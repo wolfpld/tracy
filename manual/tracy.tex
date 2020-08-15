@@ -407,7 +407,7 @@ In case you want to profile a short-lived program (for example, a compression ut
 \subsubsection{On-demand profiling}
 \label{ondemand}
 
-By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application life-time, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
+By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application lifetime, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
 
 It should be noted, that if on-demand profiling is \emph{disabled} (which is the default), then the recorded events will be stored in the system memory until a server connection is made and the data can be uploaded\footnote{This memory is never released, but it is reused for collection of further events.}. Depending on the amount of the things profiled, the requirements for event storage can easily grow up to a couple of gigabytes. Since this data is cleared after the initial connection is made, you won't be able to perform a second connection to a client, unless the on-demand mode is used.
 
@@ -749,13 +749,20 @@ Manual instrumentation is best started with adding markup to the main loop of th
 \subsection{Handling text strings}
 \label{textstrings}
 
-When dealing with Tracy macros, you will encounter two ways of providing string data to the profiler. In both cases you should pass \texttt{const char*} pointers, but there are differences in expected life-time of the pointed data.
+When dealing with Tracy macros, you will encounter two ways of providing string data to the profiler. In both cases you should pass \texttt{const char*} pointers, but there are differences in expected lifetime of the pointed data.
 
 \begin{enumerate}
 \item When a macro only accepts a pointer (for example: \texttt{TracyMessageL(text)}), the provided string data must be accessible at any time in program execution (\emph{this also includes the time after exiting the \texttt{main} function}). The string also cannot be changed. This basically means that the only option is to use a string literal (e.g.: \texttt{TracyMessageL("Hello")}).
 
 \item If there's a string pointer with a size parameter (for example: \texttt{TracyMessage(text, size)}), the profiler will allocate an internal temporary buffer to store the data. The \texttt{size} count should not include the terminating null character; \texttt{strlen(text)} is fine. The pointed-to data is not used afterwards. You should be aware that allocating and copying memory involved in this operation has a small time cost.
 \end{enumerate}
+
+\subsubsection{Program data lifetime}
+\label{datalifetime}
+
+Take extra care to consider the lifetime of program code (which includes string literals) in your application. If you're dynamically adding and removing modules (i.e. DLLs, shared objects) during the runtime, text data will be only present when the module is loaded. Additionally, when a module is unloaded, another one can be placed in its space in process memory map, which can result in aliasing of text strings. This leads to all sorts of confusion and potential crashes.
+
+Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified.
 
 \subsection{Specifying colors}
 
@@ -969,11 +976,21 @@ $2560\times1440$ & 23~FPS & 3300~FPS & 1600~FPS
 \subsection{Marking zones}
 \label{markingzones}
 
-To record a zone's\footnote{A \texttt{zone} represents the life-time of a special on-stack profiler variable. Typically it would exist for the duration of a whole scope of the profiled function, but you also can measure time spent in scopes of a for-loop, or an if-branch.} execution time add the \texttt{ZoneScoped} macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the \texttt{ZoneScopedC(color)} macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). You may also set a custom name for the zone, using the \texttt{ZoneScopedN(name)} macro. Color and name may be combined by using the \texttt{ZoneScopedNC(name, color)} macro.
+To record a zone's\footnote{A \texttt{zone} represents the lifetime of a special on-stack profiler variable. Typically it would exist for the duration of a whole scope of the profiled function, but you also can measure time spent in scopes of a for-loop, or an if-branch.} execution time add the \texttt{ZoneScoped} macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the \texttt{ZoneScopedC(color)} macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). You may also set a custom name for the zone, using the \texttt{ZoneScopedN(name)} macro. Color and name may be combined by using the \texttt{ZoneScopedNC(name, color)} macro.
 
 Use the \texttt{ZoneText(text, size)} macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Multiple text strings can be attached to any single zone. If you want to send a numeric value and don't want to pay the cost of converting it to a string, you may use the \texttt{ZoneValue(uint64\_t)} macro.
 
 If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro. This name won't be used in the process of grouping the zones for statistical purposes (sections~\ref{statistics} and~\ref{findzone}).
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Zones are identified using static data structures embedded in program code. You need to consider the lifetime of code in your application, as discussed in section~\ref{datalifetime}, to make sure that the profiler is able to access this data at any time during the program lifetime.
+
+If this requirement can't be fulfilled, you may consider using the C~API allocated source locations, documented in section~\ref{capibindings}.
+\end{bclogo}
 
 \subsubsection{Manual management of zone scope}
 
@@ -1554,6 +1571,7 @@ Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, \texttt{TracyCSecureAllocS}, \texttt{TracyCSecureFreeS}, \texttt{TracyCMessageS}, \texttt{TracyCMessageLS}, \texttt{TracyCMessageCS}, \texttt{TracyCMessageLCS}.
 
 \subsubsection{Using the C API to implement bindings}
+\label{capibindings}
 
 Tracy C API exposes functions with the \texttt{\_\_\_tracy} prefix that may be used to write bindings to other programming languages. Most of the functions available are a counterpart to macros described in section~\ref{capi}. Some functions do not have macro equivalents and are dedicated expressly for binding implementation purposes. This includes the following:
 
@@ -1669,6 +1687,14 @@ This feature requires privilege elevation, as described in chapter~\ref{contexts
 To enable deep insight into program execution, Tracy will capture small chunks of the executable image during profiling. The retrieved code can be subsequently disassembled to be inspected in detail. This functionality will be performed only for functions that are no larger than 64 KB and only if symbol information is present.
 
 You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+For proper program code retrieval no module used by the application can be unloaded during the runtime. See section~\ref{datalifetime} for an explanation.
+\end{bclogo}
 
 \subsubsection{Vertical synchronization}
 
@@ -2778,7 +2804,7 @@ The memory window is split into the following sections:
 
 \subsubsection{Allocations}
 
-The \emph{\faAt{} Allocations} pane allows you to search for the specified address usage during the whole life-time of the program. All recorded memory allocations that match the query will be displayed on a list.
+The \emph{\faAt{} Allocations} pane allows you to search for the specified address usage during the whole lifetime of the program. All recorded memory allocations that match the query will be displayed on a list.
 
 \subsubsection{Active allocations}
 

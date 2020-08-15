@@ -500,6 +500,9 @@
     <ClInclude Include="..\..\..\server\TracyMouse.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\NativeWindow.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

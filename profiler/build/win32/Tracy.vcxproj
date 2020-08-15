@@ -264,6 +264,7 @@
     <ClInclude Include="..\..\src\imgui_freetype.h" />
     <ClInclude Include="..\..\src\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\..\src\NativeWindow.hpp" />
     <ClInclude Include="..\..\src\ResolvService.hpp" />
     <ClInclude Include="..\..\src\stb_image.h" />
   </ItemGroup>

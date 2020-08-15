@@ -142,6 +142,22 @@ static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
 static ImGuiTextFilter addrFilter, portFilter, progFilter;
+static std::thread::id mainThread;
+static std::vector<std::function<void()>> mainThreadTasks;
+static std::mutex mainThreadLock;
+
+void RunOnMainThread( std::function<void()> cb )
+{
+    if( std::this_thread::get_id() == mainThread )
+    {
+        cb();
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock( mainThreadLock );
+        mainThreadTasks.emplace_back( cb );
+    }
+}
 
 int main( int argc, char** argv )
 {
@@ -214,6 +230,8 @@ int main( int argc, char** argv )
             fclose( f );
         }
     }
+
+    mainThread = std::this_thread::get_id();
 
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
@@ -305,7 +323,7 @@ int main( int argc, char** argv )
         auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
         if( f )
         {
-            view = std::make_unique<tracy::View>( *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+            view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
         }
     }
     else
@@ -331,7 +349,7 @@ int main( int argc, char** argv )
     }
     if( connectTo )
     {
-        view = std::make_unique<tracy::View>( connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
     }
 
     glfwShowWindow( window );
@@ -349,6 +367,14 @@ int main( int argc, char** argv )
         if( !glfwGetWindowAttrib( window, GLFW_FOCUSED ) )
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        }
+        std::unique_lock<std::mutex> lock( mainThreadLock );
+        if( !mainThreadTasks.empty() )
+        {
+            std::vector<std::function<void()>> tmp;
+            std::swap( tmp, mainThreadTasks );
+            lock.unlock();
+            for( auto& cb : tmp ) cb();
         }
     }
 
@@ -635,11 +661,11 @@ static void DrawContents()
             {
                 std::string addrPart = std::string( addr, ptr );
                 uint32_t portPart = atoi( ptr+1 );
-                view = std::make_unique<tracy::View>( addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
             }
             else
             {
-                view = std::make_unique<tracy::View>( addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
             }
         }
         ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
@@ -657,7 +683,7 @@ static void DrawContents()
                         loadThread = std::thread( [f] {
                             try
                             {
-                                view = std::make_unique<tracy::View>( *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -779,7 +805,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view = std::make_unique<tracy::View>( v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -919,7 +945,7 @@ static void DrawContents()
         viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
         if( reconnect )
         {
-            view = std::make_unique<tracy::View>( reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
         }
         break;
     default:

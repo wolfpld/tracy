@@ -3907,7 +3907,6 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         if( zsz < MinVisSize )
         {
             auto px1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
-            auto rend = end;
             auto nextTime = end + MinVisSize * nspx;
             for(;;)
             {
@@ -3919,7 +3918,6 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
-                rend = nend;
                 nextTime = nend + nspx;
             }
         }
@@ -13080,8 +13078,6 @@ void View::DrawInfo()
     time_t date = m_worker.GetCaptureTime();
     auto lt = localtime( &date );
     strftime( dtmp, 64, "%F %T", lt );
-
-    const auto& io = ImGui::GetIO();
 
     ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );

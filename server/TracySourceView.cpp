@@ -2533,8 +2533,6 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
             SmallColorBox( fileColor );
             ImGui::SameLine();
-            const auto lineString = RealToString( srcline );
-            const auto linesz = strlen( lineString );
             char buf[64];
             const auto fnsz = strlen( fileName );
             if( fnsz < 30 - m_maxLine )
@@ -3211,11 +3209,7 @@ uint32_t SourceView::CountAsmIpStats( uint64_t addr, const Worker& worker, bool 
         uint32_t cnt = 0;
         auto ipmap = worker.GetSymbolInstructionPointers( addr );
         if( !ipmap ) return 0;
-        for( auto& ip : *ipmap )
-        {
-            auto addr = worker.GetCanonicalPointer( ip.first );
-            cnt += ip.second;
-        }
+        for( auto& ip : *ipmap ) cnt += ip.second;
         return cnt;
     }
 }
@@ -3302,7 +3296,7 @@ static bool TokenizeNumber( const char*& begin, const char* end )
         begin++;
     }
     if( !hasNum ) return false;
-    bool isFloat = false, isHex = false, isBinary = false;
+    bool isFloat = false, isBinary = false;
     if( begin < end )
     {
         if( *begin == '.' )
@@ -3313,7 +3307,7 @@ static bool TokenizeNumber( const char*& begin, const char* end )
         }
         else if( *begin == 'x' || *begin == 'X' )
         {
-            isHex = true;
+            // hexadecimal
             begin++;
             while( begin < end && ( ( *begin >= '0' && *begin <= '9' ) || ( *begin >= 'a' && *begin <= 'f' ) || ( *begin >= 'A' && *begin <= 'F' ) || *begin == '\'' ) ) begin++;
         }

@@ -192,8 +192,8 @@ View::~View()
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();
 
-    if( m_frameTexture ) FreeTexture( m_frameTexture );
-    if( m_playback.texture ) FreeTexture( m_playback.texture );
+    if( m_frameTexture ) FreeTexture( m_frameTexture, m_cbMainThread );
+    if( m_playback.texture ) FreeTexture( m_playback.texture, m_cbMainThread );
 
     assert( s_instance != nullptr );
     s_instance = nullptr;

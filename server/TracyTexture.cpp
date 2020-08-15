@@ -21,10 +21,10 @@ void* MakeTexture()
     return (void*)(intptr_t)tex;
 }
 
-void FreeTexture( void* _tex )
+void FreeTexture( void* _tex, void(*runOnMainThread)(std::function<void()>) )
 {
     auto tex = (GLuint)(intptr_t)_tex;
-    glDeleteTextures( 1, &tex );
+    runOnMainThread( [tex] { glDeleteTextures( 1, &tex ); } );
 }
 
 void UpdateTexture( void* _tex, const char* data, int w, int h )

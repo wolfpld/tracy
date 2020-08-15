@@ -1,17 +1,17 @@
 namespace tracy
 {
 
+template<size_t Size>
 class RingBuffer
 {
 public:
-    RingBuffer( uint32_t size, int fd )
-        : m_size( size )
-        , m_fd( fd )
+    RingBuffer( int fd )
+        : m_fd( fd )
     {
         const auto pageSize = uint32_t( getpagesize() );
-        assert( size >= pageSize );
-        assert( __builtin_popcount( size ) == 1 );
-        m_mapSize = size + pageSize;
+        assert( Size >= pageSize );
+        assert( __builtin_popcount( Size ) == 1 );
+        m_mapSize = Size + pageSize;
         m_mapAddr = mmap( nullptr, m_mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
         if( !m_mapAddr )
         {
@@ -63,14 +63,14 @@ public:
 
     void Read( void* dst, uint64_t offset, uint64_t cnt )
     {
-        auto src = ( m_metadata->data_tail + offset ) % m_size;
-        if( src + cnt <= m_size )
+        auto src = ( m_metadata->data_tail + offset ) % Size;
+        if( src + cnt <= Size )
         {
             memcpy( dst, m_buffer + src, cnt );
         }
         else
         {
-            const auto s0 = m_size - src;
+            const auto s0 = Size - src;
             memcpy( dst, m_buffer + src, s0 );
             memcpy( (char*)dst + s0, m_buffer, cnt - s0 );
         }
@@ -106,7 +106,6 @@ private:
         std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, tail, std::memory_order_release );
     }
 
-    size_t m_size;
     size_t m_mapSize;
     void* m_mapAddr;
 

@@ -762,7 +762,7 @@ When dealing with Tracy macros, you will encounter two ways of providing string 
 
 Take extra care to consider the lifetime of program code (which includes string literals) in your application. If you're dynamically adding and removing modules (i.e. DLLs, shared objects) during the runtime, text data will be only present when the module is loaded. Additionally, when a module is unloaded, another one can be placed in its space in process memory map, which can result in aliasing of text strings. This leads to all sorts of confusion and potential crashes.
 
-Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified.
+Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified. You cannot unload modules that contain string literals which were passed to the profiler.
 
 \subsection{Specifying colors}
 
@@ -989,7 +989,7 @@ logo=\bcbombe
 ]{Important}
 Zones are identified using static data structures embedded in program code. You need to consider the lifetime of code in your application, as discussed in section~\ref{datalifetime}, to make sure that the profiler is able to access this data at any time during the program lifetime.
 
-If this requirement can't be fulfilled, you may consider using the C~API allocated source locations, documented in section~\ref{capibindings}.
+If this requirement can't be fulfilled, you must use transient zones, described in section~\ref{transientzones}.
 \end{bclogo}
 
 \subsubsection{Manual management of zone scope}
@@ -1025,25 +1025,6 @@ The \texttt{ZoneScoped} macros are imposing creation and usage of an implicit zo
 It is valid to set the \texttt{Zone1} text or name \emph{only} in places \circled{a} or \circled{c}. After \texttt{Zone2} is created at \circled{b} you can no longer perform operations on \texttt{Zone1}, until \texttt{Zone2} is destroyed.
 
 \end{bclogo}
-
-\subsubsection{Variable shadowing}
-
-The following code is fully compliant with the C++ standard:
-
-\begin{lstlisting}
-void Function()
-{
-	ZoneScoped;
-	...
-	for(int i=0; i<10; i++)
-	{
-		ZoneScoped;
-		...
-	}
-}
-\end{lstlisting}
-
-This doesn't stop some compilers from dispensing \emph{fashion advice} about variable shadowing (as both \texttt{ZoneScoped} calls create a variable with the same name, with the inner scope one shadowing the one in the outer scope). If you want to avoid these warnings, you will also need to use the \texttt{ZoneNamed} macros.
 
 \subsubsection{Filtering zones}
 \label{filteringzones}
@@ -1081,6 +1062,32 @@ void Graphics::Render()
 	...
 }
 \end{lstlisting}
+
+\subsubsection{Transient zones}
+\label{transientzones}
+
+In order to prevent problems caused by unloadable code, described in section~\ref{datalifetime}, transient zones copy the source location data to an on-heap buffer. This way the requirement on the string literal data being accessible for the rest of program lifetime is relaxed, at the cost of increased memory usage.
+
+Transient zones can be declared through the \texttt{ZoneTransient} and \texttt{ZoneTransientN} macros, with the same set of parameters as the \texttt{ZoneNamed} macros. See section~\ref{multizone} for details and make sure that you observe the requirements outlined there.
+
+\subsubsection{Variable shadowing}
+
+The following code is fully compliant with the C++ standard:
+
+\begin{lstlisting}
+void Function()
+{
+	ZoneScoped;
+	...
+	for(int i=0; i<10; i++)
+	{
+		ZoneScoped;
+		...
+	}
+}
+\end{lstlisting}
+
+This doesn't stop some compilers from dispensing \emph{fashion advice} about variable shadowing (as both \texttt{ZoneScoped} calls create a variable with the same name, with the inner scope one shadowing the one in the outer scope). If you want to avoid these warnings, you will also need to use the \texttt{ZoneNamed} macros.
 
 \subsubsection{Exiting program from within a zone}
 
@@ -1311,7 +1318,7 @@ Remember that you need to provide your own name for the created stack variable a
 \subsection{Collecting call stacks}
 \label{collectingcallstacks}
 
-Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracySecureAllocS}, \texttt{TracySecureFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
+Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracySecureAllocS}, \texttt{TracySecureFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named and transient variants.
 
 Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} and figure~\ref{CallstackPlot} show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
@@ -1372,7 +1379,7 @@ To have proper call stack information, the profiled application must be compiled
 \item On MSVC open the project properties and go to \emph{Linker\textrightarrow Debugging\textrightarrow Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
 \item On gcc or clang remember to specify the debugging information \texttt{-g} parameter during compilation and \emph{do not} add the strip symbols \texttt{-s} parameter. Additionally, omitting frame pointers will severely reduce the quality of stack traces, which can be fixed by adding the \texttt{-fno-omit-frame-pointer} parameter. Link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
 \item On OSX you may need to run \texttt{dsymutil} to extract the debugging data out of the executable binary.
-\item On iOS you will have to add a \emph{New Run Script Phase} to your XCode project, which will execute the following shell script:
+\item On iOS you will have to add a \emph{New Run Script Phase} to your XCode project, which shall execute the following shell script:
 
 \begin{lstlisting}[language=sh]
 cp -rf ${TARGET_BUILD_DIR}/${WRAPPER_NAME}.dSYM/* ${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/${PRODUCT_NAME}.dSYM
@@ -1533,6 +1540,10 @@ In typical use cases the zone context data structure is hidden from your view, r
 Since all instrumentation using the C API has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section~\ref{instrumentationfailures} for more information.
 
 The validation comes with a performance cost though, which you may not want to pay. If you are \emph{completely sure} that the instrumentation is not broken in any way, you may use the \texttt{TRACY\_NO\_VERIFY} macro, which will disable the validation code.
+
+\paragraph{Transient zones in C API}
+
+There is no explicit support for transient zones (section~\ref{transientzones}) in the C API macros. However, this functionality can be implemented by following instructions outlined in section~\ref{capibindings}.
 
 \subsubsection{Memory profiling}
 

@@ -373,8 +373,8 @@ using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 
 #define TracyD3D12NewFrame(ctx) ctx->NewFrame();
 
-#define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), active };
-#define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), active };
+#define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), active };
+#define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), active };
 #define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZone(ctx, ___tracy_gpu_zone, cmdList, name, true)
 #define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneC(ctx, ___tracy_gpu_zone, cmdList, name, color, true)
 

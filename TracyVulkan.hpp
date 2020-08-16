@@ -399,21 +399,21 @@ using TracyVkCtx = tracy::VkCtx*;
 #define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyVkNamedZone( ctx, varname, cmdbuf, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );
-#  define TracyVkNamedZoneC( ctx, varname, cmdbuf, name, color, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );
+#  define TracyVkNamedZone( ctx, varname, cmdbuf, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );
+#  define TracyVkNamedZoneC( ctx, varname, cmdbuf, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );
 #  define TracyVkZone( ctx, cmdbuf, name ) TracyVkNamedZoneS( ctx, ___tracy_gpu_zone, cmdbuf, name, TRACY_CALLSTACK, true )
 #  define TracyVkZoneC( ctx, cmdbuf, name, color ) TracyVkNamedZoneCS( ctx, ___tracy_gpu_zone, cmdbuf, name, color, TRACY_CALLSTACK, true )
 #else
-#  define TracyVkNamedZone( ctx, varname, cmdbuf, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, active );
-#  define TracyVkNamedZoneC( ctx, varname, cmdbuf, name, color, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, active );
+#  define TracyVkNamedZone( ctx, varname, cmdbuf, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, active );
+#  define TracyVkNamedZoneC( ctx, varname, cmdbuf, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, active );
 #  define TracyVkZone( ctx, cmdbuf, name ) TracyVkNamedZone( ctx, ___tracy_gpu_zone, cmdbuf, name, true )
 #  define TracyVkZoneC( ctx, cmdbuf, name, color ) TracyVkNamedZoneC( ctx, ___tracy_gpu_zone, cmdbuf, name, color, true )
 #endif
 #define TracyVkCollect( ctx, cmdbuf ) ctx->Collect( cmdbuf );
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyVkNamedZoneS( ctx, varname, cmdbuf, name, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, depth, active );
-#  define TracyVkNamedZoneCS( ctx, varname, cmdbuf, name, color, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, depth, active );
+#  define TracyVkNamedZoneS( ctx, varname, cmdbuf, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, depth, active );
+#  define TracyVkNamedZoneCS( ctx, varname, cmdbuf, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, depth, active );
 #  define TracyVkZoneS( ctx, cmdbuf, name, depth ) TracyVkNamedZoneS( ctx, ___tracy_gpu_zone, cmdbuf, name, depth, true )
 #  define TracyVkZoneCS( ctx, cmdbuf, name, color, depth ) TracyVkNamedZoneCS( ctx, ___tracy_gpu_zone, cmdbuf, name, color, depth, true )
 #else

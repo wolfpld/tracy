@@ -11,6 +11,9 @@
 #define ZoneNamedC(x,y,z)
 #define ZoneNamedNC(x,y,z,w)
 
+#define ZoneTransient(x,y)
+#define ZoneTransientN(x,y,z)
+
 #define ZoneScoped
 #define ZoneScopedN(x)
 #define ZoneScopedC(x)
@@ -58,6 +61,9 @@
 #define ZoneNamedCS(x,y,z,w)
 #define ZoneNamedNCS(x,y,z,w,a)
 
+#define ZoneTransientS(x,y,z)
+#define ZoneTransientNS(x,y,z,w)
+
 #define ZoneScopedS(x)
 #define ZoneScopedNS(x,y)
 #define ZoneScopedCS(x,y)
@@ -79,6 +85,8 @@
 
 #else
 
+#include <string.h>
+
 #include "client/TracyLock.hpp"
 #include "client/TracyProfiler.hpp"
 #include "client/TracyScoped.hpp"
@@ -88,11 +96,17 @@
 #  define ZoneNamedN( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
 #  define ZoneNamedC( varname, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
 #  define ZoneNamedNC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
+
+#  define ZoneTransient( varname, active ) tracy::ScopedZone varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), nullptr, 0, TRACY_CALLSTACK, active );
+#  define ZoneTransientN( varname, name, active ) tracy::ScopedZone varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name, strlen( name ), TRACY_CALLSTACK, active );
 #else
 #  define ZoneNamed( varname, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), active );
 #  define ZoneNamedN( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), active );
 #  define ZoneNamedC( varname, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), active );
 #  define ZoneNamedNC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), active );
+
+#  define ZoneTransient( varname, active ) tracy::ScopedZone varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), nullptr, 0, active );
+#  define ZoneTransientN( varname, name, active ) tracy::ScopedZone varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name, strlen( name ), active );
 #endif
 
 #define ZoneScoped ZoneNamed( ___tracy_scoped_zone, true )
@@ -156,6 +170,9 @@
 #  define ZoneNamedCS( varname, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), depth, active );
 #  define ZoneNamedNCS( varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), depth, active );
 
+#  define ZoneTransientS( varname, depth, active ) tracy::ScopedZone varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), nullptr, 0, depth, active );
+#  define ZoneTransientNS( varname, name, depth, active ) tracy::ScopedZone varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name, strlen( name ), depth, active );
+
 #  define ZoneScopedS( depth ) ZoneNamedS( ___tracy_scoped_zone, depth, true )
 #  define ZoneScopedNS( name, depth ) ZoneNamedNS( ___tracy_scoped_zone, name, depth, true )
 #  define ZoneScopedCS( color, depth ) ZoneNamedCS( ___tracy_scoped_zone, color, depth, true )
@@ -175,6 +192,9 @@
 #  define ZoneNamedNS( varname, name, depth, active ) ZoneNamedN( varname, name, active )
 #  define ZoneNamedCS( varname, color, depth, active ) ZoneNamedC( varname, color, active )
 #  define ZoneNamedNCS( varname, name, color, depth, active ) ZoneNamedNC( varname, name, color, active )
+
+#  define ZoneTransientS( varname, depth, active ) ZoneTransient( varname, active )
+#  define ZoneTransientNS( varname, name, depth, active ) ZoneTransientN( varname, name, active )
 
 #  define ZoneScopedS( depth ) ZoneScoped
 #  define ZoneScopedNS( name, depth ) ZoneScopedN( name )

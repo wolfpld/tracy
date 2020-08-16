@@ -6,6 +6,8 @@
 #define TracyD3D12Context(device, queue) nullptr
 #define TracyD3D12Destroy(ctx)
 
+#define TracyD3D12NewFrame(ctx) 
+
 #define TracyD3D12NamedZone(ctx, varname, cmdList, name, active)
 #define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active)
 #define TracyD3D12Zone(ctx, cmdList, name)

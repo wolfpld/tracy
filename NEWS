@@ -35,6 +35,7 @@ v0.7.1 (xxxx-xx-xx)
 - Exact time from start of profiling session can be now viewed by hovering
   the mouse over the time scale.
 - Code transfer can be now compiled-out.
+- Added support for zone markup in unloadable modules.
 
 v0.7 (2020-06-11)
 -----------------

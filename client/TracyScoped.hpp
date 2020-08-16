@@ -52,6 +52,44 @@ public:
         GetProfiler().SendCallstack( depth );
     }
 
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active = true )
+#ifdef TRACY_ON_DEMAND
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( is_active )
+#endif
+    {
+        if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        m_connectionId = GetProfiler().ConnectionId();
+#endif
+        TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
+        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
+        MemWrite( &item->zoneBegin.srcloc, srcloc );
+        TracyLfqCommit;
+    }
+
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true )
+#ifdef TRACY_ON_DEMAND
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( is_active )
+#endif
+    {
+        if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        m_connectionId = GetProfiler().ConnectionId();
+#endif
+        TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
+        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
+        MemWrite( &item->zoneBegin.srcloc, srcloc );
+        TracyLfqCommit;
+
+        GetProfiler().SendCallstack( depth );
+    }
+
     tracy_force_inline ~ScopedZone()
     {
         if( !m_active ) return;

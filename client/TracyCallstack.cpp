@@ -445,11 +445,7 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, con
     auto& sym = *(SymbolData*)data;
     if( !fn )
     {
-        const char* symloc = nullptr;
-        Dl_info dlinfo;
-        if( dladdr( (void*)pc, &dlinfo ) ) symloc = dlinfo.dli_fname;
-        if( !symloc ) symloc = "[unknown]";
-        sym.file = symloc;
+        sym.file = "[unknown]";
         sym.line = 0;
         sym.needFree = false;
     }
@@ -494,14 +490,12 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
     if( !fn && !function )
     {
         const char* symname = nullptr;
-        const char* symloc = nullptr;
         auto vptr = (void*)pc;
         ptrdiff_t symoff = 0;
 
         Dl_info dlinfo;
         if( dladdr( vptr, &dlinfo ) )
         {
-            symloc = dlinfo.dli_fname;
             symname = dlinfo.dli_sname;
             symoff = (char*)pc - (char*)dlinfo.dli_saddr;
 
@@ -518,7 +512,6 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         }
 
         if( !symname ) symname = "[unknown]";
-        if( !symloc ) symloc = "[unknown]";
 
         if( symoff == 0 )
         {
@@ -536,15 +529,7 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
             cb_data[cb_num].name = name;
         }
 
-        char buf[32];
-        const auto addrlen = sprintf( buf, " [%p]", (void*)pc );
-        const auto loclen = strlen( symloc );
-        auto loc = (char*)tracy_malloc( loclen + addrlen + 1 );
-        memcpy( loc, symloc, loclen );
-        memcpy( loc + loclen, buf, addrlen );
-        loc[loclen + addrlen] = '\0';
-        cb_data[cb_num].file = loc;
-
+        cb_data[cb_num].file = CopyString( "[unknown]" );
         cb_data[cb_num].line = 0;
     }
     else
@@ -717,15 +702,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         cb.name = name;
     }
 
-    char buf[32];
-    const auto addrlen = sprintf( buf, " [%p]", (void*)ptr );
-    const auto loclen = strlen( symloc );
-    auto loc = (char*)tracy_malloc( loclen + addrlen + 1 );
-    memcpy( loc, symloc, loclen );
-    memcpy( loc + loclen, buf, addrlen );
-    loc[loclen + addrlen] = '\0';
-    cb.file = loc;
-
+    cb.file = CopyString( "[unknown]" );
     cb.symLen = 0;
     cb.symAddr = (uint64_t)symaddr;
 

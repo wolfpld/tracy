@@ -886,19 +886,16 @@ void SysTraceStop()
 
 static uint64_t ReadNumber( const char*& ptr )
 {
-    uint64_t val = 0;
+    assert( *ptr >= '0' && *ptr <= '9' );
+    uint64_t val = *ptr++ - '0';
     for(;;)
     {
-        if( *ptr >= '0' && *ptr <= '9' )
-        {
-            val = val * 10 + ( *ptr - '0' );
-            ptr++;
-        }
-        else
-        {
-            return val;
-        }
+        const uint8_t v = uint8_t( *ptr - '0' );
+        if( v > 9 ) break;
+        val = val * 10 + v;
+        ptr++;
     }
+    return val;
 }
 
 static uint8_t ReadState( char state )

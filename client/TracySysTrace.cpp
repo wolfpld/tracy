@@ -884,8 +884,9 @@ void SysTraceStop()
     }
 }
 
-static uint64_t ReadNumber( const char*& ptr )
+static uint64_t ReadNumber( const char*& data )
 {
+    auto ptr = data;
     assert( *ptr >= '0' && *ptr <= '9' );
     uint64_t val = *ptr++ - '0';
     for(;;)
@@ -895,6 +896,7 @@ static uint64_t ReadNumber( const char*& ptr )
         val = val * 10 + v;
         ptr++;
     }
+    data = ptr;
     return val;
 }
 

@@ -1102,19 +1102,16 @@ static void ProcessTraceLines( int fd )
         line = buf;
         for(;;)
         {
-            auto next = line;
-            while( next < end && *next != '\n' ) next++;
-            next++;
-            if( next >= end )
+            auto next = (char*)memchr( line, '\n', end - line );
+            if( !next )
             {
                 const auto lsz = end - line;
                 memmove( buf, line, lsz );
                 line = buf + lsz;
                 break;
             }
-
             HandleTraceLine( line );
-            line = next;
+            line = ++next;
         }
         if( rd < 64*1024 )
         {
@@ -1189,14 +1186,10 @@ static void ProcessTraceLines( int fd )
         const auto end = buf + rd;
         for(;;)
         {
-            auto next = line;
-            while( next < end && *next != '\n' ) next++;
-            if( next == end ) break;
-            assert( *next == '\n' );
-            next++;
-
+            auto next = (char*)memchr( line, '\n', end - line );
+            if( !next ) break;
             HandleTraceLine( line );
-            line = next;
+            line = ++next;
         }
     }
 

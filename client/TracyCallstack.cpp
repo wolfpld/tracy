@@ -222,9 +222,9 @@ static const char* GetModuleName( uint64_t addr )
     return "[unknown]";
 }
 
-SymbolData DecodeSymbolAddress( uint64_t ptr )
+CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
-    SymbolData sym;
+    CallstackSymbolData sym;
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
@@ -242,9 +242,9 @@ SymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
-SymbolData DecodeCodeAddress( uint64_t ptr )
+CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
-    SymbolData sym;
+    CallstackSymbolData sym;
     const auto proc = GetCurrentProcess();
     bool done = false;
 
@@ -442,7 +442,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 static int SymbolAddressDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
-    auto& sym = *(SymbolData*)data;
+    auto& sym = *(CallstackSymbolData*)data;
     if( !fn )
     {
         sym.file = "[unknown]";
@@ -461,20 +461,20 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, con
 
 static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*/ )
 {
-    auto& sym = *(SymbolData*)data;
+    auto& sym = *(CallstackSymbolData*)data;
     sym.file = "[unknown]";
     sym.line = 0;
     sym.needFree = false;
 }
 
-SymbolData DecodeSymbolAddress( uint64_t ptr )
+CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
-    SymbolData sym;
+    CallstackSymbolData sym;
     backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
     return sym;
 }
 
-SymbolData DecodeCodeAddress( uint64_t ptr )
+CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
     return DecodeSymbolAddress( ptr );
 }
@@ -637,16 +637,16 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
-SymbolData DecodeSymbolAddress( uint64_t ptr )
+CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     const char* symloc = nullptr;
     Dl_info dlinfo;
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
     if( !symloc ) symloc = "[unknown]";
-    return SymbolData { symloc, 0, false };
+    return CallstackSymbolData { symloc, 0, false };
 }
 
-SymbolData DecodeCodeAddress( uint64_t ptr )
+CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
     return DecodeSymbolAddress( ptr );
 }

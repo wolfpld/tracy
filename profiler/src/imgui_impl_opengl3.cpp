@@ -15,6 +15,7 @@
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
 //  2020-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2020-07-10: OpenGL: Added support for glad2 OpenGL loader.
 //  2020-05-08: OpenGL: Made default GLSL version 150 (instead of 130) on OSX.
 //  2020-04-21: OpenGL: Fixed handling of glClipControl(GL_UPPER_LEFT) by inverting projection matrix.
 //  2020-04-12: OpenGL: Fixed context version check mistakenly testing for 4.0+ instead of 3.2+ to enable ImGuiBackendFlags_RendererHasVtxOffset.
@@ -26,7 +27,7 @@
 //  2019-05-29: OpenGL: Desktop GL only: Added support for large mesh (64K+ vertices), enable ImGuiBackendFlags_RendererHasVtxOffset flag.
 //  2019-04-30: OpenGL: Added support for special ImDrawCallback_ResetRenderState callback to reset render state.
 //  2019-03-29: OpenGL: Not calling glBindBuffer more than necessary in the render loop.
-//  2019-03-15: OpenGL: Added a dummy GL call + comments in ImGui_ImplOpenGL3_Init() to detect uninitialized GL function loaders early.
+//  2019-03-15: OpenGL: Added a GL call + comments in ImGui_ImplOpenGL3_Init() to detect uninitialized GL function loaders early.
 //  2019-03-03: OpenGL: Fix support for ES 2.0 (WebGL 1.0).
 //  2019-02-20: OpenGL: Fix for OSX not supporting OpenGL 4.5, we don't try to read GL_CLIP_ORIGIN even if defined by the headers/loader.
 //  2019-02-11: OpenGL: Projecting clipping rectangles correctly using draw_data->FramebufferScale to allow multi-viewports for retina display.
@@ -103,6 +104,8 @@
 #include <GL/glew.h>            // Needs to be initialized with glewInit() in user's code.
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
 #include <glad/glad.h>          // Needs to be initialized with gladLoadGL() in user's code.
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD2)
+#include <glad/gl.h>            // Needs to be initialized with gladLoadGL(...) or gladLoaderLoadGL() in user's code.
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
 #ifndef GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
@@ -183,7 +186,7 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
     strcpy(g_GlslVersionString, glsl_version);
     strcat(g_GlslVersionString, "\n");
 
-    // Dummy construct to make it easily visible in the IDE and debugger which GL loader has been selected.
+    // Debugging construct to make it easily visible in the IDE and debugger which GL loader has been selected.
     // The code actually never uses the 'gl_loader' variable! It is only here so you can read it!
     // If auto-detection fails or doesn't select the same GL loader file as used by your application,
     // you are likely to get a crash below.
@@ -196,6 +199,8 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
     gl_loader = "GLEW";
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
     gl_loader = "GLAD";
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD2)
+    gl_loader = "GLAD2";
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
     gl_loader = "glbinding2";
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
@@ -206,7 +211,7 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
     gl_loader = "none";
 #endif
 
-    // Make a dummy GL call (we don't actually need the result)
+    // Make an arbitrary GL call (we don't actually need the result)
     // IF YOU GET A CRASH HERE: it probably means that you haven't initialized the OpenGL function loader used by this code.
     // Desktop OpenGL 3/4 need a function loader. See the IMGUI_IMPL_OPENGL_LOADER_xxx explanation above.
     GLint current_texture;

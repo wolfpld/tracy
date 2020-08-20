@@ -256,6 +256,7 @@ Worker::Worker( const char* addr, int port )
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
+    m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
 
     memset( (char*)m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
 
@@ -287,6 +288,7 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
+    m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
 
     m_data.lastTime = 0;
     if( !timeline.empty() )
@@ -1381,7 +1383,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             f.Read( sz );
             m_data.symbolLoc.reserve_exact( sz, m_slab );
             f.Read( sz );
-            m_data.symbolLocInline.reserve_exact( sz, m_slab );
+            if( fileVer < FileVersion( 0, 7, 2 ) )
+            {
+                m_data.symbolLocInline.reserve_exact( sz + 1, m_slab );
+            }
+            else
+            {
+                m_data.symbolLocInline.reserve_exact( sz, m_slab );
+            }
             f.Read( sz );
             m_data.symbolMap.reserve( sz );
             int symIdx = 0;
@@ -1403,6 +1412,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 {
                     m_data.symbolLoc[symIdx++] = SymbolLocation { symAddr, size.Val() };
                 }
+            }
+            if( fileVer < FileVersion( 0, 7, 2 ) )
+            {
+                m_data.symbolLocInline[symInlineIdx] = std::numeric_limits<uint64_t>::max();
             }
         }
         else
@@ -1427,6 +1440,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
                 }
             }
+            m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
         }
 #ifdef NO_PARALLEL_SORT
         pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );

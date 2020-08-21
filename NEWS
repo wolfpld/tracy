@@ -36,6 +36,7 @@ v0.7.1 (xxxx-xx-xx)
   the mouse over the time scale.
 - Code transfer can be now compiled-out.
 - Added support for zone markup in unloadable modules.
+- Added image name filter to sampling statistics results window.
 
 v0.7 (2020-06-11)
 -----------------

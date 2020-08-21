@@ -346,6 +346,7 @@ private:
     bool m_reactToCrash = false;
 
     ImGuiTextFilter m_statisticsFilter;
+    ImGuiTextFilter m_statisticsImageFilter;
 
     Region m_highlight;
     Region m_highlightZoom;

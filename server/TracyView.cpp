@@ -11866,7 +11866,7 @@ void View::DrawStatistics()
     ImGui::Separator();
     TextDisabledUnformatted( "Filter results" );
     ImGui::SameLine();
-    m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
+    m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
     {
@@ -11875,6 +11875,20 @@ void View::DrawStatistics()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
+    if( m_statMode == 1 )
+    {
+        TextDisabledUnformatted( "Image name" );
+        ImGui::SameLine();
+        m_statisticsImageFilter.Draw( ICON_FA_FILTER "###imageFilter", 200 );
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+        {
+            m_statisticsImageFilter.Clear();
+        }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+    }
     if( m_statMode == 1 && !m_worker.AreSymbolSamplesReady() )
     {
         m_statRange.active = false;
@@ -12030,12 +12044,13 @@ void View::DrawStatistics()
         if( m_showAllSymbols )
         {
             data.reserve( symMap.size() );
-            if( m_statisticsFilter.IsActive() )
+            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() )
             {
                 for( auto& v : symMap )
                 {
-                    auto name = m_worker.GetString( v.second.name );
-                    bool pass = m_statisticsFilter.PassFilter( name );
+                    const auto name = m_worker.GetString( v.second.name );
+                    const auto image = m_worker.GetString( v.second.imageName );
+                    bool pass = m_statisticsFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
                     if( !pass && v.second.size.Val() == 0 )
                     {
                         const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
@@ -12045,7 +12060,7 @@ void View::DrawStatistics()
                             if( pit != symMap.end() )
                             {
                                 const auto parentName = m_worker.GetString( pit->second.name );
-                                pass = m_statisticsFilter.PassFilter( parentName );
+                                pass = m_statisticsFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
                             }
                         }
                     }
@@ -12132,15 +12147,16 @@ void View::DrawStatistics()
         else
         {
             data.reserve( symStat.size() );
-            if( m_statisticsFilter.IsActive() )
+            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() )
             {
                 for( auto& v : symStat )
                 {
                     auto sit = symMap.find( v.first );
                     if( sit != symMap.end() )
                     {
-                        auto name = m_worker.GetString( sit->second.name );
-                        bool pass = m_statisticsFilter.PassFilter( name );
+                        const auto name = m_worker.GetString( sit->second.name );
+                        const auto image = m_worker.GetString( sit->second.imageName );
+                        bool pass = m_statisticsFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
                         if( !pass && sit->second.size.Val() == 0 )
                         {
                             const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
@@ -12150,7 +12166,7 @@ void View::DrawStatistics()
                                 if( pit != symMap.end() )
                                 {
                                     const auto parentName = m_worker.GetString( pit->second.name );
-                                    pass = m_statisticsFilter.PassFilter( parentName );
+                                    pass = m_statisticsFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
                                 }
                             }
                         }

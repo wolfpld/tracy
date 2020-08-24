@@ -1692,6 +1692,8 @@ Manual markup of zones doesn't cover every function existing in a program and ca
 
 This feature requires privilege elevation, as described in chapter~\ref{contextswitches}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
 
+On Windows sampling is performed at 8 kHz frequency (which is the maximum possible value), and on Linux and Android it is performed at 10 kHz.
+
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}
 

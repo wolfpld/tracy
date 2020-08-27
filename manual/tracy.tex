@@ -754,8 +754,10 @@ When dealing with Tracy macros, you will encounter two ways of providing string 
 \begin{enumerate}
 \item When a macro only accepts a pointer (for example: \texttt{TracyMessageL(text)}), the provided string data must be accessible at any time in program execution (\emph{this also includes the time after exiting the \texttt{main} function}). The string also cannot be changed. This basically means that the only option is to use a string literal (e.g.: \texttt{TracyMessageL("Hello")}).
 
-\item If there's a string pointer with a size parameter (for example: \texttt{TracyMessage(text, size)}), the profiler will allocate an internal temporary buffer to store the data. The \texttt{size} count should not include the terminating null character; \texttt{strlen(text)} is fine. The pointed-to data is not used afterwards. You should be aware that allocating and copying memory involved in this operation has a small time cost.
+\item If there's a string pointer with a size parameter (for example: \texttt{TracyMessage(text, size)}), the profiler will allocate an internal temporary buffer to store the data. The \texttt{size} count should not include the terminating null character, using \texttt{strlen(text)} is fine. The pointed-to data is not used afterwards. Remember that allocating and copying memory involved in this operation has a small time cost.
 \end{enumerate}
+
+Be aware that each single instance of text string data passed to the profiler can't be larger than 64 KB.
 
 \subsubsection{Program data lifetime}
 \label{datalifetime}

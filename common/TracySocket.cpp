@@ -393,7 +393,11 @@ static int addrinfo_and_socket_for_family(int port, int ai_family, struct addrin
     hints.ai_family = ai_family;
     hints.ai_socktype = SOCK_STREAM;
 #ifndef TRACY_ONLY_LOCALHOST
-    hints.ai_flags = AI_PASSIVE;
+    const char* onlyLocalhost = getenv( "TRACY_ONLY_LOCALHOST" );
+    if( !onlyLocalhost || onlyLocalhost[0] != '1' )
+    {
+        hints.ai_flags = AI_PASSIVE;
+    }
 #endif
     char portbuf[32];
     sprintf( portbuf, "%i", port );
@@ -410,7 +414,11 @@ bool ListenSocket::Listen( int port, int backlog )
     struct addrinfo* res = nullptr;
 
 #ifndef TRACY_ONLY_IPV4
-    m_sock = addrinfo_and_socket_for_family(port, AF_INET6, &res);
+    const char* onlyIPv4 = getenv( "TRACY_ONLY_IPV4" );
+    if( !onlyIPv4 || onlyIPv4[0] != '1' )
+    {
+        m_sock = addrinfo_and_socket_for_family(port, AF_INET6, &res);
+    }
 #endif
     if (m_sock == -1)
     {

@@ -425,9 +425,9 @@ By default Tracy client will announce its presence to the local network\footnote
 
 \subsubsection{Client network interface}
 
-By default Tracy client will listen on all network interfaces. If you want to restrict it to only listening on the localhost interface, define the \texttt{TRACY\_ONLY\_LOCALHOST} macro.
+By default Tracy client will listen on all network interfaces. If you want to restrict it to only listening on the localhost interface, define the \texttt{TRACY\_ONLY\_LOCALHOST} macro at compile time, or set the \texttt{TRACY\_ONLY\_LOCALHOST} environment variable to $1$ at runtime.
 
-By default Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is not available. If you want to restrict it to only listening on IPv4 interfaces, define the \texttt{TRACY\_ONLY\_IPV4} macro.
+By default Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is not available. If you want to restrict it to only listening on IPv4 interfaces, define the \texttt{TRACY\_ONLY\_IPV4} macro at compile time, or set the \texttt{TRACY\_ONLY\_IPV4} environment variable to $1$ at runtime.
 
 \subsubsection{Setup for multi-DLL projects}
 

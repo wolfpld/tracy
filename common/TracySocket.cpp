@@ -386,33 +386,45 @@ ListenSocket::~ListenSocket()
     if( m_sock != -1 ) Close();
 }
 
+static int addrinfo_and_socket_for_family(int port, int ai_family, struct addrinfo** res)
+{
+    struct addrinfo hints;
+    memset( &hints, 0, sizeof( hints ) );
+    hints.ai_family = ai_family;
+    hints.ai_socktype = SOCK_STREAM;
+#ifndef TRACY_ONLY_LOCALHOST
+    const char* onlyLocalhost = getenv( "TRACY_ONLY_LOCALHOST" );
+    if( !onlyLocalhost || onlyLocalhost[0] != '1' )
+    {
+        hints.ai_flags = AI_PASSIVE;
+    }
+#endif
+    char portbuf[32];
+    sprintf( portbuf, "%i", port );
+    if( getaddrinfo( nullptr, portbuf, &hints, res ) != 0 ) return -1;
+    int sock = socket( (*res)->ai_family, (*res)->ai_socktype, (*res)->ai_protocol );
+    if (sock == -1) freeaddrinfo( *res );
+    return sock;
+}
+
 bool ListenSocket::Listen( int port, int backlog )
 {
     assert( m_sock == -1 );
 
-    struct addrinfo* res;
-    struct addrinfo hints;
+    struct addrinfo* res = nullptr;
 
-    memset( &hints, 0, sizeof( hints ) );
-    hints.ai_family = AF_INET6;
-    hints.ai_socktype = SOCK_STREAM;
-#ifndef TRACY_ONLY_LOCALHOST
-    hints.ai_flags = AI_PASSIVE;
+#ifndef TRACY_ONLY_IPV4
+    const char* onlyIPv4 = getenv( "TRACY_ONLY_IPV4" );
+    if( !onlyIPv4 || onlyIPv4[0] != '1' )
+    {
+        m_sock = addrinfo_and_socket_for_family(port, AF_INET6, &res);
+    }
 #endif
-
-    char portbuf[32];
-    sprintf( portbuf, "%i", port );
-
-    if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
-
-    m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
     if (m_sock == -1)
     {
         // IPV6 protocol may not be available/is disabled. Try to create a socket
         // with the IPV4 protocol
-        hints.ai_family = AF_INET;
-        if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
-        m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
+        m_sock = addrinfo_and_socket_for_family(port, AF_INET, &res);
         if( m_sock == -1 ) return false;
     }
 #if defined _WIN32 || defined __CYGWIN__

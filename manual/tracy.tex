@@ -443,9 +443,11 @@ If you are experiencing crashes or freezes when manually loading/unloading a sep
 
 \subsubsection{Problematic platforms}
 
-Some OS vendors think that \emph{they} own and control the devices \emph{you} have paid for. This results in restricting usage of APIs that might 'confuse' you, or denying you access to information about what your computer is doing.
+In case of some programming environments you may need to take extra steps to ensure Tracy is able to work correctly.
 
-This is a very sad state of things.
+\paragraph{Microsoft Visual Studio}
+
+If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, as it makes the compiler non-conformant to some aspects of the C++ standard. In order to do so, open the project properties and go to \menu[,]{C/C++,General,Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
 
 \paragraph{Apple woes}
 
@@ -1483,14 +1485,6 @@ couleur=black!5,
 logo=\bcbombe
 ]{Important}
 Tracy is written in C++, so you will need to have a C++ compiler and link with C++ standard library, even if your program is strictly pure C.
-\end{bclogo}
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcattention
-]{Caveats}
-If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, for the C API to work\footnote{There's no such requirement for C++ API.}. To do so, open the project properties and go to \emph{C/C++\textrightarrow General\textrightarrow Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
 \end{bclogo}
 
 \subsubsection{Setting thread names}

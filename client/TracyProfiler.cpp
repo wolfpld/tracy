@@ -538,6 +538,8 @@ static char s_crashText[1024];
 
 LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 {
+    if( !GetProfiler().IsConnected() ) return EXCEPTION_CONTINUE_SEARCH;
+
     const unsigned ec = pExp->ExceptionRecord->ExceptionCode;
     auto msgPtr = s_crashText;
     switch( ec )

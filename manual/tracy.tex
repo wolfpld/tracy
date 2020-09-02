@@ -2976,10 +2976,14 @@ This window displays statistical information about the selected symbol. All samp
 
 The layout of frame list and the \emph{\faAt{}~Frame location} option selection is similar to the call stack window, described in chapter~\ref{callstackwindow}.
 
-\subsection{Source file view window}
+\subsection{Source view window}
 \label{sourceview}
 
-In this window you can view the source code of the profiled application, to take a quick glance at the context of the function behavior you are analyzing. The selected line (for example, a location of a profiling zone) will be highlighted both in the source code listing and on the scroll bar.
+This window can operate in one of the two modes. The first one is quite simple, just showing the source code associated with a source file. The second one, which is used if symbol context is available, is considerably more feature-rich.
+
+\subsubsection{Source file view}
+
+In source view mode you can view the source code of the profiled application, to take a quick glance at the context of the function behavior you are analyzing. The selected line (for example, a location of a profiling zone) will be highlighted both in the source code listing and on the scroll bar.
 
 \begin{bclogo}[
 noborder=true,
@@ -2998,7 +3002,7 @@ Source file view depends on local files you have on your disk, as the profiled a
 \subsubsection{Symbol view}
 \label{symbolview}
 
-If the inspected source location has an associated symbol context (i.e. if it comes from a call stack capture, from call stack sampling, etc.), a much more capable symbol view is available. A symbol is an unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of multiple inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter~\ref{statisticssampling}.
+If the inspected source location has an associated symbol context (i.e. if it comes from a call stack capture, from call stack sampling, etc.), a much more capable symbol view mode is available. A symbol is an unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of multiple inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter~\ref{statisticssampling}.
 
 The header of symbol view window contains a name of the selected \emph{\faPuzzlePiece{}~symbol}, a list of \emph{\faSitemap{}~functions} that contribute to the symbol, and information such as \emph{\faWeightHanging{}~Code size} in the program, or count of probed \emph{\faEyeDropper{}~Samples}.
 

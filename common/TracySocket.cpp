@@ -115,7 +115,7 @@ bool Socket::Connect( const char* addr, int port )
         const auto c = connect( m_connSock, m_ptr->ai_addr, m_ptr->ai_addrlen );
         if( c == -1 )
         {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
             const auto err = WSAGetLastError();
             if( err == WSAEALREADY || err == WSAEINPROGRESS ) return false;
             if( err != WSAEISCONN )
@@ -138,7 +138,7 @@ bool Socket::Connect( const char* addr, int port )
 #endif
         }
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
         u_long nonblocking = 0;
         ioctlsocket( m_connSock, FIONBIO, &nonblocking );
 #else
@@ -170,7 +170,7 @@ bool Socket::Connect( const char* addr, int port )
         int val = 1;
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
         u_long nonblocking = 1;
         ioctlsocket( sock, FIONBIO, &nonblocking );
 #else
@@ -183,7 +183,7 @@ bool Socket::Connect( const char* addr, int port )
         }
         else
         {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
             const auto err = WSAGetLastError();
             if( err != WSAEWOULDBLOCK )
             {
@@ -206,7 +206,7 @@ bool Socket::Connect( const char* addr, int port )
     freeaddrinfo( res );
     if( !ptr ) return false;
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     u_long nonblocking = 0;
     ioctlsocket( sock, FIONBIO, &nonblocking );
 #else
@@ -250,7 +250,7 @@ int Socket::GetSendBufSize()
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );
     int bufSize;
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     int sz = sizeof( bufSize );
     getsockopt( sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
 #else
@@ -521,7 +521,7 @@ bool UdpBroadcast::Open( const char* addr, int port )
         int val = 1;
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
         unsigned long broadcast = 1;
         if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof( broadcast ) ) == -1 )
 #else
@@ -613,14 +613,14 @@ bool UdpListen::Listen( int port )
     int val = 1;
     setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     unsigned long reuse = 1;
     setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof( reuse ) );
 #else
     int reuse = 1;
     setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof( reuse ) );
 #endif
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     unsigned long broadcast = 1;
     if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof( broadcast ) ) == -1 )
 #else

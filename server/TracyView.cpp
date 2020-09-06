@@ -432,17 +432,15 @@ bool View::DrawImpl()
 {
     if( !m_worker.HasData() )
     {
+        bool keepOpen = true;
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
-        ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+        ImGui::Begin( tmp, &keepOpen, ImGuiWindowFlags_AlwaysAutoResize );
         TextCentered( ICON_FA_WIFI );
         ImGui::TextUnformatted( "Waiting for connection..." );
         DrawWaitingDots( s_time );
-        ImGui::Spacing();
-        ImGui::Separator();
-        bool wasCancelled = ImGui::Button( "Cancel" );
         ImGui::End();
-        return !wasCancelled;
+        return keepOpen;
     }
 
     if( !m_uarchSet )

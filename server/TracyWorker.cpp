@@ -2686,23 +2686,27 @@ void Worker::Exec()
                 m_data.newFramesWereReceived = false;
             }
 #endif
-            if( m_data.newSymbolsWereAdded )
+            if( m_data.newSymbolsIndex >= 0 )
             {
-                m_data.newSymbolsWereAdded = false;
 #ifdef NO_PARALLEL_SORT
-                pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+                pdqsort_branchless( m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
 #else
-                std::sort( std::execution::par_unseq, m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+                std::sort( std::execution::par_unseq, m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
 #endif
+                const auto ms = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc[m_data.newSymbolsIndex], [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+                std::inplace_merge( ms, m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+                m_data.newSymbolsIndex = -1;
             }
-            if( m_data.newInlineSymbolsWereAdded )
+            if( m_data.newInlineSymbolsIndex >= 0 )
             {
-                m_data.newInlineSymbolsWereAdded = false;
 #ifdef NO_PARALLEL_SORT
-                pdqsort_branchless( m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
+                pdqsort_branchless( m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
 #else
-                std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
+                std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
 #endif
+                const auto ms = std::lower_bound( m_data.symbolLocInline.begin(), m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline[m_data.newInlineSymbolsIndex] );
+                std::inplace_merge( ms, m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
+                m_data.newInlineSymbolsIndex = -1;
             }
 
             if( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
@@ -5602,12 +5606,12 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
 
     if( !it->second.isInline )
     {
-        if( !m_data.newSymbolsWereAdded ) m_data.newSymbolsWereAdded = true;
+        if( m_data.newSymbolsIndex < 0 ) m_data.newSymbolsIndex = int64_t( m_data.symbolLoc.size() );
         m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
     }
     else
     {
-        if( !m_data.newInlineSymbolsWereAdded ) m_data.newInlineSymbolsWereAdded = true;
+        if( m_data.newInlineSymbolsIndex < 0 ) m_data.newInlineSymbolsIndex = int64_t( m_data.symbolLocInline.size() );
         m_data.symbolLocInline.push_back( ev.symAddr );
     }
 

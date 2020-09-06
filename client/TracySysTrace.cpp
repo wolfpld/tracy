@@ -240,7 +240,6 @@ void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
     }
     while( ++idx < 8 );
 
-    const char* name = "Vsync";
     TracyLfqPrepare( QueueType::FrameMarkMsg );
     MemWrite( &item->frameMark.time, hdr.TimeStamp.QuadPart );
     MemWrite( &item->frameMark.name, uint64_t( VsyncName[idx] ) );

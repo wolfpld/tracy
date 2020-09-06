@@ -6,6 +6,13 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
+v0.x.x (xxxx-xx-xx)
+-------------------
+
+- The "waiting for connection" dialog no longer has "cancel" button. To
+  abort connection attempt just use the "close window" button.
+
+
 v0.7.1 (2020-08-24)
 -------------------
 
@@ -37,6 +44,7 @@ v0.7.1 (2020-08-24)
 - Code transfer can be now compiled-out.
 - Added support for zone markup in unloadable modules.
 - Added image name filter to sampling statistics results window.
+
 
 v0.7 (2020-06-11)
 -----------------
@@ -99,6 +107,7 @@ update utility to convert your old traces now!
 - OpenCL profiling.
 - Direct3D 12 profiling.
 
+
 v0.6.3 (2020-02-13)
 -------------------
 
@@ -119,6 +128,7 @@ v0.6.3 (2020-02-13)
 - Frame images are now internally compressed using Zstd (instead of LZ4).
 - Fix display of continuous frame set tooltips.
 
+
 v0.6.2 (2019-12-30)
 -------------------
 
@@ -133,6 +143,7 @@ v0.6.2 (2019-12-30)
 - Highlight hovered zone from find zone menu zone list on the histogram.
 - Allow copying user data directory location to the clipboard.
 
+
 v0.6.1 (2019-11-28)
 -------------------
 
@@ -143,6 +154,7 @@ v0.6.1 (2019-11-28)
 - Added CPU thread highlight for CPU data items.
 - Client parameters may be now set from the server.
 - Minor UI fixes.
+
 
 v0.6 (2019-11-17)
 -----------------
@@ -202,6 +214,7 @@ update utility to convert your old traces now!
 - Zone list in the statistics window can be now filtered.
 - Implemented configuration of plots.
 - Messages can now collect call stacks.
+
 
 v0.5 (2019-08-10)
 -----------------
@@ -290,6 +303,7 @@ update utility to convert your old traces now!
 - GPU drift value can be now automatically measured.
 - Connection window is now a popup hidden under a dedicated button.
 
+
 v0.4.1 (2018-12-30)
 -------------------
 
@@ -316,6 +330,7 @@ v0.4.1 (2018-12-30)
   profiler application (use "-a address" argument to enable).
 - Pressing enter key after entering client address in the welcome dialog
   will now automatically begin connection process.
+
 
 v0.4 (2018-10-09)
 -----------------

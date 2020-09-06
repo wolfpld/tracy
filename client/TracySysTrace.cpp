@@ -248,6 +248,7 @@ void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 
 static void SetupVsync()
 {
+#if _WIN32_WINNT >= _WIN32_WINNT_WINBLUE
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + MAX_PATH;
     s_propVsync = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_propVsync, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
@@ -325,6 +326,7 @@ static void SetupVsync()
         SetThreadName( "Tracy Vsync" );
         ProcessTrace( &s_traceHandleVsync2, 1, nullptr, nullptr );
     }, nullptr );
+#endif
 }
 
 bool SysTraceStart( int64_t& samplingPeriod )

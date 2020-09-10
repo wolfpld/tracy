@@ -32,6 +32,7 @@
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyBadVersion.hpp"
+#include "../../server/TracyFileHeader.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyImGui.hpp"
 #include "../../server/TracyMouse.hpp"
@@ -616,6 +617,16 @@ static void DrawContents()
         if( ImGui::Button( ICON_FA_HEART " Sponsor" ) )
         {
             OpenWebpage( "https://github.com/sponsors/wolfpld/" );
+        }
+        if( updateVersion != 0 && updateVersion > tracy::FileVersion( tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch ) )
+        {
+            ImGui::Separator();
+            ImGui::TextColored( ImVec4( 1, 1, 0, 1 ), ICON_FA_EXCLAMATION_TRIANGLE " Update to %i.%i.%i is available!", ( updateVersion >> 16 ) & 0xFF, ( updateVersion >> 8 ) & 0xFF, updateVersion & 0xFF );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( ICON_FA_DOWNLOAD " Get it!" ) )
+            {
+                OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+            }
         }
         ImGui::Separator();
         ImGui::TextUnformatted( "Client address" );

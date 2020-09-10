@@ -351,6 +351,24 @@ int Socket::Recv( void* _buf, int len, int timeout )
     }
 }
 
+int Socket::ReadUpTo( void* _buf, int len, int timeout )
+{
+    const auto sock = m_sock.load( std::memory_order_relaxed );
+    auto buf = (char*)_buf;
+
+    int rd = 0;
+    while( len > 0 )
+    {
+        const auto res = recv( sock, buf, len, 0 );
+        if( res == 0 ) break;
+        if( res == -1 ) return -1;
+        len -= res;
+        rd += res;
+        buf += res;
+    }
+    return rd;
+}
+
 bool Socket::Read( void* buf, int len, int timeout )
 {
     auto cbuf = (char*)buf;

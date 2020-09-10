@@ -218,6 +218,48 @@ bool Socket::Connect( const char* addr, int port )
     return true;
 }
 
+bool Socket::ConnectBlocking( const char* addr, int port )
+{
+    assert( !IsValid() );
+    assert( !m_ptr );
+
+    struct addrinfo hints;
+    struct addrinfo *res, *ptr;
+
+    memset( &hints, 0, sizeof( hints ) );
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    char portbuf[32];
+    sprintf( portbuf, "%i", port );
+
+    if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
+    int sock = 0;
+    for( ptr = res; ptr; ptr = ptr->ai_next )
+    {
+        if( ( sock = socket( ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol ) ) == -1 ) continue;
+#if defined __APPLE__
+        int val = 1;
+        setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+#endif
+        if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
+        {
+#ifdef _WIN32
+            closesocket( sock );
+#else
+            close( sock );
+#endif
+            continue;
+        }
+        break;
+    }
+    freeaddrinfo( res );
+    if( !ptr ) return false;
+
+    m_sock.store( sock, std::memory_order_relaxed );
+    return true;
+}
+
 void Socket::Close()
 {
     const auto sock = m_sock.load( std::memory_order_relaxed );

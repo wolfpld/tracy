@@ -24,6 +24,7 @@ public:
     ~Socket();
 
     bool Connect( const char* addr, int port );
+    bool ConnectBlocking( const char* addr, int port );
     void Close();
 
     int Send( const void* buf, int len );

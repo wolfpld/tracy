@@ -348,6 +348,14 @@ bool View::Draw()
             ImGui::EndPopup();
             return false;
         }
+        ImGui::SameLine();
+        if( ImGui::Button( "Reconnect" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            s_instance->m_reconnectRequested = true;
+            return false;
+        }
         ImGui::EndPopup();
     }
 
@@ -362,6 +370,14 @@ bool View::Draw()
             ImGui::EndPopup();
             return false;
         }
+        ImGui::SameLine();
+        if( ImGui::Button( "Reconnect" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            s_instance->m_reconnectRequested = true;
+            return false;
+        }
         ImGui::EndPopup();
     }
 
@@ -374,6 +390,14 @@ bool View::Draw()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
+            return false;
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( "Reconnect" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            s_instance->m_reconnectRequested = true;
             return false;
         }
         ImGui::EndPopup();

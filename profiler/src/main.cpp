@@ -51,6 +51,7 @@
 #include "icon.hpp"
 #include "ResolvService.hpp"
 #include "NativeWindow.hpp"
+#include "HttpRequest.hpp"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -227,18 +228,15 @@ int main( int argc, char** argv )
     mainThread = std::this_thread::get_id();
 
     updateThread = std::thread( [] {
-        tracy::Socket sock;
-        if( !sock.ConnectBlocking( "51.89.23.220", 8099 ) ) return;
-        char request[1024];
-        const auto len = sprintf( request, "GET /tracy/version HTTP/1.1\r\nHost: 51.89.23.220\r\nUser-Agent: Tracy Profiler %i.%i.%i\r\nConnection: close\r\nCache-Control: no-cache, no-store, must-revalidate\r\n\r\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
-        sock.Send( request, len );
-        char response[1024];
-        const auto sz = sock.ReadUpTo( response, 1024, 15 );
-        if( sz < 13 ) return;
-        if( memcmp( response, "HTTP/1.1 200", 12 ) != 0 ) return;
-        uint32_t ver;
-        memcpy( &ver, response + sz - 4, 4 );
-        RunOnMainThread( [ver] { updateVersion = ver; } );
+        HttpRequest( "51.89.23.220", "/tracy/version", 8099, [] ( int size, char* data ) {
+            if( size == 4 )
+            {
+                uint32_t ver;
+                memcpy( &ver, data, 4 );
+                RunOnMainThread( [ver] { updateVersion = ver; } );
+            }
+            delete[] data;
+        } );
     } );
 
     // Setup window

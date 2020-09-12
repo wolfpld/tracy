@@ -207,6 +207,9 @@
     <ClCompile Include="..\..\..\server\TracyMouse.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\HttpRequest.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -501,6 +504,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\NativeWindow.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\HttpRequest.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

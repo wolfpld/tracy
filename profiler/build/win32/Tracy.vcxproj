@@ -156,6 +156,7 @@
     <ClCompile Include="..\..\..\zstd\zstd_ldm.c" />
     <ClCompile Include="..\..\..\zstd\zstd_opt.c" />
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c" />
+    <ClCompile Include="..\..\src\HttpRequest.cpp" />
     <ClCompile Include="..\..\src\imgui_freetype.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp" />
@@ -260,6 +261,7 @@
     <ClInclude Include="..\..\src\Arimo.hpp" />
     <ClInclude Include="..\..\src\Cousine.hpp" />
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp" />
+    <ClInclude Include="..\..\src\HttpRequest.hpp" />
     <ClInclude Include="..\..\src\icon.hpp" />
     <ClInclude Include="..\..\src\imgui_freetype.h" />
     <ClInclude Include="..\..\src\imgui_impl_glfw.h" />

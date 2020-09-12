@@ -9,6 +9,9 @@ a mistake.
 v0.x.x (xxxx-xx-xx)
 -------------------
 
+- Note: the bitbucket repository is obsolete and will soon stop receiving
+  updates. Migrate to https://github.com/wolfpld/tracy, if you haven't
+  already.
 - The "waiting for connection" dialog no longer has "cancel" button. To
   abort connection attempt just use the "close window" button.
 - Added update notification.

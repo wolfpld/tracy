@@ -122,6 +122,13 @@ private:
         uint64_t mem;
     };
 
+    enum class ViewMode
+    {
+        Paused,
+        LastFrames,
+        LastRange
+    };
+
     void InitTextEditor( ImFont* font );
 
     const char* ShortenNamespace( const char* name ) const;
@@ -213,7 +220,7 @@ private:
 
     void ZoomToZone( const ZoneEvent& ev );
     void ZoomToZone( const GpuEvent& ev );
-    void ZoomToRange( int64_t start, int64_t end );
+    void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
     void CenterAtTime( int64_t t );
@@ -309,7 +316,7 @@ private:
     Worker m_worker;
     std::string m_filename;
     bool m_staticView;
-    bool m_pause;
+    ViewMode m_viewMode;
     DecayValue<bool> m_forceConnectionPopup = false;
 
     ViewData m_vd;

@@ -132,7 +132,7 @@ static View* s_instance = nullptr;
 View::View( void(*cbMainThread)(std::function<void()>), const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb )
     : m_worker( addr, port )
     , m_staticView( false )
-    , m_pause( false )
+    , m_viewMode( ViewMode::LastFrames )
     , m_forceConnectionPopup( true, true )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
@@ -154,7 +154,7 @@ View::View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fix
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
-    , m_pause( true )
+    , m_viewMode( ViewMode::Paused )
     , m_frames( m_worker.GetFramesBase() )
     , m_messagesScrollBottom( false )
     , m_smallFont( smallFont )
@@ -553,13 +553,35 @@ bool View::DrawImpl()
     {
         if( m_worker.IsConnected() )
         {
-            if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
+            if( ImGui::Button( m_viewMode == ViewMode::Paused ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) )
+            {
+                if( m_viewMode != ViewMode::Paused )
+                {
+                    m_viewMode = ViewMode::Paused;
+                }
+                else
+                {
+                    ImGui::OpenPopup( "viewMode" );
+                }
+            }
         }
         else
         {
             ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
             ImGui::ButtonEx( MainWindowButtons[2], ImVec2( bw, 0 ), ImGuiButtonFlags_Disabled );
             ImGui::PopStyleColor( 1 );
+        }
+        if( ImGui::BeginPopup( "viewMode" ) )
+        {
+            if( ImGui::Selectable( ICON_FA_SEARCH_PLUS " Newest three frames" ) )
+            {
+                m_viewMode = ViewMode::LastFrames;
+            }
+            if( ImGui::Selectable( ICON_FA_RULER_HORIZONTAL " Use current zoom level" ) )
+            {
+                m_viewMode = ViewMode::LastRange;
+            }
+            ImGui::EndPopup();
         }
     }
     else
@@ -806,6 +828,17 @@ bool View::DrawImpl()
 
     if( m_zoomAnim.active )
     {
+        if( m_viewMode == ViewMode::LastRange )
+        {
+            const auto delta = m_worker.GetLastTime() - m_vd.zvEnd;
+            if( delta != 0 )
+            {
+                m_zoomAnim.start0 += delta;
+                m_zoomAnim.start1 += delta;
+                m_zoomAnim.end0 += delta;
+                m_zoomAnim.end1 += delta;
+            }
+        }
         m_zoomAnim.progress += io.DeltaTime * 3.33f;
         if( m_zoomAnim.progress >= 1.f )
         {
@@ -1389,17 +1422,30 @@ void View::DrawFrames()
     const int group = GetFrameGroup( m_vd.frameScale );
     const int total = m_worker.GetFrameCount( *m_frames );
     const int onScreen = ( w - 2 ) / fwidth;
-    if( !m_pause )
+    if( m_viewMode != ViewMode::Paused )
     {
         m_vd.frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
-        SetViewToLastFrames();
+        if( m_viewMode == ViewMode::LastFrames )
+        {
+            SetViewToLastFrames();
+        }
+        else
+        {
+            assert( m_viewMode == ViewMode::LastRange );
+            const auto delta = m_worker.GetLastTime() - m_vd.zvEnd;
+            if( delta != 0 )
+            {
+                m_vd.zvStart += delta;
+                m_vd.zvEnd += delta;
+            }
+        }
     }
 
     if( hover )
     {
         if( IsMouseDragging( 1 ) )
         {
-            m_pause = true;
+            m_viewMode = ViewMode::Paused;
             const auto delta = GetMouseDragDelta( 1 ).x;
             if( abs( delta ) >= fwidth )
             {
@@ -1527,7 +1573,7 @@ void View::DrawFrames()
                 {
                     if( IsMouseClicked( 0 ) )
                     {
-                        m_pause = true;
+                        m_viewMode = ViewMode::Paused;
                         m_zoomAnim.active = false;
                         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
                         m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, sel );
@@ -1545,7 +1591,7 @@ void View::DrawFrames()
                 if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
             }
 
-            if( m_pause && wheel != 0 )
+            if( m_viewMode == ViewMode::Paused && wheel != 0 )
             {
                 const int pfwidth = GetFrameWidth( prevScale );
                 const int pgroup = GetFrameGroup( prevScale );
@@ -1900,7 +1946,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     const auto hwheel_delta = io.MouseWheelH * 100.f;
     if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
     {
-        m_pause = true;
+        m_viewMode = ViewMode::Paused;
         m_zoomAnim.active = false;
         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
         const auto delta = GetMouseDragDelta( 1 );
@@ -1930,6 +1976,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     const auto wheel = io.MouseWheel;
     if( wheel != 0 )
     {
+        if( m_viewMode == ViewMode::LastFrames ) m_viewMode = ViewMode::LastRange;
         const double mouse = io.MousePos.x - wpos.x;
         const auto p = mouse / w;
 
@@ -1957,7 +2004,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             t0 -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
             t1 += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
         }
-        ZoomToRange( t0, t1 );
+        ZoomToRange( t0, t1, m_viewMode == ViewMode::Paused );
     }
 }
 
@@ -14197,6 +14244,7 @@ void View::DrawPlayback()
             m_zoomAnim.active = false;
             m_vd.zvStart = tstart;
             m_vd.zvEnd = end;
+            m_viewMode = ViewMode::Paused;
         }
     }
 
@@ -14298,6 +14346,8 @@ void View::DrawPlayback()
         {
             m_vd.zvStart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
             m_vd.zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
+            m_zoomAnim.active = false;
+            m_viewMode = ViewMode::Paused;
         }
     }
     ImGui::SameLine();
@@ -16194,21 +16244,34 @@ void View::ZoomToZone( const GpuEvent& ev )
     }
 }
 
-void View::ZoomToRange( int64_t start, int64_t end )
+void View::ZoomToRange( int64_t start, int64_t end, bool pause )
 {
     if( start == end )
     {
         end = start + 1;
     }
 
-    m_pause = true;
+    if( pause ) m_viewMode = ViewMode::Paused;
     m_highlightZoom.active = false;
     if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
+
     m_zoomAnim.active = true;
-    m_zoomAnim.start0 = m_vd.zvStart;
-    m_zoomAnim.start1 = start;
-    m_zoomAnim.end0 = m_vd.zvEnd;
-    m_zoomAnim.end1 = end;
+    if( m_viewMode == ViewMode::LastRange )
+    {
+        const auto rangeCurr = m_vd.zvEnd - m_vd.zvStart;
+        const auto rangeDest = end - start;
+        m_zoomAnim.start0 = m_vd.zvStart;
+        m_zoomAnim.start1 = m_vd.zvStart - ( rangeDest - rangeCurr );
+        m_zoomAnim.end0 = m_vd.zvEnd;
+        m_zoomAnim.end1 = m_vd.zvEnd;
+    }
+    else
+    {
+        m_zoomAnim.start0 = m_vd.zvStart;
+        m_zoomAnim.start1 = start;
+        m_zoomAnim.end0 = m_vd.zvEnd;
+        m_zoomAnim.end1 = end;
+    }
     m_zoomAnim.progress = 0;
 }
 

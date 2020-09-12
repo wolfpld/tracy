@@ -120,7 +120,7 @@ static tracy::BadVersionState badVer;
 static int port = 8086;
 static const char* connectTo = nullptr;
 static char title[128];
-static std::thread loadThread, updateThread;
+static std::thread loadThread, updateThread, updateNotesThread;
 static std::unique_ptr<tracy::UdpListen> broadcastListen;
 static std::mutex resolvLock;
 static tracy::unordered_flat_map<std::string, std::string> resolvMap;
@@ -139,6 +139,8 @@ static std::thread::id mainThread;
 static std::vector<std::function<void()>> mainThreadTasks;
 static std::mutex mainThreadLock;
 static uint32_t updateVersion = 0;
+static bool showReleaseNotes = false;
+static std::string releaseNotes;
 
 void RunOnMainThread( std::function<void()> cb )
 {
@@ -386,6 +388,7 @@ int main( int argc, char** argv )
 
     if( loadThread.joinable() ) loadThread.join();
     if( updateThread.joinable() ) updateThread.join();
+    if( updateNotesThread.joinable() ) updateNotesThread.join();
     view.reset();
 
     {
@@ -619,11 +622,21 @@ static void DrawContents()
         if( updateVersion != 0 && updateVersion > tracy::FileVersion( tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch ) )
         {
             ImGui::Separator();
-            ImGui::TextColored( ImVec4( 1, 1, 0, 1 ), ICON_FA_EXCLAMATION_TRIANGLE " Update to %i.%i.%i is available!", ( updateVersion >> 16 ) & 0xFF, ( updateVersion >> 8 ) & 0xFF, updateVersion & 0xFF );
+            ImGui::TextColored( ImVec4( 1, 1, 0, 1 ), ICON_FA_EXCLAMATION " Update to %i.%i.%i is available!", ( updateVersion >> 16 ) & 0xFF, ( updateVersion >> 8 ) & 0xFF, updateVersion & 0xFF );
             ImGui::SameLine();
-            if( ImGui::SmallButton( ICON_FA_DOWNLOAD " Get it!" ) )
+            if( ImGui::SmallButton( ICON_FA_GIFT " Get it!" ) )
             {
-                OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+                showReleaseNotes = true;
+                if( !updateNotesThread.joinable() )
+                {
+                    updateNotesThread = std::thread( [] {
+                        HttpRequest( "51.89.23.220", "/tracy/notes", 8099, [] ( int size, char* data ) {
+                            std::string notes( data, data+size );
+                            delete[] data;
+                            RunOnMainThread( [notes = move( notes )] { releaseNotes = std::move( notes ); } );
+                        } );
+                    } );
+                }
             }
         }
         ImGui::Separator();
@@ -853,11 +866,38 @@ static void DrawContents()
                 ImGui::TextUnformatted( "All clients are filtered." );
             }
         }
-
         ImGui::End();
+
+        if( showReleaseNotes )
+        {
+            assert( updateNotesThread.joinable() );
+            ImGui::SetNextWindowSize( ImVec2( 600, 400 ), ImGuiCond_FirstUseEver );
+            ImGui::Begin( "Update available!", &showReleaseNotes );
+            if( ImGui::Button( ICON_FA_DOWNLOAD " Download" ) )
+            {
+                OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+            }
+            ImGui::BeginChild( "###notes", ImVec2( 0, 0 ), true );
+            if( releaseNotes.empty() )
+            {
+                static float rnTime = 0;
+                rnTime += ImGui::GetIO().DeltaTime;
+                tracy::TextCentered( "Fetching release notes..." );
+                tracy::DrawWaitingDots( rnTime );
+            }
+            else
+            {
+                ImGui::PushFont( fixedWidth );
+                ImGui::TextUnformatted( releaseNotes.c_str() );
+                ImGui::PopFont();
+            }
+            ImGui::EndChild();
+            ImGui::End();
+        }
     }
     else
     {
+        if( showReleaseNotes ) showReleaseNotes = false;
         if( broadcastListen )
         {
             broadcastListen.reset();

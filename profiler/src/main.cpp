@@ -230,7 +230,7 @@ int main( int argc, char** argv )
     mainThread = std::this_thread::get_id();
 
     updateThread = std::thread( [] {
-        HttpRequest( "51.89.23.220", "/tracy/version", 8099, [] ( int size, char* data ) {
+        HttpRequest( "nereid.pl", "/tracy/version", 8099, [] ( int size, char* data ) {
             if( size == 4 )
             {
                 uint32_t ver;
@@ -630,7 +630,7 @@ static void DrawContents()
                 if( !updateNotesThread.joinable() )
                 {
                     updateNotesThread = std::thread( [] {
-                        HttpRequest( "51.89.23.220", "/tracy/notes", 8099, [] ( int size, char* data ) {
+                        HttpRequest( "nereid.pl", "/tracy/notes", 8099, [] ( int size, char* data ) {
                             std::string notes( data, data+size );
                             delete[] data;
                             RunOnMainThread( [notes = move( notes )] { releaseNotes = std::move( notes ); } );

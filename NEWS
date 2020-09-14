@@ -17,6 +17,10 @@ v0.x.x (xxxx-xx-xx)
 - Added update notification.
 - The most recent traced events can be now viewed regardless of timeline
   zoom level.
+- Fixed going-to-line in source view (again).
+- Crash handling on client is now not performed, if there is no active
+  connection.
+- Added ability to listen only on IPv4 interfaces.
 
 
 v0.7.1 (2020-08-24)

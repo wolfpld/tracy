@@ -62,24 +62,6 @@
 namespace tracy
 {
 
-// Exceptions
-#ifndef MOODYCAMEL_EXCEPTIONS_ENABLED
-#if (defined(_MSC_VER) && defined(_CPPUNWIND)) || (defined(__GNUC__) && defined(__EXCEPTIONS)) || (!defined(_MSC_VER) && !defined(__GNUC__))
-#define MOODYCAMEL_EXCEPTIONS_ENABLED
-#endif
-#endif
-#ifdef MOODYCAMEL_EXCEPTIONS_ENABLED
-#define MOODYCAMEL_TRY try
-#define MOODYCAMEL_CATCH(...) catch(__VA_ARGS__)
-#define MOODYCAMEL_RETHROW throw
-#define MOODYCAMEL_THROW(expr) throw (expr)
-#else
-#define MOODYCAMEL_TRY if (true)
-#define MOODYCAMEL_CATCH(...) else if (false)
-#define MOODYCAMEL_RETHROW
-#define MOODYCAMEL_THROW(expr)
-#endif
-
 #ifndef MOODYCAMEL_NOEXCEPT
 #if !defined(MOODYCAMEL_EXCEPTIONS_ENABLED)
 #define MOODYCAMEL_NOEXCEPT

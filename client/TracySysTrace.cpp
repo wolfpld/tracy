@@ -594,6 +594,7 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <atomic>
 #    include <thread>
 #    include <linux/perf_event.h>
+#    include <linux/version.h>
 #    include <sys/mman.h>
 #    include <sys/ioctl.h>
 
@@ -649,7 +650,9 @@ static void SetupSampling( int64_t& samplingPeriod )
 
     pe.sample_freq = 10000;
     pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
     pe.sample_max_stack = 127;
+#endif
     pe.exclude_callchain_kernel = 1;
 
     pe.disabled = 1;

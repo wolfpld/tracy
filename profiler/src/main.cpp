@@ -509,7 +509,7 @@ static void DrawContents()
             {
                 auto msg = broadcastListen->Read( len, addr, 0 );
                 if( !msg ) break;
-                assert( len <= sizeof( tracy::BroadcastMessage ) );
+                if( len > sizeof( tracy::BroadcastMessage ) ) continue;
                 tracy::BroadcastMessage bm;
                 memcpy( &bm, msg, len );
 

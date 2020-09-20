@@ -1373,6 +1373,11 @@ void Profiler::Worker()
 #ifndef TRACY_NO_EXIT
             if( !m_noExit && ShouldExit() )
             {
+                if( m_broadcast )
+                {
+                    broadcastMsg.activeTime = -1;
+                    m_broadcast->Send( broadcastPort, &broadcastMsg, broadcastLen );
+                }
                 m_shutdownFinished.store( true, std::memory_order_relaxed );
                 return;
             }
@@ -1395,6 +1400,13 @@ void Profiler::Worker()
                     m_broadcast->Send( broadcastPort, &broadcastMsg, broadcastLen );
                 }
             }
+        }
+
+        if( m_broadcast )
+        {
+            lastBroadcast = 0;
+            broadcastMsg.activeTime = -1;
+            m_broadcast->Send( broadcastPort, &broadcastMsg, broadcastLen );
         }
 
         // Handshake

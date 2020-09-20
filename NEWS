@@ -6,6 +6,12 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
+v0.x.x (xxxx-xx-xx)
+-------------------
+
+- Properly support DPI scaling on Linux.
+
+
 v0.7.2 (2020-09-14)
 -------------------
 

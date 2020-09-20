@@ -524,30 +524,37 @@ static void DrawContents()
                     const auto ipNumerical = addr.GetNumber();
                     const auto clientId = uint64_t( ipNumerical ) | ( uint64_t( listenPort ) << 32 );
                     auto it = clients.find( clientId );
-                    if( it == clients.end() )
+                    if( activeTime >= 0 )
                     {
-                        std::string ip( address );
-                        resolvLock.lock();
-                        if( resolvMap.find( ip ) == resolvMap.end() )
+                        if( it == clients.end() )
                         {
-                            resolvMap.emplace( ip, ip );
-                            resolv.Query( ipNumerical, [ip] ( std::string&& name ) {
-                                std::lock_guard<std::mutex> lock( resolvLock );
-                                auto it = resolvMap.find( ip );
-                                assert( it != resolvMap.end() );
-                                std::swap( it->second, name );
-                                } );
+                            std::string ip( address );
+                            resolvLock.lock();
+                            if( resolvMap.find( ip ) == resolvMap.end() )
+                            {
+                                resolvMap.emplace( ip, ip );
+                                resolv.Query( ipNumerical, [ip] ( std::string&& name ) {
+                                    std::lock_guard<std::mutex> lock( resolvLock );
+                                    auto it = resolvMap.find( ip );
+                                    assert( it != resolvMap.end() );
+                                    std::swap( it->second, name );
+                                    } );
+                            }
+                            resolvLock.unlock();
+                            clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, procname, std::move( ip ) } );
                         }
-                        resolvLock.unlock();
-                        clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, procname, std::move( ip ) } );
+                        else
+                        {
+                            it->second.time = time;
+                            it->second.activeTime = activeTime;
+                            it->second.port = listenPort;
+                            if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
+                            if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                        }
                     }
-                    else
+                    else if( it != clients.end() )
                     {
-                        it->second.time = time;
-                        it->second.activeTime = activeTime;
-                        it->second.port = listenPort;
-                        if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
-                        if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                        clients.erase( it );
                     }
                 }
             }

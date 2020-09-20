@@ -227,7 +227,11 @@ static int64_t SetupHwTimer()
         const char* noCheck = getenv( "TRACY_NO_INVARIANT_CHECK" );
         if( !noCheck || noCheck[0] != '1' )
         {
+#if defined _WIN32 || defined __CYGWIN__
             InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*.\nAlternatively you may rebuild the application with the TRACY_TIMER_QPC define to use lower resolution timer." );
+#else
+            InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*." );
+#endif
         }
     }
 #endif

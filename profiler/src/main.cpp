@@ -275,10 +275,17 @@ int main( int argc, char** argv )
     typedef UINT(*GDFS)(void);
     GDFS getDpiForSystem = nullptr;
     HMODULE dll = GetModuleHandleW(L"user32.dll");
-    if (dll != INVALID_HANDLE_VALUE)
-        getDpiForSystem = (GDFS)GetProcAddress(dll, "GetDpiForSystem");
-    if (getDpiForSystem)
-        dpiScale = getDpiForSystem() / 96.f;
+    if( dll != INVALID_HANDLE_VALUE ) getDpiForSystem = (GDFS)GetProcAddress(dll, "GetDpiForSystem");
+    if( getDpiForSystem ) dpiScale = getDpiForSystem() / 96.f;
+#elif defined __linux__
+    auto monitor = glfwGetWindowMonitor( window );
+    if( !monitor ) monitor = glfwGetPrimaryMonitor();
+    if( monitor )
+    {
+        float x, y;
+        glfwGetMonitorContentScale( monitor, &x, &y );
+        dpiScale = x;
+    }
 #endif
 
     // Setup ImGui binding

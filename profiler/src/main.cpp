@@ -505,9 +505,10 @@ static void DrawContents()
         {
             tracy::IpAddress addr;
             size_t len;
-            auto msg = broadcastListen->Read( len, addr, 0 );
-            if( msg )
+            for(;;)
             {
+                auto msg = broadcastListen->Read( len, addr, 0 );
+                if( !msg ) break;
                 assert( len <= sizeof( tracy::BroadcastMessage ) );
                 tracy::BroadcastMessage bm;
                 memcpy( &bm, msg, len );

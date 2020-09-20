@@ -106,7 +106,7 @@ struct ClientData
 {
     int64_t time;
     uint32_t protocolVersion;
-    uint32_t activeTime;
+    int32_t activeTime;
     uint32_t port;
     std::string procName;
     std::string address;

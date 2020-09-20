@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "../../common/TracyProtocol.hpp"
 #include "../../server/TracyFileWrite.hpp"
@@ -27,7 +28,7 @@ void SigInt( int )
 
 void Usage()
 {
-    printf( "Usage: capture -o output.tracy [-a address] [-p port]\n" );
+    printf( "Usage: capture -o output.tracy [-a address] [-p port] [-f]\n" );
     exit( 1 );
 }
 
@@ -41,12 +42,13 @@ int main( int argc, char** argv )
     }
 #endif
 
+    bool overwrite = false;
     const char* address = "localhost";
     const char* output = nullptr;
     int port = 8086;
 
     int c;
-    while( ( c = getopt( argc, argv, "a:o:p:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "a:o:p:f" ) ) != -1 )
     {
         switch( c )
         {
@@ -59,6 +61,9 @@ int main( int argc, char** argv )
         case 'p':
             port = atoi( optarg );
             break;
+        case 'f':
+            overwrite = true;
+            break;
         default:
             Usage();
             break;
@@ -66,6 +71,13 @@ int main( int argc, char** argv )
     }
 
     if( !address || !output ) Usage();
+
+    struct stat st;
+    if( stat( output, &st ) == 0 && !overwrite )
+    {
+        printf( "Output file %s already exists! Use -f to force overwrite.\n", output );
+        return 4;
+    }
 
     printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );

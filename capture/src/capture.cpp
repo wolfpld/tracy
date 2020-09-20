@@ -1,5 +1,7 @@
 #ifdef _WIN32
 #  include <windows.h>
+#else
+#  include <unistd.h>
 #endif
 
 #include <chrono>
@@ -78,6 +80,15 @@ int main( int argc, char** argv )
         printf( "Output file %s already exists! Use -f to force overwrite.\n", output );
         return 4;
     }
+
+    FILE* test = fopen( output, "wb" );
+    if( !test )
+    {
+        printf( "Cannot open output file %s for writing!\n", output );
+        return 5;
+    }
+    fclose( test );
+    unlink( output );
 
     printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );

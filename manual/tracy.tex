@@ -1745,12 +1745,13 @@ After the client application has been instrumented, you will want to connect to 
 
 \subsection{Command line}
 
-You can capture a trace using a command line utility contained in the \texttt{capture} directory. To use it you will need to provide the following parameters:
+You can capture a trace using a command line utility contained in the \texttt{capture} directory. To use it you may provide the following parameters:
 
 \begin{itemize}
-\item \texttt{-o output.tracy} -- the file name of the resulting trace.
+\item \texttt{-o output.tracy} -- the file name of the resulting trace (required).
 \item \texttt{-a address} -- specifies the IP address (or a domain name) of the client application (uses \texttt{localhost} if not provided).
 \item \texttt{-p port} -- network port which should be used (optional).
+\item \texttt{-f} -- force overwrite, if output file already exists.
 \end{itemize}
 
 If there is no client running at the given address, the server will wait until a connection can be made. During the capture the following information will be displayed:

@@ -139,7 +139,7 @@ public:
     bool Listen( int port );
     void Close();
 
-    const char* Read( size_t& len, IpAddress& addr );
+    const char* Read( size_t& len, IpAddress& addr, int timeout );
 
     UdpListen( const UdpListen& ) = delete;
     UdpListen( UdpListen&& ) = delete;

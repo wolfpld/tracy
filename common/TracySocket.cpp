@@ -726,14 +726,14 @@ void UdpListen::Close()
     m_sock = -1;
 }
 
-const char* UdpListen::Read( size_t& len, IpAddress& addr )
+const char* UdpListen::Read( size_t& len, IpAddress& addr, int timeout )
 {
     static char buf[2048];
 
     struct pollfd fd;
     fd.fd = (socket_t)m_sock;
     fd.events = POLLIN;
-    if( poll( &fd, 1, 10 ) <= 0 ) return nullptr;
+    if( poll( &fd, 1, timeout ) <= 0 ) return nullptr;
 
     sockaddr sa;
     socklen_t salen = sizeof( struct sockaddr );

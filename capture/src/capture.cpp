@@ -26,7 +26,7 @@ void SigInt( int )
     disconnect = true;
 }
 
-void Usage()
+[[noreturn]] void Usage()
 {
     printf( "Usage: capture -o output.tracy [-a address] [-p port] [-f]\n" );
     exit( 1 );

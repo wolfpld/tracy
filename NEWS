@@ -10,6 +10,7 @@ v0.x.x (xxxx-xx-xx)
 -------------------
 
 - Properly support DPI scaling on Linux.
+- Added early checks for output file validity in the capture utility.
 
 
 v0.7.2 (2020-09-14)

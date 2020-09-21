@@ -8252,6 +8252,9 @@ void View::DrawOptions()
 
     int ival = m_vd.dynamicColors;
     ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );
+    ImGui::SameLine();
+    bool forceColors = m_vd.forceColors;
+    if( SmallCheckbox( "Ignore custom", &forceColors ) ) m_vd.forceColors = forceColors;
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Static", &ival, 0 );
@@ -16133,7 +16136,7 @@ uint32_t View::GetRawSrcLocColor( const SourceLocation& srcloc, int depth )
 uint32_t View::GetSrcLocColor( const SourceLocation& srcloc, int depth )
 {
     const auto color = srcloc.color;
-    if( color != 0 ) return color | 0xFF000000;
+    if( color != 0 && !m_vd.forceColors ) return color | 0xFF000000;
     if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
     return GetRawSrcLocColor( srcloc, depth );
 }
@@ -16143,7 +16146,7 @@ uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth 
     const auto sl = ev.SrcLoc();
     const auto& srcloc = m_worker.GetSourceLocation( sl );
     const auto color = srcloc.color;
-    if( color != 0 ) return color | 0xFF000000;
+    if( color != 0 && !m_vd.forceColors ) return color | 0xFF000000;
     switch( m_vd.dynamicColors )
     {
     case 0:

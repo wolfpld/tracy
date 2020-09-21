@@ -21,7 +21,7 @@ constexpr auto FileAnnotations = "annotations";
 constexpr auto FileSourceSubstitutions = "srcsub";
 
 enum : uint32_t { VersionTimeline = 0 };
-enum : uint32_t { VersionOptions = 5 };
+enum : uint32_t { VersionOptions = 6 };
 enum : uint32_t { VersionAnnotations = 0 };
 enum : uint32_t { VersionSourceSubstitutions = 0 };
 
@@ -108,6 +108,7 @@ void UserData::LoadState( ViewData& data )
             fread( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
             fread( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
             fread( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
+            fread( &data.forceColors, 1, sizeof( data.forceColors ), f );
             fread( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
         }
         fclose( f );
@@ -149,6 +150,7 @@ void UserData::SaveState( const ViewData& data )
         fwrite( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
         fwrite( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
         fwrite( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
+        fwrite( &data.forceColors, 1, sizeof( data.forceColors ), f );
         fwrite( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
         fclose( f );
     }

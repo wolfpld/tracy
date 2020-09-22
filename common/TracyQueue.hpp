@@ -33,9 +33,13 @@ enum class QueueType : uint8_t
     LockSharedRelease,
     LockName,
     MemAlloc,
+    MemAllocNamed,
     MemFree,
+    MemFreeNamed,
     MemAllocCallstack,
+    MemAllocCallstackNamed,
     MemFreeCallstack,
+    MemFreeCallstackNamed,
     GpuZoneBegin,
     GpuZoneBeginCallstack,
     GpuZoneEnd,
@@ -78,6 +82,7 @@ enum class QueueType : uint8_t
     CpuTopology,
     SingleStringData,
     SecondStringData,
+    MemNamePayload,
     StringData,
     ThreadName,
     PlotName,
@@ -336,6 +341,11 @@ struct QueueGpuCalibration
     uint8_t context;
 };
 
+struct QueueMemNamePayload
+{
+    uint64_t name;
+};
+
 struct QueueMemAlloc
 {
     int64_t time;
@@ -508,6 +518,7 @@ struct QueueItem
         QueueGpuCalibration gpuCalibration;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
+        QueueMemNamePayload memName;
         QueueCallstackFat callstackFat;
         QueueCallstackAllocFat callstackAllocFat;
         QueueCallstackSample callstackSample;
@@ -557,9 +568,13 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),     // shared
     sizeof( QueueHeader ) + sizeof( QueueLockName ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
+    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // named
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),
+    sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // named
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack, named
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack, named
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
@@ -603,6 +618,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
     sizeof( QueueHeader ),                                  // second string data
+    sizeof( QueueHeader ) + sizeof( QueueMemNamePayload ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

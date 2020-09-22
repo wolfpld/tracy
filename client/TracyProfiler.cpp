@@ -2160,7 +2160,9 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     break;
                 }
                 case QueueType::MemAlloc:
+                case QueueType::MemAllocNamed:
                 case QueueType::MemAllocCallstack:
+                case QueueType::MemAllocCallstackNamed:
                 {
                     int64_t t = MemRead<int64_t>( &item->memAlloc.time );
                     int64_t dt = t - refSerial;
@@ -2169,7 +2171,9 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     break;
                 }
                 case QueueType::MemFree:
+                case QueueType::MemFreeNamed:
                 case QueueType::MemFreeCallstack:
+                case QueueType::MemFreeCallstackNamed:
                 {
                     int64_t t = MemRead<int64_t>( &item->memFree.time );
                     int64_t dt = t - refSerial;

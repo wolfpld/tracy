@@ -240,7 +240,8 @@ private:
         StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         Vector<ZoneExtra> zoneExtra;
-        MemData memory;
+        MemData* memory;
+        unordered_flat_map<uint64_t, MemData*> memNameMap;
         uint64_t zonesCnt = 0;
         uint64_t gpuCnt = 0;
         uint64_t samplesCnt = 0;
@@ -484,7 +485,8 @@ public:
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const ThreadData* GetThreadData( uint64_t tid ) const;
-    const MemData& GetMemData() const { return m_data.memory; }
+    // TODO
+    const MemData& GetMemData() const { return *m_data.memory; }
     const Vector<short_ptr<FrameImage>>& GetFrameImages() const { return m_data.frameImage; }
     const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }
 
@@ -675,6 +677,8 @@ private:
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial );
+    tracy_force_inline void ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev );
+    tracy_force_inline bool ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev );
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev );
@@ -695,9 +699,9 @@ private:
     int16_t ShrinkSourceLocationReal( uint64_t srcloc );
     int16_t NewShrinkedSourceLocation( uint64_t srcloc );
 
-    tracy_force_inline void MemAllocChanged( int64_t time );
-    void CreateMemAllocPlot();
-    void ReconstructMemAllocPlot();
+    tracy_force_inline void MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time );
+    void CreateMemAllocPlot( uint64_t mamname, MemData& memdata );
+    void ReconstructMemAllocPlot( uint64_t memname, MemData& memdata );
 
     void InsertMessageData( MessageData* msg );
 
@@ -884,6 +888,7 @@ private:
 
     uint64_t m_lastMemActionCallstack;
     bool m_lastMemActionWasAlloc;
+    MemData* m_lastMemActionData;
     uint64_t m_memNamePayload = 0;
 
     Slab<64*1024*1024> m_slab;

@@ -257,6 +257,8 @@ Worker::Worker( const char* addr, int port )
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
     m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
+    m_data.memory = m_slab.AllocInit<MemData>();
+    m_data.memNameMap.emplace( 0, m_data.memory );
 
     memset( (char*)m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
 
@@ -289,6 +291,8 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
     m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
+    m_data.memory = m_slab.AllocInit<MemData>();
+    m_data.memNameMap.emplace( 0, m_data.memory );
 
     m_data.lastTime = 0;
     if( !timeline.empty() )
@@ -1004,22 +1008,27 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
     bool reconstructMemAllocPlot = false;
 
+    m_data.memory = m_slab.AllocInit<MemData>();
+    m_data.memNameMap.emplace( 0, m_data.memory );
+
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::Memory, std::memory_order_relaxed );
     f.Read( sz );
     if( eventMask & EventType::Memory )
     {
-        m_data.memory.data.reserve_exact( sz, m_slab );
+        // TODO
+        auto& memdata = *m_data.memory;
+        memdata.data.reserve_exact( sz, m_slab );
         uint64_t activeSz, freesSz;
         f.Read2( activeSz, freesSz );
-        m_data.memory.active.reserve( activeSz );
-        m_data.memory.frees.reserve_exact( freesSz, m_slab );
-        auto mem = m_data.memory.data.data();
+        memdata.active.reserve( activeSz );
+        memdata.frees.reserve_exact( freesSz, m_slab );
+        auto mem = memdata.data.data();
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         size_t fidx = 0;
         int64_t refTime = 0;
-        auto& frees = m_data.memory.frees;
-        auto& active = m_data.memory.active;
+        auto& frees = memdata.frees;
+        auto& active = memdata.active;
 
         for( uint64_t i=0; i<sz; i++ )
         {
@@ -1046,7 +1055,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
             mem++;
         }
-        f.Read3( m_data.memory.high, m_data.memory.low, m_data.memory.usage );
+        f.Read3( memdata.high, memdata.low, memdata.usage );
 
         if( sz != 0 )
         {
@@ -1586,7 +1595,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
             if( reconstructMemAllocPlot )
             {
-                jobs.emplace_back( std::thread( [this] { ReconstructMemAllocPlot(); } ) );
+                // TODO
+                jobs.emplace_back( std::thread( [this] { ReconstructMemAllocPlot( 0, *m_data.memory ); } ) );
             }
 
             std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
@@ -5175,7 +5185,7 @@ void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )
     ctx->calibratedCpuTime = TscTime( ev.cpuTime - m_data.baseTime );
 }
 
-void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
+void Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev )
 {
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
@@ -5183,10 +5193,10 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
-    assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
-    assert( m_data.memory.data.empty() || m_data.memory.data.back().TimeAlloc() <= time );
+    assert( memdata.active.find( ev.ptr ) == memdata.active.end() );
+    assert( memdata.data.empty() || memdata.data.back().TimeAlloc() <= time );
 
-    m_data.memory.active.emplace( ev.ptr, m_data.memory.data.size() );
+    memdata.active.emplace( ev.ptr, memdata.data.size() );
 
     const auto ptr = ev.ptr;
     uint32_t lo;
@@ -5195,7 +5205,7 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     memcpy( &hi, ev.size+4, 2 );
     const uint64_t size = lo | ( uint64_t( hi ) << 32 );
 
-    auto& mem = m_data.memory.data.push_next();
+    auto& mem = memdata.data.push_next();
     mem.SetPtr( ptr );
     mem.SetSize( size );
     mem.SetTimeThreadAlloc( time, CompressThread( ev.thread ) );
@@ -5203,26 +5213,26 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     mem.SetCsAlloc( 0 );
     mem.csFree.SetVal( 0 );
 
-    const auto low = m_data.memory.low;
-    const auto high = m_data.memory.high;
+    const auto low = memdata.low;
+    const auto high = memdata.high;
     const auto ptrend = ptr + size;
 
-    m_data.memory.low = std::min( low, ptr );
-    m_data.memory.high = std::max( high, ptrend );
-    m_data.memory.usage += size;
+    memdata.low = std::min( low, ptr );
+    memdata.high = std::max( high, ptrend );
+    memdata.usage += size;
 
-    MemAllocChanged( time );
+    MemAllocChanged( memname, memdata, time );
 }
 
-bool Worker::ProcessMemFree( const QueueMemFree& ev )
+bool Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev )
 {
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
 
     if( ev.ptr == 0 ) return false;
 
-    auto it = m_data.memory.active.find( ev.ptr );
-    if( it == m_data.memory.active.end() )
+    auto it = memdata.active.find( ev.ptr );
+    if( it == memdata.active.end() )
     {
         if( !m_ignoreMemFreeFaults )
         {
@@ -5236,19 +5246,32 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
-    m_data.memory.frees.push_back( it->second );
-    auto& mem = m_data.memory.data[it->second];
+    memdata.frees.push_back( it->second );
+    auto& mem = memdata.data[it->second];
     mem.SetTimeThreadFree( time, CompressThread( ev.thread ) );
-    m_data.memory.usage -= mem.Size();
-    m_data.memory.active.erase( it );
+    memdata.usage -= mem.Size();
+    memdata.active.erase( it );
 
-    MemAllocChanged( time );
+    MemAllocChanged( memname, memdata, time );
     return true;
+}
+
+void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
+{
+    assert( m_memNamePayload == 0 );
+    ProcessMemAllocImpl( 0, *m_data.memory, ev );
+}
+
+bool Worker::ProcessMemFree( const QueueMemFree& ev )
+{
+    assert( m_memNamePayload == 0 );
+    return ProcessMemFreeImpl( 0, *m_data.memory, ev );
 }
 
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 {
-    m_lastMemActionCallstack = m_data.memory.data.size();
+    m_lastMemActionData = m_data.memory;
+    m_lastMemActionCallstack = m_data.memory->data.size();
     ProcessMemAlloc( ev );
     m_lastMemActionWasAlloc = true;
 }
@@ -5257,7 +5280,8 @@ void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
     if( ProcessMemFree( ev ) )
     {
-        m_lastMemActionCallstack = m_data.memory.frees.back();
+        m_lastMemActionData = m_data.memory;
+        m_lastMemActionCallstack = m_data.memory->frees.back();
         m_lastMemActionWasAlloc = false;
     }
     else
@@ -5273,7 +5297,7 @@ void Worker::ProcessCallstackMemory()
 
     if( m_lastMemActionCallstack != std::numeric_limits<uint64_t>::max() )
     {
-        auto& mem = m_data.memory.data[m_lastMemActionCallstack];
+        auto& mem = m_lastMemActionData->data[m_lastMemActionCallstack];
         if( m_lastMemActionWasAlloc )
         {
             mem.SetCsAlloc( m_pendingCallstackId );
@@ -5843,40 +5867,39 @@ void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )
     m_memNamePayload = ev.name;
 }
 
-void Worker::MemAllocChanged( int64_t time )
+void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
 {
-    const auto val = (double)m_data.memory.usage;
-    if( !m_data.memory.plot )
+    const auto val = (double)memdata.usage;
+    if( !memdata.plot )
     {
-        CreateMemAllocPlot();
-        m_data.memory.plot->min = val;
-        m_data.memory.plot->max = val;
-        m_data.memory.plot->data.push_back( { time, val } );
+        CreateMemAllocPlot( memname, memdata );
+        memdata.plot->min = val;
+        memdata.plot->max = val;
+        memdata.plot->data.push_back( { time, val } );
     }
     else
     {
-        assert( !m_data.memory.plot->data.empty() );
-        assert( m_data.memory.plot->data.back().time.Val() <= time );
-        if( m_data.memory.plot->min > val ) m_data.memory.plot->min = val;
-        else if( m_data.memory.plot->max < val ) m_data.memory.plot->max = val;
-        m_data.memory.plot->data.push_back_non_empty( { time, val } );
+        assert( !memdata.plot->data.empty() );
+        assert( memdata.plot->data.back().time.Val() <= time );
+        if( memdata.plot->min > val ) memdata.plot->min = val;
+        else if( memdata.plot->max < val ) memdata.plot->max = val;
+        memdata.plot->data.push_back_non_empty( { time, val } );
     }
 }
 
-void Worker::CreateMemAllocPlot()
+void Worker::CreateMemAllocPlot( uint64_t memname, MemData& memdata )
 {
-    assert( !m_data.memory.plot );
-    m_data.memory.plot = m_slab.AllocInit<PlotData>();
-    m_data.memory.plot->name = 0;
-    m_data.memory.plot->type = PlotType::Memory;
-    m_data.memory.plot->format = PlotValueFormatting::Memory;
-    m_data.memory.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
-    m_data.plots.Data().push_back( m_data.memory.plot );
+    assert( !memdata.plot );
+    memdata.plot = m_slab.AllocInit<PlotData>();
+    memdata.plot->name = memname;
+    memdata.plot->type = PlotType::Memory;
+    memdata.plot->format = PlotValueFormatting::Memory;
+    memdata.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
+    m_data.plots.Data().push_back( memdata.plot );
 }
 
-void Worker::ReconstructMemAllocPlot()
+void Worker::ReconstructMemAllocPlot( uint64_t memname, MemData& mem )
 {
-    auto& mem = m_data.memory;
 #ifdef NO_PARALLEL_SORT
     pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].TimeFree() < mem.data[rhs].TimeFree(); } );
 #else
@@ -5891,7 +5914,7 @@ void Worker::ReconstructMemAllocPlot()
         plot = m_slab.AllocInit<PlotData>();
     }
 
-    plot->name = 0;
+    plot->name = memname;
     plot->type = PlotType::Memory;
     plot->format = PlotValueFormatting::Memory;
     plot->data.reserve_exact( psz, m_slab );
@@ -5973,7 +5996,7 @@ void Worker::ReconstructMemAllocPlot()
 
     std::lock_guard<std::shared_mutex> lock( m_data.lock );
     m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );
-    m_data.memory.plot = plot;
+    mem.plot = plot;
 }
 
 #ifndef TRACY_NO_STATISTICS
@@ -6771,15 +6794,17 @@ void Worker::Write( FileWrite& f )
         }
     }
 
+    // TODO
     {
+        auto& memdata = *m_data.memory;
         int64_t refTime = 0;
-        sz = m_data.memory.data.size();
+        sz = memdata.data.size();
         f.Write( &sz, sizeof( sz ) );
-        sz = m_data.memory.active.size();
+        sz = memdata.active.size();
         f.Write( &sz, sizeof( sz ) );
-        sz = m_data.memory.frees.size();
+        sz = memdata.frees.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& mem : m_data.memory.data )
+        for( auto& mem : memdata.data )
         {
             const auto ptr = mem.Ptr();
             const auto size = mem.Size();
@@ -6799,9 +6824,9 @@ void Worker::Write( FileWrite& f )
             f.Write( &threadAlloc, sizeof( threadAlloc ) );
             f.Write( &threadFree, sizeof( threadFree ) );
         }
-        f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
-        f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );
-        f.Write( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
+        f.Write( &memdata.high, sizeof( memdata.high ) );
+        f.Write( &memdata.low, sizeof( memdata.low ) );
+        f.Write( &memdata.usage, sizeof( memdata.usage ) );
     }
 
     sz = m_data.callstackPayload.size() - 1;

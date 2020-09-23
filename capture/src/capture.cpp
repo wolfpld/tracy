@@ -45,7 +45,7 @@ int main( int argc, char** argv )
 #endif
 
     bool overwrite = false;
-    const char* address = "localhost";
+    const char* address = "127.0.0.1";
     const char* output = nullptr;
     int port = 8086;
 

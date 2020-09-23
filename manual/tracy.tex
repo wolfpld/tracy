@@ -1009,6 +1009,8 @@ Using the \texttt{ZoneScoped} family of macros creates a stack variable named \t
 
 The \texttt{ZoneText}, \texttt{ZoneValue} and \texttt{ZoneName} macros apply to the zones created using the \texttt{ZoneScoped} macros. For zones created using the \texttt{ZoneNamed} macros, you can use the \texttt{ZoneTextV(variableName, text, size)}, \texttt{ZoneValueV(variableName, uint64\_t)}, or \texttt{ZoneNameV(variableName, text, size)} macros, or invoke the methods \texttt{Text}, \texttt{Value} or \texttt{Name} directly on the variable you have created.
 
+Zone objects can't be moved or copied.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -1531,6 +1533,7 @@ In typical use cases the zone context data structure is hidden from your view, r
 \item The data structure is of an opaque, immutable type \texttt{TracyCZoneCtx}.
 \item Contents of the data structure can be copied by assignment. Do not retrieve or use the structure's address -- this is asking for trouble.
 \item You \emph{must} use the data structure (or any of its copies) exactly \emph{once} to end a zone.
+\item Zone \emph{must} end in the same thread in which it was started.
 \end{itemize}
 
 \paragraph{Zone validation}

@@ -1615,7 +1615,7 @@ void View::DrawFrames()
                 if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
             }
 
-            if( m_viewMode == ViewMode::Paused && wheel != 0 )
+            if( ( !m_worker.IsConnected() || m_viewMode == ViewMode::Paused ) && wheel != 0 )
             {
                 const int pfwidth = GetFrameWidth( prevScale );
                 const int pgroup = GetFrameGroup( prevScale );
@@ -2028,7 +2028,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             t0 -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
             t1 += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
         }
-        ZoomToRange( t0, t1, m_viewMode == ViewMode::Paused );
+        ZoomToRange( t0, t1, !m_worker.IsConnected() || m_viewMode == ViewMode::Paused );
     }
 }
 

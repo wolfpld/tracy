@@ -4092,14 +4092,26 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MemAlloc:
         ProcessMemAlloc( ev.memAlloc );
         break;
+    case QueueType::MemAllocNamed:
+        ProcessMemAllocNamed( ev.memAlloc );
+        break;
     case QueueType::MemFree:
         ProcessMemFree( ev.memFree );
+        break;
+    case QueueType::MemFreeNamed:
+        ProcessMemFreeNamed( ev.memFree );
         break;
     case QueueType::MemAllocCallstack:
         ProcessMemAllocCallstack( ev.memAlloc );
         break;
+    case QueueType::MemAllocCallstackNamed:
+        ProcessMemAllocCallstackNamed( ev.memAlloc );
+        break;
     case QueueType::MemFreeCallstack:
         ProcessMemFreeCallstack( ev.memFree );
+        break;
+    case QueueType::MemFreeCallstackNamed:
+        ProcessMemFreeCallstackNamed( ev.memFree );
         break;
     case QueueType::CallstackMemory:
         ProcessCallstackMemory();
@@ -5262,10 +5274,38 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     ProcessMemAllocImpl( 0, *m_data.memory, ev );
 }
 
+void Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
+{
+    assert( m_memNamePayload != 0 );
+    auto memname = m_memNamePayload;
+    m_memNamePayload = 0;
+    auto it = m_data.memNameMap.find( memname );
+    if( it == m_data.memNameMap.end() )
+    {
+        CheckString( memname );
+        it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+    }
+    ProcessMemAllocImpl( memname, *it->second, ev );
+}
+
 bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
     assert( m_memNamePayload == 0 );
     return ProcessMemFreeImpl( 0, *m_data.memory, ev );
+}
+
+bool Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
+{
+    assert( m_memNamePayload != 0 );
+    auto memname = m_memNamePayload;
+    m_memNamePayload = 0;
+    auto it = m_data.memNameMap.find( memname );
+    if( it == m_data.memNameMap.end() )
+    {
+        CheckString( memname );
+        it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+    }
+    return ProcessMemFreeImpl( memname, *it->second, ev );
 }
 
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
@@ -5276,12 +5316,52 @@ void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
     m_lastMemActionWasAlloc = true;
 }
 
+void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
+{
+    assert( m_memNamePayload != 0 );
+    auto memname = m_memNamePayload;
+    m_memNamePayload = 0;
+    auto it = m_data.memNameMap.find( memname );
+    if( it == m_data.memNameMap.end() )
+    {
+        CheckString( memname );
+        it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+    }
+    m_lastMemActionData = it->second;
+    m_lastMemActionCallstack = it->second->data.size();
+    ProcessMemAllocImpl( memname, *it->second, ev );
+    m_lastMemActionWasAlloc = true;
+}
+
 void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
     if( ProcessMemFree( ev ) )
     {
         m_lastMemActionData = m_data.memory;
         m_lastMemActionCallstack = m_data.memory->frees.back();
+        m_lastMemActionWasAlloc = false;
+    }
+    else
+    {
+        m_lastMemActionCallstack = std::numeric_limits<uint64_t>::max();
+    }
+}
+
+void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
+{
+    assert( m_memNamePayload != 0 );
+    auto memname = m_memNamePayload;
+    m_memNamePayload = 0;
+    auto it = m_data.memNameMap.find( memname );
+    if( it == m_data.memNameMap.end() )
+    {
+        CheckString( memname );
+        it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+    }
+    if( ProcessMemFreeImpl( memname, *it->second, ev ) )
+    {
+        m_lastMemActionData = it->second;
+        m_lastMemActionCallstack = it->second->frees.back();
         m_lastMemActionWasAlloc = false;
     }
     else

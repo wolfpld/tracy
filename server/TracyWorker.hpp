@@ -653,9 +653,13 @@ private:
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
     tracy_force_inline void ProcessGpuCalibration( const QueueGpuCalibration& ev );
     tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
+    tracy_force_inline void ProcessMemAllocNamed( const QueueMemAlloc& ev );
     tracy_force_inline bool ProcessMemFree( const QueueMemFree& ev );
+    tracy_force_inline bool ProcessMemFreeNamed( const QueueMemFree& ev );
     tracy_force_inline void ProcessMemAllocCallstack( const QueueMemAlloc& ev );
+    tracy_force_inline void ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
+    tracy_force_inline void ProcessMemFreeCallstackNamed( const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackMemory();
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackAlloc();

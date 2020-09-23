@@ -16,6 +16,11 @@ namespace tracy
 class ScopedZone
 {
 public:
+    ScopedZone( const ScopedZone& ) = delete;
+    ScopedZone( ScopedZone&& ) = delete;
+    ScopedZone& operator=( const ScopedZone& ) = delete;
+    ScopedZone& operator=( ScopedZone&& ) = delete;
+
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )

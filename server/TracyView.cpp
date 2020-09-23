@@ -16073,12 +16073,21 @@ void View::DrawAllocList()
 
 const char* View::GetPlotName( const PlotData* plot ) const
 {
+    static char tmp[1024];
     switch( plot->type )
     {
     case PlotType::User:
         return m_worker.GetString( plot->name );
     case PlotType::Memory:
-        return ICON_FA_MEMORY " Memory usage";
+        if( plot->name == 0 )
+        {
+            return ICON_FA_MEMORY " Memory usage";
+        }
+        else
+        {
+            sprintf( tmp, ICON_FA_MEMORY " %s", m_worker.GetString( plot->name ) );
+            return tmp;
+        }
     case PlotType::SysTime:
         return ICON_FA_TACHOMETER_ALT " CPU usage";
     default:

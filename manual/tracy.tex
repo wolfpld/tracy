@@ -770,6 +770,37 @@ Take extra care to consider the lifetime of program code (which includes string 
 
 Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified. You cannot unload modules that contain string literals which were passed to the profiler.
 
+\subsubsection{Unique pointers}
+\label{uniquepointers}
+
+In some cases, which will be clearly marked in the manual, Tracy expects that you provide an unique pointer in each case the same string literal is used. This can be exemplified in the following listing:
+
+\begin{lstlisting}
+FrameMarkStart("Audio processing");
+...
+FrameMarkEnd("Audio processing");
+\end{lstlisting}
+
+Here you can see that two string literals with identical contents are passed to two different macros. It is entirely up to the compiler to decide if these two strings will be pooled into one pointer, or if there will be two instances present in the executable image\footnote{\cite{ISO:2012:III} \S 2.14.5.12: "Whether all string literals are distinct (that is, are stored in nonoverlapping objects) is implementation-defined".}. For example, on MSVC this is controlled by \menu[,]{Configuration Properties,C/C++,Code Generation,Enable String Pooling} option in the project properties (it is automatically enabled in optimized builds). Note that even if string pooling is enabled on the compilation unit level, it is still up to the linker to implement pooling across object files.
+
+As you can see making sure that string literals are properly pooled can be surprisingly tricky. To workaround this problem you may employ the following technique. In \emph{one} source file create the unique pointer for a string literal, for example:
+
+\begin{lstlisting}
+const char* const sl_AudioProcessing = "Audio processing";
+\end{lstlisting}
+
+Then in each file where the literal is to be used, use the variable name instead. Notice that with such approach if you'd want to change a name passed to Tracy, you'd need to do it only in one place.
+
+\begin{lstlisting}
+extern const char* const sl_AudioProcessing;
+
+FrameMarkStart(sl_AudioProcessing);
+...
+FrameMarkEnd(sl_AudioProcessing);
+\end{lstlisting}
+
+Proper support for non-unique same-content string literals will be implemented in future.
+
 \subsection{Specifying colors}
 
 In some cases you will want to provide your own colors to be displayed by the profiler. In all such places you should use a hexadecimal \texttt{0xRRGGBB} notation.
@@ -794,7 +825,7 @@ This step is optional, as some applications do not use the concept of a frame.
 \subsubsection{Secondary frame sets}
 \label{secondaryframeset}
 
-In some cases you may want to track more than one set of frames in your program. To do so, you may use the \texttt{FrameMarkNamed(name)} macro, which will create a new set of frames for each unique name you provide.
+In some cases you may want to track more than one set of frames in your program. To do so, you may use the \texttt{FrameMarkNamed(name)} macro, which will create a new set of frames for each unique name you provide. Make sure the passed string literal is properly pooled, as described in section~\ref{uniquepointers}.
 
 \subsubsection{Discontinuous frames}
 
@@ -810,7 +841,7 @@ logo=\bcbombe
 \begin{itemize}
 \item Frame types \emph{must not} be mixed. For each frame set, identified by an unique name, use either continuous or discontinuous frames only!
 \item You \emph{must} issue the \texttt{FrameMarkStart} and \texttt{FrameMarkEnd} macros in proper order. Be extra careful, especially if multi-threading is involved.
-\item Discontinuous frames may not work correctly if the profiled program doesn't have string pooling enabled. This is an implementation issue which will be fixed in the future.
+\item String literals passed as frame names must be properly pooled, as described in section~\ref{uniquepointers}.
 \end{itemize}
 \end{bclogo}
 
@@ -1164,6 +1195,8 @@ To configure how plot values are presented by the profiler, you may use the \tex
 \item \texttt{tracy::PlotFormatType::Percentage} -- values will be displayed as percentage (with value $100$ being equal to $100\%$).
 \end{itemize}
 
+It is beneficial, but not required to use unique pointer for name string literal (see section~\ref{uniquepointers} for more details).
+
 \subsection{Message log}
 \label{messagelog}
 
@@ -1384,7 +1417,7 @@ logo=\bcattention
 To have proper call stack information, the profiled application must be compiled with debugging symbols enabled. You can achieve that in the following way:
 
 \begin{itemize}
-\item On MSVC open the project properties and go to \emph{Linker\textrightarrow Debugging\textrightarrow Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
+\item On MSVC open the project properties and go to \menu[,]{Linker,Debugging,Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
 \item On gcc or clang remember to specify the debugging information \texttt{-g} parameter during compilation and \emph{do not} add the strip symbols \texttt{-s} parameter. Additionally, omitting frame pointers will severely reduce the quality of stack traces, which can be fixed by adding the \texttt{-fno-omit-frame-pointer} parameter. Link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
 \item On OSX you may need to run \texttt{dsymutil} to extract the debugging data out of the executable binary.
 \item On iOS you will have to add a \emph{New Run Script Phase} to your XCode project, which shall execute the following shell script:
@@ -1398,7 +1431,7 @@ You will also need to setup proper dependencies, by setting the following input 
 \texttt{\$\{TARGET\_BUILD\_DIR\}/\$\{UNLOCALIZED\_RESOURCES\_FOLDER\_PATH\}/\$\{PRODUCT\_NAME\}.dSYM}.
 \end{itemize}
 
-You may also be interested in symbols from external libraries, especially if you have sampling profiling enabled (section~\ref{sampling}). In MSVC you can retrieve such symbols by going to \emph{Tools\textrightarrow Options\textrightarrow Debugging\textrightarrow Symbols} and selecting appropriate \emph{Symbol file (.pdb) location} servers. Note that additional symbols may significantly increase application startup times.
+You may also be interested in symbols from external libraries, especially if you have sampling profiling enabled (section~\ref{sampling}). In MSVC you can retrieve such symbols by going to \menu[,]{Tools,Options,Debugging,Symbols} and selecting appropriate \emph{Symbol file (.pdb) location} servers. Note that additional symbols may significantly increase application startup times.
 \end{bclogo}
 
 \subsection{Lua support}

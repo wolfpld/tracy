@@ -4150,6 +4150,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::CpuTopology:
         ProcessCpuTopology( ev.cpuTopology );
         break;
+    case QueueType::MemNamePayload:
+        ProcessMemNamePayload( ev.memName );
+        break;
     default:
         assert( false );
         break;
@@ -5832,6 +5835,12 @@ void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )
 
     assert( m_data.cpuTopologyMap.find( ev.thread ) == m_data.cpuTopologyMap.end() );
     m_data.cpuTopologyMap.emplace( ev.thread, CpuThreadTopology { ev.package, ev.core } );
+}
+
+void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )
+{
+    assert( m_memNamePayload == 0 );
+    m_memNamePayload = ev.name;
 }
 
 void Worker::MemAllocChanged( int64_t time )

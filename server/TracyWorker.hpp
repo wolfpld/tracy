@@ -669,6 +669,7 @@ private:
     tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
     tracy_force_inline void ProcessParamSetup( const QueueParamSetup& ev );
     tracy_force_inline void ProcessCpuTopology( const QueueCpuTopology& ev );
+    tracy_force_inline void ProcessMemNamePayload( const QueueMemNamePayload& ev );
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
@@ -883,6 +884,7 @@ private:
 
     uint64_t m_lastMemActionCallstack;
     bool m_lastMemActionWasAlloc;
+    uint64_t m_memNamePayload = 0;
 
     Slab<64*1024*1024> m_slab;
 

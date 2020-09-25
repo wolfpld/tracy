@@ -15700,6 +15700,7 @@ void View::DrawMemory()
             }
             ImGui::EndCombo();
         }
+        ImGui::Separator();
     }
 
     auto& mem = m_worker.GetMemoryNamed( m_memInfo.pool );

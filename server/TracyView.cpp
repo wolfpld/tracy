@@ -15898,7 +15898,7 @@ void View::DrawMemory()
         ImGui::TreePop();
     }
 
-
+    ImGui::PushID( m_memInfo.pool );
     ImGui::Separator();
     if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Bottom-up call stack tree" ) )
     {
@@ -15958,6 +15958,7 @@ void View::DrawMemory()
 
         ImGui::TreePop();
     }
+    ImGui::PopID();
 
     ImGui::EndChild();
     ImGui::End();

@@ -5284,6 +5284,7 @@ void Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
     {
         CheckString( memname );
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+        it->second->name = memname;
     }
     ProcessMemAllocImpl( memname, *it->second, ev );
 }
@@ -5304,6 +5305,7 @@ bool Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
     {
         CheckString( memname );
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+        it->second->name = memname;
     }
     return ProcessMemFreeImpl( memname, *it->second, ev );
 }
@@ -5326,6 +5328,7 @@ void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
     {
         CheckString( memname );
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+        it->second->name = memname;
     }
     m_lastMemActionData = it->second;
     m_lastMemActionCallstack = it->second->data.size();
@@ -5357,6 +5360,7 @@ void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
     {
         CheckString( memname );
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
+        it->second->name = memname;
     }
     if( ProcessMemFreeImpl( memname, *it->second, ev ) )
     {

@@ -3259,6 +3259,13 @@ const ThreadData* Worker::GetThreadData( uint64_t tid ) const
     return it->second;
 }
 
+const MemData& Worker::GetMemoryNamed( uint64_t name ) const
+{
+    auto it = m_data.memNameMap.find( name );
+    assert( it != m_data.memNameMap.end() );
+    return *it->second;
+}
+
 ThreadData* Worker::NewThread( uint64_t thread )
 {
     CheckThreadString( thread );

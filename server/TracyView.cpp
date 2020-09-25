@@ -6020,9 +6020,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                 if( v->type == PlotType::Memory )
                 {
-                    const auto& mem = m_worker.GetMemData();
+                    auto& mem = m_worker.GetMemoryNamed( v->name );
 
-                    if( m_memoryAllocInfoWindow >= 0 )
+                    if( m_memoryAllocInfoPool == v->name && m_memoryAllocInfoWindow >= 0 )
                     {
                         const auto& ev = mem.data[m_memoryAllocInfoWindow];
 
@@ -6034,7 +6034,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
                         draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
                     }
-                    if( m_memoryAllocHover >= 0 && m_memoryAllocHover != m_memoryAllocInfoWindow )
+                    if( m_memoryAllocHover >= 0 && m_memoryAllocHoverPool == v->name && ( m_memoryAllocInfoPool != v->name || m_memoryAllocHover != m_memoryAllocInfoWindow ) )
                     {
                         const auto& ev = mem.data[m_memoryAllocHover];
 
@@ -6119,7 +6119,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 {
                     const auto x = ( it->time.Val() - m_vd.zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, v->format, PlotHeight );
+                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, v->format, PlotHeight, v->name );
                 }
 
                 auto prevx = it;
@@ -6142,7 +6142,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto rsz = std::distance( it, range );
                     if( rsz == 1 )
                     {
-                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type, v->format, PlotHeight );
+                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type, v->format, PlotHeight, v->name );
                         prevx = it;
                         prevy = it;
                         ++it;
@@ -6259,7 +6259,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     }
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, PlotValueFormatting format, float PlotHeight )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, PlotValueFormatting format, float PlotHeight, uint64_t name )
 {
     auto draw = ImGui::GetWindowDrawList();
     if( merged )
@@ -6301,7 +6301,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
 
             if( type == PlotType::Memory )
             {
-                auto& mem = m_worker.GetMemData();
+                auto& mem = m_worker.GetMemoryNamed( name );
                 const MemEvent* ev = nullptr;
                 if( change > 0 )
                 {
@@ -6363,9 +6363,11 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
 
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
+                    m_memoryAllocHoverPool = name;
                     if( IsMouseClicked( 0 ) )
                     {
                         m_memoryAllocInfoWindow = m_memoryAllocHover;
+                        m_memoryAllocInfoPool = name;
                     }
                 }
             }
@@ -7061,7 +7063,7 @@ void View::DrawZoneInfoWindow()
         }
     }
 
-    auto& mem = m_worker.GetMemData();
+    auto& mem = m_worker.GetMemoryDefault();
     if( !mem.data.empty() )
     {
         ImGui::Separator();
@@ -7170,7 +7172,7 @@ void View::DrawZoneInfoWindow()
 
                         ListMemData( v, []( auto v ) {
                             ImGui::Text( "0x%" PRIx64, v->Ptr() );
-                        }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1 );
+                        }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1, 0 );
                         ImGui::TreePop();
                     }
                 }
@@ -13040,7 +13042,7 @@ void View::DrawMemoryAllocWindow()
     bool show = true;
     ImGui::Begin( "Memory allocation", &show, ImGuiWindowFlags_AlwaysAutoResize );
 
-    const auto& mem = m_worker.GetMemData();
+    const auto& mem = m_worker.GetMemoryNamed( m_memoryAllocInfoPool );
     const auto& ev = mem.data[m_memoryAllocInfoWindow];
     const auto tidAlloc = m_worker.DecompressThread( ev.ThreadAlloc() );
     const auto tidFree = m_worker.DecompressThread( ev.ThreadFree() );
@@ -13051,6 +13053,10 @@ void View::DrawMemoryAllocWindow()
         ZoomToRange( ev.TimeAlloc(), ev.TimeFree() >= 0 ? ev.TimeFree() : m_worker.GetLastTime() );
     }
 
+    if( m_worker.GetMemNameMap().size() > 1 )
+    {
+        TextFocused( ICON_FA_ARCHIVE " Pool:", m_memoryAllocInfoPool == 0 ? "Default allocator" : m_worker.GetString( m_memoryAllocInfoPool ) );
+    }
     char buf[64];
     sprintf( buf, "0x%" PRIx64, ev.Ptr() );
     TextFocused( "Address:", buf );
@@ -13250,7 +13256,11 @@ void View::DrawInfo()
             ImGui::TextUnformatted( "Automated Tracy plots" );
             ImGui::EndTooltip();
         }
-        TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size() ) );
+        auto& memNameMap = m_worker.GetMemNameMap();
+        TextFocused( "Memory pools:", RealToString( memNameMap.size() ) );
+        uint64_t memTotalCnt = 0;
+        for( auto v : memNameMap ) memTotalCnt += v.second->data.size();
+        TextFocused( "Memory allocations:", RealToString( memTotalCnt ) );
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
         TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
@@ -15076,7 +15086,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
     }
 }
 
-void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime )
+void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime, uint64_t pool )
 {
     if( startTime == -1 ) startTime = 0;
 
@@ -15124,7 +15134,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
     ImGui::NextColumn();
     ImGui::Separator();
 
-    const auto& mem = m_worker.GetMemData();
+    const auto& mem = m_worker.GetMemoryNamed( pool );
 
     switch( sortBy )
     {
@@ -15153,7 +15163,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
             auto v = vec[i];
             const auto arrIdx = std::distance( mem.data.begin(), v );
 
-            if( m_memoryAllocInfoWindow == arrIdx )
+            if( m_memoryAllocInfoPool == pool && m_memoryAllocInfoWindow == arrIdx )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );
                 DrawAddress( v );
@@ -15165,6 +15175,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
                 if( ImGui::IsItemClicked() )
                 {
                     m_memoryAllocInfoWindow = arrIdx;
+                    m_memoryAllocInfoPool = pool;
                 }
             }
             if( ImGui::IsItemClicked( 2 ) )
@@ -15175,6 +15186,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
             {
                 m_memoryAllocHover = arrIdx;
                 m_memoryAllocHoverWait = 2;
+                m_memoryAllocHoverPool = pool;
             }
             ImGui::NextColumn();
             ImGui::TextUnformatted( MemSizeToString( v->Size() ) );
@@ -15612,7 +15624,7 @@ std::vector<MemoryPage> View::GetMemoryPages() const
 
     static unordered_flat_map<uint64_t, MemoryPage> memmap;
 
-    const auto& mem = m_worker.GetMemData();
+    const auto& mem = m_worker.GetMemoryNamed( m_memInfo.pool );
     const auto memlow = mem.low;
 
     if( m_memInfo.restrictTime )
@@ -15668,11 +15680,29 @@ std::vector<MemoryPage> View::GetMemoryPages() const
 
 void View::DrawMemory()
 {
-    auto& mem = m_worker.GetMemData();
-
     ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Memory", &m_memInfo.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
+    auto& memNameMap = m_worker.GetMemNameMap();
+    if( memNameMap.size() > 1 )
+    {
+        TextDisabledUnformatted( ICON_FA_ARCHIVE " Memory pool:" );
+        ImGui::SameLine();
+        if( ImGui::BeginCombo( "##memoryPool", m_memInfo.pool == 0 ? "Default allocator" : m_worker.GetString( m_memInfo.pool ) ) )
+        {
+            for( auto& v : memNameMap )
+            {
+                if( ImGui::Selectable( v.first == 0 ? "Default allocator" : m_worker.GetString( v.first ) ) )
+                {
+                    m_memInfo.pool = v.first;
+                    m_memInfo.showAllocList = false;
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    auto& mem = m_worker.GetMemoryNamed( m_memInfo.pool );
     if( mem.data.empty() )
     {
         ImGui::TextWrapped( "No memory data collected." );
@@ -15760,7 +15790,7 @@ void View::DrawMemory()
                     {
                         ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->Ptr(), m_memInfo.ptrFind - v->Ptr() );
                     }
-                }, "##allocations" );
+                }, "##allocations", -1, m_memInfo.pool );
             }
         }
         ImGui::TreePop();
@@ -15805,7 +15835,7 @@ void View::DrawMemory()
         {
             ListMemData( items, []( auto v ) {
                 ImGui::Text( "0x%" PRIx64, v->Ptr() );
-            }, "##activeMem" );
+            }, "##activeMem", -1, m_memInfo.pool );
         }
         else
         {
@@ -15885,9 +15915,7 @@ void View::DrawMemory()
         ImGui::SameLine();
         SmallCheckbox( "Only active allocations", &m_activeOnlyBottomUp );
 
-        auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeBottomUp( mem );
-
         if( !tree.empty() )
         {
             int idx = 0;
@@ -15917,9 +15945,7 @@ void View::DrawMemory()
         ImGui::SameLine();
         SmallCheckbox( "Only active allocations", &m_activeOnlyTopDown );
 
-        auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeTopDown( mem );
-
         if( !tree.empty() )
         {
             int idx = 0;
@@ -15982,7 +16008,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
 
             if( ImGui::IsItemClicked( 1 ) )
             {
-                auto& mem = m_worker.GetMemData().data;
+                auto& mem = m_worker.GetMemoryNamed( m_memInfo.pool ).data;
                 const auto sz = mem.size();
                 m_memInfo.showAllocList = true;
                 m_memInfo.allocList.clear();
@@ -16055,7 +16081,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
 void View::DrawAllocList()
 {
     std::vector<const MemEvent*> data;
-    auto basePtr = m_worker.GetMemData().data.data();
+    auto basePtr = m_worker.GetMemoryNamed( m_memInfo.pool ).data.data();
     data.reserve( m_memInfo.allocList.size() );
     for( auto& idx : m_memInfo.allocList )
     {
@@ -16067,7 +16093,7 @@ void View::DrawAllocList()
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
     ListMemData( data, []( auto v ) {
         ImGui::Text( "0x%" PRIx64, v->Ptr() );
-    }, "##allocations" );
+    }, "##allocations", -1, m_memInfo.pool );
     ImGui::End();
 }
 

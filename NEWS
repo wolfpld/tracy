@@ -13,6 +13,7 @@ v0.x.x (xxxx-xx-xx)
 - Added early checks for output file validity in the capture utility.
 - Improvements to presence broadcast handling.
 - Custom zone colors can be optionally ignored.
+- Added support for tracking multiple memory pools.
 
 
 v0.7.2 (2020-09-14)

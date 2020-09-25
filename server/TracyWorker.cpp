@@ -1006,67 +1006,136 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
-    bool reconstructMemAllocPlot = false;
-
-    m_data.memory = m_slab.AllocInit<MemData>();
-    m_data.memNameMap.emplace( 0, m_data.memory );
-
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::Memory, std::memory_order_relaxed );
-    f.Read( sz );
-    if( eventMask & EventType::Memory )
-    {
-        // TODO
-        auto& memdata = *m_data.memory;
-        memdata.data.reserve_exact( sz, m_slab );
-        uint64_t activeSz, freesSz;
-        f.Read2( activeSz, freesSz );
-        memdata.active.reserve( activeSz );
-        memdata.frees.reserve_exact( freesSz, m_slab );
-        auto mem = memdata.data.data();
-        s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
-        size_t fidx = 0;
-        int64_t refTime = 0;
-        auto& frees = memdata.frees;
-        auto& active = memdata.active;
 
-        for( uint64_t i=0; i<sz; i++ )
+    if( fileVer >= FileVersion( 0, 7, 3 ) )
+    {
+        uint64_t memcount, memtarget, memload = 0;
+        f.Read2( memcount, memtarget );
+        s_loadProgress.subTotal.store( memtarget, std::memory_order_relaxed );
+
+        for( uint64_t k=0; k<memcount; k++ )
         {
-            s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-            uint64_t ptr, size;
-            Int24 csAlloc;
-            int64_t timeAlloc, timeFree;
-            uint16_t threadAlloc, threadFree;
-            f.Read8( ptr, size, csAlloc, mem->csFree, timeAlloc, timeFree, threadAlloc, threadFree );
-            mem->SetPtr( ptr );
-            mem->SetSize( size );
-            mem->SetCsAlloc( csAlloc.Val() );
-            refTime += timeAlloc;
-            mem->SetTimeThreadAlloc( refTime, threadAlloc );
-            if( timeFree >= 0 )
+            uint64_t memname;
+            f.Read2( memname, sz );
+            if( eventMask & EventType::Memory )
             {
-                mem->SetTimeThreadFree( timeFree + refTime, threadFree );
-                frees[fidx++] = i;
+                auto mit = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() );
+                if( memname == 0 ) m_data.memory = mit.first->second;
+                auto& memdata = *mit.first->second;
+                memdata.data.reserve_exact( sz, m_slab );
+                uint64_t activeSz, freesSz;
+                f.Read2( activeSz, freesSz );
+                memdata.active.reserve( activeSz );
+                memdata.frees.reserve_exact( freesSz, m_slab );
+                auto mem = memdata.data.data();
+                s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+                size_t fidx = 0;
+                int64_t refTime = 0;
+                auto& frees = memdata.frees;
+                auto& active = memdata.active;
+
+                for( uint64_t i=0; i<sz; i++ )
+                {
+                    s_loadProgress.subProgress.store( memload+i, std::memory_order_relaxed );
+                    uint64_t ptr, size;
+                    Int24 csAlloc;
+                    int64_t timeAlloc, timeFree;
+                    uint16_t threadAlloc, threadFree;
+                    f.Read8( ptr, size, csAlloc, mem->csFree, timeAlloc, timeFree, threadAlloc, threadFree );
+                    mem->SetPtr( ptr );
+                    mem->SetSize( size );
+                    mem->SetCsAlloc( csAlloc.Val() );
+                    refTime += timeAlloc;
+                    mem->SetTimeThreadAlloc( refTime, threadAlloc );
+                    if( timeFree >= 0 )
+                    {
+                        mem->SetTimeThreadFree( timeFree + refTime, threadFree );
+                        frees[fidx++] = i;
+                    }
+                    else
+                    {
+                        mem->SetTimeThreadFree( timeFree, threadFree );
+                        active.emplace( ptr, i );
+                    }
+                    mem++;
+                }
+                memload += sz;
+                f.Read4( memdata.high, memdata.low, memdata.usage, memdata.name );
+
+                if( sz != 0 )
+                {
+                    memdata.reconstruct = true;
+                }
             }
             else
             {
-                mem->SetTimeThreadFree( timeFree, threadFree );
-                active.emplace( ptr, i );
+                f.Skip( 2 * sizeof( uint64_t ) );
+                f.Skip( sz * ( sizeof( uint64_t ) + sizeof( uint64_t ) + sizeof( Int24 ) + sizeof( Int24 ) + sizeof( int64_t ) * 2 + sizeof( uint16_t ) * 2 ) );
+                f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) + sizeof( MemData::name ) );
             }
-            mem++;
-        }
-        f.Read3( memdata.high, memdata.low, memdata.usage );
-
-        if( sz != 0 )
-        {
-            reconstructMemAllocPlot = true;
         }
     }
     else
     {
-        f.Skip( 2 * sizeof( uint64_t ) );
-        f.Skip( sz * ( sizeof( uint64_t ) + sizeof( uint64_t ) + sizeof( Int24 ) + sizeof( Int24 ) + sizeof( int64_t ) * 2 + sizeof( uint16_t ) * 2 ) );
-        f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
+        m_data.memory = m_slab.AllocInit<MemData>();
+        m_data.memNameMap.emplace( 0, m_data.memory );
+
+        f.Read( sz );
+        if( eventMask & EventType::Memory )
+        {
+            auto& memdata = *m_data.memory;
+            memdata.data.reserve_exact( sz, m_slab );
+            uint64_t activeSz, freesSz;
+            f.Read2( activeSz, freesSz );
+            memdata.active.reserve( activeSz );
+            memdata.frees.reserve_exact( freesSz, m_slab );
+            auto mem = memdata.data.data();
+            s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+            size_t fidx = 0;
+            int64_t refTime = 0;
+            auto& frees = memdata.frees;
+            auto& active = memdata.active;
+
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                uint64_t ptr, size;
+                Int24 csAlloc;
+                int64_t timeAlloc, timeFree;
+                uint16_t threadAlloc, threadFree;
+                f.Read8( ptr, size, csAlloc, mem->csFree, timeAlloc, timeFree, threadAlloc, threadFree );
+                mem->SetPtr( ptr );
+                mem->SetSize( size );
+                mem->SetCsAlloc( csAlloc.Val() );
+                refTime += timeAlloc;
+                mem->SetTimeThreadAlloc( refTime, threadAlloc );
+                if( timeFree >= 0 )
+                {
+                    mem->SetTimeThreadFree( timeFree + refTime, threadFree );
+                    frees[fidx++] = i;
+                }
+                else
+                {
+                    mem->SetTimeThreadFree( timeFree, threadFree );
+                    active.emplace( ptr, i );
+                }
+                mem++;
+            }
+            f.Read3( memdata.high, memdata.low, memdata.usage );
+
+            if( sz != 0 )
+            {
+                memdata.reconstruct = true;
+            }
+        }
+        else
+        {
+            f.Skip( 2 * sizeof( uint64_t ) );
+            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( uint64_t ) + sizeof( Int24 ) + sizeof( Int24 ) + sizeof( int64_t ) * 2 + sizeof( uint16_t ) * 2 ) );
+            f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
+        }
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -1585,7 +1654,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
-        m_threadBackground = std::thread( [this, reconstructMemAllocPlot, eventMask] {
+        m_threadBackground = std::thread( [this, eventMask] {
             std::vector<std::thread> jobs;
 
             if( !m_data.ctxSwitch.empty() )
@@ -1593,10 +1662,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 jobs.emplace_back( std::thread( [this] { ReconstructContextSwitchUsage(); } ) );
             }
 
-            if( reconstructMemAllocPlot )
+            for( auto& mem : m_data.memNameMap )
             {
-                // TODO
-                jobs.emplace_back( std::thread( [this] { ReconstructMemAllocPlot( 0, *m_data.memory ); } ) );
+                if( mem.second->reconstruct ) jobs.emplace_back( std::thread( [this, mem = mem.second] { ReconstructMemAllocPlot( *mem ); } ) );
             }
 
             std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
@@ -5956,7 +6024,7 @@ void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
     const auto val = (double)memdata.usage;
     if( !memdata.plot )
     {
-        CreateMemAllocPlot( memname, memdata );
+        CreateMemAllocPlot( memdata );
         memdata.plot->min = val;
         memdata.plot->max = val;
         memdata.plot->data.push_back( { time, val } );
@@ -5971,18 +6039,18 @@ void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
     }
 }
 
-void Worker::CreateMemAllocPlot( uint64_t memname, MemData& memdata )
+void Worker::CreateMemAllocPlot( MemData& memdata )
 {
     assert( !memdata.plot );
     memdata.plot = m_slab.AllocInit<PlotData>();
-    memdata.plot->name = memname;
+    memdata.plot->name = memdata.name;
     memdata.plot->type = PlotType::Memory;
     memdata.plot->format = PlotValueFormatting::Memory;
     memdata.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
     m_data.plots.Data().push_back( memdata.plot );
 }
 
-void Worker::ReconstructMemAllocPlot( uint64_t memname, MemData& mem )
+void Worker::ReconstructMemAllocPlot( MemData& mem )
 {
 #ifdef NO_PARALLEL_SORT
     pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].TimeFree() < mem.data[rhs].TimeFree(); } );
@@ -5998,7 +6066,7 @@ void Worker::ReconstructMemAllocPlot( uint64_t memname, MemData& mem )
         plot = m_slab.AllocInit<PlotData>();
     }
 
-    plot->name = memname;
+    plot->name = mem.name;
     plot->type = PlotType::Memory;
     plot->format = PlotValueFormatting::Memory;
     plot->data.reserve_exact( psz, m_slab );
@@ -6878,9 +6946,20 @@ void Worker::Write( FileWrite& f )
         }
     }
 
-    // TODO
+    sz = m_data.memNameMap.size();
+    f.Write( &sz, sizeof( sz ) );
+    sz = 0;
+    for( auto& memory : m_data.memNameMap )
     {
-        auto& memdata = *m_data.memory;
+        sz += memory.second->data.size();
+    }
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& memory : m_data.memNameMap )
+    {
+        uint64_t name = memory.first;
+        f.Write( &name, sizeof( name ) );
+
+        auto& memdata = *memory.second;
         int64_t refTime = 0;
         sz = memdata.data.size();
         f.Write( &sz, sizeof( sz ) );
@@ -6911,6 +6990,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &memdata.high, sizeof( memdata.high ) );
         f.Write( &memdata.low, sizeof( memdata.low ) );
         f.Write( &memdata.usage, sizeof( memdata.usage ) );
+        f.Write( &memdata.name, sizeof( memdata.name ) );
     }
 
     sz = m_data.callstackPayload.size() - 1;

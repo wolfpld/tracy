@@ -704,8 +704,8 @@ private:
     int16_t NewShrinkedSourceLocation( uint64_t srcloc );
 
     tracy_force_inline void MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time );
-    void CreateMemAllocPlot( uint64_t mamname, MemData& memdata );
-    void ReconstructMemAllocPlot( uint64_t memname, MemData& memdata );
+    void CreateMemAllocPlot( MemData& memdata );
+    void ReconstructMemAllocPlot( MemData& memdata );
 
     void InsertMessageData( MessageData* msg );
 

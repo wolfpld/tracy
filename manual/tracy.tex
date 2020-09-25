@@ -1262,6 +1262,13 @@ Each tracked memory free event must also have a corresponding memory allocation 
 This requirement is relaxed in the on-demand mode (section~\ref{ondemand}), because the memory allocation event might have happened before the connection was made.
 \end{bclogo}
 
+\subsubsection{Memory pools}
+\label{memorypools}
+
+Sometimes an application will use more than one memory pool. For example, in addition to tracking the \texttt{malloc}/\texttt{free} heap you may also be interested in memory usage of a graphic API, such as Vulkan. Or maybe you want to see how your scripting language is managing memory.
+
+To mark that a separate memory pool is to be tracked you should use the named version of memory macros, for example \texttt{TracyAllocN(ptr, size, name)} and \texttt{TracyFreeN(ptr, name)}, where \texttt{name} is an unique pointer to a string literal (section~\ref{uniquepointers}) identifying the memory pool.
+
 \subsection{GPU profiling}
 \label{gpuprofiling}
 
@@ -2843,7 +2850,9 @@ Set custom trace descriptions (see section~\ref{traceinfo}) to easily differenti
 \subsection{Memory window}
 \label{memorywindow}
 
-The data gathered by profiling memory usage (section~\ref{memoryprofiling}) can be viewed in the memory window. The top row contains statistics, such as \emph{total allocations} count, number of \emph{active allocations}, current \emph{memory usage} and process \emph{memory span}\footnote{Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.}.
+The data gathered by profiling memory usage (section~\ref{memoryprofiling}) can be viewed in the memory window. If more than one memory pool was tracked during the capture, you will be able to select which pool you want to look at, using the \emph{\faArchive{}~Memory pool} selection box.
+
+The top row contains statistics, such as \emph{total allocations} count, number of \emph{active allocations}, current \emph{memory usage} and process \emph{memory span}\footnote{Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.}.
 
 The lists of captured memory allocations are displayed in a common multi-column format thorough the profiler. The first column specifies the memory address of an allocation, or an address and an offset, if the address is not at the start of the allocation. Clicking the \LMB{} left mouse button on an address will open the memory allocation information window\footnote{While the allocation information window is opened, the address will be highlighted on the list.} (see section~\ref{memallocinfo}). Clicking the \MMB{}~middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
 

@@ -278,6 +278,7 @@ int main( int argc, char** argv )
     if( dll != INVALID_HANDLE_VALUE ) getDpiForSystem = (GDFS)GetProcAddress(dll, "GetDpiForSystem");
     if( getDpiForSystem ) dpiScale = getDpiForSystem() / 96.f;
 #elif defined __linux__
+#  if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
     auto monitor = glfwGetWindowMonitor( window );
     if( !monitor ) monitor = glfwGetPrimaryMonitor();
     if( monitor )
@@ -286,6 +287,7 @@ int main( int argc, char** argv )
         glfwGetMonitorContentScale( monitor, &x, &y );
         dpiScale = x;
     }
+#  endif
 #endif
 
     // Setup ImGui binding

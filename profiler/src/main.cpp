@@ -1032,7 +1032,7 @@ static void DrawContents()
         tracy::TextCentered( ICON_FA_BROOM );
         animTime += ImGui::GetIO().DeltaTime;
         tracy::DrawWaitingDots( animTime );
-        ImGui::Text( "Please wait, cleanup is in progress" );
+        ImGui::TextUnformatted( "Please wait, cleanup is in progress" );
         ImGui::EndPopup();
     }
 

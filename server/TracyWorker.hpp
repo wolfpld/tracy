@@ -885,7 +885,7 @@ private:
     int64_t m_loadTime;
 
     Failure m_failure = Failure::None;
-    FailureData m_failureData;
+    FailureData m_failureData = {};
 
     PlotData* m_sysTimePlot = nullptr;
 

@@ -4457,42 +4457,33 @@ void Worker::ZoneTextFailure( uint64_t thread )
 {
     m_failure = Failure::ZoneText;
     m_failureData.thread = thread;
-    m_failureData.srcloc = 0;
 }
 
 void Worker::ZoneNameFailure( uint64_t thread )
 {
     m_failure = Failure::ZoneName;
     m_failureData.thread = thread;
-    m_failureData.srcloc = 0;
 }
 
 void Worker::MemFreeFailure( uint64_t thread )
 {
     m_failure = Failure::MemFree;
     m_failureData.thread = thread;
-    m_failureData.srcloc = 0;
 }
 
 void Worker::FrameEndFailure()
 {
     m_failure = Failure::FrameEnd;
-    m_failureData.thread = 0;
-    m_failureData.srcloc = 0;
 }
 
 void Worker::FrameImageIndexFailure()
 {
     m_failure = Failure::FrameImageIndex;
-    m_failureData.thread = 0;
-    m_failureData.srcloc = 0;
 }
 
 void Worker::FrameImageTwiceFailure()
 {
     m_failure = Failure::FrameImageTwice;
-    m_failureData.thread = 0;
-    m_failureData.srcloc = 0;
 }
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )

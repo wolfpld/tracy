@@ -1091,13 +1091,13 @@ enum SubSystems
 
 void Physics::Process()
 {
-	ZoneScopedN( __tracy, SUBSYSTEMS & Sys_Physics );		// always true, no runtime cost
+	ZoneNamed( __tracy, SUBSYSTEMS & Sys_Physics );		// always true, no runtime cost
 	...
 }
 
 void Graphics::Render()
 {
-	ZoneScopedN( __tracy, SUBSYSTEMS & Sys_Graphics );		// always false, no runtime cost
+	ZoneNamed( __tracy, SUBSYSTEMS & Sys_Graphics );		// always false, no runtime cost
 	...
 }
 \end{lstlisting}

@@ -197,6 +197,13 @@ static inline int LuaZoneBeginS( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
+#ifdef TRACY_CALLSTACK
+    const uint32_t depth = TRACY_CALLSTACK;
+#else
+    const auto depth = uint32_t( lua_tointeger( L, 1 ) );
+#endif
+    SendLuaCallstack( L, depth );
+
     TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
@@ -205,13 +212,6 @@ static inline int LuaZoneBeginS( lua_State* L )
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
     TracyLfqCommit;
-
-#ifdef TRACY_CALLSTACK
-    const uint32_t depth = TRACY_CALLSTACK;
-#else
-    const auto depth = uint32_t( lua_tointeger( L, 1 ) );
-#endif
-    SendLuaCallstack( L, depth );
 
     return 0;
 }
@@ -225,6 +225,13 @@ static inline int LuaZoneBeginNS( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
+#ifdef TRACY_CALLSTACK
+    const uint32_t depth = TRACY_CALLSTACK;
+#else
+    const auto depth = uint32_t( lua_tointeger( L, 2 ) );
+#endif
+    SendLuaCallstack( L, depth );
+
     TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
@@ -235,13 +242,6 @@ static inline int LuaZoneBeginNS( lua_State* L )
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
     TracyLfqCommit;
-
-#ifdef TRACY_CALLSTACK
-    const uint32_t depth = TRACY_CALLSTACK;
-#else
-    const auto depth = uint32_t( lua_tointeger( L, 2 ) );
-#endif
-    SendLuaCallstack( L, depth );
 
     return 0;
 }

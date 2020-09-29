@@ -311,6 +311,10 @@ namespace tracy
 			m_queryId = ctx->NextQueryId();
 			cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
 
+#if defined(TRACY_HAS_CALLSTACK) && defined(TRACY_CALLSTACK)
+			GetProfiler().SendCallstack(TRACY_CALLSTACK);
+#endif
+
 			auto* item = Profiler::QueueSerial();
 #if defined(TRACY_HAS_CALLSTACK) && defined(TRACY_CALLSTACK)
 			MemWrite(&item->hdr.type, QueueType::GpuZoneBeginCallstackSerial);
@@ -324,10 +328,6 @@ namespace tracy
 			MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
 
 			Profiler::QueueSerialFinish();
-
-#if defined(TRACY_HAS_CALLSTACK) && defined(TRACY_CALLSTACK)
-			GetProfiler().SendCallstack(TRACY_CALLSTACK);
-#endif
 		}
 
 		tracy_force_inline ~D3D12ZoneScope()

@@ -246,6 +246,8 @@ namespace tracy {
 
             m_beginQueryId = ctx->NextQueryId(EventInfo{ nullptr, EventPhase::Begin });
 
+            GetProfiler().SendCallstack(depth);
+
             auto item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuZoneBeginCallstackSerial);
             MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
@@ -254,8 +256,6 @@ namespace tracy {
             MemWrite(&item->gpuZoneBegin.queryId, (uint16_t)m_beginQueryId);
             MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
             Profiler::QueueSerialFinish();
-
-            GetProfiler().SendCallstack(depth);
         }
 
         tracy_force_inline void SetEvent(cl_event event)

@@ -215,6 +215,8 @@ public:
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
+        GetProfiler().SendCallstack( depth );
+
         const auto thread = GetThreadHandle();
         TracyLfqPrepare( QueueType::GpuZoneBeginCallstack );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
@@ -223,8 +225,6 @@ public:
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, GetGpuCtx().ptr->GetId() );
         TracyLfqCommit;
-
-        GetProfiler().SendCallstack( depth );
     }
 
     tracy_force_inline ~GpuCtxScope()

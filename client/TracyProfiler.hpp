@@ -283,6 +283,8 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+
         TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
@@ -290,8 +292,6 @@ public:
         MemWrite( &item->messageFat.text, (uint64_t)ptr );
         MemWrite( &item->messageFat.size, (uint16_t)size );
         TracyLfqCommit;
-
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
     static tracy_force_inline void Message( const char* txt, int callstack )
@@ -299,12 +299,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->messageLiteral.time, GetTime() );
         MemWrite( &item->messageLiteral.text, (uint64_t)txt );
         TracyLfqCommit;
-
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
     static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
@@ -313,6 +313,8 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
@@ -323,8 +325,6 @@ public:
         MemWrite( &item->messageColorFat.b, uint8_t( ( color >> 16 ) & 0xFF ) );
         MemWrite( &item->messageColorFat.size, (uint16_t)size );
         TracyLfqCommit;
-
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
     static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int callstack )
@@ -332,6 +332,8 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColorLiteral.time, GetTime() );
         MemWrite( &item->messageColorLiteral.text, (uint64_t)txt );
@@ -339,8 +341,6 @@ public:
         MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColorLiteral.b, uint8_t( ( color >> 16 ) & 0xFF ) );
         TracyLfqCommit;
-
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
@@ -401,8 +401,8 @@ public:
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
-        SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         SendCallstackMemory( callstack );
+        SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         profiler.m_serialLock.unlock();
 #else
         MemAlloc( ptr, size, secure );
@@ -423,8 +423,8 @@ public:
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
-        SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         SendCallstackMemory( callstack );
+        SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         profiler.m_serialLock.unlock();
 #else
         MemFree( ptr, secure );
@@ -473,9 +473,9 @@ public:
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
+        SendCallstackMemory( callstack );
         SendMemName( name );
         SendMemAlloc( QueueType::MemAllocCallstackNamed, thread, ptr, size );
-        SendCallstackMemory( callstack );
         profiler.m_serialLock.unlock();
 #else
         MemAlloc( ptr, size, secure );
@@ -496,9 +496,9 @@ public:
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
+        SendCallstackMemory( callstack );
         SendMemName( name );
         SendMemFree( QueueType::MemFreeCallstackNamed, thread, ptr );
-        SendCallstackMemory( callstack );
         profiler.m_serialLock.unlock();
 #else
         MemFree( ptr, secure );

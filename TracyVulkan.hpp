@@ -342,6 +342,8 @@ public:
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId );
 
+        GetProfiler().SendCallstack( depth );
+
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstackSerial );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
@@ -350,8 +352,6 @@ public:
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         Profiler::QueueSerialFinish();
-
-        GetProfiler().SendCallstack( depth );
     }
 
     tracy_force_inline ~VkCtxScope()

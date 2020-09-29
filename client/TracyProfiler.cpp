@@ -594,12 +594,12 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     }
 
     {
+        GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
+
         TracyLfqPrepare( QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
         TracyLfqCommit;
-
-        GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
     }
 
     HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
@@ -826,12 +826,12 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     }
 
     {
+        GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
+
         TracyLfqPrepare( QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
         TracyLfqCommit;
-
-        GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
     }
 
     DIR* dp = opendir( "/proc/self/task" );
@@ -2992,14 +2992,13 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
         TracyLfqCommitC;
     }
 #endif
+    tracy::GetProfiler().SendCallstack( depth );
     {
         TracyLfqPrepareC( tracy::QueueType::ZoneBeginCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         TracyLfqCommitC;
     }
-
-    tracy::GetProfiler().SendCallstack( depth );
     return ctx;
 }
 
@@ -3058,14 +3057,13 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
         TracyLfqCommitC;
     }
 #endif
+    tracy::GetProfiler().SendCallstack( depth );
     {
         TracyLfqPrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
         TracyLfqCommitC;
     }
-
-    tracy::GetProfiler().SendCallstack( depth );
     return ctx;
 }
 

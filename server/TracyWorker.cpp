@@ -2869,6 +2869,17 @@ bool Worker::IsThreadStringRetrieved( uint64_t id )
     return strcmp( name, "???" ) != 0;
 }
 
+bool Worker::IsCallstackRetrieved( uint32_t callstack )
+{
+    auto& cs = GetCallstack( callstack );
+    for( auto& v : cs )
+    {
+        auto frameData = GetCallstackFrame( v );
+        if( !frameData ) return false;
+    }
+    return true;
+}
+
 bool Worker::IsSourceLocationRetrieved( int16_t srcloc )
 {
     auto& sl = GetSourceLocation( srcloc );
@@ -2881,6 +2892,7 @@ bool Worker::HasAllFailureData()
 {
     if( m_failureData.thread != 0 && !IsThreadStringRetrieved( m_failureData.thread ) ) return false;
     if( m_failureData.srcloc != 0 && !IsSourceLocationRetrieved( m_failureData.srcloc ) ) return false;
+    if( m_failureData.callstack != 0 && !IsCallstackRetrieved( m_failureData.callstack ) ) return false;
     return true;
 }
 

@@ -755,6 +755,7 @@ private:
 
     bool IsThreadStringRetrieved( uint64_t id );
     bool IsSourceLocationRetrieved( int16_t srcloc );
+    bool IsCallstackRetrieved( uint32_t callstack );
     bool HasAllFailureData();
     void HandleFailure( const char* ptr, const char* end );
     void DispatchFailure( const QueueItem& ev, const char*& ptr );

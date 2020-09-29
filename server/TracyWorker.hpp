@@ -844,8 +844,7 @@ private:
     bool m_codeTransfer;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
-    uint64_t m_pendingCallstackPtr = 0;
-    uint32_t m_pendingCallstackId;
+    uint32_t m_pendingCallstackId = 0;
     int16_t m_pendingSourceLocationPayload = 0;
     Vector<uint64_t> m_sourceLocationQueue;
     unordered_flat_map<uint64_t, int16_t> m_sourceLocationShrink;

@@ -2815,7 +2815,7 @@ void Worker::Exec()
         if( m_terminate )
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                m_data.plots.IsPending() || m_pendingCallstackPtr != 0 || m_pendingExternalNames != 0 ||
+                m_data.plots.IsPending() || m_pendingCallstackId != 0 || m_pendingExternalNames != 0 ||
                 m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr || !m_pendingSymbols.empty() ||
                 !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() ||
                 m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr )
@@ -3629,7 +3629,7 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
 
 void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
 {
-    assert( m_pendingCallstackPtr == 0 );
+    assert( m_pendingCallstackId == 0 );
 
     const auto sz = _sz / sizeof( uint64_t );
     const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
@@ -3670,7 +3670,6 @@ void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
         m_slab.Unalloc( memsize );
     }
 
-    m_pendingCallstackPtr = ptr;
     m_pendingCallstackId = idx;
 }
 
@@ -3716,7 +3715,7 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
 
     VarArray<CallstackFrameId>* arr;
     size_t memsize;
-    if( m_pendingCallstackPtr != 0 )
+    if( m_pendingCallstackId != 0 )
     {
         const auto nativeCs = m_data.callstackPayload[m_pendingCallstackId];
         const auto nsz = nativeCs->size();
@@ -3764,7 +3763,6 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
         m_slab.Unalloc( memsize );
     }
 
-    m_pendingCallstackPtr = ptr;
     m_pendingCallstackId = idx;
 }
 
@@ -5450,26 +5448,25 @@ void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
 
 void Worker::ProcessCallstackMemory()
 {
-    assert( m_pendingCallstackPtr != 0 );
-    m_pendingCallstackPtr = 0;
+    assert( m_pendingCallstackId != 0 );
     assert( m_memNextCallstack == 0 );
     m_memNextCallstack = m_pendingCallstackId;
+    m_pendingCallstackId = 0;
 }
 
 void Worker::ProcessCallstack()
 {
-    assert( m_pendingCallstackPtr != 0 );
-    m_pendingCallstackPtr = 0;
+    assert( m_pendingCallstackId != 0 );
     auto it = m_nextCallstack.find( m_threadCtx );
     if( it == m_nextCallstack.end() ) it = m_nextCallstack.emplace( m_threadCtx, 0 ).first;
     assert( it->second == 0 );
     it->second = m_pendingCallstackId;
+    m_pendingCallstackId = 0;
 }
 
 void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
 {
-    assert( m_pendingCallstackPtr != 0 );
-    m_pendingCallstackPtr = 0;
+    assert( m_pendingCallstackId != 0 );
     m_data.samplesCnt++;
 
     const auto refTime = m_refTimeCtx + ev.time;
@@ -5569,6 +5566,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
         m_data.ghostZonesPostponed = true;
     }
 #endif
+    m_pendingCallstackId = 0;
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

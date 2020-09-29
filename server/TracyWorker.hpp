@@ -367,6 +367,7 @@ private:
     {
         uint64_t thread;
         int16_t srcloc;
+        uint32_t callstack;
     };
 
     struct FrameImagePending

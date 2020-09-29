@@ -4469,6 +4469,7 @@ void Worker::MemFreeFailure( uint64_t thread )
 {
     m_failure = Failure::MemFree;
     m_failureData.thread = thread;
+    m_failureData.callstack = m_memNextCallstack;
 }
 
 void Worker::FrameEndFailure()

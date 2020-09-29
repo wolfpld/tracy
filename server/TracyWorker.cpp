@@ -4192,10 +4192,8 @@ bool Worker::Process( const QueueItem& ev )
         ProcessCallstackMemory();
         break;
     case QueueType::Callstack:
-        ProcessCallstack();
-        break;
     case QueueType::CallstackAlloc:
-        ProcessCallstackAlloc();
+        ProcessCallstack();
         break;
     case QueueType::CallstackSample:
         ProcessCallstackSample( ev.callstackSample );
@@ -4313,10 +4311,11 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
 {
     auto zone = AllocZoneEvent();
     ProcessZoneBeginImpl( zone, ev );
-
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Zone;
-    next.zone = zone;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    auto& extra = RequestZoneExtra( *zone );
+    extra.callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev )
@@ -4347,10 +4346,11 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev 
 {
     auto zone = AllocZoneEvent();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );
-
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Zone;
-    next.zone = zone;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    auto& extra = RequestZoneExtra( *zone );
+    extra.callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
@@ -5008,33 +5008,41 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
 void Worker::ProcessMessageCallstack( const QueueMessage& ev )
 {
     ProcessMessage( ev );
-
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Message;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    assert( m_threadCtxData );
+    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessMessageLiteralCallstack( const QueueMessageLiteral& ev )
 {
     ProcessMessageLiteral( ev );
-
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Message;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    assert( m_threadCtxData );
+    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessMessageColorCallstack( const QueueMessageColor& ev )
 {
     ProcessMessageColor( ev );
-
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Message;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    assert( m_threadCtxData );
+    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColorLiteral& ev )
 {
     ProcessMessageLiteralColor( ev );
-
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Message;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    assert( m_threadCtxData );
+    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
@@ -5157,10 +5165,10 @@ void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool ser
 {
     auto zone = m_slab.Alloc<GpuEvent>();
     ProcessGpuZoneBeginImpl( zone, ev, serial );
-
-    auto& next = m_nextCallstack[ev.thread];
-    next.type = NextCallstackType::Gpu;
-    next.gpu = zone;
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    zone->callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
@@ -5272,7 +5280,7 @@ void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )
     ctx->calibratedCpuTime = TscTime( ev.cpuTime - m_data.baseTime );
 }
 
-void Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev )
+MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev )
 {
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
@@ -5309,14 +5317,15 @@ void Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const Queu
     memdata.usage += size;
 
     MemAllocChanged( memname, memdata, time );
+    return &mem;
 }
 
-bool Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev )
+MemEvent* Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev )
 {
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
 
-    if( ev.ptr == 0 ) return false;
+    if( ev.ptr == 0 ) return nullptr;
 
     auto it = memdata.active.find( ev.ptr );
     if( it == memdata.active.end() )
@@ -5326,7 +5335,7 @@ bool Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const Queue
             CheckThreadString( ev.thread );
             MemFreeFailure( ev.thread );
         }
-        return false;
+        return nullptr;
     }
 
     const auto time = TscTime( refTime - m_data.baseTime );
@@ -5340,16 +5349,16 @@ bool Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const Queue
     memdata.active.erase( it );
 
     MemAllocChanged( memname, memdata, time );
-    return true;
+    return &mem;
 }
 
-void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
+MemEvent* Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
     assert( m_memNamePayload == 0 );
-    ProcessMemAllocImpl( 0, *m_data.memory, ev );
+    return ProcessMemAllocImpl( 0, *m_data.memory, ev );
 }
 
-void Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
+MemEvent* Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
 {
     assert( m_memNamePayload != 0 );
     auto memname = m_memNamePayload;
@@ -5361,16 +5370,16 @@ void Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    ProcessMemAllocImpl( memname, *it->second, ev );
+    return ProcessMemAllocImpl( memname, *it->second, ev );
 }
 
-bool Worker::ProcessMemFree( const QueueMemFree& ev )
+MemEvent* Worker::ProcessMemFree( const QueueMemFree& ev )
 {
     assert( m_memNamePayload == 0 );
     return ProcessMemFreeImpl( 0, *m_data.memory, ev );
 }
 
-bool Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
+MemEvent* Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
 {
     assert( m_memNamePayload != 0 );
     auto memname = m_memNamePayload;
@@ -5387,10 +5396,11 @@ bool Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
 
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 {
-    m_lastMemActionData = m_data.memory;
-    m_lastMemActionCallstack = m_data.memory->data.size();
-    ProcessMemAlloc( ev );
-    m_lastMemActionWasAlloc = true;
+    auto mem = ProcessMemAlloc( ev );
+    assert( mem );
+    assert( m_memNextCallstack != 0 );
+    mem->SetCsAlloc( m_memNextCallstack );
+    m_memNextCallstack = 0;
 }
 
 void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
@@ -5405,24 +5415,19 @@ void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    m_lastMemActionData = it->second;
-    m_lastMemActionCallstack = it->second->data.size();
-    ProcessMemAllocImpl( memname, *it->second, ev );
-    m_lastMemActionWasAlloc = true;
+    auto mem = ProcessMemAllocImpl( memname, *it->second, ev );
+    assert( mem );
+    assert( m_memNextCallstack != 0 );
+    mem->SetCsAlloc( m_memNextCallstack );
+    m_memNextCallstack = 0;
 }
 
 void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
-    if( ProcessMemFree( ev ) )
-    {
-        m_lastMemActionData = m_data.memory;
-        m_lastMemActionCallstack = m_data.memory->frees.back();
-        m_lastMemActionWasAlloc = false;
-    }
-    else
-    {
-        m_lastMemActionCallstack = std::numeric_limits<uint64_t>::max();
-    }
+    auto mem = ProcessMemFree( ev );
+    assert( m_memNextCallstack != 0 );
+    if( mem ) mem->csFree.SetVal( m_memNextCallstack );
+    m_memNextCallstack = 0;
 }
 
 void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
@@ -5437,109 +5442,28 @@ void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    if( ProcessMemFreeImpl( memname, *it->second, ev ) )
-    {
-        m_lastMemActionData = it->second;
-        m_lastMemActionCallstack = it->second->frees.back();
-        m_lastMemActionWasAlloc = false;
-    }
-    else
-    {
-        m_lastMemActionCallstack = std::numeric_limits<uint64_t>::max();
-    }
+    auto mem = ProcessMemFreeImpl( memname, *it->second, ev );
+    assert( m_memNextCallstack != 0 );
+    if( mem ) mem->csFree.SetVal( m_memNextCallstack );
+    m_memNextCallstack = 0;
 }
 
 void Worker::ProcessCallstackMemory()
 {
     assert( m_pendingCallstackPtr != 0 );
     m_pendingCallstackPtr = 0;
-
-    if( m_lastMemActionCallstack != std::numeric_limits<uint64_t>::max() )
-    {
-        auto& mem = m_lastMemActionData->data[m_lastMemActionCallstack];
-        if( m_lastMemActionWasAlloc )
-        {
-            mem.SetCsAlloc( m_pendingCallstackId );
-        }
-        else
-        {
-            mem.csFree.SetVal( m_pendingCallstackId );
-        }
-    }
+    assert( m_memNextCallstack == 0 );
+    m_memNextCallstack = m_pendingCallstackId;
 }
 
 void Worker::ProcessCallstack()
 {
     assert( m_pendingCallstackPtr != 0 );
     m_pendingCallstackPtr = 0;
-
-    auto nit = m_nextCallstack.find( m_threadCtx );
-    assert( nit != m_nextCallstack.end() );
-    auto& next = nit->second;
-
-    switch( next.type )
-    {
-    case NextCallstackType::Zone:
-    {
-        auto& extra = RequestZoneExtra( *next.zone );
-        extra.callstack.SetVal( m_pendingCallstackId );
-        break;
-    }
-    case NextCallstackType::Gpu:
-        next.gpu->callstack.SetVal( m_pendingCallstackId );
-        break;
-    case NextCallstackType::Crash:
-        m_data.crashEvent.callstack = m_pendingCallstackId;
-        break;
-    case NextCallstackType::Message:
-    {
-        auto td = m_threadCtxData;
-        if( !td ) td = m_threadCtxData = RetrieveThread( m_threadCtx );
-        assert( td );
-        td->messages.back()->callstack.SetVal( m_pendingCallstackId );
-        break;
-    }
-    default:
-        assert( false );
-        break;
-    }
-}
-
-void Worker::ProcessCallstackAlloc()
-{
-    assert( m_pendingCallstackPtr != 0 );
-    m_pendingCallstackPtr = 0;
-
-    auto nit = m_nextCallstack.find( m_threadCtx );
-    assert( nit != m_nextCallstack.end() );
-    auto& next = nit->second;
-
-    switch( next.type )
-    {
-    case NextCallstackType::Zone:
-    {
-        auto& extra = RequestZoneExtra( *next.zone );
-        extra.callstack.SetVal( m_pendingCallstackId );
-        break;
-    }
-    case NextCallstackType::Gpu:
-        next.gpu->callstack.SetVal( m_pendingCallstackId );
-        break;
-    case NextCallstackType::Crash:
-        m_data.crashEvent.callstack = m_pendingCallstackId;
-        break;
-    case NextCallstackType::Message:
-    {
-        auto td = m_threadCtxData;
-        if( !td ) td = m_threadCtxData = RetrieveThread( m_threadCtx );
-        assert( td );
-        td->messages.back()->callstack.SetVal( m_pendingCallstackId );
-        break;
-    }
-    default:
-        assert( false );
-        break;
-    }
+    auto it = m_nextCallstack.find( m_threadCtx );
+    if( it == m_nextCallstack.end() ) it = m_nextCallstack.emplace( m_threadCtx, 0 ).first;
+    assert( it->second == 0 );
+    it->second = m_pendingCallstackId;
 }
 
 void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
@@ -5843,13 +5767,20 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 {
     CheckString( ev.text );
 
-    auto& next = m_nextCallstack[m_threadCtx];
-    next.type = NextCallstackType::Crash;
-
     m_data.crashEvent.thread = m_threadCtx;
     m_data.crashEvent.time = TscTime( ev.time - m_data.baseTime );
     m_data.crashEvent.message = ev.text;
-    m_data.crashEvent.callstack = 0;
+
+    auto it = m_nextCallstack.find( m_threadCtx );
+    if( it != m_nextCallstack.end() && it->second != 0 )
+    {
+        m_data.crashEvent.callstack = it->second;
+        it->second = 0;
+    }
+    else
+    {
+        m_data.crashEvent.callstack = 0;
+    }
 }
 
 void Worker::ProcessSysTime( const QueueSysTime& ev )

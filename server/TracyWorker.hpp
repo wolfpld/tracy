@@ -363,24 +363,6 @@ private:
         uint64_t transferred;
     };
 
-    enum class NextCallstackType
-    {
-        Zone,
-        Gpu,
-        Crash,
-        Message
-    };
-
-    struct NextCallstack
-    {
-        NextCallstackType type;
-        union
-        {
-            ZoneEvent* zone;
-            GpuEvent* gpu;
-        };
-    };
-
     struct FailureData
     {
         uint64_t thread;
@@ -653,17 +635,16 @@ private:
     tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
     tracy_force_inline void ProcessGpuCalibration( const QueueGpuCalibration& ev );
-    tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
-    tracy_force_inline void ProcessMemAllocNamed( const QueueMemAlloc& ev );
-    tracy_force_inline bool ProcessMemFree( const QueueMemFree& ev );
-    tracy_force_inline bool ProcessMemFreeNamed( const QueueMemFree& ev );
+    tracy_force_inline MemEvent* ProcessMemAlloc( const QueueMemAlloc& ev );
+    tracy_force_inline MemEvent* ProcessMemAllocNamed( const QueueMemAlloc& ev );
+    tracy_force_inline MemEvent* ProcessMemFree( const QueueMemFree& ev );
+    tracy_force_inline MemEvent* ProcessMemFreeNamed( const QueueMemFree& ev );
     tracy_force_inline void ProcessMemAllocCallstack( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessMemFreeCallstackNamed( const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackMemory();
     tracy_force_inline void ProcessCallstack();
-    tracy_force_inline void ProcessCallstackAlloc();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
@@ -682,8 +663,8 @@ private:
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial );
-    tracy_force_inline void ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev );
-    tracy_force_inline bool ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev );
+    tracy_force_inline MemEvent* ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev );
+    tracy_force_inline MemEvent* ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev );
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev );
@@ -869,7 +850,6 @@ private:
     Vector<uint64_t> m_sourceLocationQueue;
     unordered_flat_map<uint64_t, int16_t> m_sourceLocationShrink;
     unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
-    unordered_flat_map<uint64_t, NextCallstack> m_nextCallstack;
     FrameImagePending m_pendingFrameImageData = {};
     unordered_flat_map<uint64_t, SymbolPending> m_pendingSymbols;
     unordered_flat_set<uint64_t> m_pendingSymbolCode;
@@ -891,9 +871,7 @@ private:
     uint64_t m_callstackAllocNextIdx = 0;
     uint64_t m_callstackParentNextIdx = 0;
 
-    uint64_t m_lastMemActionCallstack;
-    bool m_lastMemActionWasAlloc;
-    MemData* m_lastMemActionData;
+    uint32_t m_memNextCallstack = 0;
     uint64_t m_memNamePayload = 0;
 
     Slab<64*1024*1024> m_slab;
@@ -952,6 +930,8 @@ private:
 
     char* m_tmpBuf = nullptr;
     size_t m_tmpBufSize = 0;
+
+    unordered_flat_map<uint64_t, uint32_t> m_nextCallstack;
 };
 
 }

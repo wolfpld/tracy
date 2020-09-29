@@ -244,7 +244,9 @@ int main( int argc, char** argv )
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if( !glfwInit() ) return 1;
+#ifndef DISPLAY_SERVER_WAYLAND
     glfwWindowHint(GLFW_VISIBLE, 0);
+#endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

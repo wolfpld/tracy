@@ -2989,10 +2989,18 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
         switch( ev.hdr.type )
         {
         case QueueType::SingleStringData:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            AddSingleStringFailure( ptr, sz );
+            ptr += sz;
+            break;
         case QueueType::SecondStringData:
             ptr += sizeof( QueueHeader );
             memcpy( &sz, ptr, sizeof( sz ) );
-            ptr += sizeof( sz ) + sz;
+            ptr += sizeof( sz );
+            AddSecondString( ptr, sz );
+            ptr += sz;
             break;
         default:
             ptr += QueueDataSize[ev.hdr.idx];
@@ -3003,6 +3011,12 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 m_serverQuerySpaceLeft++;
                 break;
             case QueueType::CallstackFrameSize:
+                ProcessCallstackFrameSize( ev.callstackFrameSize );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::CallstackFrame:
+                ProcessCallstackFrame( ev.callstackFrame, false );
+                break;
             case QueueType::SymbolInformation:
             case QueueType::ParamPingback:
                 m_serverQuerySpaceLeft++;
@@ -3539,6 +3553,13 @@ void Worker::AddThreadString( uint64_t id, const char* str, size_t sz )
 void Worker::AddSingleString( const char* str, size_t sz )
 {
     assert( m_pendingSingleString.ptr == nullptr );
+    m_pendingSingleString = StoreString( str, sz );
+}
+
+void Worker::AddSingleStringFailure( const char* str, size_t sz )
+{
+    // During failure dispatch processing of most events is ignored, but string data
+    // is still send. Just ignore anything that was already in the staging area.
     m_pendingSingleString = StoreString( str, sz );
 }
 

@@ -736,6 +736,7 @@ private:
     void AddString( uint64_t ptr, const char* str, size_t sz );
     void AddThreadString( uint64_t id, const char* str, size_t sz );
     void AddSingleString( const char* str, size_t sz );
+    void AddSingleStringFailure( const char* str, size_t sz );
     void AddSecondString( const char* str, size_t sz );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );

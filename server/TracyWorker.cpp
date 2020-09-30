@@ -2953,6 +2953,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
         if( ev.hdr.type == QueueType::FrameImageData ||
             ev.hdr.type == QueueType::SymbolCode )
         {
+            if( ev.hdr.type == QueueType::SymbolCode ) m_serverQuerySpaceLeft++;
             uint32_t sz;
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz ) + sz;
@@ -3018,6 +3019,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 ProcessCallstackFrame( ev.callstackFrame, false );
                 break;
             case QueueType::SymbolInformation:
+            case QueueType::CodeInformation:
             case QueueType::ParamPingback:
                 m_serverQuerySpaceLeft++;
                 break;

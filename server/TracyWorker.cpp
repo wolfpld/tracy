@@ -2985,20 +2985,31 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
     }
     else
     {
-        ptr += QueueDataSize[ev.hdr.idx];
+        uint16_t sz;
         switch( ev.hdr.type )
         {
-        case QueueType::SourceLocation:
-            AddSourceLocation( ev.srcloc );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::CallstackFrameSize:
-        case QueueType::SymbolInformation:
-        case QueueType::ParamPingback:
-            m_serverQuerySpaceLeft++;
+        case QueueType::SingleStringData:
+        case QueueType::SecondStringData:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz ) + sz;
             break;
         default:
-            break;
+            ptr += QueueDataSize[ev.hdr.idx];
+            switch( ev.hdr.type )
+            {
+            case QueueType::SourceLocation:
+                AddSourceLocation( ev.srcloc );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::CallstackFrameSize:
+            case QueueType::SymbolInformation:
+            case QueueType::ParamPingback:
+                m_serverQuerySpaceLeft++;
+                break;
+            default:
+                break;
+            }
         }
     }
 }

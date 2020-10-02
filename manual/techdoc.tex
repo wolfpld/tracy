@@ -141,6 +141,8 @@ The \texttt{debug.mk} and \texttt{release.mk} files only set a few of the optimi
 
 In the header of the \texttt{build.mk} file you can find definitions of the resulting executable name, list of used libraries, required include paths, etc. Most of the file is boilerplate required to extract build dependencies, or pass the appropriate flags to compiler and linker.
 
+By default, the profiler uses X11 on Linux.  If you would like to support Wayland instead, set the environment variable \texttt{TRACY\_USE\_WAYLAND} before running make.
+
 \section{Client part}
 
 The client portion of Tracy is basically a queue. Application threads are producing queue items through the instrumentation macros and a dedicated profiler thread consumes the items to send them over the network, to the server.

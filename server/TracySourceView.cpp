@@ -3315,7 +3315,7 @@ static bool TokenizeNumber( const char*& begin, const char* end )
         {
             isBinary = true;
             begin++;
-            while( begin < end && ( *begin == '0' || *begin == '1' ) || *begin == '\'' ) begin++;
+            while( begin < end && ( ( *begin == '0' || *begin == '1' ) || *begin == '\'' ) ) begin++;
         }
     }
     if( !isBinary )
@@ -3374,7 +3374,7 @@ SourceView::TokenColor SourceView::IdentifyToken( const char*& begin, const char
     {
         const char* tmp = begin;
         begin++;
-        while( begin < end && ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || ( *begin >= '0' && *begin <= '9' ) || *begin == '_' ) begin++;
+        while( begin < end && ( ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || ( *begin >= '0' && *begin <= '9' ) || *begin == '_' ) ) begin++;
         if( begin - tmp <= 24 )
         {
             char buf[25];

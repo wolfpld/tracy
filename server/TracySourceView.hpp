@@ -115,7 +115,7 @@ private:
     {
         uint64_t min;
         uint64_t max;
-        int level;
+        size_t level;
         std::vector<uint64_t> source;
     };
 
@@ -169,10 +169,10 @@ private:
     std::vector<Token> Tokenize( const char* begin, const char* end );
 
     void ResetAsm();
-    void FollowRead( int line, RegsX86 reg, int limit );
-    void FollowWrite( int line, RegsX86 reg, int limit );
-    void CheckRead( int line, RegsX86 reg, int limit );
-    void CheckWrite( int line, RegsX86 reg, int limit );
+    void FollowRead( size_t line, RegsX86 reg, size_t limit );
+    void FollowWrite( size_t line, RegsX86 reg, size_t limit );
+    void CheckRead( size_t line, RegsX86 reg, size_t limit );
+    void CheckWrite( size_t line, RegsX86 reg, size_t limit );
 
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
@@ -223,7 +223,7 @@ private:
     unordered_flat_map<uint64_t, uint32_t> m_locMap;
     unordered_flat_map<uint64_t, JumpData> m_jumpTable;
     unordered_flat_set<uint64_t> m_jumpOut;
-    int m_maxJumpLevel;
+    size_t m_maxJumpLevel;
     bool m_showJumps;
 
     unordered_flat_map<uint32_t, uint32_t> m_sourceFiles;
@@ -243,8 +243,8 @@ private:
 
     unordered_flat_set<uint32_t> m_asmSampleSelect;
     unordered_flat_set<uint32_t> m_srcSampleSelect;
-    uint32_t m_asmGroupSelect = -1;
-    uint32_t m_srcGroupSelect = -1;
+    int32_t m_asmGroupSelect = -1;
+    int32_t m_srcGroupSelect = -1;
 
     float m_srcWidth;
     float m_asmWidth;

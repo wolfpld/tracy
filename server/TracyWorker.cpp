@@ -3943,9 +3943,9 @@ int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone
             tmp = &m_data.ghostChildren[back.child];
         }
     }
-    const uint64_t refBackTime = vec->empty() ? 0 : vec->back().end.Val();
+    const int64_t refBackTime = vec->empty() ? 0 : vec->back().end.Val();
     int gcnt = 0;
-    int idx = 0;
+    size_t idx = 0;
     while( !vec->empty() && idx < stack.size() )
     {
         auto& back = vec->back();

@@ -777,7 +777,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             }
 #endif
 
-            const auto mLen = strlen( op.mnemonic );
+            const auto mLen = (int)strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
             if( op.size > bytesMax ) bytesMax = op.size;
 
@@ -821,7 +821,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             {
                 auto it = m_jumpTable.find( v.target );
                 assert( it != m_jumpTable.end() );
-                int level = 0;
+                size_t level = 0;
                 for(;;)
                 {
                     assert( levelRanges.size() >= level );
@@ -2063,7 +2063,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             const auto x0 = rect.Min.x;
             const auto x1 = rect.Min.x + rect.GetWidth() * 0.2f;
             float sy;
-            for( size_t i=0; i<m_asm.size(); i++ )
+            for( int i=0; i<(int)m_asm.size(); i++ )
             {
                 if( i == m_asmSelected )
                 {
@@ -2658,7 +2658,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 for( int i=0; i<op->numVariants; i++ )
                 {
                     const auto& var = *op->variant[i];
-                    if( var.descNum == line.params.size() )
+                    if( var.descNum == (int)line.params.size() )
                     {
                         int penalty = 0;
                         bool match = true;
@@ -3542,7 +3542,7 @@ void SourceView::ResetAsm()
     for( auto& line : m_asm ) memset( line.regData, 0, sizeof( line.regData ) );
 }
 
-void SourceView::FollowRead( int line, RegsX86 reg, int limit )
+void SourceView::FollowRead( size_t line, RegsX86 reg, size_t limit )
 {
     if( limit == 0 ) return;
     const auto& data = m_asm[line];
@@ -3562,7 +3562,7 @@ void SourceView::FollowRead( int line, RegsX86 reg, int limit )
     }
 }
 
-void SourceView::FollowWrite( int line, RegsX86 reg, int limit )
+void SourceView::FollowWrite( size_t line, RegsX86 reg, size_t limit )
 {
     if( limit == 0 ) return;
     const auto& data = m_asm[line];
@@ -3577,14 +3577,15 @@ void SourceView::FollowWrite( int line, RegsX86 reg, int limit )
             CheckWrite( fit - m_asm.begin(), reg, limit );
         }
     }
-    if( line-1 >= 0 )
+    if( line > 0 )
     {
         CheckWrite( line-1, reg, limit );
     }
 }
 
-void SourceView::CheckRead( int line, RegsX86 reg, int limit )
+void SourceView::CheckRead( size_t line, RegsX86 reg, size_t limit )
 {
+    assert( limit > 0 );
     auto& data = m_asm[line];
     int idx = 0;
     for(;;)
@@ -3642,8 +3643,9 @@ void SourceView::CheckRead( int line, RegsX86 reg, int limit )
     }
 }
 
-void SourceView::CheckWrite( int line, RegsX86 reg, int limit )
+void SourceView::CheckWrite( size_t line, RegsX86 reg, size_t limit )
 {
+    assert( limit > 0 );
     auto& data = m_asm[line];
     int idx = 0;
     for(;;)

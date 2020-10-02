@@ -259,7 +259,7 @@ private:
     int64_t GetZoneChildTime( const ZoneEvent& zone );
     int64_t GetZoneChildTime( const GpuEvent& zone );
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
-    int64_t GetZoneChildTimeFastClamped( const ZoneEvent& zone, uint64_t t0, uint64_t t1 );
+    int64_t GetZoneChildTimeFastClamped( const ZoneEvent& zone, int64_t t0, int64_t t1 );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );

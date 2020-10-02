@@ -17262,7 +17262,7 @@ int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
     return time;
 }
 
-int64_t View::GetZoneChildTimeFastClamped( const ZoneEvent& zone, uint64_t t0, uint64_t t1 )
+int64_t View::GetZoneChildTimeFastClamped( const ZoneEvent& zone, int64_t t0, int64_t t1 )
 {
     int64_t time = 0;
     if( zone.HasChildren() )
@@ -17277,8 +17277,8 @@ int64_t View::GetZoneChildTimeFastClamped( const ZoneEvent& zone, uint64_t t0, u
             if( it == zitend ) return 0;
             while( it < zitend )
             {
-                const auto c0 = std::max<uint64_t>( it->Start(), t0 );
-                const auto c1 = std::min<uint64_t>( it->End(), t1 );
+                const auto c0 = std::max<int64_t>( it->Start(), t0 );
+                const auto c1 = std::min<int64_t>( it->End(), t1 );
                 time += c1 - c0;
                 ++it;
             }
@@ -17291,8 +17291,8 @@ int64_t View::GetZoneChildTimeFastClamped( const ZoneEvent& zone, uint64_t t0, u
             if( it == zitend ) return 0;
             while( it < zitend )
             {
-                const auto c0 = std::max<uint64_t>( (*it)->Start(), t0 );
-                const auto c1 = std::min<uint64_t>( (*it)->End(), t1 );
+                const auto c0 = std::max<int64_t>( (*it)->Start(), t0 );
+                const auto c1 = std::min<int64_t>( (*it)->End(), t1 );
                 time += c1 - c0;
                 ++it;
             }

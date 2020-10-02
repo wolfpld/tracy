@@ -22,42 +22,42 @@ static inline ImVec2 operator-( const ImVec2& l, const ImVec2& r ) { return ImVe
 namespace tracy
 {
 
-    static inline void TextCentered( const char* text )
+    [[maybe_unused]] static inline void TextCentered( const char* text )
     {
         const auto tw = ImGui::CalcTextSize( text ).x;
         ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw ) * 0.5f );
         ImGui::TextUnformatted( text );
     }
 
-    static inline void TextColoredUnformatted( uint32_t col, const char* text, const char* end = nullptr )
+    [[maybe_unused]] static inline void TextColoredUnformatted( uint32_t col, const char* text, const char* end = nullptr )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, col );
         ImGui::TextUnformatted( text, end );
         ImGui::PopStyleColor();
     }
 
-    static inline void TextColoredUnformatted( const ImVec4& col, const char* text, const char* end = nullptr )
+    [[maybe_unused]] static inline void TextColoredUnformatted( const ImVec4& col, const char* text, const char* end = nullptr )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, col );
         ImGui::TextUnformatted( text, end );
         ImGui::PopStyleColor();
     }
 
-    static inline void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
+    [[maybe_unused]] static inline void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
         ImGui::TextUnformatted( begin, end );
         ImGui::PopStyleColor();
     }
 
-    static inline void TextFocused( const char* label, const char* value )
+    [[maybe_unused]] static inline void TextFocused( const char* label, const char* value )
     {
         TextDisabledUnformatted( label );
         ImGui::SameLine();
         ImGui::TextUnformatted( value );
     }
 
-    static inline void DrawWaitingDots( double time )
+    [[maybe_unused]] static inline void DrawWaitingDots( double time )
     {
         ImGui::TextUnformatted( "" );
         auto draw = ImGui::GetWindowDrawList();
@@ -70,7 +70,7 @@ namespace tracy
         draw->AddCircleFilled( wpos + ImVec2( w * 0.5f + ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
     }
 
-    static inline bool SmallCheckbox( const char* label, bool* var )
+    [[maybe_unused]] static inline bool SmallCheckbox( const char* label, bool* var )
     {
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         auto ret = ImGui::Checkbox( label, var );
@@ -78,14 +78,14 @@ namespace tracy
         return ret;
     }
 
-    static inline void SmallColorBox( uint32_t color )
+    [[maybe_unused]] static inline void SmallColorBox( uint32_t color )
     {
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         ImGui::ColorButton( "c1", ImVec4( (color & 0xFF) / 255.f, ((color>>8) & 0xFF ) / 255.f, ((color>>16) & 0xFF ) / 255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
         ImGui::PopStyleVar();
     }
 
-    static inline bool ButtonDisablable( const char* label, bool disabled )
+    [[maybe_unused]] static inline bool ButtonDisablable( const char* label, bool disabled )
     {
         if( disabled )
         {
@@ -100,7 +100,7 @@ namespace tracy
         }
     }
 
-    static inline bool SmallButtonDisablable( const char* label, bool disabled )
+    [[maybe_unused]] static inline bool SmallButtonDisablable( const char* label, bool disabled )
     {
         if( disabled )
         {
@@ -119,20 +119,20 @@ namespace tracy
         }
     }
 
-    static inline void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
+    [[maybe_unused]] static inline void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
     {
         draw->AddText( pos + ImVec2( 1, 1 ), 0xAA000000, text );
         draw->AddText( pos, color, text );
     }
 
-    static void SetButtonHighlightColor()
+    [[maybe_unused]] static void SetButtonHighlightColor()
     {
         ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.35f, 0.6f, 0.6f ) );
         ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.35f, 0.8f, 0.8f ) );
         ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.35f, 0.7f, 0.7f ) );
     }
 
-    static void ToggleButton( const char* label, bool& toggle )
+    [[maybe_unused]] static void ToggleButton( const char* label, bool& toggle )
     {
         const auto active = toggle;
         if( active ) SetButtonHighlightColor();
@@ -140,7 +140,7 @@ namespace tracy
         if( active ) ImGui::PopStyleColor( 3 );
     }
 
-    static void SmallToggleButton( const char* label, bool& toggle )
+    [[maybe_unused]] static void SmallToggleButton( const char* label, bool& toggle )
     {
         const auto active = toggle;
         if( active ) SetButtonHighlightColor();
@@ -150,7 +150,7 @@ namespace tracy
         if( active ) ImGui::PopStyleColor( 3 );
     }
 
-    static bool ClipboardButton( int id = 0 )
+    [[maybe_unused]] static bool ClipboardButton( int id = 0 )
     {
         ImGui::PushStyleColor( ImGuiCol_Border, ImVec4( 0.43f, 0.43f, 0.50f, 0.25f ) );
         ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0.26f, 0.59f, 0.98f, 0.20f ) );
@@ -164,7 +164,7 @@ namespace tracy
         return res;
     }
 
-    static void DrawStripedRect( ImDrawList* draw, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted )
+    [[maybe_unused]] static void DrawStripedRect( ImDrawList* draw, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted )
     {
         assert( x1 >= x0 );
         assert( y1 >= y0 );

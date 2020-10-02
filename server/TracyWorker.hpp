@@ -392,13 +392,13 @@ public:
         NUM_FAILURES
     };
 
-    Worker( const char* addr, int port );
+    Worker( const char* addr, uint16_t port );
     Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true );
     ~Worker();
 
     const std::string& GetAddr() const { return m_addr; }
-    int GetPort() const { return m_port; }
+    uint16_t GetPort() const { return m_port; }
     const std::string& GetCaptureName() const { return m_captureName; }
     const std::string& GetCaptureProgram() const { return m_captureProgram; }
     uint64_t GetCaptureTime() const { return m_captureTime; }
@@ -816,7 +816,7 @@ private:
 
     Socket m_sock;
     std::string m_addr;
-    int m_port;
+    uint16_t m_port;
 
     std::thread m_thread;
     std::thread m_threadNet;

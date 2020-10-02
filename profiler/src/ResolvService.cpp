@@ -8,7 +8,7 @@
 
 #include "ResolvService.hpp"
 
-ResolvService::ResolvService( int port )
+ResolvService::ResolvService( uint16_t port )
     : m_exit( false )
     , m_port( port )
     , m_thread( [this] { Worker(); } )

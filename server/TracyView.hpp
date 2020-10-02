@@ -76,7 +76,7 @@ public:
     using GetWindowCallback = void*(*)();
 
     View( void(*cbMainThread)(std::function<void()>), ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr ) : View( cbMainThread, "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb, gwcb ) {}
-    View( void(*cbMainThread)(std::function<void()>), const char* addr, int port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
+    View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16_t port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
     View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
     ~View();
 
@@ -89,7 +89,7 @@ public:
 
     bool ReconnectRequested() const { return m_reconnectRequested; }
     std::string GetAddress() const { return m_worker.GetAddr(); }
-    int GetPort() const { return m_worker.GetPort(); }
+    uint16_t GetPort() const { return m_worker.GetPort(); }
 
     const char* SourceSubstitution( const char* srcFile ) const;
 

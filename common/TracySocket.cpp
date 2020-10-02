@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <inttypes.h>
 #include <new>
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,7 +107,7 @@ Socket::~Socket()
     }
 }
 
-bool Socket::Connect( const char* addr, int port )
+bool Socket::Connect( const char* addr, uint16_t port )
 {
     assert( !IsValid() );
 
@@ -159,7 +160,7 @@ bool Socket::Connect( const char* addr, int port )
     hints.ai_socktype = SOCK_STREAM;
 
     char portbuf[32];
-    sprintf( portbuf, "%i", port );
+    sprintf( portbuf, "%" PRIu16, port );
 
     if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
     int sock = 0;
@@ -218,7 +219,7 @@ bool Socket::Connect( const char* addr, int port )
     return true;
 }
 
-bool Socket::ConnectBlocking( const char* addr, int port )
+bool Socket::ConnectBlocking( const char* addr, uint16_t port )
 {
     assert( !IsValid() );
     assert( !m_ptr );
@@ -231,7 +232,7 @@ bool Socket::ConnectBlocking( const char* addr, int port )
     hints.ai_socktype = SOCK_STREAM;
 
     char portbuf[32];
-    sprintf( portbuf, "%i", port );
+    sprintf( portbuf, "%" PRIu16, port );
 
     if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
     int sock = 0;
@@ -446,7 +447,7 @@ ListenSocket::~ListenSocket()
     if( m_sock != -1 ) Close();
 }
 
-static int addrinfo_and_socket_for_family(int port, int ai_family, struct addrinfo** res)
+static int addrinfo_and_socket_for_family( uint16_t port, int ai_family, struct addrinfo** res )
 {
     struct addrinfo hints;
     memset( &hints, 0, sizeof( hints ) );
@@ -460,14 +461,14 @@ static int addrinfo_and_socket_for_family(int port, int ai_family, struct addrin
     }
 #endif
     char portbuf[32];
-    sprintf( portbuf, "%i", port );
+    sprintf( portbuf, "%" PRIu16, port );
     if( getaddrinfo( nullptr, portbuf, &hints, res ) != 0 ) return -1;
     int sock = socket( (*res)->ai_family, (*res)->ai_socktype, (*res)->ai_protocol );
     if (sock == -1) freeaddrinfo( *res );
     return sock;
 }
 
-bool ListenSocket::Listen( int port, int backlog )
+bool ListenSocket::Listen( uint16_t port, int backlog )
 {
     assert( m_sock == -1 );
 
@@ -477,14 +478,14 @@ bool ListenSocket::Listen( int port, int backlog )
     const char* onlyIPv4 = getenv( "TRACY_ONLY_IPV4" );
     if( !onlyIPv4 || onlyIPv4[0] != '1' )
     {
-        m_sock = addrinfo_and_socket_for_family(port, AF_INET6, &res);
+        m_sock = addrinfo_and_socket_for_family( port, AF_INET6, &res );
     }
 #endif
     if (m_sock == -1)
     {
         // IPV6 protocol may not be available/is disabled. Try to create a socket
         // with the IPV4 protocol
-        m_sock = addrinfo_and_socket_for_family(port, AF_INET, &res);
+        m_sock = addrinfo_and_socket_for_family( port, AF_INET, &res );
         if( m_sock == -1 ) return false;
     }
 #if defined _WIN32 || defined __CYGWIN__
@@ -558,7 +559,7 @@ UdpBroadcast::~UdpBroadcast()
     if( m_sock != -1 ) Close();
 }
 
-bool UdpBroadcast::Open( const char* addr, int port )
+bool UdpBroadcast::Open( const char* addr, uint16_t port )
 {
     assert( m_sock == -1 );
 
@@ -570,7 +571,7 @@ bool UdpBroadcast::Open( const char* addr, int port )
     hints.ai_socktype = SOCK_DGRAM;
 
     char portbuf[32];
-    sprintf( portbuf, "%i", port );
+    sprintf( portbuf, "%" PRIu16, port );
 
     if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
     int sock = 0;
@@ -616,7 +617,7 @@ void UdpBroadcast::Close()
     m_sock = -1;
 }
 
-int UdpBroadcast::Send( int port, const void* data, int len )
+int UdpBroadcast::Send( uint16_t port, const void* data, int len )
 {
     assert( m_sock != -1 );
     struct sockaddr_in addr;
@@ -662,7 +663,7 @@ UdpListen::~UdpListen()
     if( m_sock != -1 ) Close();
 }
 
-bool UdpListen::Listen( int port )
+bool UdpListen::Listen( uint16_t port )
 {
     assert( m_sock == -1 );
 

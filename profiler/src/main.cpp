@@ -107,7 +107,7 @@ struct ClientData
     int64_t time;
     uint32_t protocolVersion;
     int32_t activeTime;
-    uint32_t port;
+    uint16_t port;
     std::string procName;
     std::string address;
 };
@@ -117,7 +117,7 @@ enum class ViewShutdown { False, True, Join };
 static tracy::unordered_flat_map<uint64_t, ClientData> clients;
 static std::unique_ptr<tracy::View> view;
 static tracy::BadVersionState badVer;
-static int port = 8086;
+static uint16_t port = 8086;
 static const char* connectTo = nullptr;
 static char title[128];
 static std::thread loadThread, updateThread, updateNotesThread;
@@ -357,7 +357,7 @@ int main( int argc, char** argv )
             }
             else if( strcmp( argv[1], "-p" ) == 0 )
             {
-                port = atoi( argv[2] );
+                port = (uint16_t)atoi( argv[2] );
             }
             else
             {
@@ -475,7 +475,7 @@ static void DrawContents()
 {
     static bool reconnect = false;
     static std::string reconnectAddr;
-    static int reconnectPort;
+    static uint16_t reconnectPort;
     static bool showFilter = false;
 
     const ImVec4 clear_color = ImColor( 114, 144, 154 );
@@ -712,7 +712,7 @@ static void DrawContents()
             if( *ptr == ':' )
             {
                 std::string addrPart = std::string( addr, ptr );
-                uint32_t portPart = atoi( ptr+1 );
+                uint16_t portPart = (uint16_t)atoi( ptr+1 );
                 view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
             }
             else
@@ -826,7 +826,7 @@ static void DrawContents()
                 if( portFilter.IsActive() )
                 {
                     char buf[32];
-                    sprintf( buf, "%" PRIu32, v.second.port );
+                    sprintf( buf, "%" PRIu16, v.second.port );
                     if( !portFilter.PassFilter( buf ) ) continue;
                 }
                 if( progFilter.IsActive() && !progFilter.PassFilter( v.second.procName.c_str() ) ) continue;
@@ -838,7 +838,7 @@ static void DrawContents()
                 if( ImGui::IsItemHovered() )
                 {
                     char portstr[32];
-                    sprintf( portstr, "%" PRIu32, v.second.port );
+                    sprintf( portstr, "%" PRIu16, v.second.port );
                     ImGui::BeginTooltip();
                     if( badProto )
                     {
@@ -853,7 +853,7 @@ static void DrawContents()
                 if( v.second.port != port )
                 {
                     ImGui::SameLine();
-                    ImGui::TextDisabled( ":%" PRIu32, v.second.port );
+                    ImGui::TextDisabled( ":%" PRIu16, v.second.port );
                 }
                 if( selected && !loadThread.joinable() )
                 {

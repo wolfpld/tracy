@@ -234,7 +234,7 @@ static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEven
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr, int port )
+Worker::Worker( const char* addr, uint16_t port )
     : m_addr( addr )
     , m_port( port )
     , m_hasData( false )

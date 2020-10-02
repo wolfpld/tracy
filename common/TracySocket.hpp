@@ -23,8 +23,8 @@ public:
     Socket( int sock );
     ~Socket();
 
-    bool Connect( const char* addr, int port );
-    bool ConnectBlocking( const char* addr, int port );
+    bool Connect( const char* addr, uint16_t port );
+    bool ConnectBlocking( const char* addr, uint16_t port );
     void Close();
 
     int Send( const void* buf, int len );
@@ -76,7 +76,7 @@ public:
     ListenSocket();
     ~ListenSocket();
 
-    bool Listen( int port, int backlog );
+    bool Listen( uint16_t port, int backlog );
     Socket* Accept();
     void Close();
 
@@ -95,10 +95,10 @@ public:
     UdpBroadcast();
     ~UdpBroadcast();
 
-    bool Open( const char* addr, int port );
+    bool Open( const char* addr, uint16_t port );
     void Close();
 
-    int Send( int port, const void* data, int len );
+    int Send( uint16_t port, const void* data, int len );
 
     UdpBroadcast( const UdpBroadcast& ) = delete;
     UdpBroadcast( UdpBroadcast&& ) = delete;
@@ -136,7 +136,7 @@ public:
     UdpListen();
     ~UdpListen();
 
-    bool Listen( int port );
+    bool Listen( uint16_t port );
     void Close();
 
     const char* Read( size_t& len, IpAddress& addr, int timeout );

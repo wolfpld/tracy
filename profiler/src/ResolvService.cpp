@@ -33,7 +33,7 @@ void ResolvService::Worker()
 {
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
-    addr.sin_port = m_port;
+    addr.sin_port = htons( m_port );
 
     char buf[128];
 

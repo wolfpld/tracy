@@ -1,4 +1,4 @@
-all: debug
+all: release
 
 debug:
 	@+make -f debug.mk all

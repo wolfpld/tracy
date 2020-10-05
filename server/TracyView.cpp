@@ -12088,6 +12088,7 @@ void View::DrawStatistics()
     }
 
     ImGui::Separator();
+    ImGui::AlignTextToFramePadding();
     TextDisabledUnformatted( "Filter results" );
     ImGui::SameLine();
     m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );

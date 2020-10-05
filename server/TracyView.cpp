@@ -7192,11 +7192,32 @@ void View::DrawZoneInfoWindow()
         }
     }
 
-    auto& mem = m_worker.GetMemoryDefault();
-    if( !mem.data.empty() )
+    ImGui::Separator();
+    auto& memNameMap = m_worker.GetMemNameMap();
+    if( memNameMap.size() > 1 )
     {
-        ImGui::Separator();
-
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( ICON_FA_ARCHIVE " Memory pool:" );
+        ImGui::SameLine();
+        if( ImGui::BeginCombo( "##memoryPool", m_zoneInfoMemPool == 0 ? "Default allocator" : m_worker.GetString( m_zoneInfoMemPool ) ) )
+        {
+            for( auto& v : memNameMap )
+            {
+                if( ImGui::Selectable( v.first == 0 ? "Default allocator" : m_worker.GetString( v.first ) ) )
+                {
+                    m_zoneInfoMemPool = v.first;
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+    auto& mem = m_worker.GetMemoryNamed( m_zoneInfoMemPool );
+    if( mem.data.empty() )
+    {
+        TextDisabledUnformatted( "No memory events." );
+    }
+    else
+    {
         if( !mem.plot )
         {
             ImGui::Text( "Please wait, computing data..." );
@@ -7301,7 +7322,7 @@ void View::DrawZoneInfoWindow()
 
                         ListMemData( v, []( auto v ) {
                             ImGui::Text( "0x%" PRIx64, v->Ptr() );
-                        }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1, 0 );
+                        }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1, m_zoneInfoMemPool );
                         ImGui::TreePop();
                     }
                 }

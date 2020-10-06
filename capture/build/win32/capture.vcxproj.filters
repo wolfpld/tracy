@@ -132,6 +132,9 @@
     <ClCompile Include="..\..\..\getopt\getopt.c">
       <Filter>getopt</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyStackFrames.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -295,6 +298,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\getopt\getopt.h">
       <Filter>getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyStackFrames.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

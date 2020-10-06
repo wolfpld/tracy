@@ -17,6 +17,7 @@
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyPrint.hpp"
+#include "../../server/TracyStackFrames.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../getopt/getopt.h"
 
@@ -165,6 +166,76 @@ int main( int argc, char** argv )
     if( failure != tracy::Worker::Failure::None )
     {
         printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
+        auto& fd = worker.GetFailureData();
+        if( fd.callstack != 0 )
+        {
+            printf( "\n\033[1mFailure callstack:\033[0m\n" );
+            auto& cs = worker.GetCallstack( fd.callstack );
+            int fidx = 0;
+            int bidx = 0;
+            for( auto& entry : cs )
+            {
+                auto frameData = worker.GetCallstackFrame( entry );
+                if( !frameData )
+                {
+                    printf( "%3i. %p\n", fidx++, (void*)worker.GetCanonicalPointer( entry ) );
+                }
+                else
+                {
+                    const auto fsz = frameData->size;
+                    for( uint8_t f=0; f<fsz; f++ )
+                    {
+                        const auto& frame = frameData->data[f];
+                        auto txt = worker.GetString( frame.name );
+
+                        if( fidx == 0 && f != fsz-1 )
+                        {
+                            auto test = tracy::s_tracyStackFrames;
+                            bool match = false;
+                            do
+                            {
+                                if( strcmp( txt, *test ) == 0 )
+                                {
+                                    match = true;
+                                    break;
+                                }
+                            }
+                            while( *++test );
+                            if( match ) continue;
+                        }
+
+                        bidx++;
+
+                        if( f == fsz-1 )
+                        {
+                            printf( "%3i. ", fidx++ );
+                        }
+                        else
+                        {
+                            printf( "\033[30;1minl. " );
+                        }
+                        printf( "\033[0;36m%s  ", txt );
+                        txt = worker.GetString( frame.file );
+                        if( frame.line == 0 )
+                        {
+                            printf( "\033[33m(%s)", txt );
+                        }
+                        else
+                        {
+                            printf( "\033[33m(%s:%" PRIu32 ")", txt, frame.line );
+                        }
+                        if( frameData->imageName.Active() )
+                        {
+                            printf( "\033[35m %s\033[0m\n", worker.GetString( frameData->imageName ) );
+                        }
+                        else
+                        {
+                            printf( "\033[0m\n" );
+                        }
+                    }
+                }
+            }
+        }
     }
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",

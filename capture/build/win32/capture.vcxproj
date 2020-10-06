@@ -142,6 +142,7 @@
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />
     <ClCompile Include="..\..\..\server\TracyPrint.cpp" />
+    <ClCompile Include="..\..\..\server\TracyStackFrames.cpp" />
     <ClCompile Include="..\..\..\server\TracyTaskDispatch.cpp" />
     <ClCompile Include="..\..\..\server\TracyTextureCompression.cpp" />
     <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="..\..\..\server\TracyPopcnt.hpp" />
     <ClInclude Include="..\..\..\server\TracyPrint.hpp" />
     <ClInclude Include="..\..\..\server\TracySlab.hpp" />
+    <ClInclude Include="..\..\..\server\TracyStackFrames.hpp" />
     <ClInclude Include="..\..\..\server\TracyTaskDispatch.hpp" />
     <ClInclude Include="..\..\..\server\TracyTextureCompression.hpp" />
     <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp" />

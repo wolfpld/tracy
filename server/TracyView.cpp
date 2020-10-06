@@ -36,6 +36,7 @@
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
 #include "TracySourceView.hpp"
+#include "TracyStackFrames.hpp"
 #include "TracyView.hpp"
 
 #include "../imgui/imgui_internal.h"
@@ -54,24 +55,6 @@ namespace tracy
 {
 
 static double s_time = 0;
-
-constexpr const char* s_tracyStackFrames[] = {
-    "tracy::Callstack",
-    "tracy::Callstack(int)",
-    "tracy::GpuCtxScope::{ctor}",
-    "tracy::Profiler::SendCallstack",
-    "tracy::Profiler::SendCallstack(int)",
-    "tracy::Profiler::SendCallstack(int, unsigned long)",
-    "tracy::Profiler::MemAllocCallstack",
-    "tracy::Profiler::MemAllocCallstack(void const*, unsigned long, int)",
-    "tracy::Profiler::MemFreeCallstack",
-    "tracy::Profiler::MemFreeCallstack(void const*, int)",
-    "tracy::ScopedZone::{ctor}",
-    "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)",
-    "tracy::CallTrace",
-    "tracy::Profiler::Message",
-    nullptr
-};
 
 constexpr const char* GpuContextNames[] = {
     "Invalid",

@@ -210,6 +210,9 @@
     <ClCompile Include="..\..\src\HttpRequest.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyStackFrames.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -508,6 +511,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\HttpRequest.hpp">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyStackFrames.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

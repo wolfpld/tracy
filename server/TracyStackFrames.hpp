@@ -4,7 +4,7 @@
 namespace tracy
 {
 
-const char* s_tracyStackFrames[];
+extern const char** s_tracyStackFrames;
 
 }
 

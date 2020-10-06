@@ -3,7 +3,7 @@
 namespace tracy
 {
 
-const char* s_tracyStackFrames[] = {
+const char* s_tracyStackFrames_[] = {
     "tracy::Callstack",
     "tracy::Callstack(int)",
     "tracy::GpuCtxScope::{ctor}",
@@ -20,5 +20,7 @@ const char* s_tracyStackFrames[] = {
     "tracy::Profiler::Message",
     nullptr
 };
+
+const char** s_tracyStackFrames = s_tracyStackFrames_;
 
 }

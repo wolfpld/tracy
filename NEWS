@@ -17,6 +17,9 @@ v0.x.x (xxxx-xx-xx)
 - Memory free failure dialog can now show call stack pointing to the failure
   location.
 - Added support for Wayland on Linux.
+- If during the first 5 seconds of the trace there are no frames being
+  reported, the profiler will switch to following last 5 seconds of the
+  trace, instead of displaying three last frames.
 
 
 v0.7.2 (2020-09-14)

@@ -317,6 +317,7 @@ private:
     std::string m_filename;
     bool m_staticView;
     ViewMode m_viewMode;
+    bool m_viewModeHeuristicTry = false;
     DecayValue<bool> m_forceConnectionPopup = false;
 
     ViewData m_vd;

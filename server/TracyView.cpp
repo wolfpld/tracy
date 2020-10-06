@@ -116,6 +116,7 @@ View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16
     : m_worker( addr, port )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
+    , m_viewModeHeuristicTry( true )
     , m_forceConnectionPopup( true, true )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
@@ -694,6 +695,7 @@ bool View::DrawImpl()
                 if( m_viewMode != ViewMode::Paused )
                 {
                     m_viewMode = ViewMode::Paused;
+                    m_viewModeHeuristicTry = false;
                 }
                 else
                 {
@@ -718,6 +720,22 @@ bool View::DrawImpl()
                 m_viewMode = ViewMode::LastRange;
             }
             ImGui::EndPopup();
+        }
+        else if( m_viewModeHeuristicTry )
+        {
+            const auto lastTime = m_worker.GetLastTime();
+            if( lastTime > 5*1000*1000*1000ll )
+            {
+                if( m_viewMode == ViewMode::LastFrames && m_worker.GetFrameCount( *m_worker.GetFramesBase() ) <= 2 )
+                {
+                    m_viewMode = ViewMode::LastRange;
+                    ZoomToRange( lastTime - 5*1000*1000*1000ll, lastTime, false );
+                }
+                else
+                {
+                    m_viewModeHeuristicTry = false;
+                }
+            }
         }
     }
     else
@@ -1582,6 +1600,7 @@ void View::DrawFrames()
         if( IsMouseDragging( 1 ) )
         {
             m_viewMode = ViewMode::Paused;
+            m_viewModeHeuristicTry = false;
             const auto delta = GetMouseDragDelta( 1 ).x;
             if( abs( delta ) >= fwidth )
             {
@@ -1710,6 +1729,7 @@ void View::DrawFrames()
                     if( IsMouseClicked( 0 ) )
                     {
                         m_viewMode = ViewMode::Paused;
+                        m_viewModeHeuristicTry = false;
                         m_zoomAnim.active = false;
                         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
                         m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, sel );
@@ -2083,6 +2103,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
     {
         m_viewMode = ViewMode::Paused;
+        m_viewModeHeuristicTry = false;
         m_zoomAnim.active = false;
         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
         const auto delta = GetMouseDragDelta( 1 );
@@ -14416,6 +14437,7 @@ void View::DrawPlayback()
             m_vd.zvStart = tstart;
             m_vd.zvEnd = end;
             m_viewMode = ViewMode::Paused;
+            m_viewModeHeuristicTry = false;
         }
     }
 
@@ -14519,6 +14541,7 @@ void View::DrawPlayback()
             m_vd.zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
             m_zoomAnim.active = false;
             m_viewMode = ViewMode::Paused;
+            m_viewModeHeuristicTry = false;
         }
     }
     ImGui::SameLine();
@@ -16449,7 +16472,11 @@ void View::ZoomToRange( int64_t start, int64_t end, bool pause )
         end = start + 1;
     }
 
-    if( pause ) m_viewMode = ViewMode::Paused;
+    if( pause )
+    {
+        m_viewMode = ViewMode::Paused;
+        m_viewModeHeuristicTry = false;
+    }
     m_highlightZoom.active = false;
     if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
 

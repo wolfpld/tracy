@@ -1262,6 +1262,14 @@ Each tracked memory free event must also have a corresponding memory allocation 
 This requirement is relaxed in the on-demand mode (section~\ref{ondemand}), because the memory allocation event might have happened before the connection was made.
 \end{bclogo}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Non-stable memory addresses}
+Note that the pointer data you provide to the profiler does not have to reflect the real memory layout, which in some cases may not be known. This includes possibility of having multiple overlapping memory allocation regions. For example, you may want to track GPU memory, which may be mapped to different locations in the program address space during allocation and freeing. Or maybe you use some sort of memory defragmentation scheme, which by its very design moves pointers around. In such cases you may rather use unique numeric identifiers as a way of identifying allocated objects. This will make some profiler facilities unavailable, for example the memory map won't have much sense anymore.
+\end{bclogo}
+
 \subsubsection{Memory pools}
 \label{memorypools}
 

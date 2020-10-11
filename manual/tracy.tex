@@ -799,7 +799,18 @@ FrameMarkStart(sl_AudioProcessing);
 FrameMarkEnd(sl_AudioProcessing);
 \end{lstlisting}
 
-Proper support for non-unique same-content string literals will be implemented in future.
+In some cases you may want to have semi-dynamic strings, for example you may want to enumerate workers, but don't know how many will be used. This can be handled by allocating a never-freed \texttt{char} buffer, which can be then propagated where it's needed. For example:
+
+\begin{lstlisting}
+char* workerId = new char[16];
+snprintf(workerId, 16, "Worker %i", id);
+...
+FrameMarkStart(workerId);
+\end{lstlisting}
+
+You have to make sure it's initialized only once, before passing it to any Tracy API, that it is not overwritten by new data, etc. In the end this is just a pointer to character-string data, and it doesn't matter if it was loaded from program image, or if it was allocated on the heap.
+
+Proper support for non-unique same-content string literals may be implemented in future.
 
 \subsection{Specifying colors}
 

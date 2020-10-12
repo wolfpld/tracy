@@ -587,6 +587,30 @@ static void DrawContents()
         ImGui::PushFont( bigFont );
         tracy::TextCentered( buf );
         ImGui::PopFont();
+        ImGui::SameLine( ImGui::GetWindowContentRegionMax().x - ImGui::CalcTextSize( ICON_FA_WRENCH ).x - ImGui::GetStyle().FramePadding.x * 2 );
+        if( ImGui::Button( ICON_FA_WRENCH ) )
+        {
+            ImGui::OpenPopup( "About Tracy" );
+        }
+        bool keepOpenAbout = true;
+        if( ImGui::BeginPopupModal( "About Tracy", &keepOpenAbout, ImGuiWindowFlags_AlwaysAutoResize ) )
+        {
+            ImGui::PushFont( bigFont );
+            tracy::TextCentered( buf );
+            ImGui::PopFont();
+            ImGui::Spacing();
+            ImGui::TextUnformatted( "A real time, nanosecond resolution, remote telemetry, hybrid\nframe and sampling profiler for games and other applications." );
+            ImGui::Spacing();
+            ImGui::TextUnformatted( "Created by Bartosz Taudul" );
+            ImGui::SameLine();
+            tracy::TextDisabledUnformatted( "<wolf.pld@gmail.com>" );
+            tracy::TextDisabledUnformatted( "Additional authors listed in AUTHORS file and in git history." );
+            ImGui::Separator();
+            tracy::TextFocused( "Protocol version", tracy::RealToString( tracy::ProtocolVersion ) );
+            tracy::TextFocused( "Broadcast version", tracy::RealToString( tracy::BroadcastVersion ) );
+            tracy::TextFocused( "Build date", __DATE__ ", " __TIME__ );
+            ImGui::EndPopup();
+        }
         ImGui::Spacing();
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {

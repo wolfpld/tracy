@@ -938,7 +938,8 @@ void SourceView::RenderSimpleSourceView()
     }
     else
     {
-        ImGuiListClipper clipper( (int)m_lines.size() );
+        ImGuiListClipper clipper;
+        clipper.Begin( (int)m_lines.size() );
         while( clipper.Step() )
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
@@ -1512,7 +1513,8 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     }
     else
     {
-        ImGuiListClipper clipper( (int)m_lines.size() );
+        ImGuiListClipper clipper;
+        clipper.Begin( (int)m_lines.size() );
         while( clipper.Step() )
         {
             if( iptotal == 0 )
@@ -1786,7 +1788,8 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     else
     {
         const auto th = (int)ImGui::GetTextLineHeightWithSpacing();
-        ImGuiListClipper clipper( (int)m_asm.size(), th );
+        ImGuiListClipper clipper;
+        clipper.Begin( (int)m_asm.size(), th );
         while( clipper.Step() )
         {
             assert( clipper.StepNo == 3 );

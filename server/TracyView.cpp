@@ -7102,7 +7102,8 @@ void View::DrawZoneInfoWindow()
                     ImGui::NextColumn();
                     ImGui::Separator();
                     const auto wrsz = eit - bit;
-                    ImGuiListClipper clipper( wrsz );
+                    ImGuiListClipper clipper;
+                    clipper.Begin( wrsz );
                     while( clipper.Step() )
                     {
                         for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
@@ -7717,7 +7718,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
                 pdqsort_branchless( cti.get(), cti.get() + cgr.v.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
-                ImGuiListClipper clipper( cgr.v.size() );
+                ImGuiListClipper clipper;
+                clipper.Begin( cgr.v.size() );
                 while( clipper.Step() )
                 {
                     for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
@@ -7779,7 +7781,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
-        ImGuiListClipper clipper( children.size() );
+        ImGuiListClipper clipper;
+        clipper.Begin( children.size() );
         while( clipper.Step() )
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
@@ -9118,7 +9121,8 @@ void View::DrawMessages()
     }
     else
     {
-        ImGuiListClipper clipper( m_msgList.size() );
+        ImGuiListClipper clipper;
+        clipper.Begin( m_msgList.size() );
         while( clipper.Step() )
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
@@ -10809,7 +10813,8 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
         }
     }
 
-    ImGuiListClipper clipper( zonesToIterate->size() );
+    ImGuiListClipper clipper;
+    clipper.Begin( zonesToIterate->size() );
     while( clipper.Step() )
     {
         for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
@@ -15312,7 +15317,8 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
     }
 
     int idx = 0;
-    ImGuiListClipper clipper( vec.end() - vec.begin() );
+    ImGuiListClipper clipper;
+    clipper.Begin( vec.end() - vec.begin() );
     while( clipper.Step() )
     {
         for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )

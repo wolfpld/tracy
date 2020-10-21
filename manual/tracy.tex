@@ -768,7 +768,9 @@ Be aware that each single instance of text string data passed to the profiler ca
 
 Take extra care to consider the lifetime of program code (which includes string literals) in your application. If you're dynamically adding and removing modules (i.e. DLLs, shared objects) during the runtime, text data will be only present when the module is loaded. Additionally, when a module is unloaded, another one can be placed in its space in process memory map, which can result in aliasing of text strings. This leads to all sorts of confusion and potential crashes.
 
-Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified. You cannot unload modules that contain string literals which were passed to the profiler.
+Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified. You cannot unload modules that contain string literals which were passed to the profiler\footnote{If you really do must unload a module, manually allocating a \texttt{char} buffer, as described in section~\ref{uniquepointers}, will give you a persistent string in memory.}.
+
+
 
 \subsubsection{Unique pointers}
 \label{uniquepointers}
@@ -1438,6 +1440,14 @@ The maximum call stack depth that can be retrieved is 62 frames. This is a restr
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
+logo=\bcbombe
+]{Important!}
+Collecting call stack data will also trigger retrieval of profiled program's executable code by the profiler. See section~\ref{executableretrieval} for details.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
 logo=\bcattention
 ]{Debugging symbols}
 To have proper call stack information, the profiled application must be compiled with debugging symbols enabled. You can achieve that in the following way:
@@ -1761,7 +1771,7 @@ To enable deep insight into program execution, Tracy will capture small chunks o
 
 Discovery of previously unseen executable code may result in reduced performance of real-time capture. This is especially true when the profiling session had just started. Such behavior is expected and will go back to normal after a couple of moments.
 
-You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. Disabling collection of program code can be achieved by compiling the profiled application with the \texttt{TRACY\_NO\_CODE\_TRANSFER} define.
+You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. Disabling collection of program code can be achieved by compiling the profiled application with the \texttt{TRACY\_NO\_CODE\_TRANSFER} define. You can also strip the code from a saved trace using the \texttt{update} utility (section~\ref{dataremoval}).
 
 \begin{bclogo}[
 noborder=true,
@@ -2037,6 +2047,7 @@ Trace files created using the \emph{default}, \emph{hc} and \emph{extreme} modes
 For archival purposes it is however much better to use the \emph{zstd} compression modes, which are faster, compress trace files more tightly, and are directly loadable by the profiler, without the intermediate decompression step.
 
 \subsubsection{Data removal}
+\label{dataremoval}
 
 In some cases you may want to share just a portion of the trace file, omitting sensitive data such as source file cache, or machine code of the symbols. This can be achieved using the \texttt{-s flags} command line option. To select what kind of data is to be stripped, you need to provide a list of flags selected from the following:
 

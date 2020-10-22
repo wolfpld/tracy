@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #include "backtrace.hpp"
 #include "internal.hpp"
 
-#include "../client/tracy_rpmalloc.hpp"
+#include "../common/TracyAlloc.hpp"
 
 namespace tracy
 {
@@ -59,7 +59,7 @@ backtrace_alloc (struct backtrace_state *state ATTRIBUTE_UNUSED,
 {
   void *ret;
 
-  ret = rpmalloc (size);
+  ret = tracy_malloc (size);
   if (ret == NULL)
     {
       if (error_callback)
@@ -76,7 +76,7 @@ backtrace_free (struct backtrace_state *state ATTRIBUTE_UNUSED,
 		backtrace_error_callback error_callback ATTRIBUTE_UNUSED,
 		void *data ATTRIBUTE_UNUSED)
 {
-  rpfree (p);
+  tracy_free (p);
 }
 
 /* Grow VEC by SIZE bytes.  */
@@ -103,7 +103,7 @@ backtrace_vector_grow (struct backtrace_state *state ATTRIBUTE_UNUSED,
       if (alc < vec->size + size)
 	alc = vec->size + size;
 
-      base = rprealloc (vec->base, alc);
+      base = tracy_realloc (vec->base, alc);
       if (base == NULL)
 	{
 	  error_callback (data, "realloc", errno);
@@ -156,12 +156,12 @@ backtrace_vector_release (struct backtrace_state *state ATTRIBUTE_UNUSED,
     {
       /* As of C17, realloc with size 0 is marked as an obsolescent feature, use
 	 free instead.  */
-      rpfree (vec->base);
+      tracy_free (vec->base);
       vec->base = NULL;
       return 1;
     }
 
-  vec->base = rprealloc (vec->base, vec->size);
+  vec->base = tracy_realloc (vec->base, vec->size);
   if (vec->base == NULL)
     {
       error_callback (data, "realloc", errno);

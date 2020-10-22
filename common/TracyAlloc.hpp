@@ -28,6 +28,15 @@ static inline void tracy_free( void* ptr )
 #endif
 }
 
+static inline void* tracy_realloc( void* ptr, size_t size )
+{
+#ifdef TRACY_ENABLE
+    return rprealloc( ptr, size );
+#else
+    return realloc( ptr, size );
+#endif
+}
+
 }
 
 #endif

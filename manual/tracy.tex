@@ -770,8 +770,6 @@ Take extra care to consider the lifetime of program code (which includes string 
 
 Note that string literals are available as the only option in many parts of the Tracy API. For example, take a look at how frame or plot names are specified. You cannot unload modules that contain string literals which were passed to the profiler\footnote{If you really do must unload a module, manually allocating a \texttt{char} buffer, as described in section~\ref{uniquepointers}, will give you a persistent string in memory.}.
 
-
-
 \subsubsection{Unique pointers}
 \label{uniquepointers}
 

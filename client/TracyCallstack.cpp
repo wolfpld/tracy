@@ -30,6 +30,21 @@
 #  include <cxxabi.h>
 #endif
 
+#ifdef TRACY_DBGHELP_LOCK
+#  include "TracyProfiler.hpp"
+
+#  define DBGHELP_INIT TracyConcat( TRACY_DBGHELP_LOCK, Init() )
+#  define DBGHELP_LOCK TracyConcat( TRACY_DBGHELP_LOCK, Lock() );
+#  define DBGHELP_UNLOCK TracyConcat( TRACY_DBGHELP_LOCK, Unlock() );
+
+extern "C"
+{
+    void DBGHELP_INIT;
+    void DBGHELP_LOCK;
+    void DBGHELP_UNLOCK;
+};
+#endif
+
 namespace tracy
 {
 
@@ -94,6 +109,11 @@ void InitCallstack()
 {
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
 
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_INIT;
+    DBGHELP_LOCK;
+#endif
+
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 
@@ -135,6 +155,10 @@ void InitCallstack()
         }
     }
 #endif
+
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
 }
 
 TRACY_API uintptr_t* CallTrace( int depth )
@@ -155,6 +179,9 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = MaxNameSize;
 
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
     if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
     {
         *ret = '\0';
@@ -164,6 +191,9 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
         memcpy( ret, si->Name, si->NameLen );
         ret[si->NameLen] = '\0';
     }
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
     return ret;
 }
 
@@ -228,7 +258,14 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-    if( SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line ) == 0 )
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
+    const auto res = SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line );
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
+    if( res == 0 )
     {
         sym.file = "[unknown]";
         sym.line = 0;
@@ -252,6 +289,9 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
 #ifndef __CYGWIN__
     DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
     DWORD ctx = 0;
@@ -281,6 +321,9 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
             sym.line = line.LineNumber;
         }
     }
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
     sym.needFree = false;
     return sym;
 }
@@ -289,6 +332,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     int write;
     const auto proc = GetCurrentProcess();
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
 #ifndef __CYGWIN__
     DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
     if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
@@ -382,6 +428,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             ctx++;
         }
     }
+#endif
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
 #endif
 
     return { cb_data, uint8_t( cb_num ), moduleName };

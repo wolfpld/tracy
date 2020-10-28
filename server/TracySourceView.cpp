@@ -488,6 +488,7 @@ void SourceView::ParseSource( const char* fileName, const Worker& worker, const 
                     auto end = txt;
                     while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
                     m_lines.emplace_back( Line { txt, end, Tokenize( txt, end ) } );
+                    if( end - m_data == sz ) break;
                     if( *end == '\n' )
                     {
                         end++;

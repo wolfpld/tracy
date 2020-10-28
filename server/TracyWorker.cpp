@@ -49,6 +49,8 @@ static bool SourceFileValid( const char* fn, uint64_t olderThan )
     struct stat buf;
     if( stat( fn, &buf ) == 0 && ( buf.st_mode & S_IFREG ) != 0 )
     {
+        // Avoid caching very large files (such as those in unity builds).
+        if ( buf.st_size >= 2 * 1024 * 1024 ) return false;
         return (uint64_t)buf.st_mtime < olderThan;
     }
     return false;

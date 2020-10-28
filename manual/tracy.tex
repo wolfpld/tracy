@@ -1445,11 +1445,8 @@ logo=\bcbombe
 Collecting call stack data will also trigger retrieval of profiled program's executable code by the profiler. See section~\ref{executableretrieval} for details.
 \end{bclogo}
 
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcattention
-]{Debugging symbols}
+\subsubsection{Debugging symbols}
+
 To have proper call stack information, the profiled application must be compiled with debugging symbols enabled. You can achieve that in the following way:
 
 \begin{itemize}
@@ -1467,8 +1464,37 @@ You will also need to setup proper dependencies, by setting the following input 
 \texttt{\$\{TARGET\_BUILD\_DIR\}/\$\{UNLOCALIZED\_RESOURCES\_FOLDER\_PATH\}/\$\{PRODUCT\_NAME\}.dSYM}.
 \end{itemize}
 
+\paragraph{External libraries}
+
 You may also be interested in symbols from external libraries, especially if you have sampling profiling enabled (section~\ref{sampling}). In MSVC you can retrieve such symbols by going to \menu[,]{Tools,Options,Debugging,Symbols} and selecting appropriate \emph{Symbol file (.pdb) location} servers. Note that additional symbols may significantly increase application startup times.
-\end{bclogo}
+
+Libraries built with vcpkg typically also provide pdb symbol files, even for release builds. Using vcpkg to obtain libraries has the extra benefit that everything is built using local source files, which allows Tracy to provide source view not only of your application, but also the libraries you use.
+
+\paragraph{Refreshing symbols list on Windows}
+
+If your application loads shared libraries during runtime, you will need to notify the debug symbol library (dbghelp) that it needs to refresh its internal symbols database. This database is filled during application initialization and is not automatically updated when you load a library. The symbol list can be manually updated by using functions such as \texttt{SymRefreshModuleList()} or \texttt{SymLoadModule()}. Note that \texttt{LdrRegisterDllNotification()} may be used to register callback to be executed when a DLL is loaded.
+
+Since dbghelp functions are not thread safe, you must take extra steps to make sure your calls to the \texttt{Sym*} family of functions are not colliding with calls made by Tracy. To do so, perform the following steps:
+
+\begin{enumerate}
+\item Add a \texttt{TRACY\_DBGHELP\_LOCK} define, with the value set to prefix of lock-handling functions (for example: \texttt{TRACY\_DBGHELP\_LOCK=DbgHelp}).
+\item Create a dbghelp lock (i.e. mutex) in your application.
+\item Provide a set of \texttt{Init}, \texttt{Lock} and \texttt{Unlock} functions, including the provided prefix name, which will operate on the lock. These functions must be defined using the C linkage. Notice that there's no cleanup function.
+\item Remember to appropriately protect access to dbghelp in your code!
+\end{enumerate}
+
+An example implementation of such lock interface is provided below, as a reference:
+
+\begin{lstlisting}
+extern "C"
+{
+static HANDLE dbgHelpLock;
+
+void DbgHelpInit() { dbgHelpLock = CreateMutex(nullptr, FALSE, nullptr); }
+void DbgHelpLock() { WaitForSingleObject(dbgHelpLock, INFINITE); }
+void DbgHelpUnlock() { ReleaseMutex(dbgHelpLock); }
+}
+\end{lstlisting}
 
 \subsection{Lua support}
 

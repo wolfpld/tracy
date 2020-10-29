@@ -62,38 +62,6 @@
 namespace tracy
 {
 
-#ifndef MOODYCAMEL_NOEXCEPT
-#if !defined(MOODYCAMEL_EXCEPTIONS_ENABLED)
-#define MOODYCAMEL_NOEXCEPT
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) true
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) true
-#elif defined(_MSC_VER) && defined(_NOEXCEPT) && _MSC_VER < 1800
-// VS2012's std::is_nothrow_[move_]constructible is broken and returns true when it shouldn't :-(
-// We have to assume *all* non-trivial constructors may throw on VS2012!
-#define MOODYCAMEL_NOEXCEPT _NOEXCEPT
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) (std::is_rvalue_reference<valueType>::value && std::is_move_constructible<type>::value ? std::is_trivially_move_constructible<type>::value : std::is_trivially_copy_constructible<type>::value)
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) ((std::is_rvalue_reference<valueType>::value && std::is_move_assignable<type>::value ? std::is_trivially_move_assignable<type>::value || std::is_nothrow_move_assignable<type>::value : std::is_trivially_copy_assignable<type>::value || std::is_nothrow_copy_assignable<type>::value) && MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr))
-#elif defined(_MSC_VER) && defined(_NOEXCEPT) && _MSC_VER < 1900
-#define MOODYCAMEL_NOEXCEPT _NOEXCEPT
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) (std::is_rvalue_reference<valueType>::value && std::is_move_constructible<type>::value ? std::is_trivially_move_constructible<type>::value || std::is_nothrow_move_constructible<type>::value : std::is_trivially_copy_constructible<type>::value || std::is_nothrow_copy_constructible<type>::value)
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) ((std::is_rvalue_reference<valueType>::value && std::is_move_assignable<type>::value ? std::is_trivially_move_assignable<type>::value || std::is_nothrow_move_assignable<type>::value : std::is_trivially_copy_assignable<type>::value || std::is_nothrow_copy_assignable<type>::value) && MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr))
-#else
-#define MOODYCAMEL_NOEXCEPT noexcept
-#define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) noexcept(expr)
-#define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) noexcept(expr)
-#endif
-#endif
-
-// VS2012 doesn't support deleted functions. 
-// In this case, we declare the function normally but don't define it. A link error will be generated if the function is called.
-#ifndef MOODYCAMEL_DELETE_FUNCTION
-#if defined(_MSC_VER) && _MSC_VER < 1800
-#define MOODYCAMEL_DELETE_FUNCTION
-#else
-#define MOODYCAMEL_DELETE_FUNCTION = delete
-#endif
-#endif
-
 // Compiler-specific likely/unlikely hints
 namespace moodycamel { namespace details {
 #if defined(__GNUC__)
@@ -316,7 +284,7 @@ namespace details
 	};
 	
 	template<typename It>
-	static inline auto deref_noexcept(It& it) MOODYCAMEL_NOEXCEPT -> decltype(*it)
+	static inline auto deref_noexcept(It& it) noexcept -> decltype(*it)
 	{
 		return *it;
 	}
@@ -343,8 +311,8 @@ struct ProducerToken
 {
 	template<typename T, typename Traits>
 	explicit ProducerToken(ConcurrentQueue<T, Traits>& queue);
-	
-	ProducerToken(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
+
+	ProducerToken(ProducerToken&& other) noexcept
 		: producer(other.producer)
 	{
 		other.producer = nullptr;
@@ -352,14 +320,14 @@ struct ProducerToken
 			producer->token = this;
 		}
 	}
-	
-	inline ProducerToken& operator=(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
+
+	inline ProducerToken& operator=(ProducerToken&& other) noexcept
 	{
 		swap(other);
 		return *this;
 	}
-	
-	void swap(ProducerToken& other) MOODYCAMEL_NOEXCEPT
+
+	void swap(ProducerToken& other) noexcept
 	{
 		std::swap(producer, other.producer);
 		if (producer != nullptr) {
@@ -389,9 +357,9 @@ struct ProducerToken
 	}
 	
 	// Disable copying and assignment
-	ProducerToken(ProducerToken const&) MOODYCAMEL_DELETE_FUNCTION;
-	ProducerToken& operator=(ProducerToken const&) MOODYCAMEL_DELETE_FUNCTION;
-	
+	ProducerToken(ProducerToken const&) = delete;
+	ProducerToken& operator=(ProducerToken const&) = delete;
+
 private:
 	template<typename T, typename Traits> friend class ConcurrentQueue;
 	
@@ -404,19 +372,19 @@ struct ConsumerToken
 {
 	template<typename T, typename Traits>
 	explicit ConsumerToken(ConcurrentQueue<T, Traits>& q);
-	
-	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
+
+	ConsumerToken(ConsumerToken&& other) noexcept
 		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset), itemsConsumedFromCurrent(other.itemsConsumedFromCurrent), currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
 	{
 	}
-	
-	inline ConsumerToken& operator=(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
+
+	inline ConsumerToken& operator=(ConsumerToken&& other) noexcept
 	{
 		swap(other);
 		return *this;
 	}
-	
-	void swap(ConsumerToken& other) MOODYCAMEL_NOEXCEPT
+
+	void swap(ConsumerToken& other) noexcept
 	{
 		std::swap(initialOffset, other.initialOffset);
 		std::swap(lastKnownGlobalOffset, other.lastKnownGlobalOffset);
@@ -426,8 +394,8 @@ struct ConsumerToken
 	}
 	
 	// Disable copying and assignment
-	ConsumerToken(ConsumerToken const&) MOODYCAMEL_DELETE_FUNCTION;
-	ConsumerToken& operator=(ConsumerToken const&) MOODYCAMEL_DELETE_FUNCTION;
+	ConsumerToken(ConsumerToken const&) = delete;
+	ConsumerToken& operator=(ConsumerToken const&) = delete;
 
 private:
 	template<typename T, typename Traits> friend class ConcurrentQueue;
@@ -540,11 +508,11 @@ public:
 	}
 
 	// Disable copying and copy assignment
-	ConcurrentQueue(ConcurrentQueue const&) MOODYCAMEL_DELETE_FUNCTION;
-    ConcurrentQueue(ConcurrentQueue&& other) MOODYCAMEL_DELETE_FUNCTION;
-	ConcurrentQueue& operator=(ConcurrentQueue const&) MOODYCAMEL_DELETE_FUNCTION;
-    ConcurrentQueue& operator=(ConcurrentQueue&& other) MOODYCAMEL_DELETE_FUNCTION;
-	
+	ConcurrentQueue(ConcurrentQueue const&) = delete;
+    ConcurrentQueue(ConcurrentQueue&& other) = delete;
+	ConcurrentQueue& operator=(ConcurrentQueue const&) = delete;
+    ConcurrentQueue& operator=(ConcurrentQueue&& other) = delete;
+
 public:
     tracy_force_inline T* enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
@@ -696,10 +664,10 @@ private:
 		FreeList() : freeListHead(nullptr) { }
 		FreeList(FreeList&& other) : freeListHead(other.freeListHead.load(std::memory_order_relaxed)) { other.freeListHead.store(nullptr, std::memory_order_relaxed); }
 		void swap(FreeList& other) { details::swap_relaxed(freeListHead, other.freeListHead); }
-		
-		FreeList(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
-		FreeList& operator=(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
-		
+
+		FreeList(FreeList const&) = delete;
+		FreeList& operator=(FreeList const&) = delete;
+
 		inline void add(N* node)
 		{
 			// We know that the should-be-on-freelist bit is 0 at this point, so it's safe to
@@ -886,10 +854,10 @@ private:
 				elementsCompletelyDequeued.store(0, std::memory_order_relaxed);
 			}
 		}
-		
-		inline T* operator[](index_t idx) MOODYCAMEL_NOEXCEPT { return static_cast<T*>(static_cast<void*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
-		inline T const* operator[](index_t idx) const MOODYCAMEL_NOEXCEPT { return static_cast<T const*>(static_cast<void const*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
-		
+
+		inline T* operator[](index_t idx) noexcept { return static_cast<T*>(static_cast<void*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
+		inline T const* operator[](index_t idx) const noexcept { return static_cast<T const*>(static_cast<void const*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
+
 	private:
 		// IMPORTANT: This must be the first member in Block, so that if T depends on the alignment of
 		// addresses returned by malloc, that alignment will be preserved. Apparently clang actually
@@ -1454,17 +1422,17 @@ ConsumerToken::ConsumerToken(ConcurrentQueue<T, Traits>& queue)
 }
 
 template<typename T, typename Traits>
-inline void swap(ConcurrentQueue<T, Traits>& a, ConcurrentQueue<T, Traits>& b) MOODYCAMEL_NOEXCEPT
+inline void swap(ConcurrentQueue<T, Traits>& a, ConcurrentQueue<T, Traits>& b) noexcept
 {
 	a.swap(b);
 }
 
-inline void swap(ProducerToken& a, ProducerToken& b) MOODYCAMEL_NOEXCEPT
+inline void swap(ProducerToken& a, ProducerToken& b) noexcept
 {
 	a.swap(b);
 }
 
-inline void swap(ConsumerToken& a, ConsumerToken& b) MOODYCAMEL_NOEXCEPT
+inline void swap(ConsumerToken& a, ConsumerToken& b) noexcept
 {
 	a.swap(b);
 }

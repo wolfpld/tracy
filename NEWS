@@ -10,6 +10,7 @@ v0.x.x (xxxx-xx-xx)
 -------------------
 
 - Added support for user-provided locks to keep dbghelp calls thread-safe.
+- Call stacks can be now copied to clipboard.
 
 
 v0.7.3 (2020-10-06)

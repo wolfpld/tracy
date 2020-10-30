@@ -14,6 +14,7 @@
 #include <mutex>
 #include <numeric>
 #include <random>
+#include <sstream>
 #include <stddef.h>
 #include <stdlib.h>
 #include <time.h>
@@ -12927,6 +12928,80 @@ void View::DrawCallstackWindow()
     ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
+    auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
+    if( ClipboardButton() )
+    {
+        std::ostringstream s;
+        int fidx = 0;
+        int bidx = 0;
+        for( auto& entry : cs )
+        {
+            char buf[64*1024];
+            auto frameData = m_worker.GetCallstackFrame( entry );
+            if( !frameData )
+            {
+                sprintf( buf, "%3i. %p\n", fidx++, (void*)m_worker.GetCanonicalPointer( entry ) );
+            }
+            else
+            {
+                auto ptr = buf;
+                const auto fsz = frameData->size;
+                for( uint8_t f=0; f<fsz; f++ )
+                {
+                    const auto& frame = frameData->data[f];
+                    auto txt = m_worker.GetString( frame.name );
+
+                    if( fidx == 0 && f != fsz-1 )
+                    {
+                        auto test = tracy::s_tracyStackFrames;
+                        bool match = false;
+                        do
+                        {
+                            if( strcmp( txt, *test ) == 0 )
+                            {
+                                match = true;
+                                break;
+                            }
+                        }
+                        while( *++test );
+                        if( match ) continue;
+                    }
+
+                    bidx++;
+
+                    if( f == fsz-1 )
+                    {
+                        ptr += sprintf( ptr, "%3i. ", fidx++ );
+                    }
+                    else
+                    {
+                        ptr += sprintf( ptr, "inl. " );
+                    }
+                    ptr += sprintf( ptr, "%s  ", txt );
+                    txt = m_worker.GetString( frame.file );
+                    if( frame.line == 0 )
+                    {
+                        ptr += sprintf( ptr, "(%s)", txt );
+                    }
+                    else
+                    {
+                        ptr += sprintf( ptr, "(%s:%" PRIu32 ")", txt, frame.line );
+                    }
+                    if( frameData->imageName.Active() )
+                    {
+                        ptr += sprintf( ptr, " %s\n", m_worker.GetString( frameData->imageName ) );
+                    }
+                    else
+                    {
+                        ptr += sprintf( ptr, "\n" );
+                    }
+                }
+            }
+            s << buf;
+        }
+        ImGui::SetClipboardText( s.str().c_str() );
+    }
+    ImGui::SameLine();
     ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -12938,7 +13013,6 @@ void View::DrawCallstackWindow()
     ImGui::SameLine();
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
 
-    auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
     if( m_worker.AreCallstackSamplesReady() )
     {
         auto frame = m_worker.GetCallstackFrame( *cs.begin() );

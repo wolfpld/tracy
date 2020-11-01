@@ -12531,7 +12531,7 @@ void View::DrawStatistics()
             ImGui::Separator();
 
             double revSampleCount100;
-            if( m_statRange.active )
+            if( m_statRange.active && m_worker.GetSamplingPeriod() != 0 )
             {
                 const auto st = m_statRange.max - m_statRange.min;
                 const auto cnt = st / m_worker.GetSamplingPeriod();

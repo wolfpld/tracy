@@ -56,6 +56,15 @@ class View
         uint64_t count;
     };
 
+    struct StatisticsCache
+    {
+        RangeSlim range;
+        size_t sourceCount;
+        size_t count;
+        int64_t total;
+        int64_t selfTotal;
+    };
+
 public:
     struct VisData
     {
@@ -467,6 +476,8 @@ private:
 
     RangeSlim m_setRangePopup;
     bool m_setRangePopupOpen = false;
+
+    unordered_flat_map<int16_t, StatisticsCache> m_statCache;
 
     void(*m_cbMainThread)(std::function<void()>);
 

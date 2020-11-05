@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: microsoft/setup-msbuild@v1.0.0
+    - uses: microsoft/setup-msbuild@v1.0.2
     - name: Integrate vcpkg
       run: vcpkg integrate install
     - name: Build vcpkg libraries

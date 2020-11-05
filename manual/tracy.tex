@@ -1743,7 +1743,7 @@ As a corollary, it is often not enough to know how long it took to execute a zon
 
 To solve this problem, Tracy collects context switch\footnote{A context switch happens when any given CPU core stops executing one thread and starts running another one.} information. This data can be then used to see when a zone was in the executing state and where it was waiting to be resumed.
 
-Context switch data capture may be disabled by adding the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define to the client.
+Context switch data capture may be disabled by adding the \texttt{TRACY\_NO\_CONTEXT\_SWITCH} define to the client. Alternatively, the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define may be used to disable all tracing needing privilege escalation.
 
 \begin{bclogo}[
 noborder=true,

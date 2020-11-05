@@ -368,7 +368,10 @@ bool SysTraceStart( int64_t& samplingPeriod )
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
     s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
-    ULONG flags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD;
+    ULONG flags = 0;
+#ifndef TRACY_NO_CONTEXT_SWITCH
+    flags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD;
+#endif
     if( isOs64Bit ) flags |= EVENT_TRACE_FLAG_PROFILE;
     s_prop->EnableFlags = flags;
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;

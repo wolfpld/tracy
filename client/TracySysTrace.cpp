@@ -372,7 +372,9 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #ifndef TRACY_NO_CONTEXT_SWITCH
     flags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD;
 #endif
+#ifndef TRACY_NO_SAMPLING
     if( isOs64Bit ) flags |= EVENT_TRACE_FLAG_PROFILE;
+#endif
     s_prop->EnableFlags = flags;
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;

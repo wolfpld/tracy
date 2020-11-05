@@ -3004,9 +3004,12 @@ void View::DrawZones()
         if( showFull )
         {
             const auto sampleOffset = offset;
-            if( m_vd.drawSamples && !v->samples.empty() )
+            const auto hasSamples = m_vd.drawSamples && !v->samples.empty();
+            const auto hasCtxSwitch = m_vd.drawContextSwitches && m_worker.GetContextSwitchData( v->id );
+
+            if( hasSamples )
             {
-                if( m_vd.drawContextSwitches )
+                if( hasCtxSwitch )
                 {
                     offset += round( ostep * 0.5f );
                 }
@@ -3017,7 +3020,7 @@ void View::DrawZones()
             }
 
             const auto ctxOffset = offset;
-            if( m_vd.drawContextSwitches ) offset += round( ostep * 0.75f );
+            if( hasCtxSwitch ) offset += round( ostep * 0.75f );
 
             if( m_vd.drawZones )
             {
@@ -3034,7 +3037,7 @@ void View::DrawZones()
                 offset += ostep * depth;
             }
 
-            if( m_vd.drawContextSwitches )
+            if( hasCtxSwitch )
             {
                 auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
                 if( ctxSwitch )
@@ -3043,7 +3046,7 @@ void View::DrawZones()
                 }
             }
 
-            if( m_vd.drawSamples && !v->samples.empty() )
+            if( hasSamples )
             {
                 DrawSamples( v->samples, hover, pxns, int64_t( nspx ), wpos, sampleOffset );
             }

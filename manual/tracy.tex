@@ -1809,6 +1809,8 @@ For proper program code retrieval no module used by the application can be unloa
 
 On Windows Tracy will automatically capture hardware Vsync events, if running with elevated privileges (see section~\ref{contextswitches}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application, due to desktop composition, command queue buffering, etc.
 
+Use the \texttt{TRACY\_NO\_VSYNC\_CAPTURE} macro to disable capture of Vsync events.
+
 \subsection{Trace parameters}
 \label{traceparameters}
 

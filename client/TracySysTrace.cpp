@@ -439,7 +439,9 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return false;
     }
 
+#ifndef TRACY_NO_VSYNC_CAPTURE
     SetupVsync();
+#endif
 
     return true;
 }

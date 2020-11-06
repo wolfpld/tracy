@@ -324,6 +324,8 @@ static constexpr CpuIdMap s_cpuIdMap[] = {
     { PackCpuInfo( 0x830F10 ), "ZEN2" },
     { PackCpuInfo( 0x860F01 ), "ZEN2" },
     { PackCpuInfo( 0x0706E5 ), "ICL" },
+    { PackCpuInfo( 0x050656 ), "CLX" },
+    { PackCpuInfo( 0x050657 ), "CLX" },
     { PackCpuInfo( 0x060663 ), "CNL" },
     { PackCpuInfo( 0x0906EA ), "CFL" },
     { PackCpuInfo( 0x0906EB ), "CFL" },

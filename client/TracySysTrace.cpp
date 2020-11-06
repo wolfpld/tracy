@@ -609,10 +609,6 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include "TracyRingBuffer.hpp"
 #    include "TracyThread.hpp"
 
-#    ifdef __ANDROID__
-#      include "TracySysTracePayload.hpp"
-#    endif
-
 namespace tracy
 {
 
@@ -625,7 +621,6 @@ static const char SchedSwitch[] = "events/sched/sched_switch/enable";
 static const char SchedWakeup[] = "events/sched/sched_wakeup/enable";
 static const char BufferSizeKb[] = "buffer_size_kb";
 static const char TracePipe[] = "trace_pipe";
-static const char PayloadPath[] = "/data/tracy_systrace";
 
 static std::atomic<bool> traceActive { false };
 static Thread* s_threadSampling = nullptr;
@@ -846,36 +841,6 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
     return true;
 }
 
-#ifdef __ANDROID__
-// The whole idea of the payload in a separate on-disk binary seems to have
-// been motivated by the need to run that code as root. However, on current
-// versions of Android, it now seems necessary to run all of the sampling
-// code as root anyway, which in practice means running the whole workload
-// as root. It may thus be possible to drop all this and simply run the
-// payload as part of our process.
-void SysTraceInjectPayload()
-{
-#if defined __aarch64__
-    const auto* payload_data = tracy_systrace_aarch64_data;
-    int payload_size = tracy_systrace_aarch64_size;
-#elif defined __ARM_ARCH
-    const auto* payload_data = tracy_systrace_armv7_data;
-    int payload_size = tracy_systrace_armv7_size;
-#else
-#error No payload for target CPU architecture
-#endif
-    int fd = open(PayloadPath, O_CREAT | O_TRUNC | O_WRONLY, S_IRWXU);
-    if (fd == -1) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to open %s for write", PayloadPath);
-        return;
-    }
-    if (!WriteBufferToFd(fd, payload_data, payload_size)) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to write to %s", PayloadPath);
-    }
-    close(fd);
-}
-#endif
-
 bool SysTraceStart( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
@@ -896,10 +861,6 @@ bool SysTraceStart( int64_t& samplingPeriod )
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
     if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "4096", 5 ) ) return false;
-
-#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
-    SysTraceInjectPayload();
-#endif
 
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
     traceActive.store( true, std::memory_order_relaxed );
@@ -1157,46 +1118,8 @@ static void ProcessTraceLines( int fd )
     tracy_free( buf );
 }
 
-void SysTraceWorker( void* ptr )
-{
-    ThreadExitHandler threadExitHandler;
-    SetThreadName( "Tracy SysTrace" );
-    int pipefd[2];
-    if( pipe( pipefd ) == 0 )
-    {
-        const auto pid = fork();
-        if( pid == 0 )
-        {
-            // child
-            close( pipefd[0] );
-            dup2( pipefd[1], STDERR_FILENO );
-            if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
-            {
-                close( pipefd[1] );
-                sched_param sp = { 4 };
-                pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
-                if (execl( PayloadPath, PayloadPath, nullptr ) == -1) {
-                    TRACY_LOG_ERROR_ERRNO_FMT("failed to exec %s", PayloadPath);
-                }
 #else
-                execlp( "cat", "cat", "/sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
-#endif
-                exit( 1 );
-            }
-        }
-        else if( pid > 0 )
-        {
-            // parent
-            close( pipefd[1] );
-            sched_param sp = { 5 };
-            pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-            ProcessTraceLines( pipefd[0] );
-            close( pipefd[0] );
-        }
-    }
-}
-#else
+
 static void ProcessTraceLines( int fd )
 {
     char* buf = (char*)tracy_malloc( 64*1024 );
@@ -1235,6 +1158,7 @@ static void ProcessTraceLines( int fd )
 
     tracy_free( buf );
 }
+#endif
 
 void SysTraceWorker( void* ptr )
 {
@@ -1245,13 +1169,15 @@ void SysTraceWorker( void* ptr )
     memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
 
     int fd = open( tmp, O_RDONLY );
-    if( fd < 0 ) return;
+    if( fd < 0 ) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to open %s for read", tmp);
+        return;
+    }
     sched_param sp = { 5 };
     pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
     ProcessTraceLines( fd );
     close( fd );
 }
-#endif
 
 void SysTraceSendExternalName( uint64_t thread )
 {

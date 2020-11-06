@@ -36,6 +36,7 @@ struct MicroArchitecture
 extern const char* MicroArchitectureList[];
 extern const char* PortList[];
 extern const char* OpsList[];
+extern const char* OpDescList[];
 extern const char* IsaList[];
 extern const MicroArchitecture* const MicroArchitectureData[];
 

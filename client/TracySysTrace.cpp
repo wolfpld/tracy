@@ -625,6 +625,7 @@ static const char SchedSwitch[] = "events/sched/sched_switch/enable";
 static const char SchedWakeup[] = "events/sched/sched_wakeup/enable";
 static const char BufferSizeKb[] = "buffer_size_kb";
 static const char TracePipe[] = "trace_pipe";
+static const char PayloadPath[] = "/data/tracy_systrace";
 
 static std::atomic<bool> traceActive { false };
 static Thread* s_threadSampling = nullptr;
@@ -632,6 +633,14 @@ static int s_numCpus = 0;
 
 static constexpr size_t RingBufSize = 64*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
+
+#define TRACY_LOG_ERROR_ERRNO(msg) \
+  fprintf(stderr, "ERROR (%s:%d) " msg " (errno=%d, %s)\n", \
+      __FILE__, __LINE__, errno, strerror(errno))
+
+#define TRACY_LOG_ERROR_ERRNO_FMT(fmt, ...) \
+  fprintf(stderr, "ERROR (%s:%d) " fmt " (errno=%d, %s)\n", \
+      __FILE__, __LINE__, __VA_ARGS__, errno, strerror(errno))
 
 static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )
 {
@@ -674,6 +683,7 @@ static void SetupSampling( int64_t& samplingPeriod )
         const int fd = perf_event_open( &pe, -1, i, -1, 0 );
         if( fd == -1 )
         {
+            TRACY_LOG_ERROR_ERRNO("perf_event_open failed");
             for( int j=0; j<i; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
             tracy_free( s_ring );
             return;
@@ -795,14 +805,25 @@ static void SetupSampling( int64_t& samplingPeriod )
     }, nullptr );
 }
 
-#ifdef __ANDROID__
-static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
-{
-    char tmp[256];
-    sprintf( tmp, "su -c 'echo \"%s\" > %s%s'", val, BasePath, path );
-    return system( tmp ) == 0;
+// Writes buffer contents (given by address `buf` and size `buf_size`) to
+// the specified file descriptor (`fd`). Handles the case of `write` writing
+// fewer bytes than requested.
+static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
+    const char* buf_ptr = static_cast<const char*>(buf);
+    while( buf_size > 0 )
+    {
+        ssize_t write_retval = write( fd, buf_ptr, buf_size );
+        if( write_retval < 0 )
+        {
+            return false;
+        }
+        buf_size -= write_retval;
+        buf_ptr += write_retval;
+    }
+    assert(buf_size == 0);
+    return true;
 }
-#else
+
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
 {
     char tmp[256];
@@ -810,61 +831,48 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
     memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
 
     int fd = open( tmp, O_WRONLY );
-    if( fd < 0 ) return false;
-
-    for(;;)
-    {
-        ssize_t cnt = write( fd, val, vsz );
-        if( cnt == (ssize_t)vsz )
-        {
-            close( fd );
-            return true;
-        }
-        if( cnt < 0 )
-        {
-            close( fd );
-            return false;
-        }
-        vsz -= cnt;
-        val += cnt;
+    if( fd < 0 ) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to open %s for write", tmp);
+        return false;
     }
+
+    if (!WriteBufferToFd(fd, val, vsz)) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to write to %s", tmp);
+        close(fd);
+        return false;
+    }
+
+    close(fd);
+    return true;
 }
-#endif
 
 #ifdef __ANDROID__
+// The whole idea of the payload in a separate on-disk binary seems to have
+// been motivated by the need to run that code as root. However, on current
+// versions of Android, it now seems necessary to run all of the sampling
+// code as root anyway, which in practice means running the whole workload
+// as root. It may thus be possible to drop all this and simply run the
+// payload as part of our process.
 void SysTraceInjectPayload()
 {
-    int pipefd[2];
-    if( pipe( pipefd ) == 0 )
-    {
-        const auto pid = fork();
-        if( pid == 0 )
-        {
-            // child
-            close( pipefd[1] );
-            if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
-            {
-                close( pipefd[0] );
-                execlp( "su", "su", "-c", "cat > /data/tracy_systrace", (char*)nullptr );
-                exit( 1 );
-            }
-        }
-        else if( pid > 0 )
-        {
-            // parent
-            close( pipefd[0] );
-
-#ifdef __aarch64__
-            write( pipefd[1], tracy_systrace_aarch64_data, tracy_systrace_aarch64_size );
+#if defined __aarch64__
+    const auto* payload_data = tracy_systrace_aarch64_data;
+    int payload_size = tracy_systrace_aarch64_size;
+#elif defined __ARM_ARCH
+    const auto* payload_data = tracy_systrace_armv7_data;
+    int payload_size = tracy_systrace_armv7_size;
 #else
-            write( pipefd[1], tracy_systrace_armv7_data, tracy_systrace_armv7_size );
+#error No payload for target CPU architecture
 #endif
-            close( pipefd[1] );
-            waitpid( pid, nullptr, 0 );
-
-            system( "su -c 'chmod 700 /data/tracy_systrace'" );
-        }
+    int fd = open(PayloadPath, O_CREAT | O_TRUNC | O_WRONLY, S_IRWXU);
+    if (fd == -1) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to open %s for write", PayloadPath);
+        return;
     }
+    if (!WriteBufferToFd(fd, payload_data, payload_size)) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to write to %s", PayloadPath);
+    }
+    close(fd);
 }
 #endif
 
@@ -1168,9 +1176,12 @@ void SysTraceWorker( void* ptr )
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
-                execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
+                if (execl( PayloadPath, PayloadPath, nullptr ) == -1) {
+                    TRACY_LOG_ERROR_ERRNO_FMT("failed to exec %s", PayloadPath);
+                }
+#else
+                execlp( "cat", "cat", "/sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
 #endif
-                execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
                 exit( 1 );
             }
         }
@@ -1215,7 +1226,9 @@ static void ProcessTraceLines( int fd )
         {
             auto next = (char*)memchr( line, '\n', end - line );
             if( !next ) break;
+
             HandleTraceLine( line );
+
             line = ++next;
         }
     }

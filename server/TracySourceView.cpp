@@ -2632,6 +2632,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         ImGui::SameLine( 0, ty );
     }
 
+    int opdesc = 0;
     const AsmVar* asmVar = nullptr;
     if( !m_atnt && ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) )
     {
@@ -2658,6 +2659,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             if( oit != uarch->ops + uarch->numOps && (*oit)->id == opid )
             {
                 const auto& op = *oit;
+                opdesc = op->descId;
                 std::vector<std::pair<int, int>> res;
                 res.reserve( op->numVariants );
                 for( int i=0; i<op->numVariants; i++ )
@@ -2769,6 +2771,11 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             const auto& var = *asmVar;
             if( m_font ) ImGui::PopFont();
             ImGui::BeginTooltip();
+            if( opdesc != 0 )
+            {
+                ImGui::TextUnformatted( OpDescList[opdesc] );
+                ImGui::Separator();
+            }
             TextFocused( "Throughput:", RealToString( var.tp ) );
             ImGui::SameLine();
             TextDisabledUnformatted( "(cycles per instruction, lower is better)" );

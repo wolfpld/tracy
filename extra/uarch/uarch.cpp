@@ -152,7 +152,11 @@ int main()
                     auto& uai = uav[uaidx];
                     auto& opi = uai.ops[opidx];
 
-                    float tp = measurement.attribute( "TP" ) ? atof( measurement.attribute( "TP" ).value() ) : -1;
+                    float tp = -1;
+                    if( measurement.attribute( "TP" ) ) tp = atof( measurement.attribute( "TP" ).value() );
+                    else if( measurement.attribute( "TP_ports" ) ) tp = atof( measurement.attribute( "TP_ports" ).value() );
+                    else if( measurement.attribute( "TP_unrolled" ) ) tp = atof( measurement.attribute( "TP_unrolled" ).value() );
+
                     int portid = measurement.attribute( "ports" ) ? ports.Get( measurement.attribute( "ports" ).value() ) : -1;
                     int uops = measurement.attribute( "uops" ) ? atoi( measurement.attribute( "uops" ).value() ) : -1;
                     assert( tp != -1 && uops != -1 );

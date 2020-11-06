@@ -841,28 +841,34 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
     return true;
 }
 
+template<int path_size>
+static bool TraceWrite( const char (&path)[path_size], const char* val, size_t vsz )
+{
+    return TraceWrite(path, path_size, val, vsz);
+}
+
 bool SysTraceStart( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
     return false;
 #endif
 
-    if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
-    if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;
-    TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 );
-    TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 );
-    TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 );
-    TraceWrite( TraceOptions, sizeof( TraceOptions ), "noannotate", 11 );
+    if( !TraceWrite( TracingOn, "0", 2 ) ) return false;
+    if( !TraceWrite( CurrentTracer, "nop", 4 ) ) return false;
+    if( !TraceWrite( TraceOptions, "norecord-cmd", 13 ) ) return false;
+    if( !TraceWrite( TraceOptions, "norecord-tgid", 14 ) ) return false;
+    if( !TraceWrite( TraceOptions, "noirq-info", 11 ) ) return false;
+    if( !TraceWrite( TraceOptions, "noannotate", 11 ) ) return false;
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
+    if( !TraceWrite( TraceClock, "x86-tsc", 8 ) ) return false;
 #else
-    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "mono_raw", 9 ) ) return false;
+    if( !TraceWrite( TraceClock, "mono_raw", 9 ) ) return false;
 #endif
-    if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
-    if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
-    if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "4096", 5 ) ) return false;
+    if( !TraceWrite( SchedSwitch, "1", 2 ) ) return false;
+    if( !TraceWrite( SchedWakeup, "1", 2 ) ) return false;
+    if( !TraceWrite( BufferSizeKb, "4096", 5 ) ) return false;
 
-    if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
+    if( !TraceWrite( TracingOn, "1", 2 ) ) return false;
     traceActive.store( true, std::memory_order_relaxed );
 
     SetupSampling( samplingPeriod );

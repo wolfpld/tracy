@@ -47,6 +47,7 @@ static constexpr MicroArchUx s_uArchUx[] = {
     { "Coffee Lake", "Core i7-8700K", "CFL" },
     { "Cannon Lake", "Core i3-8121U", "CNL" },
     { "Ice Lake", "Core i5-1035G1", "ICL" },
+    { "Cascade Lake", "Core i9-10980XE", "CLX" },
     { "AMD Zen+", "Ryzen 5 2600", "ZEN+" },
     { "AMD Zen 2", "Ryzen 7 3700X", "ZEN2" },
 };

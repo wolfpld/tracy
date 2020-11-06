@@ -53,6 +53,7 @@ struct Variant
 struct Op
 {
     std::vector<Variant> var;
+    int desc;
 };
 
 struct UArch
@@ -81,6 +82,7 @@ int main()
     auto root = doc.child( "root" );
 
     Dictionary ops;
+    Dictionary opsdesc;
     Dictionary uarchs;
     Dictionary ports;
     Dictionary isas;
@@ -94,6 +96,7 @@ int main()
         {
             assert( strcmp( op.name(), "instruction" ) == 0 );
             auto opstr = op.attribute( "asm" ).value();
+            auto opdesc = op.attribute( "summary" ).value();
             bool magic = false;
             if( opstr[0] == '{' )
             {
@@ -125,6 +128,7 @@ int main()
                 }
             }
             const auto opidx = ops.Get( opstr );
+            const auto opdescidx = opsdesc.Get( opdesc );
 
             int isaSet = isas.Get( op.attribute( "isa-set" ).value() );
 
@@ -151,6 +155,7 @@ int main()
                     if( uav.size() <= uaidx ) uav.emplace_back( UArch {} );
                     auto& uai = uav[uaidx];
                     auto& opi = uai.ops[opidx];
+                    opi.desc = opdescidx;
 
                     float tp = -1;
                     if( measurement.attribute( "TP" ) ) tp = atof( measurement.attribute( "TP" ).value() );
@@ -228,6 +233,13 @@ int main()
     }
     printf( "};\n\n" );
 
+    printf( "const char* OpDescList[]={\n" );
+    for( auto& v : opsdesc.strlist )
+    {
+        printf( "\"%s\",\n", v.c_str() );
+    }
+    printf( "};\n\n" );
+
     printf( "#define V static constexpr AsmVar\n" );
     printf( "#define A static constexpr AsmVar const*\n\n" );
 
@@ -273,7 +285,7 @@ int main()
         for( auto it = ua.ops.begin(); it != ua.ops.end(); ++it )
         {
             auto& op = *it;
-            printf( "O x%x_%x={%i,%i,y%x_%x};\n", uaidx, op.first, op.first, (int)op.second.var.size(), uaidx, op.first );
+            printf( "O x%x_%x={%i,%i,%i,y%x_%x};\n", uaidx, op.first, op.first, op.second.desc, (int)op.second.var.size(), uaidx, op.first );
             opsort.emplace_back( it );
         }
         std::sort( opsort.begin(), opsort.end(), []( const auto& l, const auto& r ) { return l->first < r->first; } );

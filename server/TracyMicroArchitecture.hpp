@@ -22,6 +22,7 @@ struct AsmVar
 struct AsmOp
 {
     int id;
+    int descId;
     int numVariants;
     const AsmVar*const* variant;
 };

@@ -630,8 +630,8 @@ static constexpr size_t RingBufSize = 64*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
 
 #define TRACY_LOG_ERROR_ERRNO(msg) \
-  fprintf(stderr, "ERROR (%s:%d) " msg " (errno=%d, %s)\n", \
-      __FILE__, __LINE__, errno, strerror(errno))
+  fprintf(stderr, "ERROR (%s:%d) %s (errno=%d, %s)\n", \
+      __FILE__, __LINE__, msg, errno, strerror(errno))
 
 #define TRACY_LOG_ERROR_ERRNO_FMT(fmt, ...) \
   fprintf(stderr, "ERROR (%s:%d) " fmt " (errno=%d, %s)\n", \
@@ -819,25 +819,141 @@ static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
     return true;
 }
 
+static bool WriteBufferToFileDirectly(const char* filename, const void* buf, ssize_t buf_size) {
+    int fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC , S_IRUSR | S_IWUSR );
+    if( fd < 0 ) {
+        return false;
+    }
+
+    if (!WriteBufferToFd(fd, buf, buf_size)) {
+        close(fd);
+        return false;
+    }
+
+    close(fd);
+    return true;
+}
+
+class TemporaryDirectory {
+public:
+    static const char* Get() {
+        static const TemporaryDirectory singleton;
+        return singleton.path;
+    }
+private:
+    const char* path;
+    TemporaryDirectory() {
+        const char* tmp_dir_env = getenv("TRACY_TMP_DIR");
+        if (tmp_dir_env) {
+            path = tmp_dir_env;
+        } else {
+#ifdef __ANDROID__
+            // Default path working on a majority of recent Android devices.
+            // Also the path used in the bionic implementation of tmpfile().
+            path = "/data/local/tmp";
+#else
+            path = "/tmp";
+#endif
+        }
+    }
+};
+
+class TemporarySingleFileName {
+public:
+    static const char* Get() {
+        static const TemporarySingleFileName singleton;
+        return singleton.filename;
+    }
+private:
+    char filename[256];
+    TemporarySingleFileName() {
+        const char* tmp_dir = TemporaryDirectory::Get();
+        ssize_t tmp_dir_len = strlen(tmp_dir);
+        const char basename[] = "tracy-systrace-temp-file";
+        if (sizeof(filename) < tmp_dir_len + 1 + sizeof(basename)) {
+            // Should not get here - means we created a too small buffer.
+            // No error message, not a user-facing error.
+            abort();
+        }
+        memcpy(filename, tmp_dir, tmp_dir_len);
+        filename[tmp_dir_len] = '/';
+        memcpy(filename + tmp_dir_len + 1, basename, sizeof(basename));
+    }
+};
+
+static bool WaitForSubprocess(int pid) {
+    while(true) {
+        int status = 0;
+        if (waitpid(pid, &status, 0) == -1) {
+            TRACY_LOG_ERROR_ERRNO("waitpid failed");
+            return false;
+        }
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status) == EXIT_SUCCESS;
+        }
+        if (WIFSIGNALED(status)) {
+            return false;
+        }
+    }
+}
+
+static bool MoveFileWithSu(const char* from, const char* to) {
+    int pid = fork();
+    if (pid == -1) {
+        TRACY_LOG_ERROR_ERRNO("fork failed");
+        return false;
+    }
+    if (pid == 0) {
+        // Child process.
+        execlp("su", "su", "root", "mv", from, to, nullptr);
+        // The above exec only returns in case of failure. Since here we're in the
+        // child process, we want any error to be fatal. Logging will be done in the
+        // parent process.
+        exit( EXIT_FAILURE );
+    } else {
+        // Parent process.
+        if (!WaitForSubprocess(pid)) {
+            TRACY_LOG_ERROR_ERRNO_FMT("child process failed to exec su to move %s to %s", from, to);
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool WriteBufferToFileWithSu(const char* filename, const void* buf, ssize_t buf_size) {
+    char temporary_template[256];
+    const char* tmp_filename = TemporarySingleFileName::Get();
+    if (!WriteBufferToFileDirectly(tmp_filename, buf, buf_size)) {
+        return false;
+    }
+    if (!MoveFileWithSu(tmp_filename, filename)) {
+        return false;
+    }
+    return true;
+}
+
+static bool WriteBufferToFileMaybeWithSu(const char* filename, const void* buf, ssize_t buf_size) {
+    if (WriteBufferToFileDirectly(filename, buf, buf_size)) {
+        return true;
+    }
+    if (WriteBufferToFileWithSu(filename, buf, buf_size)) {
+        fprintf(stderr, "XXXXX Writing as root to %s\n", filename);
+        return true;
+    }
+    return false;
+}
+
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
 {
     char tmp[256];
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
 
-    int fd = open( tmp, O_WRONLY );
-    if( fd < 0 ) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to open %s for write", tmp);
-        return false;
-    }
-
-    if (!WriteBufferToFd(fd, val, vsz)) {
+    if (!WriteBufferToFileMaybeWithSu(tmp, val, vsz)) {
         TRACY_LOG_ERROR_ERRNO_FMT("failed to write to %s", tmp);
-        close(fd);
         return false;
     }
 
-    close(fd);
     return true;
 }
 

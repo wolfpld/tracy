@@ -605,6 +605,8 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <sys/mman.h>
 #    include <sys/ioctl.h>
 
+#    include <functional>
+
 #    include "TracyProfiler.hpp"
 #    include "TracyRingBuffer.hpp"
 #    include "TracyThread.hpp"
@@ -630,12 +632,18 @@ static constexpr size_t RingBufSize = 64*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
 
 #define TRACY_LOG_ERROR_ERRNO(msg) \
-  fprintf(stderr, "ERROR (%s:%d) %s (errno=%d, %s)\n", \
-      __FILE__, __LINE__, msg, errno, strerror(errno))
+    do { \
+        fprintf(stderr, "ERROR (%s:%d) %s (errno=%d, %s)\n", \
+            __FILE__, __LINE__, msg, errno, strerror(errno)); \
+        fflush(stderr); \
+    } while(false)
 
 #define TRACY_LOG_ERROR_ERRNO_FMT(fmt, ...) \
-  fprintf(stderr, "ERROR (%s:%d) " fmt " (errno=%d, %s)\n", \
-      __FILE__, __LINE__, __VA_ARGS__, errno, strerror(errno))
+  do { \
+      fprintf(stderr, "ERROR (%s:%d) " fmt " (errno=%d, %s)\n", \
+          __FILE__, __LINE__, __VA_ARGS__, errno, strerror(errno)); \
+        fflush(stderr); \
+    } while(false)
 
 static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )
 {
@@ -800,6 +808,115 @@ static void SetupSampling( int64_t& samplingPeriod )
     }, nullptr );
 }
 
+// Abstracts a file descriptor that may be:
+//  Either (if pid==0) just a file that we opened in this process
+//  Or (if pid!=0) our end of a pipe to a subprocess (given by pid) where we
+//  perform file I/O as root. 
+struct Channel {
+    int fd;
+    int pid;
+};
+
+enum class Mode {
+    Read,
+    Write
+};
+
+static bool OpenInProcess(Mode mode, const char* filename, Channel* ch) {
+    int fd = open(filename, mode == Mode::Read ? O_RDONLY : O_WRONLY);
+    if (fd == -1) {
+        // Don't log an error here, this is normal, it's what we have
+        // OpenAsRoot as a fallback for.
+        return false;
+    }
+    ch->fd = fd;
+    ch->pid = 0;
+    return true;
+}
+
+static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
+    int pipefd[2];
+    if( pipe( pipefd ) == -1 )
+    {
+        TRACY_LOG_ERROR_ERRNO("pipe failed");
+        return false;
+    }
+    int read_end = pipefd[0];
+    int write_end = pipefd[1];
+    int child_end = mode == Mode::Read ? write_end : read_end;
+    int parent_end = mode == Mode::Read ? read_end : write_end;
+        
+    const int pid = fork();
+    if (pid == -1) {
+        TRACY_LOG_ERROR_ERRNO("fork failed");
+        return false;
+    }
+
+    if( pid == 0 )
+    {
+        // Child process.
+        close( parent_end );
+        // Redirect either standard input or standard output (depending on if we're
+        // going to be reading from or writing to a file) to our end of the pipe.
+        int fd_to_dup_to_child_end = mode == Mode::Read ? STDOUT_FILENO : STDIN_FILENO;
+        if( dup2( child_end, fd_to_dup_to_child_end ) == -1 ) {
+            return false;
+        }
+        close( child_end );
+        char dd_arg[256];
+        strcpy(dd_arg, mode == Mode::Read ? "if=" : "of=");
+        strcpy(dd_arg + strlen(dd_arg), filename);
+        execlp( "su", "su", "root", "dd", dd_arg, "status=none", nullptr);
+        // The above exec only returns in case of failure. Since here we're in the
+        // child process, we want any error to be fatal.
+        TRACY_LOG_ERROR_ERRNO_FMT("exec failed: su root dd %s", dd_arg);
+        exit( EXIT_FAILURE );
+    }
+    
+    // Parent process.
+    close( child_end );
+    ch->fd = parent_end;
+    ch->pid = pid;
+    return true;
+}
+
+static bool Open(Mode mode, const char* filename, Channel* ch) {
+    if (OpenInProcess(mode, filename, ch)) {
+        return true;
+    }
+    if (OpenAsRoot(mode, filename, ch)) {
+        return true;
+    }
+    return false;
+}
+
+static bool WaitForSubprocess(int pid) {
+    while(true) {
+        int status = 0;
+        if (waitpid(pid, &status, 0) == -1) {
+            return false;
+        }
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status) == EXIT_SUCCESS;
+        }
+        if (WIFSIGNALED(status)) {
+            return false;
+        }
+    }
+}
+
+static bool Close(const Channel& ch) {
+    if (ch.pid) {
+        if (!WaitForSubprocess(ch.pid)) {
+            return false;
+        }
+    }
+    if (close(ch.fd) == -1) {
+        return false;
+    }
+    return true;
+}
+
 // Writes buffer contents (given by address `buf` and size `buf_size`) to
 // the specified file descriptor (`fd`). Handles the case of `write` writing
 // fewer bytes than requested.
@@ -819,128 +936,32 @@ static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
     return true;
 }
 
-static bool WriteBufferToFileDirectly(const char* filename, const void* buf, ssize_t buf_size) {
-    int fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC , S_IRUSR | S_IWUSR );
-    if( fd < 0 ) {
+static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf_size) {
+    Channel ch;
+    if (!Open(Mode::Write, filename, &ch)) {
         return false;
     }
-
-    if (!WriteBufferToFd(fd, buf, buf_size)) {
-        close(fd);
+    if (!WriteBufferToFd(ch.fd, buf, buf_size)) {
         return false;
     }
-
-    close(fd);
-    return true;
-}
-
-class TemporaryDirectory {
-public:
-    static const char* Get() {
-        static const TemporaryDirectory singleton;
-        return singleton.path;
-    }
-private:
-    const char* path;
-    TemporaryDirectory() {
-        const char* tmp_dir_env = getenv("TRACY_TMP_DIR");
-        if (tmp_dir_env) {
-            path = tmp_dir_env;
-        } else {
-#ifdef __ANDROID__
-            // Default path working on a majority of recent Android devices.
-            // Also the path used in the bionic implementation of tmpfile().
-            path = "/data/local/tmp";
-#else
-            path = "/tmp";
-#endif
-        }
-    }
-};
-
-class TemporarySingleFileName {
-public:
-    static const char* Get() {
-        static const TemporarySingleFileName singleton;
-        return singleton.filename;
-    }
-private:
-    char filename[256];
-    TemporarySingleFileName() {
-        const char* tmp_dir = TemporaryDirectory::Get();
-        ssize_t tmp_dir_len = strlen(tmp_dir);
-        const char basename[] = "tracy-systrace-temp-file";
-        if (sizeof(filename) < tmp_dir_len + 1 + sizeof(basename)) {
-            // Should not get here - means we created a too small buffer.
-            // No error message, not a user-facing error.
-            abort();
-        }
-        memcpy(filename, tmp_dir, tmp_dir_len);
-        filename[tmp_dir_len] = '/';
-        memcpy(filename + tmp_dir_len + 1, basename, sizeof(basename));
-    }
-};
-
-static bool WaitForSubprocess(int pid) {
-    while(true) {
-        int status = 0;
-        if (waitpid(pid, &status, 0) == -1) {
-            TRACY_LOG_ERROR_ERRNO("waitpid failed");
-            return false;
-        }
-        if (WIFEXITED(status)) {
-            return WEXITSTATUS(status) == EXIT_SUCCESS;
-        }
-        if (WIFSIGNALED(status)) {
-            return false;
-        }
-    }
-}
-
-static bool MoveFileWithSu(const char* from, const char* to) {
-    int pid = fork();
-    if (pid == -1) {
-        TRACY_LOG_ERROR_ERRNO("fork failed");
-        return false;
-    }
-    if (pid == 0) {
-        // Child process.
-        execlp("su", "su", "root", "mv", from, to, nullptr);
-        // The above exec only returns in case of failure. Since here we're in the
-        // child process, we want any error to be fatal. Logging will be done in the
-        // parent process.
-        exit( EXIT_FAILURE );
-    } else {
-        // Parent process.
-        if (!WaitForSubprocess(pid)) {
-            TRACY_LOG_ERROR_ERRNO_FMT("child process failed to exec su to move %s to %s", from, to);
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool WriteBufferToFileWithSu(const char* filename, const void* buf, ssize_t buf_size) {
-    char temporary_template[256];
-    const char* tmp_filename = TemporarySingleFileName::Get();
-    if (!WriteBufferToFileDirectly(tmp_filename, buf, buf_size)) {
-        return false;
-    }
-    if (!MoveFileWithSu(tmp_filename, filename)) {
+    if (!Close(ch)) {
         return false;
     }
     return true;
 }
 
-static bool WriteBufferToFileMaybeWithSu(const char* filename, const void* buf, ssize_t buf_size) {
-    if (WriteBufferToFileDirectly(filename, buf, buf_size)) {
-        return true;
+static bool ReadFileWithFunction(const char* filename, const std::function<bool(int)> &read_function) {
+    Channel ch;
+    if (!Open(Mode::Read, filename, &ch)) {
+        return false;
     }
-    if (WriteBufferToFileWithSu(filename, buf, buf_size)) {
-        fprintf(stderr, "XXXXX Writing as root to %s\n", filename);
-        return true;
+    if (!read_function(ch.fd)) {
+        return false;
     }
-    return false;
+    if (!Close(ch)) {
+        return false;
+    }
+    return true;
 }
 
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
@@ -949,7 +970,7 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
 
-    if (!WriteBufferToFileMaybeWithSu(tmp, val, vsz)) {
+    if (!WriteBufferToFile(tmp, val, vsz)) {
         TRACY_LOG_ERROR_ERRNO_FMT("failed to write to %s", tmp);
         return false;
     }
@@ -1290,40 +1311,41 @@ void SysTraceWorker( void* ptr )
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
 
-    int fd = open( tmp, O_RDONLY );
-    if( fd < 0 ) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to open %s for read", tmp);
-        return;
-    }
     sched_param sp = { 5 };
     pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-    ProcessTraceLines( fd );
-    close( fd );
+
+    ReadFileWithFunction(tmp, [](int fd) {
+        ProcessTraceLines(fd);
+        return true;  // ProcessTraceLines doesn't report errors.
+    });
 }
 
 void SysTraceSendExternalName( uint64_t thread )
 {
-    FILE* f;
     char fn[256];
     sprintf( fn, "/proc/%" PRIu64 "/comm", thread );
-    f = fopen( fn, "rb" );
-    if( f )
-    {
+
+    if (!ReadFileWithFunction(fn, [=](int fd){
         char buf[256];
-        const auto sz = fread( buf, 1, 256, f );
+        const auto sz = read( fd, buf, sizeof(buf) );
+        if (sz == -1) {
+            return false;
+        }
         if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
         GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
-        fclose( f );
-    }
-    else
-    {
-        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
+        return true;
+    })) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to read %s", fn);
     }
 
+    FILE* f;
+
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
-    f = fopen( fn, "rb" );
-    if( f )
-    {
+    if (!ReadFileWithFunction(fn, [=](int fd){
+        FILE* f = fdopen(dup(fd), "rb");
+        if (!f) {
+            return false;
+        }
         int pid = -1;
         size_t lsz = 1024;
         auto line = (char*)tracy_malloc( lsz );
@@ -1348,20 +1370,26 @@ void SysTraceSendExternalName( uint64_t thread )
                 MemWrite( &item->tidToPid.pid, _pid );
                 TracyLfqCommit;
             }
+            char fn[256];
             sprintf( fn, "/proc/%i/comm", pid );
-            f = fopen( fn, "rb" );
-            if( f )
-            {
+            if (!ReadFileWithFunction(fn, [=](int fd){
                 char buf[256];
-                const auto sz = fread( buf, 1, 256, f );
+                const auto sz = read( fd, buf, sizeof(buf));
+                if (sz == -1) {
+                    return false;
+                }
                 if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
                 GetProfiler().SendString( thread, buf, QueueType::ExternalName );
-                fclose( f );
-                return;
+                return true;
+            })) {
+                TRACY_LOG_ERROR_ERRNO_FMT("failed to read %s", fn);
             }
         }
+        return true;
+    })) {
+        TRACY_LOG_ERROR_ERRNO_FMT("failed to read %s", fn);
+        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
     }
-    GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
 }
 
 }

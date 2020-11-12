@@ -860,10 +860,6 @@ static bool ReadFileWithFunction(const char* filename, const std::function<bool(
 
 static void SetupSampling( int64_t& samplingPeriod )
 {
-#ifndef CLOCK_MONOTONIC_RAW
-    return;
-#endif
-
     samplingPeriod = 100*1000;
 
     s_numCpus = (int)std::thread::hardware_concurrency();
@@ -886,7 +882,11 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.freq = 1;
 #if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     pe.use_clockid = 1;
+#ifdef CLOCK_MONOTONIC_RAW
     pe.clockid = CLOCK_MONOTONIC_RAW;
+#else
+    pe.clockid = CLOCK_MONOTONIC;
+#endif
 #endif
 
     WriteBufferToFile("/proc/sys/kernel/perf_event_paranoid", "0");
@@ -1034,10 +1034,6 @@ static bool TraceWrite( const char* path, const char* val )
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
-#ifndef CLOCK_MONOTONIC_RAW
-    return false;
-#endif
-
     if( !TraceWrite( TracingOn, "0" ) ) return false;
     if( !TraceWrite( CurrentTracer, "nop" ) ) return false;
     if( !TraceWrite( TraceOptions, "norecord-cmd" ) ) return false;

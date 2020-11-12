@@ -889,12 +889,17 @@ static void SetupSampling( int64_t& samplingPeriod )
 #endif
 #endif
 
-    WriteBufferToFile("/proc/sys/kernel/perf_event_paranoid", "0");
+    // If the 'paranoid' file exists, it may beed to be set to 0 before we can
+    // use perf_event_open.
+    const char paranoid_filename[] = "/proc/sys/kernel/perf_event_paranoid";
+    if (!WriteBufferToFile(paranoid_filename, "0") && errno != ENOENT) {
+        TRACY_LOG_ERROR_ERRNO("failed to write to %s", paranoid_filename);
+    }
 
     for( int i=0; i<s_numCpus; i++ )
     {
         const int fd = perf_event_open( &pe, -1, i, -1, 0 );
-        if( fd == -1 )
+        if( fd == -1)
         {
             TRACY_LOG_ERROR_ERRNO("perf_event_open failed");
             for( int j=0; j<i; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
@@ -1032,9 +1037,49 @@ static bool TraceWrite( const char* path, const char* val )
     return true;
 }
 
+static void PrintErrorAboutNeedingRootPermissions() {
+    fprintf(stderr, R"TXT(
+
+#############################################################################
+A possible reason for that failure may be that that required root permissions.
+
+If it's acceptable for your profilee program to run as root, that's
+easiest, but as this isn't always possible, tracy instrumentation
+supports non-root programs by creating subprocesses running only some file
+I/O as root, by exec'ing the command `sudo` (or, on Android, `su`) in a
+non-interactive way (e.g. `su -n`).
+
+You are seeing this error message because the latter just failed. Typically,
+that is because sudo or su needs authentication to proceed, so it was not
+possible to perform a non-interactive sudo or su.
+
+Ways to fix this:
+ 0. As noted above, consider running the whole program as root if possible.
+ 1. Try relying on your system's persistence of authentication: maybe it
+    does not require a sudo or su password every time? It may work
+    to perform any sudo or su authentication manually in your terminal,
+    before running your program again, letting it ride on the persistent
+    authentication.
+ 2. Try editing your system configuration (e.g. see `man sudo`) so it does
+    not ask for a password. Note, that should already be the case on Android
+    on any rooted device. On Android, the first thing to check, then, is that
+    your device is rooted (can you get a root shell? Does `su` work?)
+ 3. Try editying this file,
+    %s,
+    to make it actually authenticate. For example, instead of doing `sudo -n`,
+    how about trying `sudo -A` to get a password prompt from a external
+    program, or maybe even just `sudo -S`?
+#############################################################################
+
+)TXT", __FILE__);
+}
+
 bool SysTraceStart( int64_t& samplingPeriod )
 {
-    if( !TraceWrite( TracingOn, "0" ) ) return false;
+    if( !TraceWrite( TracingOn, "0" ) ) {
+        PrintErrorAboutNeedingRootPermissions();
+        return false;
+    }
     if( !TraceWrite( CurrentTracer, "nop" ) ) return false;
     if( !TraceWrite( TraceOptions, "norecord-cmd" ) ) return false;
     if( !TraceWrite( TraceOptions, "norecord-tgid" ) ) return false;
@@ -1379,12 +1424,17 @@ void SysTraceSendExternalName( uint64_t thread )
         GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
         return true;
     })) {
-        TRACY_LOG_ERROR_ERRNO("failed to read %s", fn);
+        // This function frequently fails to read files because the /proc/$tid/
+        // files that it tries to read go away when the thread terminates, and there
+        // is no synchronization to prevent that from happening.
+        // To limit logging verbosity, we don't report these failures.
+        // The user may still see stderr messages coming directly from the exec'd
+        // `dd` command.
         return;
     }
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
-    if (!ReadFileWithFunction(fn, [=](int fd){
+    ReadFileWithFunction(fn, [=](int fd){
         FILE* f = fdopen(dup(fd), "rb");
         if (!f) {
             return false;
@@ -1415,7 +1465,7 @@ void SysTraceSendExternalName( uint64_t thread )
             }
             char fn[256];
             sprintf( fn, "/proc/%i/comm", pid );
-            if (!ReadFileWithFunction(fn, [=](int fd){
+            ReadFileWithFunction(fn, [=](int fd){
                 char buf[256];
                 const auto sz = read( fd, buf, sizeof(buf));
                 if (sz == -1) {
@@ -1424,17 +1474,10 @@ void SysTraceSendExternalName( uint64_t thread )
                 if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
                 GetProfiler().SendString( thread, buf, QueueType::ExternalName );
                 return true;
-            })) {
-                TRACY_LOG_ERROR_ERRNO("failed to read %s", fn);
-                return false;
-            }
+            });
         }
         return true;
-    })) {
-        TRACY_LOG_ERROR_ERRNO("failed to read %s", fn);
-        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
-        return;
-    }
+    });
 }
 
 }

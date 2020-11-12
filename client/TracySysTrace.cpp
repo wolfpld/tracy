@@ -809,20 +809,29 @@ static void SetupSampling( int64_t& samplingPeriod )
     }, nullptr );
 }
 
-// Abstracts a file descriptor that may be:
-//  Either (if pid==0) just a file that we opened in this process
-//  Or (if pid!=0) our end of a pipe to a subprocess (given by pid) where we
-//  perform file I/O as root. 
+namespace {
+
+// Encapsulates a file descriptor and possibly a PID. Two modes:
+//   Either (if pid==0) just a file that we opened in this process.
+//   Or (if pid!=0) our end of a pipe to a subprocess (given by pid) where we
+//     perform file I/O as root. 
 struct Channel {
     int fd;
     int pid;
 };
 
+// File access mode: read-only or write-only.
 enum class Mode {
     Read,
     Write
 };
 
+}  // end anonymous namespace
+
+// Internal implementation helper for the Open() function.
+// Just opens a file and return the descriptor - thin wrapper around open(2).
+// Motivation: have a homogeneous interface with OpenAsRoot().
+// `ch` is the output-parameter where we return the file descriptor.
 static bool OpenInProcess(Mode mode, const char* filename, Channel* ch) {
     int fd = open(filename, mode == Mode::Read ? O_RDONLY : O_WRONLY);
     if (fd == -1) {
@@ -835,6 +844,12 @@ static bool OpenInProcess(Mode mode, const char* filename, Channel* ch) {
     return true;
 }
 
+// Internal implementation helper for the Open() function.
+// Opens a file that may require root privileges to access.
+// Works by forking a subprocess where the actual file I/O is done
+// as root (exec su), and transferring the data via a pipe to our
+// process. The `ch` output parameter is populated with the file
+// descriptor of our end of that pipe, and the pid of the subprocess.
 static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
     int pipefd[2];
     if( pipe( pipefd ) == -1 )
@@ -865,7 +880,12 @@ static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
         char dd_arg[256];
         strcpy(dd_arg, mode == Mode::Read ? "if=" : "of=");
         strcpy(dd_arg + strlen(dd_arg), filename);
-        execlp( "su", "su", "root", "dd", dd_arg, "status=none", nullptr);
+#ifdef __ANDROID__
+        const char su_arg[] = "root";
+#else
+        const char su_arg[] = "-c";
+#endif
+        execlp( "su", "su", su_arg, "dd", dd_arg, "status=none", nullptr);
         // The above exec only returns in case of failure. Since here we're in the
         // child process, we want any error to be fatal.
         exit( EXIT_FAILURE );
@@ -878,6 +898,14 @@ static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
     return true;
 }
 
+// Opens a file that might require root permissions to access.
+// First tries to open it directly in-process, then tries OpenAsRoot,
+// spawning a subprocess to perform the file I/O as root (exec su).
+// The output-parameter `ch` is populated with the resulting opened
+// file descriptor and the pid of the subprocess (or 0 if the file
+// was just opened in-process). The output `ch` should be closed by
+// the Close() function.
+// The return value indicates success.
 static bool Open(Mode mode, const char* filename, Channel* ch) {
     if (OpenInProcess(mode, filename, ch)) {
         return true;
@@ -888,6 +916,10 @@ static bool Open(Mode mode, const char* filename, Channel* ch) {
     return false;
 }
 
+// Internal implementation helper for Close().
+// Waits for the process given by `pid` to terminate.
+// The return value is true with the subprocess exited with
+// EXIT_SUCCESS, false otherwise.
 static bool WaitForSubprocess(int pid) {
     while(true) {
         int status = 0;
@@ -903,6 +935,12 @@ static bool WaitForSubprocess(int pid) {
     }
 }
 
+// Closes a Channel `ch` that was previously opened by Open().
+// In case of a subprocess channel (OpenAsRoot), this will first
+// wait for that subprocess to terminate.
+// The return value indicates success. In the case where a
+// subprocess was used, any failure in the actual remote file I/O
+// may only be reported here (so it's important to check this retval).
 static bool Close(const Channel& ch) {
     if (ch.pid) {
         if (!WaitForSubprocess(ch.pid)) {
@@ -915,6 +953,7 @@ static bool Close(const Channel& ch) {
     return true;
 }
 
+// Internal implementation helper for WriteBufferToFile.
 // Writes buffer contents (given by address `buf` and size `buf_size`) to
 // the specified file descriptor (`fd`). Handles the case of `write` writing
 // fewer bytes than requested.
@@ -934,6 +973,11 @@ static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
     return true;
 }
 
+// Writes buffer contents (given by address `buf` and size `buf_size`) to
+// the file given by `filename`. If opening the file in-process fails, this will attempt
+// opening the file in a subprocess as root (so this allows writing to files
+// requiring more permissions than the calling process has).
+// The return value indicates success.
 static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf_size) {
     Channel ch;
     if (!Open(Mode::Write, filename, &ch)) {
@@ -948,6 +992,12 @@ static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf
     return true;
 }
 
+// Opens the file given by `filename` for read, and passes the resulting file
+// descriptor to the passed `read_function`, which must return `true` if and only
+// if it succeeded. If opening the file in-process fails, this will attempt
+// opening the file in a subprocess as root (so this allows reading files
+// requiring more permissions than the calling process has).
+// The return value indicates success.
 static bool ReadFileWithFunction(const char* filename, const std::function<bool(int)> &read_function) {
     Channel ch;
     if (!Open(Mode::Read, filename, &ch)) {

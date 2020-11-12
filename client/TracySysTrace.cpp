@@ -651,6 +651,213 @@ static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu
     return syscall( __NR_perf_event_open, hw_event, pid, cpu, group_fd, flags );
 }
 
+namespace {
+
+// Encapsulates a file descriptor and possibly a PID. Two modes:
+//   Either (if pid==0) just a file that we opened in this process.
+//   Or (if pid!=0) our end of a pipe to a subprocess (given by pid) where we
+//     perform file I/O as root. 
+struct Channel {
+    int fd;
+    int pid;
+};
+
+// File access mode: read-only or write-only.
+enum class Mode {
+    Read,
+    Write
+};
+
+}  // end anonymous namespace
+
+// Internal implementation helper for the Open() function.
+// Just opens a file and return the descriptor - thin wrapper around open(2).
+// Motivation: have a homogeneous interface with OpenAsRoot().
+// `ch` is the output-parameter where we return the file descriptor.
+static bool OpenInProcess(Mode mode, const char* filename, Channel* ch) {
+    int fd = open(filename, mode == Mode::Read ? O_RDONLY : O_WRONLY);
+    if (fd == -1) {
+        // Don't log an error here, this is normal, it's what we have
+        // OpenAsRoot as a fallback for.
+        return false;
+    }
+    ch->fd = fd;
+    ch->pid = 0;
+    return true;
+}
+
+// Internal implementation helper for the Open() function.
+// Opens a file that may require root privileges to access.
+// Works by forking a subprocess where the actual file I/O is done
+// as root (exec su), and transferring the data via a pipe to our
+// process. The `ch` output parameter is populated with the file
+// descriptor of our end of that pipe, and the pid of the subprocess.
+static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
+    int data_transfer_pipe[2];
+    if( pipe( data_transfer_pipe ) == -1 )
+    {
+        return false;
+    }
+    int read_end = data_transfer_pipe[0];
+    int write_end = data_transfer_pipe[1];
+    int child_end = mode == Mode::Read ? write_end : read_end;
+    int parent_end = mode == Mode::Read ? read_end : write_end;
+        
+    const int pid = fork();
+    if (pid == -1) {
+        return false;
+    }
+
+    if( pid == 0 )
+    {
+        // Child process.
+        close( parent_end );
+        // Redirect either standard input or standard output (depending on if we're
+        // going to be reading from or writing to a file) to our end of the pipe.
+        int fd_to_dup_to_child_end = mode == Mode::Read ? STDOUT_FILENO : STDIN_FILENO;
+        if( dup2( child_end, fd_to_dup_to_child_end ) == -1 ) {
+            return false;
+        }
+        close( child_end );
+        char dd_arg[256];
+        strcpy(dd_arg, mode == Mode::Read ? "if=" : "of=");
+        strcpy(dd_arg + strlen(dd_arg), filename);
+#ifdef __ANDROID__
+        execlp( "su", "su", "root", "dd", dd_arg, "status=none", nullptr);
+#else
+        execlp( "sudo", "sudo", "-n", "dd", dd_arg, "status=none", nullptr);
+#endif
+        // The above exec only returns in case of failure. Since here we're in the
+        // child process, we want any error to be fatal.
+        exit( EXIT_FAILURE );
+    }
+    
+    // Parent process.
+    close( child_end );
+    ch->fd = parent_end;
+    ch->pid = pid;
+    return true;
+}
+
+// Opens a file that might require root permissions to access.
+// First tries to open it directly in-process, then tries OpenAsRoot,
+// spawning a subprocess to perform the file I/O as root (exec su).
+// The output-parameter `ch` is populated with the resulting opened
+// file descriptor and the pid of the subprocess (or 0 if the file
+// was just opened in-process). The output `ch` should be closed by
+// the Close() function.
+// The return value indicates success.
+static bool Open(Mode mode, const char* filename, Channel* ch) {
+    if (OpenInProcess(mode, filename, ch)) {
+        return true;
+    }
+    if (OpenAsRoot(mode, filename, ch)) {
+        return true;
+    }
+    return false;
+}
+
+// Internal implementation helper for Close().
+// Waits for the process given by `pid` to terminate.
+// The return value is true with the subprocess exited with
+// EXIT_SUCCESS, false otherwise.
+static bool WaitForSubprocess(int pid) {
+    while(true) {
+        int status = 0;
+        if (waitpid(pid, &status, 0) == -1) {
+            return false;
+        }
+        if (WIFEXITED(status)) {
+            return WEXITSTATUS(status) == EXIT_SUCCESS;
+        }
+        if (WIFSIGNALED(status)) {
+            return false;
+        }
+    }
+}
+
+// Closes a Channel `ch` that was previously opened by Open().
+// In case of a subprocess channel (OpenAsRoot), this will first
+// wait for that subprocess to terminate.
+// The return value indicates success. In the case where a
+// subprocess was used, any failure in the actual remote file I/O
+// may only be reported here (so it's important to check this retval).
+static bool Close(const Channel& ch) {
+    if (close(ch.fd) == -1) {
+        return false;
+    }
+    if (ch.pid) {
+        if (!WaitForSubprocess(ch.pid)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Internal implementation helper for WriteBufferToFile.
+// Writes buffer contents (given by address `buf` and size `buf_size`) to
+// the specified file descriptor (`fd`). Handles the case of `write` writing
+// fewer bytes than requested.
+static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
+    const char* buf_ptr = static_cast<const char*>(buf);
+    while( buf_size > 0 )
+    {
+        ssize_t write_retval = write( fd, buf_ptr, buf_size );
+        if( write_retval < 0 )
+        {
+            return false;
+        }
+        buf_size -= write_retval;
+        buf_ptr += write_retval;
+    }
+    assert(buf_size == 0);
+    return true;
+}
+
+// Writes buffer contents (given by address `buf` and size `buf_size`) to
+// the file given by `filename`. If opening the file in-process fails, this will attempt
+// opening the file in a subprocess as root (so this allows writing to files
+// requiring more permissions than the calling process has).
+// The return value indicates success.
+static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf_size) {
+    Channel ch;
+    if (!Open(Mode::Write, filename, &ch)) {
+        return false;
+    }
+    if (!WriteBufferToFd(ch.fd, buf, buf_size)) {
+        return false;
+    }
+    if (!Close(ch)) {
+        return false;
+    }
+    return true;
+}
+
+// Convenience overload: writes the specified string, without the terminating 0.
+static bool WriteBufferToFile(const char* filename, const char* buf) {
+    return WriteBufferToFile(filename, buf, strlen(buf));
+}
+
+// Opens the file given by `filename` for read, and passes the resulting file
+// descriptor to the passed `read_function`, which must return `true` if and only
+// if it succeeded. If opening the file in-process fails, this will attempt
+// opening the file in a subprocess as root (so this allows reading files
+// requiring more permissions than the calling process has).
+// The return value indicates success.
+static bool ReadFileWithFunction(const char* filename, const std::function<bool(int)> &read_function) {
+    Channel ch;
+    if (!Open(Mode::Read, filename, &ch)) {
+        return false;
+    }
+    if (!read_function(ch.fd)) {
+        return false;
+    }
+    if (!Close(ch)) {
+        return false;
+    }
+    return true;
+}
+
 static void SetupSampling( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
@@ -681,6 +888,8 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.use_clockid = 1;
     pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
+
+    WriteBufferToFile("/proc/sys/kernel/perf_event_paranoid", "0");
 
     for( int i=0; i<s_numCpus; i++ )
     {
@@ -809,227 +1018,18 @@ static void SetupSampling( int64_t& samplingPeriod )
     }, nullptr );
 }
 
-namespace {
-
-// Encapsulates a file descriptor and possibly a PID. Two modes:
-//   Either (if pid==0) just a file that we opened in this process.
-//   Or (if pid!=0) our end of a pipe to a subprocess (given by pid) where we
-//     perform file I/O as root. 
-struct Channel {
-    int fd;
-    int pid;
-};
-
-// File access mode: read-only or write-only.
-enum class Mode {
-    Read,
-    Write
-};
-
-}  // end anonymous namespace
-
-// Internal implementation helper for the Open() function.
-// Just opens a file and return the descriptor - thin wrapper around open(2).
-// Motivation: have a homogeneous interface with OpenAsRoot().
-// `ch` is the output-parameter where we return the file descriptor.
-static bool OpenInProcess(Mode mode, const char* filename, Channel* ch) {
-    int fd = open(filename, mode == Mode::Read ? O_RDONLY : O_WRONLY);
-    if (fd == -1) {
-        // Don't log an error here, this is normal, it's what we have
-        // OpenAsRoot as a fallback for.
-        return false;
-    }
-    ch->fd = fd;
-    ch->pid = 0;
-    return true;
-}
-
-// Internal implementation helper for the Open() function.
-// Opens a file that may require root privileges to access.
-// Works by forking a subprocess where the actual file I/O is done
-// as root (exec su), and transferring the data via a pipe to our
-// process. The `ch` output parameter is populated with the file
-// descriptor of our end of that pipe, and the pid of the subprocess.
-static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
-    int pipefd[2];
-    if( pipe( pipefd ) == -1 )
-    {
-        return false;
-    }
-    int read_end = pipefd[0];
-    int write_end = pipefd[1];
-    int child_end = mode == Mode::Read ? write_end : read_end;
-    int parent_end = mode == Mode::Read ? read_end : write_end;
-        
-    const int pid = fork();
-    if (pid == -1) {
-        return false;
-    }
-
-    if( pid == 0 )
-    {
-        // Child process.
-        close( parent_end );
-        // Redirect either standard input or standard output (depending on if we're
-        // going to be reading from or writing to a file) to our end of the pipe.
-        int fd_to_dup_to_child_end = mode == Mode::Read ? STDOUT_FILENO : STDIN_FILENO;
-        if( dup2( child_end, fd_to_dup_to_child_end ) == -1 ) {
-            return false;
-        }
-        close( child_end );
-        char dd_arg[256];
-        strcpy(dd_arg, mode == Mode::Read ? "if=" : "of=");
-        strcpy(dd_arg + strlen(dd_arg), filename);
-#ifdef __ANDROID__
-        const char su_arg[] = "root";
-#else
-        const char su_arg[] = "-c";
-#endif
-        execlp( "su", "su", su_arg, "dd", dd_arg, "status=none", nullptr);
-        // The above exec only returns in case of failure. Since here we're in the
-        // child process, we want any error to be fatal.
-        exit( EXIT_FAILURE );
-    }
-    
-    // Parent process.
-    close( child_end );
-    ch->fd = parent_end;
-    ch->pid = pid;
-    return true;
-}
-
-// Opens a file that might require root permissions to access.
-// First tries to open it directly in-process, then tries OpenAsRoot,
-// spawning a subprocess to perform the file I/O as root (exec su).
-// The output-parameter `ch` is populated with the resulting opened
-// file descriptor and the pid of the subprocess (or 0 if the file
-// was just opened in-process). The output `ch` should be closed by
-// the Close() function.
-// The return value indicates success.
-static bool Open(Mode mode, const char* filename, Channel* ch) {
-    if (OpenInProcess(mode, filename, ch)) {
-        return true;
-    }
-    if (OpenAsRoot(mode, filename, ch)) {
-        return true;
-    }
-    return false;
-}
-
-// Internal implementation helper for Close().
-// Waits for the process given by `pid` to terminate.
-// The return value is true with the subprocess exited with
-// EXIT_SUCCESS, false otherwise.
-static bool WaitForSubprocess(int pid) {
-    while(true) {
-        int status = 0;
-        if (waitpid(pid, &status, 0) == -1) {
-            return false;
-        }
-        if (WIFEXITED(status)) {
-            return WEXITSTATUS(status) == EXIT_SUCCESS;
-        }
-        if (WIFSIGNALED(status)) {
-            return false;
-        }
-    }
-}
-
-// Closes a Channel `ch` that was previously opened by Open().
-// In case of a subprocess channel (OpenAsRoot), this will first
-// wait for that subprocess to terminate.
-// The return value indicates success. In the case where a
-// subprocess was used, any failure in the actual remote file I/O
-// may only be reported here (so it's important to check this retval).
-static bool Close(const Channel& ch) {
-    if (ch.pid) {
-        if (!WaitForSubprocess(ch.pid)) {
-            return false;
-        }
-    }
-    if (close(ch.fd) == -1) {
-        return false;
-    }
-    return true;
-}
-
-// Internal implementation helper for WriteBufferToFile.
-// Writes buffer contents (given by address `buf` and size `buf_size`) to
-// the specified file descriptor (`fd`). Handles the case of `write` writing
-// fewer bytes than requested.
-static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
-    const char* buf_ptr = static_cast<const char*>(buf);
-    while( buf_size > 0 )
-    {
-        ssize_t write_retval = write( fd, buf_ptr, buf_size );
-        if( write_retval < 0 )
-        {
-            return false;
-        }
-        buf_size -= write_retval;
-        buf_ptr += write_retval;
-    }
-    assert(buf_size == 0);
-    return true;
-}
-
-// Writes buffer contents (given by address `buf` and size `buf_size`) to
-// the file given by `filename`. If opening the file in-process fails, this will attempt
-// opening the file in a subprocess as root (so this allows writing to files
-// requiring more permissions than the calling process has).
-// The return value indicates success.
-static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf_size) {
-    Channel ch;
-    if (!Open(Mode::Write, filename, &ch)) {
-        return false;
-    }
-    if (!WriteBufferToFd(ch.fd, buf, buf_size)) {
-        return false;
-    }
-    if (!Close(ch)) {
-        return false;
-    }
-    return true;
-}
-
-// Opens the file given by `filename` for read, and passes the resulting file
-// descriptor to the passed `read_function`, which must return `true` if and only
-// if it succeeded. If opening the file in-process fails, this will attempt
-// opening the file in a subprocess as root (so this allows reading files
-// requiring more permissions than the calling process has).
-// The return value indicates success.
-static bool ReadFileWithFunction(const char* filename, const std::function<bool(int)> &read_function) {
-    Channel ch;
-    if (!Open(Mode::Read, filename, &ch)) {
-        return false;
-    }
-    if (!read_function(ch.fd)) {
-        return false;
-    }
-    if (!Close(ch)) {
-        return false;
-    }
-    return true;
-}
-
-static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
+static bool TraceWrite( const char* path, const char* val )
 {
     char tmp[256];
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
-    memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
+    memcpy( tmp + sizeof( BasePath ) - 1, path, strlen(path) + 1 );
 
-    if (!WriteBufferToFile(tmp, val, vsz)) {
+    if (!WriteBufferToFile(tmp, val)) {
         TRACY_LOG_ERROR_ERRNO("failed to write to %s", tmp);
         return false;
     }
 
     return true;
-}
-
-template<int path_size>
-static bool TraceWrite( const char (&path)[path_size], const char* val, size_t vsz )
-{
-    return TraceWrite(path, path_size, val, vsz);
 }
 
 bool SysTraceStart( int64_t& samplingPeriod )
@@ -1038,22 +1038,22 @@ bool SysTraceStart( int64_t& samplingPeriod )
     return false;
 #endif
 
-    if( !TraceWrite( TracingOn, "0", 2 ) ) return false;
-    if( !TraceWrite( CurrentTracer, "nop", 4 ) ) return false;
-    if( !TraceWrite( TraceOptions, "norecord-cmd", 13 ) ) return false;
-    if( !TraceWrite( TraceOptions, "norecord-tgid", 14 ) ) return false;
-    if( !TraceWrite( TraceOptions, "noirq-info", 11 ) ) return false;
-    if( !TraceWrite( TraceOptions, "noannotate", 11 ) ) return false;
+    if( !TraceWrite( TracingOn, "0" ) ) return false;
+    if( !TraceWrite( CurrentTracer, "nop" ) ) return false;
+    if( !TraceWrite( TraceOptions, "norecord-cmd" ) ) return false;
+    if( !TraceWrite( TraceOptions, "norecord-tgid" ) ) return false;
+    if( !TraceWrite( TraceOptions, "noirq-info" ) ) return false;
+    if( !TraceWrite( TraceOptions, "noannotate" ) ) return false;
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    if( !TraceWrite( TraceClock, "x86-tsc", 8 ) ) return false;
+    if( !TraceWrite( TraceClock, "x86-tsc" ) ) return false;
 #else
-    if( !TraceWrite( TraceClock, "mono_raw", 9 ) ) return false;
+    if( !TraceWrite( TraceClock, "mono_raw" ) ) return false;
 #endif
-    if( !TraceWrite( SchedSwitch, "1", 2 ) ) return false;
-    if( !TraceWrite( SchedWakeup, "1", 2 ) ) return false;
-    if( !TraceWrite( BufferSizeKb, "4096", 5 ) ) return false;
+    if( !TraceWrite( SchedSwitch, "1" ) ) return false;
+    if( !TraceWrite( SchedWakeup, "1" ) ) return false;
+    if( !TraceWrite( BufferSizeKb, "4096" ) ) return false;
 
-    if( !TraceWrite( TracingOn, "1", 2 ) ) return false;
+    if( !TraceWrite( TracingOn, "1" ) ) return false;
     traceActive.store( true, std::memory_order_relaxed );
 
     SetupSampling( samplingPeriod );
@@ -1063,7 +1063,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
 void SysTraceStop()
 {
-    TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 );
+    TraceWrite( TracingOn, "0" );
     traceActive.store( false, std::memory_order_relaxed );
     if( s_threadSampling )
     {

@@ -594,6 +594,7 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <inttypes.h>
 #    include <limits>
 #    include <poll.h>
+#    include <stdarg.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
@@ -631,19 +632,19 @@ static int s_numCpus = 0;
 static constexpr size_t RingBufSize = 64*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
 
-#define TRACY_LOG_ERROR_ERRNO(msg) \
-    do { \
-        fprintf(stderr, "ERROR (%s:%d) %s (errno=%d, %s)\n", \
-            __FILE__, __LINE__, msg, errno, strerror(errno)); \
-        fflush(stderr); \
-    } while(false)
+static void log_error_errno(const char* file, int line, const char *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+    char buf[256];
+    vsnprintf(buf, sizeof(buf), format, ap);
+    va_end(ap);
+    fprintf(stderr, "ERROR (%s:%d) %s (errno=%d, %s)\n",
+            file, line, buf, errno, strerror(errno));
+    fflush(stderr);
+}
 
-#define TRACY_LOG_ERROR_ERRNO_FMT(fmt, ...) \
-  do { \
-      fprintf(stderr, "ERROR (%s:%d) " fmt " (errno=%d, %s)\n", \
-          __FILE__, __LINE__, __VA_ARGS__, errno, strerror(errno)); \
-        fflush(stderr); \
-    } while(false)
+#define TRACY_LOG_ERROR_ERRNO(...) \
+    ::tracy::log_error_errno(__FILE__, __LINE__, __VA_ARGS__)
 
 static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )
 {
@@ -838,7 +839,6 @@ static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
     int pipefd[2];
     if( pipe( pipefd ) == -1 )
     {
-        TRACY_LOG_ERROR_ERRNO("pipe failed");
         return false;
     }
     int read_end = pipefd[0];
@@ -848,7 +848,6 @@ static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
         
     const int pid = fork();
     if (pid == -1) {
-        TRACY_LOG_ERROR_ERRNO("fork failed");
         return false;
     }
 
@@ -869,7 +868,6 @@ static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
         execlp( "su", "su", "root", "dd", dd_arg, "status=none", nullptr);
         // The above exec only returns in case of failure. Since here we're in the
         // child process, we want any error to be fatal.
-        TRACY_LOG_ERROR_ERRNO_FMT("exec failed: su root dd %s", dd_arg);
         exit( EXIT_FAILURE );
     }
     
@@ -971,7 +969,7 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
     memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
 
     if (!WriteBufferToFile(tmp, val, vsz)) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to write to %s", tmp);
+        TRACY_LOG_ERROR_ERRNO("failed to write to %s", tmp);
         return false;
     }
 
@@ -1335,10 +1333,9 @@ void SysTraceSendExternalName( uint64_t thread )
         GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
         return true;
     })) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to read %s", fn);
+        TRACY_LOG_ERROR_ERRNO("failed to read %s", fn);
+        return;
     }
-
-    FILE* f;
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
     if (!ReadFileWithFunction(fn, [=](int fd){
@@ -1382,13 +1379,15 @@ void SysTraceSendExternalName( uint64_t thread )
                 GetProfiler().SendString( thread, buf, QueueType::ExternalName );
                 return true;
             })) {
-                TRACY_LOG_ERROR_ERRNO_FMT("failed to read %s", fn);
+                TRACY_LOG_ERROR_ERRNO("failed to read %s", fn);
+                return false;
             }
         }
         return true;
     })) {
-        TRACY_LOG_ERROR_ERRNO_FMT("failed to read %s", fn);
+        TRACY_LOG_ERROR_ERRNO("failed to read %s", fn);
         GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
+        return;
     }
 }
 

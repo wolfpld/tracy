@@ -238,7 +238,7 @@ private:
     unordered_flat_map<const char*, int, charutil::Hasher, charutil::Comparator> m_microArchOpMap;
     CpuArchitecture m_cpuArch;
     int m_selMicroArch;
-    int m_idxMicroArch;
+    int m_idxMicroArch, m_profileMicroArch;
     bool m_showLatency;
 
     unordered_flat_set<uint32_t> m_asmSampleSelect;

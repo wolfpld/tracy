@@ -386,11 +386,13 @@ void SourceView::SetCpuId( uint32_t cpuId )
         if( cpuId == ptr->cpuInfo )
         {
             SelectMicroArchitecture( ptr->moniker );
+            m_profileMicroArch = m_selMicroArch;
             return;
         }
         ptr++;
     }
     SelectMicroArchitecture( "ZEN2" );
+    m_profileMicroArch = -1;
 }
 
 void SourceView::OpenSource( const char* fileName, int line, const View& view, const Worker& worker )
@@ -1726,7 +1728,36 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 const auto w = ImGui::CalcTextSize( v.uArch ).x;
                 if( w > mw ) mw = w;
             }
-            ImGui::TextUnformatted( ICON_FA_MICROCHIP " \xce\xbc""arch:" );
+            if( m_selMicroArch == m_profileMicroArch )
+            {
+                TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_MICROCHIP );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Selected microarchitecture is the same as the profiled application was running on" );
+                    ImGui::EndTooltip();
+                }
+            }
+            else
+            {
+                TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), ICON_FA_MICROCHIP );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Selected microarchitecture does not match the one profiled application was running on" );
+                    if( m_profileMicroArch >= 0 )
+                    {
+                        ImGui::Text( "Measurements were performed on the %s microarchitecture", s_uArchUx[m_profileMicroArch].uArch );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( "Measurements were performed on an unknown microarchitecture" );
+                    }
+                    ImGui::EndTooltip();
+                }
+            }
+            ImGui::SameLine( 0, 0 );
+            ImGui::TextUnformatted( " \xce\xbc""arch:" );
             ImGui::SameLine();
             ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );

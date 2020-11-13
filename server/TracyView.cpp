@@ -919,6 +919,19 @@ bool View::DrawImpl()
             ImGui::Text( "Profiler memory usage" );
             ImGui::EndTooltip();
         }
+        if( m_totalMemory != 0 )
+        {
+            ImGui::SameLine();
+            const auto memUse = float( memUsage ) / m_totalMemory * 100;
+            if( memUse < 80 )
+            {
+                ImGui::TextDisabled( "(%.2f%%)", memUse );
+            }
+            else
+            {
+                ImGui::TextColored( ImVec4( 1.f, 0.25f, 0.25f, 1.f ), "(%.2f%%)", memUse );
+            }
+        }
         ImGui::SameLine();
         dx = ImGui::GetCursorPosX() - cx;
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );

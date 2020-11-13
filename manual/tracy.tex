@@ -3157,7 +3157,7 @@ If the listed assembly code targets x86 or x64 instruction set architectures, ho
 \item \emph{Ports} -- Which ports (execution units) are required for dispatch of microinstructions. For example, \texttt{2*p0+1*p015} would mean that out of the three microinstructions implementing the assembly instruction, two can only be executed on port 0, and one microinstruction can be executed on ports 0, 1, or 5. Number of available ports and their capabilities vary between different processors architectures. Refer to \url{https://wikichip.org/} for more information.
 \end{itemize}
 
-Selection of the CPU microarchitecture can be performed using the \emph{\faMicrochip{}~\textmu{}arch} drop-down. Each architecture is accompanied with a name of an example CPU implementing it.
+Selection of the CPU microarchitecture can be performed using the \emph{\faMicrochip{}~\textmu{}arch} drop-down. Each architecture is accompanied with a name of an example CPU implementing it. If the current selection matches the microarchitecture on which the profiled application was running on, the \faMicrochip{}~icon will be green\footnote{Comparing sampled instruction counts with microarchitectural details only makes sense when this selection is properly matched.}. Otherwise it will be red\footnote{This can be used to gain insight into how the code \emph{may} behave on other processors.}.
 
 Enabling the \emph{\faTruckLoading{}~Latency} option will display graphical representation of instruction latencies on the listing. Minimum latency of an instruction is represented with a red bar, while the maximum latency is represented by a yellow bar.
 

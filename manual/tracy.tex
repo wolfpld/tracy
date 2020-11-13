@@ -393,7 +393,10 @@ noborder=true,
 couleur=black!5,
 logo=\bcbombe
 ]{Important}
-Double-check that the define name is entered correctly (as \texttt{TRACY\_ENABLE}), don't make a mistake of adding an additional \texttt{D} at the end. Make sure that this macro is defined for all files across your project (e.g. it should be specified in the \texttt{CFLAGS} variable, which is always passed to the compiler, or in an equivalent way), and \emph{not} as a \texttt{\#define} in just some of the source files.
+\begin{itemize}
+\item Double-check that the define name is entered correctly (as \texttt{TRACY\_ENABLE}), don't make a mistake of adding an additional \texttt{D} at the end. Make sure that this macro is defined for all files across your project (e.g. it should be specified in the \texttt{CFLAGS} variable, which is always passed to the compiler, or in an equivalent way), and \emph{not} as a \texttt{\#define} in just some of the source files.
+\item The value of the define is not taken into consideration by Tracy, only the fact if the macro is defined, or not (unless specified otherwise). Be careful not to make a mistake of assigning numeric values to Tracy defines, which could lead you to being puzzled why constructs such as \texttt{TRACY\_ENABLE=0} don't work as you expect them to do.
+\end{itemize}
 \end{bclogo}
 
 The application you want to profile should be compiled with all the usual optimization options enabled (i.e.~make a release build). It makes no sense to profile debugging builds, as the unoptimized code and additional checks (asserts, etc.) completely change how the program behaves.

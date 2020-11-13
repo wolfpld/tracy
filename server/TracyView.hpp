@@ -138,6 +138,7 @@ private:
         LastRange
     };
 
+    void InitMemory();
     void InitTextEditor( ImFont* font );
 
     const char* ShortenNamespace( const char* name ) const;
@@ -328,6 +329,7 @@ private:
     ViewMode m_viewMode;
     bool m_viewModeHeuristicTry = false;
     DecayValue<bool> m_forceConnectionPopup = false;
+    uint64_t m_totalMemory;
 
     ViewData m_vd;
 

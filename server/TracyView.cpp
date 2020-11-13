@@ -46,6 +46,15 @@
 #  include "../nfd/nfd.h"
 #endif
 
+#ifdef _WIN32
+#  include <windows.h>
+#elif defined __linux__
+#  include <sys/sysinfo.h>
+#elif defined __APPLE__ || defined BSD
+#  include <sys/types.h>
+#  include <sys/sysctl.h>
+#endif
+
 #include "IconsFontAwesome5.h"
 
 #ifndef M_PI_2
@@ -132,6 +141,7 @@ View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16
     assert( s_instance == nullptr );
     s_instance = this;
 
+    InitMemory();
     InitTextEditor( fixedWidth );
 }
 
@@ -155,6 +165,7 @@ View::View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fix
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
+    InitMemory();
     InitTextEditor( fixedWidth );
     SetViewToLastFrames();
     m_userData.StateShouldBePreserved();
@@ -182,6 +193,32 @@ View::~View()
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
+}
+
+void View::InitMemory()
+{
+#ifdef _WIN32
+    MEMORYSTATUSEX statex;
+    statex.dwLength = sizeof( statex );
+    GlobalMemoryStatusEx( &statex );
+    m_totalMemory = statex.ullTotalPhys;
+#elif defined __linux__
+    struct sysinfo sysInfo;
+    sysinfo( &sysInfo );
+    m_totalMemory = sysInfo.totalram;
+#elif defined __APPLE__
+    size_t memSize;
+    size_t sz = sizeof( memSize );
+    sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
+    m_totalMemory = memSize;
+#elif defined BSD
+    size_t memSize;
+    size_t sz = sizeof( memSize );
+    sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
+    m_totalMemory = memSize;
+#else
+    m_totalMemory = 0;
+#endif
 }
 
 void View::InitTextEditor( ImFont* font )

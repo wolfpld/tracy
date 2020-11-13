@@ -794,7 +794,7 @@ static bool Close(const Channel& ch) {
     return true;
 }
 
-// Internal implementation helper for WriteBufferToFile.
+// Internal implementation helper for WriteBufferToSystemFile.
 // Writes buffer contents (given by address `buf` and size `buf_size`) to
 // the specified file descriptor (`fd`). Handles the case of `write` writing
 // fewer bytes than requested.
@@ -815,11 +815,13 @@ static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
 }
 
 // Writes buffer contents (given by address `buf` and size `buf_size`) to
-// the file given by `filename`. If opening the file in-process fails, this will attempt
-// opening the file in a subprocess as root (so this allows writing to files
-// requiring more permissions than the calling process has).
+// the file given by `filename`. By a "system file", we mean a file that may
+// ror may not require root permissions to access. If opening the file
+// in-process fails, this will attempt opening the file in a subprocess as
+// root (so this allows writing to files requiring more permissions than
+// the calling process has).
 // The return value indicates success.
-static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf_size) {
+static bool WriteBufferToSystemFile(const char* filename, const void* buf, ssize_t buf_size) {
     Channel ch;
     if (!Open(Mode::Write, filename, &ch)) {
         return false;
@@ -833,18 +835,21 @@ static bool WriteBufferToFile(const char* filename, const void* buf, ssize_t buf
     return true;
 }
 
-// Convenience overload: writes the specified string, without the terminating 0.
-static bool WriteBufferToFile(const char* filename, const char* buf) {
-    return WriteBufferToFile(filename, buf, strlen(buf));
+// Convenience overload: writes the specified 0-terminated string, without
+// the terminating 0.
+static bool WriteBufferToSystemFile(const char* filename, const char* buf) {
+    return WriteBufferToSystemFile(filename, buf, strlen(buf));
 }
 
 // Opens the file given by `filename` for read, and passes the resulting file
 // descriptor to the passed `read_function`, which must return `true` if and only
-// if it succeeded. If opening the file in-process fails, this will attempt
-// opening the file in a subprocess as root (so this allows reading files
-// requiring more permissions than the calling process has).
+// if it succeeded. By a "system file", we mean a file that may
+// ror may not require root permissions to access. If opening the file in-process
+// fails, this will attempt opening the file in a subprocess as root (so this
+// allows reading files requiring more permissions than the calling process has).
 // The return value indicates success.
-static bool ReadFileWithFunction(const char* filename, const std::function<bool(int)> &read_function) {
+static bool ReadSystemFileWithFunction(const char* filename,
+                                       const std::function<bool(int)> &read_function) {
     Channel ch;
     if (!Open(Mode::Read, filename, &ch)) {
         return false;
@@ -892,7 +897,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     // If the 'paranoid' file exists, it may beed to be set to 0 before we can
     // use perf_event_open.
     const char paranoid_filename[] = "/proc/sys/kernel/perf_event_paranoid";
-    if (!WriteBufferToFile(paranoid_filename, "0") && errno != ENOENT) {
+    if (!WriteBufferToSystemFile(paranoid_filename, "0") && errno != ENOENT) {
         TRACY_LOG_ERROR_ERRNO("failed to write to %s", paranoid_filename);
     }
 
@@ -1029,7 +1034,7 @@ static bool TraceWrite( const char* path, const char* val )
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, path, strlen(path) + 1 );
 
-    if (!WriteBufferToFile(tmp, val)) {
+    if (!WriteBufferToSystemFile(tmp, val)) {
         TRACY_LOG_ERROR_ERRNO("failed to write to %s", tmp);
         return false;
     }
@@ -1039,7 +1044,6 @@ static bool TraceWrite( const char* path, const char* val )
 
 static void PrintErrorAboutNeedingRootPermissions() {
     fprintf(stderr, R"TXT(
-
 #############################################################################
 A possible reason for that failure may be that that required root permissions.
 
@@ -1064,14 +1068,12 @@ Ways to fix this:
     not ask for a password. Note, that should already be the case on Android
     on any rooted device. On Android, the first thing to check, then, is that
     your device is rooted (can you get a root shell? Does `su` work?)
- 3. Try editying this file,
-    %s,
+ 3. Try editying this file, TracySysTrace.cpp,
     to make it actually authenticate. For example, instead of doing `sudo -n`,
     how about trying `sudo -A` to get a password prompt from a external
     program, or maybe even just `sudo -S`?
 #############################################################################
-
-)TXT", __FILE__);
+)TXT");
 }
 
 bool SysTraceStart( int64_t& samplingPeriod )
@@ -1403,7 +1405,7 @@ void SysTraceWorker( void* ptr )
     sched_param sp = { 5 };
     pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
 
-    ReadFileWithFunction(tmp, [](int fd) {
+    ReadSystemFileWithFunction(tmp, [](int fd) {
         ProcessTraceLines(fd);
         return true;  // ProcessTraceLines doesn't report errors.
     });
@@ -1414,7 +1416,7 @@ void SysTraceSendExternalName( uint64_t thread )
     char fn[256];
     sprintf( fn, "/proc/%" PRIu64 "/comm", thread );
 
-    if (!ReadFileWithFunction(fn, [=](int fd){
+    if (!ReadSystemFileWithFunction(fn, [=](int fd){
         char buf[256];
         const auto sz = read( fd, buf, sizeof(buf) );
         if (sz == -1) {
@@ -1434,7 +1436,7 @@ void SysTraceSendExternalName( uint64_t thread )
     }
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
-    ReadFileWithFunction(fn, [=](int fd){
+    ReadSystemFileWithFunction(fn, [=](int fd){
         FILE* f = fdopen(dup(fd), "rb");
         if (!f) {
             return false;
@@ -1465,7 +1467,7 @@ void SysTraceSendExternalName( uint64_t thread )
             }
             char fn[256];
             sprintf( fn, "/proc/%i/comm", pid );
-            ReadFileWithFunction(fn, [=](int fd){
+            ReadSystemFileWithFunction(fn, [=](int fd){
                 char buf[256];
                 const auto sz = read( fd, buf, sizeof(buf));
                 if (sz == -1) {

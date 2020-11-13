@@ -816,7 +816,7 @@ static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
 
 // Writes buffer contents (given by address `buf` and size `buf_size`) to
 // the file given by `filename`. By a "system file", we mean a file that may
-// ror may not require root permissions to access. If opening the file
+// or may not require root permissions to access. If opening the file
 // in-process fails, this will attempt opening the file in a subprocess as
 // root (so this allows writing to files requiring more permissions than
 // the calling process has).
@@ -844,7 +844,7 @@ static bool WriteBufferToSystemFile(const char* filename, const char* buf) {
 // Opens the file given by `filename` for read, and passes the resulting file
 // descriptor to the passed `read_function`, which must return `true` if and only
 // if it succeeded. By a "system file", we mean a file that may
-// ror may not require root permissions to access. If opening the file in-process
+// or may not require root permissions to access. If opening the file in-process
 // fails, this will attempt opening the file in a subprocess as root (so this
 // allows reading files requiring more permissions than the calling process has).
 // The return value indicates success.
@@ -1429,14 +1429,15 @@ void SysTraceSendExternalName( uint64_t thread )
         // This function frequently fails to read files because the /proc/$tid/
         // files that it tries to read go away when the thread terminates, and there
         // is no synchronization to prevent that from happening.
-        // To limit logging verbosity, we don't report these failures.
+        // To limit logging verbosity, we don't report these failures on stderr.
         // The user may still see stderr messages coming directly from the exec'd
         // `dd` command.
+        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
         return;
     }
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
-    ReadSystemFileWithFunction(fn, [=](int fd){
+    if (!ReadSystemFileWithFunction(fn, [=](int fd){
         FILE* f = fdopen(dup(fd), "rb");
         if (!f) {
             return false;
@@ -1479,7 +1480,9 @@ void SysTraceSendExternalName( uint64_t thread )
             });
         }
         return true;
-    });
+    })) {
+        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
+    }
 }
 
 }

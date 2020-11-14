@@ -4081,12 +4081,18 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 const auto& sym = frame->data[ghostKey.inlineFrame];
                 const auto isInline = ghostKey.inlineFrame != frame->size-1;
                 const auto col = isInline ? DarkenColor( color ) : color;
-                const auto symName = m_worker.GetString( sym.name );
+                auto symName = m_worker.GetString( sym.name );
                 uint32_t txtColor = symName[0] == '[' ? 0xFF999999 : 0xFFFFFFFF;
-                const auto tsz = ImGui::CalcTextSize( symName );
+                auto tsz = ImGui::CalcTextSize( symName );
 
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), col );
                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), outline, 0.f, -1 );
+
+                if( tsz.x > zsz )
+                {
+                    symName = ShortenNamespace( symName );
+                    tsz = ImGui::CalcTextSize( symName );
+                }
 
                 if( tsz.x < zsz )
                 {

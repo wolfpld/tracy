@@ -1167,7 +1167,7 @@ void SysTraceWorker( void* ptr )
                 close( pipefd[1] );
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
+#if defined __aarch64__ || defined __ARM_ARCH
                 execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
 #endif
                 execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );

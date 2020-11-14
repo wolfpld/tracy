@@ -17,6 +17,8 @@ v0.x.x (xxxx-xx-xx)
   physical memory.
 - Microarchitecture mismatch is now clearly displayed in the source view
   window.
+- Ghost zones are now supporting all zone coloring modes and namespace
+  shortening.
 
 
 v0.7.3 (2020-10-06)

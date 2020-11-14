@@ -3949,9 +3949,6 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
 
-    const auto color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
-    const auto outline = HighlightColor( color );
-
     depth++;
     int maxdepth = depth;
 
@@ -3962,6 +3959,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
+            const auto color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
             const auto px0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             auto px1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
             auto rend = end;
@@ -4000,6 +3998,26 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         {
             const auto& ghostKey = m_worker.GetGhostFrame( ev.frame );
             const auto frame = m_worker.GetCallstackFrame( ghostKey.frame );
+
+            uint32_t color;
+            if( m_vd.dynamicColors == 2 )
+            {
+                if( frame )
+                {
+                    const auto& sym = frame->data[ghostKey.inlineFrame];
+                    color = GetHsvColor( sym.name.Idx(), depth );
+                }
+                else
+                {
+                    color = GetHsvColor( ghostKey.frame.data, depth );
+                }
+            }
+            else
+            {
+                color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
+            }
+            const auto outline = HighlightColor( color );
+
             const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );

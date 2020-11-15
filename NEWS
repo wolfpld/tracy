@@ -20,6 +20,7 @@ v0.x.x (xxxx-xx-xx)
 - Ghost zones are now supporting all zone coloring modes and namespace
   shortening.
 - Extend C API to support memory pools.
+- Frame rate targets can be now visually represented on the timeline view.
 
 
 v0.7.3 (2020-10-06)

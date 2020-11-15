@@ -2346,13 +2346,15 @@ Frames from each frame set are displayed directly underneath the time scale. Eac
 \label{framesetsfig}
 \end{figure}
 
-On figure~\ref{framesetsfig} we can see the fully described frames~312 and 347. The description consists of the frame name, which is \emph{Frame} for the default frame set (section~\ref{markingframes}) or the name you used for the secondary name set (section~\ref{secondaryframeset}), the frame number and the frame time. The frame~348 is too small to be fully displayed, so only the frame time is shown. The frame~349 is even smaller, with no space for any text. Moreover, frames~313~to~346 are too small to be displayed individually, so they are replaced with a zig-zag pattern, as described in section~\ref{collapseditems}.
+On figure~\ref{framesetsfig} we can see the fully described frames~312 and 347. The description consists of the frame name, which is \emph{Frame} for the default frame set (section~\ref{markingframes}) or the name you used for the secondary name set (section~\ref{secondaryframeset}), the frame number and the frame time. Since frame~348 is too small to be fully labeled, only the frame time is shown. Frame~349 is even smaller, with no space for any text. Moreover, frames~313~to~346 are too small to be displayed individually, so they are replaced with a zig-zag pattern, as described in section~\ref{collapseditems}.
 
 You can also see that there are frame separators, projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. You can make a frame set active by clicking the \LMB{}~left mouse button on a frame set row you want to select (also see section~\ref{controlmenu}).
 
 Clicking the \MMB{} middle mouse button on a frame will zoom the view to the extent of the frame.
 
 If a frame has an associated frame image (see chapter~\ref{frameimages}), you can hold the \keys{\ctrl} key and click the \LMB{}~left mouse button on the frame, to open the frame image playback window (see chapter~\ref{playback}) and set the playback to the selected frame.
+
+If the \emph{\faFlagCheckered{}~Draw frame targets} option is enabled (see section~\ref{options}), time regions in frames exceeding the set target value will be marked with a red background.
 
 \paragraph{Zones, locks and plots display}
 \label{zoneslocksplots}
@@ -2605,6 +2607,7 @@ In this window you can set various trace-related options. The timeline view migh
 
 \begin{itemize}
 \item \emph{\faExpand{} Draw empty labels} -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
+\item \emph{\faFlagCheckered{} Draw frame targets} -- If enabled, time regions in any frame from the currently selected frame set, which exceed the specified \emph{Target FPS} value will be marked with a red background on timeline view.
 \item \emph{\faHiking{} Draw context switches} -- Allows disabling context switch display in threads.
 \begin{itemize}
 \item \emph{\faMoon{} Darken inactive thread} -- If enabled, inactive regions in threads will be dimmed out.

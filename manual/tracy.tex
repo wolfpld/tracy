@@ -1657,7 +1657,9 @@ Using this functionality in a proper way can be quite tricky, as you also will n
 
 There is no explicit support for \texttt{realloc} function. You will need to handle it by marking memory allocations and frees, according to the system manual describing behavior of this routine.
 
-For more information refer to section~\ref{memoryprofiling}.
+Memory pools (section~\ref{memorypools}) are supported through macros with \texttt{N} postfix.
+
+For more information about memory profiling refer to section~\ref{memoryprofiling}.
 
 \subsubsection{Plots and messages}
 
@@ -1676,7 +1678,7 @@ Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
 
 \subsubsection{Call stacks}
 
-You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, \texttt{TracyCSecureAllocS}, \texttt{TracyCSecureFreeS}, \texttt{TracyCMessageS}, \texttt{TracyCMessageLS}, \texttt{TracyCMessageCS}, \texttt{TracyCMessageLCS}.
+You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using macros with \texttt{S} postfix, such as: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, and so on.
 
 \subsubsection{Using the C API to implement bindings}
 \label{capibindings}

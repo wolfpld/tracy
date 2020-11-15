@@ -17,6 +17,7 @@ v0.x.x (xxxx-xx-xx)
   physical memory.
 - Microarchitecture mismatch is now clearly displayed in the source view
   window.
+- Added Zen 3 and Cascade Lake microarchitectural data.
 - Ghost zones are now supporting all zone coloring modes and namespace
   shortening.
 - Extend C API to support memory pools.

@@ -8335,6 +8335,18 @@ void View::DrawOptions()
     bool val = m_vd.drawEmptyLabels;
     ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &val );
     m_vd.drawEmptyLabels = val;
+    val = m_vd.drawFrameTargets;
+    ImGui::Checkbox( ICON_FA_FLAG_CHECKERED " Draw frame targets", &val );
+    m_vd.drawFrameTargets = val;
+    ImGui::Indent();
+    int tmp = m_vd.frameTarget;
+    ImGui::SetNextItemWidth( 120 );
+    if( ImGui::InputInt( "Target FPS", &tmp ) )
+    {
+        if( tmp < 1 ) tmp = 1;
+        m_vd.frameTarget = tmp;
+    }
+    ImGui::Unindent();
     if( m_worker.HasContextSwitches() )
     {
         ImGui::Separator();

@@ -19,6 +19,7 @@ v0.x.x (xxxx-xx-xx)
   window.
 - Ghost zones are now supporting all zone coloring modes and namespace
   shortening.
+- Extend C API to support memory pools.
 
 
 v0.7.3 (2020-10-06)

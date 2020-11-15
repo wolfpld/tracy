@@ -2429,6 +2429,7 @@ void View::DrawZoneFrames( const FrameData& frames )
     int64_t endPos = -1;
     bool tooltipDisplayed = false;
     const auto activeFrameSet = m_frames == &frames;
+    const int64_t frameTarget = ( activeFrameSet && m_vd.drawFrameTargets ) ? 1000000000ll / m_vd.frameTarget : std::numeric_limits<int64_t>::max();
 
     const auto inactiveColor = GetColorMuted( 0x888888, activeFrameSet );
     const auto activeColor = GetColorMuted( 0xFFFFFF, activeFrameSet );
@@ -2538,6 +2539,10 @@ void View::DrawZoneFrames( const FrameData& frames )
 
         if( activeFrameSet )
         {
+            if( fend - fbegin > frameTarget )
+            {
+                draw->AddRectFilled( wpos + ImVec2( ( fbegin + frameTarget - m_vd.zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns, wh ), 0x224444FF );
+            }
             if( fbegin >= m_vd.zvStart && endPos != fbegin )
             {
                 draw->AddLine( wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns, wh ), 0x22FFFFFF );

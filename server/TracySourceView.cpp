@@ -50,6 +50,7 @@ static constexpr MicroArchUx s_uArchUx[] = {
     { "Cascade Lake", "Core i9-10980XE", "CLX" },
     { "AMD Zen+", "Ryzen 5 2600", "ZEN+" },
     { "AMD Zen 2", "Ryzen 7 3700X", "ZEN2" },
+    { "AMD Zen 3", "Ryzen 9 5950X", "ZEN3" },
 };
 
 static constexpr const char* s_regNameX86[] = {
@@ -325,7 +326,7 @@ static constexpr CpuIdMap s_cpuIdMap[] = {
     { PackCpuInfo( 0x860F01 ), "ZEN2" },
     { PackCpuInfo( 0x860F81 ), "ZEN2" },
     { PackCpuInfo( 0x890F00 ), "ZEN2" },
-    //{ PackCpuInfo( 0xA20F10 ), "ZEN3" },
+    { PackCpuInfo( 0xA20F10 ), "ZEN3" },
     { PackCpuInfo( 0x0706E5 ), "ICL" },
     { PackCpuInfo( 0x050656 ), "CLX" },
     { PackCpuInfo( 0x050657 ), "CLX" },

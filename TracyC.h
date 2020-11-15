@@ -34,6 +34,11 @@ typedef const void* TracyCZoneCtx;
 #define TracyCSecureAlloc(x,y)
 #define TracyCSecureFree(x)
 
+#define TracyCAllocN(x,y,z)
+#define TracyCFreeN(x,y)
+#define TracyCSecureAllocN(x,y,z)
+#define TracyCSecureFreeN(x,y)
+
 #define TracyCFrameMark
 #define TracyCFrameMarkNamed(x)
 #define TracyCFrameMarkStart(x)
@@ -56,6 +61,11 @@ typedef const void* TracyCZoneCtx;
 #define TracyCFreeS(x,y)
 #define TracyCSecureAllocS(x,y,z)
 #define TracyCSecureFreeS(x,y)
+
+#define TracyCAllocNS(x,y,z,w)
+#define TracyCFreeNS(x,y,z)
+#define TracyCSecureAllocNS(x,y,z,w)
+#define TracyCSecureFreeNS(x,y,z)
 
 #define TracyCMessageS(x,y,z)
 #define TracyCMessageLS(x,y)
@@ -138,6 +148,11 @@ TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int cal
 #  define TracyCSecureAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK, 1 )
 #  define TracyCSecureFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK, 1 )
 
+#  define TracyCAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, 0, name )
+#  define TracyCFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 0, name )
+#  define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, 1, name )
+#  define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 1, name )
+
 #  define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, TRACY_CALLSTACK );
 #  define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, TRACY_CALLSTACK );
 #  define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, TRACY_CALLSTACK );
@@ -147,6 +162,11 @@ TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int cal
 #  define TracyCFree( ptr ) ___tracy_emit_memory_free( ptr, 0 );
 #  define TracyCSecureAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size, 1 );
 #  define TracyCSecureFree( ptr ) ___tracy_emit_memory_free( ptr, 1 );
+
+#  define TracyCAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_named( ptr, size, 0, name );
+#  define TracyCFreeN( ptr, name ) ___tracy_emit_memory_free_named( ptr, 0, name );
+#  define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_named( ptr, size, 1, name );
+#  define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_named( ptr, 1, name );
 
 #  define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, 0 );
 #  define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, 0 );
@@ -185,6 +205,11 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #  define TracyCSecureAllocS( ptr, size, depth ) ___tracy_emit_memory_alloc_callstack( ptr, size, depth, 1 )
 #  define TracyCSecureFreeS( ptr, depth ) ___tracy_emit_memory_free_callstack( ptr, depth, 1 )
 
+#  define TracyCAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, 0, name )
+#  define TracyCFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 0, name )
+#  define TracyCSecureAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, 1, name )
+#  define TracyCSecureFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 1, name )
+
 #  define TracyCMessageS( txt, size, depth ) ___tracy_emit_message( txt, size, depth );
 #  define TracyCMessageLS( txt, depth ) ___tracy_emit_messageL( txt, depth );
 #  define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_messageC( txt, size, color, depth );
@@ -199,6 +224,11 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #  define TracyCFreeS( ptr, depth ) TracyCFree( ptr )
 #  define TracyCSecureAllocS( ptr, size, depth ) TracyCSecureAlloc( ptr, size )
 #  define TracyCSecureFreeS( ptr, depth ) TracyCSecureFree( ptr )
+
+#  define TracyCAllocNS( ptr, size, depth, name ) TracyCAllocN( ptr, size, name )
+#  define TracyCFreeNS( ptr, depth, name ) TracyCFreeN( ptr, name )
+#  define TracyCSecureAllocNS( ptr, size, depth, name ) TracyCSecureAllocN( ptr, size, name )
+#  define TracyCSecureFreeNS( ptr, depth, name ) TracyCSecureFreeN( ptr, name )
 
 #  define TracyCMessageS( txt, size, depth ) TracyCMessage( txt, size )
 #  define TracyCMessageLS( txt, depth ) TracyCMessageL( txt )

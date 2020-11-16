@@ -594,7 +594,6 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <inttypes.h>
 #    include <limits>
 #    include <poll.h>
-#    include <stdarg.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
@@ -606,11 +605,13 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <sys/mman.h>
 #    include <sys/ioctl.h>
 
-#    include <functional>
-
 #    include "TracyProfiler.hpp"
 #    include "TracyRingBuffer.hpp"
 #    include "TracyThread.hpp"
+
+#    ifdef __ANDROID__
+#      include "TracySysTracePayload.hpp"
+#    endif
 
 namespace tracy
 {
@@ -632,239 +633,17 @@ static int s_numCpus = 0;
 static constexpr size_t RingBufSize = 64*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
 
-static void log_error_errno(const char* file, int line, const char *format, ...) {
-    va_list ap;
-    va_start(ap, format);
-    char buf[256];
-    vsnprintf(buf, sizeof(buf), format, ap);
-    va_end(ap);
-    fprintf(stderr, "ERROR (%s:%d) %s (errno=%d, %s)\n",
-            file, line, buf, errno, strerror(errno));
-    fflush(stderr);
-}
-
-#define TRACY_LOG_ERROR_ERRNO(...) \
-    ::tracy::log_error_errno(__FILE__, __LINE__, __VA_ARGS__)
-
 static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )
 {
     return syscall( __NR_perf_event_open, hw_event, pid, cpu, group_fd, flags );
 }
 
-namespace {
-
-// Encapsulates a file descriptor and possibly a PID. Two modes:
-//   Either (if pid==0) just a file that we opened in this process.
-//   Or (if pid!=0) our end of a pipe to a subprocess (given by pid) where we
-//     perform file I/O as root. 
-struct Channel {
-    int fd;
-    int pid;
-};
-
-// File access mode: read-only or write-only.
-enum class Mode {
-    Read,
-    Write
-};
-
-}  // end anonymous namespace
-
-// Internal implementation helper for the Open() function.
-// Just opens a file and return the descriptor - thin wrapper around open(2).
-// Motivation: have a homogeneous interface with OpenAsRoot().
-// `ch` is the output-parameter where we return the file descriptor.
-static bool OpenInProcess(Mode mode, const char* filename, Channel* ch) {
-    int fd = open(filename, mode == Mode::Read ? O_RDONLY : O_WRONLY);
-    if (fd == -1) {
-        // Don't log an error here, this is normal, it's what we have
-        // OpenAsRoot as a fallback for.
-        return false;
-    }
-    ch->fd = fd;
-    ch->pid = 0;
-    return true;
-}
-
-// Internal implementation helper for the Open() function.
-// Opens a file that may require root privileges to access.
-// Works by forking a subprocess where the actual file I/O is done
-// as root (exec su), and transferring the data via a pipe to our
-// process. The `ch` output parameter is populated with the file
-// descriptor of our end of that pipe, and the pid of the subprocess.
-static bool OpenAsRoot(Mode mode, const char* filename, Channel* ch) {
-    int data_transfer_pipe[2];
-    if( pipe( data_transfer_pipe ) == -1 )
-    {
-        return false;
-    }
-    int read_end = data_transfer_pipe[0];
-    int write_end = data_transfer_pipe[1];
-    int child_end = mode == Mode::Read ? write_end : read_end;
-    int parent_end = mode == Mode::Read ? read_end : write_end;
-        
-    const int pid = fork();
-    if (pid == -1) {
-        return false;
-    }
-
-    if( pid == 0 )
-    {
-        // Child process.
-        close( parent_end );
-        // Redirect either standard input or standard output (depending on if we're
-        // going to be reading from or writing to a file) to our end of the pipe.
-        int fd_to_dup_to_child_end = mode == Mode::Read ? STDOUT_FILENO : STDIN_FILENO;
-        if( dup2( child_end, fd_to_dup_to_child_end ) == -1 ) {
-            return false;
-        }
-        close( child_end );
-        char dd_arg[256];
-        strcpy(dd_arg, mode == Mode::Read ? "if=" : "of=");
-        strcpy(dd_arg + strlen(dd_arg), filename);
-#ifdef __ANDROID__
-        execlp( "su", "su", "root", "dd", dd_arg, "status=none", nullptr);
-#else
-        execlp( "sudo", "sudo", "-n", "dd", dd_arg, "status=none", nullptr);
-#endif
-        // The above exec only returns in case of failure. Since here we're in the
-        // child process, we want any error to be fatal.
-        exit( EXIT_FAILURE );
-    }
-    
-    // Parent process.
-    close( child_end );
-    ch->fd = parent_end;
-    ch->pid = pid;
-    return true;
-}
-
-// Opens a file that might require root permissions to access.
-// First tries to open it directly in-process, then tries OpenAsRoot,
-// spawning a subprocess to perform the file I/O as root (exec su).
-// The output-parameter `ch` is populated with the resulting opened
-// file descriptor and the pid of the subprocess (or 0 if the file
-// was just opened in-process). The output `ch` should be closed by
-// the Close() function.
-// The return value indicates success.
-static bool Open(Mode mode, const char* filename, Channel* ch) {
-    if (OpenInProcess(mode, filename, ch)) {
-        return true;
-    }
-    if (OpenAsRoot(mode, filename, ch)) {
-        return true;
-    }
-    return false;
-}
-
-// Internal implementation helper for Close().
-// Waits for the process given by `pid` to terminate.
-// The return value is true with the subprocess exited with
-// EXIT_SUCCESS, false otherwise.
-static bool WaitForSubprocess(int pid) {
-    while(true) {
-        int status = 0;
-        if (waitpid(pid, &status, 0) == -1) {
-            return false;
-        }
-        if (WIFEXITED(status)) {
-            return WEXITSTATUS(status) == EXIT_SUCCESS;
-        }
-        if (WIFSIGNALED(status)) {
-            return false;
-        }
-    }
-}
-
-// Closes a Channel `ch` that was previously opened by Open().
-// In case of a subprocess channel (OpenAsRoot), this will first
-// wait for that subprocess to terminate.
-// The return value indicates success. In the case where a
-// subprocess was used, any failure in the actual remote file I/O
-// may only be reported here (so it's important to check this retval).
-static bool Close(const Channel& ch) {
-    if (close(ch.fd) == -1) {
-        return false;
-    }
-    if (ch.pid) {
-        if (!WaitForSubprocess(ch.pid)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Internal implementation helper for WriteBufferToSystemFile.
-// Writes buffer contents (given by address `buf` and size `buf_size`) to
-// the specified file descriptor (`fd`). Handles the case of `write` writing
-// fewer bytes than requested.
-static bool WriteBufferToFd(int fd, const void* buf, ssize_t buf_size) {
-    const char* buf_ptr = static_cast<const char*>(buf);
-    while( buf_size > 0 )
-    {
-        ssize_t write_retval = write( fd, buf_ptr, buf_size );
-        if( write_retval < 0 )
-        {
-            return false;
-        }
-        buf_size -= write_retval;
-        buf_ptr += write_retval;
-    }
-    assert(buf_size == 0);
-    return true;
-}
-
-// Writes buffer contents (given by address `buf` and size `buf_size`) to
-// the file given by `filename`. By a "system file", we mean a file that may
-// or may not require root permissions to access. If opening the file
-// in-process fails, this will attempt opening the file in a subprocess as
-// root (so this allows writing to files requiring more permissions than
-// the calling process has).
-// The return value indicates success.
-static bool WriteBufferToSystemFile(const char* filename, const void* buf, ssize_t buf_size) {
-    Channel ch;
-    if (!Open(Mode::Write, filename, &ch)) {
-        return false;
-    }
-    if (!WriteBufferToFd(ch.fd, buf, buf_size)) {
-        return false;
-    }
-    if (!Close(ch)) {
-        return false;
-    }
-    return true;
-}
-
-// Convenience overload: writes the specified 0-terminated string, without
-// the terminating 0.
-static bool WriteBufferToSystemFile(const char* filename, const char* buf) {
-    return WriteBufferToSystemFile(filename, buf, strlen(buf));
-}
-
-// Opens the file given by `filename` for read, and passes the resulting file
-// descriptor to the passed `read_function`, which must return `true` if and only
-// if it succeeded. By a "system file", we mean a file that may
-// or may not require root permissions to access. If opening the file in-process
-// fails, this will attempt opening the file in a subprocess as root (so this
-// allows reading files requiring more permissions than the calling process has).
-// The return value indicates success.
-static bool ReadSystemFileWithFunction(const char* filename,
-                                       const std::function<bool(int)> &read_function) {
-    Channel ch;
-    if (!Open(Mode::Read, filename, &ch)) {
-        return false;
-    }
-    if (!read_function(ch.fd)) {
-        return false;
-    }
-    if (!Close(ch)) {
-        return false;
-    }
-    return true;
-}
-
 static void SetupSampling( int64_t& samplingPeriod )
 {
+#ifndef CLOCK_MONOTONIC_RAW
+    return;
+#endif
+
     samplingPeriod = 100*1000;
 
     s_numCpus = (int)std::thread::hardware_concurrency();
@@ -887,26 +666,14 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.freq = 1;
 #if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     pe.use_clockid = 1;
-#ifdef CLOCK_MONOTONIC_RAW
     pe.clockid = CLOCK_MONOTONIC_RAW;
-#else
-    pe.clockid = CLOCK_MONOTONIC;
 #endif
-#endif
-
-    // If the 'paranoid' file exists, it may beed to be set to 0 before we can
-    // use perf_event_open.
-    const char paranoid_filename[] = "/proc/sys/kernel/perf_event_paranoid";
-    if (!WriteBufferToSystemFile(paranoid_filename, "0") && errno != ENOENT) {
-        TRACY_LOG_ERROR_ERRNO("failed to write to %s", paranoid_filename);
-    }
 
     for( int i=0; i<s_numCpus; i++ )
     {
         const int fd = perf_event_open( &pe, -1, i, -1, 0 );
-        if( fd == -1)
+        if( fd == -1 )
         {
-            TRACY_LOG_ERROR_ERRNO("perf_event_open failed");
             for( int j=0; j<i; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
             tracy_free( s_ring );
             return;
@@ -1028,75 +795,105 @@ static void SetupSampling( int64_t& samplingPeriod )
     }, nullptr );
 }
 
-static bool TraceWrite( const char* path, const char* val )
+#ifdef __ANDROID__
+static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
+{
+    char tmp[256];
+    sprintf( tmp, "su -c 'echo \"%s\" > %s%s'", val, BasePath, path );
+    return system( tmp ) == 0;
+}
+#else
+static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
 {
     char tmp[256];
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
-    memcpy( tmp + sizeof( BasePath ) - 1, path, strlen(path) + 1 );
+    memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
 
-    if (!WriteBufferToSystemFile(tmp, val)) {
-        TRACY_LOG_ERROR_ERRNO("failed to write to %s", tmp);
-        return false;
+    int fd = open( tmp, O_WRONLY );
+    if( fd < 0 ) return false;
+
+    for(;;)
+    {
+        ssize_t cnt = write( fd, val, vsz );
+        if( cnt == (ssize_t)vsz )
+        {
+            close( fd );
+            return true;
+        }
+        if( cnt < 0 )
+        {
+            close( fd );
+            return false;
+        }
+        vsz -= cnt;
+        val += cnt;
     }
-
-    return true;
 }
+#endif
 
-static void PrintErrorAboutNeedingRootPermissions() {
-    fprintf(stderr, R"TXT(
-#############################################################################
-A possible reason for that failure may be that that required root permissions.
+#ifdef __ANDROID__
+void SysTraceInjectPayload()
+{
+    int pipefd[2];
+    if( pipe( pipefd ) == 0 )
+    {
+        const auto pid = fork();
+        if( pid == 0 )
+        {
+            // child
+            close( pipefd[1] );
+            if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
+            {
+                close( pipefd[0] );
+                execlp( "su", "su", "-c", "cat > /data/tracy_systrace", (char*)nullptr );
+                exit( 1 );
+            }
+        }
+        else if( pid > 0 )
+        {
+            // parent
+            close( pipefd[0] );
 
-If it's acceptable for your profilee program to run as root, that's
-easiest, but as this isn't always possible, tracy instrumentation
-supports non-root programs by creating subprocesses running only some file
-I/O as root, by exec'ing the command `sudo` (or, on Android, `su`) in a
-non-interactive way (e.g. `su -n`).
+#ifdef __aarch64__
+            write( pipefd[1], tracy_systrace_aarch64_data, tracy_systrace_aarch64_size );
+#else
+            write( pipefd[1], tracy_systrace_armv7_data, tracy_systrace_armv7_size );
+#endif
+            close( pipefd[1] );
+            waitpid( pid, nullptr, 0 );
 
-You are seeing this error message because the latter just failed. Typically,
-that is because sudo or su needs authentication to proceed, so it was not
-possible to perform a non-interactive sudo or su.
-
-Ways to fix this:
- 0. As noted above, consider running the whole program as root if possible.
- 1. Try relying on your system's persistence of authentication: maybe it
-    does not require a sudo or su password every time? It may work
-    to perform any sudo or su authentication manually in your terminal,
-    before running your program again, letting it ride on the persistent
-    authentication.
- 2. Try editing your system configuration (e.g. see `man sudo`) so it does
-    not ask for a password. Note, that should already be the case on Android
-    on any rooted device. On Android, the first thing to check, then, is that
-    your device is rooted (can you get a root shell? Does `su` work?)
- 3. Try editying this file, TracySysTrace.cpp,
-    to make it actually authenticate. For example, instead of doing `sudo -n`,
-    how about trying `sudo -A` to get a password prompt from a external
-    program, or maybe even just `sudo -S`?
-#############################################################################
-)TXT");
+            system( "su -c 'chmod 700 /data/tracy_systrace'" );
+        }
+    }
 }
+#endif
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
-    if( !TraceWrite( TracingOn, "0" ) ) {
-        PrintErrorAboutNeedingRootPermissions();
-        return false;
-    }
-    if( !TraceWrite( CurrentTracer, "nop" ) ) return false;
-    if( !TraceWrite( TraceOptions, "norecord-cmd" ) ) return false;
-    if( !TraceWrite( TraceOptions, "norecord-tgid" ) ) return false;
-    if( !TraceWrite( TraceOptions, "noirq-info" ) ) return false;
-    if( !TraceWrite( TraceOptions, "noannotate" ) ) return false;
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    if( !TraceWrite( TraceClock, "x86-tsc" ) ) return false;
-#else
-    if( !TraceWrite( TraceClock, "mono_raw" ) ) return false;
+#ifndef CLOCK_MONOTONIC_RAW
+    return false;
 #endif
-    if( !TraceWrite( SchedSwitch, "1" ) ) return false;
-    if( !TraceWrite( SchedWakeup, "1" ) ) return false;
-    if( !TraceWrite( BufferSizeKb, "4096" ) ) return false;
 
-    if( !TraceWrite( TracingOn, "1" ) ) return false;
+    if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
+    if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 );
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 );
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 );
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "noannotate", 11 );
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
+#else
+    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "mono_raw", 9 ) ) return false;
+#endif
+    if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
+    if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
+    if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "4096", 5 ) ) return false;
+
+#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
+    SysTraceInjectPayload();
+#endif
+
+    if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
     traceActive.store( true, std::memory_order_relaxed );
 
     SetupSampling( samplingPeriod );
@@ -1106,7 +903,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
 void SysTraceStop()
 {
-    TraceWrite( TracingOn, "0" );
+    TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 );
     traceActive.store( false, std::memory_order_relaxed );
     if( s_threadSampling )
     {
@@ -1352,8 +1149,43 @@ static void ProcessTraceLines( int fd )
     tracy_free( buf );
 }
 
+void SysTraceWorker( void* ptr )
+{
+    ThreadExitHandler threadExitHandler;
+    SetThreadName( "Tracy SysTrace" );
+    int pipefd[2];
+    if( pipe( pipefd ) == 0 )
+    {
+        const auto pid = fork();
+        if( pid == 0 )
+        {
+            // child
+            close( pipefd[0] );
+            dup2( pipefd[1], STDERR_FILENO );
+            if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
+            {
+                close( pipefd[1] );
+                sched_param sp = { 4 };
+                pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
+#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
+                execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
+#endif
+                execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
+                exit( 1 );
+            }
+        }
+        else if( pid > 0 )
+        {
+            // parent
+            close( pipefd[1] );
+            sched_param sp = { 5 };
+            pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
+            ProcessTraceLines( pipefd[0] );
+            close( pipefd[0] );
+        }
+    }
+}
 #else
-
 static void ProcessTraceLines( int fd )
 {
     char* buf = (char*)tracy_malloc( 64*1024 );
@@ -1383,16 +1215,13 @@ static void ProcessTraceLines( int fd )
         {
             auto next = (char*)memchr( line, '\n', end - line );
             if( !next ) break;
-
             HandleTraceLine( line );
-
             line = ++next;
         }
     }
 
     tracy_free( buf );
 }
-#endif
 
 void SysTraceWorker( void* ptr )
 {
@@ -1402,46 +1231,38 @@ void SysTraceWorker( void* ptr )
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
 
+    int fd = open( tmp, O_RDONLY );
+    if( fd < 0 ) return;
     sched_param sp = { 5 };
     pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-
-    ReadSystemFileWithFunction(tmp, [](int fd) {
-        ProcessTraceLines(fd);
-        return true;  // ProcessTraceLines doesn't report errors.
-    });
+    ProcessTraceLines( fd );
+    close( fd );
 }
+#endif
 
 void SysTraceSendExternalName( uint64_t thread )
 {
+    FILE* f;
     char fn[256];
     sprintf( fn, "/proc/%" PRIu64 "/comm", thread );
-
-    if (!ReadSystemFileWithFunction(fn, [=](int fd){
+    f = fopen( fn, "rb" );
+    if( f )
+    {
         char buf[256];
-        const auto sz = read( fd, buf, sizeof(buf) );
-        if (sz == -1) {
-            return false;
-        }
+        const auto sz = fread( buf, 1, 256, f );
         if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
         GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
-        return true;
-    })) {
-        // This function frequently fails to read files because the /proc/$tid/
-        // files that it tries to read go away when the thread terminates, and there
-        // is no synchronization to prevent that from happening.
-        // To limit logging verbosity, we don't report these failures on stderr.
-        // The user may still see stderr messages coming directly from the exec'd
-        // `dd` command.
+        fclose( f );
+    }
+    else
+    {
         GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
-        return;
     }
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
-    if (!ReadSystemFileWithFunction(fn, [=](int fd){
-        FILE* f = fdopen(dup(fd), "rb");
-        if (!f) {
-            return false;
-        }
+    f = fopen( fn, "rb" );
+    if( f )
+    {
         int pid = -1;
         size_t lsz = 1024;
         auto line = (char*)tracy_malloc( lsz );
@@ -1466,23 +1287,20 @@ void SysTraceSendExternalName( uint64_t thread )
                 MemWrite( &item->tidToPid.pid, _pid );
                 TracyLfqCommit;
             }
-            char fn[256];
             sprintf( fn, "/proc/%i/comm", pid );
-            ReadSystemFileWithFunction(fn, [=](int fd){
+            f = fopen( fn, "rb" );
+            if( f )
+            {
                 char buf[256];
-                const auto sz = read( fd, buf, sizeof(buf));
-                if (sz == -1) {
-                    return false;
-                }
+                const auto sz = fread( buf, 1, 256, f );
                 if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
                 GetProfiler().SendString( thread, buf, QueueType::ExternalName );
-                return true;
-            });
+                fclose( f );
+                return;
+            }
         }
-        return true;
-    })) {
-        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
     }
+    GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
 }
 
 }

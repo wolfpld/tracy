@@ -31,16 +31,12 @@
    - LZ4 source repository : https://github.com/lz4/lz4
    - LZ4 public forum : https://groups.google.com/forum/#!forum/lz4c
 */
-#ifndef LZ4_HC_H_19834876238432
-#define LZ4_HC_H_19834876238432
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
+#ifndef TRACY_LZ4_HC_H_19834876238432
+#define TRACY_LZ4_HC_H_19834876238432
 
 /* --- Dependency --- */
 /* note : lz4hc requires lz4.h/lz4.c for compilation */
-#include "lz4.h"   /* stddef, LZ4LIB_API, LZ4_DEPRECATED */
+#include "tracy_lz4.hpp"   /* stddef, LZ4LIB_API, LZ4_DEPRECATED */
 
 
 /* --- Useful constants --- */
@@ -49,6 +45,8 @@ extern "C" {
 #define LZ4HC_CLEVEL_OPT_MIN    10
 #define LZ4HC_CLEVEL_MAX        12
 
+namespace tracy
+{
 
 /*-************************************
  *  Block Compression
@@ -291,10 +289,7 @@ LZ4_DEPRECATED("use LZ4_initStreamHC() instead") LZ4LIB_API  int   LZ4_resetStre
  */
 LZ4LIB_API void LZ4_resetStreamHC (LZ4_streamHC_t* streamHCPtr, int compressionLevel);
 
-
-#if defined (__cplusplus)
 }
-#endif
 
 #endif /* LZ4_HC_H_19834876238432 */
 
@@ -308,15 +303,14 @@ LZ4LIB_API void LZ4_resetStreamHC (LZ4_streamHC_t* streamHCPtr, int compressionL
  * after successfull usage in real-life scenarios.
  ***************************************************/
 #ifdef LZ4_HC_STATIC_LINKING_ONLY   /* protection macro */
-#ifndef LZ4_HC_SLO_098092834
-#define LZ4_HC_SLO_098092834
+#ifndef TRACY_LZ4_HC_SLO_098092834
+#define TRACY_LZ4_HC_SLO_098092834
 
 #define LZ4_STATIC_LINKING_ONLY   /* LZ4LIB_STATIC_API */
-#include "lz4.h"
+#include "tracy_lz4.hpp"
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
+namespace tracy
+{
 
 /*! LZ4_setCompressionLevel() : v1.8.0+ (experimental)
  *  It's possible to change compression level
@@ -405,9 +399,7 @@ LZ4LIB_STATIC_API void LZ4_attach_HC_dictionary(
           LZ4_streamHC_t *working_stream,
     const LZ4_streamHC_t *dictionary_stream);
 
-#if defined (__cplusplus)
 }
-#endif
 
 #endif   /* LZ4_HC_SLO_098092834 */
 #endif   /* LZ4_HC_STATIC_LINKING_ONLY */

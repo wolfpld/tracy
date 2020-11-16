@@ -50,7 +50,7 @@
 
 /*===    Dependency    ===*/
 #define LZ4_HC_STATIC_LINKING_ONLY
-#include "lz4hc.h"
+#include "tracy_lz4hc.hpp"
 
 
 /*===   Common definitions   ===*/
@@ -63,7 +63,7 @@
 
 #define LZ4_COMMONDEFS_ONLY
 #ifndef LZ4_SRC_INCLUDED
-#include "lz4.c"   /* LZ4_count, constants, mem */
+#include "tracy_lz4.cpp"   /* LZ4_count, constants, mem */
 #endif
 
 
@@ -84,6 +84,9 @@ typedef enum { noDictCtx, usingDictCtxHc } dictCtx_directive;
 #define DELTANEXTU16(table, pos) table[(U16)(pos)]   /* faster */
 /* Make fields passed to, and updated by LZ4HC_encodeSequence explicit */
 #define UPDATABLE(ip, op, anchor) &ip, &op, &anchor
+
+namespace tracy
+{
 
 static U32 LZ4HC_hashPtr(const void* ptr) { return HASH_FUNCTION(LZ4_read32(ptr)); }
 
@@ -1612,4 +1615,6 @@ _return_label:
      FREEMEM(opt);
 #endif
      return retval;
+}
+
 }

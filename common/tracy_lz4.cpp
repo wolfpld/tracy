@@ -114,7 +114,7 @@
 #endif
 
 #define LZ4_STATIC_LINKING_ONLY  /* LZ4_DISTANCE_MAX */
-#include "lz4.h"
+#include "tracy_lz4.hpp"
 /* see also "memory routines" below */
 
 
@@ -303,6 +303,8 @@ typedef enum {
     fillOutput = 2
 } limitedOutput_directive;
 
+namespace tracy
+{
 
 /*-************************************
 *  Reading and writing into memory
@@ -678,19 +680,12 @@ int LZ4_sizeofState(void) { return LZ4_STREAMSIZE; }
 /*-************************************
 *  Internal Definitions used in Tests
 **************************************/
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 int LZ4_compress_forceExtDict (LZ4_stream_t* LZ4_dict, const char* source, char* dest, int srcSize);
 
 int LZ4_decompress_safe_forceExtDict(const char* source, char* dest,
                                      int compressedSize, int maxOutputSize,
                                      const void* dictStart, size_t dictSize);
-
-#if defined (__cplusplus)
-}
-#endif
 
 /*-******************************
 *  Compression functions
@@ -2493,3 +2488,5 @@ char* LZ4_slideInputBuffer (void* state)
 }
 
 #endif   /* LZ4_COMMONDEFS_ONLY */
+
+}

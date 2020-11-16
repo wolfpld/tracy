@@ -32,15 +32,13 @@
     - LZ4 homepage : http://www.lz4.org
     - LZ4 source repository : https://github.com/lz4/lz4
 */
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
-#ifndef LZ4_H_2983827168210
-#define LZ4_H_2983827168210
+#ifndef TRACY_LZ4_H_2983827168210
+#define TRACY_LZ4_H_2983827168210
 
 /* --- Dependency --- */
 #include <stddef.h>   /* size_t */
+#include <stdint.h>
 
 
 /**
@@ -108,6 +106,9 @@ extern "C" {
 #define LZ4_QUOTE(str) #str
 #define LZ4_EXPAND_AND_QUOTE(str) LZ4_QUOTE(str)
 #define LZ4_VERSION_STRING LZ4_EXPAND_AND_QUOTE(LZ4_LIB_VERSION)
+
+namespace tracy
+{
 
 LZ4LIB_API int LZ4_versionNumber (void);  /**< library version number; useful to check dll version */
 LZ4LIB_API const char* LZ4_versionString (void);   /**< library version string; useful to check dll version */
@@ -419,6 +420,8 @@ LZ4LIB_API int LZ4_decompress_safe_continue (LZ4_streamDecode_t* LZ4_streamDecod
  */
 LZ4LIB_API int LZ4_decompress_safe_usingDict (const char* src, char* dst, int srcSize, int dstCapcity, const char* dictStart, int dictSize);
 
+}
+
 #endif /* LZ4_H_2983827168210 */
 
 
@@ -448,8 +451,8 @@ LZ4LIB_API int LZ4_decompress_safe_usingDict (const char* src, char* dst, int sr
 
 #ifdef LZ4_STATIC_LINKING_ONLY
 
-#ifndef LZ4_STATIC_3504398509
-#define LZ4_STATIC_3504398509
+#ifndef TRACY_LZ4_STATIC_3504398509
+#define TRACY_LZ4_STATIC_3504398509
 
 #ifdef LZ4_PUBLISH_STATIC_FUNCTIONS
 #define LZ4LIB_STATIC_API LZ4LIB_API
@@ -457,6 +460,8 @@ LZ4LIB_API int LZ4_decompress_safe_usingDict (const char* src, char* dst, int sr
 #define LZ4LIB_STATIC_API
 #endif
 
+namespace tracy
+{
 
 /*! LZ4_compress_fast_extState_fastReset() :
  *  A variant of LZ4_compress_fast_extState().
@@ -560,13 +565,16 @@ LZ4LIB_STATIC_API void LZ4_attach_dictionary(LZ4_stream_t* workingStream, const 
 #define LZ4_COMPRESS_INPLACE_MARGIN                           (LZ4_DISTANCE_MAX + 32)   /* LZ4_DISTANCE_MAX can be safely replaced by srcSize when it's smaller */
 #define LZ4_COMPRESS_INPLACE_BUFFER_SIZE(maxCompressedSize)   ((maxCompressedSize) + LZ4_COMPRESS_INPLACE_MARGIN)  /**< maxCompressedSize is generally LZ4_COMPRESSBOUND(inputSize), but can be set to any lower value, with the risk that compression can fail (return code 0(zero)) */
 
+}
+
 #endif   /* LZ4_STATIC_3504398509 */
 #endif   /* LZ4_STATIC_LINKING_ONLY */
 
+#ifndef TRACY_LZ4_H_98237428734687
+#define TRACY_LZ4_H_98237428734687
 
-
-#ifndef LZ4_H_98237428734687
-#define LZ4_H_98237428734687
+namespace tracy
+{
 
 /*-************************************************************
  *  Private Definitions
@@ -580,7 +588,6 @@ LZ4LIB_STATIC_API void LZ4_attach_dictionary(LZ4_stream_t* workingStream, const 
 #define LZ4_HASH_SIZE_U32 (1 << LZ4_HASHLOG)       /* required as macro for static allocation */
 
 #if defined(__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
-# include <stdint.h>
   typedef  int8_t  LZ4_i8;
   typedef uint8_t  LZ4_byte;
   typedef uint16_t LZ4_u16;
@@ -765,10 +772,6 @@ LZ4LIB_API int LZ4_decompress_fast_usingDict (const char* src, char* dst, int or
  */
 LZ4LIB_API void LZ4_resetStream (LZ4_stream_t* streamPtr);
 
+}
 
 #endif /* LZ4_H_98237428734687 */
-
-
-#if defined (__cplusplus)
-}
-#endif

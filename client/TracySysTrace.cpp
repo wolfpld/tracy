@@ -798,8 +798,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 
 #ifdef __ANDROID__
 
-// The following Android-specific code is motivated by the following Android-specific
-// aspects:
+// This code is motivated by the following Android-specific aspects:
 // 1. On Android, graphical applications ("intents") never run as root, not even
 //    if spawned from a root shell. See:
 //      https://stackoverflow.com/questions/18479288/can-i-start-an-android-intent-as-root
@@ -857,8 +856,8 @@ static bool TrySuCommandFlag(const char* flag) {
             close( write_end );
             char buf[8] = {};
             int read_len = read( read_end, buf, sizeof buf );
-            if (read_len >= 2) {
-                success = !memcmp(buf, "0\n", 2 );
+            if ( read_len >= 2 ) {
+                success = !memcmp( buf, "0\n", 2 );
             }
             close( read_end );
             waitpid( pid, nullptr, 0 );
@@ -884,6 +883,7 @@ enum class RootMethod {
     //   `su root sh -c 'command'`.
     SuRoot,
     // We don't know how to run a command as root on this device.
+    // This should be caught early during initialization.
     None
 };
 
@@ -891,13 +891,13 @@ enum class RootMethod {
 //
 // Functionally equivalent to it, but much more expensive (no caching).
 static RootMethod EvalRootMethod() {
-    if (getuid() == 0) {
+    if( getuid() == 0 ) {
         return RootMethod::AlreadyRoot;
     }
-    if (TrySuCommandFlag("-c")) {
+    if( TrySuCommandFlag( "-c" ) ) {
         return RootMethod::SuDashC;
     }
-    if (TrySuCommandFlag("root")) {
+    if( TrySuCommandFlag( "root" ) ) {
         return RootMethod::SuRoot;
     }
     return RootMethod::None;
@@ -919,7 +919,7 @@ static int ExeclpAsRoot( char* argv0, ... ) {
     static constexpr int maxargs = 16;
     char* args[maxargs] = { nullptr };
     int args_count = 0;
-    switch(GetRootMethod()) {
+    switch( GetRootMethod() ) {
         case RootMethod::AlreadyRoot:
             break;  // no need to prepend any args.
         case RootMethod::SuDashC:
@@ -930,16 +930,16 @@ static int ExeclpAsRoot( char* argv0, ... ) {
             args[args_count++] = "su";
             args[args_count++] = "root";
             break;
-        case RootMethod::None:
-            break;  // just cross fingers!
+        default:
+            break;
     }
     va_list l;
-    va_start(l, argv0);
-    for (char* argv = argv0; argv; argv = va_arg(l, char*)) {
+    va_start( l, argv0 );
+    for( char* argv = argv0; argv; argv = va_arg( l, char* ) ) {
         args[args_count++] = argv;
     }
-    va_end(l);
-    return execvp(args[0], args);
+    va_end( l );
+    return execvp( args[0], args );
 }
 
 // Similar to system(3), but the command is run as root.
@@ -949,24 +949,23 @@ static int ExeclpAsRoot( char* argv0, ... ) {
 // internally used does not interprete its own command argument as
 // a shell command, then this function fixes that up by inserting
 // `sh -c` in the command.
-static int SystemAsRoot(const char* command) {
-   const char* command_format = "";
-    switch(GetRootMethod()) {
+static int SystemAsRoot( const char* command ) {
+   const char* format = "";
+    switch( GetRootMethod() ) {
         case RootMethod::AlreadyRoot:
-            command_format = "%s";  // no need to prepend any args.
+            format = "%s";  // no need to prepend any args.
             break;
         case RootMethod::SuDashC:
-            command_format = "su -c '%s'";
+            format = "su -c '%s'";
             break;
         case RootMethod::SuRoot:
-            command_format = "su root sh -c '%s'";
+            format = "su root sh -c '%s'";
             break;
-        case RootMethod::None:
-            command_format = "%s";  // just cross fingers!
+        default:
             break;
     }
     char actual_command[256] = {};
-    snprintf(actual_command, sizeof actual_command, command_format, command);
+    snprintf( actual_command, sizeof actual_command, format, command );
     return system( actual_command );
 }
 

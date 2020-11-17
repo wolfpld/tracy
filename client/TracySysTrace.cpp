@@ -855,7 +855,7 @@ static bool TrySuCommandFlag(const char* flag) {
         {
             // parent
             close( write_end );
-            char buf[8] = { 0 };
+            char buf[8] = {};
             int read_len = read( read_end, buf, sizeof buf );
             if (read_len >= 2) {
                 success = !memcmp(buf, "0\n", 2 );
@@ -870,6 +870,10 @@ static bool TrySuCommandFlag(const char* flag) {
 // Enum identifying a method for running a command as root.
 enum class HowToRunAsRoot {
     // Our process is already root (getuid()==0). Nothing else is needed.
+    // This scenario happens when running a command-line program
+    // via `adb shell` while adbd is running as root, that is,
+    // $ adb root
+    // $ adb shell /data/local/tmp/some_program
     AlreadyRunningAsRoot,
     // The way to run a command as root is: `su -c 'command'`.
     // In this case, `command` is interpreted by a shell (not just exec'd).
@@ -961,7 +965,7 @@ static int SystemAsRoot(const char* command) {
             command_format = "%s";  // just cross fingers!
             break;
     }
-    char actual_command[256] = { 0 };
+    char actual_command[256] = {};
     snprintf(actual_command, sizeof actual_command, command_format, command);
     return system( actual_command );
 }
@@ -1044,6 +1048,10 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #ifndef CLOCK_MONOTONIC_RAW
     return false;
 #endif
+
+    if (GetHowToRunAsRoot() == HowToRunAsRoot::DontKnow) {
+        return false;
+    }
 
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
     if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;

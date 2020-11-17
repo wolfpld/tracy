@@ -798,8 +798,20 @@ static void SetupSampling( int64_t& samplingPeriod )
 #ifdef __ANDROID__
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
 {
+    // Explanation for "su root sh -c": there are 2 flavors of "su" in circulation
+    // on Android. The default Android su has the following syntax to run a command
+    // as root:
+    //   su root 'command'
+    // and 'command' is exec'd not passed to a shell, so if shell interpretation is
+    // wanted, one needs to do:
+    //   su root sh -c 'command'
+    // Besides that default Android 'su' command, some Android devices use a different
+    // su with a command-line interface closer to the familiar util-linux su found
+    // on Linux distributions. Fortunately, both the util-linux su and the one
+    // in https://github.com/topjohnwu/Magisk seem to be happy with the above
+    // `su root sh -c 'command'` command line syntax.
     char tmp[256];
-    sprintf( tmp, "su -c 'echo \"%s\" > %s%s'", val, BasePath, path );
+    sprintf( tmp, "su root sh -c 'echo \"%s\" > %s%s'", val, BasePath, path );
     return system( tmp ) == 0;
 }
 #else
@@ -845,7 +857,7 @@ void SysTraceInjectPayload()
             if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
             {
                 close( pipefd[0] );
-                execlp( "su", "su", "-c", "cat > /data/tracy_systrace", (char*)nullptr );
+                execlp( "su", "su", "root", "sh", "-c", "cat > /data/tracy_systrace", (char*)nullptr );
                 exit( 1 );
             }
         }
@@ -862,7 +874,7 @@ void SysTraceInjectPayload()
             close( pipefd[1] );
             waitpid( pid, nullptr, 0 );
 
-            system( "su -c 'chmod 700 /data/tracy_systrace'" );
+            system( "su root sh -c 'chmod 700 /data/tracy_systrace'" );
         }
     }
 }
@@ -1168,9 +1180,9 @@ void SysTraceWorker( void* ptr )
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
-                execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
+                execlp( "su", "su", "root", "sh", "-c", "/data/tracy_systrace", (char*)nullptr );
 #endif
-                execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
+                execlp( "su", "su", "root", "sh", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
                 exit( 1 );
             }
         }

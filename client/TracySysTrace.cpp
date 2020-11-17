@@ -851,6 +851,7 @@ static bool TrySuCommandFlag(const char* flag) {
             // tries incorrect command lines.
             int null_fd = open( "/dev/null", O_WRONLY );
             dup2( null_fd, STDERR_FILENO );
+            close( null_fd );
             execlp( "su", "su", flag, "id", "-u", nullptr );
             exit( EXIT_FAILURE );
         }
@@ -1052,9 +1053,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
     return false;
 #endif
 
+#ifdef __ANDROID__
     if (GetRootMethod() == RootMethod::None) {
         return false;
     }
+#endif
 
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
     if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;

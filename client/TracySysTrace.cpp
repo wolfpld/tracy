@@ -825,7 +825,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 //    for instance from https://github.com/topjohnwu/Magisk.
 //    We have to handle both flavors of `su` commands.
 
-// Internal implementation helper for GetHowToRunAsRoot.
+// Internal implementation helper for GetRootMethod.
 //
 // Checks if `su <flag> command` succeeds running the specified command as root.
 //
@@ -868,13 +868,13 @@ static bool TrySuCommandFlag(const char* flag) {
 }
 
 // Enum identifying a method for running a command as root.
-enum class HowToRunAsRoot {
+enum class RootMethod {
     // Our process is already root (getuid()==0). Nothing else is needed.
     // This scenario happens when running a command-line program
     // via `adb shell` while adbd is running as root, that is,
     // $ adb root
     // $ adb shell /data/local/tmp/some_program
-    AlreadyRunningAsRoot,
+    AlreadyRoot,
     // The way to run a command as root is: `su -c 'command'`.
     // In this case, `command` is interpreted by a shell (not just exec'd).
     SuDashC,
@@ -884,23 +884,23 @@ enum class HowToRunAsRoot {
     //   `su root sh -c 'command'`.
     SuRoot,
     // We don't know how to run a command as root on this device.
-    DontKnow
+    None
 };
 
-// Internal implementation helper for GetHowToRunAsRoot.
+// Internal implementation helper for GetRootMethod.
 //
 // Functionally equivalent to it, but much more expensive (no caching).
-static HowToRunAsRoot ExpensivelyDetermineHowToRunAsRoot() {
+static RootMethod EvalRootMethod() {
     if (getuid() == 0) {
-        return HowToRunAsRoot::AlreadyRunningAsRoot;
+        return RootMethod::AlreadyRoot;
     }
     if (TrySuCommandFlag("-c")) {
-        return HowToRunAsRoot::SuDashC;
+        return RootMethod::SuDashC;
     }
     if (TrySuCommandFlag("root")) {
-        return HowToRunAsRoot::SuRoot;
+        return RootMethod::SuRoot;
     }
-    return HowToRunAsRoot::DontKnow;
+    return RootMethod::None;
 }
 
 // Internal implementation helper for ExeclpAsRoot and SystemAsRoot.
@@ -908,8 +908,8 @@ static HowToRunAsRoot ExpensivelyDetermineHowToRunAsRoot() {
 // Returns how to run a command as root. Determines that once, then
 // caches the result. Reentrant thanks to C++11 specifying the
 // initialization of static locals as reentrant.
-static HowToRunAsRoot GetHowToRunAsRoot() {
-    static const HowToRunAsRoot value = ExpensivelyDetermineHowToRunAsRoot();
+static RootMethod GetRootMethod() {
+    static const RootMethod value = EvalRootMethod();
     return value;
 }
 
@@ -919,18 +919,18 @@ static int ExeclpAsRoot( char* argv0, ... ) {
     static constexpr int maxargs = 16;
     char* args[maxargs] = { nullptr };
     int args_count = 0;
-    switch(GetHowToRunAsRoot()) {
-        case HowToRunAsRoot::AlreadyRunningAsRoot:
+    switch(GetRootMethod()) {
+        case RootMethod::AlreadyRoot:
             break;  // no need to prepend any args.
-        case HowToRunAsRoot::SuDashC:
+        case RootMethod::SuDashC:
             args[args_count++] = "su";
             args[args_count++] = "-c";
             break;
-        case HowToRunAsRoot::SuRoot:
+        case RootMethod::SuRoot:
             args[args_count++] = "su";
             args[args_count++] = "root";
             break;
-        case HowToRunAsRoot::DontKnow:
+        case RootMethod::None:
             break;  // just cross fingers!
     }
     va_list l;
@@ -951,17 +951,17 @@ static int ExeclpAsRoot( char* argv0, ... ) {
 // `sh -c` in the command.
 static int SystemAsRoot(const char* command) {
    const char* command_format = "";
-    switch(GetHowToRunAsRoot()) {
-        case HowToRunAsRoot::AlreadyRunningAsRoot:
+    switch(GetRootMethod()) {
+        case RootMethod::AlreadyRoot:
             command_format = "%s";  // no need to prepend any args.
             break;
-        case HowToRunAsRoot::SuDashC:
+        case RootMethod::SuDashC:
             command_format = "su -c '%s'";
             break;
-        case HowToRunAsRoot::SuRoot:
+        case RootMethod::SuRoot:
             command_format = "su root sh -c '%s'";
             break;
-        case HowToRunAsRoot::DontKnow:
+        case RootMethod::None:
             command_format = "%s";  // just cross fingers!
             break;
     }
@@ -1049,7 +1049,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     return false;
 #endif
 
-    if (GetHowToRunAsRoot() == HowToRunAsRoot::DontKnow) {
+    if (GetRootMethod() == RootMethod::None) {
         return false;
     }
 

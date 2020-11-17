@@ -1022,7 +1022,7 @@ void SysTraceInjectPayload()
             if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
             {
                 close( pipefd[0] );
-                ExeclpAsRoot( "dd", "status=none", "of=/data/tracy_systrace", nullptr );
+                ExeclpAsRoot( "sh", "-c", "cat > /data/tracy_systrace", nullptr );
                 exit( 1 );
             }
         }

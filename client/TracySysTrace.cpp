@@ -908,7 +908,7 @@ static RootMethod EvalRootMethod() {
     return RootMethod::None;
 }
 
-// Internal implementation helper for ExeclpAsRoot and SystemAsRoot.
+// Internal implementation helper for ExecAsRoot and SystemAsRoot.
 //
 // Returns how to run a command as root. Determines that once, then
 // caches the result. Reentrant thanks to C++11 specifying the
@@ -920,7 +920,11 @@ static RootMethod GetRootMethod() {
 
 // Similar to execlp(3), but the program is run as root.
 // This is done by running `su` as needed.
-static int ExeclpAsRoot( char* argv0, ... ) {
+//
+// Another difference is that we don't require the program
+// name to be passed twice, as in execlp, once as the path and
+// then once as argv[0]. We only take the argv list.
+static int ExecAsRoot( char* argv0, ... ) {
     static constexpr int maxargs = 16;
     char* args[maxargs] = { nullptr };
     int args_count = 0;
@@ -1023,7 +1027,7 @@ void SysTraceInjectPayload()
             if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
             {
                 close( pipefd[0] );
-                ExeclpAsRoot( "sh", "-c", "cat > /data/tracy_systrace", nullptr );
+                ExecAsRoot( "sh", "-c", "cat > /data/tracy_systrace", nullptr );
                 exit( 1 );
             }
         }
@@ -1353,9 +1357,9 @@ void SysTraceWorker( void* ptr )
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
 #if defined __aarch64__ || defined __ARM_ARCH
-                ExeclpAsRoot( "/data/tracy_systrace", nullptr );
+                ExecAsRoot( "/data/tracy_systrace", nullptr );
 #endif
-                ExeclpAsRoot( "cat", "/sys/kernel/debug/tracing/trace_pipe", nullptr );
+                ExecAsRoot( "cat", "/sys/kernel/debug/tracing/trace_pipe", nullptr );
                 exit( 1 );
             }
         }

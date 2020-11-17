@@ -847,6 +847,10 @@ static bool TrySuCommandFlag(const char* flag) {
             close( read_end );
             dup2( write_end, STDOUT_FILENO );
             close( write_end );
+            // We redirect stderr to /dev/null because by nature this function
+            // tries incorrect command lines.
+            int null_fd = open("/dev/null", O_WRONLY);
+            dup2( null_fd, STDERR_FILENO );
             execlp( "su", "su", flag, "id", "-u", nullptr );
             exit( EXIT_FAILURE );
         }

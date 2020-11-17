@@ -594,7 +594,6 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <inttypes.h>
 #    include <limits>
 #    include <poll.h>
-#    include <stdarg.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
@@ -797,192 +796,11 @@ static void SetupSampling( int64_t& samplingPeriod )
 }
 
 #ifdef __ANDROID__
-
-// This code is motivated by the following Android-specific aspects:
-// 1. On Android, graphical applications ("intents") never run as root, not even
-//    if spawned from a root shell. See:
-//      https://stackoverflow.com/questions/18479288/can-i-start-an-android-intent-as-root
-//    Only command-line programs can be run as root. This means that we can't
-//    limit support to root processes, we have to support unprivileged user processes.
-//    As some of the things that we need to do require root privileges, this forces
-//    us to spawn sub-processes executing commands as root. On rooted Android devices,
-//    the default `su` command succeeds non-interactively (does not ask for any
-//    credentials) so this is mostly transparent to the user.
-// 2. On Android, multiple implementations of `su` are in use, with different
-//    command-line syntax and semantics. The default `su` in Android has the following
-//    syntax to run a command as root:
-//      su root some_command
-//    Moreover, it directly exec's the command, there is no
-//    shell invocation, which means that commands that need to be interpreted by a
-//    shell (e.g. commands using the > redirection operator) need to be wrapped
-//    in a `sh -c` invokation, like this:
-//      su root sh -c 'some_command'
-//    This is in contrast with other `su` commands, which typically have syntax
-//      su -c some_command
-//    and which tend to execute a shell to interprete the command (so there is
-//    no need for `sh -c`). Some developers' Android device have such `su` commands,
-//    for instance from https://github.com/topjohnwu/Magisk.
-//    We have to handle both flavors of `su` commands.
-
-// Internal implementation helper for GetRootMethod.
-//
-// Checks if `su <flag> command` succeeds running the specified command as root.
-//
-// Concretely, the test performed is to run the `id -u` command as root, and check
-// that its output is `0` (the uid of root).
-// This test is based on the command's stdout and not on the return code, because
-// it seems that some implementations of `su` don't propagate the command's return
-// code.
-static bool TrySuCommandFlag(const char* flag) {
-    bool success = false;
-    int pipefd[2];
-    if( pipe( pipefd ) == 0 )
-    {
-        int read_end = pipefd[0];
-        int write_end = pipefd[1];
-        const auto pid = fork();
-        if( pid == 0 )
-        {
-            // child
-            close( read_end );
-            dup2( write_end, STDOUT_FILENO );
-            close( write_end );
-            // We redirect stderr to /dev/null because by nature this function
-            // tries incorrect command lines.
-            int null_fd = open( "/dev/null", O_WRONLY );
-            dup2( null_fd, STDERR_FILENO );
-            close( null_fd );
-            execlp( "su", "su", flag, "id", "-u", nullptr );
-            exit( EXIT_FAILURE );
-        }
-        else if( pid > 0 )
-        {
-            // parent
-            close( write_end );
-            char buf[8] = {};
-            int read_len = read( read_end, buf, sizeof buf );
-            if ( read_len >= 2 ) {
-                success = !memcmp( buf, "0\n", 2 );
-            }
-            close( read_end );
-            waitpid( pid, nullptr, 0 );
-        }
-    }
-    return success;
-}
-
-// Enum identifying a method for running a command as root.
-enum class RootMethod {
-    // Our process is already root (getuid()==0). Nothing else is needed.
-    // This scenario happens when running a command-line program
-    // via `adb shell` while adbd is running as root, that is,
-    // $ adb root
-    // $ adb shell /data/local/tmp/some_program
-    AlreadyRoot,
-    // The way to run a command as root is: `su -c 'command'`.
-    // In this case, `command` is interpreted by a shell (not just exec'd).
-    SuDashC,
-    // The way to run a command as root is: `su root 'command'`.
-    // In this case, `command` is just exec'd. If any interpretation by a
-    // shell is needed, it needs to be done explicitly, like:
-    //   `su root sh -c 'command'`.
-    SuRoot,
-    // We don't know how to run a command as root on this device.
-    // This should be caught early during initialization.
-    None
-};
-
-// Internal implementation helper for GetRootMethod.
-//
-// Functionally equivalent to it, but much more expensive (no caching).
-static RootMethod EvalRootMethod() {
-    if( getuid() == 0 ) {
-        return RootMethod::AlreadyRoot;
-    }
-    if( TrySuCommandFlag( "-c" ) ) {
-        return RootMethod::SuDashC;
-    }
-    if( TrySuCommandFlag( "root" ) ) {
-        return RootMethod::SuRoot;
-    }
-    return RootMethod::None;
-}
-
-// Internal implementation helper for ExecAsRoot and SystemAsRoot.
-//
-// Returns how to run a command as root. Determines that once, then
-// caches the result. Reentrant thanks to C++11 specifying the
-// initialization of static locals as reentrant.
-static RootMethod GetRootMethod() {
-    static const RootMethod value = EvalRootMethod();
-    return value;
-}
-
-// Similar to execlp(3), but the program is run as root.
-// This is done by running `su` as needed.
-//
-// Another difference is that we don't require the program
-// name to be passed twice, as in execlp, once as the path and
-// then once as argv[0]. We only take the argv list.
-static int ExecAsRoot( char* argv0, ... ) {
-    static constexpr int maxargs = 16;
-    char* args[maxargs] = { nullptr };
-    int args_count = 0;
-    switch( GetRootMethod() ) {
-        case RootMethod::AlreadyRoot:
-            break;  // no need to prepend any args.
-        case RootMethod::SuDashC:
-            args[args_count++] = "su";
-            args[args_count++] = "-c";
-            break;
-        case RootMethod::SuRoot:
-            args[args_count++] = "su";
-            args[args_count++] = "root";
-            break;
-        default:
-            break;
-    }
-    va_list l;
-    va_start( l, argv0 );
-    for( char* argv = argv0; argv; argv = va_arg( l, char* ) ) {
-        args[args_count++] = argv;
-    }
-    va_end( l );
-    return execvp( args[0], args );
-}
-
-// Similar to system(3), but the command is run as root.
-// This is done by running `su` as needed.
-//
-// The command is always interpreted by a shell. If the `su` command
-// internally used does not interprete its own command argument as
-// a shell command, then this function fixes that up by inserting
-// `sh -c` in the command.
-static int SystemAsRoot( const char* command ) {
-   const char* format = "";
-    switch( GetRootMethod() ) {
-        case RootMethod::AlreadyRoot:
-            format = "%s";  // no need to prepend any args.
-            break;
-        case RootMethod::SuDashC:
-            format = "su -c '%s'";
-            break;
-        case RootMethod::SuRoot:
-            format = "su root sh -c '%s'";
-            break;
-        default:
-            break;
-    }
-    char actual_command[256] = {};
-    snprintf( actual_command, sizeof actual_command, format, command );
-    return system( actual_command );
-}
-
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
 {
     char tmp[256];
-    sprintf( tmp, "echo \"%s\" > %s%s", val, BasePath, path );
-    return SystemAsRoot( tmp ) == 0;
+    sprintf( tmp, "su -c 'echo \"%s\" > %s%s'", val, BasePath, path );
+    return system( tmp ) == 0;
 }
 #else
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
@@ -1027,7 +845,7 @@ void SysTraceInjectPayload()
             if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
             {
                 close( pipefd[0] );
-                ExecAsRoot( "sh", "-c", "cat > /data/tracy_systrace", nullptr );
+                execlp( "su", "su", "-c", "cat > /data/tracy_systrace", (char*)nullptr );
                 exit( 1 );
             }
         }
@@ -1044,7 +862,7 @@ void SysTraceInjectPayload()
             close( pipefd[1] );
             waitpid( pid, nullptr, 0 );
 
-            SystemAsRoot( "chmod 700 /data/tracy_systrace" );
+            system( "su -c 'chmod 700 /data/tracy_systrace'" );
         }
     }
 }
@@ -1052,15 +870,8 @@ void SysTraceInjectPayload()
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
-
 #ifndef CLOCK_MONOTONIC_RAW
     return false;
-#endif
-
-#ifdef __ANDROID__
-    if (GetRootMethod() == RootMethod::None) {
-        return false;
-    }
 #endif
 
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
@@ -1356,10 +1167,10 @@ void SysTraceWorker( void* ptr )
                 close( pipefd[1] );
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-#if defined __aarch64__ || defined __ARM_ARCH
-                ExecAsRoot( "/data/tracy_systrace", nullptr );
+#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
+                execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
 #endif
-                ExecAsRoot( "cat", "/sys/kernel/debug/tracing/trace_pipe", nullptr );
+                execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
                 exit( 1 );
             }
         }

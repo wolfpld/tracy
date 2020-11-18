@@ -131,6 +131,7 @@ View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
     , m_reactToCrash( true )
+    , m_reactToLostConnection( true )
     , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
@@ -1117,6 +1118,27 @@ bool View::DrawImpl()
         ImGui::Separator();
         if( ImGui::Button( ICON_FA_MICROSCOPE " Focus" ) ) CenterAtTime( crash.time );
         ImGui::SameLine();
+        if( ImGui::Button( "Dismiss" ) ) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    if( m_reactToLostConnection && !m_worker.IsConnected() )
+    {
+        m_reactToLostConnection = false;
+        if( m_worker.GetSendInFlight() > 0 )
+        {
+            ImGui::OpenPopup( "Connection lost!" );
+        }
+    }
+    if( ImGui::BeginPopupModal( "Connection lost!", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        TextCentered( ICON_FA_PLUG );
+        ImGui::TextUnformatted(
+            "Connection to the profiled application was lost\n"
+            "before all required profiling data could be retrieved.\n"
+            "This will result in missing source locations,\n"
+            "unresolved stack frames, etc." );
+        ImGui::Separator();
         if( ImGui::Button( "Dismiss" ) ) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }

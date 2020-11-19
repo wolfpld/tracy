@@ -2975,6 +2975,12 @@ MappingInfoVector ParseMappings()
     return result;
 }
 
+// Takes as input an address range [start_address, end_address) and a
+// known vector `mappings`, and returns as output-params a range
+// of iterators into this `mappings` vector, containing the mappings that
+// intersect that address range.
+// Returns true if such a range of iterators exist, false otherwise
+// (that is, if the input address range can't be covered by known mappings).
 bool GetMappingsRange(MappingInfoVector& mappings,
                       std::uintptr_t start_address,
                       std::uintptr_t end_address,

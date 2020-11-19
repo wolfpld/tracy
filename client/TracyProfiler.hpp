@@ -144,7 +144,7 @@ public:
 #  elif defined __x86_64__ || defined _M_X64
         uint64_t rax, rdx;
         asm volatile ( "rdtsc" : "=a" (rax), "=d" (rdx) );
-        return ( rdx << 32 ) + rax;
+        return (int64_t)(( rdx << 32 ) + rax);
 #  else
 #    error "TRACY_HW_TIMER detection logic needs fixing"
 #  endif
@@ -639,7 +639,7 @@ private:
     {
         assert( len <= TargetFrameSize );
         bool ret = true;
-        if( m_bufferOffset - m_bufferStart + len > TargetFrameSize )
+        if( m_bufferOffset - m_bufferStart + (int)len > TargetFrameSize )
         {
             ret = CommitData();
         }

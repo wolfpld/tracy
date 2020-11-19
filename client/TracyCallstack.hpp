@@ -100,8 +100,8 @@ static tracy_force_inline void* Callstack( int depth )
 {
     assert( depth >= 1 );
 
-    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
-    const auto num = backtrace( (void**)(trace+1), depth );
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + (size_t)depth ) * sizeof( uintptr_t ) );
+    const auto num = (size_t)backtrace( (void**)(trace+1), depth );
     *trace = num;
 
     return trace;

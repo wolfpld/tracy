@@ -1085,7 +1085,7 @@ static void HandleTraceLine( const char* line )
     {
         line += 14;
 
-        while( memcmp( line, "pid", 3 ) != 0 ) line++;
+        while( memcmp( line, "pid=", 4 ) != 0 ) line++;
         line += 4;
 
         const auto pid = ReadNumber( line );

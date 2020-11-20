@@ -2924,7 +2924,7 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
 */
 // See https://github.com/wolfpld/tracy/issues/125 .
 // To work around this, we parse /proc/self/maps and we use mprotect to set read permissions
-// on any mappings that are touched by address ranges that HandleSymbolCodeQuery needs to read.
+// on any mappings that contain symbols addresses hit by HandleSymbolCodeQuery.
 namespace {
 
 // Holds some information about a single memory mapping.

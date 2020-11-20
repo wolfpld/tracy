@@ -2932,7 +2932,7 @@ struct MappingInfo {
     // Start of address range. Inclusive.
     uintptr_t start_address;
     // End of address range. Exclusive, so the mapping is the half-open interval
-    // [start, end) and its length in bytes is `end - start`). As in /proc/self/maps.
+    // [start, end) and its length in bytes is `end - start`. As in /proc/self/maps.
     uintptr_t end_address;
     // Read/Write/Executable permissions.
     bool perm_r, perm_w, perm_x;
@@ -2981,8 +2981,6 @@ MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address
 {
     // We assume mappings to be sorted by address, as /proc/self/maps seems to be.
     // Construct a MappingInfo just for the purpose of using std::lower_bound.
-    // (It's an abuse of MappingInfo since this address range is not necessarily
-    // one mapping).
     MappingInfo needle;
     needle.start_address = address;
     needle.end_address = address;

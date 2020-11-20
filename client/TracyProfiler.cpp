@@ -2979,22 +2979,21 @@ std::vector<MappingInfo> ParseMappings()
 // the address isn't in `mappings`.
 MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
 {
-    // Find the first mapping containing the requested address.
     // We assume mappings to be sorted by address, as /proc/self/maps seems to be.
     // Construct a MappingInfo just for the purpose of using std::lower_bound.
     // (It's an abuse of MappingInfo since this address range is not necessarily
     // one mapping).
-    MappingInfo address_range;
-    address_range.start_address = address;
-    address_range.end_address = address;
+    MappingInfo needle;
+    needle.start_address = address;
+    needle.end_address = address;
     // Comparison function for std::lower_bound. Returns true if all addresses in `m1`
     // are lower than all addresses in `m2`.
     auto Compare = []( const MappingInfo& m1, const MappingInfo& m2 ) {
         // '<=' because the address ranges are half-open intervals, [start, end).
         return m1.end_address <= m2.start_address;
     };
-    auto iter = std::lower_bound( mappings.begin(), mappings.end(), address_range, Compare );
-    if( iter == mappings.end() ) {
+    auto iter = std::lower_bound( mappings.begin(), mappings.end(), needle, Compare );
+    if( iter == mappings.end() || iter->end_address <= address) {
         return nullptr;
     }
     return &*iter;

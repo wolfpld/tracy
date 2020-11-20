@@ -8992,7 +8992,6 @@ void View::DrawOptions()
                     m_threadOrder.insert( m_threadOrder.begin() + target, srcval );
                     m_threadOrder.erase( m_threadOrder.begin() + source );
                 }
-                SortThreads();
             }
         }
         ImGui::TreePop();

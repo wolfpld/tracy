@@ -3058,6 +3058,7 @@ void View::DrawZones()
         {
             m_threadOrder.push_back( threadData[i] );
         }
+        SortThreads();
     }
 
     auto& crash = m_worker.GetCrashEvent();
@@ -8991,6 +8992,7 @@ void View::DrawOptions()
                     m_threadOrder.insert( m_threadOrder.begin() + target, srcval );
                     m_threadOrder.erase( m_threadOrder.begin() + source );
                 }
+                SortThreads();
             }
         }
         ImGui::TreePop();
@@ -17624,4 +17626,10 @@ const char* View::SourceSubstitution( const char* srcFile ) const
     return res.c_str();
 }
 
+void View::SortThreads() {
+    std::sort( m_threadOrder.begin(), m_threadOrder.end(),
+               []( const ThreadData *a, const ThreadData *b ) {
+                   return a->id < b->id;
+               } );
+}
 }

@@ -34,10 +34,10 @@
 
 #ifdef __ANDROID__
 #  include <sys/mman.h>
-#  include <cstdio>
-#  include <cstdint>
+#  include <stdio.h>
+#  include <stdint.h>
+#  include <algorithm>
 #  include <vector>
-#  include <mutex>
 #endif
 
 #if defined __APPLE__ || defined BSD
@@ -2930,33 +2930,29 @@ namespace {
 // Holds some information about a single memory mapping.
 struct MappingInfo {
     // Start of address range. Inclusive.
-    std::uintptr_t start_address;
+    uintptr_t start_address;
     // End of address range. Exclusive, so the mapping is the half-open interval
     // [start, end) and its length in bytes is `end - start`). As in /proc/self/maps.
-    std::uintptr_t end_address;
+    uintptr_t end_address;
     // Read/Write/Executable permissions.
     bool perm_r, perm_w, perm_x;
-    // Flag indicating if a `mprotect` call has already failed on this mapping,
-    // so we don't retry over and over again.
-    bool mprotect_fails = false;
 };
 
-using MappingInfoVector = std::vector<MappingInfo>;
-using MappingInfoIterator = MappingInfoVector::iterator;
-
+// Internal implementation helper for LookUpMapping(address).
+//
 // Parses /proc/self/maps returning a vector<MappingInfo>.
 // /proc/self/maps is assumed to be sorted by ascending address, so the resulting
 // vector is sorted by ascending address too.
-MappingInfoVector ParseMappings()
+std::vector<MappingInfo> ParseMappings()
 {
-    MappingInfoVector result;
+    std::vector<MappingInfo> result;
     FILE* file = fopen( "/proc/self/maps", "r" );
     if( !file ) return result;
-    char line[256];
+    char line[1024];
     while( fgets( line, sizeof( line ), file ) )
     {
-        std::uintptr_t start_addr;
-        std::uintptr_t end_addr;
+        uintptr_t start_addr;
+        uintptr_t end_addr;
         if( sscanf( line, "%lx-%lx", &start_addr, &end_addr ) != 2 ) continue;
         char* first_space = strchr( line, ' ' );
         if( !first_space ) continue;
@@ -2975,119 +2971,93 @@ MappingInfoVector ParseMappings()
     return result;
 }
 
-// Takes as input an address range [start_address, end_address) and a
-// known vector `mappings`, and returns as output-params a range
-// of iterators into this `mappings` vector, containing the mappings that
-// intersect that address range.
-// Returns true if such a range of iterators exist, false otherwise
-// (that is, if the input address range can't be covered by known mappings).
-bool GetMappingsRange(MappingInfoVector& mappings,
-                      std::uintptr_t start_address,
-                      std::uintptr_t end_address,
-                      MappingInfoIterator* start_iterator,
-                      MappingInfoIterator* end_iterator)
+// Internal implementation helper for LookUpMapping(address).
+//
+// Takes as input an `address` and a
+// known vector `mappings`, and returns a pointer to the MappingInfo
+// describing the mapping that this address belongs to, or nullptr if
+// the address isn't in `mappings`.
+MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
 {
-    // Find the first mapping intersecting the requested address range.
+    // Find the first mapping containing the requested address.
     // We assume mappings to be sorted by address, as /proc/self/maps seems to be.
     // Construct a MappingInfo just for the purpose of using std::lower_bound.
     // (It's an abuse of MappingInfo since this address range is not necessarily
     // one mapping).
     MappingInfo address_range;
-    address_range.start_address = start_address;
-    address_range.end_address = end_address;
+    address_range.start_address = address;
+    address_range.end_address = address;
     // Comparison function for std::lower_bound. Returns true if all addresses in `m1`
     // are lower than all addresses in `m2`.
     auto Compare = []( const MappingInfo& m1, const MappingInfo& m2 ) {
         // '<=' because the address ranges are half-open intervals, [start, end).
         return m1.end_address <= m2.start_address;
     };
-    MappingInfoIterator it = std::lower_bound( mappings.begin(), mappings.end(), address_range, Compare );
-    *start_iterator = it;
-    std::uintptr_t remainder_start_address = start_address;
-    // Loop over all contiguous mappings intersecting the requested address range.
-    while( it != mappings.end() && it->start_address < end_address ) {
-        if (it->start_address > remainder_start_address) {
-            // The current mapping starts after the remainder of the address
-            // range that we needs to cover, so some of that address range
-            // isn't covered by any mapping.
-            return false;
-        }
-        remainder_start_address = it->end_address;
-        ++it;
+    auto iter = std::lower_bound( mappings.begin(), mappings.end(), address_range, Compare );
+    if( iter == mappings.end() ) {
+        return nullptr;
     }
-    // Some of the address range isn't covered by any mapping.
-    if (remainder_start_address < end_address) return false;
-    *end_iterator = it;
-    if (*end_iterator < *start_iterator) {
-        abort();
-    }
-    if (*end_iterator > (*start_iterator) + 1) {
-        abort();
-    }
-    return true;
+    return &*iter;
+}
+
+// Internal implementation helper for EnsureReadable(address).
+//
+// Takes as input an `address` and returns a pointer to a MappingInfo
+// describing the mapping that this address belongs to, or nullptr if
+// the address isn't in any known mapping.
+//
+// This function is stateful and not reentrant (assumes to be called from)
+// only one thread. It holds a vector of mappings parsed from /proc/self/maps.
+//
+// Attempts to react to mappings changes by re-parsing /proc/self/maps.
+MappingInfo* LookUpMapping(uintptr_t address)
+{
+    // Static state managed by this function. Not constant, we mutate that state as
+    // we turn some mappings readable. Initially parsed once here, updated as needed below.
+    static std::vector<MappingInfo> s_mappings = ParseMappings();
+    MappingInfo* mapping = LookUpMapping( s_mappings, address );
+    if( mapping ) return mapping;
+    
+    // This address isn't in any known mapping. Try parsing again, maybe
+    // mappings changed.
+    s_mappings = ParseMappings();
+    return LookUpMapping( s_mappings, address );
 }
                       
-
+// Internal implementation helper for EnsureReadable(address).
+//
 // Attempts to make the specified `mapping` readable if it isn't already.
 // Returns true if and only if the mapping is readable.
-bool EnsureReadable( MappingInfo* mapping )
+bool EnsureReadable( MappingInfo& mapping )
 {
-    if( mapping->perm_r )
+    if( mapping.perm_r )
     {
         // The mapping is already readable.
         return true;
     }
-    if( mapping->mprotect_fails )
-    {
-        // We have already see mprotect failing on this mapping.
-        return false;
-    }
     int prot = PROT_READ;
-    if( mapping->perm_w ) prot |= PROT_WRITE;
-    if( mapping->perm_x ) prot |= PROT_EXEC;
-    if( mprotect( reinterpret_cast<void*>( mapping->start_address ),
-                 mapping->end_address - mapping->start_address, prot ) == -1 )
+    if( mapping.perm_w ) prot |= PROT_WRITE;
+    if( mapping.perm_x ) prot |= PROT_EXEC;
+    if( mprotect( reinterpret_cast<void*>( mapping.start_address ),
+                  mapping.end_address - mapping.start_address, prot ) == -1 )
     {
-        // Failed to make the mapping readable. Update `mapping`
-        // so the next call will be fast.
-        mapping->mprotect_fails = true;
+        // Failed to make the mapping readable. Shouldn't happen, hasn't
+        // been observed yet. If it happened in practice, we should consider
+        // adding a bool to MappingInfo to track this to avoid retrying mprotect
+        // everytime on such mappings.
         return false;
     }
     // The mapping is now readable. Update `mapping` so the next call will be fast.
-    mapping->perm_r = true;
+    mapping.perm_r = true;
     return true;
 }
 
-// Attempts to make the specified address range readable.
-bool EnsureReadable( std::uintptr_t start_address, std::uintptr_t end_address )
+// Attempts to set the read permission on the entire mapping containing the
+// specified address.
+bool EnsureReadable( uintptr_t address )
 {
-    // Lock ensuring reentrancy of this function.
-    static std::mutex s_mutex;
-    const std::lock_guard<std::mutex> lock( s_mutex );
-    // Static state managed by this function. Not constant, we mutate that state as
-    // we turn some mappings readable. Initially parsed once here, updated as needed below.
-    static MappingInfoVector mappings = ParseMappings();
-    MappingInfoIterator start_iter, end_iter;
-    if (!GetMappingsRange(mappings, start_address, end_address, &start_iter, &end_iter))
-    {
-        // Some of this address range isn't in any known mapping. Try parsing agains, maybe
-        // mappings changed.
-        mappings = ParseMappings();
-        if (!GetMappingsRange(mappings, start_address, end_address, &start_iter, &end_iter))
-        {
-            // Still not mapped? This shouldn't happen...
-            return false;
-        }
-    }
-    if (end_iter < start_iter) {
-        abort();
-    }
-    int k = 0;
-    for (auto it = start_iter; it != end_iter; ++it)
-    {
-        if( !EnsureReadable( &*it ) ) return false;
-    }
-    return true;
+    MappingInfo* mapping = LookUpMapping(address);
+    return mapping && EnsureReadable( *mapping );
 }
 
 }  // anonymous namespace
@@ -3098,9 +3068,9 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 #ifdef __ANDROID__
     // On Android it's common for code to be in mappings that are only executable
     // but not readable.
-    if (!EnsureReadable( symbol, symbol + size ) )
+    if( !EnsureReadable( symbol ) )
     {
-        // Non-readable addresses: bail here, avoid segfault below.
+        // Non-readable address: bail here, avoid segfault below.
         return;
     }
 #endif

@@ -519,14 +519,14 @@ static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     CallstackSymbolData sym;
-    if( EnsureReadable(ptr) )
-    {
-        backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
-    }
-    else
+#ifdef __ANDROID__
+    if( !EnsureReadable(ptr) )
     {
         memset(&sym, 0, sizeof sym);
+        return sym;
     }
+#endif
+    backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
     return sym;
 }
 

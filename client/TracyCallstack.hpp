@@ -10,6 +10,7 @@
 #  include <execinfo.h>
 #endif
 
+
 #ifdef TRACY_HAS_CALLSTACK
 
 #include <assert.h>
@@ -110,16 +111,6 @@ static tracy_force_inline void* Callstack( int depth )
 
 }
 
-#endif  // defined TRACY_HAS_CALLSTACK
-
-// The below is defined independently of TRACY_HAS_CALLSTACK because it's
-// also used by TracyProfiler.cpp.
-#ifdef __ANDROID__
-namespace tracy {
-// Attempts to set the read permission on the entire mapping containing the
-// specified address.
-bool EnsureReadable( uintptr_t address );
-}  // namespace tracy
-#endif  // defined __ANDROID__
+#endif
 
 #endif

@@ -10,14 +10,6 @@
 #  include <execinfo.h>
 #endif
 
-#ifdef __ANDROID__
-#  include <sys/mman.h>
-#  include <stdio.h>
-#  include <stdint.h>
-#  include <algorithm>
-#  include <vector>
-#endif
-
 #ifdef TRACY_HAS_CALLSTACK
 
 #include <assert.h>

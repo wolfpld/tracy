@@ -2955,24 +2955,19 @@ std::vector<MappingInfo> ParseMappings()
 
 // Internal implementation helper for LookUpMapping(address).
 //
-// Takes as input an `address` and a
-// known vector `mappings`, and returns a pointer to the MappingInfo
-// describing the mapping that this address belongs to, or nullptr if
-// the address isn't in `mappings`.
+// Takes as input an `address` and a known vector `mappings`, assumed to be
+// sorted by increasing addresses, as /proc/self/maps seems to be.
+// Returns a pointer to the MappingInfo describing the mapping that this
+// address belongs to, or nullptr if the address isn't in `mappings`.
 inline MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
 {
-    // We assume mappings to be sorted by address, as /proc/self/maps seems to be.
-    // Construct a MappingInfo just for the purpose of using std::lower_bound.
-    MappingInfo needle;
-    needle.start_address = address;
-    needle.end_address = address;
     // Comparison function for std::lower_bound. Returns true if all addresses in `m1`
-    // are lower than all addresses in `m2`.
-    auto Compare = []( const MappingInfo& m1, const MappingInfo& m2 ) {
+    // are lower than `addr`.
+    auto Compare = []( const MappingInfo& m1, uintptr_t addr ) {
         // '<=' because the address ranges are half-open intervals, [start, end).
-        return m1.end_address <= m2.start_address;
+        return m1.end_address <= addr;
     };
-    auto iter = std::lower_bound( mappings.begin(), mappings.end(), needle, Compare );
+    auto iter = std::lower_bound( mappings.begin(), mappings.end(), address, Compare );
     if( iter == mappings.end() || iter->end_address <= address) {
         return nullptr;
     }

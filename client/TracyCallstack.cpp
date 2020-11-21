@@ -519,7 +519,14 @@ static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     CallstackSymbolData sym;
-    backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
+    if( EnsureReadable(ptr) )
+    {
+        backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
+    }
+    else
+    {
+        memset(&sym, 0, sizeof sym);
+    }
     return sym;
 }
 

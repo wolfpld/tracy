@@ -9,7 +9,7 @@ a mistake.
 v0.x.x (xxxx-xx-xx)
 -------------------
 
-- More robust handling of privilege elevation on Android.
+- More robust handling of system tracing on Android.
 - Added warning dialog when the connection is lost before all needed data
   can be retrieved.
 

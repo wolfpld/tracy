@@ -2959,7 +2959,7 @@ std::vector<MappingInfo> ParseMappings()
 // sorted by increasing addresses, as /proc/self/maps seems to be.
 // Returns a pointer to the MappingInfo describing the mapping that this
 // address belongs to, or nullptr if the address isn't in `mappings`.
-inline MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
+MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
 {
     // Comparison function for std::lower_bound. Returns true if all addresses in `m1`
     // are lower than `addr`.
@@ -2980,11 +2980,11 @@ inline MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t 
 // describing the mapping that this address belongs to, or nullptr if
 // the address isn't in any known mapping.
 //
-// This function is stateful and not reentrant (assumes to be called from)
-// only one thread. It holds a vector of mappings parsed from /proc/self/maps.
+// This function is stateful and not reentrant (assumes to be called from
+// only one thread). It holds a vector of mappings parsed from /proc/self/maps.
 //
 // Attempts to react to mappings changes by re-parsing /proc/self/maps.
-inline MappingInfo* LookUpMapping(uintptr_t address)
+MappingInfo* LookUpMapping(uintptr_t address)
 {
     // Static state managed by this function. Not constant, we mutate that state as
     // we turn some mappings readable. Initially parsed once here, updated as needed below.
@@ -3002,7 +3002,7 @@ inline MappingInfo* LookUpMapping(uintptr_t address)
 //
 // Attempts to make the specified `mapping` readable if it isn't already.
 // Returns true if and only if the mapping is readable.
-inline bool EnsureReadable( MappingInfo& mapping )
+bool EnsureReadable( MappingInfo& mapping )
 {
     if( mapping.perm_r )
     {

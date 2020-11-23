@@ -10,6 +10,7 @@
 
 #include <cctype>
 #include <chrono>
+#include <math.h>
 #include <string.h>
 
 #ifdef __MINGW32__

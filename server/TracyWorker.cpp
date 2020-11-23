@@ -4951,6 +4951,8 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
     case PlotDataType::Float:
         if( !isfinite( ev.data.f ) ) return;
         break;
+    default:
+        break;
     }
 
     PlotData* plot = m_data.plots.Retrieve( ev.name, [this] ( uint64_t name ) {

@@ -2898,7 +2898,6 @@ void Profiler::HandleParameter( uint64_t payload )
 }
 
 #ifdef __ANDROID__
-namespace {
 // Implementation helpers of EnsureReadable(address).
 // This is so far only needed on Android, where it is common for libraries to be mapped
 // with only executable, not readable, permissions. Typical example (line from /proc/self/maps):
@@ -2909,6 +2908,7 @@ namespace {
 // To work around this, we parse /proc/self/maps and we use mprotect to set read permissions
 // on any mappings that contain symbols addresses hit by HandleSymbolCodeQuery.
 
+namespace {
 // Holds some information about a single memory mapping.
 struct MappingInfo {
     // Start of address range. Inclusive.
@@ -2919,13 +2919,14 @@ struct MappingInfo {
     // Read/Write/Executable permissions.
     bool perm_r, perm_w, perm_x;
 };
+}  // anonymous namespace
 
 // Internal implementation helper for LookUpMapping(address).
 //
 // Parses /proc/self/maps returning a vector<MappingInfo>.
 // /proc/self/maps is assumed to be sorted by ascending address, so the resulting
 // vector is sorted by ascending address too.
-std::vector<MappingInfo> ParseMappings()
+static std::vector<MappingInfo> ParseMappings()
 {
     std::vector<MappingInfo> result;
     FILE* file = fopen( "/proc/self/maps", "r" );
@@ -2959,7 +2960,7 @@ std::vector<MappingInfo> ParseMappings()
 // sorted by increasing addresses, as /proc/self/maps seems to be.
 // Returns a pointer to the MappingInfo describing the mapping that this
 // address belongs to, or nullptr if the address isn't in `mappings`.
-inline MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
+static MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t address)
 {
     // Comparison function for std::lower_bound. Returns true if all addresses in `m1`
     // are lower than `addr`.
@@ -2968,7 +2969,7 @@ inline MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t 
         return m1.end_address <= addr;
     };
     auto iter = std::lower_bound( mappings.begin(), mappings.end(), address, Compare );
-    if( iter == mappings.end() || iter->end_address <= address) {
+    if( iter == mappings.end() || iter->start_address > address) {
         return nullptr;
     }
     return &*iter;
@@ -2980,11 +2981,11 @@ inline MappingInfo* LookUpMapping(std::vector<MappingInfo>& mappings, uintptr_t 
 // describing the mapping that this address belongs to, or nullptr if
 // the address isn't in any known mapping.
 //
-// This function is stateful and not reentrant (assumes to be called from)
-// only one thread. It holds a vector of mappings parsed from /proc/self/maps.
+// This function is stateful and not reentrant (assumes to be called from
+// only one thread). It holds a vector of mappings parsed from /proc/self/maps.
 //
 // Attempts to react to mappings changes by re-parsing /proc/self/maps.
-inline MappingInfo* LookUpMapping(uintptr_t address)
+static MappingInfo* LookUpMapping(uintptr_t address)
 {
     // Static state managed by this function. Not constant, we mutate that state as
     // we turn some mappings readable. Initially parsed once here, updated as needed below.
@@ -3002,7 +3003,7 @@ inline MappingInfo* LookUpMapping(uintptr_t address)
 //
 // Attempts to make the specified `mapping` readable if it isn't already.
 // Returns true if and only if the mapping is readable.
-inline bool EnsureReadable( MappingInfo& mapping )
+static bool EnsureReadable( MappingInfo& mapping )
 {
     if( mapping.perm_r )
     {
@@ -3027,14 +3028,13 @@ inline bool EnsureReadable( MappingInfo& mapping )
 }
 
 // Attempts to set the read permission on the entire mapping containing the
-// specified address.
-bool EnsureReadable( uintptr_t address )
+// specified address. Returns true if and only if the mapping is now readable.
+static bool EnsureReadable( uintptr_t address )
 {
     MappingInfo* mapping = LookUpMapping(address);
     return mapping && EnsureReadable( *mapping );
 }
 
-}  // anonymous namespace
 #endif  // defined __ANDROID__
 
 void Profiler::HandleSymbolQuery( uint64_t symbol )

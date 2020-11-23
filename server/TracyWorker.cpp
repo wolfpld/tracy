@@ -4942,6 +4942,16 @@ void Worker::ProcessLockName( const QueueLockName& ev )
 
 void Worker::ProcessPlotData( const QueuePlotData& ev )
 {
+    switch( ev.type )
+    {
+    case PlotDataType::Double:
+        if( !isfinite( ev.data.d ) ) return;
+        break;
+    case PlotDataType::Float:
+        if( !isfinite( ev.data.f ) ) return;
+        break;
+    }
+
     PlotData* plot = m_data.plots.Retrieve( ev.name, [this] ( uint64_t name ) {
         auto plot = m_slab.AllocInit<PlotData>();
         plot->name = name;

@@ -784,6 +784,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                 }
                 s_ring[i].Advance( hdr.size );
             }
+            if( !traceActive.load( std::memory_order_relaxed) ) break;
             if( !hadData )
             {
                 std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
@@ -1179,10 +1180,12 @@ void SysTraceWorker( void* ptr )
                 close( pipefd[1] );
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
+                execlp( "su", "su", "root", "sh", "-c",
+                    "cat /sys/kernel/debug/tracing/trace_pipe"
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
-                execlp( "su", "su", "root", "sh", "-c", "/data/tracy_systrace", (char*)nullptr );
+                    " || /data/tracy_systrace"
 #endif
-                execlp( "su", "su", "root", "sh", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
+                    , nullptr );
                 exit( 1 );
             }
         }
@@ -1194,6 +1197,7 @@ void SysTraceWorker( void* ptr )
             pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
             ProcessTraceLines( pipefd[0] );
             close( pipefd[0] );
+            waitpid( pid, nullptr, 0 );
         }
     }
 }

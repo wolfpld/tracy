@@ -1180,15 +1180,10 @@ void SysTraceWorker( void* ptr )
                 close( pipefd[1] );
                 sched_param sp = { 4 };
                 pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-                // Try `cat /sys/kernel/debug/tracing/trace_pipe` first, and then
-                // possibly as a fallback /data/tracy_systrace. To make the fallback
-                // seamless, we redirect cat's stderr to /dev/null.
-                execlp( "su", "su", "root", "sh", "-c",
-                    "cat /sys/kernel/debug/tracing/trace_pipe 2>/dev/null"
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
-                    " || /data/tracy_systrace"
+                execlp( "su", "su", "root", "sh", "-c", "/data/tracy_systrace", (char*)nullptr );
 #endif
-                    , nullptr );
+                execlp( "su", "su", "root", "sh", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
                 exit( 1 );
             }
         }

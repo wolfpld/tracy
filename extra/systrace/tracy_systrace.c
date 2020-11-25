@@ -44,9 +44,12 @@ void _start()
     for(;;)
     {
         while( sym_poll( &pfd, 1, 0 ) <= 0 ) sym_nanosleep( &sleepTime, NULL );
-        const int rd = sym_read( kernelFd, buf, BufSize );
+        const ssize_t rd = sym_read( kernelFd, buf, BufSize );
         if( rd <= 0 ) break;
-        sym_write( STDOUT_FILENO, buf, rd );
+        const ssize_t wr = sym_write( STDOUT_FILENO, buf, rd );
+        // Termination condition occurring on exit of the profiled program,
+        // when the parent process closes the pipe.
+        if( wr <= 0 ) break;
     }
 
     sym_exit( 0 );

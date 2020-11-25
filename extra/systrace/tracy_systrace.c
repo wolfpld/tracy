@@ -33,23 +33,32 @@ void _start()
     int kernelFd = sym_open( "/sys/kernel/debug/tracing/trace_pipe", O_RDONLY );
     if( kernelFd < 0 ) sym_exit( 0 );
 
-    struct pollfd pfd;
-    pfd.fd = kernelFd;
-    pfd.events = POLLIN | POLLERR;
+    struct pollfd pfd_in;
+    pfd_in.fd = kernelFd;
+    pfd_in.events = POLLIN | POLLERR;
+
+    struct pollfd pfd_out;
+    pfd_out.fd = STDOUT_FILENO;
+    pfd_out.events = POLLERR;
 
     struct timespec sleepTime;
     sleepTime.tv_sec = 0;
     sleepTime.tv_nsec = 1000 * 1000 * 10;
 
-    for(;;)
+    // While the pipe is open (no POLLERR on the output fd)
+    while( sym_poll( &pfd_out, 1, 0) <= 0 )
     {
-        while( sym_poll( &pfd, 1, 0 ) <= 0 ) sym_nanosleep( &sleepTime, NULL );
+        // If there is neither data (POLLIN) nor an error (POLLERR) on
+        // the read fd, sleep. This implements a blocking read without relying
+        // on the Linux kernel's implementation of blocking reads which causes
+        // a large number of context switches.
+        if( sym_poll( &pfd_in, 1, 0 ) <= 0 ) {
+            sym_nanosleep( &sleepTime, NULL );
+            continue;  // go back to the while condition polling the output fd
+        }
         const ssize_t rd = sym_read( kernelFd, buf, BufSize );
         if( rd <= 0 ) break;
-        const ssize_t wr = sym_write( STDOUT_FILENO, buf, rd );
-        // Termination condition occurring on exit of the profiled program,
-        // when the parent process closes the pipe.
-        if( wr <= 0 ) break;
+        sym_write( STDOUT_FILENO, buf, rd );
     }
 
     sym_exit( 0 );

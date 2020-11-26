@@ -97,6 +97,7 @@ BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG
 #ifndef __CYGWIN__
 struct ModuleCache
 {
+    HMODULE mod;
     uint64_t start;
     uint64_t end;
     char* name;
@@ -143,6 +144,7 @@ void InitCallstack()
                     if( ptr > name ) ptr++;
                     const auto namelen = name + res - ptr;
                     auto cache = s_modCache->push_next();
+                    cache->mod = mod[i];
                     cache->start = base;
                     cache->end = base + info.SizeOfImage;
                     cache->name = (char*)tracy_malloc( namelen+3 );
@@ -150,6 +152,15 @@ void InitCallstack()
                     memcpy( cache->name+1, ptr, namelen );
                     cache->name[namelen+1] = ']';
                     cache->name[namelen+2] = '\0';
+                } else {
+                    auto cache = s_modCache->push_next();
+                    cache->mod = mod[i];
+                    cache->start = base;
+                    cache->end = base + info.SizeOfImage;
+                    const char* modName = "[unknown]";
+                    auto len = strlen(modName);
+                    cache->name = (char*)tracy_malloc( len+1 );
+                    memcpy( cache->name, modName, len+1 );
                 }
             }
         }
@@ -197,6 +208,30 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
+static bool HasModuleAddr(uint64_t addr) 
+{
+    for( auto& v : *s_modCache )
+    {
+        if( addr >= v.start && addr < v.end )
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool HasModule(HMODULE mod) 
+{
+    for( auto& v : *s_modCache )
+    {
+        if( v.mod == mod )
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 static const char* GetModuleName( uint64_t addr )
 {
     if( ( addr & 0x8000000000000000 ) != 0 ) return "[kernel]";
@@ -214,38 +249,78 @@ static const char* GetModuleName( uint64_t addr )
     DWORD needed;
     HANDLE proc = GetCurrentProcess();
 
-    if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+    char* needle = nullptr;
+    static int sNumModules = 0;
+
+    if( EnumProcessModulesEx( proc, mod, sizeof( mod ), &needed, LIST_MODULES_ALL ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );
+        if (sz == sNumModules) {
+            return "[unknown]";
+        }
+
+        sNumModules = sz;
         for( size_t i=0; i<sz; i++ )
         {
+            if (HasModule(mod[i])) {
+                continue;
+            }
+
             MODULEINFO info;
             if( GetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
             {
                 const auto base = uint64_t( info.lpBaseOfDll );
-                if( addr >= base && addr < base + info.SizeOfImage )
+                char name[1024];
+                const auto res = GetModuleFileNameA( mod[i], name, 1021 );
+                if( res > 0 )
                 {
-                    char name[1024];
-                    const auto res = GetModuleFileNameA( mod[i], name, 1021 );
-                    if( res > 0 )
-                    {
-                        auto ptr = name + res;
-                        while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
-                        if( ptr > name ) ptr++;
-                        const auto namelen = name + res - ptr;
-                        auto cache = s_modCache->push_next();
-                        cache->start = base;
-                        cache->end = base + info.SizeOfImage;
-                        cache->name = (char*)tracy_malloc( namelen+3 );
-                        cache->name[0] = '[';
-                        memcpy( cache->name+1, ptr, namelen );
-                        cache->name[namelen+1] = ']';
-                        cache->name[namelen+2] = '\0';
-                        return cache->name;
+                    auto ptr = name + res;
+                    while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
+                    if( ptr > name ) ptr++;
+                    const auto namelen = name + res - ptr;
+                    auto cache = s_modCache->push_next();
+                    cache->mod = mod[i];
+                    cache->start = base;
+                    cache->end = base + info.SizeOfImage;
+                    cache->name = (char*)tracy_malloc( namelen+3 );
+                    cache->name[0] = '[';
+                    memcpy( cache->name+1, ptr, namelen );
+                    cache->name[namelen+1] = ']';
+                    cache->name[namelen+2] = '\0';
+                    if (addr >= cache->start && addr < cache->end) {
+                        needle = cache->name;
                     }
+                } else {
+                    auto cache = s_modCache->push_next();
+                    cache->mod = mod[i];
+                    cache->start = base;
+                    cache->end = base + info.SizeOfImage;
+                    const char* modName = "[unknown]";
+                    auto len = strlen(modName);
+                    cache->name = (char*)tracy_malloc( len+1 );
+                    memcpy( cache->name, modName, len+1 );
+                    if (addr >= cache->start && addr < cache->end) {
+                        needle = cache->name;
+                    }
+                }
+            } else {
+                auto cache = s_modCache->push_next();
+                cache->mod = mod[i];
+                cache->start = addr;
+                cache->end = addr+1;
+                const char* modName = "[unknown]";
+                auto len = strlen(modName);
+                cache->name = (char*)tracy_malloc( len+1 );
+                memcpy( cache->name, modName, len+1 );
+                if (addr >= cache->start && addr < cache->end) {
+                    needle = cache->name;
                 }
             }
         }
+    }
+
+    if (needle != nullptr) {
+        return needle;
     }
 #endif
 

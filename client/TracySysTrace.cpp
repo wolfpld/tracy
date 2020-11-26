@@ -784,6 +784,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                 }
                 s_ring[i].Advance( hdr.size );
             }
+            if( !traceActive.load( std::memory_order_relaxed) ) break;
             if( !hadData )
             {
                 std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
@@ -1173,7 +1174,7 @@ void SysTraceWorker( void* ptr )
         {
             // child
             close( pipefd[0] );
-            dup2( pipefd[1], STDERR_FILENO );
+            dup2( open( "/dev/null", O_WRONLY ), STDERR_FILENO );
             if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
             {
                 close( pipefd[1] );
@@ -1194,6 +1195,7 @@ void SysTraceWorker( void* ptr )
             pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
             ProcessTraceLines( pipefd[0] );
             close( pipefd[0] );
+            waitpid( pid, nullptr, 0 );
         }
     }
 }

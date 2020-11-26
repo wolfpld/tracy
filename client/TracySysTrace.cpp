@@ -1174,7 +1174,7 @@ void SysTraceWorker( void* ptr )
         {
             // child
             close( pipefd[0] );
-            dup2( open("/dev/null", O_WRONLY), STDERR_FILENO );
+            dup2( open( "/dev/null", O_WRONLY ), STDERR_FILENO );
             if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
             {
                 close( pipefd[1] );

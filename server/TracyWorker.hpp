@@ -383,6 +383,7 @@ public:
         ZoneStack,
         ZoneDoubleEnd,
         ZoneText,
+        ZoneColor,
         ZoneName,
         MemFree,
         FrameEnd,
@@ -608,6 +609,7 @@ private:
     tracy_force_inline void ProcessFrameImage( const QueueFrameImage& ev );
     tracy_force_inline void ProcessZoneText();
     tracy_force_inline void ProcessZoneName();
+    tracy_force_inline void ProcessZoneColor( const QueueZoneColor& ev );
     tracy_force_inline void ProcessZoneValue( const QueueZoneValue& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
     tracy_force_inline void ProcessLockTerminate( const QueueLockTerminate& ev );
@@ -670,6 +672,7 @@ private:
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneTextFailure( uint64_t thread );
+    void ZoneColorFailure( uint64_t thread );
     void ZoneNameFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );
     void FrameEndFailure();

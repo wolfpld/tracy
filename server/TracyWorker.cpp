@@ -4116,6 +4116,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ZoneName:
         ProcessZoneName();
         break;
+    case QueueType::ZoneColor:
+        ProcessZoneColor( ev.zoneColor );
+        break;
     case QueueType::ZoneValue:
         ProcessZoneValue( ev.zoneValue );
         break;
@@ -4506,6 +4509,12 @@ void Worker::ZoneTextFailure( uint64_t thread )
     m_failureData.thread = thread;
 }
 
+void Worker::ZoneColorFailure( uint64_t thread )
+{
+    m_failure = Failure::ZoneColor;
+    m_failureData.thread = thread;
+}
+
 void Worker::ZoneNameFailure( uint64_t thread )
 {
     m_failure = Failure::ZoneName;
@@ -4736,6 +4745,23 @@ void Worker::ProcessZoneName()
     auto zone = stack.back();
     auto& extra = RequestZoneExtra( *zone );
     extra.name = StringIdx( GetSingleStringIdx() );
+}
+
+void Worker::ProcessZoneColor( const QueueZoneColor& ev )
+{
+    auto td = RetrieveThread( m_threadCtx );
+    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneColorFailure( m_threadCtx );
+        return;
+    }
+
+    td->nextZoneId = 0;
+    auto& stack = td->stack;
+    auto zone = stack.back();
+    auto& extra = RequestZoneExtra( *zone );
+    const uint32_t color = ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
+    extra.color = color;
 }
 
 void Worker::ProcessZoneValue( const QueueZoneValue& ev )
@@ -7221,6 +7247,7 @@ static const char* s_failureReasons[] = {
     "Invalid order of zone begin and end events.",
     "Zone is ended twice.",
     "Zone text transfer destination doesn't match active zone.",
+    "Zone color transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",
     "Discontinuous frame begin/end mismatch.",

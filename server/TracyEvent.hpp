@@ -205,6 +205,7 @@ static_assert( std::is_standard_layout<ZoneEvent>::value, "ZoneEvent is not stan
 struct ZoneExtra
 {
     Int24 callstack;
+    Int24 color;
     StringIdx text;
     StringIdx name;
 };

@@ -3290,6 +3290,24 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
     }
 }
 
+TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color ) {
+    if( !ctx.active ) return;
+#ifndef TRACY_NO_VERIFY
+    {
+        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.id, ctx.id );
+        TracyLfqCommitC;
+    }
+#endif
+    {
+        TracyLfqPrepareC( tracy::QueueType::ZoneColor );
+        tracy::MemWrite( &item->zoneColor.r, uint8_t( ( color       ) & 0xFF ) );
+        tracy::MemWrite( &item->zoneColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+        tracy::MemWrite( &item->zoneColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        TracyLfqCommitC;
+    }
+}
+
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value )
 {
     if( !ctx.active ) return;

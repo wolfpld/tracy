@@ -27,6 +27,7 @@ typedef const void* TracyCZoneCtx;
 #define TracyCZoneEnd(c)
 #define TracyCZoneText(c,x,y)
 #define TracyCZoneName(c,x,y)
+#define TracyCZoneColor(c,x)
 #define TracyCZoneValue(c,x)
 
 #define TracyCAlloc(x,y)
@@ -111,6 +112,7 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx );
 TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size );
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size );
+TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color );
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value );
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
@@ -129,6 +131,7 @@ TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value );
 
 #define TracyCZoneText( ctx, txt, size ) ___tracy_emit_zone_text( ctx, txt, size );
 #define TracyCZoneName( ctx, txt, size ) ___tracy_emit_zone_name( ctx, txt, size );
+#define TracyCZoneColor( ctx, color ) ___tracy_emit_zone_color( ctx, color );
 #define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
 
 

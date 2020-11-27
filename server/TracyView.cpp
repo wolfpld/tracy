@@ -16561,8 +16561,16 @@ uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth 
 {
     const auto sl = ev.SrcLoc();
     const auto& srcloc = m_worker.GetSourceLocation( sl );
-    const auto color = srcloc.color;
-    if( color != 0 && !m_vd.forceColors ) return color | 0xFF000000;
+    if( !m_vd.forceColors )
+    {
+        if( m_worker.HasZoneExtra( ev ) )
+        {
+            const auto custom_color = m_worker.GetZoneExtra( ev ).color.Val();
+            if( custom_color != 0 ) return custom_color | 0xFF000000;
+        }
+        const auto color = srcloc.color;
+        if( color != 0 ) return color | 0xFF000000;
+    }
     switch( m_vd.dynamicColors )
     {
     case 0:

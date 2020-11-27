@@ -822,12 +822,24 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) + sizeof( MessageData::color ) + sizeof( MessageData::callstack ) ) );
     }
 
-    if( fileVer >= FileVersion( 0, 6, 3 ) )
+    if( fileVer >= FileVersion( 0, 7, 5 ) )
     {
         f.Read( sz );
         assert( sz != 0 );
         m_data.zoneExtra.reserve_exact( sz, m_slab );
         f.Read( m_data.zoneExtra.data(), sz * sizeof( ZoneExtra ) );
+    }
+    else if( fileVer >= FileVersion( 0, 6, 3 ) )
+    {
+        f.Read( sz );
+        assert( sz != 0 );
+        m_data.zoneExtra.reserve_exact( sz, m_slab );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            auto* zoneExtra = &m_data.zoneExtra[i];
+            f.Read3( zoneExtra->callstack, zoneExtra->text, zoneExtra->name );
+            zoneExtra->color = 0;
+        }
     }
     else
     {
@@ -4116,6 +4128,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ZoneName:
         ProcessZoneName();
         break;
+    case QueueType::ZoneColor:
+        ProcessZoneColor( ev.zoneColor );
+        break;
     case QueueType::ZoneValue:
         ProcessZoneValue( ev.zoneValue );
         break;
@@ -4506,6 +4521,12 @@ void Worker::ZoneTextFailure( uint64_t thread )
     m_failureData.thread = thread;
 }
 
+void Worker::ZoneColorFailure( uint64_t thread )
+{
+    m_failure = Failure::ZoneColor;
+    m_failureData.thread = thread;
+}
+
 void Worker::ZoneNameFailure( uint64_t thread )
 {
     m_failure = Failure::ZoneName;
@@ -4736,6 +4757,23 @@ void Worker::ProcessZoneName()
     auto zone = stack.back();
     auto& extra = RequestZoneExtra( *zone );
     extra.name = StringIdx( GetSingleStringIdx() );
+}
+
+void Worker::ProcessZoneColor( const QueueZoneColor& ev )
+{
+    auto td = RetrieveThread( m_threadCtx );
+    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneColorFailure( m_threadCtx );
+        return;
+    }
+
+    td->nextZoneId = 0;
+    auto& stack = td->stack;
+    auto zone = stack.back();
+    auto& extra = RequestZoneExtra( *zone );
+    const uint32_t color = ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
+    extra.color = color;
 }
 
 void Worker::ProcessZoneValue( const QueueZoneValue& ev )
@@ -7221,6 +7259,7 @@ static const char* s_failureReasons[] = {
     "Invalid order of zone begin and end events.",
     "Zone is ended twice.",
     "Zone text transfer destination doesn't match active zone.",
+    "Zone color transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",
     "Discontinuous frame begin/end mismatch.",

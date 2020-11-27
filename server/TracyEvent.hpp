@@ -207,6 +207,7 @@ struct ZoneExtra
     Int24 callstack;
     StringIdx text;
     StringIdx name;
+    Int24 color;
 };
 
 enum { ZoneExtraSize = sizeof( ZoneExtra ) };

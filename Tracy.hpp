@@ -23,6 +23,8 @@
 #define ZoneTextV(x,y,z)
 #define ZoneName(x,y)
 #define ZoneNameV(x,y,z)
+#define ZoneColor(x)
+#define ZoneColorV(x,y)
 #define ZoneValue(x)
 #define ZoneValueV(x,y)
 
@@ -128,6 +130,8 @@
 #define ZoneTextV( varname, txt, size ) varname.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 #define ZoneNameV( varname, txt, size ) varname.Name( txt, size );
+#define ZoneColor( color ) __trace_scoped_zone.Color( color );
+#define ZoneColorV( varname, color ) varname.Color( color );
 #define ZoneValue( value ) ___tracy_scoped_zone.Value( value );
 #define ZoneValueV( varname, value ) varname.Value( value );
 

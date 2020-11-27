@@ -136,6 +136,19 @@ public:
         TracyLfqCommit;
     }
 
+    tracy_force_inline void Color( uint32_t color )
+    {
+        if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
+        TracyLfqPrepare( QueueType::ZoneColor );
+        MemWrite( &item->zoneColor.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->zoneColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+        MemWrite( &item->zoneColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        TracyLfqCommit;
+    }
+
     tracy_force_inline void Value( uint64_t value )
     {
         if( !m_active ) return;

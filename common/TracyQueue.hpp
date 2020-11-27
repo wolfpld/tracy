@@ -57,6 +57,7 @@ enum class QueueType : uint8_t
     Crash,
     CrashReport,
     ZoneValidation,
+    ZoneColor,
     ZoneValue,
     FrameMarkMsg,
     FrameMarkMsgStart,
@@ -122,6 +123,13 @@ struct QueueZoneEnd
 struct QueueZoneValidation
 {
     uint32_t id;
+};
+
+struct QueueZoneColor
+{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
 };
 
 struct QueueZoneValue
@@ -489,6 +497,7 @@ struct QueueItem
         QueueZoneBeginLean zoneBeginLean;
         QueueZoneEnd zoneEnd;
         QueueZoneValidation zoneValidation;
+        QueueZoneColor zoneColor;
         QueueZoneValue zoneValue;
         QueueStringTransfer stringTransfer;
         QueueFrameMark frameMark;
@@ -593,6 +602,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // crash
     sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
     sizeof( QueueHeader ) + sizeof( QueueZoneValidation ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneColor ),
     sizeof( QueueHeader ) + sizeof( QueueZoneValue ),
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // continuous frames
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // start

@@ -13,7 +13,7 @@ extern "C" {
 
 TRACY_API void ___tracy_set_thread_name( const char* name );
 
-#define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
+#define TracyCSetThreadName( name ) ___tracy_set_thread_name( name )
 
 
 #ifndef TRACY_ENABLE
@@ -116,23 +116,23 @@ TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color );
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value );
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyCZone( ctx, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
-#  define TracyCZoneN( ctx, name, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
-#  define TracyCZoneC( ctx, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
-#  define TracyCZoneNC( ctx, name, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
+#  define TracyCZone( ctx, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active )
+#  define TracyCZoneN( ctx, name, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active )
+#  define TracyCZoneC( ctx, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active )
+#  define TracyCZoneNC( ctx, name, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active )
 #else
-#  define TracyCZone( ctx, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active );
-#  define TracyCZoneN( ctx, name, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active );
-#  define TracyCZoneC( ctx, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active );
-#  define TracyCZoneNC( ctx, name, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active );
+#  define TracyCZone( ctx, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active )
+#  define TracyCZoneN( ctx, name, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active )
+#  define TracyCZoneC( ctx, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active )
+#  define TracyCZoneNC( ctx, name, color, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin( &TracyConcat(__tracy_source_location,__LINE__), active )
 #endif
 
-#define TracyCZoneEnd( ctx ) ___tracy_emit_zone_end( ctx );
+#define TracyCZoneEnd( ctx ) ___tracy_emit_zone_end( ctx )
 
-#define TracyCZoneText( ctx, txt, size ) ___tracy_emit_zone_text( ctx, txt, size );
-#define TracyCZoneName( ctx, txt, size ) ___tracy_emit_zone_name( ctx, txt, size );
-#define TracyCZoneColor( ctx, color ) ___tracy_emit_zone_color( ctx, color );
-#define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
+#define TracyCZoneText( ctx, txt, size ) ___tracy_emit_zone_text( ctx, txt, size )
+#define TracyCZoneName( ctx, txt, size ) ___tracy_emit_zone_name( ctx, txt, size )
+#define TracyCZoneColor( ctx, color ) ___tracy_emit_zone_color( ctx, color )
+#define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value )
 
 
 TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int secure );
@@ -156,25 +156,25 @@ TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int cal
 #  define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, 1, name )
 #  define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 1, name )
 
-#  define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, TRACY_CALLSTACK );
-#  define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, TRACY_CALLSTACK );
-#  define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, TRACY_CALLSTACK );
-#  define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color, TRACY_CALLSTACK );
+#  define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, TRACY_CALLSTACK )
+#  define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, TRACY_CALLSTACK )
+#  define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, TRACY_CALLSTACK )
+#  define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color, TRACY_CALLSTACK )
 #else
-#  define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size, 0 );
-#  define TracyCFree( ptr ) ___tracy_emit_memory_free( ptr, 0 );
-#  define TracyCSecureAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size, 1 );
-#  define TracyCSecureFree( ptr ) ___tracy_emit_memory_free( ptr, 1 );
+#  define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size, 0 )
+#  define TracyCFree( ptr ) ___tracy_emit_memory_free( ptr, 0 )
+#  define TracyCSecureAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size, 1 )
+#  define TracyCSecureFree( ptr ) ___tracy_emit_memory_free( ptr, 1 )
 
-#  define TracyCAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_named( ptr, size, 0, name );
-#  define TracyCFreeN( ptr, name ) ___tracy_emit_memory_free_named( ptr, 0, name );
-#  define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_named( ptr, size, 1, name );
-#  define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_named( ptr, 1, name );
+#  define TracyCAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_named( ptr, size, 0, name )
+#  define TracyCFreeN( ptr, name ) ___tracy_emit_memory_free_named( ptr, 0, name )
+#  define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_named( ptr, size, 1, name )
+#  define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_named( ptr, 1, name )
 
-#  define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, 0 );
-#  define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, 0 );
-#  define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, 0 );
-#  define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color, 0 );
+#  define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, 0 )
+#  define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, 0 )
+#  define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, 0 )
+#  define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color, 0 )
 #endif
 
 
@@ -183,25 +183,25 @@ TRACY_API void ___tracy_emit_frame_mark_start( const char* name );
 TRACY_API void ___tracy_emit_frame_mark_end( const char* name );
 TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_t h, uint8_t offset, int flip );
 
-#define TracyCFrameMark ___tracy_emit_frame_mark( 0 );
-#define TracyCFrameMarkNamed( name ) ___tracy_emit_frame_mark( name );
-#define TracyCFrameMarkStart( name ) ___tracy_emit_frame_mark_start( name );
-#define TracyCFrameMarkEnd( name ) ___tracy_emit_frame_mark_end( name );
-#define TracyCFrameImage( image, width, height, offset, flip ) ___tracy_emit_frame_image( image, width, height, offset, flip );
+#define TracyCFrameMark ___tracy_emit_frame_mark( 0 )
+#define TracyCFrameMarkNamed( name ) ___tracy_emit_frame_mark( name )
+#define TracyCFrameMarkStart( name ) ___tracy_emit_frame_mark_start( name )
+#define TracyCFrameMarkEnd( name ) ___tracy_emit_frame_mark_end( name )
+#define TracyCFrameImage( image, width, height, offset, flip ) ___tracy_emit_frame_image( image, width, height, offset, flip )
 
 
 TRACY_API void ___tracy_emit_plot( const char* name, double val );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
-#define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
-#define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
+#define TracyCPlot( name, val ) ___tracy_emit_plot( name, val )
+#define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color )
 
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyCZoneS( ctx, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active );
-#  define TracyCZoneNS( ctx, name, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active );
-#  define TracyCZoneCS( ctx, color, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active );
-#  define TracyCZoneNCS( ctx, name, color, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active );
+#  define TracyCZoneS( ctx, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active )
+#  define TracyCZoneNS( ctx, name, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active )
+#  define TracyCZoneCS( ctx, color, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active )
+#  define TracyCZoneNCS( ctx, name, color, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { name, __FUNCTION__,  __FILE__, static_cast<uint32_t>(__LINE__), color }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active )
 
 #  define TracyCAllocS( ptr, size, depth ) ___tracy_emit_memory_alloc_callstack( ptr, size, depth, 0 )
 #  define TracyCFreeS( ptr, depth ) ___tracy_emit_memory_free_callstack( ptr, depth, 0 )
@@ -213,10 +213,10 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #  define TracyCSecureAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, 1, name )
 #  define TracyCSecureFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 1, name )
 
-#  define TracyCMessageS( txt, size, depth ) ___tracy_emit_message( txt, size, depth );
-#  define TracyCMessageLS( txt, depth ) ___tracy_emit_messageL( txt, depth );
-#  define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_messageC( txt, size, color, depth );
-#  define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_messageLC( txt, color, depth );
+#  define TracyCMessageS( txt, size, depth ) ___tracy_emit_message( txt, size, depth )
+#  define TracyCMessageLS( txt, depth ) ___tracy_emit_messageL( txt, depth )
+#  define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_messageC( txt, size, color, depth )
+#  define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_messageLC( txt, color, depth )
 #else
 #  define TracyCZoneS( ctx, depth, active ) TracyCZone( ctx, active )
 #  define TracyCZoneNS( ctx, name, depth, active ) TracyCZoneN( ctx, name, active )

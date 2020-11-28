@@ -12,6 +12,8 @@ v0.x.x (xxxx-xx-xx)
 - More robust handling of system tracing on Android.
 - Added warning dialog when the connection is lost before all needed data
   can be retrieved.
+- Dynamic zone colors are now supported through the ZoneColor() macro.
+- Fixed Arm machine code printout to match the one printed by objdump.
 
 
 v0.7.4 (2020-11-15)

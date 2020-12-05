@@ -7192,20 +7192,15 @@ void View::DrawZoneInfoWindow()
                     SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
 
-                    ImGui::Columns( 6 );
-                    ImGui::Text( "Begin" );
-                    ImGui::NextColumn();
-                    ImGui::Text( "End" );
-                    ImGui::NextColumn();
-                    ImGui::Text( "Time" );
-                    ImGui::NextColumn();
-                    ImGui::Text( "Wakeup" );
-                    ImGui::NextColumn();
-                    ImGui::Text( "CPU" );
-                    ImGui::NextColumn();
-                    ImGui::Text( "State" );
-                    ImGui::NextColumn();
-                    ImGui::Separator();
+                    ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg );
+                    ImGui::TableSetupScrollFreeze( 0, 1 );
+                    ImGui::TableSetupColumn( "Begin" );
+                    ImGui::TableSetupColumn( "End" );
+                    ImGui::TableSetupColumn( "Time" );
+                    ImGui::TableSetupColumn( "Wakeup" );
+                    ImGui::TableSetupColumn( "CPU" );
+                    ImGui::TableSetupColumn( "State" );
+                    ImGui::TableHeadersRow();
                     const auto wrsz = eit - bit;
                     ImGuiListClipper clipper;
                     clipper.Begin( wrsz );
@@ -7221,23 +7216,27 @@ void View::DrawZoneInfoWindow()
                             const auto cwakeup = bit[i+1].WakeupVal();
                             const auto cpu1 = bit[i+1].Cpu();
 
+                            ImGui::PushID( i );
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+
                             auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
                             if( ImGui::Selectable( tt ) )
                             {
                                 CenterAtTime( cend );
                             }
-                            ImGui::NextColumn();
+                            ImGui::TableNextColumn();
                             tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
                             if( ImGui::Selectable( tt ) )
                             {
                                 CenterAtTime( cstart );
                             }
-                            ImGui::NextColumn();
+                            ImGui::TableNextColumn();
                             if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
                             {
                                 ZoomToRange( cend, cwakeup );
                             }
-                            ImGui::NextColumn();
+                            ImGui::TableNextColumn();
                             if( cstart != cwakeup )
                             {
                                 if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
@@ -7249,7 +7248,7 @@ void View::DrawZoneInfoWindow()
                             {
                                 ImGui::TextUnformatted( "-" );
                             }
-                            ImGui::NextColumn();
+                            ImGui::TableNextColumn();
                             if( cpu0 == cpu1 )
                             {
                                 ImGui::TextUnformatted( RealToString( cpu0 ) );
@@ -7273,7 +7272,7 @@ void View::DrawZoneInfoWindow()
                                     }
                                 }
                             }
-                            ImGui::NextColumn();
+                            ImGui::TableNextColumn();
                             const char* desc;
                             if( reason == ContextSwitchData::NoState )
                             {
@@ -7291,11 +7290,10 @@ void View::DrawZoneInfoWindow()
                                 ImGui::TextUnformatted( desc );
                                 ImGui::EndTooltip();
                             }
-                            ImGui::NextColumn();
+                            ImGui::PopID();
                         }
                     }
-                    ImGui::EndColumns();
-
+                    ImGui::EndTable();
                     ImGui::TreePop();
                 }
             }

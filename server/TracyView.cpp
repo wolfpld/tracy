@@ -1541,17 +1541,17 @@ bool View::DrawConnection()
             ImGui::Separator();
             if( ImGui::TreeNode( "Trace parameters" ) )
             {
-                ImGui::Columns( 2 );
-                ImGui::TextUnformatted( "Name" );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( "Value" );
-                ImGui::NextColumn();
-                ImGui::Separator();
+                ImGui::BeginTable( "##traceparams", 2, ImGuiTableFlags_Borders );
+                ImGui::TableSetupColumn( "Name" );
+                ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthAutoResize );
+                ImGui::TableHeadersRow();
                 size_t idx = 0;
                 for( auto& p : params )
                 {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
                     ImGui::TextUnformatted( m_worker.GetString( p.name ) );
-                    ImGui::NextColumn();
+                    ImGui::TableNextColumn();
                     ImGui::PushID( idx );
                     if( p.isBool )
                     {
@@ -1570,10 +1570,9 @@ bool View::DrawConnection()
                         }
                     }
                     ImGui::PopID();
-                    ImGui::NextColumn();
                     idx++;
                 }
-                ImGui::EndColumns();
+                ImGui::EndTable();
                 ImGui::TreePop();
             }
         }

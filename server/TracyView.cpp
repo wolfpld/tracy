@@ -7464,7 +7464,7 @@ void View::DrawZoneInfoWindow()
                 {
                     ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
-                    ImGui::BeginTable( "##waitregions", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) );
+                    ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) );
                     ImGui::TableSetupScrollFreeze( 0, 1 );
                     ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );
                     ImGui::TableSetupColumn( "Message" );

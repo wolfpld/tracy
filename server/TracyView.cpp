@@ -1541,38 +1541,40 @@ bool View::DrawConnection()
             ImGui::Separator();
             if( ImGui::TreeNode( "Trace parameters" ) )
             {
-                ImGui::BeginTable( "##traceparams", 2, ImGuiTableFlags_Borders );
-                ImGui::TableSetupColumn( "Name" );
-                ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthAutoResize );
-                ImGui::TableHeadersRow();
-                size_t idx = 0;
-                for( auto& p : params )
+                if( ImGui::BeginTable( "##traceparams", 2, ImGuiTableFlags_Borders ) )
                 {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted( m_worker.GetString( p.name ) );
-                    ImGui::TableNextColumn();
-                    ImGui::PushID( idx );
-                    if( p.isBool )
+                    ImGui::TableSetupColumn( "Name" );
+                    ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthAutoResize );
+                    ImGui::TableHeadersRow();
+                    size_t idx = 0;
+                    for( auto& p : params )
                     {
-                        bool val = p.val;
-                        if( ImGui::Checkbox( "", &val ) )
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted( m_worker.GetString( p.name ) );
+                        ImGui::TableNextColumn();
+                        ImGui::PushID( idx );
+                        if( p.isBool )
                         {
-                            m_worker.SetParameter( idx, int32_t( val ) );
+                            bool val = p.val;
+                            if( ImGui::Checkbox( "", &val ) )
+                            {
+                                m_worker.SetParameter( idx, int32_t( val ) );
+                            }
                         }
-                    }
-                    else
-                    {
-                        auto val = int( p.val );
-                        if( ImGui::InputInt( "", &val, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue ) )
+                        else
                         {
-                            m_worker.SetParameter( idx, int32_t( val ) );
+                            auto val = int( p.val );
+                            if( ImGui::InputInt( "", &val, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue ) )
+                            {
+                                m_worker.SetParameter( idx, int32_t( val ) );
+                            }
                         }
+                        ImGui::PopID();
+                        idx++;
                     }
-                    ImGui::PopID();
-                    idx++;
+                    ImGui::EndTable();
                 }
-                ImGui::EndTable();
                 ImGui::TreePop();
             }
         }
@@ -7193,108 +7195,110 @@ void View::DrawZoneInfoWindow()
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
                     const auto wrsz = eit - bit;
 
-                    ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) );
-                    ImGui::TableSetupScrollFreeze( 0, 1 );
-                    ImGui::TableSetupColumn( "Begin" );
-                    ImGui::TableSetupColumn( "End" );
-                    ImGui::TableSetupColumn( "Time" );
-                    ImGui::TableSetupColumn( "Wakeup" );
-                    ImGui::TableSetupColumn( "CPU" );
-                    ImGui::TableSetupColumn( "State" );
-                    ImGui::TableHeadersRow();
-
-                    ImGuiListClipper clipper;
-                    clipper.Begin( wrsz );
-                    while( clipper.Step() )
+                    if( ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
                     {
-                        for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                        ImGui::TableSetupScrollFreeze( 0, 1 );
+                        ImGui::TableSetupColumn( "Begin" );
+                        ImGui::TableSetupColumn( "End" );
+                        ImGui::TableSetupColumn( "Time" );
+                        ImGui::TableSetupColumn( "Wakeup" );
+                        ImGui::TableSetupColumn( "CPU" );
+                        ImGui::TableSetupColumn( "State" );
+                        ImGui::TableHeadersRow();
+
+                        ImGuiListClipper clipper;
+                        clipper.Begin( wrsz );
+                        while( clipper.Step() )
                         {
-                            const auto cend = bit[i].End();
-                            const auto state = bit[i].State();
-                            const auto reason = bit[i].Reason();
-                            const auto cpu0 = bit[i].Cpu();
-                            const auto cstart = bit[i+1].Start();
-                            const auto cwakeup = bit[i+1].WakeupVal();
-                            const auto cpu1 = bit[i+1].Cpu();
+                            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                            {
+                                const auto cend = bit[i].End();
+                                const auto state = bit[i].State();
+                                const auto reason = bit[i].Reason();
+                                const auto cpu0 = bit[i].Cpu();
+                                const auto cstart = bit[i+1].Start();
+                                const auto cwakeup = bit[i+1].WakeupVal();
+                                const auto cpu1 = bit[i+1].Cpu();
 
-                            ImGui::PushID( i );
-                            ImGui::TableNextRow();
-                            ImGui::TableNextColumn();
+                                ImGui::PushID( i );
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
 
-                            auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
-                            if( ImGui::Selectable( tt ) )
-                            {
-                                CenterAtTime( cend );
-                            }
-                            ImGui::TableNextColumn();
-                            tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
-                            if( ImGui::Selectable( tt ) )
-                            {
-                                CenterAtTime( cstart );
-                            }
-                            ImGui::TableNextColumn();
-                            if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
-                            {
-                                ZoomToRange( cend, cwakeup );
-                            }
-                            ImGui::TableNextColumn();
-                            if( cstart != cwakeup )
-                            {
-                                if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
+                                auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
+                                if( ImGui::Selectable( tt ) )
                                 {
-                                    ZoomToRange( cwakeup, cstart );
+                                    CenterAtTime( cend );
                                 }
-                            }
-                            else
-                            {
-                                ImGui::TextUnformatted( "-" );
-                            }
-                            ImGui::TableNextColumn();
-                            if( cpu0 == cpu1 )
-                            {
-                                ImGui::TextUnformatted( RealToString( cpu0 ) );
-                            }
-                            else
-                            {
-                                ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
-                                const auto tt0 = m_worker.GetThreadTopology( cpu0 );
-                                const auto tt1 = m_worker.GetThreadTopology( cpu1 );
-                                if( tt0 && tt1 )
+                                ImGui::TableNextColumn();
+                                tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
+                                if( ImGui::Selectable( tt ) )
                                 {
-                                    if( tt0->package != tt1->package )
+                                    CenterAtTime( cstart );
+                                }
+                                ImGui::TableNextColumn();
+                                if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
+                                {
+                                    ZoomToRange( cend, cwakeup );
+                                }
+                                ImGui::TableNextColumn();
+                                if( cstart != cwakeup )
+                                {
+                                    if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
                                     {
-                                        ImGui::SameLine();
-                                        TextDisabledUnformatted( "P" );
-                                    }
-                                    else if( tt0->core != tt1->core )
-                                    {
-                                        ImGui::SameLine();
-                                        TextDisabledUnformatted( "C" );
+                                        ZoomToRange( cwakeup, cstart );
                                     }
                                 }
+                                else
+                                {
+                                    ImGui::TextUnformatted( "-" );
+                                }
+                                ImGui::TableNextColumn();
+                                if( cpu0 == cpu1 )
+                                {
+                                    ImGui::TextUnformatted( RealToString( cpu0 ) );
+                                }
+                                else
+                                {
+                                    ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
+                                    const auto tt0 = m_worker.GetThreadTopology( cpu0 );
+                                    const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                                    if( tt0 && tt1 )
+                                    {
+                                        if( tt0->package != tt1->package )
+                                        {
+                                            ImGui::SameLine();
+                                            TextDisabledUnformatted( "P" );
+                                        }
+                                        else if( tt0->core != tt1->core )
+                                        {
+                                            ImGui::SameLine();
+                                            TextDisabledUnformatted( "C" );
+                                        }
+                                    }
+                                }
+                                ImGui::TableNextColumn();
+                                const char* desc;
+                                if( reason == ContextSwitchData::NoState )
+                                {
+                                    ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
+                                    desc = DecodeContextSwitchState( state );
+                                }
+                                else
+                                {
+                                    ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
+                                    desc = DecodeContextSwitchReason( reason );
+                                }
+                                if( *desc && ImGui::IsItemHovered() )
+                                {
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextUnformatted( desc );
+                                    ImGui::EndTooltip();
+                                }
+                                ImGui::PopID();
                             }
-                            ImGui::TableNextColumn();
-                            const char* desc;
-                            if( reason == ContextSwitchData::NoState )
-                            {
-                                ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
-                                desc = DecodeContextSwitchState( state );
-                            }
-                            else
-                            {
-                                ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
-                                desc = DecodeContextSwitchReason( reason );
-                            }
-                            if( *desc && ImGui::IsItemHovered() )
-                            {
-                                ImGui::BeginTooltip();
-                                ImGui::TextUnformatted( desc );
-                                ImGui::EndTooltip();
-                            }
-                            ImGui::PopID();
                         }
+                        ImGui::EndTable();
                     }
-                    ImGui::EndTable();
                     ImGui::TreePop();
                 }
             }
@@ -7464,32 +7468,34 @@ void View::DrawZoneInfoWindow()
                 {
                     ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
-                    ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) );
-                    ImGui::TableSetupScrollFreeze( 0, 1 );
-                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );
-                    ImGui::TableSetupColumn( "Message" );
-                    ImGui::TableHeadersRow();
-                    do
+                    if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
                     {
-                        ImGui::PushID( *msgit );
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
+                        ImGui::TableSetupScrollFreeze( 0, 1 );
+                        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );
+                        ImGui::TableSetupColumn( "Message" );
+                        ImGui::TableHeadersRow();
+                        do
                         {
-                            CenterAtTime( (*msgit)->time );
+                            ImGui::PushID( *msgit );
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
+                            {
+                                CenterAtTime( (*msgit)->time );
+                            }
+                            if( ImGui::IsItemHovered() )
+                            {
+                                m_msgHighlight = *msgit;
+                            }
+                            ImGui::PopID();
+                            ImGui::TableNextColumn();
+                            ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
+                            ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
+                            ImGui::PopStyleColor();
                         }
-                        if( ImGui::IsItemHovered() )
-                        {
-                            m_msgHighlight = *msgit;
-                        }
-                        ImGui::PopID();
-                        ImGui::TableNextColumn();
-                        ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
-                        ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
-                        ImGui::PopStyleColor();
+                        while( ++msgit != msgend );
+                        ImGui::EndTable();
                     }
-                    while( ++msgit != msgend );
-                    ImGui::EndTable();
                     ImGui::TreePop();
                     ImGui::Spacing();
                 }

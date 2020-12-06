@@ -7463,23 +7463,16 @@ void View::DrawZoneInfoWindow()
                 {
                     ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
-                    static bool widthSet = false;
-                    ImGui::Columns( 2 );
-                    if( !widthSet )
-                    {
-                        widthSet = true;
-                        const auto w = ImGui::GetWindowWidth();
-                        ImGui::SetColumnWidth( 0, w * 0.2f );
-                        ImGui::SetColumnWidth( 1, w * 0.8f );
-                    }
-                    TextDisabledUnformatted( "Time" );
-                    ImGui::NextColumn();
-                    TextDisabledUnformatted( "Message" );
-                    ImGui::NextColumn();
-                    ImGui::Separator();
+                    ImGui::BeginTable( "##waitregions", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV );
+                    ImGui::TableSetupScrollFreeze( 0, 1 );
+                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );
+                    ImGui::TableSetupColumn( "Message" );
+                    ImGui::TableHeadersRow();
                     do
                     {
                         ImGui::PushID( *msgit );
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
                         if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
                             CenterAtTime( (*msgit)->time );
@@ -7489,14 +7482,13 @@ void View::DrawZoneInfoWindow()
                             m_msgHighlight = *msgit;
                         }
                         ImGui::PopID();
-                        ImGui::NextColumn();
+                        ImGui::TableNextColumn();
                         ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
                         ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
                         ImGui::PopStyleColor();
-                        ImGui::NextColumn();
                     }
                     while( ++msgit != msgend );
-                    ImGui::EndColumns();
+                    ImGui::EndTable();
                     ImGui::TreePop();
                     ImGui::Spacing();
                 }

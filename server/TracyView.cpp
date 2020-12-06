@@ -7191,8 +7191,9 @@ void View::DrawZoneInfoWindow()
                     ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
+                    const auto wrsz = eit - bit;
 
-                    ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg );
+                    ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) );
                     ImGui::TableSetupScrollFreeze( 0, 1 );
                     ImGui::TableSetupColumn( "Begin" );
                     ImGui::TableSetupColumn( "End" );
@@ -7201,7 +7202,7 @@ void View::DrawZoneInfoWindow()
                     ImGui::TableSetupColumn( "CPU" );
                     ImGui::TableSetupColumn( "State" );
                     ImGui::TableHeadersRow();
-                    const auto wrsz = eit - bit;
+
                     ImGuiListClipper clipper;
                     clipper.Begin( wrsz );
                     while( clipper.Step() )
@@ -7463,7 +7464,7 @@ void View::DrawZoneInfoWindow()
                 {
                     ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
-                    ImGui::BeginTable( "##waitregions", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV );
+                    ImGui::BeginTable( "##waitregions", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) );
                     ImGui::TableSetupScrollFreeze( 0, 1 );
                     ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );
                     ImGui::TableSetupColumn( "Message" );

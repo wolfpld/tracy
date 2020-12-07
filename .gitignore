@@ -2,9 +2,8 @@
 *.opendb
 *.db
 *.vcxproj.user
-x64
-Release
-Debug
+Build/
+*.sln
 *.d
 *.o
 *.so

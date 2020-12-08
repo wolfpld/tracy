@@ -1748,10 +1748,13 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.zoneTextFat.text );
         tracy_free( (void*)ptr );
         break;
-    case QueueType::Message:
     case QueueType::MessageColor:
-    case QueueType::MessageCallstack:
     case QueueType::MessageColorCallstack:
+        ptr = MemRead<uint64_t>( &item.messageColorFat.text );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::Message:
+    case QueueType::MessageCallstack:
 #ifndef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
 #endif

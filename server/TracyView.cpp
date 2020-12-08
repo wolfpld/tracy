@@ -7630,61 +7630,74 @@ void View::DrawZoneInfoWindow()
                 std::vector<unordered_flat_map<int16_t, ZoneTimeData>::const_iterator> vec;
                 vec.reserve( m_timeDist.data.size() );
                 for( auto it = m_timeDist.data.cbegin(); it != m_timeDist.data.cend(); ++it ) vec.emplace_back( it );
-                static bool widthSet = false;
-                ImGui::Columns( 3 );
-                if( !widthSet )
+                if( ImGui::BeginTable( "##timedist", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) )
                 {
-                    widthSet = true;
-                    const auto w = ImGui::GetWindowWidth();
-                    ImGui::SetColumnWidth( 0, w * 0.57f );
-                    ImGui::SetColumnWidth( 1, w * 0.25f );
-                    ImGui::SetColumnWidth( 2, w * 0.18f );
-                }
-                if( ImGui::SmallButton( "Zone" ) ) m_timeDist.sortBy = TimeDistribution::SortBy::Count;
-                ImGui::NextColumn();
-                if( ImGui::SmallButton( "Time" ) ) m_timeDist.sortBy = TimeDistribution::SortBy::Time;
-                ImGui::NextColumn();
-                if( ImGui::SmallButton( "MTPC" ) ) m_timeDist.sortBy = TimeDistribution::SortBy::Mtpc;
-                ImGui::NextColumn();
-                ImGui::Separator();
-                switch( m_timeDist.sortBy )
-                {
-                case TimeDistribution::SortBy::Count:
-                    pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
-                    break;
-                case TimeDistribution::SortBy::Time:
-                    pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
-                    break;
-                case TimeDistribution::SortBy::Mtpc:
-                    pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count > float( rhs->second.time ) / rhs->second.count; } );
-                    break;
-                default:
-                    assert( false );
-                    break;
-                }
-                for( auto& v : vec )
-                {
-                    const auto& sl = m_worker.GetSourceLocation( v->first );
-                    SmallColorBox( GetSrcLocColor( sl, 0 ) );
-                    ImGui::SameLine();
-                    const auto name = m_worker.GetZoneName( sl );
-                    if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
+                    ImGui::TableSetupColumn( "Zone", ImGuiTableColumnFlags_PreferSortDescending );
+                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthAutoResize );
+                    ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAutoResize );
+                    ImGui::TableHeadersRow();
+                    const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+                    switch( sortspec.ColumnIndex )
                     {
-                        m_findZone.ShowZone( v->first, name, ev.Start(), m_worker.GetZoneEnd( ev ) );
+                    case 0:
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count < rhs->second.count; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
+                        }
+                        break;
+                    case 1:
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time < rhs->second.time; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+                        }
+                        break;
+                    case 2:
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count < float( rhs->second.time ) / rhs->second.count; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count > float( rhs->second.time ) / rhs->second.count; } );
+                        }
+                        break;
+                    default:
+                        assert( false );
+                        break;
                     }
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count ) );
-                    ImGui::NextColumn();
-                    ImGui::TextUnformatted( TimeToString( v->second.time ) );
-                    ImGui::SameLine();
-                    char buf[64];
-                    PrintStringPercent( buf, v->second.time * m_timeDist.fztime );
-                    TextDisabledUnformatted( buf );
-                    ImGui::NextColumn();
-                    ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
-                    ImGui::NextColumn();
+                    for( auto& v : vec )
+                    {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        const auto& sl = m_worker.GetSourceLocation( v->first );
+                        SmallColorBox( GetSrcLocColor( sl, 0 ) );
+                        ImGui::SameLine();
+                        const auto name = m_worker.GetZoneName( sl );
+                        if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
+                        {
+                            m_findZone.ShowZone( v->first, name, ev.Start(), m_worker.GetZoneEnd( ev ) );
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count ) );
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted( TimeToString( v->second.time ) );
+                        ImGui::SameLine();
+                        char buf[64];
+                        PrintStringPercent( buf, v->second.time * m_timeDist.fztime );
+                        TextDisabledUnformatted( buf );
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
+                    }
+                    ImGui::EndTable();
                 }
-                ImGui::EndColumns();
             }
             ImGui::TreePop();
         }

@@ -7201,7 +7201,7 @@ void View::DrawZoneInfoWindow()
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
                     const auto wrsz = eit - bit;
 
-                    if( ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
+                    if( ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
                     {
                         ImGui::TableSetupScrollFreeze( 0, 1 );
                         ImGui::TableSetupColumn( "Begin" );
@@ -9215,7 +9215,7 @@ void View::DrawMessages()
     ImGui::Separator();
     ImGui::BeginChild( "##messages" );
     const int colNum = hasCallstack ? 4 : 3;
-    if( ImGui::BeginTable( "##messages", colNum, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_ScrollY ) )
+    if( ImGui::BeginTable( "##messages", colNum, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Hideable ) )
     {
         ImGui::TableSetupScrollFreeze( 0, 1 );
         ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );

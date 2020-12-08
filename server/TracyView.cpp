@@ -460,7 +460,7 @@ bool View::Draw()
             {
                 ImGui::BeginChild( "##callstackFailure", ImVec2( 1200, 500 ) );
                 const auto w = ImGui::GetWindowWidth();
-                if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders ) )
+                if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders ) )
                 {
                     ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_WidthAutoResize );
                     ImGui::TableSetupColumn( "Function" );
@@ -7201,7 +7201,7 @@ void View::DrawZoneInfoWindow()
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
                     const auto wrsz = eit - bit;
 
-                    if( ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
+                    if( ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
                     {
                         ImGui::TableSetupScrollFreeze( 0, 1 );
                         ImGui::TableSetupColumn( "Begin" );
@@ -7474,7 +7474,7 @@ void View::DrawZoneInfoWindow()
                 {
                     ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
-                    if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
+                    if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
                     {
                         ImGui::TableSetupScrollFreeze( 0, 1 );
                         ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );

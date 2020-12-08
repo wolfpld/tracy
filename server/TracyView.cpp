@@ -460,125 +460,131 @@ bool View::Draw()
             {
                 ImGui::BeginChild( "##callstackFailure", ImVec2( 1200, 500 ) );
                 const auto w = ImGui::GetWindowWidth();
-                ImGui::Columns( 4 );
-                ImGui::SetColumnWidth( 0, w * 0.05f );
-                ImGui::SetColumnWidth( 1, w * 0.425f );
-                ImGui::SetColumnWidth( 2, w * 0.425f );
-                ImGui::SetColumnWidth( 3, w * 0.1f );
-                ImGui::TextUnformatted( "Frame" );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( "Function" );
-                ImGui::SameLine();
-                s_instance->DrawHelpMarker( "Click on entry to copy it to clipboard." );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( "Location" );
-                ImGui::SameLine();
-                s_instance->DrawHelpMarker( "Click on entry to copy it to clipboard." );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( "Image" );
-                ImGui::NextColumn();
-
-                auto& cs = s_instance->m_worker.GetCallstack( data.callstack );
-                int fidx = 0;
-                int bidx = 0;
-                for( auto& entry : cs )
+                if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders ) )
                 {
-                    auto frameData = s_instance->m_worker.GetCallstackFrame( entry );
-                    if( !frameData )
-                    {
-                        ImGui::Separator();
-                        ImGui::Text( "%i", fidx++ );
-                        ImGui::NextColumn();
-                        char buf[32];
-                        sprintf( buf, "%p", (void*)s_instance->m_worker.GetCanonicalPointer( entry ) );
-                        ImGui::TextUnformatted( buf );
-                        if( ImGui::IsItemClicked() )
-                        {
-                            ImGui::SetClipboardText( buf );
-                        }
-                        ImGui::NextColumn();
-                        ImGui::NextColumn();
-                        ImGui::NextColumn();
-                    }
-                    else
-                    {
-                        const auto fsz = frameData->size;
-                        for( uint8_t f=0; f<fsz; f++ )
-                        {
-                            const auto& frame = frameData->data[f];
-                            auto txt = s_instance->m_worker.GetString( frame.name );
+                    ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_WidthAutoResize );
+                    ImGui::TableSetupColumn( "Function" );
+                    ImGui::TableSetupColumn( "Location" );
+                    ImGui::TableSetupColumn( "Image" );
+                    ImGui::TableHeadersRow();
 
-                            if( fidx == 0 && f != fsz-1 )
+                    auto& cs = s_instance->m_worker.GetCallstack( data.callstack );
+                    int fidx = 0;
+                    int bidx = 0;
+                    for( auto& entry : cs )
+                    {
+                        auto frameData = s_instance->m_worker.GetCallstackFrame( entry );
+                        if( !frameData )
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::Text( "%i", fidx++ );
+                            ImGui::TableNextColumn();
+                            char buf[32];
+                            sprintf( buf, "%p", (void*)s_instance->m_worker.GetCanonicalPointer( entry ) );
+                            ImGui::TextUnformatted( buf );
+                            if( ImGui::IsItemHovered() )
                             {
-                                auto test = s_tracyStackFrames;
-                                bool match = false;
-                                do
+                                ImGui::BeginTooltip();
+                                ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
+                                ImGui::EndTooltip();
+                                if( ImGui::IsItemClicked() )
                                 {
-                                    if( strcmp( txt, *test ) == 0 )
+                                    ImGui::SetClipboardText( buf );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            const auto fsz = frameData->size;
+                            for( uint8_t f=0; f<fsz; f++ )
+                            {
+                                const auto& frame = frameData->data[f];
+                                auto txt = s_instance->m_worker.GetString( frame.name );
+
+                                if( fidx == 0 && f != fsz-1 )
+                                {
+                                    auto test = s_tracyStackFrames;
+                                    bool match = false;
+                                    do
                                     {
-                                        match = true;
-                                        break;
+                                        if( strcmp( txt, *test ) == 0 )
+                                        {
+                                            match = true;
+                                            break;
+                                        }
+                                    }
+                                    while( *++test );
+                                    if( match ) continue;
+                                }
+
+                                bidx++;
+
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+                                if( f == fsz-1 )
+                                {
+                                    ImGui::Text( "%i", fidx++ );
+                                }
+                                else
+                                {
+                                    TextDisabledUnformatted( "inline" );
+                                }
+                                ImGui::TableNextColumn();
+                                {
+                                    ImGui::PushTextWrapPos( 0.0f );
+                                    if( txt[0] == '[' )
+                                    {
+                                        TextDisabledUnformatted( txt );
+                                    }
+                                    else
+                                    {
+                                        ImGui::TextUnformatted( txt );
+                                    }
+                                    ImGui::PopTextWrapPos();
+                                }
+                                if( ImGui::IsItemHovered() )
+                                {
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
+                                    ImGui::EndTooltip();
+                                    if( ImGui::IsItemClicked() )
+                                    {
+                                        ImGui::SetClipboardText( txt );
                                     }
                                 }
-                                while( *++test );
-                                if( match ) continue;
-                            }
-
-                            bidx++;
-
-                            ImGui::Separator();
-                            if( f == fsz-1 )
-                            {
-                                ImGui::Text( "%i", fidx++ );
-                            }
-                            else
-                            {
-                                TextDisabledUnformatted( "inline" );
-                            }
-                            ImGui::NextColumn();
-                            {
+                                ImGui::TableNextColumn();
                                 ImGui::PushTextWrapPos( 0.0f );
-                                if( txt[0] == '[' )
+                                txt = s_instance->m_worker.GetString( frame.file );
+                                if( frame.line == 0 )
                                 {
                                     TextDisabledUnformatted( txt );
                                 }
                                 else
                                 {
-                                    ImGui::TextUnformatted( txt );
+                                    ImGui::TextDisabled( "%s:%i", txt, frame.line );
+                                }
+                                if( ImGui::IsItemHovered() )
+                                {
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
+                                    ImGui::EndTooltip();
+                                    if( ImGui::IsItemClicked() )
+                                    {
+                                        ImGui::SetClipboardText( txt );
+                                    }
                                 }
                                 ImGui::PopTextWrapPos();
+                                ImGui::TableNextColumn();
+                                if( frameData->imageName.Active() )
+                                {
+                                    TextDisabledUnformatted( s_instance->m_worker.GetString( frameData->imageName ) );
+                                }
                             }
-                            if( ImGui::IsItemClicked() )
-                            {
-                                ImGui::SetClipboardText( txt );
-                            }
-                            ImGui::NextColumn();
-                            ImGui::PushTextWrapPos( 0.0f );
-                            txt = s_instance->m_worker.GetString( frame.file );
-                            if( frame.line == 0 )
-                            {
-                                TextDisabledUnformatted( txt );
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled( "%s:%i", txt, frame.line );
-                            }
-                            if( ImGui::IsItemClicked() )
-                            {
-                                ImGui::SetClipboardText( txt );
-                            }
-                            ImGui::PopTextWrapPos();
-                            ImGui::NextColumn();
-                            if( frameData->imageName.Active() )
-                            {
-                                TextDisabledUnformatted( s_instance->m_worker.GetString( frameData->imageName ) );
-                            }
-                            ImGui::NextColumn();
                         }
                     }
+                    ImGui::EndTable();
                 }
-
-                ImGui::EndColumns();
                 ImGui::EndChild();
                 ImGui::TreePop();
             }

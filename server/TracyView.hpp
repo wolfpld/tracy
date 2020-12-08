@@ -708,8 +708,6 @@ private:
     } m_playback;
 
     struct TimeDistribution {
-        enum class SortBy : int { Count, Time, Mtpc };
-        SortBy sortBy = SortBy::Time;
         bool runningTime = false;
         bool exclusiveTime = true;
         unordered_flat_map<int16_t, ZoneTimeData> data;

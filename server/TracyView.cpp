@@ -9214,69 +9214,51 @@ void View::DrawMessages()
     bool hasCallstack = m_worker.GetCallstackFrameCount() != 0;
     ImGui::Separator();
     ImGui::BeginChild( "##messages" );
-    const auto w = ImGui::GetWindowWidth();
-    static int widthSet = 0;
     const int colNum = hasCallstack ? 4 : 3;
-    ImGui::Columns( colNum );
-    if( widthSet != colNum )
+    if( ImGui::BeginTable( "##messages", colNum, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_ScrollY ) )
     {
-        widthSet = colNum;
-        ImGui::SetColumnWidth( 0, w * 0.1f );
-        ImGui::SetColumnWidth( 1, w * 0.13f );
-        ImGui::SetColumnWidth( 2, w * ( hasCallstack ? 0.57f : 0.77f ) );
-        if( hasCallstack )
-        {
-            ImGui::SetColumnWidth( 3, w * 0.2f );
-        }
-    }
-    ImGui::TextUnformatted( "Time" );
-    ImGui::SameLine();
-    DrawHelpMarker( "Click on message to center timeline on it." );
-    ImGui::NextColumn();
-    ImGui::TextUnformatted( "Thread" );
-    ImGui::NextColumn();
-    ImGui::TextUnformatted( "Message" );
-    ImGui::NextColumn();
-    if( hasCallstack )
-    {
-        ImGui::TextUnformatted( "Call stack" );
-        ImGui::NextColumn();
-    }
-    ImGui::Separator();
+        ImGui::TableSetupScrollFreeze( 0, 1 );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAutoResize );
+        ImGui::TableSetupColumn( "Thread" );
+        ImGui::TableSetupColumn( "Message" );
+        if( hasCallstack ) ImGui::TableSetupColumn( "Call stack" );
+        ImGui::TableHeadersRow();
 
-    int idx = 0;
-    if( m_msgToFocus )
-    {
-        for( const auto& msgIdx : m_msgList )
+        int idx = 0;
+        if( m_msgToFocus )
         {
-            DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
-        }
-    }
-    else
-    {
-        ImGuiListClipper clipper;
-        clipper.Begin( m_msgList.size() );
-        while( clipper.Step() )
-        {
-            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+            for( const auto& msgIdx : m_msgList )
             {
-                DrawMessageLine( *msgs[m_msgList[i]], hasCallstack, idx );
+                DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
             }
         }
-    }
+        else
+        {
+            ImGuiListClipper clipper;
+            clipper.Begin( m_msgList.size() );
+            while( clipper.Step() )
+            {
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    DrawMessageLine( *msgs[m_msgList[i]], hasCallstack, idx );
+                }
+            }
+        }
 
-    if( m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
-    {
-        ImGui::SetScrollHereY( 1.f );
+        if( m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
+        {
+            ImGui::SetScrollHereY( 1.f );
+        }
+        ImGui::EndTable();
     }
-
-    ImGui::EndColumns();
     ImGui::EndChild();
     ImGui::End();
 }
 
 void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx )
 {
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
     const auto text = m_worker.GetString( msg.ref );
     const auto tid = m_worker.DecompressThread( msg.thread );
     ImGui::PushID( &msg );
@@ -9320,13 +9302,13 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
         m_messagesScrollBottom = false;
     }
     ImGui::PopID();
-    ImGui::NextColumn();
+    ImGui::TableNextColumn();
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
     ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-    ImGui::NextColumn();
+    ImGui::TableNextColumn();
     ImGui::PushStyleColor( ImGuiCol_Text, msg.color );
     const auto cw = ImGui::GetContentRegionAvail().x;
     const auto tw = ImGui::CalcTextSize( text ).x;
@@ -9339,9 +9321,9 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
         ImGui::EndTooltip();
     }
     ImGui::PopStyleColor();
-    ImGui::NextColumn();
     if( hasCallstack )
     {
+        ImGui::TableNextColumn();
         const auto cs = msg.callstack.Val();
         if( cs != 0 )
         {
@@ -9349,7 +9331,6 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
             ImGui::SameLine();
             DrawCallstackCalls( cs, 4 );
         }
-        ImGui::NextColumn();
     }
 }
 

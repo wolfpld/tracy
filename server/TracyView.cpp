@@ -10863,63 +10863,109 @@ void View::DrawFindZone()
 
 void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
 {
-    ImGui::Columns( 3 );
-    ImGui::Separator();
-    if( ImGui::SmallButton( "Time from start" ) ) m_findZone.tableSortBy = FindZone::TableSortBy::Starttime;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Execution time" ) )  m_findZone.tableSortBy = FindZone::TableSortBy::Runtime;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Name" ) )  m_findZone.tableSortBy = FindZone::TableSortBy::Name;
-    ImGui::SameLine();
-    DrawHelpMarker( "Only displayed if custom zone name is set." );
-    ImGui::NextColumn();
-    ImGui::Separator();
+    if( !ImGui::BeginTable( "##zonelist", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY ) ) return;
+    ImGui::TableSetupScrollFreeze( 0, 1 );
+    ImGui::TableSetupColumn( "Time from start" );
+    ImGui::TableSetupColumn( "Execution time", ImGuiTableColumnFlags_PreferSortDescending );
+    ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoSort );
+    ImGui::TableHeadersRow();
 
     const Vector<short_ptr<ZoneEvent>>* zonesToIterate = &zones;
     Vector<short_ptr<ZoneEvent>> sortedZones;
 
-    if( m_findZone.tableSortBy != FindZone::TableSortBy::Starttime )
+    const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+    if( sortspec.ColumnIndex != 0 || sortspec.SortDirection != ImGuiSortDirection_Ascending )
     {
         zonesToIterate = &sortedZones;
         sortedZones.reserve_and_use( zones.size() );
         memcpy( sortedZones.data(), zones.data(), zones.size() * sizeof( decltype( *zones.begin() ) ) );
 
-        switch( m_findZone.tableSortBy )
+        switch( sortspec.ColumnIndex )
         {
-        case FindZone::TableSortBy::Runtime:
+        case 0:
+            assert( sortspec.SortDirection != ImGuiSortDirection_Descending );
+            std::reverse( sortedZones.begin(), sortedZones.end() );
+            break;
+        case 1:
             if( m_findZone.selfTime )
             {
-                pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
-                    return m_worker.GetZoneEndDirect( *lhs ) - lhs->Start() - this->GetZoneChildTimeFast( *lhs ) >
-                        m_worker.GetZoneEndDirect( *rhs ) - rhs->Start() - this->GetZoneChildTimeFast( *rhs );
-                } );
+                if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                {
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                        return m_worker.GetZoneEndDirect( *lhs ) - lhs->Start() - this->GetZoneChildTimeFast( *lhs ) >
+                               m_worker.GetZoneEndDirect( *rhs ) - rhs->Start() - this->GetZoneChildTimeFast( *rhs );
+                    } );
+                }
+                else
+                {
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                        return m_worker.GetZoneEndDirect( *lhs ) - lhs->Start() - this->GetZoneChildTimeFast( *lhs ) <
+                               m_worker.GetZoneEndDirect( *rhs ) - rhs->Start() - this->GetZoneChildTimeFast( *rhs );
+                    } );
+                }
             }
             else if( m_findZone.runningTime )
             {
+                if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                {
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                        const auto ctx0 = m_worker.GetContextSwitchData( GetZoneThread( *lhs ) );
+                        const auto ctx1 = m_worker.GetContextSwitchData( GetZoneThread( *rhs ) );
+                        int64_t t0, t1;
+                        uint64_t c0, c1;
+                        GetZoneRunningTime( ctx0, *lhs, t0, c0 );
+                        GetZoneRunningTime( ctx1, *rhs, t1, c1 );
+                        return t0 > t1;
+                    } );
+                }
+                else
+                {
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                        const auto ctx0 = m_worker.GetContextSwitchData( GetZoneThread( *lhs ) );
+                        const auto ctx1 = m_worker.GetContextSwitchData( GetZoneThread( *rhs ) );
+                        int64_t t0, t1;
+                        uint64_t c0, c1;
+                        GetZoneRunningTime( ctx0, *lhs, t0, c0 );
+                        GetZoneRunningTime( ctx1, *rhs, t1, c1 );
+                        return t0 < t1;
+                    } );
+                }
+            }
+            else
+            {
+                if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                {
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                        return m_worker.GetZoneEndDirect( *lhs ) - lhs->Start() > m_worker.GetZoneEndDirect( *rhs ) - rhs->Start();
+                    } );
+                }
+                else
+                {
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                        return m_worker.GetZoneEndDirect( *lhs ) - lhs->Start() < m_worker.GetZoneEndDirect( *rhs ) - rhs->Start();
+                    } );
+                }
+            }
+            break;
+        case 2:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
                 pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
-                    const auto ctx0 = m_worker.GetContextSwitchData( GetZoneThread( *lhs ) );
-                    const auto ctx1 = m_worker.GetContextSwitchData( GetZoneThread( *rhs ) );
-                    int64_t t0, t1;
-                    uint64_t c0, c1;
-                    GetZoneRunningTime( ctx0, *lhs, t0, c0 );
-                    GetZoneRunningTime( ctx1, *rhs, t1, c1 );
-                    return t0 > t1;
+                    const auto hle = m_worker.HasZoneExtra( *lhs );
+                    const auto hre = m_worker.HasZoneExtra( *rhs );
+                    if( !( hle & hre ) ) return hle > hre;
+                    return strcmp( m_worker.GetString( m_worker.GetZoneExtra( *lhs ).name ), m_worker.GetString( m_worker.GetZoneExtra( *rhs ).name ) ) < 0;
                 } );
             }
             else
             {
                 pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
-                    return m_worker.GetZoneEndDirect( *lhs ) - lhs->Start() > m_worker.GetZoneEndDirect( *rhs ) - rhs->Start();
+                    const auto hle = m_worker.HasZoneExtra( *lhs );
+                    const auto hre = m_worker.HasZoneExtra( *rhs );
+                    if( !( hle & hre ) ) return hle < hre;
+                    return strcmp( m_worker.GetString( m_worker.GetZoneExtra( *lhs ).name ), m_worker.GetString( m_worker.GetZoneExtra( *rhs ).name ) ) > 0;
                 } );
             }
-            break;
-        case FindZone::TableSortBy::Name:
-            pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
-                const auto hle = m_worker.HasZoneExtra( *lhs );
-                const auto hre = m_worker.HasZoneExtra( *rhs );
-                if( !( hle & hre ) ) return hle > hre;
-                return strcmp( m_worker.GetString( m_worker.GetZoneExtra( *lhs ).name ), m_worker.GetString( m_worker.GetZoneExtra( *rhs ).name ) ) < 0;
-            } );
             break;
         default:
             assert( false );
@@ -10933,6 +10979,9 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
     {
         for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
         {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
             auto ev = (*zonesToIterate)[i].get();
             const auto end = m_worker.GetZoneEndDirect( *ev );
             int64_t timespan;
@@ -10965,9 +11014,9 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
                 m_zoneHover2 = ev;
             }
 
-            ImGui::NextColumn();
+            ImGui::TableNextColumn();
             ImGui::TextUnformatted( TimeToString( timespan ) );
-            ImGui::NextColumn();
+            ImGui::TableNextColumn();
             if( m_worker.HasZoneExtra( *ev ) )
             {
                 const auto& extra = m_worker.GetZoneExtra( *ev );
@@ -10976,13 +11025,11 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
                     ImGui::TextUnformatted( m_worker.GetString( extra.name ) );
                 }
             }
-            ImGui::NextColumn();
             if( m_zoneHover == ev ) ImGui::PopStyleColor();
             ImGui::PopID();
         }
     }
-    ImGui::Columns( 1 );
-    ImGui::Separator();
+    ImGui::EndTable();
     ImGui::TreePop();
 }
 

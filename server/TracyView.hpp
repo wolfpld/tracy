@@ -488,7 +488,6 @@ private:
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
         enum class GroupBy : int { Thread, UserText, ZoneName, Callstack, Parent, NoGrouping };
         enum class SortBy : int { Order, Count, Time, Mtpc };
-        enum class TableSortBy : int { Starttime, Runtime, Name };
 
         struct Group
         {
@@ -513,7 +512,6 @@ private:
         bool runningTime = false;
         GroupBy groupBy = GroupBy::Thread;
         SortBy sortBy = SortBy::Count;
-        TableSortBy tableSortBy = TableSortBy::Starttime;
         Region highlight;
         int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;

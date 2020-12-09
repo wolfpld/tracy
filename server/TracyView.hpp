@@ -386,17 +386,6 @@ private:
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;
 
-    enum class CpuDataSortBy
-    {
-        Pid,
-        Name,
-        Time,
-        Regions,
-        Migrations
-    };
-
-    CpuDataSortBy m_cpuDataSort = CpuDataSortBy::Pid;
-
     bool m_statSelf = true;
     bool m_statSampleTime = true;
     int m_statMode = 0;

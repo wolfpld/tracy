@@ -14897,164 +14897,261 @@ void View::DrawCpuDataWindow()
     TextFocused( "Tracked processes:", RealToString( pids.size() ) );
     ImGui::Separator();
     ImGui::BeginChild( "##cpudata" );
-    ImGui::Columns( 5 );
-    if( ImGui::SmallButton( "PID/TID" ) ) m_cpuDataSort = CpuDataSortBy::Pid;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Name" ) ) m_cpuDataSort = CpuDataSortBy::Name;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Running time" ) ) m_cpuDataSort = CpuDataSortBy::Time;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Running regions" ) ) m_cpuDataSort = CpuDataSortBy::Regions;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "CPU migrations" ) ) m_cpuDataSort = CpuDataSortBy::Migrations;
-    ImGui::NextColumn();
-    ImGui::Separator();
-
-    std::vector<unordered_flat_map<uint64_t, PidData>::iterator> psort;
-    psort.reserve( pids.size() );
-    for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
-    switch( m_cpuDataSort )
+    if( ImGui::BeginTable( "##cpudata", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
     {
-    case CpuDataSortBy::Pid: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } ); break;
-    case CpuDataSortBy::Name: pdqsort_branchless( psort.begin(), psort.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l->second.tids[0] ).first, m_worker.GetExternalName( r->second.tids[0] ).first ) < 0; } ); break;
-    case CpuDataSortBy::Time: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningTime > r->second.data.runningTime; } ); break;
-    case CpuDataSortBy::Regions: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningRegions > r->second.data.runningRegions; } ); break;
-    case CpuDataSortBy::Migrations: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.migrations > r->second.data.migrations; } ); break;
-    default: assert( false ); break;
-    }
+        ImGui::TableSetupScrollFreeze( 0, 1 );
+        ImGui::TableSetupColumn( "PID/TID" );
+        ImGui::TableSetupColumn( "Name" );
+        ImGui::TableSetupColumn( "Running time", ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableSetupColumn( "Running regions", ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableSetupColumn( "CPU migrations", ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableHeadersRow();
 
-    const auto thisPid = m_worker.GetPid();
-    const auto rtimespan = 1.0 / m_worker.GetLastTime();
-    const auto ty = ImGui::GetTextLineHeight();
-
-    for( auto& pidit : psort )
-    {
-        char buf[128];
-        auto& pid = *pidit;
-        const auto pidMatch = thisPid != 0 && thisPid == pid.first;
-        auto name = m_worker.GetExternalName( pid.second.tids[0] ).first;
-        if( pidMatch )
+        std::vector<unordered_flat_map<uint64_t, PidData>::iterator> psort;
+        psort.reserve( pids.size() );
+        for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
+        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+        switch( sortspec.ColumnIndex )
         {
-            name = m_worker.GetCaptureProgram().c_str();
-            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.2f, 1.0f, 0.2f, 1.0f ) );
+        case 0:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first > r->first; } );
+            }
+            else
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+            }
+            break;
+        case 1:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l->second.tids[0] ).first, m_worker.GetExternalName( r->second.tids[0] ).first ) > 0; } );
+            }
+            else
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l->second.tids[0] ).first, m_worker.GetExternalName( r->second.tids[0] ).first ) < 0; } );
+            }
+            break;
+        case 2:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningTime > r->second.data.runningTime; } );
+            }
+            else
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningTime < r->second.data.runningTime; } );
+            }
+            break;
+        case 3:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningRegions > r->second.data.runningRegions; } );
+            }
+            else
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningRegions < r->second.data.runningRegions; } );
+            }
+            break;
+        case 4:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.migrations > r->second.data.migrations; } );
+            }
+            else
+            {
+                pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.migrations < r->second.data.migrations; } );
+            }
+            break;
+        default:
+            assert( false );
+            break;
         }
-        const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first );
-        const auto expand = ImGui::TreeNode( pidtxt );
-        if( ImGui::IsItemHovered() )
+
+        const auto thisPid = m_worker.GetPid();
+        const auto rtimespan = 1.0 / m_worker.GetLastTime();
+        const auto ty = ImGui::GetTextLineHeight();
+
+        for( auto& pidit : psort )
         {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            char buf[128];
+            auto& pid = *pidit;
+            const auto pidMatch = thisPid != 0 && thisPid == pid.first;
+            auto name = m_worker.GetExternalName( pid.second.tids[0] ).first;
             if( pidMatch )
             {
-                m_drawThreadMigrations = pid.first;
-                m_cpuDataThread = pid.first;
+                name = m_worker.GetCaptureProgram().c_str();
+                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.2f, 1.0f, 0.2f, 1.0f ) );
             }
-            m_drawThreadHighlight = pid.first;
-        }
-        const auto tsz = pid.second.tids.size();
-        if( tsz > 1 )
-        {
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( tsz ) );
-        }
-        ImGui::NextColumn();
-        ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
-        if( ImGui::IsItemHovered() )
-        {
-            if( pidMatch )
+            const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first );
+            const auto expand = ImGui::TreeNode( pidtxt );
+            if( ImGui::IsItemHovered() )
             {
-                m_drawThreadMigrations = pid.first;
-                m_cpuDataThread = pid.first;
+                if( pidMatch )
+                {
+                    m_drawThreadMigrations = pid.first;
+                    m_cpuDataThread = pid.first;
+                }
+                m_drawThreadHighlight = pid.first;
             }
-            m_drawThreadHighlight = pid.first;
-        }
-        ImGui::NextColumn();
-        PrintStringPercent( buf, TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
-        ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
-        ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions ) );
-        ImGui::NextColumn();
-        ImGui::TextUnformatted( RealToString( pid.second.data.migrations ) );
-        ImGui::SameLine();
-        PrintStringPercent( buf, double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
-        TextDisabledUnformatted( buf );
-        ImGui::NextColumn();
-        if( expand )
-        {
-            ImGui::Separator();
-            switch( m_cpuDataSort )
+            const auto tsz = pid.second.tids.size();
+            if( tsz > 1 )
             {
-            case CpuDataSortBy::Pid: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end() ); break;
-            case CpuDataSortBy::Name: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l ).second, m_worker.GetExternalName( r ).second ) < 0; } ); break;
-            case CpuDataSortBy::Time: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningTime > ctd.find( r )->second.runningTime; } ); break;
-            case CpuDataSortBy::Regions: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningRegions > ctd.find( r )->second.runningRegions; } ); break;
-            case CpuDataSortBy::Migrations: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.migrations > ctd.find( r )->second.migrations; } ); break;
-            default: assert( false ); break;
-            }
-            for( auto& tid : pid.second.tids )
-            {
-                const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );
-                const char* tname;
-                if( tidMatch )
-                {
-                    tname = m_worker.GetThreadName( tid );
-                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 1.0f, 0.2f, 1.0f ) );
-                }
-                else
-                {
-                    tname = m_worker.GetExternalName( tid ).second;
-                }
-                const auto& tit = ctd.find( tid );
-                assert( tit != ctd.end() );
-                ImGui::TextUnformatted( RealToString( tid ) );
-                if( ImGui::IsItemHovered() )
-                {
-                    if( tidMatch )
-                    {
-                        m_drawThreadMigrations = tid;
-                        m_cpuDataThread = tid;
-                    }
-                    m_drawThreadHighlight = tid;
-                }
-                ImGui::NextColumn();
-                if( tidMatch )
-                {
-                    SmallColorBox( GetThreadColor( tid, 0 ) );
-                    ImGui::SameLine();
-                }
-                ImGui::TextUnformatted( tname );
-                if( ImGui::IsItemHovered() )
-                {
-                    if( tidMatch )
-                    {
-                        m_drawThreadMigrations = tid;
-                        m_cpuDataThread = tid;
-                    }
-                    m_drawThreadHighlight = tid;
-                }
-                ImGui::NextColumn();
-                PrintStringPercent( buf, TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
-                ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( RealToString( tit->second.runningRegions ) );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( RealToString( tit->second.migrations ) );
                 ImGui::SameLine();
-                PrintStringPercent( buf, double( tit->second.migrations ) / tit->second.runningRegions * 100 );
-                TextDisabledUnformatted( buf );
-                ImGui::NextColumn();
-                if( tidMatch )
-                {
-                    ImGui::PopStyleColor();
-                }
+                ImGui::TextDisabled( "(%s)", RealToString( tsz ) );
             }
-            ImGui::TreePop();
-            ImGui::Separator();
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
+            if( ImGui::IsItemHovered() )
+            {
+                if( pidMatch )
+                {
+                    m_drawThreadMigrations = pid.first;
+                    m_cpuDataThread = pid.first;
+                }
+                m_drawThreadHighlight = pid.first;
+            }
+            ImGui::TableNextColumn();
+            PrintStringPercent( buf, TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
+            ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions ) );
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted( RealToString( pid.second.data.migrations ) );
+            ImGui::SameLine();
+            PrintStringPercent( buf, double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
+            TextDisabledUnformatted( buf );
+            if( expand )
+            {
+                ImGui::Separator();
+                switch( sortspec.ColumnIndex )
+                {
+                case 0:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), []( const auto& l, const auto& r ) { return l > r; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end() );
+                    }
+                    break;
+                case 1:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l ).second, m_worker.GetExternalName( r ).second ) > 0; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l ).second, m_worker.GetExternalName( r ).second ) < 0; } );
+                    }
+                    break;
+                case 2:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningTime > ctd.find( r )->second.runningTime; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningTime < ctd.find( r )->second.runningTime; } );
+                    }
+                    break;
+                case 3:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningRegions > ctd.find( r )->second.runningRegions; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningRegions < ctd.find( r )->second.runningRegions; } );
+                    }
+                    break;
+                case 4:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.migrations > ctd.find( r )->second.migrations; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.migrations < ctd.find( r )->second.migrations; } );
+                    }
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
+                for( auto& tid : pid.second.tids )
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+
+                    const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );
+                    const char* tname;
+                    if( tidMatch )
+                    {
+                        tname = m_worker.GetThreadName( tid );
+                        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 1.0f, 0.2f, 1.0f ) );
+                    }
+                    else
+                    {
+                        tname = m_worker.GetExternalName( tid ).second;
+                    }
+                    const auto& tit = ctd.find( tid );
+                    assert( tit != ctd.end() );
+                    ImGui::TextUnformatted( RealToString( tid ) );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        if( tidMatch )
+                        {
+                            m_drawThreadMigrations = tid;
+                            m_cpuDataThread = tid;
+                        }
+                        m_drawThreadHighlight = tid;
+                    }
+                    ImGui::TableNextColumn();
+                    if( tidMatch )
+                    {
+                        SmallColorBox( GetThreadColor( tid, 0 ) );
+                        ImGui::SameLine();
+                    }
+                    ImGui::TextUnformatted( tname );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        if( tidMatch )
+                        {
+                            m_drawThreadMigrations = tid;
+                            m_cpuDataThread = tid;
+                        }
+                        m_drawThreadHighlight = tid;
+                    }
+                    ImGui::TableNextColumn();
+                    PrintStringPercent( buf, TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
+                    ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted( RealToString( tit->second.runningRegions ) );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted( RealToString( tit->second.migrations ) );
+                    ImGui::SameLine();
+                    PrintStringPercent( buf, double( tit->second.migrations ) / tit->second.runningRegions * 100 );
+                    TextDisabledUnformatted( buf );
+                    if( tidMatch )
+                    {
+                        ImGui::PopStyleColor();
+                    }
+                }
+                ImGui::TreePop();
+                ImGui::Separator();
+            }
+            if( pidMatch )
+            {
+                ImGui::PopStyleColor();
+            }
         }
-        if( pidMatch )
-        {
-            ImGui::PopStyleColor();
-        }
+        ImGui::EndTable();
     }
-    ImGui::EndColumns();
     ImGui::EndChild();
     ImGui::End();
 }

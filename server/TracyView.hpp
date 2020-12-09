@@ -397,7 +397,6 @@ private:
 
     CpuDataSortBy m_cpuDataSort = CpuDataSortBy::Pid;
 
-    int m_statSort = 0;
     bool m_statSelf = true;
     bool m_statSampleTime = true;
     int m_statMode = 0;

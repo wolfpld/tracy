@@ -12202,36 +12202,6 @@ void View::DrawStatistics()
             }
         }
 
-        switch( m_statSort )
-        {
-        case 0:
-            if( m_statSelf )
-            {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal > rhs.selfTotal; } );
-            }
-            else
-            {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total > rhs.total; } );
-            }
-            break;
-        case 1:
-            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.numZones > rhs.numZones; } );
-            break;
-        case 2:
-            if( m_statSelf )
-            {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal / lhs.numZones > rhs.selfTotal / rhs.numZones; } );
-            }
-            else
-            {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones > rhs.total / rhs.numZones; } );
-            }
-            break;
-        default:
-            assert( false );
-            break;
-        }
-
         TextFocused( "Total zone count:", RealToString( slzcnt ) );
         ImGui::SameLine();
         ImGui::Spacing();
@@ -12367,84 +12337,147 @@ void View::DrawStatistics()
         else
         {
             ImGui::BeginChild( "##statistics" );
-            const auto w = ImGui::GetWindowWidth();
-            static bool widthSet = false;
-            ImGui::Columns( 5 );
-            if( !widthSet )
+            if( ImGui::BeginTable( "##statistics", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
             {
-                widthSet = true;
-                ImGui::SetColumnWidth( 0, w * 0.325f );
-                ImGui::SetColumnWidth( 1, w * 0.425f );
-                ImGui::SetColumnWidth( 2, w * 0.1f );
-                ImGui::SetColumnWidth( 3, w * 0.075f );
-                ImGui::SetColumnWidth( 4, w * 0.075f );
-            }
-            ImGui::TextUnformatted( "Name" );
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( "Location" );
-            ImGui::NextColumn();
-            if( ImGui::SmallButton( "Total time" ) ) m_statSort = 0;
-            ImGui::NextColumn();
-            if( ImGui::SmallButton( "Counts" ) ) m_statSort = 1;
-            ImGui::NextColumn();
-            if( ImGui::SmallButton( "MTPC" ) ) m_statSort = 2;
-            ImGui::SameLine();
-            DrawHelpMarker( "Mean time per call" );
-            ImGui::NextColumn();
-            ImGui::Separator();
+                ImGui::TableSetupScrollFreeze( 0, 1 );
+                ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
+                ImGui::TableSetupColumn( "Location", ImGuiTableColumnFlags_NoSort );
+                ImGui::TableSetupColumn( "Total time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAutoResize );
+                ImGui::TableSetupColumn( "Counts", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAutoResize );
+                ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAutoResize );
+                ImGui::TableHeadersRow();
 
-            for( auto& v : srcloc )
-            {
-                ImGui::PushID( v.srcloc );
-                auto& srcloc = m_worker.GetSourceLocation( v.srcloc );
-                auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
-                ImGui::SameLine();
-                if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v.srcloc, ImGuiSelectableFlags_SpanAllColumns ) )
+                const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+                switch( sortspec.ColumnIndex )
                 {
-                    m_findZone.ShowZone( v.srcloc, name );
-                }
-                ImGui::NextColumn();
-                float indentVal = 0.f;
-                if( m_statBuzzAnim.Match( v.srcloc ) )
-                {
-                    const auto time = m_statBuzzAnim.Time();
-                    indentVal = sin( time * 60.f ) * 10.f * time;
-                    ImGui::Indent( indentVal );
-                }
-                const auto file = m_worker.GetString( srcloc.file );
-
-                ImGui::TextDisabled( "%s:%i", file, srcloc.line );
-                if( ImGui::IsItemClicked( 1 ) )
-                {
-                    if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                case 0:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
                     {
-                        ViewSource( file, srcloc.line );
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), [this]( const auto& lhs, const auto& rhs ) { return strcmp( m_worker.GetZoneName( m_worker.GetSourceLocation( lhs.srcloc ) ), m_worker.GetZoneName( m_worker.GetSourceLocation( rhs.srcloc ) ) ) < 0; } );
                     }
                     else
                     {
-                        m_statBuzzAnim.Enable( v.srcloc, 0.5f );
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), [this]( const auto& lhs, const auto& rhs ) { return strcmp( m_worker.GetZoneName( m_worker.GetSourceLocation( lhs.srcloc ) ), m_worker.GetZoneName( m_worker.GetSourceLocation( rhs.srcloc ) ) ) > 0; } );
                     }
+                    break;
+                case 2:
+                    if( m_statSelf )
+                    {
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal < rhs.selfTotal; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal > rhs.selfTotal; } );
+                        }
+                    }
+                    else
+                    {
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total < rhs.total; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total > rhs.total; } );
+                        }
+                    }
+                    break;
+                case 3:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                    {
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.numZones < rhs.numZones; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.numZones > rhs.numZones; } );
+                    }
+                    break;
+                case 4:
+                    if( m_statSelf )
+                    {
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal / lhs.numZones < rhs.selfTotal / rhs.numZones; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal / lhs.numZones > rhs.selfTotal / rhs.numZones; } );
+                        }
+                    }
+                    else
+                    {
+                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones < rhs.total / rhs.numZones; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones > rhs.total / rhs.numZones; } );
+                        }
+                    }
+                    break;
+                default:
+                    assert( false );
+                    break;
                 }
-                if( indentVal != 0.f )
+
+                for( auto& v : srcloc )
                 {
-                    ImGui::Unindent( indentVal );
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+
+                    ImGui::PushID( v.srcloc );
+                    auto& srcloc = m_worker.GetSourceLocation( v.srcloc );
+                    auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+                    ImGui::SameLine();
+                    if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v.srcloc, ImGuiSelectableFlags_SpanAllColumns ) )
+                    {
+                        m_findZone.ShowZone( v.srcloc, name );
+                    }
+                    ImGui::TableNextColumn();
+                    float indentVal = 0.f;
+                    if( m_statBuzzAnim.Match( v.srcloc ) )
+                    {
+                        const auto time = m_statBuzzAnim.Time();
+                        indentVal = sin( time * 60.f ) * 10.f * time;
+                        ImGui::Indent( indentVal );
+                    }
+                    const auto file = m_worker.GetString( srcloc.file );
+
+                    ImGui::TextDisabled( "%s:%i", file, srcloc.line );
+                    if( ImGui::IsItemClicked( 1 ) )
+                    {
+                        if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                        {
+                            ViewSource( file, srcloc.line );
+                        }
+                        else
+                        {
+                            m_statBuzzAnim.Enable( v.srcloc, 0.5f );
+                        }
+                    }
+                    if( indentVal != 0.f )
+                    {
+                        ImGui::Unindent( indentVal );
+                    }
+                    ImGui::TableNextColumn();
+                    const auto time = m_statSelf ? v.selfTotal : v.total;
+                    ImGui::TextUnformatted( TimeToString( time ) );
+                    ImGui::SameLine();
+                    char buf[64];
+                    PrintStringPercent( buf, 100. * time / timeRange );
+                    TextDisabledUnformatted( buf );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted( RealToString( v.numZones ) );
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v.selfTotal : v.total ) / v.numZones ) );
+                    ImGui::PopID();
                 }
-                ImGui::NextColumn();
-                const auto time = m_statSelf ? v.selfTotal : v.total;
-                ImGui::TextUnformatted( TimeToString( time ) );
-                ImGui::SameLine();
-                char buf[64];
-                PrintStringPercent( buf, 100. * time / timeRange );
-                TextDisabledUnformatted( buf );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( RealToString( v.numZones ) );
-                ImGui::NextColumn();
-                ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v.selfTotal : v.total ) / v.numZones ) );
-                ImGui::NextColumn();
-                ImGui::PopID();
+                ImGui::EndTable();
             }
-            ImGui::EndColumns();
             ImGui::EndChild();
         }
     }

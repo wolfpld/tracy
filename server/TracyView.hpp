@@ -202,7 +202,7 @@ private:
     unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
     unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
-    void DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones );
+    void DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();

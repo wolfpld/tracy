@@ -10486,7 +10486,16 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::TextUnformatted( "Found zones:" );
         ImGui::SameLine();
-        DrawHelpMarker( "Left click to highlight entry. Right click to clear selection." );
+        DrawHelpMarker( "Left click to highlight entry." );
+        if( m_findZone.selGroup != m_findZone.Unselected )
+        {
+            ImGui::SameLine();
+            if( ImGui::SmallButton( ICON_FA_BACKSPACE " Clear" ) )
+            {
+                m_findZone.selGroup = m_findZone.Unselected;
+                m_findZone.ResetSelection();
+            }
+        }
 
         bool groupChanged = false;
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -10660,7 +10669,6 @@ void View::DrawFindZone()
             break;
         }
 
-        ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
         if( groupBy == FindZone::GroupBy::Callstack )
         {
             const auto gsz = (int)groups.size();
@@ -10764,7 +10772,7 @@ void View::DrawFindZone()
                 ImGui::Spacing();
                 if( ImGui::TreeNodeEx( "Zone list" ) )
                 {
-                    DrawZoneList( group->second.zones );
+                    DrawZoneList( group->second.id, group->second.zones );
                 }
             }
         }
@@ -10844,15 +10852,9 @@ void View::DrawFindZone()
                 ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size() ), TimeToString( v->second.time ) );
                 if( expand )
                 {
-                    DrawZoneList( v->second.zones );
+                    DrawZoneList( v->second.id, v->second.zones );
                 }
             }
-        }
-        ImGui::EndChild();
-        if( ImGui::IsItemHovered() && IsMouseClicked( 1 ) )
-        {
-            m_findZone.selGroup = m_findZone.Unselected;
-            m_findZone.ResetSelection();
         }
         ImGui::EndChild();
     }
@@ -10861,9 +10863,12 @@ void View::DrawFindZone()
     ImGui::End();
 }
 
-void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
+void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
 {
-    if( !ImGui::BeginTable( "##zonelist", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY ) ) return;
+    const auto zsz = zones.size();
+    char buf[32];
+    sprintf( buf, "%i##zonelist", id );
+    if( !ImGui::BeginTable( buf, 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<size_t>( zsz + 1, 15 ) ) ) ) return;
     ImGui::TableSetupScrollFreeze( 0, 1 );
     ImGui::TableSetupColumn( "Time from start" );
     ImGui::TableSetupColumn( "Execution time", ImGuiTableColumnFlags_PreferSortDescending );

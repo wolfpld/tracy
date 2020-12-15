@@ -15634,136 +15634,116 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
 void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime, uint64_t pool )
 {
     if( startTime == -1 ) startTime = 0;
-
-    const auto& style = ImGui::GetStyle();
-    const auto dist = vec.size() + 1;
-    const auto ty = ImGui::GetTextLineHeight() + style.ItemSpacing.y;
-
-    enum class SortBy
+    if( ImGui::BeginTable( "##mem", 8, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+vec.size(), 15 ) ) ) )
     {
-        Address,
-        Size,
-        AllocTime,
-        Duration
-    };
+        ImGui::TableSetupScrollFreeze( 0, 1 );
+        ImGui::TableSetupColumn( "Address", ImGuiTableColumnFlags_NoHide );
+        ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableSetupColumn( "Appeared at", ImGuiTableColumnFlags_DefaultSort );
+        ImGui::TableSetupColumn( "Duration", ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableSetupColumn( "Thread", ImGuiTableColumnFlags_NoSort );
+        ImGui::TableSetupColumn( "Zone alloc", ImGuiTableColumnFlags_NoSort );
+        ImGui::TableSetupColumn( "Zone free", ImGuiTableColumnFlags_NoSort );
+        ImGui::TableSetupColumn( "Call stack", ImGuiTableColumnFlags_NoSort );
+        ImGui::TableHeadersRow();
 
-    static SortBy sortBy = SortBy::AllocTime;
-
-    ImGui::BeginChild( id ? id : "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
-    ImGui::Columns( 8 );
-    if( ImGui::SmallButton( "Address" ) ) sortBy = SortBy::Address;
-    ImGui::SameLine();
-    DrawHelpMarker( "Click on address to display memory allocation info window.\nMiddle click to zoom to allocation range." );
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Size" ) ) sortBy = SortBy::Size;
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Appeared at" ) ) sortBy = SortBy::AllocTime;
-    ImGui::SameLine();
-    DrawHelpMarker( "Click on entry to center timeline at the memory allocation time." );
-    ImGui::NextColumn();
-    if( ImGui::SmallButton( "Duration" ) ) sortBy = SortBy::Duration;
-    ImGui::SameLine();
-    DrawHelpMarker( "Active allocations are displayed using green color.\nClick on entry to center timeline at the memory release time." );
-    ImGui::NextColumn();
-    ImGui::TextUnformatted( "Thread" );
-    ImGui::SameLine();
-    DrawHelpMarker( "Shows one thread if alloc and free was performed on the same thread.\nOtherwise two threads are displayed in order: alloc, free." );
-    ImGui::NextColumn();
-    ImGui::TextUnformatted( "Zone alloc" );
-    ImGui::NextColumn();
-    ImGui::TextUnformatted( "Zone free" );
-    ImGui::SameLine();
-    DrawHelpMarker( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
-    ImGui::NextColumn();
-    ImGui::TextUnformatted( "Call stack" );
-    ImGui::NextColumn();
-    ImGui::Separator();
-
-    const auto& mem = m_worker.GetMemoryNamed( pool );
-
-    switch( sortBy )
-    {
-    case SortBy::Address:
-        pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Ptr() < r->Ptr(); } );
-        break;
-    case SortBy::AllocTime:
-        break;
-    case SortBy::Duration:
-        pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return ( l->TimeFree() - l->TimeAlloc() ) < ( r->TimeFree() - r->TimeAlloc() ); } );
-        break;
-    case SortBy::Size:
-        pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Size() < r->Size(); } );
-        break;
-    default:
-        assert( false );
-        break;
-    }
-
-    int idx = 0;
-    ImGuiListClipper clipper;
-    clipper.Begin( vec.end() - vec.begin() );
-    while( clipper.Step() )
-    {
-        for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+        const auto& mem = m_worker.GetMemoryNamed( pool );
+        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+        switch( sortspec.ColumnIndex )
         {
-            auto v = vec[i];
-            const auto arrIdx = std::distance( mem.data.begin(), v );
+        case 0:
+            if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+            {
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Ptr() < r->Ptr(); } );
+            }
+            else
+            {
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Ptr() > r->Ptr(); } );
+            }
+            break;
+        case 1:
+            if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+            {
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Size() < r->Size(); } );
+            }
+            else
+            {
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Size() > r->Size(); } );
+            }
+            break;
+        case 2:
+            if( sortspec.SortDirection == ImGuiSortDirection_Descending )
+            {
+                std::reverse( vec.begin(), vec.end() );
+            }
+            break;
+        case 3:
+            if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+            {
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return ( l->TimeFree() - l->TimeAlloc() ) < ( r->TimeFree() - r->TimeAlloc() ); } );
+            }
+            else
+            {
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return ( l->TimeFree() - l->TimeAlloc() ) > ( r->TimeFree() - r->TimeAlloc() ); } );
+            }
+            break;
+        default:
+            assert( false );
+            break;
+        }
 
-            if( m_memoryAllocInfoPool == pool && m_memoryAllocInfoWindow == arrIdx )
+        int idx = 0;
+        ImGuiListClipper clipper;
+        clipper.Begin( vec.end() - vec.begin() );
+        while( clipper.Step() )
+        {
+            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );
-                DrawAddress( v );
-                ImGui::PopStyleColor();
-            }
-            else
-            {
-                DrawAddress( v );
-                if( ImGui::IsItemClicked() )
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                auto v = vec[i];
+                const auto arrIdx = std::distance( mem.data.begin(), v );
+
+                if( m_memoryAllocInfoPool == pool && m_memoryAllocInfoWindow == arrIdx )
                 {
-                    m_memoryAllocInfoWindow = arrIdx;
-                    m_memoryAllocInfoPool = pool;
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );
+                    DrawAddress( v );
+                    ImGui::PopStyleColor();
                 }
-            }
-            if( ImGui::IsItemClicked( 2 ) )
-            {
-                ZoomToRange( v->TimeAlloc(), v->TimeFree() >= 0 ? v->TimeFree() : m_worker.GetLastTime() );
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                m_memoryAllocHover = arrIdx;
-                m_memoryAllocHoverWait = 2;
-                m_memoryAllocHoverPool = pool;
-            }
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( MemSizeToString( v->Size() ) );
-            ImGui::NextColumn();
-            ImGui::PushID( idx++ );
-            if( ImGui::Selectable( TimeToStringExact( v->TimeAlloc() - startTime ) ) )
-            {
-                CenterAtTime( v->TimeAlloc() );
-            }
-            ImGui::PopID();
-            ImGui::NextColumn();
-            if( v->TimeFree() < 0 )
-            {
-                TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->TimeAlloc() ) );
-                ImGui::NextColumn();
-                const auto tid = m_worker.DecompressThread( v->ThreadAlloc() );
-                SmallColorBox( GetThreadColor( tid, 0 ) );
-                ImGui::SameLine();
-                ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
-            }
-            else
-            {
-                ImGui::PushID( idx++ );
-                if( ImGui::Selectable( TimeToString( v->TimeFree() - v->TimeAlloc() ) ) )
+                else
                 {
-                    CenterAtTime( v->TimeFree() );
+                    DrawAddress( v );
+                    if( ImGui::IsItemClicked() )
+                    {
+                        m_memoryAllocInfoWindow = arrIdx;
+                        m_memoryAllocInfoPool = pool;
+                    }
+                }
+                if( ImGui::IsItemClicked( 2 ) )
+                {
+                    ZoomToRange( v->TimeAlloc(), v->TimeFree() >= 0 ? v->TimeFree() : m_worker.GetLastTime() );
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    m_memoryAllocHover = arrIdx;
+                    m_memoryAllocHoverWait = 2;
+                    m_memoryAllocHoverPool = pool;
+                }
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted( MemSizeToString( v->Size() ) );
+                ImGui::TableNextColumn();
+                ImGui::PushID( idx++ );
+                if( ImGui::Selectable( TimeToStringExact( v->TimeAlloc() - startTime ) ) )
+                {
+                    CenterAtTime( v->TimeAlloc() );
                 }
                 ImGui::PopID();
-                ImGui::NextColumn();
-                if( v->ThreadAlloc() == v->ThreadFree() )
+                ImGui::TableNextColumn();
+                if( v->TimeFree() < 0 )
                 {
+                    TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->TimeAlloc() ) );
+                    ImGui::TableNextColumn();
                     const auto tid = m_worker.DecompressThread( v->ThreadAlloc() );
                     SmallColorBox( GetThreadColor( tid, 0 ) );
                     ImGui::SameLine();
@@ -15771,117 +15751,132 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
                 }
                 else
                 {
-                    const auto tidAlloc = m_worker.DecompressThread( v->ThreadAlloc() );
-                    const auto tidFree = m_worker.DecompressThread( v->ThreadFree() );
-                    SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted( m_worker.GetThreadName( tidAlloc ) );
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted( "/" );
-                    ImGui::SameLine();
-                    SmallColorBox( GetThreadColor( tidFree, 0 ) );
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted( m_worker.GetThreadName( tidFree ) );
-                }
-            }
-            ImGui::NextColumn();
-            auto zone = FindZoneAtTime( m_worker.DecompressThread( v->ThreadAlloc() ), v->TimeAlloc() );
-            if( !zone )
-            {
-                ImGui::TextUnformatted( "-" );
-            }
-            else
-            {
-                const auto& srcloc = m_worker.GetSourceLocation( zone->SrcLoc() );
-                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-                ImGui::PushID( idx++ );
-                auto sel = ImGui::Selectable( txt, m_zoneInfoWindow == zone );
-                auto hover = ImGui::IsItemHovered();
-                ImGui::PopID();
-                if( sel )
-                {
-                    ShowZoneInfo( *zone );
-                }
-                if( hover )
-                {
-                    m_zoneHighlight = zone;
-                    if( IsMouseClicked( 2 ) )
+                    ImGui::PushID( idx++ );
+                    if( ImGui::Selectable( TimeToString( v->TimeFree() - v->TimeAlloc() ) ) )
                     {
-                        ZoomToZone( *zone );
+                        CenterAtTime( v->TimeFree() );
                     }
-                    ZoneTooltip( *zone );
+                    ImGui::PopID();
+                    ImGui::TableNextColumn();
+                    if( v->ThreadAlloc() == v->ThreadFree() )
+                    {
+                        const auto tid = m_worker.DecompressThread( v->ThreadAlloc() );
+                        SmallColorBox( GetThreadColor( tid, 0 ) );
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
+                    }
+                    else
+                    {
+                        const auto tidAlloc = m_worker.DecompressThread( v->ThreadAlloc() );
+                        const auto tidFree = m_worker.DecompressThread( v->ThreadFree() );
+                        SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted( m_worker.GetThreadName( tidAlloc ) );
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted( "/" );
+                        ImGui::SameLine();
+                        SmallColorBox( GetThreadColor( tidFree, 0 ) );
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted( m_worker.GetThreadName( tidFree ) );
+                    }
                 }
-            }
-            ImGui::NextColumn();
-            if( v->TimeFree() < 0 )
-            {
-                TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
-            }
-            else
-            {
-                auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->ThreadFree() ), v->TimeFree() );
-                if( !zoneFree )
+                ImGui::TableNextColumn();
+                auto zone = FindZoneAtTime( m_worker.DecompressThread( v->ThreadAlloc() ), v->TimeAlloc() );
+                if( !zone )
                 {
                     ImGui::TextUnformatted( "-" );
                 }
                 else
                 {
-                    const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
+                    const auto& srcloc = m_worker.GetSourceLocation( zone->SrcLoc() );
                     const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
                     ImGui::PushID( idx++ );
-                    bool sel;
-                    if( zoneFree == zone )
-                    {
-                        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.6f, 1.f ) );
-                        sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
-                        ImGui::PopStyleColor( 1 );
-                    }
-                    else
-                    {
-                        sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
-                    }
+                    auto sel = ImGui::Selectable( txt, m_zoneInfoWindow == zone );
                     auto hover = ImGui::IsItemHovered();
                     ImGui::PopID();
                     if( sel )
                     {
-                        ShowZoneInfo( *zoneFree );
+                        ShowZoneInfo( *zone );
                     }
                     if( hover )
                     {
-                        m_zoneHighlight = zoneFree;
+                        m_zoneHighlight = zone;
                         if( IsMouseClicked( 2 ) )
                         {
-                            ZoomToZone( *zoneFree );
+                            ZoomToZone( *zone );
                         }
-                        ZoneTooltip( *zoneFree );
+                        ZoneTooltip( *zone );
                     }
                 }
+                ImGui::TableNextColumn();
+                if( v->TimeFree() < 0 )
+                {
+                    TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
+                }
+                else
+                {
+                    auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->ThreadFree() ), v->TimeFree() );
+                    if( !zoneFree )
+                    {
+                        ImGui::TextUnformatted( "-" );
+                    }
+                    else
+                    {
+                        const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
+                        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                        ImGui::PushID( idx++ );
+                        bool sel;
+                        if( zoneFree == zone )
+                        {
+                            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.6f, 1.f ) );
+                            sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
+                            ImGui::PopStyleColor( 1 );
+                        }
+                        else
+                        {
+                            sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
+                        }
+                        auto hover = ImGui::IsItemHovered();
+                        ImGui::PopID();
+                        if( sel )
+                        {
+                            ShowZoneInfo( *zoneFree );
+                        }
+                        if( hover )
+                        {
+                            m_zoneHighlight = zoneFree;
+                            if( IsMouseClicked( 2 ) )
+                            {
+                                ZoomToZone( *zoneFree );
+                            }
+                            ZoneTooltip( *zoneFree );
+                        }
+                    }
+                }
+                ImGui::TableNextColumn();
+                if( v->CsAlloc() == 0 )
+                {
+                    TextDisabledUnformatted( "[alloc]" );
+                }
+                else
+                {
+                    SmallCallstackButton( "alloc", v->CsAlloc(), idx );
+                }
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                if( v->csFree.Val() == 0 )
+                {
+                    TextDisabledUnformatted( "[free]" );
+                }
+                else
+                {
+                    SmallCallstackButton( "free", v->csFree.Val(), idx );
+                }
             }
-            ImGui::NextColumn();
-            if( v->CsAlloc() == 0 )
-            {
-                TextDisabledUnformatted( "[alloc]" );
-            }
-            else
-            {
-                SmallCallstackButton( "alloc", v->CsAlloc(), idx );
-            }
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-            if( v->csFree.Val() == 0 )
-            {
-                TextDisabledUnformatted( "[free]" );
-            }
-            else
-            {
-                SmallCallstackButton( "free", v->csFree.Val(), idx );
-            }
-            ImGui::NextColumn();
         }
+        ImGui::EndTable();
     }
-    ImGui::EndColumns();
-    ImGui::EndChild();
 }
 
 static tracy_force_inline CallstackFrameTree* GetFrameTreeItemNoGroup( unordered_flat_map<uint64_t, CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
@@ -16276,6 +16271,14 @@ void View::DrawMemory()
     ImGui::Text( "%-15s", MemSizeToString( mem.usage ) );
     ImGui::SameLine();
     TextFocused( "Memory span:", MemSizeToString( mem.high - mem.low ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    DrawHelpMarker(
+        "Click on address to display memory allocation info window. Middle click to zoom to allocation range.\n"
+        "Active allocations are displayed using green color.\n"
+        "A single thread is displayed if alloc and free was performed on the same thread. Otherwise two threads are displayed in order: alloc, free.\n"
+        "If alloc and free is performed in the same zone, the free zone is displayed in yellow color." );
 
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
 

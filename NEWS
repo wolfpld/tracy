@@ -14,6 +14,7 @@ v0.x.x (xxxx-xx-xx)
   can be retrieved.
 - Dynamic zone colors are now supported through the ZoneColor() macro.
 - Fixed Arm machine code printout to match the one printed by objdump.
+- Switched to the next-gen ImGui table UI.
 
 
 v0.7.4 (2020-11-15)

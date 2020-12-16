@@ -474,7 +474,7 @@ bool ListenSocket::Listen( uint16_t port, int backlog )
 
     struct addrinfo* res = nullptr;
 
-#ifndef TRACY_ONLY_IPV4
+#if !defined TRACY_ONLY_IPV4 && !defined TRACY_ONLY_LOCALHOST
     const char* onlyIPv4 = getenv( "TRACY_ONLY_IPV4" );
     if( !onlyIPv4 || onlyIPv4[0] != '1' )
     {

@@ -603,7 +603,7 @@ bool UdpBroadcast::Open( const char* addr, uint16_t port )
     if( !ptr ) return false;
 
     m_sock = sock;
-    m_addr = inet_addr( addr );
+    inet_pton( AF_INET, addr, &m_addr );
     return true;
 }
 

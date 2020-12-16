@@ -109,6 +109,25 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \item Chapter~\ref{configurationfiles}, \emph{\nameref{configurationfiles}}, gives information on the profiler settings.
 \end{itemize}
 
+\section*{Quick-start guide}
+
+For Tracy to profile your application, you will need to integrate the profiler into your application, and additionally run an independent executable which will act both as a server with which your application will communicate, and as a profiling viewer. The most basic integration looks like this:
+
+\begin{itemize}
+\item Add the Tracy repository to your project directory.
+\item Add \texttt{project/tracy/TracyClient.cpp} as a source file.
+\item Add \texttt{project/tracy/Tracy.hpp} as an include file.
+\item Include \texttt{Tracy.hpp} in every file you are interested in profiling.
+\item Define \texttt{TRACY\_ENABLE} for the \textbf{WHOLE} project.
+\item Add the macro \texttt{FrameMark} at the end of each frame loop.
+\item Add the macro \texttt{ZoneScoped} as the first line of your function definitions to include them in the profile.
+\item Compile and run both your application and the profiler server.
+\item Hit \emph{Connect} on the profiler server.
+\item Tada! You're profiling your program!
+\end{itemize}
+
+There's much more Tracy can do, which can be explored by carefully reading this manual. In case any problems should surface, refer to section~\ref{initialsetup} to ensure you've correctly included Tracy in your project. Additionally, you should refer to section~\ref{client} to make sure you are using \texttt{FrameMark}, \texttt{ZoneScoped}, and any other Tracy constructs correctly.
+
 \newpage
 
 \tableofcontents
@@ -364,6 +383,7 @@ Moreover, the following platforms are not supported due to how secretive their o
 \end{itemize}
 
 \subsection{Initial client setup}
+\label{initialsetup}
 
 The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions. If that's not an option, copy all files from the Tracy checkout directory to your project.
 

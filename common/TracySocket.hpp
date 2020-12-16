@@ -107,6 +107,7 @@ public:
 
 private:
     int m_sock;
+    uint32_t m_addr;
 };
 
 class IpAddress

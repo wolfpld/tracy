@@ -603,6 +603,7 @@ bool UdpBroadcast::Open( const char* addr, uint16_t port )
     if( !ptr ) return false;
 
     m_sock = sock;
+    m_addr = inet_addr( addr );
     return true;
 }
 
@@ -623,7 +624,7 @@ int UdpBroadcast::Send( uint16_t port, const void* data, int len )
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons( port );
-    addr.sin_addr.s_addr = INADDR_BROADCAST;
+    addr.sin_addr.s_addr = m_addr;
     return sendto( m_sock, (const char*)data, len, MSG_NOSIGNAL, (sockaddr*)&addr, sizeof( addr ) );
 }
 

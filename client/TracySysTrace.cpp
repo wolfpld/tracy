@@ -301,7 +301,11 @@ static void SetupVsync()
     params.FilterDescCount = 1;
 
     uint64_t mask = 0x4000000000000001;   // Microsoft_Windows_DxgKrnl_Performance | Base
-    EnableTraceEx2( s_traceHandleVsync, &DxgKrnlGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, mask, mask, 0, &params );
+    if( EnableTraceEx2( s_traceHandleVsync, &DxgKrnlGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, mask, mask, 0, &params ) != ERROR_SUCCESS )
+    {
+        tracy_free( s_propVsync );
+        return;
+    }
 
     char loggerName[MAX_PATH];
     strcpy( loggerName, "TracyVsync" );

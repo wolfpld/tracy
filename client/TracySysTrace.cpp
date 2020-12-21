@@ -26,11 +26,8 @@
 namespace tracy
 {
 
-struct __declspec(uuid("{ce1dbfb4-137e-4da6-87b0-3f59aa102cbc}")) PERFINFOGUID;
-static const auto PerfInfoGuid = __uuidof(PERFINFOGUID);
-
-struct __declspec(uuid("{802EC45A-1E99-4B83-9920-87C98277BA9D}")) DXGKRNLGUID;
-static const auto DxgKrnlGuid = __uuidof(DXGKRNLGUID);
+static const GUID PerfInfoGuid = { 0xce1dbfb4, 0x137e, 0x4da6, { 0x87, 0xb0, 0x3f, 0x59, 0xaa, 0x10, 0x2c, 0xbc } };
+static const GUID DxgKrnlGuid  = { 0x802ec45a, 0x1e99, 0x4b83, { 0x99, 0x20, 0x87, 0xc9, 0x82, 0x77, 0xba, 0x9d } };
 
 
 static TRACEHANDLE s_traceHandle;

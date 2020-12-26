@@ -166,7 +166,7 @@ typedef struct rpmalloc_config_t {
 } rpmalloc_config_t;
 
 //! Initialize allocator with default configuration
-RPMALLOC_EXPORT int
+TRACY_API int
 rpmalloc_initialize(void);
 
 //! Initialize allocator with given configuration
@@ -178,15 +178,15 @@ RPMALLOC_EXPORT const rpmalloc_config_t*
 rpmalloc_config(void);
 
 //! Finalize allocator
-RPMALLOC_EXPORT void
+TRACY_API void
 rpmalloc_finalize(void);
 
 //! Initialize allocator for calling thread
-RPMALLOC_EXPORT void
+TRACY_API void
 rpmalloc_thread_initialize(void);
 
 //! Finalize allocator for calling thread
-RPMALLOC_EXPORT void
+TRACY_API void
 rpmalloc_thread_finalize(void);
 
 //! Perform deferred deallocations pending for the calling thread heap

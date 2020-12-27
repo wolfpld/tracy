@@ -2166,7 +2166,7 @@ rpcalloc(size_t num, size_t size) {
 	return block;
 }
 
-extern inline RPMALLOC_ALLOCATOR void*
+TRACY_API RPMALLOC_ALLOCATOR void*
 rprealloc(void* ptr, size_t size) {
 #if ENABLE_VALIDATE_ARGS
 	if (size >= MAX_ALLOC_SIZE) {

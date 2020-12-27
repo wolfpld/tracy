@@ -222,7 +222,7 @@ RPMALLOC_EXPORT RPMALLOC_ALLOCATOR void*
 rpcalloc(size_t num, size_t size) RPMALLOC_ATTRIB_MALLOC RPMALLOC_ATTRIB_ALLOC_SIZE2(1, 2);
 
 //! Reallocate the given block to at least the given size
-RPMALLOC_EXPORT RPMALLOC_ALLOCATOR void*
+TRACY_API RPMALLOC_ALLOCATOR void*
 rprealloc(void* ptr, size_t size) RPMALLOC_ATTRIB_MALLOC RPMALLOC_ATTRIB_ALLOC_SIZE(2);
 
 //! Reallocate the given block to at least the given size and alignment,

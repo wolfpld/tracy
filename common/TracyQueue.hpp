@@ -42,9 +42,13 @@ enum class QueueType : uint8_t
     MemFreeCallstackNamed,
     GpuZoneBegin,
     GpuZoneBeginCallstack,
+    GpuZoneBeginAllocSrcLoc,
+    GpuZoneBeginAllocSrcLocCallstack,
     GpuZoneEnd,
     GpuZoneBeginSerial,
     GpuZoneBeginCallstackSerial,
+    GpuZoneBeginAllocSrcLocSerial,
+    GpuZoneBeginAllocSrcLocCallstackSerial,
     GpuZoneEndSerial,
     PlotData,
     ContextSwitch,
@@ -317,13 +321,17 @@ struct QueueGpuNewContext
     GpuContextType type;
 };
 
-struct QueueGpuZoneBegin
+struct QueueGpuZoneBeginLean
 {
     int64_t cpuTime;
-    uint64_t srcloc;
     uint64_t thread;
     uint16_t queryId;
     uint8_t context;
+};
+
+struct QueueGpuZoneBegin : public QueueGpuZoneBeginLean
+{
+    uint64_t srcloc;
 };
 
 struct QueueGpuZoneEnd
@@ -522,6 +530,7 @@ struct QueueItem
         QueueMessageColorFat messageColorFat;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
+        QueueGpuZoneBeginLean gpuZoneBeginLean;
         QueueGpuZoneEnd gpuZoneEnd;
         QueueGpuTime gpuTime;
         QueueGpuCalibration gpuCalibration;
@@ -586,9 +595,13 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack, named
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// allocated source location
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // serial
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // serial, callstack
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// serial, allocated source location
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// serial, allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),      // serial
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),

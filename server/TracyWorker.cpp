@@ -4342,6 +4342,24 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     NewZone( zone, m_threadCtx );
 }
 
+void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev )
+{
+    assert( m_pendingSourceLocationPayload != 0 );
+
+    const auto refTime = m_refTimeThread + ev.time;
+    m_refTimeThread = refTime;
+    const auto start = TscTime( refTime - m_data.baseTime );
+    zone->SetStartSrcLoc( start, m_pendingSourceLocationPayload );
+    zone->SetEnd( -1 );
+    zone->SetChild( -1 );
+
+    if( m_data.lastTime < start ) m_data.lastTime = start;
+
+    NewZone( zone, m_threadCtx );
+
+    m_pendingSourceLocationPayload = 0;
+}
+
 ZoneEvent* Worker::AllocZoneEvent()
 {
     ZoneEvent* ret;
@@ -4376,24 +4394,6 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
     auto& extra = RequestZoneExtra( *zone );
     extra.callstack.SetVal( it->second );
     it->second = 0;
-}
-
-void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev )
-{
-    assert( m_pendingSourceLocationPayload != 0 );
-
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto start = TscTime( refTime - m_data.baseTime );
-    zone->SetStartSrcLoc( start, m_pendingSourceLocationPayload );
-    zone->SetEnd( -1 );
-    zone->SetChild( -1 );
-
-    if( m_data.lastTime < start ) m_data.lastTime = start;
-
-    NewZone( zone, m_threadCtx );
-
-    m_pendingSourceLocationPayload = 0;
 }
 
 void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBeginLean& ev )

@@ -5276,10 +5276,19 @@ void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool ser
 {
     auto zone = m_slab.Alloc<GpuEvent>();
     ProcessGpuZoneBeginImpl( zone, ev, serial );
-    auto it = m_nextCallstack.find( m_threadCtx );
-    assert( it != m_nextCallstack.end() );
-    zone->callstack.SetVal( it->second );
-    it->second = 0;
+    if( serial )
+    {
+        assert( m_serialNextCallstack != 0 );
+        zone->callstack.SetVal( m_serialNextCallstack );
+        m_serialNextCallstack = 0;
+    }
+    else
+    {
+        auto it = m_nextCallstack.find( m_threadCtx );
+        assert( it != m_nextCallstack.end() );
+        zone->callstack.SetVal( it->second );
+        it->second = 0;
+    }
 }
 
 void Worker::ProcessGpuZoneBeginAllocSrcLoc( const QueueGpuZoneBeginLean& ev, bool serial )
@@ -5292,10 +5301,19 @@ void Worker::ProcessGpuZoneBeginAllocSrcLocCallstack( const QueueGpuZoneBeginLea
 {
     auto zone = m_slab.Alloc<GpuEvent>();
     ProcessGpuZoneBeginAllocSrcLocImpl( zone, ev, serial );
-    auto it = m_nextCallstack.find( m_threadCtx );
-    assert( it != m_nextCallstack.end() );
-    zone->callstack.SetVal( it->second );
-    it->second = 0;
+    if( serial )
+    {
+        assert( m_serialNextCallstack != 0 );
+        zone->callstack.SetVal( m_serialNextCallstack );
+        m_serialNextCallstack = 0;
+    }
+    else
+    {
+        auto it = m_nextCallstack.find( m_threadCtx );
+        assert( it != m_nextCallstack.end() );
+        zone->callstack.SetVal( it->second );
+        it->second = 0;
+    }
 }
 
 void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )

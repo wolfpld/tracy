@@ -5175,7 +5175,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
 {
     m_data.gpuCnt++;
 
-    auto ctx = m_gpuCtxMap[ev.context];
+    auto ctx = m_gpuCtxMap[ev.context].get();
     assert( ctx );
 
     CheckSourceLocation( ev.srcloc );

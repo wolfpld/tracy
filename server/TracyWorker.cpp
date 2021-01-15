@@ -4260,8 +4260,8 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MemFreeCallstackNamed:
         ProcessMemFreeCallstackNamed( ev.memFree );
         break;
-    case QueueType::CallstackMemory:
-        ProcessCallstackMemory();
+    case QueueType::CallstackSerial:
+        ProcessCallstackSerial();
         break;
     case QueueType::Callstack:
     case QueueType::CallstackAlloc:
@@ -4549,7 +4549,7 @@ void Worker::MemFreeFailure( uint64_t thread )
 {
     m_failure = Failure::MemFree;
     m_failureData.thread = thread;
-    m_failureData.callstack = m_memNextCallstack;
+    m_failureData.callstack = m_serialNextCallstack;
 }
 
 void Worker::FrameEndFailure()
@@ -5525,9 +5525,9 @@ void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 {
     auto mem = ProcessMemAlloc( ev );
     assert( mem );
-    assert( m_memNextCallstack != 0 );
-    mem->SetCsAlloc( m_memNextCallstack );
-    m_memNextCallstack = 0;
+    assert( m_serialNextCallstack != 0 );
+    mem->SetCsAlloc( m_serialNextCallstack );
+    m_serialNextCallstack = 0;
 }
 
 void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
@@ -5544,17 +5544,17 @@ void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
     }
     auto mem = ProcessMemAllocImpl( memname, *it->second, ev );
     assert( mem );
-    assert( m_memNextCallstack != 0 );
-    mem->SetCsAlloc( m_memNextCallstack );
-    m_memNextCallstack = 0;
+    assert( m_serialNextCallstack != 0 );
+    mem->SetCsAlloc( m_serialNextCallstack );
+    m_serialNextCallstack = 0;
 }
 
 void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
     auto mem = ProcessMemFree( ev );
-    assert( m_memNextCallstack != 0 );
-    if( mem ) mem->csFree.SetVal( m_memNextCallstack );
-    m_memNextCallstack = 0;
+    assert( m_serialNextCallstack != 0 );
+    if( mem ) mem->csFree.SetVal( m_serialNextCallstack );
+    m_serialNextCallstack = 0;
 }
 
 void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
@@ -5570,16 +5570,16 @@ void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
         it->second->name = memname;
     }
     auto mem = ProcessMemFreeImpl( memname, *it->second, ev );
-    assert( m_memNextCallstack != 0 );
-    if( mem ) mem->csFree.SetVal( m_memNextCallstack );
-    m_memNextCallstack = 0;
+    assert( m_serialNextCallstack != 0 );
+    if( mem ) mem->csFree.SetVal( m_serialNextCallstack );
+    m_serialNextCallstack = 0;
 }
 
-void Worker::ProcessCallstackMemory()
+void Worker::ProcessCallstackSerial()
 {
     assert( m_pendingCallstackId != 0 );
-    assert( m_memNextCallstack == 0 );
-    m_memNextCallstack = m_pendingCallstackId;
+    assert( m_serialNextCallstack == 0 );
+    m_serialNextCallstack = m_pendingCallstackId;
     m_pendingCallstackId = 0;
 }
 

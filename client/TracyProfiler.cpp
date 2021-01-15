@@ -1778,7 +1778,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.gpuZoneBegin.srcloc );
         tracy_free( (void*)ptr );
         break;
-    case QueueType::CallstackMemory:
+    case QueueType::CallstackSerial:
     case QueueType::Callstack:
         ptr = MemRead<uint64_t>( &item.callstackFat.ptr );
         tracy_free( (void*)ptr );
@@ -2152,7 +2152,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
             {
                 switch( (QueueType)idx )
                 {
-                case QueueType::CallstackMemory:
+                case QueueType::CallstackSerial:
                     ptr = MemRead<uint64_t>( &item->callstackFat.ptr );
                     SendCallstackPayload( ptr );
                     tracy_free( (void*)ptr );

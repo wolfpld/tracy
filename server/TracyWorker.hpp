@@ -648,7 +648,7 @@ private:
     tracy_force_inline void ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessMemFreeCallstackNamed( const QueueMemFree& ev );
-    tracy_force_inline void ProcessCallstackMemory();
+    tracy_force_inline void ProcessCallstackSerial();
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
@@ -880,7 +880,7 @@ private:
     uint64_t m_callstackAllocNextIdx = 0;
     uint64_t m_callstackParentNextIdx = 0;
 
-    uint32_t m_memNextCallstack = 0;
+    uint32_t m_serialNextCallstack = 0;
     uint64_t m_memNamePayload = 0;
 
     Slab<64*1024*1024> m_slab;

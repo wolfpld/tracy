@@ -17,7 +17,7 @@ enum class QueueType : uint8_t
     MessageAppInfo,
     ZoneBeginAllocSrcLoc,
     ZoneBeginAllocSrcLocCallstack,
-    CallstackMemory,
+    CallstackSerial,
     Callstack,
     CallstackAlloc,
     CallstackSample,

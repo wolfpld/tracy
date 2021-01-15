@@ -4206,6 +4206,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::GpuZoneBeginCallstack:
         ProcessGpuZoneBeginCallstack( ev.gpuZoneBegin, false );
         break;
+    case QueueType::GpuZoneBeginAllocSrcLoc:
+        ProcessGpuZoneBeginAllocSrcLoc( ev.gpuZoneBeginLean, false );
+        break;
+    case QueueType::GpuZoneBeginAllocSrcLocCallstack:
+        ProcessGpuZoneBeginAllocSrcLocCallstack( ev.gpuZoneBeginLean, false );
+        break;
     case QueueType::GpuZoneEnd:
         ProcessGpuZoneEnd( ev.gpuZoneEnd, false );
         break;
@@ -4214,6 +4220,12 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::GpuZoneBeginCallstackSerial:
         ProcessGpuZoneBeginCallstack( ev.gpuZoneBegin, true );
+        break;
+    case QueueType::GpuZoneBeginAllocSrcLocSerial:
+        ProcessGpuZoneBeginAllocSrcLoc( ev.gpuZoneBeginLean, true );
+        break;
+    case QueueType::GpuZoneBeginAllocSrcLocCallstackSerial:
+        ProcessGpuZoneBeginAllocSrcLocCallstack( ev.gpuZoneBeginLean, true );
         break;
     case QueueType::GpuZoneEndSerial:
         ProcessGpuZoneEnd( ev.gpuZoneEnd, true );
@@ -5173,12 +5185,25 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 
 void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial )
 {
+    CheckSourceLocation( ev.srcloc );
+    zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
+    ProcessGpuZoneBeginImplCommon( zone, ev, serial );
+}
+
+void Worker::ProcessGpuZoneBeginAllocSrcLocImpl( GpuEvent* zone, const QueueGpuZoneBeginLean& ev, bool serial )
+{
+    assert( m_pendingSourceLocationPayload != 0 );
+    zone->SetSrcLoc( m_pendingSourceLocationPayload );
+    ProcessGpuZoneBeginImplCommon( zone, ev, time );
+    m_pendingSourceLocationPayload = 0;
+}
+
+void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBeginLean& ev, bool serial )
+{
     m_data.gpuCnt++;
 
     auto ctx = m_gpuCtxMap[ev.context].get();
     assert( ctx );
-
-    CheckSourceLocation( ev.srcloc );
 
     int64_t cpuTime;
     if( serial )
@@ -5196,7 +5221,6 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     zone->SetCpuEnd( -1 );
     zone->SetGpuStart( -1 );
     zone->SetGpuEnd( -1 );
-    zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     zone->callstack.SetVal( 0 );
     zone->SetChild( -1 );
 
@@ -5252,6 +5276,22 @@ void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool ser
 {
     auto zone = m_slab.Alloc<GpuEvent>();
     ProcessGpuZoneBeginImpl( zone, ev, serial );
+    auto it = m_nextCallstack.find( m_threadCtx );
+    assert( it != m_nextCallstack.end() );
+    zone->callstack.SetVal( it->second );
+    it->second = 0;
+}
+
+void Worker::ProcessGpuZoneBeginAllocSrcLoc( const QueueGpuZoneBeginLean& ev, bool serial )
+{
+    auto zone = m_slab.Alloc<GpuEvent>();
+    ProcessGpuZoneBeginAllocSrcLocImpl( zone, ev, serial );
+}
+
+void Worker::ProcessGpuZoneBeginAllocSrcLocCallstack( const QueueGpuZoneBeginLean& ev, bool serial )
+{
+    auto zone = m_slab.Alloc<GpuEvent>();
+    ProcessGpuZoneBeginAllocSrcLocImpl( zone, ev, serial );
     auto it = m_nextCallstack.find( m_threadCtx );
     assert( it != m_nextCallstack.end() );
     zone->callstack.SetVal( it->second );

@@ -342,9 +342,7 @@ public:
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId );
 
-        GetProfiler().SendCallstack( depth );
-
-        auto item = Profiler::QueueSerial();
+        auto item = Profiler::QueueSerialCallstack( Callstack( depth ) );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstackSerial );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );

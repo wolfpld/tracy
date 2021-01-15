@@ -171,6 +171,14 @@ public:
         return p.m_serialQueue.prepare_next();
     }
 
+    static tracy_force_inline QueueItem* QueueSerialCallstack( void* ptr )
+    {
+        auto& p = GetProfiler();
+        p.m_serialLock.lock();
+        p.SendCallstackSerial( ptr );
+        return p.m_serialQueue.prepare_next();
+    }
+
     static tracy_force_inline void QueueSerialFinish()
     {
         auto& p = GetProfiler();

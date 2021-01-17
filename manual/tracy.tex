@@ -3315,7 +3315,7 @@ Note that ranges displayed in the window have color hints that match color of th
 \label{csvexport}
 
 You can use a command-line utility in the \texttt{csvexport} directory to export basic zone statistics from a saved trace into a CSV format.
-The tool requires a single .tracy file as an argument and prints results into the standard output (stdout) from where you can redirect it into a file or use it as an input into another tool.
+The tool requires a single .tracy file as an argument and prints the result into the standard output (stdout) from where you can redirect it into a file or use it as an input into another tool.
 By default, the utility will list all zones with the following columns:
 
 \begin{itemize}
@@ -3325,7 +3325,7 @@ By default, the utility will list all zones with the following columns:
   \item \texttt{total\_ns} -- Total zone time in nanoseconds
   \item \texttt{total\_perc} -- Total zone time as a percentage of the program's execution time
   \item \texttt{counts} -- Zone count
-  \item \texttt{mean\_ns} -- Mean zone time (equivalent in MPTC in the profiler GUI) in nanoseconds
+  \item \texttt{mean\_ns} -- Mean zone time (equivalent to MPTC in the profiler GUI) in nanoseconds
   \item \texttt{min\_ns} -- Minimum zone time in nanoseconds
   \item \texttt{max\_ns} -- Maximum zone time in nanoseconds
   \item \texttt{std\_ns} -- Standard deviation of the zone time in nanoseconds
@@ -3334,12 +3334,12 @@ By default, the utility will list all zones with the following columns:
 You can customize the output with the following command line options:
 
 \begin{itemize}
-  \item \texttt{-h, -\hspace{-1.25ex} -help} -- display a help message
-  \item \texttt{-f, -\hspace{-1.25ex} -filter <name>} -- filter the zone names
-  \item \texttt{-c, -\hspace{-1.25ex} -case} -- make the name filtering case sensitive
-  \item \texttt{-s, -\hspace{-1.25ex} -sep <separator>} -- customize the CSV separator (default is ``\texttt{,}'')
-  \item \texttt{-e, -\hspace{-1.25ex} -self} -- use self time (equivalent to the ``Self time'' toggle in the profiler GUI)
-  \item \texttt{-u, -\hspace{-1.25ex} -unwrap} -- report each zone individually; this will discard the statistics columns and instead reports for each zone entry its timestamp and the duration of the zone entry.
+  \item \texttt{-h, -\hspace{-1.25ex} -help} -- Display a help message
+  \item \texttt{-f, -\hspace{-1.25ex} -filter <name>} -- Filter the zone names
+  \item \texttt{-c, -\hspace{-1.25ex} -case} -- Make the name filtering case sensitive
+  \item \texttt{-s, -\hspace{-1.25ex} -sep <separator>} -- Customize the CSV separator (default is ``\texttt{,}'')
+  \item \texttt{-e, -\hspace{-1.25ex} -self} -- Use self time (equivalent to the ``Self time'' toggle in the profiler GUI)
+  \item \texttt{-u, -\hspace{-1.25ex} -unwrap} -- Report each zone individually; this will discard the statistics columns and instead report the timestamp and duration for each zone entry
 \end{itemize}
 
 \section{Importing external profiling data}

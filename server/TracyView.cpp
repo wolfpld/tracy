@@ -462,7 +462,7 @@ bool View::Draw()
                 const auto w = ImGui::GetWindowWidth();
                 if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders ) )
                 {
-                    ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_WidthAuto );
+                    ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                     ImGui::TableSetupColumn( "Function" );
                     ImGui::TableSetupColumn( "Location" );
                     ImGui::TableSetupColumn( "Image" );
@@ -1550,7 +1550,7 @@ bool View::DrawConnection()
                 if( ImGui::BeginTable( "##traceparams", 2, ImGuiTableFlags_Borders ) )
                 {
                     ImGui::TableSetupColumn( "Name" );
-                    ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthAuto );
+                    ImGui::TableSetupColumn( "Value", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                     ImGui::TableHeadersRow();
                     size_t idx = 0;
                     for( auto& p : params )
@@ -7477,7 +7477,7 @@ void View::DrawZoneInfoWindow()
                     if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
                     {
                         ImGui::TableSetupScrollFreeze( 0, 1 );
-                        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAuto );
+                        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                         ImGui::TableSetupColumn( "Message" );
                         ImGui::TableHeadersRow();
                         do
@@ -7633,8 +7633,8 @@ void View::DrawZoneInfoWindow()
                 if( ImGui::BeginTable( "##timedist", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) )
                 {
                     ImGui::TableSetupColumn( "Zone", ImGuiTableColumnFlags_PreferSortDescending );
-                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthAuto );
-                    ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAuto );
+                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                    ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                     ImGui::TableHeadersRow();
                     const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
                     switch( sortspec.ColumnIndex )
@@ -9218,7 +9218,7 @@ void View::DrawMessages()
     if( ImGui::BeginTable( "##messages", colNum, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Hideable ) )
     {
         ImGui::TableSetupScrollFreeze( 0, 1 );
-        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthAuto );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
         ImGui::TableSetupColumn( "Thread" );
         ImGui::TableSetupColumn( "Message" );
         if( hasCallstack ) ImGui::TableSetupColumn( "Call stack" );
@@ -12347,9 +12347,9 @@ void View::DrawStatistics()
                 ImGui::TableSetupScrollFreeze( 0, 1 );
                 ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
                 ImGui::TableSetupColumn( "Location", ImGuiTableColumnFlags_NoSort );
-                ImGui::TableSetupColumn( "Total time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAuto );
-                ImGui::TableSetupColumn( "Counts", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAuto );
-                ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthAuto );
+                ImGui::TableSetupColumn( "Total time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "Counts", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableHeadersRow();
 
                 const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
@@ -12735,8 +12735,8 @@ void View::DrawStatistics()
                 ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
                 ImGui::TableSetupColumn( "Location", ImGuiTableColumnFlags_NoSort );
                 ImGui::TableSetupColumn( "Image" );
-                ImGui::TableSetupColumn( m_statSampleTime ? "Time" : "Count", ImGuiTableColumnFlags_WidthAuto );
-                ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthAuto );
+                ImGui::TableSetupColumn( m_statSampleTime ? "Time" : "Count", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableHeadersRow();
 
                 double revSampleCount100;
@@ -13249,7 +13249,7 @@ void View::DrawCallstackWindow()
     if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
     {
         ImGui::TableSetupScrollFreeze( 0, 1 );
-        ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthAuto );
+        ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
         ImGui::TableSetupColumn( "Function" );
         ImGui::TableSetupColumn( "Location" );
         ImGui::TableSetupColumn( "Image" );
@@ -15352,7 +15352,7 @@ void View::DrawSampleParents()
     if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
     {
         ImGui::TableSetupScrollFreeze( 0, 1 );
-        ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthAuto );
+        ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
         ImGui::TableSetupColumn( "Function" );
         ImGui::TableSetupColumn( "Location" );
         ImGui::TableSetupColumn( "Image" );

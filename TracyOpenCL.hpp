@@ -261,7 +261,8 @@ namespace tracy {
         tracy_force_inline void SetEvent(cl_event event)
         {
             m_event = event;
-            assert(clRetainEvent(m_event) == CL_SUCCESS);
+            cl_int err = clRetainEvent(m_event);
+            assert(err == CL_SUCCESS);
             m_ctx->GetQuery(m_beginQueryId).event = m_event;
         }
 

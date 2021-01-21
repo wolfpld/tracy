@@ -125,7 +125,8 @@ namespace tracy {
                 if (eventInfo.phase == EventPhase::End)
                 {
                     // Done with the event, so release it
-                    assert(clReleaseEvent(event) == CL_SUCCESS);
+                    err = clReleaseEvent(event);
+                    assert(err == CL_SUCCESS);
                 }
 
                 m_tail = (m_tail + 1) % QueryCount;

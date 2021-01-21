@@ -122,10 +122,8 @@ namespace pdqsort_detail {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return true;
         
-        int limit = 0;
+        std::size_t limit = 0;
         for (Iter cur = begin + 1; cur != end; ++cur) {
-            if (limit > partial_insertion_sort_limit) return false;
-
             Iter sift = cur;
             Iter sift_1 = cur - 1;
 
@@ -139,6 +137,8 @@ namespace pdqsort_detail {
                 *sift = PDQSORT_PREFER_MOVE(tmp);
                 limit += cur - sift;
             }
+
+            if (limit > partial_insertion_sort_limit) return false;
         }
 
         return true;
@@ -272,7 +272,7 @@ namespace pdqsort_detail {
         }
 
         int l_size = 0, r_size = 0;
-        int unknown_left = (last - first) - ((num_r || num_l) ? block_size : 0);
+        int unknown_left = (int)(last - first) - ((num_r || num_l) ? block_size : 0);
         if (num_r) {
             // Handle leftover block by assigning the unknown elements to the other block.
             l_size = unknown_left;

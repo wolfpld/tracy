@@ -14880,11 +14880,11 @@ void View::DrawCpuDataWindow()
     if( ImGui::BeginTable( "##cpudata", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
     {
         ImGui::TableSetupScrollFreeze( 0, 1 );
-        ImGui::TableSetupColumn( "PID/TID" );
+        ImGui::TableSetupColumn( "PID/TID", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
         ImGui::TableSetupColumn( "Name" );
         ImGui::TableSetupColumn( "Running time", ImGuiTableColumnFlags_PreferSortDescending );
-        ImGui::TableSetupColumn( "Running regions", ImGuiTableColumnFlags_PreferSortDescending );
-        ImGui::TableSetupColumn( "CPU migrations", ImGuiTableColumnFlags_PreferSortDescending );
+        ImGui::TableSetupColumn( "Running regions", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+        ImGui::TableSetupColumn( "CPU migrations", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
         ImGui::TableHeadersRow();
 
         std::vector<unordered_flat_map<uint64_t, PidData>::iterator> psort;

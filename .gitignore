@@ -5,6 +5,9 @@
 x64
 Release
 Debug
+_build
+_compiler
+tools/*
 *.d
 *.o
 *.so
@@ -28,3 +31,7 @@ vcpkg/*
 !vcpkg/install_vcpkg_dependencies.bat
 .deps/
 .dirstamp
+.vscode/
+
+/_*/**
+/**/__pycache__/**

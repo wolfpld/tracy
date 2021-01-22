@@ -194,11 +194,15 @@ int main( int argc, char** argv )
     printf( "\33[2KProcessing...\r" );
     fflush( stdout );
 
-    auto program = input;
-    while( *program ) program++;
-    program--;
-    while( program > input && ( *program != '/' || *program != '\\' ) ) program--;
-    tracy::Worker worker( program, timeline, messages, plots, threadNames );
+    auto&& getFilename = [](const char* in) {
+        auto out = in;
+        while (*out) ++out;
+        --out;
+        while (out > in && (*out != '/' || *out != '\\')) out--;
+        return out;
+    };
+
+    tracy::Worker worker( getFilename(output), getFilename(input), timeline, messages, plots, threadNames );
 
     auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
     if( !w )

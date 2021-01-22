@@ -275,10 +275,11 @@ Worker::Worker( const char* addr, uint16_t port )
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
-Worker::Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames )
+Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames )
     : m_hasData( true )
     , m_delay( 0 )
     , m_resolution( 0 )
+    , m_captureName( name )
     , m_captureProgram( program )
     , m_captureTime( 0 )
     , m_pid( 0 )

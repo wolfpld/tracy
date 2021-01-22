@@ -394,7 +394,7 @@ public:
     };
 
     Worker( const char* addr, uint16_t port );
-    Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots );
+    Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true );
     ~Worker();
 

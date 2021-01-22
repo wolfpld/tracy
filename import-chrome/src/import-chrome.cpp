@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unordered_map>
 
 #include "json.hpp"
 
@@ -56,6 +57,7 @@ int main( int argc, char** argv )
     std::vector<tracy::Worker::ImportEventTimeline> timeline;
     std::vector<tracy::Worker::ImportEventMessages> messages;
     std::vector<tracy::Worker::ImportEventPlots> plots;
+    std::unordered_map<uint64_t, std::string> threadNames;
 
     if( j.is_object() && j.contains( "traceEvents" ) )
     {
@@ -156,6 +158,13 @@ int main( int argc, char** argv )
                 }
             }
         }
+        else if (type == "M")
+        {
+            if (v.contains("name") && v["name"] == "thread_name" && v.contains("args") && v["args"].is_object() && v["args"].contains("name"))
+            {
+                threadNames[v["tid"].get<uint64_t>()] = v["args"]["name"].get<std::string>();
+            }
+        }
     }
 
     std::stable_sort( timeline.begin(), timeline.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
@@ -189,7 +198,7 @@ int main( int argc, char** argv )
     while( *program ) program++;
     program--;
     while( program > input && ( *program != '/' || *program != '\\' ) ) program--;
-    tracy::Worker worker( program, timeline, messages, plots );
+    tracy::Worker worker( program, timeline, messages, plots, threadNames );
 
     auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
     if( !w )

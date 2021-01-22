@@ -706,10 +706,10 @@ static void SetupSampling( int64_t& samplingPeriod )
         for( int i=0; i<s_numCpus; i++ ) s_ring[i].Enable();
         for(;;)
         {
-            if( !traceActive.load( std::memory_order_relaxed ) ) break;
             bool hadData = false;
             for( int i=0; i<s_numCpus; i++ )
             {
+                if( !traceActive.load( std::memory_order_relaxed ) ) break;
                 if( !s_ring[i].HasData() ) continue;
                 hadData = true;
 

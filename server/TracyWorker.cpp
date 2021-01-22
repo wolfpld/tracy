@@ -512,6 +512,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         char tmp[1024];
         f.Read( tmp, sz );
         m_captureName = std::string( tmp, tmp+sz );
+        if (m_captureName.empty())
+            m_captureName = f.GetFilename();
     }
     {
         f.Read( sz );

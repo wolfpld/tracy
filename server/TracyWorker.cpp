@@ -5194,7 +5194,7 @@ void Worker::ProcessGpuZoneBeginAllocSrcLocImpl( GpuEvent* zone, const QueueGpuZ
 {
     assert( m_pendingSourceLocationPayload != 0 );
     zone->SetSrcLoc( m_pendingSourceLocationPayload );
-    ProcessGpuZoneBeginImplCommon( zone, ev, time );
+    ProcessGpuZoneBeginImplCommon( zone, ev, serial );
     m_pendingSourceLocationPayload = 0;
 }
 

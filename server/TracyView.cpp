@@ -14952,6 +14952,8 @@ void View::DrawCpuDataWindow()
         const auto rtimespan = 1.0 / m_worker.GetLastTime();
         const auto ty = ImGui::GetTextLineHeight();
 
+        auto& style = ImGui::GetStyle();
+        const auto framePaddingY = style.FramePadding.y;
         for( auto& pidit : psort )
         {
             ImGui::TableNextRow();
@@ -14996,7 +14998,9 @@ void View::DrawCpuDataWindow()
             }
             ImGui::TableNextColumn();
             PrintStringPercent( buf, TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
+            style.FramePadding.y = 0;
             ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
+            style.FramePadding.y = framePaddingY;
             ImGui::TableNextColumn();
             ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions ) );
             ImGui::TableNextColumn();
@@ -15109,7 +15113,9 @@ void View::DrawCpuDataWindow()
                     }
                     ImGui::TableNextColumn();
                     PrintStringPercent( buf, TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
+                    style.FramePadding.y = 0;
                     ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
+                    style.FramePadding.y = framePaddingY;
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted( RealToString( tit->second.runningRegions ) );
                     ImGui::TableNextColumn();

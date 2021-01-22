@@ -12,12 +12,21 @@ v0.x.x (xxxx-xx-xx)
 - More robust handling of system tracing on Android.
 - Added warning dialog when the connection is lost before all needed data
   can be retrieved.
+- Fixed handling of NaN plot entries (by skipping them).
 - Dynamic zone colors are now supported through the ZoneColor() macro.
 - Fixed Arm machine code printout to match the one printed by objdump.
+- Fixed client memory corruption when using colored messages.
 - Switched to the next-gen ImGui table UI.
+  - Table columns can have their order rearranged, can be hidden, can be
+    sorted both in ascending and descending order (where appropriate).
+  - Table columns state is now preserved between runs.
 - Various fixes related to restricting listening to localhost.
+- Improved compatibility of ETW tracing with non-MSVC compilers.
 - Fixed Vulkan call stack transfer.
 - Added support for transient GPU zones (OpenGL, Vulkan, Direct3D 12).
+- OpenCL fixes for assert-less builds and non-active zones.
+- Added support for thread names and title bar description in traces
+  imported from chrome tracing format.
 
 
 v0.7.4 (2020-11-15)

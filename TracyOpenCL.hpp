@@ -261,6 +261,7 @@ namespace tracy {
 
         tracy_force_inline void SetEvent(cl_event event)
         {
+            if (!m_active) return;
             m_event = event;
             cl_int err = clRetainEvent(m_event);
             assert(err == CL_SUCCESS);
@@ -269,6 +270,7 @@ namespace tracy {
 
         tracy_force_inline ~OpenCLCtxScope()
         {
+            if (!m_active) return;
             const auto queryId = m_ctx->NextQueryId(EventInfo{ m_event, EventPhase::End });
 
             auto item = Profiler::QueueSerial();

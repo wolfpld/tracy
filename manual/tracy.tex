@@ -741,7 +741,7 @@ Some features of the profiler are only available on selected platforms. Please r
 \centering
 \begin{tabular}[h]{c|c|c|c|c|c|c}
 \textbf{Feature} & \textbf{Windows} & \textbf{Linux} & \textbf{Android} & \textbf{OSX} & \textbf{iOS} & \textbf{BSD} \\ \hline
-Profiling initialization & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \faCheck \\
+Profiling program init & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \faCheck \\
 CPU zones & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 Locks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 Plots & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
@@ -756,6 +756,7 @@ CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCh
 Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
+VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
 \vspace{1em}
@@ -1757,6 +1758,31 @@ disabling the code, if the \texttt{TRACY\_ENABLE} macro is not defined.
 
 Tracy will perform automatic collection of system data without user intervention. This behavior is platform specific and may not be available everywhere. Refer to section~\ref{featurematrix} for more information.
 
+\subsubsection{Privilege elevation}
+\label{privilegeelevation}
+
+Some profiling data can be only retrieved using the kernel facilities, which are not available to users with normal privilege level. To collect such data you will need to elevate your rights to admin level, either by running the profiled program from the \texttt{root} account on Unix, or through the \emph{Run as administrator} option on Windows\footnote{To make this easier, you can run MSVC with admin privileges, which will be inherited by your program when you start it from within the IDE.}. On Android you will need to have a rooted device (see section~\ref{androidlunacy} for additional information).
+
+As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the necessary rights). If for some reason you would want to prevent your application from trying to access kernel data, you may recompile your program with the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+Data retrieval on Android requires spawning an elevated process to read the information provided by the kernel. While the standard \texttt{cat} utility can be used for this task, the resulting CPU usage is not acceptable, due to how the kernel handles blocking reads. As a workaround, Tracy will inject a specialized kernel data reader program at \texttt{/data/tracy\_systrace}, which has more acceptable resource requirements.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{What should be granted privileges?}
+Sometimes it may be confusing which program should be given the admin access. After all, some other profilers have to run elevated to access all their capabilities.
+
+In case of Tracy the administrative rights should be given to \emph{the profiled application}. Remember that the server part of the profiler (where the data is collected and displayed) may be running on another machine, and thus it can't be used to access kernel data.
+\end{bclogo}
+
 \subsubsection{CPU usage}
 
 System-wide CPU load is gathered with relatively high granularity (one reading every 100 \si{\milli\second}). The readings are available as a plot (see section~\ref{plots}). Note that this parameter takes into account all applications running on the system, not only the profiled program.
@@ -1770,18 +1796,7 @@ As a corollary, it is often not enough to know how long it took to execute a zon
 
 To solve this problem, Tracy collects context switch\footnote{A context switch happens when any given CPU core stops executing one thread and starts running another one.} information. This data can be then used to see when a zone was in the executing state and where it was waiting to be resumed.
 
-Context switch data capture may be disabled by adding the \texttt{TRACY\_NO\_CONTEXT\_SWITCH} define to the client. Alternatively, the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define may be used to disable all tracing needing privilege escalation.
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcattention
-]{Caveats}
-\begin{itemize}
-\item Context switch data is retrieved using the kernel profiling facilities, which are not available to users with normal privilege level. To collect context switches you will need to elevate your rights to admin level, either by running the profiled program from the \texttt{root} account on Unix, or through the \emph{Run as administrator} option on Windows. On Android context switches will be collected if you have a rooted device (see section~\ref{androidlunacy} for additional information).
-\item Android context switch capture requires spawning an elevated process to read kernel data. While the standard \texttt{cat} utility can be used for this task, the CPU usage is not acceptable due to how the kernel handles blocking reads. As a workaround, Tracy will inject a specialized kernel data reader program at \texttt{/data/tracy\_systrace}, which has more acceptable resource requirements.
-\end{itemize}
-\end{bclogo}
+Context switch data capture may be disabled by adding the \texttt{TRACY\_NO\_CONTEXT\_SWITCH} define to the client. It needs privilege elevation, which is described in section~\ref{privilegeelevation}.
 
 \subsubsection{CPU topology}
 \label{cputopology}
@@ -1790,7 +1805,7 @@ Tracy may perform discovery of CPU topology data in order to provide further inf
 
 In essence, the topology information gives you context about what any given \emph{logical CPU} really is and how it relates to other logical CPUs. The topology hierarchy consists of packages, cores and threads.
 
-Packages contain cores and shared resources, such as memory controller, L3 cache, etc. A store-bought CPU is an example of a package. While you may think that multi-package configurations would be a domain of servers, they are actually quite common in the mobile devices world, with many platforms using the \emph{big.LITTLE} arrangement of two packages.
+Packages contain cores and shared resources, such as memory controller, L3 cache, etc. A store-bought CPU is an example of a package. While you may think that multi-package configurations would be a domain of servers, they are actually quite common in the mobile devices world, with many platforms using the \emph{big.LITTLE} arrangement of two packages in one silicon chip.
 
 Cores contain at least one thread and shared resources: execution units, L1 and L2 cache, etc.
 
@@ -1811,7 +1826,7 @@ In this manual, the word \emph{core} is typically used as a short term for \emph
 
 Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries, or in kernel. This can leave blank spaces on the trace, leaving you with no clue what the application was doing. Tracy is able to periodically inspect state of running threads, providing you with a snapshot of call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight where to go next.
 
-This feature requires privilege elevation, as described in chapter~\ref{contextswitches}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
+This feature requires privilege elevation, as described in chapter~\ref{privilegeelevation}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
 
 On Windows sampling is performed at 8 kHz frequency (which is the maximum possible value), and on Linux and Android it is performed at 10 kHz.
 
@@ -1836,7 +1851,7 @@ For proper program code retrieval no module used by the application can be unloa
 
 \subsubsection{Vertical synchronization}
 
-On Windows Tracy will automatically capture hardware Vsync events, if running with elevated privileges (see section~\ref{contextswitches}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application, due to desktop composition, command queue buffering, etc.
+On Windows Tracy will automatically capture hardware Vsync events, if running with elevated privileges (see section~\ref{privilegeelevation}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application, due to desktop composition, command queue buffering, etc.
 
 Use the \texttt{TRACY\_NO\_VSYNC\_CAPTURE} macro to disable capture of Vsync events.
 

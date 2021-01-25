@@ -417,7 +417,7 @@ logo=\bcbombe
 \end{itemize}
 \end{bclogo}
 
-The application you want to profile should be compiled with all the usual optimization options enabled (i.e.~make a release build). It makes no sense to profile debugging builds, as the unoptimized code and additional checks (asserts, etc.) completely change how the program behaves.
+The application you want to profile should be compiled with all the usual optimization options enabled (i.e.~make a release build). It makes no sense to profile debugging builds, as the unoptimized code and additional checks (asserts, etc.) completely change how the program behaves. You should enable usage of the native architecture of your CPU (e.g.~\texttt{-march=native}), to leverage the expanded instruction sets, which may not be available in the default baseline target configuration.
 
 Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}. BSD systems will also need to be linked with \texttt{libexecinfo}.
 

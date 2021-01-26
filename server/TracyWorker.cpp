@@ -19,7 +19,7 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 
-#include <capstone/capstone.h>
+#include <capstone.h>
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"

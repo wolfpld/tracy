@@ -6,7 +6,7 @@ else
 LDFLAGS := -s
 endif
 
-ifeq ($(ARCH),aarch64)
+ifneq (,$(filter $(ARCH),aarch64 arm64))
 CFLAGS += -mcpu=native
 else
 CFLAGS += -march=native

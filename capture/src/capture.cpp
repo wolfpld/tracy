@@ -19,7 +19,10 @@
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracyStackFrames.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "../../getopt/getopt.h"
+
+#ifdef _WIN32
+#  include "../../getopt/getopt.h"
+#endif
 
 
 bool disconnect = false;

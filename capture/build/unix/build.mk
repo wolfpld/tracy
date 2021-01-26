@@ -6,7 +6,7 @@ LIBS += $(shell pkg-config --libs capstone) -lpthread
 PROJECT := capture
 IMAGE := $(PROJECT)-$(BUILD)
 
-FILTER :=
+FILTER := ../../../getopt/getopt.c
 include ../../../common/src-from-vcxproj.mk
 
 include ../../../common/unix.mk

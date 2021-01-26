@@ -7388,10 +7388,10 @@ void Worker::CacheSource( const StringRef& str )
     assert( m_checkedFileStrings.find( str ) == m_checkedFileStrings.end() );
     m_checkedFileStrings.emplace( str );
     auto file = GetString( str );
-    if( SourceFileValid( file, GetCaptureTime() ) )
+    // Possible duplication of pointer and index strings
+    if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
     {
-        // Possible duplication of pointer and index strings
-        if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
+        if( SourceFileValid( file, GetCaptureTime() ) )
         {
             FILE* f = fopen( file, "rb" );
             fseek( f, 0, SEEK_END );

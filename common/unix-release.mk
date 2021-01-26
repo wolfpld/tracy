@@ -2,6 +2,8 @@ ARCH := $(shell uname -m)
 
 ifeq (0,$(shell $(CC) --version | grep clang && echo 1 || echo 0))
 CFLAGS += -s
+else
+LDFLAGS := -s
 endif
 
 ifeq ($(ARCH),aarch64)

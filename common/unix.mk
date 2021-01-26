@@ -55,10 +55,10 @@ $(OBJDIR)/%.d : %.m
 
 ifeq (yes,$(SHARED_LIBRARY))
 $(IMAGE): $(OBJ) $(OBJ2)
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(LIBS) -shared -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(LIBS) -shared -o $@
 else
 $(IMAGE): $(OBJ) $(OBJ2) $(OBJ3)
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(OBJ3) $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(OBJ3) $(LIBS) -o $@
 endif
 
 ifneq "$(MAKECMDGOALS)" "clean"

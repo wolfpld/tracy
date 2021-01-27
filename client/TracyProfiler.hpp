@@ -291,7 +291,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+        if( callstack != 0 )
+        {
+            InitRPMallocThread();
+            tracy::GetProfiler().SendCallstack( callstack );
+        }
 
         TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         auto ptr = (char*)tracy_malloc( size );
@@ -307,7 +311,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+        if( callstack != 0 )
+        {
+            InitRPMallocThread();
+            tracy::GetProfiler().SendCallstack( callstack );
+        }
 
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->messageLiteral.time, GetTime() );
@@ -321,7 +329,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+        if( callstack != 0 )
+        {
+            InitRPMallocThread();
+            tracy::GetProfiler().SendCallstack( callstack );
+        }
 
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         auto ptr = (char*)tracy_malloc( size );
@@ -340,7 +352,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
+        if( callstack != 0 )
+        {
+            InitRPMallocThread();
+            tracy::GetProfiler().SendCallstack( callstack );
+        }
 
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColorLiteral.time, GetTime() );

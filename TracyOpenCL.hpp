@@ -64,6 +64,7 @@ namespace tracy {
             , m_head(0)
             , m_tail(0)
         {
+            int64_t tcpu, tgpu;
             assert(m_contextId != 255);
 
             cl_int err = CL_SUCCESS;
@@ -77,14 +78,14 @@ namespace tracy {
             assert(err == CL_SUCCESS);
             err = clWaitForEvents(1, &writeBufferEvent);
 
-            m_hostStartTime = Profiler::GetTime();
+            tcpu = Profiler::GetTime();
 
             assert(err == CL_SUCCESS);
             cl_int eventStatus;
             err = clGetEventInfo(writeBufferEvent, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &eventStatus, nullptr);
             assert(err == CL_SUCCESS);
             assert(eventStatus == CL_COMPLETE);
-            err = clGetEventProfilingInfo(writeBufferEvent, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &m_deviceStartTime, nullptr);
+            err = clGetEventProfilingInfo(writeBufferEvent, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &tgpu, nullptr);
             assert(err == CL_SUCCESS);
             err = clReleaseEvent(writeBufferEvent);
             assert(err == CL_SUCCESS);
@@ -95,8 +96,8 @@ namespace tracy {
 
             auto item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
-            MemWrite(&item->gpuNewContext.cpuTime, m_hostStartTime);
-            MemWrite(&item->gpuNewContext.gpuTime, m_deviceStartTime);
+            MemWrite(&item->gpuNewContext.cpuTime, tcpu);
+            MemWrite(&item->gpuNewContext.gpuTime, tgpu);
             memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
             MemWrite(&item->gpuNewContext.period, 1.0f);
             MemWrite(&item->gpuNewContext.type, GpuContextType::OpenCL);
@@ -178,15 +179,6 @@ namespace tracy {
         }
 
     private:
-        tracy_force_inline int64_t GetHostStartTime() const
-        {
-            return m_hostStartTime;
-        }
-
-        tracy_force_inline int64_t GetDeviceStartTime() const
-        {
-            return m_deviceStartTime;
-        }
 
         unsigned int m_contextId;
 
@@ -194,8 +186,6 @@ namespace tracy {
         unsigned int m_head;
         unsigned int m_tail;
 
-        int64_t m_hostStartTime;
-        int64_t m_deviceStartTime;
     };
 
     class OpenCLCtxScope {

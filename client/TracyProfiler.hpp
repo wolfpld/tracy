@@ -30,7 +30,7 @@
 #endif
 
 #if !defined TRACY_HW_TIMER
-  #include <chrono>
+#  include <chrono>
 #endif
 
 #ifndef TracyConcat

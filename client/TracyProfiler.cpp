@@ -225,7 +225,7 @@ static void InitFailure( const char* msg )
 
 static int64_t SetupHwTimer()
 {
-#ifndef TRACY_TIMER_QPC
+#if !defined TRACY_TIMER_QPC && !defined TRACY_TIMER_FALLBACK
     uint32_t regs[4];
     CpuId( regs, 1 );
     if( !( regs[3] & ( 1 << 4 ) ) ) InitFailure( "CPU doesn't support RDTSC instruction." );

@@ -7389,19 +7389,17 @@ void Worker::CacheSource( const StringRef& str )
     m_checkedFileStrings.emplace( str );
     auto file = GetString( str );
     // Possible duplication of pointer and index strings
-    if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
+    if( m_data.sourceFileCache.find( file ) != m_data.sourceFileCache.end() ) return;
+    if( SourceFileValid( file, GetCaptureTime() ) )
     {
-        if( SourceFileValid( file, GetCaptureTime() ) )
-        {
-            FILE* f = fopen( file, "rb" );
-            fseek( f, 0, SEEK_END );
-            const auto sz = ftell( f );
-            fseek( f, 0, SEEK_SET );
-            auto src = (char*)m_slab.AllocBig( sz );
-            fread( src, 1, sz, f );
-            fclose( f );
-            m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
-        }
+        FILE* f = fopen( file, "rb" );
+        fseek( f, 0, SEEK_END );
+        const auto sz = ftell( f );
+        fseek( f, 0, SEEK_SET );
+        auto src = (char*)m_slab.AllocBig( sz );
+        fread( src, 1, sz, f );
+        fclose( f );
+        m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
     }
 }
 

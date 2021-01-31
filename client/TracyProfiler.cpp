@@ -278,6 +278,19 @@ static const char* GetProcessName()
     return processName;
 }
 
+static const char* GetProcessExecutablePath()
+{
+#ifdef _WIN32
+    static char buf[_MAX_PATH];
+    GetModuleFileNameA( nullptr, buf, _MAX_PATH );
+    return buf;
+#elif defined _GNU_SOURCE || defined __CYGWIN__
+    return program_invocation_name;
+#else
+    return nullptr;
+#endif
+}
+
 #if defined __linux__ && defined __ARM_ARCH
 static uint32_t GetHex( char*& ptr, int skip )
 {

@@ -6,7 +6,7 @@
 #define TracyD3D12Context(device, queue) nullptr
 #define TracyD3D12Destroy(ctx)
 
-#define TracyD3D12NewFrame(ctx) 
+#define TracyD3D12NewFrame(ctx)
 
 #define TracyD3D12Zone(ctx, cmdList, name)
 #define TracyD3D12ZoneC(ctx, cmdList, name, color)
@@ -65,7 +65,7 @@ namespace tracy
 		uint8_t m_context;
 		Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_queryHeap;
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_readbackBuffer;
-		
+
 		// In-progress payload.
 		uint32_t m_queryLimit = MaxQueries;
 		uint32_t m_queryCounter = 0;

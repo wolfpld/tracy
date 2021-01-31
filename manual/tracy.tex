@@ -1337,7 +1337,7 @@ To fix such issues, add a nested scope, encompassing the command buffer recordin
 
 \subsubsection{OpenGL}
 
-You will need to include the \texttt{tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration.
+You will need to include the \texttt{tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
 
 To mark a GPU zone use the \texttt{TracyGpuZone(name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyGpuZoneC(name, color)} to specify zone color.
 
@@ -1358,7 +1358,7 @@ logo=\bcattention
 
 \subsubsection{Vulkan}
 
-Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts.
+Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts. To set a custom name for the context, use the \texttt{TracyVkContextName(ctx, name, size)} macro.
 
 The physical device, logical device, queue and command buffer must relate with each other. The queue must support graphics or compute operations. The command buffer must be in the initial state and be able to be reset. It will be rerecorded and submitted to the queue multiple times and it will be in the executable state on exit from the initialization function.
 
@@ -1374,7 +1374,7 @@ To enable calibrated context, replace the macro \texttt{TracyVkContext} with \te
 
 \subsubsection{Direct3D 12}
 
-To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type.
+To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type. To set a custom name for the context, use the \texttt{TracyD3D12ContextName(ctx, name, size)} macro.
 
 The queue must have been created through the specified device, however a command list is not needed for this stage.
 
@@ -1388,7 +1388,7 @@ Direct3D 12 contexts are always calibrated.
 
 \subsubsection{OpenCL}
 
-OpenCL support is achieved by including the \texttt{tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application.
+OpenCL support is achieved by including the \texttt{tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application. To set a custom name for the context, use the \texttt{TracyCLContextName(ctx, name, size)} macro.
 
 To mark an OpenCL zone one must make sure that a valid OpenCL \texttt{cl\_event} object is available. The event will be the object that Tracy will use to query profiling information from the OpenCL driver. For this to work, all OpenCL queues must be created with the \texttt{CL\_QUEUE\_PROFILING\_ENABLE} property.
 

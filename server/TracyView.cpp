@@ -4136,6 +4136,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), col );
                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), outline, 0.f, -1 );
 
+                auto origSymName = symName;
                 if( tsz.x > zsz )
                 {
                     symName = ShortenNamespace( symName );
@@ -4173,7 +4174,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     ImGui::BeginTooltip();
                     TextDisabledUnformatted( ICON_FA_GHOST " Ghost zone" );
                     ImGui::Separator();
-                    ImGui::TextUnformatted( symName );
+                    ImGui::TextUnformatted( origSymName );
                     if( isInline )
                     {
                         ImGui::SameLine();

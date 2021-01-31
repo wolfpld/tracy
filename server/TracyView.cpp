@@ -8458,6 +8458,12 @@ void View::DrawOptions()
                 {
                     ImGui::TextDisabled( "%s threads", RealToString( gpuData[i]->threadData.size() ) );
                 }
+                if( gpuData[i]->name.Active() )
+                {
+                    ImGui::PushFont( m_smallFont );
+                    TextFocused( "Name:", m_worker.GetString( gpuData[i]->name ) );
+                    ImGui::PopFont();
+                }
                 if( !gpuData[i]->hasCalibration )
                 {
                     ImGui::TreePush();

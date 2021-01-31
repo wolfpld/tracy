@@ -2921,11 +2921,23 @@ void View::DrawZones()
 
                 const bool isMultithreaded = (v->type == GpuContextType::Vulkan) || (v->type == GpuContextType::OpenCL) || (v->type == GpuContextType::Direct3D12);
 
+                float boxwidth;
                 char buf[64];
                 sprintf( buf, "%s context %zu", GpuContextNames[(int)v->type], i );
-                DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+                if( v->name.Active() )
+                {
+                    char tmp[4096];
+                    sprintf( tmp, "%s: %s", buf, m_worker.GetString( v->name ) );
+                    DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, tmp );
+                    boxwidth = ImGui::CalcTextSize( tmp ).x;
+                }
+                else
+                {
+                    DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+                    boxwidth = ImGui::CalcTextSize( buf ).x;
+                }
 
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, oldOffset + ty ) ) )
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + boxwidth, oldOffset + ty ) ) )
                 {
                     if( IsMouseClicked( 0 ) )
                     {
@@ -2961,6 +2973,7 @@ void View::DrawZones()
 
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( buf );
+                    if( v->name.Active() ) TextFocused( "Name:", m_worker.GetString( v->name ) );
                     ImGui::Separator();
                     if( !isMultithreaded )
                     {

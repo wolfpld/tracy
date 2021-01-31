@@ -404,6 +404,7 @@ public:
     const std::string& GetCaptureName() const { return m_captureName; }
     const std::string& GetCaptureProgram() const { return m_captureProgram; }
     uint64_t GetCaptureTime() const { return m_captureTime; }
+    uint64_t GetExecutableTime() const { return m_executableTime; }
     const std::string& GetHostInfo() const { return m_hostInfo; }
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }

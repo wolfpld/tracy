@@ -1,5 +1,5 @@
 /* posix.c -- POSIX file I/O routines for the backtrace library.
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+   Copyright (C) 2012-2021 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,9 @@ backtrace_open (const char *filename, backtrace_error_callback error_callback,
   if (descriptor < 0)
     {
       /* If DOES_NOT_EXIST is not NULL, then don't call ERROR_CALLBACK
-        if the file does not exist.  We treat lacking permission to
-        open the file as the file not existing; this case arises when
-        running the libgo syscall package tests as root.  */
+	 if the file does not exist.  We treat lacking permission to
+	 open the file as the file not existing; this case arises when
+	 running the libgo syscall package tests as root.  */
       if (does_not_exist != NULL && (errno == ENOENT || errno == EACCES))
 	*does_not_exist = 1;
       else

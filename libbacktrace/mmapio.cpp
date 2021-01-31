@@ -1,5 +1,5 @@
 /* mmapio.c -- File views using mmap.
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+   Copyright (C) 2012-2021 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,10 @@ POSSIBILITY OF SUCH DAMAGE.  */
 
 #include "backtrace.hpp"
 #include "internal.hpp"
+
+#ifndef HAVE_DECL_GETPAGESIZE
+extern int getpagesize (void);
+#endif
 
 #ifndef MAP_FAILED
 #define MAP_FAILED ((void *)-1)
@@ -101,10 +105,10 @@ backtrace_release_view (struct backtrace_state *state ATTRIBUTE_UNUSED,
   union {
     const void *cv;
     void *v;
-  };
+  } cc;
 
-  cv = view->base;
-  if (munmap (v, view->len) < 0)
+  cc.cv = view->base;
+  if (munmap (cc.v, view->len) < 0)
     error_callback (data, "munmap", errno);
 }
 

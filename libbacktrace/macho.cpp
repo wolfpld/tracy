@@ -1,5 +1,5 @@
 /* elf.c -- Get debug data from a Mach-O file for backtraces.
-   Copyright (C) 2020 Free Software Foundation, Inc.
+   Copyright (C) 2020-2021 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -78,7 +78,7 @@ struct macho_header_64
 
 struct macho_header_fat
 {
-  uint32_t magic;	/* Magic number (MACH_O_MH_MAGIC_FAT) */
+  uint32_t magic;	/* Magic number (MACH_O_MH_(MAGIC|CIGAM)_FAT(_64)?) */
   uint32_t nfat_arch;   /* Number of components */
 };
 
@@ -88,6 +88,8 @@ struct macho_header_fat
 #define MACH_O_MH_MAGIC_64	0xfeedfacf
 #define MACH_O_MH_MAGIC_FAT	0xcafebabe
 #define MACH_O_MH_CIGAM_FAT	0xbebafeca
+#define MACH_O_MH_MAGIC_FAT_64	0xcafebabf
+#define MACH_O_MH_CIGAM_FAT_64	0xbfbafeca
 
 /* Value for the header filetype field.  */
 
@@ -108,6 +110,20 @@ struct macho_fat_arch
   uint32_t align;	/* Alignment of this entry */
 };
 
+/* A component of a 64-bit fat file.  This is used if the magic field
+   is MAGIC_FAT_64.  This is only used when some file size or file
+   offset is too large to represent in the 32-bit format.  */
+
+struct macho_fat_arch_64
+{
+  uint32_t cputype;	/* CPU type */
+  uint32_t cpusubtype;	/* CPU subtype */
+  uint64_t offset;	/* File offset of this entry */
+  uint64_t size;	/* Size of this entry */
+  uint32_t align;	/* Alignment of this entry */
+  uint32_t reserved;	/* Reserved */
+};
+
 /* Values for the fat_arch cputype field (and the header cputype
    field).  */
 
@@ -115,9 +131,11 @@ struct macho_fat_arch
 
 #define MACH_O_CPU_TYPE_X86 7
 #define MACH_O_CPU_TYPE_ARM 12
+#define MACH_O_CPU_TYPE_PPC 18
 
 #define MACH_O_CPU_TYPE_X86_64 (MACH_O_CPU_TYPE_X86 | MACH_O_CPU_ARCH_ABI64)
 #define MACH_O_CPU_TYPE_ARM64  (MACH_O_CPU_TYPE_ARM | MACH_O_CPU_ARCH_ABI64)
+#define MACH_O_CPU_TYPE_PPC64  (MACH_O_CPU_TYPE_PPC | MACH_O_CPU_ARCH_ABI64)
 
 /* The header of a load command.  */
 
@@ -743,14 +761,14 @@ static int
 macho_add_fat (struct backtrace_state *state, const char *filename,
 	       int descriptor, int swapped, off_t offset,
 	       const unsigned char *match_uuid, uintptr_t base_address,
-	       int skip_symtab, uint32_t nfat_arch,
+	       int skip_symtab, uint32_t nfat_arch, int is_64,
 	       backtrace_error_callback error_callback, void *data,
 	       fileline *fileline_fn, int *found_sym)
 {
   int arch_view_valid;
   unsigned int cputype;
+  size_t arch_size;
   struct backtrace_view arch_view;
-  size_t archoffset;
   unsigned int i;
 
   arch_view_valid = 0;
@@ -763,46 +781,69 @@ macho_add_fat (struct backtrace_state *state, const char *filename,
   cputype = MACH_O_CPU_TYPE_ARM64;
 #elif defined (__arm__)
   cputype = MACH_O_CPU_TYPE_ARM;
+#elif defined (__ppc__)
+  cputype = MACH_O_CPU_TYPE_PPC;
+#elif defined (__ppc64__)
+  cputype = MACH_O_CPU_TYPE_PPC64;
 #else
   error_callback (data, "unknown Mach-O architecture", 0);
   goto fail;
 #endif
 
+  if (is_64)
+    arch_size = sizeof (struct macho_fat_arch_64);
+  else
+    arch_size = sizeof (struct macho_fat_arch);
+
   if (!backtrace_get_view (state, descriptor, offset,
-			   nfat_arch * sizeof (struct macho_fat_arch),
+			   nfat_arch * arch_size,
 			   error_callback, data, &arch_view))
     goto fail;
 
-  archoffset = 0;
   for (i = 0; i < nfat_arch; ++i)
     {
-      struct macho_fat_arch fat_arch;
       uint32_t fcputype;
+      uint64_t foffset;
 
-      memcpy (&fat_arch,
-	      ((const char *) arch_view.data
-	       + i * sizeof (struct macho_fat_arch)),
-	      sizeof fat_arch);
+      if (is_64)
+	{
+	  struct macho_fat_arch_64 fat_arch_64;
 
-      fcputype = fat_arch.cputype;
-      if (swapped)
-	fcputype = __builtin_bswap32 (fcputype);
+	  memcpy (&fat_arch_64,
+		  (const char *) arch_view.data + i * arch_size,
+		  arch_size);
+	  fcputype = fat_arch_64.cputype;
+	  foffset = fat_arch_64.offset;
+	  if (swapped)
+	    {
+	      fcputype = __builtin_bswap32 (fcputype);
+	      foffset = __builtin_bswap64 (foffset);
+	    }
+	}
+      else
+	{
+	  struct macho_fat_arch fat_arch_32;
+
+	  memcpy (&fat_arch_32,
+		  (const char *) arch_view.data + i * arch_size,
+		  arch_size);
+	  fcputype = fat_arch_32.cputype;
+	  foffset = (uint64_t) fat_arch_32.offset;
+	  if (swapped)
+	    {
+	      fcputype = __builtin_bswap32 (fcputype);
+	      foffset = (uint64_t) __builtin_bswap32 ((uint32_t) foffset);
+	    }
+	}
 
       if (fcputype == cputype)
 	{
-	  uint32_t foffset;
-
 	  /* FIXME: What about cpusubtype?  */
-	  foffset = fat_arch.offset;
-	  if (swapped)
-	    foffset = __builtin_bswap32 (foffset);
 	  backtrace_release_view (state, &arch_view, error_callback, data);
 	  return macho_add (state, filename, descriptor, foffset, match_uuid,
 			    base_address, skip_symtab, error_callback, data,
 			    fileline_fn, found_sym);
 	}
-
-      archoffset += sizeof (struct macho_fat_arch);
     }
 
   error_callback (data, "could not find executable in fat file", 0);
@@ -871,6 +912,7 @@ macho_add_dsym (struct backtrace_state *state, const char *filename,
   dsymsuffixdirlen = strlen (dsymsuffixdir);
 
   dsymlen = (dirnamelen
+	     + 1
 	     + basenamelen
 	     + dsymsuffixdirlen
 	     + basenamelen
@@ -893,7 +935,7 @@ macho_add_dsym (struct backtrace_state *state, const char *filename,
 
   if (diralc != NULL)
     {
-      backtrace_free (state, diralc, dirnamelen, error_callback, data);
+      backtrace_free (state, diralc, dirnamelen + 1, error_callback, data);
       diralc = NULL;
     }
 
@@ -983,6 +1025,7 @@ macho_add (struct backtrace_state *state, const char *filename, int descriptor,
       hdroffset = offset + sizeof (struct macho_header_64);
       break;
     case MACH_O_MH_MAGIC_FAT:
+    case MACH_O_MH_MAGIC_FAT_64:
       {
 	struct macho_header_fat fat_header;
 
@@ -990,10 +1033,12 @@ macho_add (struct backtrace_state *state, const char *filename, int descriptor,
 	memcpy (&fat_header, &header, sizeof fat_header);
 	return macho_add_fat (state, filename, descriptor, 0, hdroffset,
 			      match_uuid, base_address, skip_symtab,
-			      fat_header.nfat_arch, error_callback, data,
-			      fileline_fn, found_sym);
+			      fat_header.nfat_arch,
+			      header.magic == MACH_O_MH_MAGIC_FAT_64,
+			      error_callback, data, fileline_fn, found_sym);
       }
     case MACH_O_MH_CIGAM_FAT:
+    case MACH_O_MH_CIGAM_FAT_64:
       {
 	struct macho_header_fat fat_header;
 	uint32_t nfat_arch;
@@ -1003,8 +1048,9 @@ macho_add (struct backtrace_state *state, const char *filename, int descriptor,
 	nfat_arch = __builtin_bswap32 (fat_header.nfat_arch);
 	return macho_add_fat (state, filename, descriptor, 1, hdroffset,
 			      match_uuid, base_address, skip_symtab,
-			      nfat_arch, error_callback, data,
-			      fileline_fn, found_sym);
+			      nfat_arch,
+			      header.magic == MACH_O_MH_CIGAM_FAT_64,
+			      error_callback, data, fileline_fn, found_sym);
       }
     default:
       error_callback (data, "executable file is not in Mach-O format", 0);

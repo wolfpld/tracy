@@ -1,5 +1,5 @@
 /* internal.h -- Internal header file for stack backtrace library.
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+   Copyright (C) 2012-2021 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,8 @@ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.  */
 
-#ifndef TRACY_BACKTRACE_INTERNAL_H
-#define TRACY_BACKTRACE_INTERNAL_H
+#ifndef BACKTRACE_INTERNAL_H
+#define BACKTRACE_INTERNAL_H
 
 /* We assume that <sys/types.h> and "backtrace.h" have already been
    included.  */
@@ -53,6 +53,14 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #  define ATTRIBUTE_MALLOC __attribute__ ((__malloc__))
 # else
 #  define ATTRIBUTE_MALLOC
+# endif
+#endif
+
+#ifndef ATTRIBUTE_FALLTHROUGH
+# if (GCC_VERSION >= 7000)
+#  define ATTRIBUTE_FALLTHROUGH __attribute__ ((__fallthrough__))
+# else
+#  define ATTRIBUTE_FALLTHROUGH
 # endif
 #endif
 
@@ -329,6 +337,31 @@ extern int backtrace_dwarf_add (struct backtrace_state *state,
 				void *data, fileline *fileline_fn,
 				struct dwarf_data **fileline_entry);
 
+/* A data structure to pass to backtrace_syminfo_to_full.  */
+
+struct backtrace_call_full
+{
+  backtrace_full_callback full_callback;
+  backtrace_error_callback full_error_callback;
+  void *full_data;
+  int ret;
+};
+
+/* A backtrace_syminfo_callback that can call into a
+   backtrace_full_callback, used when we have a symbol table but no
+   debug info.  */
+
+extern void backtrace_syminfo_to_full_callback (void *data, uintptr_t pc,
+						const char *symname,
+						uintptr_t symval,
+						uintptr_t symsize);
+
+/* An error callback that corresponds to
+   backtrace_syminfo_to_full_callback.  */
+
+extern void backtrace_syminfo_to_full_error_callback (void *, const char *,
+						      int);
+
 /* A test-only hook for elf_uncompress_zdebug.  */
 
 extern int backtrace_uncompress_zdebug (struct backtrace_state *,
@@ -337,6 +370,15 @@ extern int backtrace_uncompress_zdebug (struct backtrace_state *,
 					backtrace_error_callback, void *data,
 					unsigned char **uncompressed,
 					size_t *uncompressed_size);
+
+/* A test-only hook for elf_uncompress_lzma.  */
+
+extern int backtrace_uncompress_lzma (struct backtrace_state *,
+				      const unsigned char *compressed,
+				      size_t compressed_size,
+				      backtrace_error_callback, void *data,
+				      unsigned char **uncompressed,
+				      size_t *uncompressed_size);
 
 }
 

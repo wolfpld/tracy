@@ -39,6 +39,7 @@
 
 #if defined __APPLE__
 #  include "TargetConditionals.h"
+#  include <mach-o/dyld.h>
 #endif
 
 #ifdef __ANDROID__
@@ -287,6 +288,11 @@ static const char* GetProcessExecutablePath()
     return buf;
 #elif defined _GNU_SOURCE || defined __CYGWIN__
     return program_invocation_name;
+#elif defined __APPLE__
+    static char buf[1024];
+    uint32_t size = 1024;
+    _NSGetExecutablePath( buf, &size );
+    return buf;
 #else
     return nullptr;
 #endif

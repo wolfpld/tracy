@@ -293,6 +293,24 @@ static const char* GetProcessExecutablePath()
     uint32_t size = 1024;
     _NSGetExecutablePath( buf, &size );
     return buf;
+#elif defined __DragonFly__
+    static char buf[1024];
+    readlink( "/proc/curproc/file", buf, 1024 );
+    return buf;
+#elif defined __FreeBSD__
+    static char buf[1024];
+    int mib[4];
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_PROC;
+    mib[2] = KERN_PROC_PATHNAME;
+    mib[3] = -1;
+    size_t cb = 1024;
+    sysctl( mib, 4, buf, &cb, nullptr, 0 );
+    return buf;
+#elif defined __NetBSD__
+    static char buf[1024];
+    readlink( "/proc/curproc/exe", buf, 1024 );
+    return buf;
 #else
     return nullptr;
 #endif

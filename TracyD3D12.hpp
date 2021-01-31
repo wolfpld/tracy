@@ -5,6 +5,7 @@
 
 #define TracyD3D12Context(device, queue) nullptr
 #define TracyD3D12Destroy(ctx)
+#define TracyD3D12ContextName(ctx, name, size)
 
 #define TracyD3D12NewFrame(ctx)
 
@@ -190,6 +191,22 @@ namespace tracy
 			}
 
 			m_queue->Signal(m_payloadFence.Get(), ++m_activePayload);
+		}
+
+		void Name( const char* name, uint16_t len )
+		{
+			auto ptr = (char*)tracy_malloc( len );
+			memcpy( ptr, name, len );
+
+			auto item = Profiler::QueueSerial();
+			MemWrite( &item->hdr.type, QueueType::GpuContextName );
+			MemWrite( &item->gpuContextNameFat.context, m_context );
+			MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
+			MemWrite( &item->gpuContextNameFat.size, len );
+#ifdef TRACY_ON_DEMAND
+			GetProfiler().DeferItem( *item );
+#endif
+			Profiler::QueueSerialFinish();
 		}
 
 		void Collect()
@@ -454,6 +471,7 @@ using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 
 #define TracyD3D12Context(device, queue) tracy::CreateD3D12Context(device, queue);
 #define TracyD3D12Destroy(ctx) tracy::DestroyD3D12Context(ctx);
+#define TracyD3D12ContextName(ctx, name, size) ctx->Name(name, size);
 
 #define TracyD3D12NewFrame(ctx) ctx->NewFrame();
 

@@ -6,6 +6,7 @@
 #define TracyVkContext(x,y,z,w) nullptr
 #define TracyVkContextCalibrated(x,y,z,w,a,b) nullptr
 #define TracyVkDestroy(x)
+#define TracyVkContextName(c,x,y)
 #define TracyVkNamedZone(c,x,y,z,w)
 #define TracyVkNamedZoneC(c,x,y,z,w,a)
 #define TracyVkZone(c,x,y)
@@ -177,6 +178,22 @@ public:
     {
         tracy_free( m_res );
         vkDestroyQueryPool( m_device, m_query, nullptr );
+    }
+
+    void Name( const char* name, uint16_t len )
+    {
+        auto ptr = (char*)tracy_malloc( len );
+        memcpy( ptr, name, len );
+
+        auto item = Profiler::QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::GpuContextName );
+        MemWrite( &item->gpuContextNameFat.context, m_context );
+        MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
+        MemWrite( &item->gpuContextNameFat.size, len );
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+        Profiler::QueueSerialFinish();
     }
 
     void Collect( VkCommandBuffer cmdbuf )
@@ -448,6 +465,7 @@ using TracyVkCtx = tracy::VkCtx*;
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, nullptr, nullptr );
 #define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );
+#define TracyVkContextName( ctx, name, size ) ctx->Name( name, size );
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyVkNamedZone( ctx, varname, cmdbuf, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );
 #  define TracyVkNamedZoneC( ctx, varname, cmdbuf, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );

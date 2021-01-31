@@ -5,6 +5,7 @@
 
 #define TracyCLContext(c, x) nullptr
 #define TracyCLDestroy(c)
+#define TracyCLContextName(c, x, y)
 
 #define TracyCLNamedZone(c, x, y, z)
 #define TracyCLNamedZoneC(c, x, y, z, w)
@@ -105,6 +106,22 @@ namespace tracy {
             MemWrite(&item->gpuNewContext.flags, (uint8_t)0);
 #ifdef TRACY_ON_DEMAND
             GetProfiler().DeferItem(*item);
+#endif
+            Profiler::QueueSerialFinish();
+        }
+
+        void Name( const char* name, uint16_t len )
+        {
+            auto ptr = (char*)tracy_malloc( len );
+            memcpy( ptr, name, len );
+
+            auto item = Profiler::QueueSerial();
+            MemWrite( &item->hdr.type, QueueType::GpuContextName );
+            MemWrite( &item->gpuContextNameFat.context, (uint8_t)m_contextId );
+            MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
+            MemWrite( &item->gpuContextNameFat.size, len );
+#ifdef TRACY_ON_DEMAND
+            GetProfiler().DeferItem( *item );
 #endif
             Profiler::QueueSerialFinish();
         }
@@ -287,6 +304,7 @@ using TracyCLCtx = tracy::OpenCLCtx*;
 
 #define TracyCLContext(context, device) tracy::CreateCLContext(context, device);
 #define TracyCLDestroy(ctx) tracy::DestroyCLContext(ctx);
+#define TracyCLContextName(context, name, size) ctx->Name(name, size);
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyCLNamedZone(ctx, varname, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 }; tracy::OpenCLCtxScope varname(ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );
 #  define TracyCLNamedZoneC(ctx, varname, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, color }; tracy::OpenCLCtxScope varname(ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );

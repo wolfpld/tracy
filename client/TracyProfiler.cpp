@@ -1332,6 +1332,7 @@ void Profiler::Worker()
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
+    MemWrite( &welcome.exectime, m_exectime );
     MemWrite( &welcome.pid, pid );
     MemWrite( &welcome.samplingPeriod, m_samplingPeriod );
     MemWrite( &welcome.onDemand, onDemand );

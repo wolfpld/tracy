@@ -841,6 +841,7 @@ private:
     std::string m_captureName;
     std::string m_captureProgram;
     uint64_t m_captureTime;
+    uint64_t m_executableTime;
     std::string m_hostInfo;
     uint64_t m_pid;
     int64_t m_samplingPeriod;

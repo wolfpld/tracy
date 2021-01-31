@@ -282,6 +282,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_captureName( name )
     , m_captureProgram( program )
     , m_captureTime( 0 )
+    , m_executableTime( 0 )
     , m_pid( 0 )
     , m_samplingPeriod( 0 )
     , m_stream( nullptr )
@@ -533,6 +534,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         f.Read( tmp, sz );
         m_captureProgram = std::string( tmp, tmp+sz );
         f.Read( m_captureTime );
+    }
+    if( fileVer >= FileVersion( 0, 7, 6 ) )
+    {
+        f.Read( m_executableTime );
+    }
+    else
+    {
+        m_executableTime = 0;
     }
     {
         f.Read( sz );
@@ -2699,6 +2708,7 @@ void Worker::Exec()
         m_onDemand = welcome.onDemand;
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;
+        m_executableTime = welcome.exectime;
         m_ignoreMemFreeFaults = welcome.onDemand || welcome.isApple;
         m_data.cpuArch = (CpuArchitecture)welcome.cpuArch;
         m_codeTransfer = welcome.codeTransfer;
@@ -6774,6 +6784,7 @@ void Worker::Write( FileWrite& f )
     f.Write( m_captureProgram.c_str(), sz );
 
     f.Write( &m_captureTime, sizeof( m_captureTime ) );
+    f.Write( &m_executableTime, sizeof( m_executableTime ) );
 
     sz = m_hostInfo.size();
     f.Write( &sz, sizeof( sz ) );

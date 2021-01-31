@@ -13606,6 +13606,15 @@ void View::DrawInfo()
     if( m_bigFont ) ImGui::PushFont( m_bigFont );
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     if( m_bigFont ) ImGui::PopFont();
+    const auto exectime = m_worker.GetExecutableTime();
+    if( exectime != 0 )
+    {
+        char etmp[64];
+        time_t et = exectime;
+        auto elt = localtime( &et );
+        strftime( etmp, 64, "%F %T", elt );
+        TextFocused( "Build time:", etmp );
+    }
     TextFocused( "Capture time:", dtmp );
     if( !m_filename.empty() )
     {

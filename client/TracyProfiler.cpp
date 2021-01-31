@@ -57,6 +57,7 @@
 #include <new>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <thread>
 
 #include "../common/TracyAlign.hpp"
@@ -1259,6 +1260,17 @@ void Profiler::Worker()
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     rpmalloc_thread_initialize();
+
+    m_exectime = 0;
+    const auto execname = GetProcessExecutablePath();
+    if( execname )
+    {
+        struct stat st;
+        if( stat( execname, &st ) == 0 )
+        {
+            m_exectime = (uint64_t)st.st_mtime;
+        }
+    }
 
     const auto procname = GetProcessName();
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );

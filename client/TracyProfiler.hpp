@@ -759,7 +759,7 @@ private:
     uint64_t m_delay;
     std::atomic<int64_t> m_timeBegin;
     uint64_t m_mainThread;
-    uint64_t m_epoch;
+    uint64_t m_epoch, m_exectime;
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_shutdownManual;
     std::atomic<bool> m_shutdownFinished;

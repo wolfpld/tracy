@@ -1828,9 +1828,14 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.lockNameFat.name );
         tracy_free( (void*)ptr );
         break;
+    case QueueType::GpuContextName:
+        ptr = MemRead<uint64_t>( &item.gpuContextNameFat.ptr );
+        tracy_free( (void*)ptr );
+        break;
 #endif
 #ifdef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
+    case QueueType::GpuContextName:
         // Don't free memory associated with deferred messages.
         break;
 #endif
@@ -2027,6 +2032,16 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         int64_t dt = t - refThread;
                         refThread = t;
                         MemWrite( &item->gpuZoneEnd.cpuTime, dt );
+                        break;
+                    }
+                    case QueueType::GpuContextName:
+                    {
+                        ptr = MemRead<uint64_t>( &item->gpuContextNameFat.ptr );
+                        uint16_t size = MemRead<uint16_t>( &item->gpuContextNameFat.size );
+                        SendSingleString( (const char*)ptr, size );
+#ifndef TRACY_ON_DEMAND
+                        tracy_free( (void*)ptr );
+#endif
                         break;
                     }
                     case QueueType::PlotData:
@@ -2277,6 +2292,16 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     int64_t dt = t - refGpu;
                     refGpu = t;
                     MemWrite( &item->gpuTime.gpuTime, dt );
+                    break;
+                }
+                case QueueType::GpuContextName:
+                {
+                    ptr = MemRead<uint64_t>( &item->gpuContextNameFat.ptr );
+                    uint16_t size = MemRead<uint16_t>( &item->gpuContextNameFat.size );
+                    SendSingleString( (const char*)ptr, size );
+#ifndef TRACY_ON_DEMAND
+                    tracy_free( (void*)ptr );
+#endif
                     break;
                 }
                 default:

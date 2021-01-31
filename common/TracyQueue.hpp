@@ -54,6 +54,7 @@ enum class QueueType : uint8_t
     ContextSwitch,
     ThreadWakeup,
     GpuTime,
+    GpuContextName,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -357,6 +358,17 @@ struct QueueGpuCalibration
     uint8_t context;
 };
 
+struct QueueGpuContextName
+{
+    uint8_t context;
+};
+
+struct QueueGpuContextNameFat : public QueueGpuContextName
+{
+    uint64_t ptr;
+    uint16_t size;
+};
+
 struct QueueMemNamePayload
 {
     uint64_t name;
@@ -534,6 +546,8 @@ struct QueueItem
         QueueGpuZoneEnd gpuZoneEnd;
         QueueGpuTime gpuTime;
         QueueGpuCalibration gpuCalibration;
+        QueueGpuContextName gpuContextName;
+        QueueGpuContextNameFat gpuContextNameFat;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
         QueueMemNamePayload memName;
@@ -607,6 +621,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuContextName ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

@@ -25,6 +25,7 @@ v0.x.x (xxxx-xx-xx)
   - Adds fallback to ELF symbol table if no debug info is available.
   - Various other fixes.
 - Store build time of profiled program in captures.
+- GPU contexts can be now named.
 
 
 v0.7.5 (2021-01-23)

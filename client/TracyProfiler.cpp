@@ -286,6 +286,8 @@ static const char* GetProcessExecutablePath()
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
     return buf;
+#elif defined __ANDROID__
+    return nullptr;
 #elif defined _GNU_SOURCE || defined __CYGWIN__
     return program_invocation_name;
 #elif defined __APPLE__

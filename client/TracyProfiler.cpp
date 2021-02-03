@@ -569,6 +569,12 @@ static uint64_t GetPid()
 #endif
 }
 
+static void AckServerQuery()
+{
+    TracyLfqPrepare( QueueType::AckServerQueryNoop );
+    TracyLfqCommit;
+}
+
 static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len, int port )
 {
     static BroadcastMessage msg;
@@ -3009,8 +3015,7 @@ void Profiler::HandleParameter( uint64_t payload )
     const auto idx = uint32_t( payload >> 32 );
     const auto val = int32_t( payload & 0xFFFFFFFF );
     m_paramCallback( idx, val );
-    TracyLfqPrepare( QueueType::AckServerQueryNoop );
-    TracyLfqCommit;
+    AckServerQuery();
 }
 
 #ifdef __ANDROID__

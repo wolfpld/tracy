@@ -26,6 +26,7 @@ v0.x.x (xxxx-xx-xx)
   - Various other fixes.
 - Store build time of profiled program in captures.
 - GPU contexts can be now named.
+- Implemented client -> server source code transfer.
 
 
 v0.7.5 (2021-01-23)

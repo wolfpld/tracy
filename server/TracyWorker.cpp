@@ -3062,7 +3062,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 break;
             case QueueType::SymbolInformation:
             case QueueType::CodeInformation:
-            case QueueType::ParamPingback:
+            case QueueType::AckServerQueryNoop:
                 m_serverQuerySpaceLeft++;
                 break;
             default:
@@ -4343,7 +4343,7 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ParamSetup:
         ProcessParamSetup( ev.paramSetup );
         break;
-    case QueueType::ParamPingback:
+    case QueueType::AckServerQueryNoop:
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::CpuTopology:

@@ -3009,7 +3009,7 @@ void Profiler::HandleParameter( uint64_t payload )
     const auto idx = uint32_t( payload >> 32 );
     const auto val = int32_t( payload & 0xFFFFFFFF );
     m_paramCallback( idx, val );
-    TracyLfqPrepare( QueueType::ParamPingback );
+    TracyLfqPrepare( QueueType::AckServerQueryNoop );
     TracyLfqCommit;
 }
 

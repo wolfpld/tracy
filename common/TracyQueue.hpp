@@ -84,7 +84,7 @@ enum class QueueType : uint8_t
     TidToPid,
     PlotConfig,
     ParamSetup,
-    ParamPingback,
+    AckServerQueryNoop,
     CpuTopology,
     SingleStringData,
     SecondStringData,
@@ -652,7 +652,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
-    sizeof( QueueHeader ),                                  // param pingback
+    sizeof( QueueHeader ),                                  // server query acknowledgement
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
     sizeof( QueueHeader ),                                  // second string data

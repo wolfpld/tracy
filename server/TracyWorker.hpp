@@ -595,6 +595,8 @@ private:
     void Exec();
     void Query( ServerQuery type, uint64_t data, uint32_t extra = 0 );
     void QueryTerminate();
+    void QuerySourceFile( const char* fn );
+    void QueryDataTransfer( const void* ptr, size_t size );
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, const char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );
@@ -752,6 +754,7 @@ private:
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( uint64_t ptr, const char* data, size_t sz );
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
+    void AddSourceCode( const char* data, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t sz );
@@ -945,6 +948,7 @@ private:
     size_t m_tmpBufSize = 0;
 
     unordered_flat_map<uint64_t, uint32_t> m_nextCallstack;
+    std::vector<const char*> m_sourceCodeQuery;
 };
 
 }

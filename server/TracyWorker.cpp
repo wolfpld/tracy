@@ -2860,7 +2860,8 @@ void Worker::Exec()
                 m_data.plots.IsPending() || m_pendingCallstackId != 0 || m_pendingExternalNames != 0 ||
                 m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr || !m_pendingSymbols.empty() ||
                 !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() ||
-                m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr )
+                m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr ||
+                !m_sourceCodeQuery.empty() )
             {
                 continue;
             }
@@ -2993,9 +2994,13 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
     {
         ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
         if( ev.hdr.type == QueueType::FrameImageData ||
-            ev.hdr.type == QueueType::SymbolCode )
+            ev.hdr.type == QueueType::SymbolCode ||
+            ev.hdr.type == QueueType::SourceCode )
         {
-            if( ev.hdr.type == QueueType::SymbolCode ) m_serverQuerySpaceLeft++;
+            if( ev.hdr.type == QueueType::SymbolCode || ev.hdr.type == QueueType::SourceCode )
+            {
+                m_serverQuerySpaceLeft++;
+            }
             uint32_t sz;
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz ) + sz;
@@ -3063,6 +3068,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             case QueueType::SymbolInformation:
             case QueueType::CodeInformation:
             case QueueType::AckServerQueryNoop:
+            case QueueType::AckSourceCodeNotAvailable:
                 m_serverQuerySpaceLeft++;
                 break;
             default:
@@ -3092,13 +3098,53 @@ void Worker::QueryTerminate()
     m_sock.Send( &query, ServerQueryPacketSize );
 }
 
+void Worker::QuerySourceFile( const char* fn )
+{
+    QueryDataTransfer( fn, strlen( fn ) + 1 );
+    Query( ServerQuerySourceCode, 0 );
+}
+
+void Worker::QueryDataTransfer( const void* ptr, size_t size )
+{
+    Query( ServerQueryDataTransfer, size );
+    auto data = (const char*)ptr;
+    while( size > 0 )
+    {
+        uint64_t d8;
+        uint32_t d4;
+        if( size >= 12 )
+        {
+            memcpy( &d8, data, 8 );
+            memcpy( &d4, data+8, 4 );
+            data += 12;
+            size -= 12;
+        }
+        else if( size > 8 )
+        {
+            memcpy( &d8, data, 8 );
+            memset( &d4, 0, 4 );
+            memcpy( &d4, data+8, size-8 );
+            size = 0;
+        }
+        else
+        {
+            memset( &d8, 0, 8 );
+            memset( &d4, 0, 4 );
+            memcpy( &d8, data, size );
+            size = 0;
+        }
+        Query( ServerQueryDataTransferPart, d8, d4 );
+    }
+}
+
 bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     if( ev.hdr.idx >= (int)QueueType::StringData )
     {
         ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
         if( ev.hdr.type == QueueType::FrameImageData ||
-            ev.hdr.type == QueueType::SymbolCode )
+            ev.hdr.type == QueueType::SymbolCode ||
+            ev.hdr.type == QueueType::SourceCode )
         {
             uint32_t sz;
             memcpy( &sz, ptr, sizeof( sz ) );
@@ -3110,6 +3156,10 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
                 break;
             case QueueType::SymbolCode:
                 AddSymbolCode( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::SourceCode:
+                AddSourceCode( ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
             default:
@@ -3697,6 +3747,18 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         cs_free( insn, cnt );
     }
     cs_close( &handle );
+}
+
+
+void Worker::AddSourceCode( const char* data, size_t sz )
+{
+    assert( !m_sourceCodeQuery.empty() );
+    auto file = m_sourceCodeQuery.front();
+    m_sourceCodeQuery.erase( m_sourceCodeQuery.begin() );
+    if( m_data.sourceFileCache.find( file ) != m_data.sourceFileCache.end() ) return;
+    auto src = (char*)m_slab.AllocBig( sz );
+    memcpy( src, data, sz );
+    m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
 }
 
 CallstackFrameId Worker::PackPointer( uint64_t ptr ) const
@@ -4344,6 +4406,11 @@ bool Worker::Process( const QueueItem& ev )
         ProcessParamSetup( ev.paramSetup );
         break;
     case QueueType::AckServerQueryNoop:
+        m_serverQuerySpaceLeft++;
+        break;
+    case QueueType::AckSourceCodeNotAvailable:
+        assert( !m_sourceCodeQuery.empty() );
+        m_sourceCodeQuery.erase( m_sourceCodeQuery.begin() );
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::CpuTopology:
@@ -7429,6 +7496,11 @@ void Worker::CacheSource( const StringRef& str )
         fread( src, 1, sz, f );
         fclose( f );
         m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
+    }
+    else if( m_executableTime != 0 )
+    {
+        m_sourceCodeQuery.emplace_back( file );
+        QuerySourceFile( file );
     }
 }
 

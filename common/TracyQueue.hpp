@@ -85,6 +85,7 @@ enum class QueueType : uint8_t
     PlotConfig,
     ParamSetup,
     AckServerQueryNoop,
+    AckSourceCodeNotAvailable,
     CpuTopology,
     SingleStringData,
     SecondStringData,
@@ -100,6 +101,7 @@ enum class QueueType : uint8_t
     ExternalName,
     ExternalThreadName,
     SymbolCode,
+    SourceCode,
     NUM_TYPES
 };
 
@@ -653,6 +655,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement
+    sizeof( QueueHeader ),                                  // source code not available
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
     sizeof( QueueHeader ),                                  // second string data
@@ -669,6 +672,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external thread name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // symbol code
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // source code
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

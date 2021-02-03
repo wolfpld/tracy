@@ -575,6 +575,12 @@ static void AckServerQuery()
     TracyLfqCommit;
 }
 
+static void AckSourceCodeNotAvailable()
+{
+    TracyLfqPrepare( QueueType::AckSourceCodeNotAvailable );
+    TracyLfqCommit;
+}
+
 static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len, int port )
 {
     static BroadcastMessage msg;
@@ -1143,6 +1149,7 @@ Profiler::Profiler()
     , m_deferredQueue( 64*1024 )
 #endif
     , m_paramCallback( nullptr )
+    , m_queryData( nullptr )
 {
     assert( !s_instance );
     s_instance = this;
@@ -2426,7 +2433,8 @@ void Profiler::SendSecondString( const char* ptr, size_t len )
 void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
     assert( type == QueueType::FrameImageData ||
-            type == QueueType::SymbolCode );
+            type == QueueType::SymbolCode ||
+            type == QueueType::SourceCode );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -2648,6 +2656,20 @@ bool Profiler::HandleServerQuery()
 #endif
     case ServerQueryCodeLocation:
         SendCodeLocation( ptr );
+        break;
+    case ServerQuerySourceCode:
+        HandleSourceCodeQuery();
+        break;
+    case ServerQueryDataTransfer:
+        assert( !m_queryData );
+        m_queryDataPtr = m_queryData = (char*)tracy_malloc( ptr + 11 );
+        AckServerQuery();
+        break;
+    case ServerQueryDataTransferPart:
+        memcpy( m_queryDataPtr, &ptr, 8 );
+        memcpy( m_queryDataPtr+8, &extra, 4 );
+        m_queryDataPtr += 12;
+        AckServerQuery();
         break;
     default:
         assert( false );
@@ -3195,6 +3217,44 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
 #endif
     SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
+}
+
+void Profiler::HandleSourceCodeQuery()
+{
+    assert( m_exectime != 0 );
+    assert( m_queryData );
+
+    struct stat st;
+    if( stat( m_queryData, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime && st.st_size < ( TargetFrameSize - 16 ) )
+    {
+        FILE* f = fopen( m_queryData, "rb" );
+        tracy_free( m_queryData );
+        if( f )
+        {
+            auto ptr = (char*)tracy_malloc( st.st_size );
+            auto rd = fread( ptr, 1, st.st_size, f );
+            fclose( f );
+            if( rd == st.st_size )
+            {
+                SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+            }
+            else
+            {
+                AckSourceCodeNotAvailable();
+            }
+            tracy_free( ptr );
+        }
+        else
+        {
+            AckSourceCodeNotAvailable();
+        }
+    }
+    else
+    {
+        tracy_free( m_queryData );
+        AckSourceCodeNotAvailable();
+    }
+    m_queryData = nullptr;
 }
 
 void Profiler::SendCodeLocation( uint64_t ptr )

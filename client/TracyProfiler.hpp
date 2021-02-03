@@ -691,6 +691,7 @@ private:
     void HandleParameter( uint64_t payload );
     void HandleSymbolQuery( uint64_t symbol );
     void HandleSymbolCodeQuery( uint64_t symbol, uint32_t size );
+    void HandleSourceCodeQuery();
 
     void CalibrateTimer();
     void CalibrateDelay();
@@ -808,6 +809,9 @@ private:
 #endif
 
     ParameterCallback m_paramCallback;
+
+    char* m_queryData;
+    char* m_queryDataPtr;
 };
 
 }

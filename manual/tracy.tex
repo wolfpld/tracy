@@ -3142,13 +3142,17 @@ noborder=true,
 couleur=black!5,
 logo=\bcbombe
 ]{Important}
-Source file view depends on local files you have on your disk, as the profiled application doesn't need them to run. If the profiler can access the source files during capture, it will cache them for further reference. Otherwise, you will need to make them available, possibly by using file path substitutions. Keep the following rules in mind:
+In order to be able to display source files, Tracy has to somehow gain access to them. Since having the source code is not needed for the profiled application to run, this can be a bit problematic in some cases. The source files search order is as follows:
 
-\begin{itemize}
-\item Source files can only be used, if the source file location recorded in the trace matches the files you have on your disk. See section~\ref{traceinfo} for information on redirecting source file locations.
-\item Time stamp of the source file cannot be newer than the trace, as it typically would indicate that the file has been changed and no longer contains the code that was profiled.
-\item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
-\end{itemize}
+\begin{enumerate}
+\item Discovery is performed on server side. Found files are cached in the trace. \emph{This is appropriate when the client and the server run on the same machine, or if you're deploying your application to the target device and then run the profiler on the same workstation.}
+\item If not found, discovery is performed on client side. Found files are cached in the trace. \emph{This is appropriate when you are developing your code on another machine, for example you may be working on a dev-board through a SSH connection.}
+\item If not found, Tracy will try to open source files which you might have on your disk later on. These files won't be stored in the trace. You may provide custom file path substitution rules to redirect this search to the right place (see section~\ref{traceinfo}).
+\end{enumerate}
+
+Note that the discovery process not only looks for a file on the disk, but it also checks its time stamp and validates it against the executable image time stamp, or, if it's not available, the time of the performed capture. This will prevent use of source files that are newer (i.e. were changed) than the program you're profiling.
+
+Nevertheless, \textbf{the displayed source files might still not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{bclogo}
 
 \subsubsection{Symbol view}

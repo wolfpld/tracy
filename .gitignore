@@ -35,3 +35,5 @@ vcpkg/*
 
 /_*/**
 /**/__pycache__/**
+extra/vswhere.exe
+extra/tracy-build

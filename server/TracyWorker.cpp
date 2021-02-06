@@ -7486,7 +7486,8 @@ void Worker::CacheSource( const StringRef& str )
     auto file = GetString( str );
     // Possible duplication of pointer and index strings
     if( m_data.sourceFileCache.find( file ) != m_data.sourceFileCache.end() ) return;
-    if( SourceFileValid( file, GetCaptureTime() ) )
+    const auto execTime = GetExecutableTime();
+    if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) )
     {
         FILE* f = fopen( file, "rb" );
         fseek( f, 0, SEEK_END );
@@ -7497,7 +7498,7 @@ void Worker::CacheSource( const StringRef& str )
         fclose( f );
         m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
     }
-    else if( m_executableTime != 0 )
+    else if( execTime != 0 )
     {
         m_sourceCodeQuery.emplace_back( file );
         QuerySourceFile( file );

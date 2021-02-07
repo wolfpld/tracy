@@ -374,10 +374,11 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             zone->SetEnd( v.timestamp );
 
 #ifndef TRACY_NO_STATISTICS
-            auto slz = GetSourceLocationZones( zone->SrcLoc() );
-            auto& ztd = slz->zones.push_next();
+            ZoneThreadData ztd;
             ztd.SetZone( zone );
             ztd.SetThread( CompressThread( v.tid ) );
+            auto slz = GetSourceLocationZones( zone->SrcLoc() );
+            slz->zones.push_back( ztd );
 #else
             CountZoneStatistics( zone );
 #endif
@@ -1845,12 +1846,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             for( auto& v : m_data.sourceLocationZones )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                auto& zones = v.second.zones;
-#ifdef NO_PARALLEL_SORT
-                pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
-#else
-                std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
-#endif
+                if( !v.second.zones.is_sorted() ) v.second.zones.sort();
             }
             {
                 std::lock_guard<std::mutex> lock( m_data.lock );
@@ -3935,6 +3931,14 @@ void Worker::DoPostponedWork()
         HandlePostponedGhostZones();
         m_data.newFramesWereReceived = false;
     }
+
+    if( m_data.sourceLocationZonesReady )
+    {
+        for( auto& slz : m_data.sourceLocationZones )
+        {
+            if( !slz.second.zones.is_sorted() ) slz.second.zones.sort();
+        }
+    }
 #endif
 
     if( m_data.newSymbolsIndex >= 0 )
@@ -4557,10 +4561,11 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     const auto timeSpan = timeEnd - zone->Start();
     if( timeSpan > 0 )
     {
-        auto slz = GetSourceLocationZones( zone->SrcLoc() );
-        auto& ztd = slz->zones.push_next();
+        ZoneThreadData ztd;
         ztd.SetZone( zone );
         ztd.SetThread( CompressThread( m_threadCtx ) );
+        auto slz = GetSourceLocationZones( zone->SrcLoc() );
+        slz->zones.push_back( ztd );
         if( slz->min > timeSpan ) slz->min = timeSpan;
         if( slz->max < timeSpan ) slz->max = timeSpan;
         slz->total += timeSpan;
@@ -6658,10 +6663,11 @@ void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
     {
         auto it = m_data.sourceLocationZones.find( zone.SrcLoc() );
         assert( it != m_data.sourceLocationZones.end() );
-        auto& slz = it->second;
-        auto& ztd = slz.zones.push_next();
+        ZoneThreadData ztd;
         ztd.SetZone( &zone );
         ztd.SetThread( thread );
+        auto& slz = it->second;
+        slz.zones.push_back( ztd );
         if( slz.min > timeSpan ) slz.min = timeSpan;
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;

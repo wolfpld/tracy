@@ -746,6 +746,10 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     bool expected = false;
     if( !s_alreadyCrashed.compare_exchange_strong( expected, true ) ) ThreadFreezer( signal );
 
+    struct sigaction act = {};
+    act.sa_handler = SIG_DFL;
+    sigaction( SIGABRT, &act, nullptr );
+
     auto msgPtr = s_crashText;
     switch( signal )
     {
@@ -871,6 +875,9 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
         default:
             break;
         }
+        break;
+    case SIGABRT:
+        strcpy( msgPtr, "Abort signal from abort().\n" );
         break;
     default:
         abort();
@@ -1221,6 +1228,7 @@ void Profiler::SpawnWorkerThreads()
     sigaction( SIGSEGV, &crashHandler, nullptr );
     sigaction( SIGPIPE, &crashHandler, nullptr );
     sigaction( SIGBUS, &crashHandler, nullptr );
+    sigaction( SIGABRT, &crashHandler, nullptr );
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK

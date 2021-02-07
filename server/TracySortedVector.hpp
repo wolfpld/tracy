@@ -39,7 +39,9 @@ public:
     tracy_force_inline bool empty() const { return v.empty(); }
     tracy_force_inline size_t size() const { return v.size(); }
 
+    /*
     tracy_force_inline void set_size( size_t sz ) { v.set_size( sz ); }
+    */
 
     tracy_force_inline T* data() { return v.data(); }
     tracy_force_inline const T* data() const { return v.data(); };
@@ -58,6 +60,7 @@ public:
     tracy_force_inline T& operator[]( size_t idx ) { return v[idx]; }
     tracy_force_inline const T& operator[]( size_t idx ) const { return v[idx]; }
 
+    /*
     tracy_force_inline void push_back( const T& val ) { v.push_back( val ); }
     tracy_force_inline void push_back_non_empty( const T& val ) { v.push_back_non_empty( val ); }
     tracy_force_inline void push_back_no_space_check( const T& val ) { v.push_back_no_space_check( val ); }
@@ -80,6 +83,8 @@ public:
     tracy_force_inline void reserve( size_t cap ) { v.reserve( cap ); }
     void reserve_non_zero( size_t cap ) { v.reserve_non_zero( cap ); }
     tracy_force_inline void reserve_and_use( size_t sz ) { v.reserve_and_use( sz ); }
+    */
+
     template<size_t U>
     tracy_force_inline void reserve_exact( uint32_t sz, Slab<U>& slab ) { v.reserve_exact( sz, slab ); }
 

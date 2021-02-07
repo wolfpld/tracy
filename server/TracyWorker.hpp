@@ -590,6 +590,8 @@ public:
 
     std::pair<uint64_t, uint64_t> GetTextureCompressionBytes() const { return std::make_pair( m_texcomp.GetInputBytesCount(), m_texcomp.GetOutputBytesCount() ); }
 
+    void DoPostponedWork();
+
 private:
     void Network();
     void Exec();
@@ -763,7 +765,6 @@ private:
     void HandlePlotName( uint64_t name, const char* str, size_t sz );
     void HandleFrameName( uint64_t name, const char* str, size_t sz );
 
-    void HandlePostponedPlots();
     void HandlePostponedSamples();
     void HandlePostponedGhostZones();
 

@@ -731,6 +731,7 @@ bool View::DrawImpl()
         }
     }
     std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
+    m_worker.DoPostponedWork();
     if( !m_worker.IsDataStatic() )
     {
         if( m_worker.IsConnected() )

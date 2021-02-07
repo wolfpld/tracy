@@ -10,6 +10,7 @@ v0.x.x (xxxx-xx-xx)
 -------------------
 
 - Linux crash handler will now also catch SIGABRT.
+- Fixed invalid name assignment to source files discovered client-side.
 
 
 v0.7.6 (2021-02-06)

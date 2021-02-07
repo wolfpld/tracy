@@ -693,6 +693,9 @@ private:
     void HandleSymbolCodeQuery( uint64_t symbol, uint32_t size );
     void HandleSourceCodeQuery();
 
+    void AckServerQuery();
+    void AckSourceCodeNotAvailable();
+
     void CalibrateTimer();
     void CalibrateDelay();
     void ReportTopology();

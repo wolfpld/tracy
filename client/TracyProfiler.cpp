@@ -569,16 +569,20 @@ static uint64_t GetPid()
 #endif
 }
 
-static void AckServerQuery()
+void Profiler::AckServerQuery()
 {
-    TracyLfqPrepare( QueueType::AckServerQueryNoop );
-    TracyLfqCommit;
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::AckServerQueryNoop );
+    NeedDataSize( QueueDataSize[(int)QueueType::AckServerQueryNoop] );
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::AckServerQueryNoop] );
 }
 
-static void AckSourceCodeNotAvailable()
+void Profiler::AckSourceCodeNotAvailable()
 {
-    TracyLfqPrepare( QueueType::AckSourceCodeNotAvailable );
-    TracyLfqCommit;
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::AckSourceCodeNotAvailable );
+    NeedDataSize( QueueDataSize[(int)QueueType::AckSourceCodeNotAvailable] );
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::AckSourceCodeNotAvailable] );
 }
 
 static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len, int port )

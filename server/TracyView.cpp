@@ -730,7 +730,7 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
-    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
         if( m_worker.IsConnected() )
@@ -1407,7 +1407,7 @@ bool View::DrawConnection()
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 1.75 ), cs * 0.5, isConnected ? 0xFF2222CC : 0xFF444444, 10 );
 
     {
-        std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+        std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetSendInFlight() ) );
         const auto sz = m_worker.GetFrameCount( *m_frames );
@@ -1475,7 +1475,7 @@ bool View::DrawConnection()
                 m_userData.StateShouldBePreserved();
                 m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
                 m_saveThread = std::thread( [this, f{std::move( f )}] {
-                    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+                    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
                     m_worker.Write( *f );
                     f->Finish();
                     const auto stats = f->GetCompressionStatistics();
@@ -1489,7 +1489,7 @@ bool View::DrawConnection()
 
     ImGui::SameLine( 0, 2 * ty );
     const char* stopStr = ICON_FA_PLUG " Stop";
-    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
     if( !m_disconnectIssued && m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )

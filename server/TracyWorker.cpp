@@ -1785,7 +1785,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         }
                         for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second, false );
                     }
-                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    std::lock_guard<std::mutex> lock( m_data.lock );
                     m_data.callstackSamplesReady = true;
                 } ) );
 
@@ -1801,7 +1801,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                             gcnt += AddGhostZone( GetCallstack( sd.callstack.Val() ), &t->ghostZones, sd.time.Val() );
                         }
                     }
-                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    std::lock_guard<std::mutex> lock( m_data.lock );
                     m_data.ghostZonesReady = true;
                     m_data.ghostCnt = gcnt;
                 } ) );
@@ -1835,7 +1835,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     {
                         pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
                     }
-                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    std::lock_guard<std::mutex> lock( m_data.lock );
                     m_data.symbolSamplesReady = true;
                 } ) );
             }
@@ -1853,7 +1853,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 #endif
             }
             {
-                std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                std::lock_guard<std::mutex> lock( m_data.lock );
                 m_data.sourceLocationZonesReady = true;
             }
 
@@ -2779,7 +2779,7 @@ void Worker::Exec()
         const char* end = ptr + netbuf.size;
 
         {
-            std::lock_guard<std::shared_mutex> lock( m_data.lock );
+            std::lock_guard<std::mutex> lock( m_data.lock );
             while( ptr < end )
             {
                 auto ev = (const QueueItem*)ptr;
@@ -6223,7 +6223,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
 
     PlotData* plot;
     {
-        std::lock_guard<std::shared_mutex> lock( m_data.lock );
+        std::lock_guard<std::mutex> lock( m_data.lock );
         plot = m_slab.AllocInit<PlotData>();
     }
 
@@ -6307,7 +6307,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     plot->min = 0;
     plot->max = max;
 
-    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+    std::lock_guard<std::mutex> lock( m_data.lock );
     m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );
     mem.plot = plot;
 }
@@ -6403,7 +6403,7 @@ void Worker::ReconstructContextSwitchUsage()
         }
     }
 
-    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+    std::lock_guard<std::mutex> lock( m_data.lock );
     m_data.ctxUsageReady = true;
 }
 

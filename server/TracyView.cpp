@@ -17191,6 +17191,21 @@ void View::CrashTooltip()
 
 const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 {
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreSourceLocationZonesReady() )
+    {
+        auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
+        if( !slz.zones.empty() )
+        {
+            auto it = std::lower_bound( slz.zones.begin(), slz.zones.end(), zone.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs; } );
+            if( it != slz.zones.end() && it->Zone() == &zone )
+            {
+                return GetZoneParent( zone, m_worker.DecompressThread( it->Thread() ) );
+            }
+        }
+    }
+#endif
+
     for( const auto& thread : m_worker.GetThreadData() )
     {
         const ZoneEvent* parent = nullptr;

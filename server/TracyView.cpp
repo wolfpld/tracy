@@ -459,7 +459,6 @@ bool View::Draw()
             if( ImGui::TreeNode( "Call stack" ) )
             {
                 ImGui::BeginChild( "##callstackFailure", ImVec2( 1200, 500 ) );
-                const auto w = ImGui::GetWindowWidth();
                 if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders ) )
                 {
                     ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );

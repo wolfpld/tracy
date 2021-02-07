@@ -107,11 +107,11 @@ public:
     tracy_force_inline void pop_back() { v.pop_back(); }
     tracy_force_inline T& back_and_pop() { return v.back_and_pop(); }
 
-    tracy_force_inline void reserve( size_t cap ) { v.reserve( cap ); }
     void reserve_non_zero( size_t cap ) { v.reserve_non_zero( cap ); }
     tracy_force_inline void reserve_and_use( size_t sz ) { v.reserve_and_use( sz ); }
     */
 
+    tracy_force_inline void reserve( size_t cap ) { v.reserve( cap ); }
     template<size_t U>
     tracy_force_inline void reserve_exact( uint32_t sz, Slab<U>& slab ) { v.reserve_exact( sz, slab ); }
 

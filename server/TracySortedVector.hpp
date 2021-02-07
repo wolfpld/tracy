@@ -50,10 +50,6 @@ public:
     tracy_force_inline size_t size() const { return v.size(); }
     tracy_force_inline bool is_sorted() const { return sortedEnd == 0; }
 
-    /*
-    tracy_force_inline void set_size( size_t sz ) { v.set_size( sz ); }
-    */
-
     tracy_force_inline T* data() { return v.data(); }
     tracy_force_inline const T* data() const { return v.data(); };
 
@@ -86,30 +82,6 @@ public:
             v.push_back( val );
         }
     }
-
-    /*
-    tracy_force_inline void push_back( const T& val ) { v.push_back( val ); }
-    tracy_force_inline void push_back_non_empty( const T& val ) { v.push_back_non_empty( val ); }
-    tracy_force_inline void push_back_no_space_check( const T& val ) { v.push_back_no_space_check( val ); }
-    tracy_force_inline void push_back( T&& val ) { v.push_back( std::move( val ) ); }
-
-    tracy_force_inline T& push_next() { return v.push_next(); }
-    tracy_force_inline T& push_next_non_empty() { return v.push_next_non_empty(); }
-    tracy_force_inline T& push_next_no_space_check() { return v.push_next_no_space_check(); }
-
-    T* insert( T* it, const T& val ) { return v.insert( it, val ); }
-    T* insert( T* it, T&& val ) { return v.insert( it, std::move( val ) ); }
-    void insert( T* it, T* begin, T* end ) { v.insert( it, begin, end ); }
-
-    T* erase( T* it ) { return v.erase( it ); }
-    T* erase( T* begin, T* end ) { return v.erase( begin, end ); }
-
-    tracy_force_inline void pop_back() { v.pop_back(); }
-    tracy_force_inline T& back_and_pop() { return v.back_and_pop(); }
-
-    void reserve_non_zero( size_t cap ) { v.reserve_non_zero( cap ); }
-    tracy_force_inline void reserve_and_use( size_t sz ) { v.reserve_and_use( sz ); }
-    */
 
     tracy_force_inline void reserve( size_t cap ) { v.reserve( cap ); }
     template<size_t U>

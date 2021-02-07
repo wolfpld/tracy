@@ -17189,38 +17189,6 @@ void View::CrashTooltip()
     ImGui::EndTooltip();
 }
 
-int View::GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const
-{
-    auto td = m_worker.GetThreadData( tid );
-    assert( td );
-    auto timeline = &td->timeline;
-    int depth = 0;
-    for(;;)
-    {
-        if( timeline->is_magic() )
-        {
-            auto vec = (Vector<ZoneEvent>*)timeline;
-            auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
-            if( it != vec->begin() ) --it;
-            assert( !( zone.IsEndValid() && it->Start() > zone.End() ) );
-            if( it == &zone ) return depth;
-            assert( it->HasChildren() );
-            timeline = &m_worker.GetZoneChildren( it->Child() );
-            depth++;
-        }
-        else
-        {
-            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
-            if( it != timeline->begin() ) --it;
-            assert( !( zone.IsEndValid() && (*it)->Start() > zone.End() ) );
-            if( *it == &zone ) return depth;
-            assert( (*it)->HasChildren() );
-            timeline = &m_worker.GetZoneChildren( (*it)->Child() );
-            depth++;
-        }
-    }
-}
-
 const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 {
     for( const auto& thread : m_worker.GetThreadData() )

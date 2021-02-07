@@ -17312,6 +17312,21 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
 {
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreSourceLocationZonesReady() )
+    {
+        auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
+        if( !slz.zones.empty() )
+        {
+            auto it = std::lower_bound( slz.zones.begin(), slz.zones.end(), zone.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs; } );
+            if( it != slz.zones.end() && it->Zone() == &zone )
+            {
+                return m_worker.GetThreadData( m_worker.DecompressThread( it->Thread() ) );
+            }
+        }
+    }
+#endif
+
     for( const auto& thread : m_worker.GetThreadData() )
     {
         const Vector<short_ptr<ZoneEvent>>* timeline = &thread->timeline;

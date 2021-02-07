@@ -3924,25 +3924,11 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
         plot->max = val;
         plot->data.push_back( { Int48( time ), val } );
     }
-    else if( plot->data.back().time.Val() < time )
-    {
-        if( plot->min > val ) plot->min = val;
-        else if( plot->max < val ) plot->max = val;
-        plot->data.push_back_non_empty( { Int48( time ), val } );
-    }
     else
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
-        if( plot->postpone.empty() )
-        {
-            plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-            plot->postpone.push_back( { Int48( time ), val } );
-        }
-        else
-        {
-            plot->postpone.push_back_non_empty( { Int48( time ), val } );
-        }
+        plot->data.push_back( { Int48( time ), val } );
     }
 }
 
@@ -3971,22 +3957,7 @@ void Worker::HandlePostponedPlots()
 {
     for( auto& plot : m_data.plots.Data() )
     {
-        auto& src = plot->postpone;
-        if( src.empty() ) continue;
-        if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
-        auto& dst = plot->data;
-#ifdef NO_PARALLEL_SORT
-        pdqsort_branchless( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
-#else
-        std::sort( std::execution::par_unseq, src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
-#endif
-        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time.Val(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-        const auto dsd = std::distance( dst.begin(), ds ) ;
-        const auto de = std::lower_bound( ds, dst.end(), src.back().time.Val(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-        const auto ded = std::distance( dst.begin(), de );
-        dst.insert( de, src.begin(), src.end() );
-        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
-        src.clear();
+        if( !plot->data.is_sorted() ) plot->data.sort();
     }
 }
 
@@ -6057,7 +6028,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         assert( m_sysTimePlot->data.back().time.Val() <= time );
         if( m_sysTimePlot->min > val ) m_sysTimePlot->min = val;
         else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
-        m_sysTimePlot->data.push_back_non_empty( { time, val } );
+        m_sysTimePlot->data.push_back( { time, val } );
     }
 }
 
@@ -6225,7 +6196,7 @@ void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
         assert( memdata.plot->data.back().time.Val() <= time );
         if( memdata.plot->min > val ) memdata.plot->min = val;
         else if( memdata.plot->max < val ) memdata.plot->max = val;
-        memdata.plot->data.push_back_non_empty( { time, val } );
+        memdata.plot->data.push_back( { time, val } );
     }
 }
 

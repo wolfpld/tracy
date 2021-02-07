@@ -9,6 +9,7 @@
 
 #include "TracyCharUtil.hpp"
 #include "TracyShortPtr.hpp"
+#include "TracySortedVector.hpp"
 #include "TracyVector.hpp"
 #include "tracy_robin_hood.h"
 #include "../common/TracyForceInline.hpp"
@@ -636,12 +637,12 @@ enum class PlotValueFormatting : uint8_t
 
 struct PlotData
 {
+    struct PlotItemSort { bool operator()( const PlotItem& lhs, const PlotItem& rhs ) { return lhs.time.Val() < rhs.time.Val(); }; };
+
     uint64_t name;
     double min;
     double max;
-    Vector<PlotItem> data;
-    Vector<PlotItem> postpone;
-    uint64_t postponeTime;
+    SortedVector<PlotItem, PlotItemSort> data;
     PlotType type;
     PlotValueFormatting format;
 };

@@ -6196,6 +6196,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
     for( const auto& v : m_worker.GetPlots() )
     {
+        assert( v->data.is_sorted() );
         auto& vis = Vis( v );
         if( !vis.visible )
         {

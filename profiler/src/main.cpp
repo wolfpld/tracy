@@ -44,7 +44,7 @@
 #include "../../server/TracyVersion.hpp"
 #include "../../server/IconsFontAwesome5.h"
 
-#include "imgui_freetype.h"
+#include "misc/freetype/imgui_freetype.h"
 #include "Arimo.hpp"
 #include "Cousine.hpp"
 #include "FontAwesomeSolid.hpp"
@@ -317,16 +317,18 @@ int main( int argc, char** argv )
         ICON_MIN_FA, ICON_MAX_FA,
         0
     };
+
+    ImFontConfig configBasic;
+    configBasic.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
     ImFontConfig configMerge;
     configMerge.MergeMode = true;
+    configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
 
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, &configBasic, rangesBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons );
-    fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * dpiScale );
-    bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 20.0f * dpiScale );
-    smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 10.0f * dpiScale );
-
-    ImGuiFreeType::BuildFontAtlas( io.Fonts, ImGuiFreeType::LightHinting );
+    fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * dpiScale, &configBasic );
+    bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 20.0f * dpiScale, &configBasic );
+    smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 10.0f * dpiScale, &configBasic );
 
     ImGui::StyleColorsDark();
     auto& style = ImGui::GetStyle();

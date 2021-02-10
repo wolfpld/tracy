@@ -56,7 +56,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgCurrentInstalledDir)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
@@ -82,7 +82,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgCurrentInstalledDir)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
@@ -112,6 +112,7 @@
     <ClCompile Include="..\..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\..\..\imgui\misc\freetype\imgui_freetype.cpp" />
     <ClCompile Include="..\..\..\nfd\nfd_common.c" />
     <ClCompile Include="..\..\..\nfd\nfd_win.cpp" />
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
@@ -159,7 +160,6 @@
     <ClCompile Include="..\..\..\zstd\zstd_opt.c" />
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c" />
     <ClCompile Include="..\..\src\HttpRequest.cpp" />
-    <ClCompile Include="..\..\src\imgui_freetype.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
@@ -187,6 +187,7 @@
     <ClInclude Include="..\..\..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\..\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\..\..\imgui\misc\freetype\imgui_freetype.h" />
     <ClInclude Include="..\..\..\nfd\common.h" />
     <ClInclude Include="..\..\..\nfd\nfd.h" />
     <ClInclude Include="..\..\..\nfd\nfd_common.h" />
@@ -267,7 +268,6 @@
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp" />
     <ClInclude Include="..\..\src\HttpRequest.hpp" />
     <ClInclude Include="..\..\src\icon.hpp" />
-    <ClInclude Include="..\..\src\imgui_freetype.h" />
     <ClInclude Include="..\..\src\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui_impl_opengl3.h" />
     <ClInclude Include="..\..\src\NativeWindow.hpp" />

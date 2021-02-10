@@ -2086,15 +2086,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         break;
                     }
                     case QueueType::GpuContextName:
-                    {
                         ptr = MemRead<uint64_t>( &item->gpuContextNameFat.ptr );
-                        uint16_t size = MemRead<uint16_t>( &item->gpuContextNameFat.size );
+                        size = MemRead<uint16_t>( &item->gpuContextNameFat.size );
                         SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
                         tracy_free( (void*)ptr );
 #endif
                         break;
-                    }
                     case QueueType::PlotData:
                     {
                         int64_t t = MemRead<int64_t>( &item->plotData.time );

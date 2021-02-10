@@ -603,7 +603,7 @@ static void DrawContents()
             ImGui::Spacing();
             ImGui::TextUnformatted( "Created by Bartosz Taudul" );
             ImGui::SameLine();
-            tracy::TextDisabledUnformatted( "<wolf.pld@gmail.com>" );
+            tracy::TextDisabledUnformatted( "<wolf@nereid.pl>" );
             tracy::TextDisabledUnformatted( "Additional authors listed in AUTHORS file and in git history." );
             ImGui::Separator();
             tracy::TextFocused( "Protocol version", tracy::RealToString( tracy::ProtocolVersion ) );

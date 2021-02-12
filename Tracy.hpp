@@ -130,7 +130,7 @@
 #define ZoneTextV( varname, txt, size ) varname.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 #define ZoneNameV( varname, txt, size ) varname.Name( txt, size );
-#define ZoneColor( color ) __tracy_scoped_zone.Color( color );
+#define ZoneColor( color ) ___tracy_scoped_zone.Color( color );
 #define ZoneColorV( varname, color ) varname.Color( color );
 #define ZoneValue( value ) ___tracy_scoped_zone.Value( value );
 #define ZoneValueV( varname, value ) varname.Value( value );

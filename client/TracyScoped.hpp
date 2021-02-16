@@ -160,6 +160,8 @@ public:
         TracyLfqCommit;
     }
 
+    tracy_force_inline bool IsActive() const { return m_active; }
+
 private:
     const bool m_active;
 

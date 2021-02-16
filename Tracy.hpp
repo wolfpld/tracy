@@ -27,6 +27,8 @@
 #define ZoneColorV(x,y)
 #define ZoneValue(x)
 #define ZoneValueV(x,y)
+#define ZoneIsActive false
+#define ZoneIsActiveV(x) false
 
 #define FrameMark
 #define FrameMarkNamed(x)
@@ -134,6 +136,8 @@
 #define ZoneColorV( varname, color ) varname.Color( color );
 #define ZoneValue( value ) ___tracy_scoped_zone.Value( value );
 #define ZoneValueV( varname, value ) varname.Value( value );
+#define ZoneIsActive ___tracy_scoped_zone.IsActive()
+#define ZoneIsActiveV( varname ) varname.IsActive()
 
 #define FrameMark tracy::Profiler::SendFrameMark( nullptr );
 #define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name );

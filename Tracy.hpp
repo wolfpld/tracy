@@ -103,10 +103,6 @@
 #include "client/TracyProfiler.hpp"
 #include "client/TracyScoped.hpp"
 
-#define TracySourceLocation( varname ) static const tracy::SourceLocationData varname { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
-#define TracySourceLocationN( varname, name ) static const tracy::SourceLocationData varname { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
-#define TracySourceLocationNC( varname, name, color ) static const tracy::SourceLocationData varname { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color };
-
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define ZoneNamed( varname, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
 #  define ZoneNamedN( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );

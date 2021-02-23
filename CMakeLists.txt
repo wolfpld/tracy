@@ -34,7 +34,3 @@ message(STATUS "TRACY_PORT: ${TRACY_PORT}")
 target_compile_definitions(tracy_client PUBLIC TRACY_PORT=${TRACY_PORT})
 
 target_include_directories(tracy_client PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-
-if (UNIX)
-    target_link_libraries(tracy_client PRIVATE ${CMAKE_DL_LIBS})
-endif()

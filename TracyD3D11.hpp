@@ -36,25 +36,6 @@ using TracyD3D11Ctx = void*;
 #include "common/TracyAlign.hpp"
 #include "common/TracyAlloc.hpp"
 
-#define TracyD3D11Context( device, devicectx ) tracy::CreateD3D11Context( physdev, device, queue, cmdbuf, nullptr, nullptr );
-#define TracyD3D11NamedZone( ctx, varname, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::Dx11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__) );
-#define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::Dx11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__) );
-#define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZone( ctx, ___tracy_gpu_zone, name )
-#define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneC( ctx, ___tracy_gpu_zone, name, color )
-#define TracyD3D11Collect( ctx ) ctx->Collect();
-
-#ifdef TRACY_HAS_CALLSTACK
-#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::Dx11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
-#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::Dx11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
-#  define TracyD3D11ZoneS( ctx, name, depth ) TracyD3D11NamedZoneS( ctx, ___tracy_gpu_zone, name, depth )
-#  define TracyD3D11ZoneCS( ctx, name, color, depth ) TracyD3D11NamedZoneCS( ctx, ___tracy_gpu_zone, name, color, depth )
-#else
-#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) TracyD3D11NamedZone( ctx, varname, name )
-#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) TracyD3D11NamedZoneC( ctx, varname, name, color )
-#  define TracyD3D11ZoneS( ctx, name, depth, active ) TracyD3D11Zone( ctx, name )
-#  define TracyD3D11ZoneCS( ctx, name, color, depth, active ) TracyD3D11ZoneC( name, color )
-#endif
-
 #define TRACY_D3D11_NO_SINGLE_THREAD
 
 namespace tracy
@@ -354,6 +335,27 @@ static inline void DestroyD3D11Context( D3D11Ctx* ctx )
     tracy_free( ctx );
 }
 }
+
+using TracyD3D11Ctx = tracy::D3D11Ctx*;
+
+#define TracyD3D11Context( device, devicectx ) tracy::CreateD3D11Context( device, devicectx );
+#define TracyD3D11NamedZone( ctx, varname, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), active );
+#define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::D3D11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), active );
+#define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZone( ctx, ___tracy_gpu_zone, name, true )
+#define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneC( ctx, ___tracy_gpu_zone, name, color, true )
+#define TracyD3D11Collect( ctx ) ctx->Collect();
+
+#ifdef TRACY_HAS_CALLSTACK
+#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
+#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::D3D11CtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
+#  define TracyD3D11ZoneS( ctx, name, depth ) TracyD3D11NamedZoneS( ctx, ___tracy_gpu_zone, name, depth, true )
+#  define TracyD3D11ZoneCS( ctx, name, color, depth ) TracyD3D11NamedZoneCS( ctx, ___tracy_gpu_zone, name, color, depth, true )
+#else
+#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) TracyD3D11NamedZone( ctx, varname, name )
+#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) TracyD3D11NamedZoneC( ctx, varname, name, color )
+#  define TracyD3D11ZoneS( ctx, name, depth, active ) TracyD3D11Zone( ctx, name )
+#  define TracyD3D11ZoneCS( ctx, name, color, depth, active ) TracyD3D11ZoneC( name, color )
+#endif
 
 #endif
 

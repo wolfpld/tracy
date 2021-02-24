@@ -137,7 +137,7 @@ There's much more Tracy can do, which can be explored by carefully reading this 
 \section{A quick look at Tracy Profiler}
 \label{quicklook}
 
-Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, Direct3D 12, OpenCL) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, Direct3D 12, Direct3D 11, OpenCL) and memory. It also can monitor locks held by threads and show where contention does happen.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
@@ -1355,6 +1355,14 @@ logo=\bcattention
 \item Calling the \texttt{TracyGpuCollect} macro is a fairly slow operation (couple \si{\micro\second}).
 \end{itemize}
 \end{bclogo}
+
+\subsubsection{Direct3D 11}
+
+Similar to OpenGL to enable Direct3D 11 support, include the \texttt{tracy/TracyD3D11.hpp} header file. To start profiling for Direct3D 11 , where a \texttt{TracyD3D11Ctx} is returned from a call to \texttt{TracyD3D11Context(device,ctx)}, which should be later cleaned up with the \texttt{TracyD3D11Destroy(ctx)} macro.
+
+To mark a GPU zone use the \texttt{TracyD3D11Zone(ctx,name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyD3D11ZoneC(ctx,name,color)} to specify zone color.
+
+You also need to periodically collect the GPU events similar to the OpenGL using the \texttt{TracyD3D11Collect(ctx)} macro. Recommended place to do it is after the swap buffers function call or end of a frame.
 
 \subsubsection{Vulkan}
 

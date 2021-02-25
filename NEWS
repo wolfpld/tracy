@@ -25,6 +25,9 @@ v0.x.x (xxxx-xx-xx)
     - In headless capture mode sorting will be only performed when the trace
       is saved to disk.
 - Fixed some typos in macros.
+- Fixed handling of non-ANSI file names on Windows. You can now name your
+  traces 'ęśąćż.tracy' and it should work as intended. This is supported on
+  Windows 10 release 1903 and newer.
 
 
 v0.7.6 (2021-02-06)

@@ -11,6 +11,20 @@ v0.x.x (xxxx-xx-xx)
 
 - Linux crash handler will now also catch SIGABRT.
 - Fixed invalid name assignment to source files discovered client-side.
+- Added ability to check if a zone is active (which may be used to avoid
+  preparing zone text, etc., as it wouldn't be used anyway).
+- Improved sorting behavior of internal vectors.
+  - Some data will now be always properly displayed during live capture.
+    This was not particularly visible before, as it mainly concerns edge
+    cases.
+  - Sorting is performed only as needed.
+    - In case of plots the performance during live capture may be decreased,
+      as these were sorted with at least 0.25 second intervals before. Now
+      the sorting is performed every frame.
+    - Some other data, which previously was not sorted, is sorted now.
+    - In headless capture mode sorting will be only performed when the trace
+      is saved to disk.
+- Fixed some typos in macros.
 
 
 v0.7.6 (2021-02-06)

@@ -57,7 +57,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgCurrentInstalledDir)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgInstalledDir)$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
@@ -83,7 +83,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgCurrentInstalledDir)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgInstalledDir)$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>

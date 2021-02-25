@@ -280,5 +280,8 @@
   <ItemGroup>
     <ResourceCompile Include="Tracy.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="Tracy.manifest" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

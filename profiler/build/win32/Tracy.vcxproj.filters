@@ -531,4 +531,7 @@
   <ItemGroup>
     <ResourceCompile Include="Tracy.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="Tracy.manifest" />
+  </ItemGroup>
 </Project>

@@ -1575,6 +1575,11 @@ void Profiler::Worker()
                 size = MemRead<uint16_t>( &item.lockNameFat.size );
                 SendSingleString( (const char*)ptr, size );
                 break;
+            case QueueType::GpuContextName:
+                ptr = MemRead<uint64_t>( &item.gpuContextNameFat.ptr );
+                size = MemRead<uint16_t>( &item.gpuContextNameFat.size );
+                SendSingleString( (const char*)ptr, size );
+                break;
             default:
                 break;
             }

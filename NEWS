@@ -30,6 +30,8 @@ v0.x.x (xxxx-xx-xx)
   Windows 10 release 1903 and newer.
 - Fixed sending GPU context name in on-demand mode.
 - Fixed color channel order in ZoneColor() macro.
+- Handle failure state when a memory pointer allocation is reported twice,
+  without an intermediate free.
 
 
 v0.7.6 (2021-02-06)

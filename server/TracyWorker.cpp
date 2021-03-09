@@ -4859,7 +4859,7 @@ void Worker::ProcessZoneColor( const QueueZoneColor& ev )
     auto& stack = td->stack;
     auto zone = stack.back();
     auto& extra = RequestZoneExtra( *zone );
-    const uint32_t color = ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
+    const uint32_t color = ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     extra.color = color;
 }
 

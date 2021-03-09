@@ -389,6 +389,7 @@ public:
         ZoneColor,
         ZoneName,
         MemFree,
+        MemAllocTwice,
         FrameEnd,
         FrameImageIndex,
         FrameImageTwice,
@@ -688,6 +689,7 @@ private:
     void ZoneColorFailure( uint64_t thread );
     void ZoneNameFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );
+    void MemAllocTwiceFailure( uint64_t thread );
     void FrameEndFailure();
     void FrameImageIndexFailure();
     void FrameImageTwiceFailure();

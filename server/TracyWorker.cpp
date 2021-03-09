@@ -4627,6 +4627,13 @@ void Worker::MemFreeFailure( uint64_t thread )
     m_failureData.callstack = m_serialNextCallstack;
 }
 
+void Worker::MemAllocTwiceFailure( uint64_t thread )
+{
+    m_failure = Failure::MemAllocTwice;
+    m_failureData.thread = thread;
+    m_failureData.callstack = m_serialNextCallstack;
+}
+
 void Worker::FrameEndFailure()
 {
     m_failure = Failure::FrameEnd;
@@ -5510,13 +5517,18 @@ void Worker::ProcessGpuContextName( const QueueGpuContextName& ev )
 
 MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev )
 {
+    if( memdata.active.find( ev.ptr ) != memdata.active.end() )
+    {
+        MemAllocTwiceFailure( ev.thread );
+        return nullptr;
+    }
+
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
-    assert( memdata.active.find( ev.ptr ) == memdata.active.end() );
     assert( memdata.data.empty() || memdata.data.back().TimeAlloc() <= time );
 
     memdata.active.emplace( ev.ptr, memdata.data.size() );
@@ -5625,9 +5637,8 @@ MemEvent* Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 {
     auto mem = ProcessMemAlloc( ev );
-    assert( mem );
     assert( m_serialNextCallstack != 0 );
-    mem->SetCsAlloc( m_serialNextCallstack );
+    if( mem ) mem->SetCsAlloc( m_serialNextCallstack );
     m_serialNextCallstack = 0;
 }
 
@@ -5644,9 +5655,8 @@ void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
         it->second->name = memname;
     }
     auto mem = ProcessMemAllocImpl( memname, *it->second, ev );
-    assert( mem );
     assert( m_serialNextCallstack != 0 );
-    mem->SetCsAlloc( m_serialNextCallstack );
+    if( mem ) mem->SetCsAlloc( m_serialNextCallstack );
     m_serialNextCallstack = 0;
 }
 
@@ -7408,6 +7418,7 @@ static const char* s_failureReasons[] = {
     "Zone color transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",
+    "Memory allocation event was reported for an address that is already tracked and not freed.",
     "Discontinuous frame begin/end mismatch.",
     "Frame image offset is invalid.",
     "Multiple frame images were sent for a single frame.",

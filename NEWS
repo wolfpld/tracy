@@ -29,6 +29,7 @@ v0.x.x (xxxx-xx-xx)
   traces 'ęśąćż.tracy' and it should work as intended. This is supported on
   Windows 10 release 1903 and newer.
 - Fixed sending GPU context name in on-demand mode.
+- Fixed color channel order in ZoneColor() macro.
 
 
 v0.7.6 (2021-02-06)

@@ -6,6 +6,8 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
+//  2021/03/05: added ImGuiFreeTypeBuilderFlags_Bitmap to load bitmap glyphs.
+//  2021/03/02: set 'atlas->TexPixelsUseColors = true' to help some backends with deciding of a prefered texture format.
 //  2021/01/28: added support for color-layered glyphs via ImGuiFreeTypeBuilderFlags_LoadColor (require Freetype 2.10+).
 //  2021/01/26: simplified integration by using '#define IMGUI_ENABLE_FREETYPE'.
 //              renamed ImGuiFreeType::XXX flags to ImGuiFreeTypeBuilderFlags_XXX for consistency with other API. removed ImGuiFreeType::BuildFontAtlas().
@@ -105,7 +107,7 @@ namespace
         FT_Int      OffsetX;            // The distance from the origin ("pen position") to the left of the glyph.
         FT_Int      OffsetY;            // The distance from the origin to the top of the glyph. This is usually a value < 0.
         float       AdvanceX;           // The distance from the origin to the origin of the next glyph. This is usually a value > 0.
-        bool        IsColored;
+        bool        IsColored;          // The glyph is colored
     };
 
     // Font parameters and metrics.
@@ -151,12 +153,13 @@ namespace
         if (error != 0)
             return false;
 
-        memset(&Info, 0, sizeof(Info));
-        SetPixelHeight((uint32_t)cfg.SizePixels);
-
         // Convert to FreeType flags (NB: Bold and Oblique are processed separately)
         UserFlags = cfg.FontBuilderFlags | extra_font_builder_flags;
-        LoadFlags = FT_LOAD_NO_BITMAP;
+
+        LoadFlags = 0;
+        if ((UserFlags & ImGuiFreeTypeBuilderFlags_Bitmap) == 0)
+            LoadFlags |= FT_LOAD_NO_BITMAP;
+
         if (UserFlags & ImGuiFreeTypeBuilderFlags_NoHinting)
             LoadFlags |= FT_LOAD_NO_HINTING;
         if (UserFlags & ImGuiFreeTypeBuilderFlags_NoAutoHint)
@@ -178,6 +181,9 @@ namespace
         if (UserFlags & ImGuiFreeTypeBuilderFlags_LoadColor)
             LoadFlags |= FT_LOAD_COLOR;
 
+        memset(&Info, 0, sizeof(Info));
+        SetPixelHeight((uint32_t)cfg.SizePixels);
+
         return true;
     }
 
@@ -196,7 +202,7 @@ namespace
         // is a maximum height of an any given glyph, i.e. it's the sum of font's ascender and descender. Seems strange to me.
         // NB: FT_Set_Pixel_Sizes() doesn't seem to get us the same result.
         FT_Size_RequestRec req;
-        req.type = FT_SIZE_REQUEST_TYPE_REAL_DIM;
+        req.type = (UserFlags & ImGuiFreeTypeBuilderFlags_Bitmap) ? FT_SIZE_REQUEST_TYPE_NOMINAL : FT_SIZE_REQUEST_TYPE_REAL_DIM;
         req.width = 0;
         req.height = (uint32_t)pixel_height * 64;
         req.horiResolution = 0;
@@ -224,7 +230,7 @@ namespace
 
         // Need an outline for this to work
         FT_GlyphSlot slot = Face->glyph;
-        IM_ASSERT(slot->format == FT_GLYPH_FORMAT_OUTLINE);
+        IM_ASSERT(slot->format == FT_GLYPH_FORMAT_OUTLINE || slot->format == FT_GLYPH_FORMAT_BITMAP);
 
         // Apply convenience transform (this is not picking from real "Bold"/"Italic" fonts! Merely applying FreeType helper transform. Oblique == Slanting)
         if (UserFlags & ImGuiFreeTypeBuilderFlags_Bold)
@@ -605,6 +611,7 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
 
     // 8. Copy rasterized font characters back into the main texture
     // 9. Setup ImFont and glyphs for runtime
+    bool tex_use_colors = false;
     for (int src_i = 0; src_i < src_tmp_array.Size; src_i++)
     {
         ImFontBuildSrcDataFT& src_tmp = src_tmp_array[src_i];
@@ -668,13 +675,15 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
             float v1 = (ty + info.Height) / (float)atlas->TexHeight;
             dst_font->AddGlyph(&cfg, (ImWchar)src_glyph.Codepoint, x0, y0, x1, y1, u0, v0, u1, v1, info.AdvanceX);
 
-            IM_ASSERT(dst_font->Glyphs.back().Codepoint == src_glyph.Codepoint);
+            ImFontGlyph* dst_glyph = &dst_font->Glyphs.back();
+            IM_ASSERT(dst_glyph->Codepoint == src_glyph.Codepoint);
             if (src_glyph.Info.IsColored)
-                dst_font->Glyphs.back().Colored = true;
+                dst_glyph->Colored = tex_use_colors = true;
         }
 
         src_tmp.Rects = NULL;
     }
+    atlas->TexPixelsUseColors = tex_use_colors;
 
     // Cleanup
     for (int buf_i = 0; buf_i < buf_bitmap_buffers.Size; buf_i++)

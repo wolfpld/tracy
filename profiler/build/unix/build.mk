@@ -26,7 +26,7 @@ ifeq ($(UNAME),Darwin)
 else
 	SRC2 += ../../../nfd/nfd_gtk.c
 	INCLUDES += $(shell pkg-config --cflags gtk+-3.0)
-	LIBS += $(shell pkg-config --libs gtk+-3.0) -lGL
+	LIBS += $(shell pkg-config --libs gtk+-3.0)
 endif
 
 include ../../../common/unix.mk

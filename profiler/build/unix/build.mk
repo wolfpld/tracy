@@ -19,14 +19,18 @@ IMAGE := $(PROJECT)-$(BUILD)
 FILTER := ../../../nfd/nfd_win.cpp
 include ../../../common/src-from-vcxproj.mk
 
-UNAME := $(shell uname -s)
-ifeq ($(UNAME),Darwin)
-	SRC3 += ../../../nfd/nfd_cocoa.m
-	LIBS +=  -framework CoreFoundation -framework AppKit
+ifdef TRACY_NO_FILESELECTOR
+	CXXFLAGS += -DTRACY_NO_FILESELECTOR
 else
-	SRC2 += ../../../nfd/nfd_gtk.c
-	INCLUDES += $(shell pkg-config --cflags gtk+-3.0)
-	LIBS += $(shell pkg-config --libs gtk+-3.0)
+	UNAME := $(shell uname -s)
+	ifeq ($(UNAME),Darwin)
+		SRC3 += ../../../nfd/nfd_cocoa.m
+		LIBS +=  -framework CoreFoundation -framework AppKit
+	else
+		SRC2 += ../../../nfd/nfd_gtk.c
+		INCLUDES += $(shell pkg-config --cflags gtk+-3.0)
+		LIBS += $(shell pkg-config --libs gtk+-3.0)
+	endif
 endif
 
 include ../../../common/unix.mk

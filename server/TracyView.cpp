@@ -3078,6 +3078,7 @@ void View::DrawZones()
         {
             m_threadOrder.push_back( threadData[i] );
         }
+        SortThreads();
     }
 
     auto& crash = m_worker.GetCrashEvent();
@@ -17799,4 +17800,10 @@ const char* View::SourceSubstitution( const char* srcFile ) const
     return res.c_str();
 }
 
+void View::SortThreads() {
+    std::sort( m_threadOrder.begin(), m_threadOrder.end(),
+               []( const ThreadData *a, const ThreadData *b ) {
+                   return a->id < b->id;
+               } );
+}
 }

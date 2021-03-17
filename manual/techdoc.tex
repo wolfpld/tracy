@@ -143,6 +143,8 @@ In the header of the \texttt{build.mk} file you can find definitions of the resu
 
 By default, the profiler uses X11 on Linux.  If you would like to support Wayland instead, set the environment variable \texttt{TRACY\_USE\_WAYLAND} before running make.
 
+Additionally, the variable \texttt{TRACY\_NO\_FILESELECTOR} may be set to remove Tracy's GTK 3 dependency at the expense of a file selection dialog.  Note that this means you will not be able to use certain features, e.g. opening a saved trace.
+
 \section{Client part}
 
 The client portion of Tracy is basically a queue. Application threads are producing queue items through the instrumentation macros and a dedicated profiler thread consumes the items to send them over the network, to the server.

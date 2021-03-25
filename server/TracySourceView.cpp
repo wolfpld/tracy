@@ -2463,6 +2463,27 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             auto sit = m_asmSampleSelect.find( idx );
             if( PrintPercentage( 100.f * ipcnt / iptotal, sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF ) )
             {
+                uint64_t symAddrParents = m_baseAddr;
+                auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+                if( inlineList )
+                {
+                    const auto cfi = worker.PackPointer( line.addr );
+                    const auto symEnd = m_baseAddr + m_codeLen;
+                    while( *inlineList < symEnd )
+                    {
+                        auto ipmap = worker.GetSymbolInstructionPointers( *inlineList );
+                        if( ipmap )
+                        {
+                            if( ipmap->find( cfi ) != ipmap->end() )
+                            {
+                                symAddrParents = *inlineList;
+                                break;
+                            }
+                        }
+                        inlineList++;
+                    }
+                }
+
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
                 TextFocused( "Time:", TimeToString( ipcnt * worker.GetSamplingPeriod() ) );
@@ -2525,35 +2546,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 }
                 else if( ImGui::IsMouseClicked( 2 ) )
                 {
-                    auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
-                    if( inlineList )
-                    {
-                        const auto cfi = worker.PackPointer( line.addr );
-                        bool found = false;
-                        const auto symEnd = m_baseAddr + m_codeLen;
-                        while( *inlineList < symEnd )
-                        {
-                            auto ipmap = worker.GetSymbolInstructionPointers( *inlineList );
-                            if( ipmap )
-                            {
-                                if( ipmap->find( cfi ) != ipmap->end() )
-                                {
-                                    view.ShowSampleParents( *inlineList );
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            inlineList++;
-                        }
-                        if( !found )
-                        {
-                            view.ShowSampleParents( m_baseAddr );
-                        }
-                    }
-                    else
-                    {
-                        view.ShowSampleParents( m_baseAddr );
-                    }
+                    view.ShowSampleParents( symAddrParents );
                 }
             }
             draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );

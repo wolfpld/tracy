@@ -32,6 +32,7 @@ v0.x.x (xxxx-xx-xx)
 - Fixed color channel order in ZoneColor() macro.
 - Handle failure state when a memory pointer allocation is reported twice,
   without an intermediate free.
+- Renamed "call stack parents" to "entry call stacks".
 - Display number of entry call stacks in assembly line sample count tooltip.
 
 

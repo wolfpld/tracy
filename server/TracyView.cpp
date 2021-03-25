@@ -15294,7 +15294,7 @@ void View::DrawSampleParents()
 
     bool show = true;
     ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Call stack sample parents", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    ImGui::Begin( "Sample entry call stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     ImGui::PushFont( m_bigFont );
     TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
     if( symbol->isInline )
@@ -15338,7 +15338,7 @@ void View::DrawSampleParents()
     ImGui::SameLine();
     TextDisabledUnformatted( m_worker.GetString( symbol->imageName ) );
     ImGui::Separator();
-    TextDisabledUnformatted( "Parent call stack:" );
+    TextDisabledUnformatted( "Entry call stack:" );
     ImGui::SameLine();
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
     {

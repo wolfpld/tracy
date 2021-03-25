@@ -15289,7 +15289,7 @@ void View::DrawAnnotationList()
 void View::DrawSampleParents()
 {
     const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
-    const auto stats = *m_worker.GetSymbolStats( m_sampleParents.symAddr );
+    const auto& stats = *m_worker.GetSymbolStats( m_sampleParents.symAddr );
     assert( !stats.parents.empty() );
 
     bool show = true;

@@ -2483,11 +2483,17 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                         inlineList++;
                     }
                 }
+                const auto& stats = *worker.GetSymbolStats( symAddrParents );
+                assert( !stats.parents.empty() );
 
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
                 TextFocused( "Time:", TimeToString( ipcnt * worker.GetSamplingPeriod() ) );
                 TextFocused( "Sample count:", RealToString( ipcnt ) );
+                ImGui::Separator();
+                TextFocused( "Entry call stacks:", RealToString( stats.parents.size() ) );
+                ImGui::SameLine();
+                TextDisabledUnformatted( "(middle click to view)" );
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
 

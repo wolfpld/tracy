@@ -2525,10 +2525,10 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 }
                 else if( ImGui::IsMouseClicked( 2 ) )
                 {
-                    const auto cfi = worker.PackPointer( line.addr );
                     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
                     if( inlineList )
                     {
+                        const auto cfi = worker.PackPointer( line.addr );
                         bool found = false;
                         const auto symEnd = m_baseAddr + m_codeLen;
                         while( *inlineList < symEnd )

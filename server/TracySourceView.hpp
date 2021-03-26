@@ -8,6 +8,7 @@
 #include "tracy_robin_hood.h"
 #include "TracyCharUtil.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracySourceContents.hpp"
 #include "TracySourceTokenizer.hpp"
 #include "../common/TracyProtocol.hpp"
 
@@ -103,7 +104,6 @@ public:
     using GetWindowCallback = void*(*)();
 
     SourceView( ImFont* font, GetWindowCallback gwcb );
-    ~SourceView();
 
     void SetCpuId( uint32_t cpuid );
 
@@ -149,14 +149,9 @@ private:
 #endif
 
     ImFont* m_font;
-    const char* m_file;
-    uint32_t m_fileStringIdx;
     uint64_t m_symAddr;
     uint64_t m_baseAddr;
     uint64_t m_targetAddr;
-    const char* m_data;
-    char* m_dataBuf;
-    size_t m_dataSize;
     int m_targetLine;
     int m_selectedLine;
     int m_asmSelected;
@@ -175,7 +170,7 @@ private:
     bool m_atnt;
     uint64_t m_jumpPopupAddr;
 
-    std::vector<Tokenizer::Line> m_lines;
+    SourceContents m_source;
     std::vector<AsmLine> m_asm;
 
     unordered_flat_map<uint64_t, uint32_t> m_locMap;

@@ -75,10 +75,10 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
 }
 }
 
-void Tokenizer::Reset()
+Tokenizer::Tokenizer()
+    : m_isInComment( false )
+    , m_isInPreprocessor( false )
 {
-    m_isInComment = false;
-    m_isInPreprocessor = false;
 }
 
 std::vector<Tokenizer::Token> Tokenizer::Tokenize( const char* begin, const char* end )

@@ -38,7 +38,8 @@ public:
         std::vector<Token> tokens;
     };
 
-    void Reset();
+    Tokenizer();
+
     std::vector<Token> Tokenize( const char* begin, const char* end );
 
 private:

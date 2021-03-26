@@ -72,13 +72,8 @@ enum { JumpArrowBase = 9 };
 
 SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     : m_font( font )
-    , m_file( nullptr )
-    , m_fileStringIdx( 0 )
     , m_symAddr( 0 )
     , m_targetAddr( 0 )
-    , m_data( nullptr )
-    , m_dataBuf( nullptr )
-    , m_dataSize( 0 )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
     , m_asmSelected( -1 )
@@ -296,11 +291,6 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     s_regMapX86[X86_REG_K7] = RegsX86::k7;
 }
 
-SourceView::~SourceView()
-{
-    delete[] m_dataBuf;
-}
-
 static constexpr uint32_t PackCpuInfo( uint32_t cpuid )
 {
     return ( cpuid & 0xFFF ) | ( ( cpuid & 0xFFF0000 ) >> 4 );
@@ -407,7 +397,7 @@ void SourceView::OpenSource( const char* fileName, int line, const View& view, c
     m_asm.clear();
 
     ParseSource( fileName, worker, view );
-    assert( !m_lines.empty() );
+    assert( !m_source.empty() );
 }
 
 void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view )
@@ -429,7 +419,7 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
 
 void SourceView::SelectViewMode()
 {
-    if( !m_lines.empty() )
+    if( !m_source.empty() )
     {
         if( !m_asm.empty() )
         {
@@ -449,70 +439,10 @@ void SourceView::SelectViewMode()
 
 void SourceView::ParseSource( const char* fileName, const Worker& worker, const View& view )
 {
-    if( m_file != fileName )
+    if( m_source.filename() != fileName )
     {
         m_srcWidth = 0;
-        m_file = fileName;
-        m_fileStringIdx = worker.FindStringIdx( fileName );
-        m_lines.clear();
-        if( fileName )
-        {
-            uint32_t sz;
-            const auto srcCache = worker.GetSourceFileFromCache( fileName );
-            if( srcCache.data != nullptr )
-            {
-                m_data = srcCache.data;
-                sz = srcCache.len;
-            }
-            else
-            {
-                FILE* f = fopen( view.SourceSubstitution( fileName ), "rb" );
-                if( f )
-                {
-                    fseek( f, 0, SEEK_END );
-                    sz = ftell( f );
-                    fseek( f, 0, SEEK_SET );
-                    if( sz > m_dataSize )
-                    {
-                        delete[] m_dataBuf;
-                        m_dataBuf = new char[sz];
-                        m_dataSize = sz;
-                    }
-                    fread( m_dataBuf, 1, sz, f );
-                    m_data = m_dataBuf;
-                    fclose( f );
-                }
-                else
-                {
-                    m_file = nullptr;
-                }
-            }
-
-            if( m_file )
-            {
-                m_tokenizer.Reset();
-                auto txt = m_data;
-                for(;;)
-                {
-                    auto end = txt;
-                    while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
-                    m_lines.emplace_back( Tokenizer::Line { txt, end, m_tokenizer.Tokenize( txt, end ) } );
-                    if( end - m_data == sz ) break;
-                    if( *end == '\n' )
-                    {
-                        end++;
-                        if( end - m_data < sz && *end == '\r' ) end++;
-                    }
-                    else if( *end == '\r' )
-                    {
-                        end++;
-                        if( end - m_data < sz && *end == '\n' ) end++;
-                    }
-                    if( end - m_data == sz ) break;
-                    txt = end;
-                }
-            }
-        }
+        m_source.Parse( fileName, worker, view );
     }
 }
 
@@ -890,20 +820,20 @@ void SourceView::Render( const Worker& worker, View& view )
 
     if( m_symAddr == 0 )
     {
-        if( m_file ) TextFocused( ICON_FA_FILE " File:", m_file );
-        if( m_data == m_dataBuf )
+        if( m_source.filename() ) TextFocused( ICON_FA_FILE " File:", m_source.filename() );
+        if( m_source.is_cached() )
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
+            ImGui::SameLine();
+            ImGui::TextUnformatted( "Source file cached during profiling run" );
+        }
+        else
         {
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        }
-        else
-        {
-            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
-            ImGui::SameLine();
-            ImGui::TextUnformatted( "Source file cached during profiling run" );
         }
 
         RenderSimpleSourceView();
@@ -920,12 +850,13 @@ void SourceView::RenderSimpleSourceView()
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_HorizontalScrollbar );
     if( m_font ) ImGui::PushFont( m_font );
 
+    auto& lines = m_source.get();
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetWindowPos();
     const auto wh = ImGui::GetWindowHeight();
     const auto ty = ImGui::GetFontSize();
     const auto ts = ImGui::CalcTextSize( " " ).x;
-    const auto lineCount = m_lines.size();
+    const auto lineCount = lines.size();
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
     const auto lx = ts * maxLine + ty + round( ts*0.4f );
@@ -934,7 +865,7 @@ void SourceView::RenderSimpleSourceView()
     if( m_targetLine != 0 )
     {
         int lineNum = 1;
-        for( auto& line : m_lines )
+        for( auto& line : lines )
         {
             if( m_targetLine == lineNum )
             {
@@ -949,12 +880,12 @@ void SourceView::RenderSimpleSourceView()
     else
     {
         ImGuiListClipper clipper;
-        clipper.Begin( (int)m_lines.size() );
+        clipper.Begin( (int)lines.size() );
         while( clipper.Step() )
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                RenderLine( m_lines[i], i+1, 0, 0, 0, nullptr );
+                RenderLine( lines[i], i+1, 0, 0, 0, nullptr );
             }
         }
     }
@@ -1136,7 +1067,7 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     TextDisabledUnformatted( "Mode:" );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    if( !m_lines.empty() )
+    if( !m_source.empty() )
     {
         ImGui::RadioButton( "Source", &m_displayMode, DisplaySource );
         if( !m_asm.empty() )
@@ -1305,7 +1236,13 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
 {
     if( m_sourceFiles.empty() )
     {
-        if( m_data == m_dataBuf )
+        if( m_source.is_cached() )
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
+            ImGui::SameLine();
+            ImGui::TextUnformatted( "Source file cached during profiling run" );
+        }
+        else
         {
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
             ImGui::SameLine();
@@ -1313,16 +1250,20 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
         }
-        else
-        {
-            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
-            ImGui::SameLine();
-            ImGui::TextUnformatted( "Source file cached during profiling run" );
-        }
     }
     else
     {
-        if( m_data == m_dataBuf )
+        if( m_source.is_cached() )
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Source file cached during profiling run" );
+                ImGui::EndTooltip();
+            }
+        }
+        else
         {
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
             if( ImGui::IsItemHovered() )
@@ -1336,25 +1277,15 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 ImGui::EndTooltip();
             }
         }
-        else
-        {
-            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Source file cached during profiling run" );
-                ImGui::EndTooltip();
-            }
-        }
         ImGui::SameLine();
         TextDisabledUnformatted( ICON_FA_FILE " File:" );
         ImGui::SameLine();
-        const auto fileColor = GetHsvColor( m_fileStringIdx, 0 );
+        const auto fileColor = GetHsvColor( m_source.idx(), 0 );
         SmallColorBox( fileColor );
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "##fileList", m_file, ImGuiComboFlags_HeightLarge ) )
+        if( ImGui::BeginCombo( "##fileList", m_source.filename(), ImGuiComboFlags_HeightLarge ) )
         {
             if( m_asm.empty() )
             {
@@ -1367,7 +1298,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     if( SourceFileValid( fstr, worker.GetCaptureTime(), view, worker ) )
                     {
                         ImGui::PushID( v.first );
-                        if( ImGui::Selectable( fstr, fstr == m_file ) )
+                        if( ImGui::Selectable( fstr, fstr == m_source.filename() ) )
                         {
                             ParseSource( fstr, worker, view );
                             m_targetLine = v.second;
@@ -1452,7 +1383,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     if( SourceFileValid( fstr, worker.GetCaptureTime(), view, worker ) )
                     {
                         ImGui::PushID( v.first );
-                        if( ImGui::Selectable( fstr, fstr == m_file, ImGuiSelectableFlags_SpanAllColumns ) )
+                        if( ImGui::Selectable( fstr, fstr == m_source.filename(), ImGuiSelectableFlags_SpanAllColumns ) )
                         {
                             uint32_t line = 0;
                             for( auto& file : m_sourceFiles )
@@ -1487,12 +1418,13 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     ImGui::BeginChild( "##sourceView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar );
     if( m_font ) ImGui::PushFont( m_font );
 
+    auto& lines = m_source.get();
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetWindowPos() - ImVec2( ImGui::GetCurrentWindowRead()->Scroll.x, 0 );
     const auto wh = ImGui::GetWindowHeight();
     const auto ty = ImGui::GetFontSize();
     const auto ts = ImGui::CalcTextSize( " " ).x;
-    const auto lineCount = m_lines.size();
+    const auto lineCount = lines.size();
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
     auto lx = ts * maxLine + ty + round( ts*0.4f );
@@ -1509,7 +1441,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     if( m_targetLine != 0 )
     {
         int lineNum = 1;
-        for( auto& line : m_lines )
+        for( auto& line : lines )
         {
             if( m_targetLine == lineNum )
             {
@@ -1524,14 +1456,14 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     else
     {
         ImGuiListClipper clipper;
-        clipper.Begin( (int)m_lines.size() );
+        clipper.Begin( (int)lines.size() );
         while( clipper.Step() )
         {
             if( iptotal == 0 )
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderLine( m_lines[i], i+1, 0, 0, 0, &worker );
+                    RenderLine( lines[i], i+1, 0, 0, 0, &worker );
                 }
             }
             else
@@ -1540,7 +1472,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 {
                     auto it = ipcount.find( i+1 );
                     const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                    RenderLine( m_lines[i], i+1, ipcnt, iptotal, ipmax, &worker );
+                    RenderLine( lines[i], i+1, ipcnt, iptotal, ipmax, &worker );
                 }
             }
         }
@@ -1554,23 +1486,23 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::PushClipRect( rect.Min, rect.Max, false );
         if( m_selectedLine != 0 )
         {
-            const auto ly = round( rect.Min.y + ( m_selectedLine - 0.5f ) / m_lines.size() * rect.GetHeight() );
+            const auto ly = round( rect.Min.y + ( m_selectedLine - 0.5f ) / lines.size() * rect.GetHeight() );
             draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x8899994C, 3 );
         }
-        if( m_fileStringIdx == m_hoveredSource && m_hoveredLine != 0 )
+        if( m_source.idx() == m_hoveredSource && m_hoveredLine != 0 )
         {
-            const auto ly = round( rect.Min.y + ( m_hoveredLine - 0.5f ) / m_lines.size() * rect.GetHeight() );
+            const auto ly = round( rect.Min.y + ( m_hoveredLine - 0.5f ) / lines.size() * rect.GetHeight() );
             draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 3 );
         }
 
         std::vector<std::pair<uint64_t, uint32_t>> ipData;
         ipData.reserve( ipcount.size() );
         for( auto& v : ipcount ) ipData.emplace_back( v.first, v.second );
-        for( uint32_t lineNum = 1; lineNum <= m_lines.size(); lineNum++ )
+        for( uint32_t lineNum = 1; lineNum <= lines.size(); lineNum++ )
         {
             if( ipcount.find( lineNum ) == ipcount.end() )
             {
-                auto addresses = worker.GetAddressesForLocation( m_fileStringIdx, lineNum );
+                auto addresses = worker.GetAddressesForLocation( m_source.idx(), lineNum );
                 if( addresses )
                 {
                     for( auto& addr : *addresses )
@@ -1586,7 +1518,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         }
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
 
-        const auto step = uint32_t( m_lines.size() * 2 / rect.GetHeight() );
+        const auto step = uint32_t( lines.size() * 2 / rect.GetHeight() );
         const auto x14 = round( rect.Min.x + rect.GetWidth() * 0.4f );
         const auto x34 = round( rect.Min.x + rect.GetWidth() * 0.6f );
 
@@ -1600,7 +1532,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 ipSum += it->second;
                 ++it;
             }
-            const auto ly = round( rect.Min.y + float( firstLine ) / m_lines.size() * rect.GetHeight() );
+            const auto ly = round( rect.Min.y + float( firstLine ) / lines.size() * rect.GetHeight() );
             const uint32_t color = ipSum == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum, ipmax );
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }
@@ -2258,7 +2190,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_srcWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
-    if( m_fileStringIdx == m_hoveredSource && lineNum == m_hoveredLine )
+    if( m_source.idx() == m_hoveredSource && lineNum == m_hoveredLine )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
     }
@@ -2348,7 +2280,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
         ImGui::SameLine( 0, ty );
     }
 
-    const auto lineCount = m_lines.size();
+    const auto lineCount = m_source.get().size();
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
     const auto lineString = RealToString( lineNum );
@@ -2364,7 +2296,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
     {
         assert( worker );
         const auto stw = ImGui::CalcTextSize( " " ).x;
-        auto addresses = worker->GetAddressesForLocation( m_fileStringIdx, lineNum );
+        auto addresses = worker->GetAddressesForLocation( m_source.idx(), lineNum );
         if( addresses )
         {
             for( auto& addr : *addresses )
@@ -2422,7 +2354,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
         }
         else
         {
-            SelectAsmLinesHover( m_fileStringIdx, lineNum, *worker );
+            SelectAsmLinesHover( m_source.idx(), lineNum, *worker );
         }
     }
 
@@ -2629,7 +2561,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 if( m_font ) ImGui::PushFont( m_font );
                 if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )
                 {
-                    if( m_file == fileName )
+                    if( m_source.filename() == fileName )
                     {
                         if( ImGui::IsMouseClicked( 1 ) ) m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
@@ -3117,7 +3049,7 @@ void SourceView::SelectLine( uint32_t line, const Worker* worker, bool changeAsm
     m_selectedLine = line;
     if( m_symAddr == 0 ) return;
     assert( worker );
-    SelectAsmLines( m_fileStringIdx, line, *worker, changeAsmLine, targetAddr );
+    SelectAsmLines( m_source.idx(), line, *worker, changeAsmLine, targetAddr );
 }
 
 void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine, uint64_t targetAddr )
@@ -3173,6 +3105,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
 
 void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
 {
+    auto filename = m_source.filename();
     if( limitView )
     {
         auto vec = worker.GetSamplesForSymbol( addr );
@@ -3183,13 +3116,13 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
         iptotalAsm += end - it;
         while( it != end )
         {
-            if( m_file )
+            if( filename )
             {
                 auto frame = worker.GetCallstackFrame( it->ip );
                 if( frame )
                 {
                     auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, m_file ) == 0 )
+                    if( strcmp( ffn, filename ) == 0 )
                     {
                         const auto line = frame->data[0].line;
                         if( line != 0 )
@@ -3235,13 +3168,13 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
         if( !ipmap ) return;
         for( auto& ip : *ipmap )
         {
-            if( m_file )
+            if( filename )
             {
                 auto frame = worker.GetCallstackFrame( ip.first );
                 if( frame )
                 {
                     auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, m_file ) == 0 )
+                    if( strcmp( ffn, filename ) == 0 )
                     {
                         const auto line = frame->data[0].line;
                         if( line != 0 )

@@ -2184,6 +2184,19 @@ static const ImVec4 SyntaxColors[] = {
     { 0.21f, 0.69f, 0.89f, 1 },    // special
 };
 
+static const ImVec4 SyntaxColorsDimmed[] = {
+    { 0.7f,  0.7f,  0.7f,  0.6f },    // default
+    { 0.45f, 0.68f, 0.32f, 0.6f },    // comment
+    { 0.72f, 0.37f, 0.12f, 0.6f },    // preprocessor
+    { 0.64f, 0.64f, 1,     0.6f },    // string
+    { 0.64f, 0.82f, 1,     0.6f },    // char literal
+    { 1,     0.91f, 0.53f, 0.6f },    // keyword
+    { 0.81f, 0.6f,  0.91f, 0.6f },    // number
+    { 0.9f,  0.9f,  0.9f,  0.6f },    // punctuation
+    { 0.78f, 0.46f, 0.75f, 0.6f },    // type
+    { 0.21f, 0.69f, 0.89f, 0.6f },    // special
+};
+
 void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker )
 {
     const auto ty = ImGui::GetFontSize();
@@ -2557,6 +2570,51 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 ImGui::BeginTooltip();
                 TextFocused( "File:", fileName );
                 TextFocused( "Line:", RealToString( srcline ) );
+                if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                {
+                    m_sourceTooltip.Parse( fileName, worker, view );
+                    if( !m_sourceTooltip.empty() )
+                    {
+                        ImGui::Separator();
+                        if( m_font ) ImGui::PushFont( m_font );
+                        auto& lines = m_sourceTooltip.get();
+                        const int start = std::max( 0, (int)srcline - 4 );
+                        const int end = std::min<int>( m_sourceTooltip.get().size(), srcline + 3 );
+                        for( int i=start; i<end; i++ )
+                        {
+                            auto& line = lines[i];
+                            if( line.begin == line.end )
+                            {
+                                ImGui::TextUnformatted( "" );
+                            }
+                            else
+                            {
+                                auto ptr = line.begin;
+                                auto it = line.tokens.begin();
+                                while( ptr < line.end )
+                                {
+                                    if( it == line.tokens.end() )
+                                    {
+                                        ImGui::TextUnformatted( ptr, line.end );
+                                        ImGui::SameLine( 0, 0 );
+                                        break;
+                                    }
+                                    if( ptr < it->begin )
+                                    {
+                                        ImGui::TextUnformatted( ptr, it->begin );
+                                        ImGui::SameLine( 0, 0 );
+                                    }
+                                    TextColoredUnformatted( i == srcline-1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
+                                    ImGui::SameLine( 0, 0 );
+                                    ptr = it->end;
+                                    ++it;
+                                }
+                                ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
+                            }
+                        }
+                        if( m_font ) ImGui::PopFont();
+                    }
+                }
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
                 if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )

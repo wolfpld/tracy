@@ -171,6 +171,7 @@ private:
     uint64_t m_jumpPopupAddr;
 
     SourceContents m_source;
+    SourceContents m_sourceTooltip;
     std::vector<AsmLine> m_asm;
 
     unordered_flat_map<uint64_t, uint32_t> m_locMap;

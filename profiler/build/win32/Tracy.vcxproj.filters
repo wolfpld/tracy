@@ -219,6 +219,9 @@
     <ClCompile Include="..\..\..\imgui\misc\freetype\imgui_freetype.cpp">
       <Filter>imgui\freetype</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracySourceTokenizer.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -523,6 +526,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\imgui\misc\freetype\imgui_freetype.h">
       <Filter>imgui\freetype</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracySourceTokenizer.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

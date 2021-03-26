@@ -8,6 +8,7 @@
 #include "tracy_robin_hood.h"
 #include "TracyCharUtil.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracySourceTokenizer.hpp"
 #include "../common/TracyProtocol.hpp"
 
 struct ImFont;
@@ -34,34 +35,6 @@ public:
     };
 
 private:
-    enum class TokenColor : uint8_t
-    {
-        Default,
-        Comment,
-        Preprocessor,
-        String,
-        CharacterLiteral,
-        Keyword,
-        Number,
-        Punctuation,
-        Type,
-        Special
-    };
-
-    struct Token
-    {
-        const char* begin;
-        const char* end;
-        TokenColor color;
-    };
-
-    struct Line
-    {
-        const char* begin;
-        const char* end;
-        std::vector<Token> tokens;
-    };
-
     struct AsmOpParams
     {
         uint8_t type;
@@ -153,7 +126,7 @@ private:
     void RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, unordered_flat_map<uint64_t, uint32_t> ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view );
     uint64_t RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, View& view );
 
-    void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker );
+    void RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker );
     void RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
 
     void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
@@ -165,9 +138,6 @@ private:
 
     void SelectMicroArchitecture( const char* moniker );
 
-    TokenColor IdentifyToken( const char*& begin, const char* end );
-    std::vector<Token> Tokenize( const char* begin, const char* end );
-
     void ResetAsm();
     void FollowRead( size_t line, RegsX86 reg, size_t limit );
     void FollowWrite( size_t line, RegsX86 reg, size_t limit );
@@ -177,18 +147,6 @@ private:
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
 #endif
-
-    struct TokenizerState
-    {
-        void Reset()
-        {
-            isInComment = false;
-            isInPreprocessor = false;
-        }
-
-        bool isInComment;
-        bool isInPreprocessor;
-    };
 
     ImFont* m_font;
     const char* m_file;
@@ -217,7 +175,7 @@ private:
     bool m_atnt;
     uint64_t m_jumpPopupAddr;
 
-    std::vector<Line> m_lines;
+    std::vector<Tokenizer::Line> m_lines;
     std::vector<AsmLine> m_asm;
 
     unordered_flat_map<uint64_t, uint32_t> m_locMap;
@@ -232,8 +190,6 @@ private:
 
     uint32_t m_maxLine;
     int m_maxMnemonicLen;
-
-    TokenizerState m_tokenizer;
 
     unordered_flat_map<const char*, int, charutil::Hasher, charutil::Comparator> m_microArchOpMap;
     CpuArchitecture m_cpuArch;
@@ -250,6 +206,7 @@ private:
     float m_asmWidth;
 
     GetWindowCallback m_gwcb;
+    Tokenizer m_tokenizer;
 };
 
 }

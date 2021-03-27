@@ -13449,7 +13449,7 @@ void View::DrawCallstackWindow()
                         assert( false );
                         break;
                     }
-                    if( ImGui::IsItemClicked( 1 ) )
+                    if( ImGui::IsItemHovered() )
                     {
                         if( m_showCallstackFrameAddress == 3 )
                         {
@@ -13457,21 +13457,37 @@ void View::DrawCallstackWindow()
                             if( sym )
                             {
                                 const auto symtxt = m_worker.GetString( sym->file );
-                                if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
+                                DrawSourceTooltip( symtxt, sym->line );
+                            }
+                        }
+                        else
+                        {
+                            DrawSourceTooltip( txt, frame.line );
+                        }
+                        if( ImGui::IsItemClicked( 1 ) )
+                        {
+                            if( m_showCallstackFrameAddress == 3 )
+                            {
+                                const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                                if( sym )
+                                {
+                                    const auto symtxt = m_worker.GetString( sym->file );
+                                    if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
+                                    {
+                                        m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                                    }
+                                }
+                                else
                                 {
                                     m_callstackBuzzAnim.Enable( bidx, 0.5f );
                                 }
                             }
                             else
                             {
-                                m_callstackBuzzAnim.Enable( bidx, 0.5f );
-                            }
-                        }
-                        else
-                        {
-                            if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
-                            {
-                                m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                                if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
+                                {
+                                    m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                                }
                             }
                         }
                     }

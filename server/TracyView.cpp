@@ -12492,15 +12492,19 @@ void View::DrawStatistics()
                     const auto file = m_worker.GetString( srcloc.file );
 
                     ImGui::TextDisabled( "%s:%i", file, srcloc.line );
-                    if( ImGui::IsItemClicked( 1 ) )
+                    if( ImGui::IsItemHovered() )
                     {
-                        if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                        DrawSourceTooltip( file, srcloc.line );
+                        if( ImGui::IsItemClicked( 1 ) )
                         {
-                            ViewSource( file, srcloc.line );
-                        }
-                        else
-                        {
-                            m_statBuzzAnim.Enable( v.srcloc, 0.5f );
+                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                            {
+                                ViewSource( file, srcloc.line );
+                            }
+                            else
+                            {
+                                m_statBuzzAnim.Enable( v.srcloc, 0.5f );
+                            }
                         }
                     }
                     if( indentVal != 0.f )
@@ -12934,29 +12938,33 @@ void View::DrawStatistics()
                         {
                             TextDisabledUnformatted( file );
                         }
-                        if( ImGui::IsItemClicked( 1 ) )
+                        if( ImGui::IsItemHovered() )
                         {
-                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                            DrawSourceTooltip( file, line );
+                            if( ImGui::IsItemClicked( 1 ) )
                             {
-                                ViewSymbol( file, line, codeAddr, v.symAddr );
-                                if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
-                            }
-                            else if( symlen != 0 )
-                            {
-                                uint32_t len;
-                                if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
                                 {
-                                    ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
+                                    ViewSymbol( file, line, codeAddr, v.symAddr );
                                     if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                                }
+                                else if( symlen != 0 )
+                                {
+                                    uint32_t len;
+                                    if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                    {
+                                        ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
+                                        if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                                    }
+                                    else
+                                    {
+                                        m_statBuzzAnim.Enable( v.symAddr, 0.5f );
+                                    }
                                 }
                                 else
                                 {
                                     m_statBuzzAnim.Enable( v.symAddr, 0.5f );
                                 }
-                            }
-                            else
-                            {
-                                m_statBuzzAnim.Enable( v.symAddr, 0.5f );
                             }
                         }
                         if( indentVal != 0.f )
@@ -13107,29 +13115,33 @@ void View::DrawStatistics()
                                     {
                                         TextDisabledUnformatted( file );
                                     }
-                                    if( ImGui::IsItemClicked( 1 ) )
+                                    if( ImGui::IsItemHovered() )
                                     {
-                                        if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                        DrawSourceTooltip( file, line );
+                                        if( ImGui::IsItemClicked( 1 ) )
                                         {
-                                            ViewSymbol( file, line, codeAddr, iv.symAddr );
-                                            if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
-                                        }
-                                        else if( symlen != 0 )
-                                        {
-                                            uint32_t len;
-                                            if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
                                             {
-                                                ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
+                                                ViewSymbol( file, line, codeAddr, iv.symAddr );
                                                 if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
+                                            }
+                                            else if( symlen != 0 )
+                                            {
+                                                uint32_t len;
+                                                if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                                {
+                                                    ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
+                                                    if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
+                                                }
+                                                else
+                                                {
+                                                    m_statBuzzAnim.Enable( iv.symAddr, 0.5f );
+                                                }
                                             }
                                             else
                                             {
                                                 m_statBuzzAnim.Enable( iv.symAddr, 0.5f );
                                             }
-                                        }
-                                        else
-                                        {
-                                            m_statBuzzAnim.Enable( iv.symAddr, 0.5f );
                                         }
                                     }
                                     if( indentVal != 0.f )

@@ -9527,15 +9527,19 @@ void View::DrawFindZone()
                 }
                 const auto fileName = m_worker.GetString( srcloc.file );
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), fileName, srcloc.line );
-                if( ImGui::IsItemClicked( 1 ) )
+                if( ImGui::IsItemHovered() )
                 {
-                    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                    DrawSourceTooltip( fileName, srcloc.line );
+                    if( ImGui::IsItemClicked( 1 ) )
                     {
-                        ViewSource( fileName, srcloc.line );
-                    }
-                    else
-                    {
-                        m_findZoneBuzzAnim.Enable( idx, 0.5f );
+                        if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                        {
+                            ViewSource( fileName, srcloc.line );
+                        }
+                        else
+                        {
+                            m_findZoneBuzzAnim.Enable( idx, 0.5f );
+                        }
                     }
                 }
                 ImGui::PopID();

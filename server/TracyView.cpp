@@ -17843,15 +17843,24 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     auto& lines = m_srcHintCache.get();
     const int start = std::max( 0, (int)srcline - ( before+1 ) );
     const int end = std::min<int>( m_srcHintCache.get().size(), srcline + after );
+    bool first = true;
+    int bottomEmpty = 0;
     for( int i=start; i<end; i++ )
     {
         auto& line = lines[i];
         if( line.begin == line.end )
         {
-            ImGui::TextUnformatted( "" );
+            if( !first ) bottomEmpty++;
         }
         else
         {
+            first = false;
+            while( bottomEmpty > 0 )
+            {
+                ImGui::TextUnformatted( "" );
+                bottomEmpty--;
+            }
+
             auto ptr = line.begin;
             auto it = line.tokens.begin();
             while( ptr < line.end )

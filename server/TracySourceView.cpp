@@ -2554,15 +2554,24 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                         auto& lines = m_sourceTooltip.get();
                         const int start = std::max( 0, (int)srcline - 4 );
                         const int end = std::min<int>( m_sourceTooltip.get().size(), srcline + 3 );
+                        bool first = true;
+                        int bottomEmpty = 0;
                         for( int i=start; i<end; i++ )
                         {
                             auto& line = lines[i];
                             if( line.begin == line.end )
                             {
-                                ImGui::TextUnformatted( "" );
+                                if( !first ) bottomEmpty++;
                             }
                             else
                             {
+                                first = false;
+                                while( bottomEmpty > 0 )
+                                {
+                                    ImGui::TextUnformatted( "" );
+                                    bottomEmpty--;
+                                }
+
                                 auto ptr = line.begin;
                                 auto it = line.tokens.begin();
                                 while( ptr < line.end )

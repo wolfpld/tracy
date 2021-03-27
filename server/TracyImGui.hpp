@@ -22,6 +22,32 @@ static inline ImVec2 operator-( const ImVec2& l, const ImVec2& r ) { return ImVe
 namespace tracy
 {
 
+    static const ImVec4 SyntaxColors[] = {
+        { 0.7f,  0.7f,  0.7f,  1 },    // default
+        { 0.45f, 0.68f, 0.32f, 1 },    // comment
+        { 0.72f, 0.37f, 0.12f, 1 },    // preprocessor
+        { 0.64f, 0.64f, 1,     1 },    // string
+        { 0.64f, 0.82f, 1,     1 },    // char literal
+        { 1,     0.91f, 0.53f, 1 },    // keyword
+        { 0.81f, 0.6f,  0.91f, 1 },    // number
+        { 0.9f,  0.9f,  0.9f,  1 },    // punctuation
+        { 0.78f, 0.46f, 0.75f, 1 },    // type
+        { 0.21f, 0.69f, 0.89f, 1 },    // special
+    };
+
+    static const ImVec4 SyntaxColorsDimmed[] = {
+        { 0.7f,  0.7f,  0.7f,  0.6f },    // default
+        { 0.45f, 0.68f, 0.32f, 0.6f },    // comment
+        { 0.72f, 0.37f, 0.12f, 0.6f },    // preprocessor
+        { 0.64f, 0.64f, 1,     0.6f },    // string
+        { 0.64f, 0.82f, 1,     0.6f },    // char literal
+        { 1,     0.91f, 0.53f, 0.6f },    // keyword
+        { 0.81f, 0.6f,  0.91f, 0.6f },    // number
+        { 0.9f,  0.9f,  0.9f,  0.6f },    // punctuation
+        { 0.78f, 0.46f, 0.75f, 0.6f },    // type
+        { 0.21f, 0.69f, 0.89f, 0.6f },    // special
+    };
+
     [[maybe_unused]] static inline void TextCentered( const char* text )
     {
         const auto tw = ImGui::CalcTextSize( text ).x;

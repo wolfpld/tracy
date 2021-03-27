@@ -2171,32 +2171,6 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
-static const ImVec4 SyntaxColors[] = {
-    { 0.7f,  0.7f,  0.7f,  1 },    // default
-    { 0.45f, 0.68f, 0.32f, 1 },    // comment
-    { 0.72f, 0.37f, 0.12f, 1 },    // preprocessor
-    { 0.64f, 0.64f, 1,     1 },    // string
-    { 0.64f, 0.82f, 1,     1 },    // char literal
-    { 1,     0.91f, 0.53f, 1 },    // keyword
-    { 0.81f, 0.6f,  0.91f, 1 },    // number
-    { 0.9f,  0.9f,  0.9f,  1 },    // punctuation
-    { 0.78f, 0.46f, 0.75f, 1 },    // type
-    { 0.21f, 0.69f, 0.89f, 1 },    // special
-};
-
-static const ImVec4 SyntaxColorsDimmed[] = {
-    { 0.7f,  0.7f,  0.7f,  0.6f },    // default
-    { 0.45f, 0.68f, 0.32f, 0.6f },    // comment
-    { 0.72f, 0.37f, 0.12f, 0.6f },    // preprocessor
-    { 0.64f, 0.64f, 1,     0.6f },    // string
-    { 0.64f, 0.82f, 1,     0.6f },    // char literal
-    { 1,     0.91f, 0.53f, 0.6f },    // keyword
-    { 0.81f, 0.6f,  0.91f, 0.6f },    // number
-    { 0.9f,  0.9f,  0.9f,  0.6f },    // punctuation
-    { 0.78f, 0.46f, 0.75f, 0.6f },    // type
-    { 0.21f, 0.69f, 0.89f, 0.6f },    // special
-};
-
 void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker )
 {
     const auto ty = ImGui::GetFontSize();

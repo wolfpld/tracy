@@ -2,7 +2,7 @@
 #define __TRACYIMGUI_HPP__
 
 #ifdef _MSC_VER
-#  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
+#  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data
 #endif
 
 #include <algorithm>
@@ -193,7 +193,7 @@ namespace tracy
 
             const auto manhatten_distance = x0 + flipped_v0y;
             const auto in_multiples_of_2_times_sw = int( manhatten_distance / ( sw*2 ) );
-        
+
             const auto floored_manhatten_distance = double( in_multiples_of_2_times_sw*sw*2 ); //floor in terms of 2 * stripe width
 
             const auto corrected_flipped_v0y = ( floored_manhatten_distance - x0 ); //the corrected (floored) y respects the position of the stripes

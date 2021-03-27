@@ -311,5 +311,4 @@ out:
     return TokenColor::Default;
 }
 
-
 }

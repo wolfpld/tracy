@@ -8713,15 +8713,19 @@ void View::DrawOptions()
                             ImGui::SameLine();
                         }
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
-                        if( ImGui::IsItemClicked( 1 ) )
+                        if( ImGui::IsItemHovered() )
                         {
-                            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                            DrawSourceTooltip( fileName, sl.line, 1, 1 );
+                            if( ImGui::IsItemClicked( 1 ) )
                             {
-                                ViewSource( fileName, sl.line );
-                            }
-                            else
-                            {
-                                m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                {
+                                    ViewSource( fileName, sl.line );
+                                }
+                                else
+                                {
+                                    m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                                }
                             }
                         }
                     }
@@ -8787,15 +8791,19 @@ void View::DrawOptions()
                             ImGui::SameLine();
                         }
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
-                        if( ImGui::IsItemClicked( 1 ) )
+                        if( ImGui::IsItemHovered() )
                         {
-                            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                            DrawSourceTooltip( fileName, sl.line, 1, 1 );
+                            if( ImGui::IsItemClicked( 1 ) )
                             {
-                                ViewSource( fileName, sl.line );
-                            }
-                            else
-                            {
-                                m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                {
+                                    ViewSource( fileName, sl.line );
+                                }
+                                else
+                                {
+                                    m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                                }
                             }
                         }
                     }
@@ -8861,15 +8869,19 @@ void View::DrawOptions()
                             ImGui::SameLine();
                         }
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
-                        if( ImGui::IsItemClicked( 1 ) )
+                        if( ImGui::IsItemHovered() )
                         {
-                            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                            DrawSourceTooltip( fileName, sl.line, 1, 1 );
+                            if( ImGui::IsItemClicked( 1 ) )
                             {
-                                ViewSource( fileName, sl.line );
-                            }
-                            else
-                            {
-                                m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                {
+                                    ViewSource( fileName, sl.line );
+                                }
+                                else
+                                {
+                                    m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                                }
                             }
                         }
                     }

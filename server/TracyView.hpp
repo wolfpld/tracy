@@ -28,10 +28,8 @@ namespace tracy
 {
 
 struct MemoryPage;
-struct QueueItem;
 class FileRead;
 class SourceView;
-struct ZoneTimeData;
 
 class View
 {

@@ -420,6 +420,7 @@ private:
 
     ImFont* m_smallFont;
     ImFont* m_bigFont;
+    ImFont* m_fixedFont;
 
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;

@@ -17847,6 +17847,7 @@ const char* View::SourceSubstitution( const char* srcFile ) const
 
 void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
 {
+    if( !filename ) return;
     if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return;
     m_srcHintCache.Parse( filename, m_worker, *this );
     if( m_srcHintCache.empty() ) return;

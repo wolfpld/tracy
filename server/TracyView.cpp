@@ -17801,4 +17801,50 @@ const char* View::SourceSubstitution( const char* srcFile ) const
     return res.c_str();
 }
 
+void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
+{
+    if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return;
+    m_srcHintCache.Parse( filename, m_worker, *this );
+    if( m_srcHintCache.empty() ) return;
+    if( separateTooltip ) ImGui::BeginTooltip();
+    if( m_fixedFont ) ImGui::PushFont( m_fixedFont );
+    auto& lines = m_srcHintCache.get();
+    const int start = std::max( 0, (int)srcline - ( before+1 ) );
+    const int end = std::min<int>( m_srcHintCache.get().size(), srcline + after );
+    for( int i=start; i<end; i++ )
+    {
+        auto& line = lines[i];
+        if( line.begin == line.end )
+        {
+            ImGui::TextUnformatted( "" );
+        }
+        else
+        {
+            auto ptr = line.begin;
+            auto it = line.tokens.begin();
+            while( ptr < line.end )
+            {
+                if( it == line.tokens.end() )
+                {
+                    ImGui::TextUnformatted( ptr, line.end );
+                    ImGui::SameLine( 0, 0 );
+                    break;
+                }
+                if( ptr < it->begin )
+                {
+                    ImGui::TextUnformatted( ptr, it->begin );
+                    ImGui::SameLine( 0, 0 );
+                }
+                TextColoredUnformatted( i == srcline-1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
+                ImGui::SameLine( 0, 0 );
+                ptr = it->end;
+                ++it;
+            }
+            ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
+        }
+    }
+    if( m_fixedFont ) ImGui::PopFont();
+    if( separateTooltip ) ImGui::EndTooltip();
+}
+
 }

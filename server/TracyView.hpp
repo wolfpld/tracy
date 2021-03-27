@@ -14,6 +14,7 @@
 #include "TracyDecayValue.hpp"
 #include "TracyImGui.hpp"
 #include "TracyShortPtr.hpp"
+#include "TracySourceContents.hpp"
 #include "TracyTexture.hpp"
 #include "TracyUserData.hpp"
 #include "TracyVector.hpp"
@@ -193,6 +194,7 @@ private:
     void DrawSampleParents();
     void DrawRanges();
     void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id );
+    void DrawSourceTooltip( const char* filename, uint32_t line, int before = 3, int after = 3, bool separateTooltip = true );
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1, uint64_t pool = 0 );
 
@@ -414,6 +416,7 @@ private:
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
 
+    SourceContents m_srcHintCache;
     std::unique_ptr<SourceView> m_sourceView;
     const char* m_sourceViewFile;
     bool m_uarchSet = false;

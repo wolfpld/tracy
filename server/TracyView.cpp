@@ -16647,11 +16647,15 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 fileName = m_worker.GetString( frame.file );
                 ImGui::TextDisabled( "%s:%i", fileName, frame.line );
             }
-            if( ImGui::IsItemClicked( 1 ) )
+            if( ImGui::IsItemHovered() )
             {
-                if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
+                DrawSourceTooltip( fileName, frame.line );
+                if( ImGui::IsItemClicked( 1 ) )
                 {
-                    m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+                    if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
+                    {
+                        m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+                    }
                 }
             }
 

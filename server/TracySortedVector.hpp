@@ -72,15 +72,11 @@ public:
     template<class Compare>
     tracy_force_inline void push_back( const T& val, Compare comp )
     {
-        if( sortedEnd != 0 || v.empty() || comp( v.back(), val ) )
-        {
-            v.push_back( val );
-        }
-        else
+        if( sortedEnd == 0 && !v.empty() && !comp( v.back(), val ) )
         {
             sortedEnd = (uint32_t)v.size();
-            v.push_back( val );
         }
+        v.push_back( val );
     }
 
     tracy_force_inline void reserve( size_t cap ) { v.reserve( cap ); }

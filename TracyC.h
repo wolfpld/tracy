@@ -139,6 +139,10 @@ TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int sec
 TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth, int secure );
 TRACY_API void ___tracy_emit_memory_free( const void* ptr, int secure );
 TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, int secure );
+TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int secure, const char* name );
+TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int depth, int secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int depth, int secure, const char* name );
 
 TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack );
 TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack );

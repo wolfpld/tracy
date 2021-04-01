@@ -569,6 +569,7 @@ public:
     bool IsBackgroundDone() const { return m_backgroundDone.load( std::memory_order_relaxed ); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
     void Disconnect();
+    bool WasDisconnectIssued() const { return m_disconnect; }
 
     void Write( FileWrite& f );
     int GetTraceVersion() const { return m_traceVersion; }

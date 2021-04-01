@@ -6,7 +6,7 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
-v0.x.x (xxxx-xx-xx)
+v0.7.7 (2021-04-01)
 -------------------
 
 - Linux crash handler will now also catch SIGABRT.

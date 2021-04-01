@@ -7,7 +7,7 @@ namespace Version
 {
 enum { Major = 0 };
 enum { Minor = 7 };
-enum { Patch = 6 };
+enum { Patch = 7 };
 }
 }
 

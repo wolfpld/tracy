@@ -10,6 +10,8 @@ v0.x.x (xxxx-xx-xx)
 -------------------
 
 - Updated Zen 3 and added Tiger Lake microarchitectural data.
+- Manually disconnecting from the server will no longer display erroneous
+  warning message.
 
 
 v0.7.7 (2021-04-01)

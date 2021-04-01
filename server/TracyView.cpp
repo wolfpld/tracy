@@ -1133,7 +1133,8 @@ bool View::DrawImpl()
     if( m_reactToLostConnection && !m_worker.IsConnected() )
     {
         m_reactToLostConnection = false;
-        if( m_worker.GetSendInFlight() > 0 )
+        const auto inFlight = m_worker.GetSendInFlight();
+        if( inFlight > 1 || ( inFlight == 1 && !m_worker.WasDisconnectIssued() ) )
         {
             ImGui::OpenPopup( "Connection lost!" );
         }

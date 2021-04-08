@@ -6519,7 +6519,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     CallstackFrameId parentFrameId;
     if( fxsz != 1 )
     {
-        auto cfdata = (CallstackFrame*)alloca( ( fxsz-1 ) * sizeof( CallstackFrame ) );
+        auto cfdata = (CallstackFrame*)alloca( uint8_t( fxsz-1 ) * sizeof( CallstackFrame ) );
         for( int i=0; i<fxsz-1; i++ )
         {
             cfdata[i] = fexcl->data[i+1];

@@ -1041,11 +1041,58 @@ static ProfilerData& GetProfilerData()
 }
 #  endif
 
+// GCC prior to 8.4 had a bug with function-inline thread_local variables. Versions of glibc beginning with
+// 2.18 may attempt to work around this issue, which manifests as a crash while running static destructors
+// if this function is compiled into a shared object. Unfortunately, centos7 ships with glibc 2.17. If running
+// on old GCC, use the old-fashioned way as a workaround
+// See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85400
+#if defined(__GNUC__) && ((__GNUC__ < 8) || ((__GNUC__ == 8) && (__GNUC_MINOR__ < 4)))
+struct ProfilerThreadDataKey
+{
+public:
+    ProfilerThreadDataKey()
+    {
+        int val = pthread_key_create(&m_key, sDestructor);
+        static_cast<void>(val); // unused
+        assert(val == 0);
+    }
+    ~ProfilerThreadDataKey()
+    {
+        int val = pthread_key_delete(m_key);
+        static_cast<void>(val); // unused
+        assert(val == 0);
+    }
+    ProfilerThreadData& get()
+    {
+        void* p = pthread_getspecific(m_key);
+        if (!p)
+        {
+            p = new ProfilerThreadData(GetProfilerData());
+            pthread_setspecific(m_key, p);
+        }
+        return *static_cast<ProfilerThreadData*>(p);
+    }
+private:
+    pthread_key_t m_key;
+
+    static void sDestructor(void* p)
+    {
+        delete static_cast<ProfilerThreadData*>(p);
+    }
+};
+
+static ProfilerThreadData& GetProfilerThreadData()
+{
+    static ProfilerThreadDataKey key;
+    return key.get();
+}
+#else
 static ProfilerThreadData& GetProfilerThreadData()
 {
     thread_local ProfilerThreadData data( GetProfilerData() );
     return data;
 }
+#endif
 
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
 TRACY_API Profiler& GetProfiler() { return GetProfilerData().profiler; }

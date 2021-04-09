@@ -1114,7 +1114,7 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         }
         iptotalSrc = iptotalAsm;
     }
-    if( iptotalAsm > 0 )
+    if( iptotalAsm > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         ImGui::SameLine();
         ImGui::Spacing();

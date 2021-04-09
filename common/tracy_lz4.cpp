@@ -512,7 +512,7 @@ LZ4_memcpy_using_offset(BYTE* dstPtr, const BYTE* srcPtr, BYTE* dstEnd, const si
 /*-************************************
 *  Common functions
 **************************************/
-static unsigned LZ4_NbCommonBytes (reg_t val)
+LZ4_FORCE_INLINE unsigned LZ4_NbCommonBytes (reg_t val)
 {
     assert(val != 0);
     if (LZ4_isLittleEndian()) {

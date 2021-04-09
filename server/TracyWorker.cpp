@@ -1830,11 +1830,31 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                     it->second.push_back_non_empty( SampleDataRange { time, ip } );
                                 }
                             }
+
+                            for( uint16_t i=1; i<callstack.size(); i++ )
+                            {
+                                auto frame = GetCallstackFrame( callstack[i] );
+                                if( !frame ) continue;
+                                const auto symAddr = frame->data[0].symAddr;
+                                auto it = m_data.childSamples.find( symAddr );
+                                if( it == m_data.childSamples.end() )
+                                {
+                                    m_data.childSamples.emplace( symAddr, Vector<Int48>( time ) );
+                                }
+                                else
+                                {
+                                    it->second.push_back_non_empty( time );
+                                }
+                            }
                         }
                     }
                     for( auto& v : m_data.symbolSamples )
                     {
                         pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
+                    }
+                    for( auto& v : m_data.childSamples )
+                    {
+                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs.Val(); } );
                     }
                     std::lock_guard<std::mutex> lock( m_data.lock );
                     m_data.symbolSamplesReady = true;

@@ -175,6 +175,7 @@ struct ThreadHandleWrapper
 };
 #endif
 
+
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
 static inline void CpuId( uint32_t* regs, uint32_t leaf )
 {
@@ -185,7 +186,6 @@ static inline void CpuId( uint32_t* regs, uint32_t leaf )
     __get_cpuid( leaf, regs, regs+1, regs+2, regs+3 );
 #endif
 }
-
 
 static void InitFailure( const char* msg )
 {

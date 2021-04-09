@@ -225,6 +225,43 @@ static void InitFailure( const char* msg )
     exit( 0 );
 }
 
+static const char* GetEnvVar(const char* name, char* buffer, size_t maxLen)
+{
+#if defined _WIN32 || defined __CYGWIN__
+    // unfortunately getenv() on Windows is just fundamentally broken.  It caches the entire
+    // environment block once on startup, then never refreshes it again.  If any environment
+    // strings are added or modified after startup of the CRT, those changes will not be
+    // seen by getenv().  This removes the possibility of an app using this SDK from
+    // programmatically setting any of the behaviour controlling envvars here.
+    //
+    // To work around this, we'll instead go directly to the Win32 environment strings APIs
+    // to get the current value.
+    DWORD count = GetEnvironmentVariableA(name, buffer, maxLen);
+
+    if( count == 0 )
+        return nullptr;
+
+    if( count >= maxLen )
+    {
+        char* buf = reinterpret_cast<char*>(_alloca(count + 1));
+        count = GetEnvironmentVariableA(name, buf, count + 1);
+        memcpy(buffer, buf, maxLen);
+        buffer[maxLen - 1] = 0;
+    }
+
+    return buffer;
+#else
+    const char* value = getenv(name);
+
+    if (value == nullptr)
+        return nullptr;
+
+    strncpy(buffer, value, maxLen);
+    buffer[maxLen - 1] = 0;
+    return buffer;
+#endif
+}
+
 static int64_t SetupHwTimer()
 {
 #if !defined TRACY_TIMER_QPC && !defined TRACY_TIMER_FALLBACK
@@ -234,7 +271,8 @@ static int64_t SetupHwTimer()
     CpuId( regs, 0x80000007 );
     if( !( regs[3] & ( 1 << 8 ) ) )
     {
-        const char* noCheck = getenv( "TRACY_NO_INVARIANT_CHECK" );
+        char buffer[32];
+        const char* noCheck = GetEnvVar( "TRACY_NO_INVARIANT_CHECK", buffer, sizeof(buffer) / sizeof(buffer[0]) );
         if( !noCheck || noCheck[0] != '1' )
         {
 #if defined _WIN32 || defined __CYGWIN__
@@ -1225,15 +1263,16 @@ Profiler::Profiler()
     CalibrateDelay();
     ReportTopology();
 
+    char buffer[32];
 #ifndef TRACY_NO_EXIT
-    const char* noExitEnv = getenv( "TRACY_NO_EXIT" );
+    const char* noExitEnv = GetEnvVar( "TRACY_NO_EXIT", buffer, sizeof(buffer) / sizeof(buffer[0]) );
     if( noExitEnv && noExitEnv[0] == '1' )
     {
         m_noExit = true;
     }
 #endif
 
-    const char* userPort = getenv( "TRACY_PORT" );
+    const char* userPort = GetEnvVar( "TRACY_PORT", buffer, sizeof(buffer) / sizeof(buffer[0]) );
     if( userPort )
     {
         m_userPort = atoi( userPort );

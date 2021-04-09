@@ -100,6 +100,12 @@ private:
         DisplayMixed
     };
 
+    struct AddrStat
+    {
+        uint32_t local;
+        uint32_t ext;
+    };
+
 public:
     using GetWindowCallback = void*(*)();
 
@@ -123,8 +129,8 @@ private:
     void RenderSimpleSourceView();
     void RenderSymbolView( const Worker& worker, View& view );
 
-    void RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, unordered_flat_map<uint64_t, uint32_t> ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view );
-    uint64_t RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, View& view );
+    void RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, AddrStat> ipcount, unordered_flat_map<uint64_t, AddrStat> ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view );
+    uint64_t RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, AddrStat> ipcount, uint32_t ipmax, const Worker& worker, View& view );
 
     void RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker );
     void RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
@@ -133,7 +139,7 @@ private:
     void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
-    void GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker, bool limitView, const View& view );
+    void GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker, bool limitView, const View& view );
     uint32_t CountAsmIpStats( uint64_t addr, const Worker& worker, bool limitView, const View& view );
 
     void SelectMicroArchitecture( const char* moniker );

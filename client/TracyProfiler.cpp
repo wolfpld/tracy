@@ -1261,7 +1261,6 @@ Profiler::Profiler()
     CalibrateDelay();
     ReportTopology();
 
-    char buffer[32];
 #ifndef TRACY_NO_EXIT
     const char* noExitEnv = GetEnvVar( "TRACY_NO_EXIT" );
     if( noExitEnv && noExitEnv[0] == '1' )

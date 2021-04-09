@@ -175,6 +175,42 @@ struct ThreadHandleWrapper
 };
 #endif
 
+static const char* GetEnvVar(const char* name, char* buffer, size_t maxLen)
+{
+#if defined _WIN32 || defined __CYGWIN__
+    // unfortunately getenv() on Windows is just fundamentally broken.  It caches the entire
+    // environment block once on startup, then never refreshes it again.  If any environment
+    // strings are added or modified after startup of the CRT, those changes will not be
+    // seen by getenv().  This removes the possibility of an app using this SDK from
+    // programmatically setting any of the behaviour controlling envvars here.
+    //
+    // To work around this, we'll instead go directly to the Win32 environment strings APIs
+    // to get the current value.
+    DWORD count = GetEnvironmentVariableA(name, buffer, maxLen);
+
+    if( count == 0 )
+        return nullptr;
+
+    if( count >= maxLen )
+    {
+        char* buf = reinterpret_cast<char*>(_alloca(count + 1));
+        count = GetEnvironmentVariableA(name, buf, count + 1);
+        memcpy(buffer, buf, maxLen);
+        buffer[maxLen - 1] = 0;
+    }
+
+    return buffer;
+#else
+    const char* value = getenv(name);
+
+    if (value == nullptr)
+        return nullptr;
+
+    strncpy(buffer, value, maxLen);
+    buffer[maxLen - 1] = 0;
+    return buffer;
+#endif
+}
 
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
 static inline void CpuId( uint32_t* regs, uint32_t leaf )
@@ -223,43 +259,6 @@ static void InitFailure( const char* msg )
     fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
 #endif
     exit( 0 );
-}
-
-static const char* GetEnvVar(const char* name, char* buffer, size_t maxLen)
-{
-#if defined _WIN32 || defined __CYGWIN__
-    // unfortunately getenv() on Windows is just fundamentally broken.  It caches the entire
-    // environment block once on startup, then never refreshes it again.  If any environment
-    // strings are added or modified after startup of the CRT, those changes will not be
-    // seen by getenv().  This removes the possibility of an app using this SDK from
-    // programmatically setting any of the behaviour controlling envvars here.
-    //
-    // To work around this, we'll instead go directly to the Win32 environment strings APIs
-    // to get the current value.
-    DWORD count = GetEnvironmentVariableA(name, buffer, maxLen);
-
-    if( count == 0 )
-        return nullptr;
-
-    if( count >= maxLen )
-    {
-        char* buf = reinterpret_cast<char*>(_alloca(count + 1));
-        count = GetEnvironmentVariableA(name, buf, count + 1);
-        memcpy(buffer, buf, maxLen);
-        buffer[maxLen - 1] = 0;
-    }
-
-    return buffer;
-#else
-    const char* value = getenv(name);
-
-    if (value == nullptr)
-        return nullptr;
-
-    strncpy(buffer, value, maxLen);
-    buffer[maxLen - 1] = 0;
-    return buffer;
-#endif
 }
 
 static int64_t SetupHwTimer()

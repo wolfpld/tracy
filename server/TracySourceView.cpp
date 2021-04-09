@@ -88,6 +88,7 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
     , m_atnt( false )
+    , m_childCalls( false )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
@@ -1116,6 +1117,10 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     }
     if( iptotalAsm > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();

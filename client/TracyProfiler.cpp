@@ -972,7 +972,6 @@ void InitRPMallocThread()
 struct ProfilerData
 {
     int64_t initTime = SetupHwTimer();
-    RPMallocInit rpmalloc_init;
     moodycamel::ConcurrentQueue<QueueItem> queue;
     Profiler profiler;
     std::atomic<uint32_t> lockCounter { 0 };
@@ -1002,7 +1001,9 @@ struct ProfilerThreadData
 ProfilerData* s_profilerData = nullptr;
 TRACY_API void StartupProfiler()
 {
-    s_profilerData = new ProfilerData;
+    RPMallocInit init;
+    s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
+    new (s_profilerData) ProfilerData();
     s_profilerData->profiler.SpawnWorkerThreads();
 }
 static ProfilerData& GetProfilerData()
@@ -1012,7 +1013,8 @@ static ProfilerData& GetProfilerData()
 }
 TRACY_API void ShutdownProfiler()
 {
-    delete s_profilerData;
+    s_profilerData->~ProfilerData();
+    tracy_free( s_profilerData );
     s_profilerData = nullptr;
     rpmalloc_finalize();
 }
@@ -1030,7 +1032,8 @@ static ProfilerData& GetProfilerData()
         ptr = profilerData.load( std::memory_order_acquire );
         if( !ptr )
         {
-            ptr = (ProfilerData*)malloc( sizeof( ProfilerData ) );
+            RPMallocInit init;
+            ptr = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
             new (ptr) ProfilerData();
             profilerData.store( ptr, std::memory_order_release );
         }

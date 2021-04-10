@@ -11,6 +11,7 @@
 #endif
 #if defined _WIN32 || defined __CYGWIN__
 #  include <windows.h>
+#  include <malloc.h>
 #else
 #  include <pthread.h>
 #  include <string.h>
@@ -234,6 +235,38 @@ TRACY_API const char* GetThreadName( uint64_t id )
 #endif
     sprintf( buf, "%" PRIu64, id );
     return buf;
+}
+
+TRACY_API const char* GetEnvVar( const char* name )
+{
+#if defined _WIN32 || defined __CYGWIN__
+    // unfortunately getenv() on Windows is just fundamentally broken.  It caches the entire
+    // environment block once on startup, then never refreshes it again.  If any environment
+    // strings are added or modified after startup of the CRT, those changes will not be
+    // seen by getenv().  This removes the possibility of an app using this SDK from
+    // programmatically setting any of the behaviour controlling envvars here.
+    //
+    // To work around this, we'll instead go directly to the Win32 environment strings APIs
+    // to get the current value.
+    static char buffer[1024];
+    DWORD const kBufferSize = DWORD(sizeof(buffer) / sizeof(buffer[0]));
+    DWORD count = GetEnvironmentVariableA(name, buffer, kBufferSize);
+
+    if( count == 0 )
+        return nullptr;
+
+    if( count >= kBufferSize )
+    {
+        char* buf = reinterpret_cast<char*>(_alloca(count + 1));
+        count = GetEnvironmentVariableA(name, buf, count + 1);
+        memcpy(buffer, buf, kBufferSize);
+        buffer[kBufferSize - 1] = 0;
+    }
+
+    return buffer;
+#else
+    return getenv(name);
+#endif
 }
 
 }

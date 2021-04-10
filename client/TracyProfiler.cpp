@@ -234,7 +234,7 @@ static int64_t SetupHwTimer()
     CpuId( regs, 0x80000007 );
     if( !( regs[3] & ( 1 << 8 ) ) )
     {
-        const char* noCheck = getenv( "TRACY_NO_INVARIANT_CHECK" );
+        const char* noCheck = GetEnvVar( "TRACY_NO_INVARIANT_CHECK" );
         if( !noCheck || noCheck[0] != '1' )
         {
 #if defined _WIN32 || defined __CYGWIN__
@@ -1226,14 +1226,14 @@ Profiler::Profiler()
     ReportTopology();
 
 #ifndef TRACY_NO_EXIT
-    const char* noExitEnv = getenv( "TRACY_NO_EXIT" );
+    const char* noExitEnv = GetEnvVar( "TRACY_NO_EXIT" );
     if( noExitEnv && noExitEnv[0] == '1' )
     {
         m_noExit = true;
     }
 #endif
 
-    const char* userPort = getenv( "TRACY_PORT" );
+    const char* userPort = GetEnvVar( "TRACY_PORT" );
     if( userPort )
     {
         m_userPort = atoi( userPort );

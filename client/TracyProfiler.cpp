@@ -967,7 +967,6 @@ TRACY_API void InitRPMallocThread();
 void InitRPMallocThread()
 {
     RPMallocInit rpinit;
-    rpmalloc_thread_initialize();
 }
 
 struct ProfilerData

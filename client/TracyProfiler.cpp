@@ -1069,7 +1069,9 @@ public:
         void* p = pthread_getspecific(m_key);
         if (!p)
         {
-            p = new ProfilerThreadData(GetProfilerData());
+            RPMallocInit init;
+            p = (ProfilerThreadData*)tracy_malloc( sizeof( ProfilerThreadData ) );
+            new (p) ProfilerThreadData(GetProfilerData());
             pthread_setspecific(m_key, p);
         }
         return *static_cast<ProfilerThreadData*>(p);
@@ -1079,7 +1081,8 @@ private:
 
     static void sDestructor(void* p)
     {
-        delete static_cast<ProfilerThreadData*>(p);
+        ((ProfilerThreadData*)p)->~ProfilerThreadData();
+        tracy_free(p);
     }
 };
 

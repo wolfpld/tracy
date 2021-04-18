@@ -124,7 +124,7 @@ std::vector<Tokenizer::Token> Tokenizer::Tokenize( const char* begin, const char
         }
         else
         {
-            while( begin != end && isspace( *begin ) ) begin++;
+            while( begin != end && isspace( (uint8_t)*begin ) ) begin++;
             if( first && begin < end && *begin == '#' )
             {
                 if( *(end-1) == '\\' ) m_isInPreprocessor = true;

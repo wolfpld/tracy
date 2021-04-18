@@ -3169,6 +3169,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
 
 void SourceView::GatherIpStats( uint64_t addr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
 {
+    const auto slzReady = worker.AreSourceLocationZonesReady();
     auto filename = m_source.filename();
     if( limitView )
     {
@@ -3232,6 +3233,16 @@ void SourceView::GatherIpStats( uint64_t addr, AddrStat& iptotalSrc, AddrStat& i
         if( !ipmap ) return;
         for( auto& ip : *ipmap )
         {
+            auto addr = worker.GetCanonicalPointer( ip.first );
+            assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+            auto cp = slzReady ? worker.GetChildSamples( addr ) : nullptr;
+            const uint32_t ccnt = cp ? (uint32_t)cp->size() : 0;
+            ipcountAsm.emplace( addr, AddrStat { ip.second, ccnt } );
+            iptotalAsm.local += ip.second;
+            iptotalAsm.ext += ccnt;
+            if( ipmaxAsm.local < ip.second ) ipmaxAsm.local = ip.second;
+            if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
+
             if( filename )
             {
                 auto frame = worker.GetCallstackFrame( ip.first );
@@ -3246,26 +3257,25 @@ void SourceView::GatherIpStats( uint64_t addr, AddrStat& iptotalSrc, AddrStat& i
                             auto it = ipcountSrc.find( line );
                             if( it == ipcountSrc.end() )
                             {
-                                ipcountSrc.emplace( line, AddrStat{ ip.second, 0 } );
+                                ipcountSrc.emplace( line, AddrStat{ ip.second, ccnt } );
                                 if( ipmaxSrc.local < ip.second ) ipmaxSrc.local = ip.second;
+                                if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
                             }
                             else
                             {
                                 const auto sum = it->second.local + ip.second;
+                                const auto csum = it->second.ext + ccnt;
                                 it->second.local = sum;
+                                it->second.ext = csum;
                                 if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
+                                if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
                             }
                             iptotalSrc.local += ip.second;
+                            iptotalSrc.ext += ccnt;
                         }
                     }
                 }
             }
-
-            auto addr = worker.GetCanonicalPointer( ip.first );
-            assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
-            ipcountAsm.emplace( addr, AddrStat { ip.second, 0 } );
-            iptotalAsm.local += ip.second;
-            if( ipmaxAsm.local < ip.second ) ipmaxAsm.local = ip.second;
         }
     }
 }

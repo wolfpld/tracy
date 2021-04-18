@@ -129,8 +129,8 @@ private:
     void RenderSimpleSourceView();
     void RenderSymbolView( const Worker& worker, View& view );
 
-    void RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, AddrStat> ipcount, unordered_flat_map<uint64_t, AddrStat> ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view );
-    uint64_t RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, AddrStat> ipcount, uint32_t ipmax, const Worker& worker, View& view );
+    void RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view );
+    uint64_t RenderSymbolAsmView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, uint32_t ipmax, const Worker& worker, View& view );
 
     void RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker );
     void RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );

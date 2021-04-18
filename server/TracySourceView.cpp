@@ -1238,7 +1238,7 @@ static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
 
 }
 
-void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, AddrStat> ipcount, unordered_flat_map<uint64_t, AddrStat> ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view )
+void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view )
 {
     if( m_sourceFiles.empty() )
     {
@@ -1637,7 +1637,7 @@ static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len, CpuArchit
     }
 }
 
-uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, AddrStat> ipcount, uint32_t ipmax, const Worker& worker, View& view )
+uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, uint32_t ipmax, const Worker& worker, View& view )
 {
     if( m_disasmFail >= 0 )
     {

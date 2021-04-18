@@ -2494,7 +2494,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
     if( iptotal.local + iptotal.ext != 0 )
     {
-        if( m_childCalls && ipcnt.local + ipcnt.ext == 0 || ipcnt.local == 0 )
+        if( ( m_childCalls && ipcnt.local + ipcnt.ext == 0 ) || ( !m_childCalls && ipcnt.local == 0 ) )
         {
             const auto ts = ImGui::CalcTextSize( " " );
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );

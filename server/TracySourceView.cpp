@@ -1235,7 +1235,6 @@ static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
     {
         return 0xFFFFFFFF;
     }
-
 }
 
 void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view )

@@ -2530,8 +2530,6 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         inlineList++;
                     }
                 }
-                const auto& stats = *worker.GetSymbolStats( symAddrParents );
-                assert( !stats.parents.empty() );
 
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
@@ -2545,10 +2543,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
                     TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 }
-                ImGui::Separator();
-                TextFocused( "Entry call stacks:", RealToString( stats.parents.size() ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( "(middle click to view)" );
+                const auto& stats = *worker.GetSymbolStats( symAddrParents );
+                if( !stats.parents.empty() )
+                {
+                    ImGui::Separator();
+                    TextFocused( "Entry call stacks:", RealToString( stats.parents.size() ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "(middle click to view)" );
+                }
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
 
@@ -2605,7 +2607,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     m_asmSampleSelect.clear();
                     m_asmGroupSelect = -1;
                 }
-                else if( ImGui::IsMouseClicked( 2 ) )
+                else if( !stats.parents.empty() && ImGui::IsMouseClicked( 2 ) )
                 {
                     view.ShowSampleParents( symAddrParents );
                 }

@@ -104,6 +104,13 @@ private:
     {
         uint32_t local;
         uint32_t ext;
+
+        AddrStat& operator+=( const AddrStat& other )
+        {
+            local += other.local;
+            ext += other.ext;
+            return *this;
+        }
     };
 
 public:

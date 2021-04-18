@@ -864,6 +864,7 @@ void SourceView::RenderSimpleSourceView()
     const auto lx = ts * maxLine + ty + round( ts*0.4f );
     draw->AddLine( wpos + ImVec2( lx, 0 ), wpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
+    const AddrStat zero = {};
     if( m_targetLine != 0 )
     {
         int lineNum = 1;
@@ -874,7 +875,7 @@ void SourceView::RenderSimpleSourceView()
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++, 0, 0, 0, nullptr );
+            RenderLine( line, lineNum++, zero, zero, zero, nullptr );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_srcWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -887,7 +888,7 @@ void SourceView::RenderSimpleSourceView()
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                RenderLine( lines[i], i+1, 0, 0, 0, nullptr );
+                RenderLine( lines[i], i+1, zero, zero, zero, nullptr );
             }
         }
     }
@@ -1220,14 +1221,14 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     switch( m_displayMode )
     {
     case DisplaySource:
-        RenderSymbolSourceView( iptotalSrc.local, ipcountSrc, ipcountAsm, ipmaxSrc.local, worker, view );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker, view );
         break;
     case DisplayAsm:
         jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
-        RenderSymbolSourceView( iptotalSrc.local, ipcountSrc, ipcountAsm, ipmaxSrc.local, worker, view );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker, view );
         ImGui::NextColumn();
         jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
         ImGui::EndColumns();
@@ -1281,7 +1282,7 @@ static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
     }
 }
 
-void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view )
+void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, const AddrStat& ipmax, const Worker& worker, const View& view )
 {
     if( m_sourceFiles.empty() )
     {
@@ -1512,7 +1513,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
     auto lx = ts * maxLine + ty + round( ts*0.4f );
-    if( iptotal != 0 ) lx += ts * 7 + ty;
+    if( iptotal.local + iptotal.ext != 0 ) lx += ts * 7 + ty;
     if( !m_asm.empty() )
     {
         const auto tmp = RealToString( m_asm.size() );
@@ -1521,6 +1522,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
     }
     draw->AddLine( wpos + ImVec2( lx, 0 ), wpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
+    const AddrStat zero = {};
     m_selectedAddressesHover.clear();
     if( m_targetLine != 0 )
     {
@@ -1532,7 +1534,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++, 0, iptotal, ipmax, &worker );
+            RenderLine( line, lineNum++, zero, iptotal, ipmax, &worker );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_srcWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -1543,11 +1545,11 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
         clipper.Begin( (int)lines.size() );
         while( clipper.Step() )
         {
-            if( iptotal == 0 )
+            if( iptotal.local + iptotal.ext == 0 )
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderLine( lines[i], i+1, 0, 0, 0, &worker );
+                    RenderLine( lines[i], i+1, zero, zero, zero, &worker );
                 }
             }
             else
@@ -1555,7 +1557,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
                     auto it = ipcount.find( i+1 );
-                    const auto ipcnt = it == ipcount.end() ? 0 : it->second.local;
+                    const auto ipcnt = it == ipcount.end() ? zero : it->second;
                     RenderLine( lines[i], i+1, ipcnt, iptotal, ipmax, &worker );
                 }
             }
@@ -1579,9 +1581,9 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
             draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 3 );
         }
 
-        std::vector<std::pair<uint64_t, uint32_t>> ipData;
+        std::vector<std::pair<uint64_t, AddrStat>> ipData;
         ipData.reserve( ipcount.size() );
-        for( auto& v : ipcount ) ipData.emplace_back( v.first, v.second.local );
+        for( auto& v : ipcount ) ipData.emplace_back( v.first, v.second );
         for( uint32_t lineNum = 1; lineNum <= lines.size(); lineNum++ )
         {
             if( ipcount.find( lineNum ) == ipcount.end() )
@@ -1593,7 +1595,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                     {
                         if( addr >= m_baseAddr && addr < m_baseAddr + m_codeLen )
                         {
-                            ipData.emplace_back( lineNum, 0 );
+                            ipData.emplace_back( lineNum, AddrStat {} );
                             break;
                         }
                     }
@@ -1610,15 +1612,23 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
         while( it != ipData.end() )
         {
             const auto firstLine = it->first;
-            uint32_t ipSum = 0;
+            AddrStat ipSum = {};
             while( it != ipData.end() && it->first <= firstLine + step )
             {
                 ipSum += it->second;
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / lines.size() * rect.GetHeight() );
-            const uint32_t color = ipSum == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum, ipmax );
-            draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
+            if( m_childCalls )
+            {
+                const auto color = ( ipSum.local + ipSum.ext == 0 ) ? 0x22FFFFFF : GetHotnessColor( ipSum.local + ipSum.ext, ipmax.local + ipmax.ext );
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
+            }
+            else
+            {
+                const auto color = ipSum.local == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum.local, ipmax.local );
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
+            }
         }
 
         ImGui::PopClipRect();
@@ -1629,14 +1639,14 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
 
     if( !m_srcSampleSelect.empty() )
     {
-        uint32_t count = 0;
+        AddrStat count = {};
         uint32_t numLines = 0;
         for( auto& idx : m_srcSampleSelect )
         {
             auto it = ipcount.find( idx );
             if( it != ipcount.end() )
             {
-                count += it->second.local;
+                count += it->second;
                 numLines++;
             }
         }
@@ -1649,17 +1659,43 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
         }
         ImGui::SameLine();
         char buf[16];
-        auto end = PrintFloat( buf, buf+16, 100.f * count / iptotal, 2 );
+        char* end;
+        if( m_childCalls )
+        {
+            end = PrintFloat( buf, buf+16, 100.f * ( count.local + count.ext ) / ( iptotal.local + iptotal.ext ), 2 );
+        }
+        else if( iptotal.local != 0 )
+        {
+            end = PrintFloat( buf, buf+16, 100.f * count.local / iptotal.local, 2 );
+        }
+        else
+        {
+            end = PrintFloat( buf, buf+16, 0.f, 2 );
+        }
         memcpy( end, "%", 2 );
         TextFocused( "Selected:", buf );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( "Time:", TimeToString( count * worker.GetSamplingPeriod() ) );
+        if( m_childCalls )
+        {
+            TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+        }
+        else
+        {
+            TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( "Sample count:", RealToString( count ) );
+        if( m_childCalls )
+        {
+            TextFocused( "Sample count:", RealToString( count.local + count.ext ) );
+        }
+        else
+        {
+            TextFocused( "Sample count:", RealToString( count.local ) );
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -2290,7 +2326,7 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
-void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker )
+void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker* worker )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2306,9 +2342,9 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
     }
 
     bool mouseHandled = false;
-    if( iptotal != 0 )
+    if( iptotal.local + iptotal.ext != 0 )
     {
-        if( ipcnt == 0 )
+        if( ( m_childCalls && ipcnt.local + ipcnt.ext  == 0 ) || ( !m_childCalls && ipcnt.local == 0 ) )
         {
             const auto ts = ImGui::CalcTextSize( " " );
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
@@ -2316,12 +2352,29 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
         else
         {
             auto sit = m_srcSampleSelect.find( lineNum );
-            if( PrintPercentage( 100.f * ipcnt / iptotal, sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF ) )
+            bool hover;
+            if( m_childCalls )
+            {
+                hover = PrintPercentage( 100.f * ( ipcnt.local + ipcnt.ext ) / ( iptotal.local + iptotal.ext ), sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+            }
+            else
+            {
+                hover = PrintPercentage( 100.f * ipcnt.local / iptotal.local, sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+            }
+            if( hover )
             {
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
-                if( worker ) TextFocused( "Time:", TimeToString( ipcnt * worker->GetSamplingPeriod() ) );
-                TextFocused( "Sample count:", RealToString( ipcnt ) );
+                if( ipcnt.local )
+                {
+                    if( worker ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker->GetSamplingPeriod() ) );
+                    TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                }
+                if( ipcnt.ext )
+                {
+                    if( worker ) TextFocused( "Child time:", TimeToString( ipcnt.ext * worker->GetSamplingPeriod() ) );
+                    TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
+                }
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
 
@@ -2381,7 +2434,14 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
                     m_srcGroupSelect = -1;
                 }
             }
-            draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );
+            if( m_childCalls )
+            {
+                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
+            }
+            else
+            {
+                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
+            }
         }
         ImGui::SameLine( 0, ty );
     }

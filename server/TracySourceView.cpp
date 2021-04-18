@@ -3281,13 +3281,13 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
     }
 }
 
-void SourceView::GatherIpStats( uint64_t addr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
+void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
 {
     const auto slzReady = worker.AreSourceLocationZonesReady();
     auto filename = m_source.filename();
     if( limitView )
     {
-        auto vec = worker.GetSamplesForSymbol( addr );
+        auto vec = worker.GetSamplesForSymbol( baseAddr );
         if( !vec ) return;
         auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         if( it == vec->end() ) return;
@@ -3343,7 +3343,7 @@ void SourceView::GatherIpStats( uint64_t addr, AddrStat& iptotalSrc, AddrStat& i
     }
     else
     {
-        auto ipmap = worker.GetSymbolInstructionPointers( addr );
+        auto ipmap = worker.GetSymbolInstructionPointers( baseAddr );
         if( !ipmap ) return;
         for( auto& ip : *ipmap )
         {
@@ -3394,11 +3394,11 @@ void SourceView::GatherIpStats( uint64_t addr, AddrStat& iptotalSrc, AddrStat& i
     }
 }
 
-uint32_t SourceView::CountAsmIpStats( uint64_t addr, const Worker& worker, bool limitView, const View& view )
+uint32_t SourceView::CountAsmIpStats( uint64_t baseAddr, const Worker& worker, bool limitView, const View& view )
 {
     if( limitView )
     {
-        auto vec = worker.GetSamplesForSymbol( addr );
+        auto vec = worker.GetSamplesForSymbol( baseAddr );
         if( !vec ) return 0;
         auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         if( it == vec->end() ) return 0;
@@ -3408,7 +3408,7 @@ uint32_t SourceView::CountAsmIpStats( uint64_t addr, const Worker& worker, bool 
     else
     {
         uint32_t cnt = 0;
-        auto ipmap = worker.GetSymbolInstructionPointers( addr );
+        auto ipmap = worker.GetSymbolInstructionPointers( baseAddr );
         if( !ipmap ) return 0;
         for( auto& ip : *ipmap ) cnt += ip.second;
         return cnt;

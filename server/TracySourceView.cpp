@@ -1225,13 +1225,13 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         RenderSymbolSourceView( iptotalSrc.local, ipcountSrc, ipcountAsm, ipmaxSrc.local, worker, view );
         break;
     case DisplayAsm:
-        jumpOut = RenderSymbolAsmView( iptotalAsm.local, ipcountAsm, ipmaxAsm.local, worker, view );
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
         RenderSymbolSourceView( iptotalSrc.local, ipcountSrc, ipcountAsm, ipmaxSrc.local, worker, view );
         ImGui::NextColumn();
-        jumpOut = RenderSymbolAsmView( iptotalAsm.local, ipcountAsm, ipmaxAsm.local, worker, view );
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
         ImGui::EndColumns();
         break;
     default:
@@ -1711,7 +1711,7 @@ static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len, CpuArchit
     }
 }
 
-uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, uint32_t ipmax, const Worker& worker, View& view )
+uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, const Worker& worker, View& view )
 {
     if( m_disasmFail >= 0 )
     {
@@ -1854,6 +1854,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
     uint64_t selJumpTarget;
     uint64_t jumpOut = 0;
 
+    const AddrStat zero = {};
     if( m_targetAddr != 0 )
     {
         for( auto& line : m_asm )
@@ -1863,7 +1864,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
                 m_targetAddr = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderAsmLine( line, 0, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
+            RenderAsmLine( line, zero, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_asmWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -1879,11 +1880,11 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
             const auto wpos = ImGui::GetCursorScreenPos();
             static std::vector<uint64_t> insList;
             insList.clear();
-            if( iptotal == 0 )
+            if( iptotal.local + iptotal.ext == 0 )
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderAsmLine( m_asm[i], 0, 0, 0, worker, jumpOut, maxAddrLen, view );
+                    RenderAsmLine( m_asm[i], zero, zero, zero, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( m_asm[i].addr );
                 }
             }
@@ -1893,7 +1894,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
                 {
                     auto& line = m_asm[i];
                     auto it = ipcount.find( line.addr );
-                    const auto ipcnt = it == ipcount.end() ? 0 : it->second.local;
+                    const auto ipcnt = it == ipcount.end() ? zero : it->second;
                     RenderAsmLine( line, ipcnt, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( line.addr );
                 }
@@ -1904,7 +1905,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
                 const auto ts = ImGui::CalcTextSize( " " );
                 const auto th2 = floor( ts.y / 2 );
                 const auto th4 = floor( ts.y / 4 );
-                const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
+                const auto xoff = ( ( iptotal.local + iptotal.ext ) == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
                 const auto minAddr = m_asm[clipper.DisplayStart].addr;
                 const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                 const auto mjl = m_maxJumpLevel;
@@ -2087,7 +2088,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
         }
 
         uint32_t selJumpLineStart, selJumpLineEnd, selJumpLineTarget;
-        std::vector<std::pair<uint64_t, uint32_t>> ipData;
+        std::vector<std::pair<uint64_t, AddrStat>> ipData;
         ipData.reserve( ipcount.size() );
         if( selJumpStart == 0 )
         {
@@ -2095,7 +2096,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
             {
                 auto it = ipcount.find( m_asm[i].addr );
                 if( it == ipcount.end() ) continue;
-                ipData.emplace_back( i, it->second.local );
+                ipData.emplace_back( i, it->second );
             }
         }
         else
@@ -2108,7 +2109,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
 
                 auto it = ipcount.find( m_asm[i].addr );
                 if( it == ipcount.end() ) continue;
-                ipData.emplace_back( i, it->second.local );
+                ipData.emplace_back( i, it->second );
             }
         }
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
@@ -2121,14 +2122,26 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
         while( it != ipData.end() )
         {
             const auto firstLine = it->first;
-            uint32_t ipSum = 0;
+            AddrStat ipSum = {};
             while( it != ipData.end() && it->first <= firstLine + step )
             {
                 ipSum += it->second;
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
-            const uint32_t color = GetHotnessColor( ipSum, ipmax );
+            uint32_t color;
+            if( m_childCalls )
+            {
+                color = GetHotnessColor( ipSum.local + ipSum.ext, ipmax.local + ipmax.ext );
+            }
+            else if( ipmax.local != 0 )
+            {
+                color = GetHotnessColor( ipSum.local, ipmax.local );
+            }
+            else
+            {
+                color = 0xFFFFFFFF;
+            }
             draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
         }
 
@@ -2185,14 +2198,14 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
 
     if( !m_asmSampleSelect.empty() )
     {
-        uint32_t count = 0;
+        AddrStat count = {};
         uint32_t numLines = 0;
         for( auto& idx : m_asmSampleSelect )
         {
             auto it = ipcount.find( m_asm[idx].addr );
             if( it != ipcount.end() )
             {
-                count += it->second.local;
+                count += it->second;
                 numLines++;
             }
         }
@@ -2205,17 +2218,43 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, const unordered_flat
         }
         ImGui::SameLine();
         char buf[16];
-        auto end = PrintFloat( buf, buf+16, 100.f * count / iptotal, 2 );
+        char* end;
+        if( m_childCalls )
+        {
+            end = PrintFloat( buf, buf+16, 100.f * ( count.local + count.ext ) / ( iptotal.local + iptotal.ext ), 2 );
+        }
+        else if( iptotal.local != 0 )
+        {
+            end = PrintFloat( buf, buf+16, 100.f * count.local / iptotal.local, 2 );
+        }
+        else
+        {
+            end = PrintFloat( buf, buf+16, 0.f, 2 );
+        }
         memcpy( end, "%", 2 );
         TextFocused( "Selected:", buf );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( "Time:", TimeToString( count * worker.GetSamplingPeriod() ) );
+        if( m_childCalls )
+        {
+            TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+        }
+        else
+        {
+            TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( "Sample count:", RealToString( count ) );
+        if( m_childCalls )
+        {
+            TextFocused( "Sample count:", RealToString( count.local + count.ext ) );
+        }
+        else
+        {
+            TextFocused( "Sample count:", RealToString( count.local ) );
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -2428,7 +2467,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, uint32_t 
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
+void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2449,9 +2488,9 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
 
     const auto asmIdx = &line - m_asm.data();
 
-    if( iptotal != 0 )
+    if( iptotal.local + iptotal.ext != 0 )
     {
-        if( ipcnt == 0 )
+        if( m_childCalls && ipcnt.local + ipcnt.ext == 0 || ipcnt.local == 0 )
         {
             const auto ts = ImGui::CalcTextSize( " " );
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
@@ -2460,7 +2499,16 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         {
             const auto idx = &line - m_asm.data();
             auto sit = m_asmSampleSelect.find( idx );
-            if( PrintPercentage( 100.f * ipcnt / iptotal, sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF ) )
+            bool hover;
+            if( m_childCalls )
+            {
+                hover = PrintPercentage( 100.f * ( ipcnt.local + ipcnt.ext ) / ( iptotal.local + iptotal.ext ), sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+            }
+            else
+            {
+                hover = PrintPercentage( 100.f * ipcnt.local / iptotal.local, sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+            }
+            if( hover )
             {
                 uint64_t symAddrParents = m_baseAddr;
                 auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
@@ -2487,8 +2535,10 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
 
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
-                TextFocused( "Time:", TimeToString( ipcnt * worker.GetSamplingPeriod() ) );
-                TextFocused( "Sample count:", RealToString( ipcnt ) );
+                if( ipcnt.local ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
+                if( ipcnt.ext ) TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
+                if( ipcnt.local ) TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                if( ipcnt.ext ) TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 ImGui::Separator();
                 TextFocused( "Entry call stacks:", RealToString( stats.parents.size() ) );
                 ImGui::SameLine();
@@ -2554,7 +2604,14 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                     view.ShowSampleParents( symAddrParents );
                 }
             }
-            draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );
+            if( m_childCalls )
+            {
+                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
+            }
+            else
+            {
+                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
+            }
         }
         ImGui::SameLine( 0, ty );
     }
@@ -2741,7 +2798,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             const auto th4 = floor( ts.y / 4 );
             const auto& mjl = m_maxJumpLevel;
             const auto col = GetHsvColor( line.jumpAddr, 6 );
-            const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
+            const auto xoff = ( ( iptotal.local + iptotal.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
 
             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );

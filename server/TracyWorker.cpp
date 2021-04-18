@@ -1830,16 +1830,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                     it->second.push_back_non_empty( SampleDataRange { time, ip } );
                                 }
                             }
-
                             for( uint16_t i=1; i<callstack.size(); i++ )
                             {
-                                auto frame = GetCallstackFrame( callstack[i] );
-                                if( !frame ) continue;
-                                const auto symAddr = frame->data[0].symAddr;
-                                auto it = m_data.childSamples.find( symAddr );
+                                auto addr = GetCanonicalPointer( callstack[i] );
+                                auto it = m_data.childSamples.find( addr );
                                 if( it == m_data.childSamples.end() )
                                 {
-                                    m_data.childSamples.emplace( symAddr, Vector<Int48>( time ) );
+                                    m_data.childSamples.emplace( addr, Vector<Int48>( time ) );
                                 }
                                 else
                                 {

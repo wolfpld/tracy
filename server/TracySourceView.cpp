@@ -2133,20 +2133,16 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
-            uint32_t color;
             if( m_childCalls )
             {
-                color = GetHotnessColor( ipSum.local + ipSum.ext, ipmax.local + ipmax.ext );
+                const auto color = GetHotnessColor( ipSum.local + ipSum.ext, ipmax.local + ipmax.ext );
+                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
             }
             else if( ipmax.local != 0 )
             {
-                color = GetHotnessColor( ipSum.local, ipmax.local );
+                const auto color = GetHotnessColor( ipSum.local, ipmax.local );
+                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
             }
-            else
-            {
-                color = 0xFFFFFFFF;
-            }
-            draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
         }
 
         if( selJumpStart != 0 )

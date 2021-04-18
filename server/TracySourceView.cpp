@@ -1365,36 +1365,44 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
             }
             else
             {
-                uint32_t totalSamples = 0;
-                unordered_flat_map<uint32_t, uint32_t> fileCounts;
+                AddrStat totalSamples = {};
+                unordered_flat_map<uint32_t, AddrStat> fileCounts;
                 for( auto& v : m_asm )
                 {
                     uint32_t srcline;
                     const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
                     if( srcline != 0 )
                     {
-                        uint32_t cnt = 0;
+                        AddrStat cnt = {};
                         auto ait = ipcountAsm.find( v.addr );
-                        if( ait != ipcountAsm.end() ) cnt = ait->second.local;
+                        if( ait != ipcountAsm.end() ) cnt = ait->second;
 
                         auto fit = fileCounts.find( srcidx.Idx() );
                         if( fit == fileCounts.end() )
                         {
                             fileCounts.emplace( srcidx.Idx(), cnt );
                         }
-                        else if( cnt != 0 )
+                        else
                         {
                             fit->second += cnt;
                         }
                         totalSamples += cnt;
                     }
                 }
-                std::vector<std::pair<uint32_t, uint32_t>> fileCountsVec;
+                std::vector<std::pair<uint32_t, AddrStat>> fileCountsVec;
                 fileCountsVec.reserve( fileCounts.size() );
                 for( auto& v : fileCounts ) fileCountsVec.emplace_back( v.first, v.second );
-                pdqsort_branchless( fileCountsVec.begin(), fileCountsVec.end(), [&worker] (const auto& l, const auto& r ) { return l.second == r.second ? strcmp( worker.GetString( l.first ), worker.GetString( r.first ) ) < 0 : l.second > r.second; } );
+                if( m_childCalls )
+                {
+                    pdqsort_branchless( fileCountsVec.begin(), fileCountsVec.end(), [&worker] (const auto& l, const auto& r ) { return ( l.second.local + l.second.ext == r.second.local + r.second.ext ) ? strcmp( worker.GetString( l.first ), worker.GetString( r.first ) ) < 0 : ( l.second.local + l.second.ext > r.second.local + r.second.ext ); } );
+                }
+                else
+                {
+                    pdqsort_branchless( fileCountsVec.begin(), fileCountsVec.end(), [&worker] (const auto& l, const auto& r ) { return l.second.local == r.second.local ? strcmp( worker.GetString( l.first ), worker.GetString( r.first ) ) < 0 : l.second.local > r.second.local; } );
+                }
 
-                if( totalSamples != 0 )
+                const auto hasSamples = totalSamples.local + totalSamples.ext != 0;
+                if( hasSamples )
                 {
                     ImGui::Columns( 2 );
                     static bool widthSet = false;
@@ -1409,20 +1417,41 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                 }
                 for( auto& v : fileCountsVec )
                 {
-                    if( totalSamples != 0 )
+                    if( hasSamples )
                     {
                         auto fit = fileCounts.find( v.first );
                         assert( fit != fileCounts.end() );
-                        if( fit->second != 0 )
+                        if( fit->second.local + fit->second.ext != 0 )
                         {
-                            ImGui::TextUnformatted( TimeToString( fit->second * worker.GetSamplingPeriod() ) );
-                            ImGui::SameLine();
-                            ImGui::TextDisabled( "(%.2f%%)", 100.f * fit->second / totalSamples );
+                            if( m_childCalls )
+                            {
+                                ImGui::TextUnformatted( TimeToString( ( fit->second.local + fit->second.ext ) * worker.GetSamplingPeriod() ) );
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
+                            }
                             if( ImGui::IsItemHovered() )
                             {
                                 ImGui::BeginTooltip();
-                                TextFocused( "Sample count:", RealToString( fit->second ) );
+                                TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
+                                TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
+                                TextFocused( "Local samples:", RealToString( fit->second.local ) );
+                                TextFocused( "Child samples:", RealToString( fit->second.ext ) );
                                 ImGui::EndTooltip();
+                            }
+                            ImGui::SameLine();
+                            if( m_childCalls )
+                            {
+                                ImGui::TextDisabled( "(%.2f%%)", 100.f * ( fit->second.local + fit->second.ext ) / ( totalSamples.local + totalSamples.ext ) );
+                            }
+                            else if( totalSamples.local != 0 )
+                            {
+                                ImGui::TextDisabled( "(%.2f%%)", 100.f * fit->second.local / totalSamples.local );
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled( "(%.2f%%)", 0 );
                             }
                         }
                         ImGui::NextColumn();
@@ -1455,9 +1484,9 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                     {
                         TextDisabledUnformatted( fstr );
                     }
-                    if( totalSamples != 0 ) ImGui::NextColumn();
+                    if( hasSamples ) ImGui::NextColumn();
                 }
-                if( totalSamples != 0 ) ImGui::EndColumns();
+                if( hasSamples ) ImGui::EndColumns();
             }
             ImGui::EndCombo();
         }

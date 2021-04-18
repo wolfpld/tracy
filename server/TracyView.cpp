@@ -13801,6 +13801,13 @@ void View::DrawInfo()
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );
+        TextFocused( "Child sample symbols:", RealToString( m_worker.GetChildSamplesCountSyms() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Child samples:", RealToString( m_worker.GetChildSamplesCountFull() ) );
+            ImGui::EndTooltip();
+        }
         TextFocused( "Frame images:", RealToString( ficnt ) );
         if( ficnt != 0 && ImGui::IsItemHovered() )
         {

@@ -1120,7 +1120,25 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
+        const auto slzReady = worker.AreSourceLocationZonesReady();
+        if( !slzReady )
+        {
+            ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
+            ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+            m_childCalls = false;
+        }
         SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
+        if( !slzReady )
+        {
+            ImGui::PopStyleVar();
+            ImGui::PopItemFlag();
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Please wait, processing data..." );
+                ImGui::EndTooltip();
+            }
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -1144,7 +1162,7 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Waiting for background tasks to finish" );
+                ImGui::TextUnformatted( "Please wait, processing data..." );
                 ImGui::EndTooltip();
             }
         }

@@ -445,6 +445,8 @@ public:
     uint64_t GetGhostZonesCount() const { return m_data.ghostCnt; }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }
+    uint64_t GetChildSamplesCountSyms() const { return m_data.childSamples.size(); }
+    uint64_t GetChildSamplesCountFull() const;
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
     const FrameData* GetFramesBase() const { return m_data.framesBase; }
     const Vector<FrameData*>& GetFrames() const { return m_data.frames.Data(); }

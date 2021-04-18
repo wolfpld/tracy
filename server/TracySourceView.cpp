@@ -1153,8 +1153,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            TextFocused( "Local time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
-            TextFocused( "Child time:", TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
+            if( iptotalAsm.local != 0 ) TextFocused( "Local time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
+            if( iptotalAsm.ext != 0 ) TextFocused( "Child time:", TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
             ImGui::EndTooltip();
         }
         ImGui::SameLine();
@@ -1171,8 +1171,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            TextFocused( "Local samples:", RealToString( iptotalAsm.local ) );
-            TextFocused( "Child samples:", RealToString( iptotalAsm.ext ) );
+            if( iptotalAsm.local != 0 ) TextFocused( "Local samples:", RealToString( iptotalAsm.local ) );
+            if( iptotalAsm.ext != 0 ) TextFocused( "Child samples:", RealToString( iptotalAsm.ext ) );
             ImGui::EndTooltip();
         }
         ImGui::SameLine();
@@ -1434,10 +1434,10 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                             if( ImGui::IsItemHovered() )
                             {
                                 ImGui::BeginTooltip();
-                                TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
-                                TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
-                                TextFocused( "Local samples:", RealToString( fit->second.local ) );
-                                TextFocused( "Child samples:", RealToString( fit->second.ext ) );
+                                if( fit->second.local ) TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
+                                if( fit->second.ext ) TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
+                                if( fit->second.local ) TextFocused( "Local samples:", RealToString( fit->second.local ) );
+                                if( fit->second.ext ) TextFocused( "Child samples:", RealToString( fit->second.ext ) );
                                 ImGui::EndTooltip();
                             }
                             ImGui::SameLine();

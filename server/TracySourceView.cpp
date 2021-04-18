@@ -1142,11 +1142,39 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
+        if( m_childCalls )
+        {
+            TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( ( iptotalAsm.local + iptotalAsm.ext ) * worker.GetSamplingPeriod() ) );
+        }
+        else
+        {
+            TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Local time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
+            TextFocused( "Child time:", TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
+            ImGui::EndTooltip();
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local ) );
+        if( m_childCalls )
+        {
+            TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local + iptotalAsm.ext ) );
+        }
+        else
+        {
+            TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local ) );
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Local samples:", RealToString( iptotalAsm.local ) );
+            TextFocused( "Child samples:", RealToString( iptotalAsm.ext ) );
+            ImGui::EndTooltip();
+        }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();

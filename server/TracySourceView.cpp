@@ -1434,10 +1434,16 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, const unordered_flat_
                             if( ImGui::IsItemHovered() )
                             {
                                 ImGui::BeginTooltip();
-                                if( fit->second.local ) TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
-                                if( fit->second.ext ) TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
-                                if( fit->second.local ) TextFocused( "Local samples:", RealToString( fit->second.local ) );
-                                if( fit->second.ext ) TextFocused( "Child samples:", RealToString( fit->second.ext ) );
+                                if( fit->second.local )
+                                {
+                                    TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
+                                    TextFocused( "Local samples:", RealToString( fit->second.local ) );
+                                }
+                                if( fit->second.ext )
+                                {
+                                    TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
+                                    TextFocused( "Child samples:", RealToString( fit->second.ext ) );
+                                }
                                 ImGui::EndTooltip();
                             }
                             ImGui::SameLine();
@@ -2535,10 +2541,16 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
-                if( ipcnt.local ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
-                if( ipcnt.ext ) TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
-                if( ipcnt.local ) TextFocused( "Local samples:", RealToString( ipcnt.local ) );
-                if( ipcnt.ext ) TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
+                if( ipcnt.local )
+                {
+                    TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
+                    TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                }
+                if( ipcnt.ext )
+                {
+                    TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
+                    TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
+                }
                 ImGui::Separator();
                 TextFocused( "Entry call stacks:", RealToString( stats.parents.size() ) );
                 ImGui::SameLine();

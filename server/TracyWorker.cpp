@@ -2000,6 +2000,7 @@ uint64_t Worker::GetContextSwitchPerCpuCount() const
     return cnt;
 }
 
+#ifndef TRACY_NO_STATISTICS
 uint64_t Worker::GetChildSamplesCountFull() const
 {
     uint64_t cnt = 0;
@@ -2009,6 +2010,7 @@ uint64_t Worker::GetChildSamplesCountFull() const
     }
     return cnt;
 }
+#endif
 
 uint64_t Worker::GetPidFromTid( uint64_t tid ) const
 {

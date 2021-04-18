@@ -5828,6 +5828,19 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
             }
         }
     }
+    for( uint16_t i=1; i<cs.size(); i++ )
+    {
+        auto addr = GetCanonicalPointer( cs[i] );
+        auto it = m_data.childSamples.find( addr );
+        if( it == m_data.childSamples.end() )
+        {
+            m_data.childSamples.emplace( addr, Vector<Int48>( sd.time ) );
+        }
+        else
+        {
+            it->second.push_back_non_empty( sd.time );
+        }
+    }
 
     const auto framesKnown = UpdateSampleStatistics( m_pendingCallstackId, 1, true );
     assert( td->samples.size() > td->ghostIdx );

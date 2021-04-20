@@ -1118,17 +1118,21 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
         iptotalSrc = iptotalAsm;
     }
+    const auto slzReady = worker.AreSourceLocationZonesReady();
     if( ( iptotalAsm.local + iptotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        const auto slzReady = worker.AreSourceLocationZonesReady();
         if( !slzReady )
         {
             ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
             ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
             m_childCalls = false;
+        }
+        else if( ImGui::IsKeyDown( 'Z' ) )
+        {
+            m_childCalls = !m_childCalls;
         }
         SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
         if( !slzReady )
@@ -1139,6 +1143,15 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
             {
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Please wait, processing data..." );
+                ImGui::EndTooltip();
+            }
+        }
+        else
+        {
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Press Z key to temporarily reverse selection." );
                 ImGui::EndTooltip();
             }
         }
@@ -1237,6 +1250,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         assert( false );
         break;
     }
+
+    if( slzReady && ImGui::IsKeyDown( 'Z' ) ) m_childCalls = !m_childCalls;
 
     if( jumpOut != 0 )
     {

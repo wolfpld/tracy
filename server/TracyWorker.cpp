@@ -5602,11 +5602,11 @@ MemEvent* Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const 
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
 
-    if( ev.ptr == 0 ) return nullptr;
-
     auto it = memdata.active.find( ev.ptr );
     if( it == memdata.active.end() )
     {
+        if( ev.ptr == 0 ) return nullptr;
+
         if( !m_ignoreMemFreeFaults )
         {
             CheckThreadString( ev.thread );

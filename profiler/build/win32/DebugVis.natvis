@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?> 
+<?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <Type Name="tracy::Vector&lt;*&gt;">
     <DisplayString>{{ size={m_size} }}</DisplayString>
@@ -43,5 +43,68 @@
   </Type>
   <Type Name="tracy::Int48">
     <DisplayString>{{ value={int64_t( uint64_t(m_val[0]) | (uint64_t(m_val[1])&lt;&lt;8) | (uint64_t(m_val[2])&lt;&lt;16) | (uint64_t(m_val[3])&lt;&lt;24) | (uint64_t(m_val[4])&lt;&lt;32) | (uint64_t(m_val[5])&lt;&lt;40) )} }}</DisplayString>
+  </Type>
+  <Type Name="tracy::detail::Table&lt;*,*,*,*,*,*&gt;">
+    <!--
+  $T1 = bool IsFlat
+  $T2 = size_t MaxLoadFactor100
+  $T3 = typename Key
+  $T4 = typename T
+  $T5 = typename Hash
+  $T6 = typename KeyEqual
+-->
+    <!-- <DisplayString>{map}</DisplayString> -->
+    <Expand>
+      <Synthetic Name="[elements]">
+        <DisplayString>{{size={mNumElements}}}</DisplayString>
+        <Expand>
+          <CustomListItems MaxItemsPerView="5000" >
+            <Variable Name="itKeyVals"    InitialValue="mKeyVals     " />
+            <Variable Name="itInfo"       InitialValue="mInfo        " />
+            <Variable Name="itEndKeyVals" InitialValue="(void *)mInfo " />
+            <Variable Name="n"            InitialValue="0ULL         " />
+            <Variable Name="inc"          InitialValue="(unsigned long)0" />
+
+            <Size>mNumElements</Size>
+            <Loop>
+              <!-- Fast forward -->
+              <Exec>n = *((size_t*)itInfo)</Exec>
+              <Loop>
+                <Break Condition="n != 0" />
+                <Exec>itInfo += sizeof(size_t)</Exec>
+                <Exec>itKeyVals += sizeof(size_t)</Exec>
+              </Loop>
+              <!-- Count Trailing Zeros -->
+              <Exec>
+                inc = n == 0
+                ? 64
+                : (
+                63
+                - (((n &amp; (~n + 1)) &amp; 0x00000000FFFFFFFF) ? 32 : 0)
+                - (((n &amp; (~n + 1)) &amp; 0x0000FFFF0000FFFF) ? 16 : 0)
+                - (((n &amp; (~n + 1)) &amp; 0x00FF00FF00FF00FF) ? 8  : 0)
+                - (((n &amp; (~n + 1)) &amp; 0x0F0F0F0F0F0F0F0F) ? 4  : 0)
+                - (((n &amp; (~n + 1)) &amp; 0x3333333333333333) ? 2  : 0)
+                - (((n &amp; (~n + 1)) &amp; 0x5555555555555555) ? 1  : 0)
+                )
+              </Exec>
+              <Exec>itInfo    += inc / 8</Exec>
+              <Exec>itKeyVals += inc / 8</Exec>
+              <!-- Fast forward -->
+              <Break Condition="(void*)itKeyVals == itEndKeyVals" />
+              <Item Name="[{itKeyVals-&gt;mData.first}]">itKeyVals-&gt;mData.second</Item>
+              <!-- <Item>itKeyVals-&gt;mData</Item> -->
+              <Exec>itInfo++   </Exec>
+              <Exec>itKeyVals++</Exec>
+            </Loop>
+          </CustomListItems>
+        </Expand>
+      </Synthetic>
+      <Item Name="[load_factor]"    >float(mNumElements) / float(mMask + 1)</Item>
+      <Item Name="[max_load_factor]">$T2</Item>
+      <Item Name="[IsFlat]"         >$T1</Item>
+      <Item Name="[hash_function]"  >*(WrapHash&lt;$T5&gt;*)this,nd</Item>
+      <Item Name="[key_eq]"         >*(WrapKeyEqual&lt;$T6&gt;*)this,nd</Item>
+    </Expand>
   </Type>
 </AutoVisualizer>

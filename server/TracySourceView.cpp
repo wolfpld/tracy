@@ -3042,6 +3042,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
             if( var.maxlat >= 0 )
             {
+                bool exact = false;
                 TextDisabledUnformatted( "Latency:" );
                 ImGui::SameLine();
                 if( var.minlat == var.maxlat && var.minbound == var.maxbound )
@@ -3053,6 +3054,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     else
                     {
                         ImGui::TextUnformatted( RealToString( var.minlat ) );
+                        exact = true;
                     }
                 }
                 else
@@ -3076,7 +3078,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                 }
                 ImGui::SameLine();
-                TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
+                if( exact )
+                {
+                    TextDisabledUnformatted( "(cycles in execution)" );
+                }
+                else
+                {
+                    TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
+                }
             }
             TextFocused( "\xce\xbcops:", RealToString( var.uops ) );
             if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );

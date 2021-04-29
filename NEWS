@@ -14,6 +14,8 @@ v0.x.x (xxxx-xx-xx)
   warning message.
 - Added ability to display sample time spent in child function calls.
 - Fixed issue which may have prevented sampling on ARM64.
+- Added TRACY_NO_FRAME_IMAGE macro to disable frame image compression
+  thread.
 
 
 v0.7.7 (2021-04-01)

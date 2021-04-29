@@ -13,6 +13,7 @@ v0.x.x (xxxx-xx-xx)
 - Manually disconnecting from the server will no longer display erroneous
   warning message.
 - Added ability to display sample time spent in child function calls.
+- Fixed issue which may have prevented sampling on ARM64.
 
 
 v0.7.7 (2021-04-01)

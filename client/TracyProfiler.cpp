@@ -940,7 +940,9 @@ enum { QueuePrealloc = 256 * 1024 };
 
 static Profiler* s_instance = nullptr;
 static Thread* s_thread;
+#ifndef TRACY_NO_FRAME_IMAGE
 static Thread* s_compressThread;
+#endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static Thread* s_sysTraceThread = nullptr;
@@ -1203,8 +1205,10 @@ Profiler::Profiler()
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
+#ifndef TRACY_NO_FRAME_IMAGE
     , m_fiQueue( 16 )
     , m_fiDequeue( 16 )
+#endif
     , m_frameCount( 0 )
     , m_isConnected( false )
 #ifdef TRACY_ON_DEMAND
@@ -1254,8 +1258,10 @@ void Profiler::SpawnWorkerThreads()
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
 
+#ifndef TRACY_NO_FRAME_IMAGE
     s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_compressThread) Thread( LaunchCompressWorker, this );
+#endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( SysTraceStart( m_samplingPeriod ) )
@@ -1307,8 +1313,11 @@ Profiler::~Profiler()
     }
 #endif
 
+#ifndef TRACY_NO_FRAME_IMAGE
     s_compressThread->~Thread();
     tracy_free( s_compressThread );
+#endif
+
     s_thread->~Thread();
     tracy_free( s_thread );
 
@@ -1808,6 +1817,7 @@ void Profiler::Worker()
     }
 }
 
+#ifndef TRACY_NO_FRAME_IMAGE
 void Profiler::CompressWorker()
 {
     ThreadExitHandler threadExitHandler;
@@ -1874,6 +1884,7 @@ void Profiler::CompressWorker()
         }
     }
 }
+#endif
 
 static void FreeAssociatedMemory( const QueueItem& item )
 {

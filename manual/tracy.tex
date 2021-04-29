@@ -914,6 +914,7 @@ logo=\bcattention
 ]{Caveats}
 \begin{itemize}
 \item Frame images are compressed on a second client profiler thread\footnote{Small part of compression task is performed on the server.}, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
+\item This second thread will be periodically woken up, even if there are no frame images to compress\footnote{This way of doing things is required to prevent a deadlock in specific circumstances.}. If you are not using the frame image capture functionality and you don't wish this thread to be running, you can define the \texttt{TRACY\_NO\_FRAME\_IMAGE} macro.
 \item Due to implementation details of the network buffer, single frame image cannot be greater than 256 KB after compression. Note that a $960\times540$ image fits in this limit.
 \end{itemize}
 \end{bclogo}

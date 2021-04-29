@@ -3025,6 +3025,17 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         ImGui::TextUnformatted( buf );
     }
 
+    uint32_t jumpOffset;
+    uint64_t jumpBase;
+    const char* jumpName = nullptr;
+    if( line.jumpAddr != 0 )
+    {
+        jumpOffset = 0;
+        jumpBase = worker.GetSymbolForAddress( line.jumpAddr, jumpOffset );
+        auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( line.jumpAddr ) : worker.GetSymbolData( jumpBase );
+        if( jumpSym ) jumpName = worker.GetString( jumpSym->name );
+    }
+
     if( ImGui::IsItemHovered() )
     {
         if( asmVar )
@@ -3274,35 +3285,29 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "}" );
     }
 
-    if( line.jumpAddr != 0 )
+    if( jumpName )
     {
-        uint32_t offset = 0;
-        const auto base = worker.GetSymbolForAddress( line.jumpAddr, offset );
-        auto sym = base == 0 ? worker.GetSymbolData( line.jumpAddr ) : worker.GetSymbolData( base );
-        if( sym )
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( jumpBase == m_baseAddr )
         {
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-            if( base == m_baseAddr )
+            ImGui::TextDisabled( "-> [%s+%" PRIu32"]", jumpName, jumpOffset );
+            if( ImGui::IsItemHovered() )
             {
-                ImGui::TextDisabled( "-> [%s+%" PRIu32"]", worker.GetString( sym->name ), offset );
-                if( ImGui::IsItemHovered() )
+                m_highlightAddr = line.jumpAddr;
+                if( ImGui::IsItemClicked() )
                 {
-                    m_highlightAddr = line.jumpAddr;
-                    if( ImGui::IsItemClicked() )
-                    {
-                        m_targetAddr = line.jumpAddr;
-                        m_selectedAddresses.clear();
-                        m_selectedAddresses.emplace( line.jumpAddr );
-                    }
+                    m_targetAddr = line.jumpAddr;
+                    m_selectedAddresses.clear();
+                    m_selectedAddresses.emplace( line.jumpAddr );
                 }
             }
-            else
-            {
-                ImGui::TextDisabled( "[%s+%" PRIu32"]", worker.GetString( sym->name ), offset );
-                if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
-            }
+        }
+        else
+        {
+            ImGui::TextDisabled( "[%s+%" PRIu32"]", jumpName, jumpOffset );
+            if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
         }
     }
 

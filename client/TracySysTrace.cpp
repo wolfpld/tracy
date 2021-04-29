@@ -738,6 +738,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                             auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
                             s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
 
+#if defined __x86_64__ || defined _M_X64
                             // remove non-canonical pointers
                             do
                             {
@@ -754,6 +755,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                                 const auto m2 = test >> 47;
                                 if( m1 != m2 ) trace[j] = 0;
                             }
+#endif
 
                             // skip kernel frames
                             uint64_t j;

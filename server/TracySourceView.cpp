@@ -2723,13 +2723,42 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     {
         TextDisabledUnformatted( buf );
     }
-    if( ImGui::IsItemClicked( 0 ) )
+    if( ImGui::IsItemHovered() )
     {
-        m_asmCountBase = asmIdx;
-    }
-    else if( ImGui::IsItemClicked( 1 ) )
-    {
-        m_asmCountBase = -1;
+        if( m_font ) ImGui::PopFont();
+        ImGui::BeginTooltip();
+        if( m_asmCountBase >= 0 )
+        {
+            TextDisabledUnformatted( "Absolute address:" );
+            ImGui::SameLine();
+            ImGui::Text( "%" PRIx64, line.addr );
+            TextDisabledUnformatted( "Relative address:" );
+            ImGui::SameLine();
+            ImGui::Text( "+%" PRIx64, line.addr - m_baseAddr );
+        }
+        else if( m_asmRelative )
+        {
+            TextDisabledUnformatted( "Absolute address:" );
+            ImGui::SameLine();
+            ImGui::Text( "%" PRIx64, line.addr );
+        }
+        else
+        {
+            TextDisabledUnformatted( "Relative address:" );
+            ImGui::SameLine();
+            ImGui::Text( "+%" PRIx64, line.addr - m_baseAddr );
+        }
+        ImGui::EndTooltip();
+        if( m_font ) ImGui::PushFont( m_font );
+
+        if( ImGui::IsItemClicked( 0 ) )
+        {
+            m_asmCountBase = asmIdx;
+        }
+        else if( ImGui::IsItemClicked( 1 ) )
+        {
+            m_asmCountBase = -1;
+        }
     }
 
     const auto stw = ImGui::CalcTextSize( " " ).x;

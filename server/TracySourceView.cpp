@@ -3043,11 +3043,25 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto& var = *asmVar;
             if( m_font ) ImGui::PopFont();
             ImGui::BeginTooltip();
-            if( opdesc != 0 )
+            if( jumpName || opdesc != 0 )
             {
-                ImGui::TextUnformatted( OpDescList[opdesc] );
+                if( opdesc != 0 ) ImGui::TextUnformatted( OpDescList[opdesc] );
+                if( jumpName )
+                {
+                    if( jumpBase == m_baseAddr )
+                    {
+                        TextDisabledUnformatted( "Local target:" );
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( "External target:" );
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text( "%s+%" PRIu32, jumpName, jumpOffset );
+                }
                 ImGui::Separator();
             }
+
             TextFocused( "Throughput:", RealToString( var.tp ) );
             ImGui::SameLine();
             TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
@@ -3151,6 +3165,23 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                 }
             }
+            ImGui::EndTooltip();
+            if( m_font ) ImGui::PushFont( m_font );
+        }
+        else if( jumpName )
+        {
+            if( m_font ) ImGui::PopFont();
+            ImGui::BeginTooltip();
+            if( jumpBase == m_baseAddr )
+            {
+                TextDisabledUnformatted( "Local target:" );
+            }
+            else
+            {
+                TextDisabledUnformatted( "External target:" );
+            }
+            ImGui::SameLine();
+            ImGui::Text( "%s+%" PRIu32, jumpName, jumpOffset );
             ImGui::EndTooltip();
             if( m_font ) ImGui::PushFont( m_font );
         }

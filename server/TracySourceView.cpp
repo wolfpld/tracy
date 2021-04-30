@@ -3339,7 +3339,17 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), ", " );
                 ImGui::SameLine( 0, 0 );
             }
-            TextColoredUnformatted( col, s_regNameX86[line.regData[idx++] & RegMask] );
+            TextColoredUnformatted( col, s_regNameX86[line.regData[idx] & RegMask] );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                if( ( line.regData[idx] & ( WriteBit | ReadBit ) ) == ( WriteBit | ReadBit ) ) ImGui::TextUnformatted( "Read and write" );
+                else if( line.regData[idx] & WriteBit ) ImGui::TextUnformatted( "Write" );
+                else if( line.regData[idx] & ReadBit ) ImGui::TextUnformatted( "Read" );
+                else ImGui::TextUnformatted( "Previous read" );
+                ImGui::EndTooltip();
+            }
+            idx++;
         }
         ImGui::SameLine( 0, 0 );
         TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "}" );

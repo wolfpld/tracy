@@ -458,7 +458,7 @@ struct ContextSwitchCpu
 {
     tracy_force_inline int64_t Start() const { return int64_t( _start_thread ) >> 16; }
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 4 ); memcpy( ((char*)&_start_thread)+6, ((char*)&start)+4, 2 ); }
-    tracy_force_inline int64_t End() const { return _end.Val(); }
+    tracy_force_inline int64_t End() const { int64_t v; memcpy( &v, ((char*)&_end)-2, 8 ); return v >> 16; }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end.SetVal( end ); }
     tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
     tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }

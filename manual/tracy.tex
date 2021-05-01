@@ -137,7 +137,9 @@ There's much more Tracy can do, which can be explored by carefully reading this 
 \section{A quick look at Tracy Profiler}
 \label{quicklook}
 
-Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, Direct3D 12, OpenCL) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or
+embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, Direct3D
+11/12, OpenCL) and memory. It also can monitor locks held by threads and show where contention does happen.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
@@ -1314,7 +1316,7 @@ To mark that a separate memory pool is to be tracked you should use the named ve
 \subsection{GPU profiling}
 \label{gpuprofiling}
 
-Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 12 and OpenCL execution time on GPU.
+Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12 and OpenCL execution time on GPU.
 
 Note that the CPU and GPU timers may be not synchronized, unless a calibrated context is created. Since availability of calibrated contexts is limited, you can correct the desynchronization of uncalibrated contexts in the profiler's options (section~\ref{options}).
 
@@ -1373,6 +1375,14 @@ In order to maintain synchronization between CPU and GPU time domains, you will 
 
 To enable calibrated context, replace the macro \texttt{TracyVkContext} with \texttt{TracyVkContextCalibrated} and pass the two functions as additional parameters, in the order specified above.
 
+\subsubsection{Direct3D11}
+
+To enable Direct3D 11 support, include the \texttt{tracy/TracyD3D11.hpp} header file, and create a \texttt{TracyD3D11Ctx} object with the \texttt{TracyD3D11Context(device, devicecontext)} macro. The object should later be cleaned up with the \texttt{TracyD3D11Destroy} macro. Tracy does not support D3D11 command lists. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
+
+To mark a GPU zone, use the \texttt{TracyD3D11Zone(name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyD3D11ZoneC(name, color)} to specify zone color.
+
+You also need to periodically collect the GPU events using the \texttt{TracyD3D11Collect} macro. A good place to do it is after the swap chain present function.
+
 \subsubsection{Direct3D 12}
 
 To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type. To set a custom name for the context, use the \texttt{TracyD3D12ContextName(ctx, name, size)} macro.
@@ -1401,13 +1411,13 @@ Similarly to Vulkan and OpenGL, you also need to periodically collect the OpenCL
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).
 
-To solve this problem, in case of OpenGL use the \texttt{TracyGpuNamedZone} macro in place of \texttt{TracyGpuZone} (or the color variant). The same applies to Vulkan and Direct3D 12 -- replace \texttt{TracyVkZone} with \texttt{TracyVkNamedZone} and \texttt{TracyD3D12Zone} with \texttt{TracyD3D12NamedZone}.
+To solve this problem, in case of OpenGL use the \texttt{TracyGpuNamedZone} macro in place of \texttt{TracyGpuZone} (or the color variant). The same applies to Vulkan and Direct3D 11/12 -- replace \texttt{TracyVkZone} with \texttt{TracyVkNamedZone} and \texttt{TracyD3D11Zone}/\texttt{TracyD3D12Zone} with \texttt{TracyD3D11NamedZone}/\texttt{TracyD3D12NamedZone}.
 
 Remember that you need to provide your own name for the created stack variable as the first parameter to the macros.
 
 \subsubsection{Transient GPU zones}
 
-Transient zones (see section~\ref{transientzones} for details) are available in OpenGL, Vulkan, and Direct3D 12 macros.
+Transient zones (see section~\ref{transientzones} for details) are available in OpenGL, Vulkan, and Direct3D 11/12 macros.
 
 \subsection{Collecting call stacks}
 \label{collectingcallstacks}

@@ -855,6 +855,7 @@ void SourceView::RenderSimpleSourceView()
     auto& lines = m_source.get();
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetWindowPos();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto wh = ImGui::GetWindowHeight();
     const auto ty = ImGui::GetFontSize();
     const auto ts = ImGui::CalcTextSize( " " ).x;
@@ -862,7 +863,7 @@ void SourceView::RenderSimpleSourceView()
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
     const auto lx = ts * maxLine + ty + round( ts*0.4f );
-    draw->AddLine( wpos + ImVec2( lx, 0 ), wpos + ImVec2( lx, wh ), 0x08FFFFFF );
+    DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
     const AddrStat zero = {};
     if( m_targetLine != 0 )
@@ -1521,6 +1522,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
     auto& lines = m_source.get();
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetWindowPos() - ImVec2( ImGui::GetCurrentWindowRead()->Scroll.x, 0 );
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto wh = ImGui::GetWindowHeight();
     const auto ty = ImGui::GetFontSize();
     const auto ts = ImGui::CalcTextSize( " " ).x;
@@ -1535,7 +1537,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         const auto maxAsm = strlen( tmp ) + 1;
         lx += ts * maxAsm + ty;
     }
-    draw->AddLine( wpos + ImVec2( lx, 0 ), wpos + ImVec2( lx, wh ), 0x08FFFFFF );
+    DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
     const AddrStat zero = {};
     m_selectedAddressesHover.clear();
@@ -1588,12 +1590,12 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         if( m_selectedLine != 0 )
         {
             const auto ly = round( rect.Min.y + ( m_selectedLine - 0.5f ) / lines.size() * rect.GetHeight() );
-            draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x8899994C, 3 );
+            DrawLine( draw, ImVec2( rect.Min.x + 0.5f, ly + 0.5f ), ImVec2( rect.Max.x + 0.5f, ly + 0.5f ), 0x8899994C, 3 );
         }
         if( m_source.idx() == m_hoveredSource && m_hoveredLine != 0 )
         {
             const auto ly = round( rect.Min.y + ( m_hoveredLine - 0.5f ) / lines.size() * rect.GetHeight() );
-            draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 3 );
+            DrawLine( draw, ImVec2( rect.Min.x + 0.5f, ly + 0.5f ), ImVec2( rect.Max.x + 0.5f, ly + 0.5f ), 0x88888888, 3 );
         }
 
         std::vector<std::pair<uint64_t, AddrStat>> ipData;
@@ -1933,6 +1935,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
         {
             assert( clipper.StepNo == 3 );
             const auto wpos = ImGui::GetCursorScreenPos();
+            const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
             static std::vector<uint64_t> insList;
             insList.clear();
             if( iptotal.local + iptotal.ext == 0 )
@@ -2028,16 +2031,16 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                         selJumpTarget = v.first;
                     }
 
-                    draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col, thickness );
+                    DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), dpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col, thickness );
 
                     if( v.first >= minAddr && v.first <= maxAddr )
                     {
                         auto iit = std::lower_bound( insList.begin(), insList.end(), v.first );
                         assert( iit != insList.end() );
                         const auto y = ( iit - insList.begin() ) * th;
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col, thickness );
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col, thickness );
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col, thickness );
+                        DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col, thickness );
+                        DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col, thickness );
+                        DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col, thickness );
                     }
                     for( auto& s : v.second.source )
                     {
@@ -2046,7 +2049,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                             auto iit = std::lower_bound( insList.begin(), insList.end(), s );
                             assert( iit != insList.end() );
                             const auto y = ( iit - insList.begin() ) * th;
-                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col, thickness );
+                            DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col, thickness );
                         }
                     }
                 }
@@ -2116,7 +2119,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 if( ly > lastLine )
                 {
                     lastLine = ly;
-                    draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x8899994C, 1 );
+                    DrawLine( draw, ImVec2( rect.Min.x + 0.5f, ly + 0.5f ), ImVec2( rect.Max.x + 0.5f, ly + 0.5f ), 0x8899994C, 1 );
                 }
             }
         }
@@ -2137,7 +2140,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 if( ly > lastLine )
                 {
                     lastLine = ly;
-                    draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 1 );
+                    DrawLine( draw, ImVec2( rect.Min.x + 0.5f, ly + 0.5f ), ImVec2( rect.Max.x + 0.5f, ly + 0.5f ), 0x88888888, 1 );
                 }
             }
         }
@@ -2198,14 +2201,14 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
 
         if( selJumpStart != 0 )
         {
-            const auto yStart = rect.Min.y + float( selJumpLineStart ) / m_asm.size() * rect.GetHeight();
-            const auto yEnd = rect.Min.y + float( selJumpLineEnd ) / m_asm.size() * rect.GetHeight();
-            const auto yTarget = rect.Min.y + float( selJumpLineTarget ) / m_asm.size() * rect.GetHeight();
-            const auto x50 = round( rect.Min.x + rect.GetWidth() * 0.5f ) - 1;
-            const auto x25 = round( rect.Min.x + rect.GetWidth() * 0.25f );
-            const auto x75 = round( rect.Min.x + rect.GetWidth() * 0.75f );
-            draw->AddLine( ImVec2( x50, yStart ), ImVec2( x50, yEnd ), 0xFF00FF00 );
-            draw->AddLine( ImVec2( x25, yTarget ), ImVec2( x75, yTarget ), 0xFF00FF00 );
+            const auto yStart = 0.5f + rect.Min.y + float( selJumpLineStart ) / m_asm.size() * rect.GetHeight();
+            const auto yEnd = 0.5f + rect.Min.y + float( selJumpLineEnd ) / m_asm.size() * rect.GetHeight();
+            const auto yTarget = 0.5f + rect.Min.y + float( selJumpLineTarget ) / m_asm.size() * rect.GetHeight();
+            const auto x50 = 0.5f + round( rect.Min.x + rect.GetWidth() * 0.5f ) - 1;
+            const auto x25 = 0.5f + round( rect.Min.x + rect.GetWidth() * 0.25f );
+            const auto x75 = 0.5f + round( rect.Min.x + rect.GetWidth() * 0.75f );
+            DrawLine( draw, ImVec2( x50, yStart ), ImVec2( x50, yEnd ), 0xFF00FF00 );
+            DrawLine( draw, ImVec2( x25, yTarget ), ImVec2( x75, yTarget ), 0xFF00FF00 );
         }
 
         if( m_asmSelected >= 0 )
@@ -2236,11 +2239,11 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                     if( col != 0 )
                     {
                         const auto ly = round( rect.Min.y + ( i - 0.5f ) / m_asm.size() * rect.GetHeight() );
-                        draw->AddLine( ImVec2( x0, ly ), ImVec2( x1, ly ), col, 3 );
+                        DrawLine( draw, ImVec2( x0 + 0.5f, ly + 0.5f ), ImVec2( x1 + 0.5f, ly + 0.5f ), col, 3 );
                     }
                 }
             }
-            draw->AddLine( ImVec2( x0, sy ), ImVec2( x1, sy ), 0xFFFF9900, 3 );
+            DrawLine( draw, ImVec2( x0 + 0.5f, sy + 0.5f ), ImVec2( x1 + 0.5f, sy + 0.5f ), 0xFFFF9900, 3 );
         }
     }
 
@@ -2347,6 +2350,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_srcWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     if( m_source.idx() == m_hoveredSource && lineNum == m_hoveredLine )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
@@ -2451,11 +2455,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             }
             if( m_childCalls )
             {
-                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
+                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
             }
             else
             {
-                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
+                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
             }
         }
         ImGui::SameLine( 0, ty );
@@ -2539,7 +2543,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         }
     }
 
-    draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
+    DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
@@ -2548,6 +2552,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_asmWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     if( m_selectedAddressesHover.find( line.addr ) != m_selectedAddressesHover.end() )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
@@ -2689,11 +2694,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             }
             if( m_childCalls )
             {
-                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
+                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
             }
             else
             {
-                draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
+                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
             }
         }
         ImGui::SameLine( 0, ty );
@@ -2912,9 +2917,9 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto col = GetHsvColor( line.jumpAddr, 6 );
             const auto xoff = ( ( iptotal.local + iptotal.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
 
-            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
-            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );
-            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 + th4 ), col );
+            DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
+            DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );
+            DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 + th4 ), col );
         }
     }
     else
@@ -2990,7 +2995,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
         if( asmVar->minlat == 0 )
         {
-            draw->AddLine( pos + ImVec2( 0, -1 ), pos + ImVec2( 0, ty ), 0x660000FF );
+            DrawLine( draw, pos + ImVec2( 0.5f, -0.5f ), pos + ImVec2( 0.5f, ty + 0.5f ), 0x660000FF );
         }
         else
         {
@@ -3386,7 +3391,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
     }
 
-    draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
+    DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
 void SourceView::SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine, uint64_t targetAddr )

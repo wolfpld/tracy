@@ -3732,6 +3732,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
     const auto ty = round( ImGui::GetFontSize() * 0.75f );
     const auto ty05 = round( ty * 0.5f );
     auto draw = ImGui::GetWindowDrawList();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
     auto pit = citend;
     double minpx = -10.0;
@@ -3748,7 +3749,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             if( m_vd.darkenContextSwitches )
             {
-                draw->AddRectFilled( wpos + ImVec2( px0, offset + ty05 ), wpos + ImVec2( px1, endOffset ), 0x661C2321 );
+                draw->AddRectFilled( dpos + ImVec2( px0, offset + ty05 ), dpos + ImVec2( px1, endOffset ), 0x661C2321 );
             }
             draw->AddLine( wpos + ImVec2( px0, offset + ty05 - 0.5f ), wpos + ImVec2( std::min( pxw, w+10.0 ), offset + ty05 - 0.5f ), color, 2 );
             if( ev.WakeupVal() != ev.Start() )

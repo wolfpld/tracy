@@ -2236,15 +2236,20 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         const auto zoomSpan = t1 - t0;
         const auto p1 = zoomSpan * p;
         const auto p2 = zoomSpan - p1;
+
+        double mod = 0.25;
+        if( io.KeyCtrl ) mod = 0.05;
+        else if( io.KeyShift ) mod = 0.5;
+
         if( wheel > 0 )
         {
-            t0 += int64_t( p1 * 0.25 );
-            t1 -= int64_t( p2 * 0.25 );
+            t0 += int64_t( p1 * mod );
+            t1 -= int64_t( p2 * mod );
         }
         else if( zoomSpan < 1000ll * 1000 * 1000 * 60 * 60 )
         {
-            t0 -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
-            t1 += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
+            t0 -= std::max( int64_t( 1 ), int64_t( p1 * mod ) );
+            t1 += std::max( int64_t( 1 ), int64_t( p2 * mod ) );
         }
         ZoomToRange( t0, t1, !m_worker.IsConnected() || m_viewMode == ViewMode::Paused );
     }

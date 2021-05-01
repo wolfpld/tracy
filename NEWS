@@ -16,6 +16,8 @@ v0.x.x (xxxx-xx-xx)
 - Fixed issue which may have prevented sampling on ARM64.
 - Added TRACY_NO_FRAME_IMAGE macro to disable frame image compression
   thread.
+- Ctrl and shift keys will now modify mouse wheel zoom speed.
+- Improved user experience in the symbol view window.
 
 
 v0.7.7 (2021-04-01)

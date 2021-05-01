@@ -2028,7 +2028,8 @@ void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
     // Remove this check when real-time ctxUsage contruction is implemented.
     if( !m_data.ctxUsage.empty() )
     {
-        auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), time, [] ( const auto& l, const auto& r ) { return l < r.Time(); } );
+        const auto test = ( time << 16 ) | 0xFFFF;
+        auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), test, [] ( const auto& l, const auto& r ) { return l < r._time_other_own; } );
         if( it == m_data.ctxUsage.begin() || it == m_data.ctxUsage.end() ) return;
         --it;
         own = it->Own();

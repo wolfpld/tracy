@@ -5353,7 +5353,7 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     }
     else
     {
-        // OpenGL doesn't need per-zone thread id. It still can be sent,
+        // OpenGL and Direct3D11 doesn't need per-zone thread id. It still can be sent,
         // because it may be needed for callstack collection purposes.
         zone->SetThread( 0 );
         ztid = 0;

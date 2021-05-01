@@ -5737,6 +5737,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     auto draw = ImGui::GetWindowDrawList();
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
     static int cpuDataVisStub;
     auto& vis = Vis( &cpuDataVisStub );
@@ -5758,7 +5759,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
         float txtx = ImGui::CalcTextSize( "CPU data" ).x;
         DrawTextContrast( draw, wpos + ImVec2( ty, offset ), showFull ? 0xFFDD88DD : 0xFF6E446E, "CPU data" );
-        draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x66DD88DD );
+        DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0x66DD88DD );
 
         if( hover && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
         {
@@ -5791,21 +5792,21 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     float base;
                     if( usageOwn != 0 )
                     {
-                        base = wpos.y + offset + ( 1.f - usageOwn * cpuCntRev ) * cpuUsageHeight;
-                        draw->AddLine( ImVec2( wpos.x + pos, wpos.y + offset + cpuUsageHeight ), ImVec2( wpos.x + pos, base ), 0xFF55BB55 );
+                        base = dpos.y + offset + ( 1.f - usageOwn * cpuCntRev ) * cpuUsageHeight;
+                        DrawLine( draw, ImVec2( dpos.x + pos, dpos.y + offset + cpuUsageHeight ), ImVec2( dpos.x + pos, base ), 0xFF55BB55 );
                     }
                     else
                     {
-                        base = wpos.y + offset + cpuUsageHeight;
+                        base = dpos.y + offset + cpuUsageHeight;
                     }
                     if( usageOther != 0 )
                     {
                         int usageTotal = usageOwn + usageOther;
-                        draw->AddLine( ImVec2( wpos.x + pos, base ), ImVec2( wpos.x + pos, wpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
+                        DrawLine( draw, ImVec2( dpos.x + pos, base ), ImVec2( dpos.x + pos, dpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
                     }
                     pos++;
                 }
-                draw->AddLine( wpos + ImVec2( 0, offset+cpuUsageHeight+2 ), wpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
+                DrawLine( draw, dpos + ImVec2( 0, offset+cpuUsageHeight+2 ), dpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
 
                 if( hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
                 {
@@ -5888,7 +5889,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
             {
                 if( wpos.y + offset + sty >= yMin && wpos.y + offset <= yMax )
                 {
-                    draw->AddLine( wpos + ImVec2( 0, offset+sty ), wpos + ImVec2( w, offset+sty ), 0x22DD88DD );
+                    DrawLine( draw, dpos + ImVec2( 0, offset+sty ), dpos + ImVec2( w, offset+sty ), 0x22DD88DD );
 
                     auto& cs = cpuData[i].cs;
                     auto tt = m_worker.GetThreadTopology( i );
@@ -6141,12 +6142,12 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
                     if( t1 - t0 < 2 * nspx )
                     {
-                        draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color );
+                        DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color );
                     }
                     else
                     {
-                        draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), 0xFF000000, 4.f );
-                        draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color, 2.f );
+                        DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), 0xFF000000, 4.f );
+                        DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color, 2.f );
                     }
                 }
             }

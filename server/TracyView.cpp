@@ -71,7 +71,7 @@ constexpr const char* GpuContextNames[] = {
     "OpenGL",
     "Vulkan",
     "OpenCL",
-    "Direct3D 12"
+    "Direct3D 12",
     "Direct3D 11"
 };
 

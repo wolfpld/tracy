@@ -2,6 +2,12 @@
 #  pragma warning( disable: 4267 )  // conversion from don't care to whatever, possible loss of data
 #endif
 
+#ifdef _WIN32
+#  include <malloc.h>
+#else
+#  include <alloca.h>
+#endif
+
 #ifdef __MINGW32__
 #  define __STDC_FORMAT_MACROS
 #endif
@@ -2393,42 +2399,46 @@ static uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
 
 static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f )
 {
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+
     const auto spanSz = end - start;
     if( spanSz <= h * 0.5 )
     {
-        DrawLine( draw, wpos + ImVec2( start + 0.5f, 0.5f ), wpos + ImVec2( start + spanSz + 0.5f, round( -spanSz ) + 0.5f ), color, thickness );
+        DrawLine( draw, dpos + ImVec2( start, 0 ), wpos + ImVec2( start + spanSz, round( -spanSz ) ), color, thickness );
         return;
     }
 
-    const auto p = wpos + ImVec2( 0.5f, 0.5f );
     const auto h05 = round( h * 0.5 );
-
-    draw->PathLineTo( p + ImVec2( start, 0 ) );
-    draw->PathLineTo( p + ImVec2( start + h05, -h05 ) );
-    start += h05;
-
     const auto h2 = h*2;
     int steps = int( ( end - start ) / h2 );
+
+    auto path = (ImVec2*)alloca( sizeof( ImVec2 ) * ( 2 * steps + 4 ) );
+    auto ptr = path;
+
+    *ptr++ = dpos + ImVec2( start, 0 );
+    *ptr++ = dpos + ImVec2( start + h05, -h05 );
+    start += h05;
+
     while( steps-- )
     {
-        draw->PathLineTo( p + ImVec2( start + h,   h05 ) );
-        draw->PathLineTo( p + ImVec2( start + h2, -h05 ) );
+        *ptr++ = dpos + ImVec2( start + h,   h05 );
+        *ptr++ = dpos + ImVec2( start + h2, -h05 );
         start += h2;
     }
 
     if( end - start <= h )
     {
         const auto span = end - start;
-        draw->PathLineTo( p + ImVec2( start + span, round( span - h*0.5 ) ) );
+        *ptr++ = dpos + ImVec2( start + span, round( span - h*0.5 ) );
     }
     else
     {
         const auto span = end - start - h;
-        draw->PathLineTo( p + ImVec2( start + h, h05 ) );
-        draw->PathLineTo( p + ImVec2( start + h + span, round( h*0.5 - span ) ) );
+        *ptr++ = dpos + ImVec2( start + h, h05 );
+        *ptr++ = dpos + ImVec2( start + h + span, round( h*0.5 - span ) );
     }
 
-    draw->PathStroke( color, false, thickness );
+    draw->AddPolyline( path, ptr - path, color, 0, thickness );
 }
 
 static uint32_t GetColorMuted( uint32_t color, bool active )

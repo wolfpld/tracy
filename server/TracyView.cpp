@@ -3829,11 +3829,12 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinCtxSize )
         {
+            const auto MinCtxNs = MinCtxSize * nspx;
             int num = 0;
             const auto px0 = std::max( ( ev.Start() - m_vd.zvStart ) * pxns, -10.0 );
-            auto px1 = ( end - m_vd.zvStart ) * pxns;
+            auto px1ns = end - m_vd.zvStart;
             auto rend = end;
-            auto nextTime = end + MinCtxSize * nspx;
+            auto nextTime = end + MinCtxNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -3842,13 +3843,13 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 num += std::distance( prevIt, it );
                 if( it == citend ) break;
                 const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinCtxSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinCtxNs * 2 ) break;
+                px1ns = nsnext;
                 rend = nend;
                 nextTime = nend + nspx;
             }
-            minpx = std::min( std::max( px1, px0+MinCtxSize ), double( w + 10 ) );
+            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
             if( num == 1 )
             {
                 DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, 2 );
@@ -3935,23 +3936,26 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
         int num;
         if( next != itend )
         {
-            px1 = ( next->time.Val() - m_vd.zvStart ) * pxns;
+            auto px1ns = next->time.Val() - m_vd.zvStart;
+            px1 = px1ns * pxns;
             if( px1 - px0 < MinVis )
             {
+                const auto MinVisNs = MinVis * nspx;
                 visible = false;
-                auto nextTime = px0 + MinVis * nspx;
+                auto nextTime = px0 + MinVisNs;
                 for(;;)
                 {
                     const auto prev = next;
                     next = std::lower_bound( next, itend, nextTime, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
                     if( prev == next ) ++next;
                     if( next == itend ) break;
-                    const auto pxnext = ( next->time.Val() - m_vd.zvStart ) * pxns;
-                    if( pxnext - px1 >= MinVis ) break;
-                    px1 = pxnext;
+                    const auto nsnext = next->time.Val() - m_vd.zvStart;
+                    if( nsnext - px1ns >= MinVisNs ) break;
+                    px1ns = nsnext;
                     nextTime = next->time.Val() + nspx;
                 }
                 num = next - it;
+                px1 = px1ns * pxns;
             }
         }
         if( visible )
@@ -4031,11 +4035,12 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
+            const auto MinVisNs = MinVisSize * nspx;
             const auto color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
             const auto px0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
-            auto px1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
+            auto px1ns = ev.end.Val() - m_vd.zvStart;
             auto rend = end;
-            auto nextTime = end + MinVisSize * nspx;
+            auto nextTime = end + MinVisNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4043,12 +4048,13 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = it->end.Val();
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinVisSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
                 rend = nend;
                 nextTime = nend + nspx;
             }
+            const auto px1 = px1ns * pxns;
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )
@@ -4261,8 +4267,9 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            auto px1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
-            auto nextTime = end + MinVisSize * nspx;
+            const auto MinVisNs = MinVisSize * nspx;
+            auto px1ns = ev.end.Val() - m_vd.zvStart;
+            auto nextTime = end + MinVisNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4270,9 +4277,9 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = it->end.Val();
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinVisSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
                 nextTime = nend + nspx;
             }
         }
@@ -4359,12 +4366,13 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
+            const auto MinVisNs = MinVisSize * nspx;
             const auto color = GetThreadColor( tid, depth );
             int num = 0;
             const auto px0 = ( ev.Start() - m_vd.zvStart ) * pxns;
-            auto px1 = ( end - m_vd.zvStart ) * pxns;
+            auto px1ns = end - m_vd.zvStart;
             auto rend = end;
-            auto nextTime = end + MinVisSize * nspx;
+            auto nextTime = end + MinVisNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4373,12 +4381,13 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( a(*it) );
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinVisSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
                 rend = nend;
                 nextTime = nend + nspx;
             }
+            const auto px1 = px1ns * pxns;
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )
@@ -4571,8 +4580,9 @@ int View::SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            auto px1 = ( end - m_vd.zvStart ) * pxns;
-            auto nextTime = end + MinVisSize * nspx;
+            const auto MinVisNs = MinVisSize * nspx;
+            auto px1ns = end - m_vd.zvStart;
+            auto nextTime = end + MinVisNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4580,9 +4590,9 @@ int View::SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( a(*it) );
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinVisSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
                 nextTime = nend + nspx;
             }
         }
@@ -4670,11 +4680,12 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
+            const auto MinVisNs = MinVisSize * nspx;
             int num = 0;
             const auto px0 = ( start - m_vd.zvStart ) * pxns;
-            auto px1 = ( end - m_vd.zvStart ) * pxns;
+            auto px1ns = end - m_vd.zvStart;
             auto rend = end;
-            auto nextTime = end + MinVisSize * nspx;
+            auto nextTime = end + MinVisNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4683,12 +4694,13 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( a(*it) ), begin, drift );
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext < 0 || pxnext - px1 >= MinVisSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext < 0 || nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
                 rend = nend;
                 nextTime = nend + nspx;
             }
+            const auto px1 = px1ns * pxns;
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )
@@ -4826,8 +4838,9 @@ int View::SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            auto px1 = ( end - m_vd.zvStart ) * pxns;
-            auto nextTime = end + MinVisSize * nspx;
+            const auto MinVisNs = MinVisSize * nspx;
+            auto px1ns = end - m_vd.zvStart;
+            auto nextTime = end + MinVisNs;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4835,9 +4848,9 @@ int View::SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( a(*it) ), begin, drift );
-                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinVisSize * 2 ) break;
-                px1 = pxnext;
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
                 nextTime = nend + nspx;
             }
         }
@@ -5928,11 +5941,12 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
                             if( zsz < MinVisSize )
                             {
+                                const auto MinVisNs = MinVisSize * nspx;
                                 int num = 0;
                                 const auto px0 = ( start - m_vd.zvStart ) * pxns;
-                                auto px1 = ( end - m_vd.zvStart ) * pxns;
+                                auto px1ns = end - m_vd.zvStart;
                                 auto rend = end;
-                                auto nextTime = end + MinVisSize * nspx;
+                                auto nextTime = end + MinVisNs;
                                 for(;;)
                                 {
                                     const auto prevIt = it;
@@ -5941,12 +5955,13 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     num += std::distance( prevIt, it );
                                     if( it == eit ) break;
                                     const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
-                                    const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                                    if( pxnext - px1 >= MinVisSize * 2 ) break;
-                                    px1 = pxnext;
+                                    const auto nsnext = nend - m_vd.zvStart;
+                                    if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                                    px1ns = nsnext;
                                     rend = nend;
                                     nextTime = nend + nspx;
                                 }
+                                const auto px1 = px1ns * pxns;
                                 DrawZigZag( draw, wpos + ImVec2( 0, offset + sty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), sty/4, 0xFF888888 );
 
                                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + sty ) ) )

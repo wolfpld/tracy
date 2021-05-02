@@ -18,6 +18,7 @@ v0.x.x (xxxx-xx-xx)
   thread.
 - Ctrl and shift keys will now modify mouse wheel zoom speed.
 - Improved user experience in the symbol view window.
+- Added support for Direct3D 11 instrumentation.
 
 
 v0.7.7 (2021-04-01)

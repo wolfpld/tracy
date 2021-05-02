@@ -65,10 +65,15 @@ public:
             if( num > 4 ) num = 4;
             VkTimeDomainEXT data[4];
             _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physdev, &num, data );
+            VkTimeDomainEXT supportedDomain = VK_TIME_DOMAIN_MAX_ENUM_EXT;
+#if defined _WIN32 || defined __CYGWIN__
+            supportedDomain = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT;
+#elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
+            supportedDomain = VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT;
+#endif
             for( uint32_t i=0; i<num; i++ )
             {
-                // TODO VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT
-                if( data[i] == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT )
+                if( data[i] == supportedDomain )
                 {
                     m_timeDomain = data[i];
                     break;
@@ -147,7 +152,9 @@ public:
             }
             m_deviation = minDeviation * 3 / 2;
 
+#if defined _WIN32 || defined __CYGWIN__
             m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
+#endif
 
             Calibrate( device, m_prevCalibration, tgpu );
             tcpu = Profiler::GetTime();
@@ -206,7 +213,7 @@ public:
         if( !GetProfiler().IsConnected() )
         {
             vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount );
-            m_head = m_tail = 0;
+            m_head = m_tail = m_oldCnt = 0;
             int64_t tgpu;
             if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) Calibrate( m_device, m_prevCalibration, tgpu );
             return;
@@ -297,6 +304,9 @@ private:
 #if defined _WIN32 || defined __CYGWIN__
         tGpu = ts[0];
         tCpu = ts[1] * m_qpcToNs;
+#elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
+        tGpu = ts[0];
+        tCpu = ts[1];
 #else
         assert( false );
 #endif

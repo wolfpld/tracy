@@ -16,6 +16,7 @@
 #include "CompiledPixelShader.h"
 
 #include "../../../Tracy.hpp"
+#include "../../../TracyD3D11.hpp"
 
 static HINSTANCE g_HInstance;
 static HWND g_Wnd;
@@ -44,6 +45,7 @@ static ID3D11UnorderedAccessView *g_BackbufferUAV, *g_BackbufferUAV2;
 static ID3D11SamplerState* g_SamplerLinear;
 static ID3D11RasterizerState* g_RasterState;
 static int g_BackbufferIndex;
+static tracy::D3D11Ctx *g_tracyCtx;
 
 
 #if DO_COMPUTE_GPU
@@ -215,6 +217,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR,
         else
         {
             RenderFrame();
+            TracyD3D11Collect(g_tracyCtx);
             if( --framesLeft == 0 ) break;
         }
     }
@@ -271,6 +274,7 @@ static int s_FrameCount = 0;
 static void RenderFrame()
 {
     ZoneScoped;
+    TracyD3D11Zone(g_tracyCtx, "RenderFrame");
 
     LARGE_INTEGER time1;
 
@@ -541,12 +545,18 @@ static HRESULT InitD3DDevice()
     vp.TopLeftY = 0;
     g_D3D11Ctx->RSSetViewports(1, &vp);
 
+    g_tracyCtx = TracyD3D11Context(g_D3D11Device, g_D3D11Ctx);
+    const char* tracyD3D11CtxName = "D3D11";
+    TracyD3D11ContextName(g_tracyCtx, tracyD3D11CtxName, (uint16_t)strlen(tracyD3D11CtxName));
+
     return S_OK;
 }
 
 static void ShutdownD3DDevice()
 {
     ZoneScoped;
+
+    if (g_tracyCtx) TracyD3D11Destroy(g_tracyCtx);
 
     if (g_D3D11Ctx) g_D3D11Ctx->ClearState();
 

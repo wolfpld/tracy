@@ -486,16 +486,19 @@ void SysTraceSendExternalName( uint64_t thread )
     }
     if( hnd != 0 )
     {
-        PWSTR tmp;
-        _GetThreadDescription( hnd, &tmp );
-        char buf[256];
-        if( tmp )
+        if( _GetThreadDescription )
         {
-            auto ret = wcstombs( buf, tmp, 256 );
-            if( ret != 0 )
+            PWSTR tmp;
+            _GetThreadDescription( hnd, &tmp );
+            char buf[256];
+            if( tmp )
             {
-                GetProfiler().SendString( thread, buf, ret, QueueType::ExternalThreadName );
-                threadSent = true;
+                auto ret = wcstombs( buf, tmp, 256 );
+                if( ret != 0 )
+                {
+                    GetProfiler().SendString( thread, buf, ret, QueueType::ExternalThreadName );
+                    threadSent = true;
+                }
             }
         }
         const auto pid = GetProcessIdOfThread( hnd );

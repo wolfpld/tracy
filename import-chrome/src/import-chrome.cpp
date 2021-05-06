@@ -81,19 +81,52 @@ int main( int argc, char** argv )
             exit( 1 );
         }
 
-        const auto sz = ZSTD_getDecompressedSize( zbuf, zsz );
-        auto buf = new char[sz];
-        const auto res = ZSTD_decompress( buf, sz, zbuf, zsz );
-        munmap( zbuf, zsz );
-        if( ZSTD_isError( res ) )
-        {
-            delete[] buf;
+        // use ZSTD streaming API, as size might be unknown (often the case if
+        // the trace was also compressed on the fly).
+
+        ZSTD_DStream* zstd_dec = ZSTD_createDStream();
+        ZSTD_initDStream(zstd_dec);
+
+        struct ZSTD_inBuffer_s zstd_in = {
+          .src = zbuf, .size = (size_t) zsz, .pos=0,
+        };
+        const auto out_size = 1024 * 256;
+        struct ZSTD_outBuffer_s zstd_out = {
+          .dst = new char[out_size], .size = (size_t) out_size, .pos=0,
+        };
+
+        // holds the whole decompressed content
+        std::string content;
+
+        // might have to read multiple frames, the size of which might be unknown
+        size_t total_size = 0;
+        size_t offset = 0;
+
+        while (zstd_in.pos < zstd_in.size) {
+          size_t res = ZSTD_decompressStream(zstd_dec, &zstd_out, &zstd_in);
+          if (ZSTD_isError(res))
+          {
             fprintf( stderr, "Couldn't decompress input file (%s)!\n", ZSTD_getErrorName( res ) );
             exit( 1 );
+          }
+
+          if (zstd_out.pos > 0) {
+            // data was read, copy into `content`
+            total_size += zstd_out.pos;
+            content.resize(total_size, '\00');
+
+            memcpy(&content[offset], zstd_out.dst, zstd_out.pos);
+            offset += zstd_out.pos;
+            zstd_out.pos = 0;
+          }
         }
 
-        j = json::parse( buf, buf+sz );
-        delete[] buf;
+        munmap( zbuf, zsz );
+
+        ZSTD_freeDStream(zstd_dec);
+        free(zstd_out.dst);
+
+        j = json::parse( content.c_str(), content.c_str() + content.size() );
     }
     else
     {

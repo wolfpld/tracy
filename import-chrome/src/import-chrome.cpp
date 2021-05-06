@@ -81,19 +81,42 @@ int main( int argc, char** argv )
             exit( 1 );
         }
 
-        const auto sz = ZSTD_getDecompressedSize( zbuf, zsz );
-        auto buf = new char[sz];
-        const auto res = ZSTD_decompress( buf, sz, zbuf, zsz );
-        munmap( zbuf, zsz );
-        if( ZSTD_isError( res ) )
+        auto zctx = ZSTD_createDStream();
+        ZSTD_initDStream( zctx );
+
+        enum { tmpSize = 64*1024 };
+        auto tmp = new char[tmpSize];
+
+        ZSTD_inBuffer_s zin = { zbuf, (size_t)zsz };
+        ZSTD_outBuffer_s zout = { tmp, (size_t)tmpSize };
+
+        std::vector<uint8_t> buf;
+        buf.reserve( 1024*1024 );
+
+        while( zin.pos < zin.size )
         {
-            delete[] buf;
-            fprintf( stderr, "Couldn't decompress input file (%s)!\n", ZSTD_getErrorName( res ) );
-            exit( 1 );
+            const auto res = ZSTD_decompressStream( zctx, &zout, &zin );
+            if( ZSTD_isError( res ) )
+            {
+                ZSTD_freeDStream( zctx );
+                delete[] tmp;
+                fprintf( stderr, "Couldn't decompress input file (%s)!\n", ZSTD_getErrorName( res ) );
+                exit( 1 );
+            }
+            if( zout.pos > 0 )
+            {
+                const auto bsz = buf.size();
+                buf.resize( bsz + zout.pos );
+                memcpy( buf.data() + bsz, tmp, zout.size );
+                zout.pos = 0;
+            }
         }
 
-        j = json::parse( buf, buf+sz );
-        delete[] buf;
+        ZSTD_freeDStream( zctx );
+        delete[] tmp;
+        munmap( zbuf, zsz );
+
+        j = json::parse( buf.begin(), buf.end() );
     }
     else
     {

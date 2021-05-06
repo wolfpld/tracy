@@ -20,6 +20,7 @@ v0.x.x (xxxx-xx-xx)
 - Improved user experience in the symbol view window.
 - Added support for Direct3D 11 instrumentation.
 - Vulkan contexts can be now calibrated on Linux.
+- Support loading zstd-compressed chrome traces.
 
 
 v0.7.7 (2021-04-01)

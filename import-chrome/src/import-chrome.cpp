@@ -107,7 +107,7 @@ int main( int argc, char** argv )
             {
                 const auto bsz = buf.size();
                 buf.resize( bsz + zout.pos );
-                memcpy( buf.data() + bsz, tmp, zout.size );
+                memcpy( buf.data() + bsz, tmp, zout.pos );
                 zout.pos = 0;
             }
         }

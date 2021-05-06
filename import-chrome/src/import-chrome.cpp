@@ -6,12 +6,24 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unordered_map>
+
+#include <sys/stat.h>
+
+#ifdef _MSC_VER
+#  define stat64 _stat64
+#endif
+#if defined __CYGWIN__ || defined __APPLE__
+#  define stat64 stat
+#endif
 
 #include "json.hpp"
 
 #include "../../server/TracyFileWrite.hpp"
+#include "../../server/TracyMmap.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../zstd/zstd.h"
 
 using json = nlohmann::json;
 
@@ -41,15 +53,59 @@ int main( int argc, char** argv )
     printf( "Loading...\r" );
     fflush( stdout );
 
-    std::ifstream is( input );
-    if( !is.is_open() )
-    {
-        fprintf( stderr, "Cannot open input file!\n" );
-        exit( 1 );
-    }
     json j;
-    is >> j;
-    is.close();
+
+    const auto fnsz = strlen( input );
+    if( fnsz > 4 && memcmp( input+fnsz-4, ".zst", 4 ) == 0 )
+    {
+        FILE* f = fopen( input, "rb" );
+        if( !f )
+        {
+            fprintf( stderr, "Cannot open input file!\n" );
+            exit( 1 );
+        }
+        struct stat64 sb;
+        if( stat64( input, &sb ) != 0 )
+        {
+            fprintf( stderr, "Cannot open input file!\n" );
+            fclose( f );
+            exit( 1 );
+        }
+
+        const auto zsz = sb.st_size;
+        auto zbuf = (char*)mmap( nullptr, zsz, PROT_READ, MAP_SHARED, fileno( f ), 0 );
+        fclose( f );
+        if( !zbuf )
+        {
+            fprintf( stderr, "Cannot mmap input file!\n" );
+            exit( 1 );
+        }
+
+        const auto sz = ZSTD_getDecompressedSize( zbuf, zsz );
+        auto buf = new char[sz];
+        const auto res = ZSTD_decompress( buf, sz, zbuf, zsz );
+        munmap( zbuf, zsz );
+        if( ZSTD_isError( res ) )
+        {
+            delete[] buf;
+            fprintf( stderr, "Couldn't decompress input file (%s)!\n", ZSTD_getErrorName( res ) );
+            exit( 1 );
+        }
+
+        j = json::parse( buf, buf+sz );
+        delete[] buf;
+    }
+    else
+    {
+        std::ifstream is( input );
+        if( !is.is_open() )
+        {
+            fprintf( stderr, "Cannot open input file!\n" );
+            exit( 1 );
+        }
+        is >> j;
+        is.close();
+    }
 
     printf( "\33[2KParsing...\r" );
     fflush( stdout );

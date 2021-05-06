@@ -3,15 +3,18 @@
 #endif
 
 #include <fstream>
+#include <sstream>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unordered_map>
+#include <filesystem>
 
 #include "json.hpp"
 
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../zstd/zstd.h"
 
 using json = nlohmann::json;
 
@@ -20,6 +23,30 @@ void Usage()
     printf( "Usage: import-chrome input.json output.tracy\n\n" );
     exit( 1 );
 }
+
+std::string decompressZSTD(std::ifstream is) {
+  std::stringstream buffer;
+  buffer << is.rdbuf();
+  is.close();
+
+  std::string content = std::move(buffer.str());
+
+  size_t decomp_size = ZSTD_getDecompressedSize(content.c_str(), content.size());
+
+  std::string decompressed;
+  decompressed.resize(decomp_size, '\00');
+
+  // cast to get a `char*` from the string, rather than `const char*`.
+  size_t res = ZSTD_decompress((char*) &decompressed[0], decompressed.size(),
+      content.c_str(), content.size());
+  if (ZSTD_isError(res)) {
+    printf("could not decompress zstd: %s\n", ZSTD_getErrorName(res));
+    exit(1);
+  }
+
+  return std::move(decompressed);
+}
+
 
 int main( int argc, char** argv )
 {
@@ -47,9 +74,22 @@ int main( int argc, char** argv )
         fprintf( stderr, "Cannot open input file!\n" );
         exit( 1 );
     }
+
     json j;
-    is >> j;
-    is.close();
+
+    if (std::filesystem::path(input).extension().compare(".zst") == 0) {
+      printf( "decompressing zstd file...\n" );
+
+      std::string decompressed = decompressZSTD(std::move(is));
+      printf( "decompressed zstd file into %ld bytes\n", decompressed.size() );
+
+      std::stringstream is2(decompressed);
+      is2 >> j; // parse json from decompressed data
+    } else {
+      is >> j;
+      is.close();
+    }
+
 
     printf( "\33[2KParsing...\r" );
     fflush( stdout );

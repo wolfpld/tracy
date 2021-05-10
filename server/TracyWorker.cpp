@@ -321,8 +321,8 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             SourceLocation srcloc {
                 StringRef(),
                 StringRef( StringRef::Idx, StoreString( v.name.c_str(), v.name.size() ).idx ),
-                StringRef(),
-                0,
+                StringRef( StringRef::Idx, StoreString( v.locFile.c_str(), v.locFile.size() ).idx ),
+                v.locLine,
                 0
             };
             int key;

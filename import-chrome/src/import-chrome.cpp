@@ -199,6 +199,23 @@ int main( int argc, char** argv )
             }
         }
 
+        std::string locFile;
+        uint32_t locLine = 0;
+        if( v.contains( "loc" ) )
+        {
+            auto loc = v["loc"].get<std::string>();
+            const auto lpos = loc.find_last_of( ':' );
+            if( lpos == std::string::npos )
+            {
+                std::swap( loc, locFile );
+            }
+            else
+            {
+                locFile = loc.substr( 0, lpos );
+                locLine = atoi( loc.c_str() + lpos + 1 );
+            }
+        }
+
         if( type == "B" )
         {
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
@@ -206,7 +223,9 @@ int main( int argc, char** argv )
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 v["name"].get<std::string>(),
                 std::move(zoneText),
-                false
+                false,
+                std::move(locFile),
+                locLine
             } );
         }
         else if( type == "E" )
@@ -225,7 +244,7 @@ int main( int argc, char** argv )
             const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
             const auto ts1 = ts0 + uint64_t( v["dur"].get<double>() * 1000. );
             const auto name = v["name"].get<std::string>();
-            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, std::move(zoneText), false } );
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, std::move(zoneText), false, std::move(locFile), locLine } );
             timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts1, "", "", true } );
         }
         else if( type == "i" || type == "I" )

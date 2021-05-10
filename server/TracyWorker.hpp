@@ -99,6 +99,8 @@ public:
         std::string name;
         std::string text;
         bool isEnd;
+        std::string locFile;
+        uint32_t locLine;
     };
 
     struct ImportEventMessages

@@ -177,7 +177,11 @@ int main( int argc, char** argv )
         {
             for ( auto& kv : v["args"].items() )
             {
-                zoneText += kv.key() + ": " + kv.value().dump() + "\n";
+                const auto val = kv.value();
+                const std::string s =
+                    val.is_string() ?
+                    val.get<std::string>() : val.dump();
+                zoneText += kv.key() + ": " + s + "\n";
             }
         }
 
@@ -208,7 +212,7 @@ int main( int argc, char** argv )
         }
         else if( type == "X" )
         {
-            const auto tid = v["tid"].get<uint64_t>();
+            const auto tid = getTid(pid, v["tid"].get<uint64_t>());
             const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
             const auto ts1 = ts0 + uint64_t( v["dur"].get<double>() * 1000. );
             const auto name = v["name"].get<std::string>();

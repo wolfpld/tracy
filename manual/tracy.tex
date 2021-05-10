@@ -3390,11 +3390,18 @@ Tracy can import traces compressed with the Zstandard algorithm (for example, us
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
+logo=\bclampe
+]{Source locations}
+Chrome tracing format doesn't document a way to provide source location data. The \texttt{import-chrome} utility will however recognize a custom \texttt{loc} tag in the root of zone begin events. You should be formatting this data in the usual \texttt{filename:line} style, for example: \texttt{hello.c:42}. Providing the line number (including a colon) is optional, but highly recommended.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
 logo=\bcattention
 ]{Limitations}
 \begin{itemize}
-\item Tracy is a single-process profiler. There is no differentiation between data coming from different pids.
-\item Tracy uses thread identifiers assigned by the operating system. This means that no two concurrent threads can have the same tid. Be aware that some external data formats may encourage usage of duplicated thread identifiers.
+\item Tracy is a single-process profiler. Should the imported trace contain PID entries, each PID+TID pair will create a new \emph{pseudo-TID} number. If you want to preserve the original TID numbers, your traces should omit PID entries.
 \item The imported data may be severely limited, either by not mapping directly to the data structures used by Tracy, or by following undocumented practices.
 \end{itemize}
 \end{bclogo}

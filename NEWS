@@ -21,6 +21,10 @@ v0.x.x (xxxx-xx-xx)
 - Added support for Direct3D 11 instrumentation.
 - Vulkan contexts can be now calibrated on Linux.
 - Support loading zstd-compressed chrome traces.
+- Chrome traces with multiple PID entries (and possibly conflicting TIDs)
+  can be now imported. A pseudo-TID will be created for each PID+TID pair
+  in such circumstances.
+- Added support for custom source location tag ("loc") in chrome traces.
 
 
 v0.7.7 (2021-04-01)

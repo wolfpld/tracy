@@ -148,22 +148,27 @@ int main( int argc, char** argv )
     std::unordered_map<uint64_t, std::string> threadNames;
 
     const auto getPseudoTid = [&](json& val) -> uint64_t {
-        uint64_t pid = 0;
-        if ( val.contains( "pid" ) ) {
-            pid = val["pid"].get<uint64_t>();
-        }
-
         const auto real_tid = val["tid"].get<uint64_t>();
 
-        for ( auto &pair : tid_encoders) {
-            if ( pair.pid == pid && pair.tid == real_tid ) {
-                return pair.pseudo_tid;
-            }
-        }
+        if ( val.contains( "pid" ) ) {
+            // there might be multiple processes so we allocate a pseudo-tid
+            // for each pair (pid, real_tid)
+            const auto pid = val["pid"].get<uint64_t>();
 
-        const auto pseudo_tid = tid_encoders.size();
-        tid_encoders.emplace_back(PidTidEncoder {real_tid, pid, pseudo_tid});
-        return pseudo_tid;
+            for ( auto &pair : tid_encoders) {
+              if ( pair.pid == pid && pair.tid == real_tid ) {
+                return pair.pseudo_tid;
+              }
+            }
+
+            const auto pseudo_tid = tid_encoders.size();
+            tid_encoders.emplace_back(PidTidEncoder {real_tid, pid, pseudo_tid});
+            return pseudo_tid;
+        }
+        else
+        {
+          return real_tid;
+        }
     };
 
     if( j.is_object() && j.contains( "traceEvents" ) )

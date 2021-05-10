@@ -133,10 +133,43 @@ int main( int argc, char** argv )
     printf( "\33[2KParsing...\r" );
     fflush( stdout );
 
+    // encode a pair of "real pid, real tid" from a trace into a
+    // pseudo thread ID living in the single namespace of Tracy threads.
+    struct PidTidEncoder {
+      uint64_t tid;
+      uint64_t pid;
+      uint64_t pseudo_tid; // fake thread id, unique within Tracy
+    };
+
+    std::vector<PidTidEncoder> tid_encoders;
     std::vector<tracy::Worker::ImportEventTimeline> timeline;
     std::vector<tracy::Worker::ImportEventMessages> messages;
     std::vector<tracy::Worker::ImportEventPlots> plots;
     std::unordered_map<uint64_t, std::string> threadNames;
+
+    const auto getPseudoTid = [&](json& val) -> uint64_t {
+        const auto real_tid = val["tid"].get<uint64_t>();
+
+        if ( val.contains( "pid" ) ) {
+            // there might be multiple processes so we allocate a pseudo-tid
+            // for each pair (pid, real_tid)
+            const auto pid = val["pid"].get<uint64_t>();
+
+            for ( auto &pair : tid_encoders) {
+              if ( pair.pid == pid && pair.tid == real_tid ) {
+                return pair.pseudo_tid;
+              }
+            }
+
+            const auto pseudo_tid = tid_encoders.size();
+            tid_encoders.emplace_back(PidTidEncoder {real_tid, pid, pseudo_tid});
+            return pseudo_tid;
+        }
+        else
+        {
+          return real_tid;
+        }
+    };
 
     if( j.is_object() && j.contains( "traceEvents" ) )
     {
@@ -158,14 +191,18 @@ int main( int argc, char** argv )
         {
             for ( auto& kv : v["args"].items() )
             {
-                zoneText += kv.key() + ": " + kv.value().dump() + "\n";
+                const auto val = kv.value();
+                const std::string s =
+                    val.is_string() ?
+                    val.get<std::string>() : val.dump();
+                zoneText += kv.key() + ": " + s + "\n";
             }
         }
 
         if( type == "B" )
         {
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
-                v["tid"].get<uint64_t>(),
+                getPseudoTid(v),
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 v["name"].get<std::string>(),
                 std::move(zoneText),
@@ -175,7 +212,7 @@ int main( int argc, char** argv )
         else if( type == "E" )
         {
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
-                v["tid"].get<uint64_t>(),
+                getPseudoTid(v),
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 "",
                 std::move(zoneText),
@@ -184,7 +221,7 @@ int main( int argc, char** argv )
         }
         else if( type == "X" )
         {
-            const auto tid = v["tid"].get<uint64_t>();
+            const auto tid = getPseudoTid(v);
             const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
             const auto ts1 = ts0 + uint64_t( v["dur"].get<double>() * 1000. );
             const auto name = v["name"].get<std::string>();
@@ -194,7 +231,7 @@ int main( int argc, char** argv )
         else if( type == "i" || type == "I" )
         {
             messages.emplace_back( tracy::Worker::ImportEventMessages {
-                v["tid"].get<uint64_t>(),
+                getPseudoTid(v),
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 v["name"].get<std::string>()
             } );
@@ -241,7 +278,8 @@ int main( int argc, char** argv )
         {
             if (v.contains("name") && v["name"] == "thread_name" && v.contains("args") && v["args"].is_object() && v["args"].contains("name"))
             {
-                threadNames[v["tid"].get<uint64_t>()] = v["args"]["name"].get<std::string>();
+                const auto tid = getPseudoTid(v);
+                threadNames[tid] = v["args"]["name"].get<std::string>();
             }
         }
     }

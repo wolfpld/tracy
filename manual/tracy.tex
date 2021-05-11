@@ -1839,7 +1839,7 @@ Manual markup of zones doesn't cover every function existing in a program and ca
 
 This feature requires privilege elevation, as described in chapter~\ref{privilegeelevation}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
 
-On Windows sampling is performed at 8 kHz frequency (which is the maximum possible value), and on Linux and Android it is performed at 10 kHz.
+By default sampling is performed at 8 kHz frequency on Windows (which is the maximum possible value). On Linux and Android it is performed at 10 kHz. This value can be changed by providing the sampling frequency (in Hz) through the \texttt{TRACY\_SAMPLING\_HZ} macro.
 
 Call stack sampling may be disabled by using the \texttt{TRACY\_NO\_SAMPLING} define.
 

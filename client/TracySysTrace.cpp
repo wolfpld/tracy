@@ -2,6 +2,33 @@
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
 
+#ifndef TRACY_SAMPLING_HZ
+#  if defined _WIN32 || defined __CYGWIN__
+#    define TRACY_SAMPLING_HZ 8000
+#  elif defined __linux__
+#    define TRACY_SAMPLING_HZ 10000
+#  endif
+#endif
+
+namespace tracy
+{
+
+static constexpr int GetSamplingFrequency()
+{
+#if defined _WIN32 || defined __CYGWIN__
+    return TRACY_SAMPLING_HZ > 8000 ? 8000 : ( TRACY_SAMPLING_HZ < 1 ? 1 : TRACY_SAMPLING_HZ );
+#else
+    return TRACY_SAMPLING_HZ > 1000000 ? 1000000 : ( TRACY_SAMPLING_HZ < 1 ? 1 : TRACY_SAMPLING_HZ );
+#endif
+}
+
+static constexpr int GetSamplingPeriod()
+{
+    return 1000000000 / GetSamplingFrequency();
+}
+
+}
+
 #  if defined _WIN32 || defined __CYGWIN__
 
 #    ifndef NOMINMAX
@@ -330,6 +357,11 @@ static void SetupVsync()
 #endif
 }
 
+static constexpr int GetSamplingInterval()
+{
+    return GetSamplingPeriod() / 100;
+}
+
 bool SysTraceStart( int64_t& samplingPeriod )
 {
     if( !_GetThreadDescription ) _GetThreadDescription = (t_GetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetThreadDescription" );
@@ -360,10 +392,10 @@ bool SysTraceStart( int64_t& samplingPeriod )
     if( isOs64Bit )
     {
         TRACE_PROFILE_INTERVAL interval = {};
-        interval.Interval = 1250;   // 8 kHz
+        interval.Interval = GetSamplingInterval();
         const auto intervalStatus = TraceSetInformation( 0, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
         if( intervalStatus != ERROR_SUCCESS ) return false;
-        samplingPeriod = 125*1000;
+        samplingPeriod = GetSamplingPeriod();
     }
 
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
@@ -649,7 +681,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     return;
 #endif
 
-    samplingPeriod = 100*1000;
+    samplingPeriod = GetSamplingPeriod();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
     s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus );
@@ -660,7 +692,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.size = sizeof( perf_event_attr );
     pe.config = PERF_COUNT_SW_CPU_CLOCK;
 
-    pe.sample_freq = 10000;
+    pe.sample_freq = GetSamplingFrequency();
     pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
     pe.sample_max_stack = 127;

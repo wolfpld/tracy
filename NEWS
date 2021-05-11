@@ -25,6 +25,7 @@ v0.x.x (xxxx-xx-xx)
   can be now imported. A pseudo-TID will be created for each PID+TID pair
   in such circumstances.
 - Added support for custom source location tag ("loc") in chrome traces.
+- Sampling frequency can be now controlled using TRACY_SAMPLING_HZ macro.
 
 
 v0.7.7 (2021-04-01)

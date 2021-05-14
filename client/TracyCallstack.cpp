@@ -163,6 +163,7 @@ void InitCallstack()
 
 TRACY_API uintptr_t* CallTrace( int depth )
 {
+    InitRPMallocThread();
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
     const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
     *trace = num;

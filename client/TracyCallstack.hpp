@@ -21,6 +21,7 @@
 
 namespace tracy
 {
+TRACY_API void InitRPMallocThread();
 
 struct CallstackSymbolData
 {
@@ -83,6 +84,8 @@ static _Unwind_Reason_Code tracy_unwind_callback( struct _Unwind_Context* ctx, v
 
 static tracy_force_inline void* Callstack( int depth )
 {
+    InitRPMallocThread();
+
     assert( depth >= 1 && depth < 63 );
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
@@ -98,6 +101,8 @@ static tracy_force_inline void* Callstack( int depth )
 
 static tracy_force_inline void* Callstack( int depth )
 {
+    InitRPMallocThread();
+
     assert( depth >= 1 );
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + (size_t)depth ) * sizeof( uintptr_t ) );

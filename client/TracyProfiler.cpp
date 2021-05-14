@@ -364,7 +364,7 @@ static const char* GetHostInfo()
 #  elif defined __MINGW32__
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
-        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  endif
     }
 #elif defined __linux__
@@ -1007,6 +1007,7 @@ TRACY_API void StartupProfiler()
     s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
     new (s_profilerData) ProfilerData();
     s_profilerData->profiler.SpawnWorkerThreads();
+    s_instance = &s_profilerData->profiler;
 }
 static ProfilerData& GetProfilerData()
 {
@@ -1219,7 +1220,6 @@ Profiler::Profiler()
     , m_queryData( nullptr )
 {
     assert( !s_instance );
-    s_instance = this;
 
 #ifndef TRACY_DELAYED_INIT
 #  ifdef _MSC_VER
@@ -1250,6 +1250,7 @@ Profiler::Profiler()
 
 #if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME)
     SpawnWorkerThreads();
+    s_instance = this;
 #endif
 }
 

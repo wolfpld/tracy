@@ -1,5 +1,5 @@
-#ifndef __TRACYLUA_HPP__
-#define __TRACYLUA_HPP__
+#ifndef __TRACYPYTHON_HPP__
+#define __TRACYPYTHON_HPP__
 
 // Include this file after you include python headers.
 

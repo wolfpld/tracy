@@ -36,7 +36,6 @@
 #include "tracy_pdqsort.h"
 #include "TracyColor.hpp"
 #include "TracyFileRead.hpp"
-#include "TracyFileWrite.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPopcnt.hpp"
@@ -345,6 +344,24 @@ void View::DrawHelpMarker( const char* desc ) const
     }
 }
 
+static const char* CompressionName[] = {
+    "LZ4",
+    "LZ4 HC",
+    "LZ4 HC extreme",
+    "Zstd",
+    nullptr
+};
+
+static const char* CompressionDesc[] = {
+    "Fastest save, fast load time, big file size",
+    "Slow save, fastest load time, reasonable file size",
+    "Very slow save, fastest load time, file smaller than LZ4 HC",
+    "Configurable save time (fast-slowest), reasonable load time, smallest file size",
+    nullptr
+};
+
+static_assert( sizeof( CompressionName ) == sizeof( CompressionDesc ), "Unmatched compression names and descriptions" );
+
 bool View::Draw()
 {
     HandshakeStatus status = (HandshakeStatus)s_instance->m_worker.GetHandshakeStatus();
@@ -603,6 +620,66 @@ bool View::Draw()
             ImGui::CloseCurrentPopup();
             s_instance->m_worker.ClearFailure();
         }
+        ImGui::EndPopup();
+    }
+
+    bool saveFailed = false;
+    if( !s_instance->m_filenameStaging.empty() )
+    {
+        ImGui::OpenPopup( "Save trace" );
+    }
+    if( ImGui::BeginPopupModal( "Save trace", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        assert( !s_instance->m_filenameStaging.empty() );
+        auto fn = s_instance->m_filenameStaging.c_str();
+        TextFocused( "Path:", fn );
+        ImGui::Separator();
+
+        static FileWrite::Compression comp = FileWrite::Compression::Fast;
+        static int zlvl = 6;
+        ImGui::TextUnformatted( ICON_FA_FILE_ARCHIVE " Trace compression" );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Can be changed later with the upgrade utility" );
+        ImGui::Indent();
+        int idx = 0;
+        while( CompressionName[idx] )
+        {
+            if( ImGui::RadioButton( CompressionName[idx], (int)comp == idx ) ) comp = (FileWrite::Compression)idx;
+            ImGui::SameLine();
+            ImGui::TextDisabled( CompressionDesc[idx] );
+            idx++;
+        }
+        ImGui::Unindent();
+        ImGui::TextUnformatted( "Zstd level" );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Increasing level decreases file size, but increases save and load times" );
+        ImGui::Indent();
+        ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp );
+        ImGui::Unindent();
+
+        ImGui::Separator();
+        if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )
+        {
+            saveFailed = !s_instance->Save( fn, comp, zlvl );
+            s_instance->m_filenameStaging.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( "Cancel" ) )
+        {
+            s_instance->m_filenameStaging.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if( saveFailed ) ImGui::OpenPopup( "Save failed" );
+    if( ImGui::BeginPopupModal( "Save failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::TextUnformatted( "Could not save trace at the specified location. Try again somewhere else." );
+        ImGui::Separator();
+        if( ImGui::Button( "Oh well" ) ) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
 
@@ -1466,33 +1543,16 @@ bool View::DrawConnection()
         const char* fn = "trace.tracy";
 #endif
         {
-            std::unique_ptr<FileWrite> f;
             const auto sz = strlen( fn );
             if( sz < 7 || memcmp( fn + sz - 6, ".tracy", 6 ) != 0 )
             {
                 char tmp[1024];
                 sprintf( tmp, "%s.tracy", fn );
-                f.reset( FileWrite::Open( tmp ) );
-                if( f ) m_filename = tmp;
+                m_filenameStaging = tmp;
             }
             else
             {
-                f.reset( FileWrite::Open( fn ) );
-                if( f ) m_filename = fn;
-            }
-            if( f )
-            {
-                m_userData.StateShouldBePreserved();
-                m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
-                m_saveThread = std::thread( [this, f{std::move( f )}] {
-                    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
-                    m_worker.Write( *f );
-                    f->Finish();
-                    const auto stats = f->GetCompressionStatistics();
-                    m_srcFileBytes.store( stats.first, std::memory_order_relaxed );
-                    m_dstFileBytes.store( stats.second, std::memory_order_relaxed );
-                    m_saveThreadState.store( SaveThreadState::NeedsJoin, std::memory_order_release );
-                } );
+                m_filenameStaging = fn;
             }
         }
     }
@@ -17974,6 +18034,26 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     }
     if( m_fixedFont ) ImGui::PopFont();
     if( separateTooltip ) ImGui::EndTooltip();
+}
+
+bool View::Save( const char* fn, FileWrite::Compression comp, int zlevel )
+{
+    std::unique_ptr<FileWrite> f( FileWrite::Open( fn, comp, zlevel ) );
+    if( !f ) return false;
+
+    m_userData.StateShouldBePreserved();
+    m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
+    m_saveThread = std::thread( [this, f{std::move( f )}] {
+        std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
+        m_worker.Write( *f );
+        f->Finish();
+        const auto stats = f->GetCompressionStatistics();
+        m_srcFileBytes.store( stats.first, std::memory_order_relaxed );
+        m_dstFileBytes.store( stats.second, std::memory_order_relaxed );
+        m_saveThreadState.store( SaveThreadState::NeedsJoin, std::memory_order_release );
+    } );
+
+    return true;
 }
 
 }

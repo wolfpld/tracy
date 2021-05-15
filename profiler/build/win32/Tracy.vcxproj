@@ -160,6 +160,10 @@
     <ClCompile Include="..\..\..\zstd\decompress\zstd_ddict.c" />
     <ClCompile Include="..\..\..\zstd\decompress\zstd_decompress.c" />
     <ClCompile Include="..\..\..\zstd\decompress\zstd_decompress_block.c" />
+    <ClCompile Include="..\..\..\zstd\dictBuilder\cover.c" />
+    <ClCompile Include="..\..\..\zstd\dictBuilder\divsufsort.c" />
+    <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c" />
+    <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c" />
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c" />
     <ClCompile Include="..\..\src\HttpRequest.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_glfw.cpp" />
@@ -266,6 +270,9 @@
     <ClInclude Include="..\..\..\zstd\decompress\zstd_ddict.h" />
     <ClInclude Include="..\..\..\zstd\decompress\zstd_decompress_block.h" />
     <ClInclude Include="..\..\..\zstd\decompress\zstd_decompress_internal.h" />
+    <ClInclude Include="..\..\..\zstd\dictBuilder\cover.h" />
+    <ClInclude Include="..\..\..\zstd\dictBuilder\divsufsort.h" />
+    <ClInclude Include="..\..\..\zstd\zdict.h" />
     <ClInclude Include="..\..\..\zstd\zstd.h" />
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\gl3w.h" />

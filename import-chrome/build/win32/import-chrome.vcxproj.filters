@@ -22,6 +22,9 @@
     <Filter Include="zstd\decompress">
       <UniqueIdentifier>{438fff23-197c-4b6f-91f0-74f8b3878571}</UniqueIdentifier>
     </Filter>
+    <Filter Include="zstd\dictBuilder">
+      <UniqueIdentifier>{e5c7021a-e0e4-45c2-b461-e806bc036d5f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
@@ -131,6 +134,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\zstd\decompress\zstd_decompress_block.c">
       <Filter>zstd\decompress</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\dictBuilder\cover.c">
+      <Filter>zstd\dictBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\dictBuilder\divsufsort.c">
+      <Filter>zstd\dictBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c">
+      <Filter>zstd\dictBuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c">
+      <Filter>zstd\dictBuilder</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -298,6 +313,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\zstd\decompress\zstd_decompress_internal.h">
       <Filter>zstd\decompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zdict.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\dictBuilder\cover.h">
+      <Filter>zstd\dictBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\dictBuilder\divsufsort.h">
+      <Filter>zstd\dictBuilder</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -10,6 +10,7 @@
 
 struct ZSTD_CCtx_s;
 struct ZSTD_DCtx_s;
+struct ZSTD_CDict_s;
 
 namespace tracy
 {
@@ -23,6 +24,7 @@ public:
     ~TextureCompression();
 
     uint32_t Pack( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes );
+    uint32_t Pack( struct ZSTD_CCtx_s* ctx, const struct ZSTD_CDict_s* dict, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes );
 
     template<size_t Size>
     const char* Pack( const char* image, uint32_t inBytes, uint32_t& csz, Slab<Size>& slab )

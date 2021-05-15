@@ -39,6 +39,24 @@ uint32_t TextureCompression::Pack( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& 
     return ret;
 }
 
+uint32_t TextureCompression::Pack( struct ZSTD_CCtx_s* ctx, const struct ZSTD_CDict_s* dict, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes )
+{
+    const auto maxout = ZSTD_COMPRESSBOUND( inBytes );
+    if( bufsz < maxout )
+    {
+        bufsz = maxout;
+        delete[] buf;
+        buf = new char[maxout];
+    }
+    assert( ctx );
+    auto ret = (uint32_t)ZSTD_compress_usingCDict( ctx, buf, maxout, image, inBytes, dict );
+#ifndef TRACY_NO_STATISTICS
+    m_inputBytes.fetch_add( inBytes, std::memory_order_relaxed );
+    m_outputBytes.fetch_add( ret, std::memory_order_relaxed );
+#endif
+    return ret;
+}
+
 const char* TextureCompression::Unpack( const FrameImage& image )
 {
     const auto outsz = size_t( image.w ) * size_t( image.h ) / 2;

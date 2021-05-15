@@ -435,14 +435,30 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         if( name != threadNames.end() )
         {
             char buf[128];
-            int len = snprintf( buf, sizeof( buf ), "(%" PRIu64 ") %s", t.first, name->second.c_str() );
+            int len;
+            if( t.first <= std::numeric_limits<uint32_t>::max() )
+            {
+                len = snprintf( buf, sizeof( buf ), "(%" PRIu64 ") %s", t.first, name->second.c_str() );
+            }
+            else
+            {
+                len = snprintf( buf, sizeof( buf ), "(PID %" PRIu64 " TID %" PRIu64 ") %s", t.first >> 32, t.first & 0xFFFFFFFF, name->second.c_str() );
+            }
             AddThreadString( t.first, buf, len );
         }
         else
         {
             char buf[64];
-            sprintf( buf, "%" PRIu64, t.first );
-            AddThreadString( t.first, buf, strlen( buf ) );
+            int len;
+            if( t.first <= std::numeric_limits<uint32_t>::max() )
+            {
+                len = sprintf( buf, "%" PRIu64, t.first );
+            }
+            else
+            {
+                len = sprintf( buf, "PID %" PRIu64 " TID %" PRIu64, t.first >> 32, t.first & 0xFFFFFFFF );
+            }
+            AddThreadString( t.first, buf, len );
         }
     }
 

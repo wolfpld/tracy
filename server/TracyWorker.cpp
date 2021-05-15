@@ -432,11 +432,11 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     for( auto& t : m_threadMap )
     {
         auto name = threadNames.find(t.first);
-        if (name != threadNames.end())
+        if( name != threadNames.end() )
         {
             char buf[128];
-            int len = snprintf(buf, sizeof(buf), "(%" PRIu64 ") %s", t.first, name->second.c_str());
-            AddThreadString(t.first, buf, len);
+            int len = snprintf( buf, sizeof( buf ), "(%" PRIu64 ") %s", t.first, name->second.c_str() );
+            AddThreadString( t.first, buf, len );
         }
         else
         {

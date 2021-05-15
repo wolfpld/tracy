@@ -21,6 +21,9 @@
 
 #include <capstone.h>
 
+#define ZDICT_STATIC_LINKING_ONLY
+#include "../zstd/zdict.h"
+
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
@@ -7268,6 +7271,58 @@ void Worker::Write( FileWrite& f, bool fiDict )
     {
         TextureCompression texcomp;
         sz = m_data.frameImage.size();
+        if( fiDict )
+        {
+            enum : uint32_t { DictSize = 4*1024*1024 };
+            enum : uint32_t { SamplesLimit = 1 << 31 };
+            uint32_t sNum = 0;
+            uint32_t sSize = 0;
+            for( auto& fi : m_data.frameImage )
+            {
+                const auto fisz = fi->w * fi->h / 2;
+                if( sSize + fisz > SamplesLimit ) break;
+                sSize += fisz;
+                sNum++;
+            }
+
+            uint32_t offset = 0;
+            auto sdata = new char[sSize];
+            auto ssize = new size_t[sSize];
+            for( uint32_t i=0; i<sNum; i++ )
+            {
+                const auto& fi = m_data.frameImage[i];
+                const auto fisz = fi->w * fi->h / 2;
+                const auto image = texcomp.Unpack( *fi );
+                memcpy( sdata+offset, image, fisz );
+                ssize[i] = fisz;
+                offset += fisz;
+            }
+            assert( offset == sSize );
+
+            ZDICT_fastCover_params_t params = {};
+            params.d = 6;
+            params.k = 50;
+            params.f = 30;
+            params.nbThreads = std::thread::hardware_concurrency();
+            params.zParams.compressionLevel = 3;
+
+            auto dict = new char[DictSize];
+            const auto finalDictSize = (uint32_t)ZDICT_optimizeTrainFromBuffer_fastCover( dict, DictSize, sdata, ssize, sNum, &params );
+            auto zdict = ZSTD_createCDict( dict, finalDictSize, 3 );
+
+            f.Write( &finalDictSize, sizeof( finalDictSize ) );
+            f.Write( dict, finalDictSize );
+
+            ZSTD_freeCDict( zdict );
+            delete[] dict;
+            delete[] ssize;
+            delete[] sdata;
+        }
+        else
+        {
+            uint32_t zero = 0;
+            f.Write( &zero, sizeof( zero ) );
+        }
         f.Write( &sz, sizeof( sz ) );
         for( auto& fi : m_data.frameImage )
         {

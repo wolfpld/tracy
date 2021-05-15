@@ -25,6 +25,8 @@ v0.x.x (xxxx-xx-xx)
   can be now imported.
 - Added support for custom source location tag ("loc") in chrome traces.
 - Sampling frequency can be now controlled using TRACY_SAMPLING_HZ macro.
+- Trace compression can be now selected when saving a trace.
+- If a trace cannot be saved, a failure dialog will be displayed.
 
 
 v0.7.7 (2021-04-01)

@@ -1365,7 +1365,7 @@ void View::DrawNotificationArea()
     }
     else if( m_notificationTime > 0 )
     {
-        m_notificationTime -= io.DeltaTime;
+        m_notificationTime -= std::min( io.DeltaTime, 0.25f );
         ImGui::SameLine();
         TextDisabledUnformatted( m_notificationText.c_str() );
     }

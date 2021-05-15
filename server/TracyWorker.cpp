@@ -7269,7 +7269,6 @@ void Worker::Write( FileWrite& f, bool fiDict )
     if( sz != 0 ) f.Write( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
 
     {
-        TextureCompression texcomp;
         sz = m_data.frameImage.size();
         if( fiDict )
         {
@@ -7292,7 +7291,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
             {
                 const auto& fi = m_data.frameImage[i];
                 const auto fisz = fi->w * fi->h / 2;
-                const auto image = texcomp.Unpack( *fi );
+                const auto image = m_texcomp.Unpack( *fi );
                 memcpy( sdata+offset, image, fisz );
                 ssize[i] = fisz;
                 offset += fisz;
@@ -7329,7 +7328,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
             f.Write( &fi->w, sizeof( fi->w ) );
             f.Write( &fi->h, sizeof( fi->h ) );
             f.Write( &fi->flip, sizeof( fi->flip ) );
-            const auto image = texcomp.Unpack( *fi );
+            const auto image = m_texcomp.Unpack( *fi );
             f.Write( image, fi->w * fi->h / 2 );
         }
     }

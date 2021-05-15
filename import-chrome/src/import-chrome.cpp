@@ -135,10 +135,11 @@ int main( int argc, char** argv )
 
     // encode a pair of "real pid, real tid" from a trace into a
     // pseudo thread ID living in the single namespace of Tracy threads.
-    struct PidTidEncoder {
-      uint64_t tid;
-      uint64_t pid;
-      uint64_t pseudo_tid; // fake thread id, unique within Tracy
+    struct PidTidEncoder
+    {
+        uint64_t tid;
+        uint64_t pid;
+        uint64_t pseudo_tid; // fake thread id, unique within Tracy
     };
 
     std::vector<PidTidEncoder> tid_encoders;
@@ -150,15 +151,15 @@ int main( int argc, char** argv )
     const auto getPseudoTid = [&](json& val) -> uint64_t {
         const auto real_tid = val["tid"].get<uint64_t>();
 
-        if ( val.contains( "pid" ) ) {
+        if( val.contains( "pid" ) )
+        {
             // there might be multiple processes so we allocate a pseudo-tid
             // for each pair (pid, real_tid)
             const auto pid = val["pid"].get<uint64_t>();
 
-            for ( auto &pair : tid_encoders) {
-              if ( pair.pid == pid && pair.tid == real_tid ) {
-                return pair.pseudo_tid;
-              }
+            for ( auto &pair : tid_encoders)
+            {
+                if( pair.pid == pid && pair.tid == real_tid ) return pair.pseudo_tid;
             }
 
             const auto pseudo_tid = tid_encoders.size();
@@ -167,7 +168,7 @@ int main( int argc, char** argv )
         }
         else
         {
-          return real_tid;
+            return real_tid;
         }
     };
 
@@ -187,14 +188,12 @@ int main( int argc, char** argv )
         const auto type = v["ph"].get<std::string>();
 
         std::string zoneText = "";
-        if ( v.contains( "args" ) )
+        if( v.contains( "args" ) )
         {
-            for ( auto& kv : v["args"].items() )
+            for( auto& kv : v["args"].items() )
             {
                 const auto val = kv.value();
-                const std::string s =
-                    val.is_string() ?
-                    val.get<std::string>() : val.dump();
+                const std::string s = val.is_string() ? val.get<std::string>() : val.dump();
                 zoneText += kv.key() + ": " + s + "\n";
             }
         }

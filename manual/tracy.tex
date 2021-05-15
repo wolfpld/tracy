@@ -3401,7 +3401,7 @@ couleur=black!5,
 logo=\bcattention
 ]{Limitations}
 \begin{itemize}
-\item Tracy is a single-process profiler. Should the imported trace contain PID entries, each PID+TID pair will create a new \emph{pseudo-TID} number. If you want to preserve the original TID numbers, your traces should omit PID entries.
+\item Tracy is a single-process profiler. Should the imported trace contain PID entries, each PID+TID pair will create a new \emph{pseudo-TID} number, which will be then decoded into a PID+TID pair in thread labels. If you want to preserve the original TID numbers, your traces should omit PID entries.
 \item The imported data may be severely limited, either by not mapping directly to the data structures used by Tracy, or by following undocumented practices.
 \end{itemize}
 \end{bclogo}

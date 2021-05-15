@@ -11,6 +11,7 @@
 struct ZSTD_CCtx_s;
 struct ZSTD_DCtx_s;
 struct ZSTD_CDict_s;
+struct ZSTD_DDict_s;
 
 namespace tracy
 {
@@ -22,6 +23,8 @@ class TextureCompression
 public:
     TextureCompression();
     ~TextureCompression();
+
+    void SetDict( struct ZSTD_DDict_s* dict ) { m_dict = dict; }
 
     uint32_t Pack( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes );
     uint32_t Pack( struct ZSTD_CCtx_s* ctx, const struct ZSTD_CDict_s* dict, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes );
@@ -49,6 +52,7 @@ private:
     size_t m_bufSize;
     struct ZSTD_CCtx_s* m_cctx;
     struct ZSTD_DCtx_s* m_dctx;
+    struct ZSTD_DDict_s* m_dict;
 
     std::atomic<uint64_t> m_inputBytes { 0 };
     std::atomic<uint64_t> m_outputBytes { 0 };

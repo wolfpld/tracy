@@ -1291,6 +1291,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
     if( eventMask & EventType::FrameImages )
     {
+        ZSTD_CDict* cdict = nullptr;
+        if( fileVer >= FileVersion( 0, 7, 8 ) )
+        {
+            uint32_t dsz;
+            f.Read( dsz );
+            auto dict = new char[dsz];
+            f.Read( dict, dsz );
+            cdict = ZSTD_createCDict( dict, dsz, 3 );
+            m_texcomp.SetDict( ZSTD_createDDict( dict, dsz ) );
+            delete[] dict;
+        }
+
         f.Read( sz );
         m_data.frameImage.reserve_exact( sz, m_slab );
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
@@ -1353,9 +1365,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 data[idx].fi = fi;
 
                 data[idx].state.store( JobData::InProgress, std::memory_order_release );
-                td->Queue( [this, &data, idx, fi, fileVer] {
+                td->Queue( [this, &data, idx, fi, fileVer, cdict] {
                     if( fileVer <= FileVersion( 0, 6, 9 ) ) m_texcomp.Rdo( data[idx].buf, fi->w * fi->h / 16 );
-                    fi->csz = m_texcomp.Pack( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2 );
+                    if( cdict )
+                    {
+                        fi->csz = m_texcomp.Pack( data[idx].ctx, cdict, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2 );
+                    }
+                    else
+                    {
+                        fi->csz = m_texcomp.Pack( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2 );
+                    }
                     data[idx].state.store( JobData::DataReady, std::memory_order_release );
                 } );
 
@@ -1387,9 +1406,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 }
             }
         }
+
+        ZSTD_freeCDict( cdict );
     }
     else
     {
+        if( fileVer >= FileVersion( 0, 7, 8 ) )
+        {
+            uint32_t dsz;
+            f.Read( dsz );
+            f.Skip( dsz );
+        }
         f.Read( sz );
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         for( uint64_t i=0; i<sz; i++ )

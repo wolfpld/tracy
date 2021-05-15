@@ -11,6 +11,7 @@ TextureCompression::TextureCompression()
     , m_bufSize( 0 )
     , m_cctx( ZSTD_createCCtx() )
     , m_dctx( ZSTD_createDCtx() )
+    , m_dict( nullptr )
 {
 }
 
@@ -19,6 +20,7 @@ TextureCompression::~TextureCompression()
     delete[] m_buf;
     ZSTD_freeCCtx( m_cctx );
     ZSTD_freeDCtx( m_dctx );
+    ZSTD_freeDDict( m_dict );
 }
 
 uint32_t TextureCompression::Pack( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes )
@@ -67,7 +69,14 @@ const char* TextureCompression::Unpack( const FrameImage& image )
         m_buf = new char[outsz];
     }
     assert( m_dctx );
-    ZSTD_decompressDCtx( m_dctx, m_buf, outsz, image.ptr, image.csz );
+    if( m_dict )
+    {
+        ZSTD_decompress_usingDDict( m_dctx, m_buf, outsz, image.ptr, image.csz, m_dict );
+    }
+    else
+    {
+        ZSTD_decompressDCtx( m_dctx, m_buf, outsz, image.ptr, image.csz );
+    }
     return m_buf;
 }
 

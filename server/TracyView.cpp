@@ -657,11 +657,14 @@ bool View::Draw()
         ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp );
         ImGui::Unindent();
 
-        ImGui::Separator();
         static bool buildDict = false;
-        ImGui::Checkbox( "Build frame images dictionary", &buildDict );
-        ImGui::SameLine();
-        TextDisabledUnformatted( "Decreases run-time memory requirements" );
+        if( s_instance->m_worker.GetFrameImageCount() != 0 )
+        {
+            ImGui::Separator();
+            ImGui::Checkbox( "Build frame images dictionary", &buildDict );
+            ImGui::SameLine();
+            TextDisabledUnformatted( "Decreases run-time memory requirements" );
+        }
 
         ImGui::Separator();
         if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )

@@ -22,8 +22,7 @@ v0.x.x (xxxx-xx-xx)
 - Vulkan contexts can be now calibrated on Linux.
 - Support loading zstd-compressed chrome traces.
 - Chrome traces with multiple PID entries (and possibly conflicting TIDs)
-  can be now imported. A pseudo-TID will be created for each PID+TID pair
-  in such circumstances.
+  can be now imported.
 - Added support for custom source location tag ("loc") in chrome traces.
 - Sampling frequency can be now controlled using TRACY_SAMPLING_HZ macro.
 

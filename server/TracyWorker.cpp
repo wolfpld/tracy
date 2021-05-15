@@ -7300,7 +7300,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         if( fiDict )
         {
             enum : uint32_t { DictSize = 4*1024*1024 };
-            enum : uint32_t { SamplesLimit = 1 << 31 };
+            enum : uint32_t { SamplesLimit = 1U << 31 };
             uint32_t sNum = 0;
             uint32_t sSize = 0;
             for( auto& fi : m_data.frameImage )

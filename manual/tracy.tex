@@ -1960,7 +1960,7 @@ Both connecting to a client and opening a saved trace will present you with the 
 
 If this is a real-time capture, you will also have access to the connection information pop-up (figure~\ref{connectioninfo}) through the \emph{\faWifi{}~Connection} button, with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The \emph{Query backlog} consists of two numbers. The first one represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests which were sent to the client, but weren't yet answered. While these numbers drains down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file\footnote{This should be taken literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faExclamationTriangle{}~\emph{Discard} button is used to discard current trace.
+You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file\footnote{This should be taken literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. The available compression modes are discussed in section~\ref{archival}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faExclamationTriangle{}~\emph{Discard} button is used to discard current trace.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -2017,6 +2017,7 @@ old.tracy (0.3.0) {916.4 MB} -> new.tracy (0.4.0) {349.4 MB, 31.53%}  9.7 s, 38.
 The new file contains the same data as the old one, but in the updated internal representation. Note that to perform an upgrade, whole trace needs to be loaded to memory.
 
 \subsubsection{Archival mode}
+\label{archival}
 
 The \texttt{update} utility supports optional higher levels of data compression, which reduce disk size of traces, at the cost of increased compression times. With the default settings, the output files have a reasonable size and are quick to save and load. A list of available compression modes and their respective results is available in table~\ref{compressiontimes} and figures~\ref{savesize}, \ref{savetime} and~\ref{loadtime}. Compression mode selection is controlled by the following command line options:
 

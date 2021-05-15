@@ -27,6 +27,9 @@ v0.x.x (xxxx-xx-xx)
 - Sampling frequency can be now controlled using TRACY_SAMPLING_HZ macro.
 - Trace compression can be now selected when saving a trace.
 - If a trace cannot be saved, a failure dialog will be displayed.
+- Run-time memory usage of frame images can be reduced by calculating
+  a compression dictionary. This can be only performed when a trace is saved
+  or through the update utility.
 
 
 v0.7.7 (2021-04-01)

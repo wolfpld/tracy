@@ -162,7 +162,10 @@ int main( int argc, char** argv )
                 if( pair.pid == pid && pair.tid == real_tid ) return pair.pseudo_tid;
             }
 
-            const auto pseudo_tid = tid_encoders.size();
+            assert( pid <= std::numeric_limits<uint32_t>::max() );
+            assert( real_tid <= std::numeric_limits<uint32_t>::max() );
+
+            const auto pseudo_tid = ( real_tid & 0xFFFFFFFF ) | ( pid << 32 );
             tid_encoders.emplace_back(PidTidEncoder {real_tid, pid, pseudo_tid});
             return pseudo_tid;
         }

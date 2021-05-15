@@ -579,7 +579,7 @@ public:
     void Disconnect();
     bool WasDisconnectIssued() const { return m_disconnect; }
 
-    void Write( FileWrite& f );
+    void Write( FileWrite& f, bool fiDict );
     int GetTraceVersion() const { return m_traceVersion; }
     uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
     int64_t GetSamplingPeriod() const { return m_samplingPeriod; }

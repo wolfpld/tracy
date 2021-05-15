@@ -6898,7 +6898,7 @@ void Worker::Disconnect()
     m_disconnect = true;
 }
 
-void Worker::Write( FileWrite& f )
+void Worker::Write( FileWrite& f, bool fiDict )
 {
     DoPostponedWork();
 

@@ -350,7 +350,7 @@ int main( int argc, char** argv )
     }
     printf( "\33[2KSaving...\r" );
     fflush( stdout );
-    worker.Write( *w );
+    worker.Write( *w, false );
 
     printf( "\33[2KCleanup...\n" );
     fflush( stdout );

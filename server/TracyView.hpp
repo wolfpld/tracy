@@ -283,7 +283,7 @@ private:
     void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
 
     void SetPlaybackFrame( uint32_t idx );
-    bool Save( const char* fn, FileWrite::Compression comp, int zlevel );
+    bool Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict );
 
     unordered_flat_map<const void*, VisData> m_visData;
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;

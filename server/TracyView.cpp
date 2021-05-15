@@ -658,9 +658,15 @@ bool View::Draw()
         ImGui::Unindent();
 
         ImGui::Separator();
+        static bool buildDict = false;
+        ImGui::Checkbox( "Build frame images dictionary", &buildDict );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Decreases run-time memory requirements" );
+
+        ImGui::Separator();
         if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )
         {
-            saveFailed = !s_instance->Save( fn, comp, zlvl );
+            saveFailed = !s_instance->Save( fn, comp, zlvl, buildDict );
             s_instance->m_filenameStaging.clear();
             ImGui::CloseCurrentPopup();
         }
@@ -18036,16 +18042,16 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     if( separateTooltip ) ImGui::EndTooltip();
 }
 
-bool View::Save( const char* fn, FileWrite::Compression comp, int zlevel )
+bool View::Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict )
 {
     std::unique_ptr<FileWrite> f( FileWrite::Open( fn, comp, zlevel ) );
     if( !f ) return false;
 
     m_userData.StateShouldBePreserved();
     m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
-    m_saveThread = std::thread( [this, f{std::move( f )}] {
+    m_saveThread = std::thread( [this, f{std::move( f )}, buildDict] {
         std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
-        m_worker.Write( *f );
+        m_worker.Write( *f, buildDict );
         f->Finish();
         const auto stats = f->GetCompressionStatistics();
         m_srcFileBytes.store( stats.first, std::memory_order_relaxed );

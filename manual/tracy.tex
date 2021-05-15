@@ -1960,7 +1960,7 @@ Both connecting to a client and opening a saved trace will present you with the 
 
 If this is a real-time capture, you will also have access to the connection information pop-up (figure~\ref{connectioninfo}) through the \emph{\faWifi{}~Connection} button, with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The \emph{Query backlog} consists of two numbers. The first one represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests which were sent to the client, but weren't yet answered. While these numbers drains down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file\footnote{This should be taken literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. The available compression modes are discussed in section~\ref{archival}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faExclamationTriangle{}~\emph{Discard} button is used to discard current trace.
+You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file\footnote{This should be taken literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. The available compression modes are discussed in sections~\ref{archival} and~\ref{fidict}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faExclamationTriangle{}~\emph{Discard} button is used to discard current trace.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -2127,6 +2127,15 @@ The \texttt{update} utility supports optional higher levels of data compression,
 Trace files created using the \emph{default}, \emph{hc} and \emph{extreme} modes are optimized for fast decompression and can be further compressed using file compression utilities. For example, using 7-zip results in archives of the following sizes: 77.2 MB, 54.3 MB, 52.4 MB.
 
 For archival purposes it is however much better to use the \emph{zstd} compression modes, which are faster, compress trace files more tightly, and are directly loadable by the profiler, without the intermediate decompression step.
+
+\subsubsection{Frame images dictionary}
+\label{fidict}
+
+Frame images have to be compressed individually, so that there are no delays during random access to contents of any image. Unfortunately, because of this there is no reuse of compression state between similar (or even identical) images, which leads to increased memory consumption. This can be partially remedied by enabling calculation of an optional frame images dictionary with the \texttt{-d} command line parameter.
+
+Saving a trace with frame images dictionary enabled will need some extra time, which will depend on the amount of image data you have captured. Loading such trace will also be slower, but not by much. How much RAM will be saved by the dictionary depends on the similarity of frame images. Be aware that post-processing effects such as artificial film grain have a subtle effect on image contents, which is significant in this case.
+
+The dictionary cannot be used when you are capturing a trace.
 
 \subsubsection{Data removal}
 \label{dataremoval}

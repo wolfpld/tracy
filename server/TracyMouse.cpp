@@ -2,7 +2,7 @@
 
 #include "TracyMouse.hpp"
 
-#include "../imgui/imgui_internal.h"
+#include "imgui_internal.h"
 
 namespace tracy
 {

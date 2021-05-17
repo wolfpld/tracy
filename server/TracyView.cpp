@@ -45,7 +45,7 @@
 #include "TracyStackFrames.hpp"
 #include "TracyView.hpp"
 
-#include "../imgui/imgui_internal.h"
+#include "imgui_internal.h"
 
 #ifndef TRACY_NO_FILESELECTOR
 #  include "../nfd/nfd.h"

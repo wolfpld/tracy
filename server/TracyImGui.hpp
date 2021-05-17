@@ -9,8 +9,8 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "../imgui/imgui.h"
-#include "../imgui/imgui_internal.h"
+#include "imgui.h"
+#include "imgui_internal.h"
 
 #include "../common/TracyForceInline.hpp"
 #include "IconsFontAwesome5.h"

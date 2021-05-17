@@ -4,7 +4,7 @@
 
 #include <capstone.h>
 
-#include "../imgui/imgui.h"
+#include "imgui.h"
 #include "TracyCharUtil.hpp"
 #include "TracyColor.hpp"
 #include "TracyFilesystem.hpp"

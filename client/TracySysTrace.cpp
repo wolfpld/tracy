@@ -715,7 +715,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 
     for( int i=0; i<s_numCpus; i++ )
     {
-        const int fd = perf_event_open( &pe, -1, i, -1, 0 );
+        const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
         if( fd == -1 )
         {
             for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();

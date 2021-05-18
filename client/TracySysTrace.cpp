@@ -666,6 +666,7 @@ static const char TracePipe[] = "trace_pipe";
 static std::atomic<bool> traceActive { false };
 static Thread* s_threadSampling = nullptr;
 static int s_numCpus = 0;
+static int s_numBuffers = 0;
 
 static constexpr size_t RingBufSize = 64*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
@@ -690,6 +691,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 
     s_numCpus = (int)std::thread::hardware_concurrency();
     s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus );
+    s_numBuffers = 0;
 
     perf_event_attr pe = {};
 
@@ -716,11 +718,12 @@ static void SetupSampling( int64_t& samplingPeriod )
         const int fd = perf_event_open( &pe, -1, i, -1, 0 );
         if( fd == -1 )
         {
-            for( int j=0; j<i; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
+            for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
             tracy_free( s_ring );
             return;
         }
-        new( s_ring+i ) RingBuffer<RingBufSize>( fd, EventCallstack );
+        new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCallstack );
+        s_numBuffers++;
     }
 
     s_threadSampling = (Thread*)tracy_malloc( sizeof( Thread ) );
@@ -731,11 +734,11 @@ static void SetupSampling( int64_t& samplingPeriod )
         pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
         uint32_t currentPid = (uint32_t)getpid();
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-        for( int i=0; i<s_numCpus; i++ )
+        for( int i=0; i<s_numBuffers; i++ )
         {
             if( !s_ring[i].CheckTscCaps() )
             {
-                for( int j=0; j<s_numCpus; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
+                for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
                 tracy_free( s_ring );
                 const char* err = "Tracy Profiler: sampling is disabled due to non-native scheduler clock. Are you running under a VM?";
                 Profiler::MessageAppInfo( err, strlen( err ) );
@@ -743,11 +746,11 @@ static void SetupSampling( int64_t& samplingPeriod )
             }
         }
 #endif
-        for( int i=0; i<s_numCpus; i++ ) s_ring[i].Enable();
+        for( int i=0; i<s_numBuffers; i++ ) s_ring[i].Enable();
         for(;;)
         {
             bool hadData = false;
-            for( int i=0; i<s_numCpus; i++ )
+            for( int i=0; i<s_numBuffers; i++ )
             {
                 if( !traceActive.load( std::memory_order_relaxed ) ) break;
                 if( !s_ring[i].HasData() ) continue;
@@ -838,7 +841,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             }
         }
 
-        for( int i=0; i<s_numCpus; i++ ) s_ring[i].~RingBuffer<RingBufSize>();
+        for( int i=0; i<s_numBuffers; i++ ) s_ring[i].~RingBuffer<RingBufSize>();
         tracy_free( s_ring );
     }, nullptr );
 }

@@ -675,6 +675,11 @@ static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu
     return syscall( __NR_perf_event_open, hw_event, pid, cpu, group_fd, flags );
 }
 
+enum TraceEventId
+{
+    EventCallstack
+};
+
 static void SetupSampling( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
@@ -715,7 +720,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             tracy_free( s_ring );
             return;
         }
-        new( s_ring+i ) RingBuffer<RingBufSize>( fd );
+        new( s_ring+i ) RingBuffer<RingBufSize>( fd, EventCallstack );
     }
 
     s_threadSampling = (Thread*)tracy_malloc( sizeof( Thread ) );

@@ -5,8 +5,9 @@ template<size_t Size>
 class RingBuffer
 {
 public:
-    RingBuffer( int fd )
+    RingBuffer( int fd, int id )
         : m_fd( fd )
+        , m_id( id )
     {
         const auto pageSize = uint32_t( getpagesize() );
         assert( Size >= pageSize );
@@ -49,6 +50,7 @@ public:
     }
 
     bool IsValid() const { return m_metadata != nullptr; }
+    int GetId() const { return m_id; }
 
     void Enable()
     {
@@ -111,6 +113,7 @@ private:
 
     size_t m_mapSize;
     int m_fd;
+    int m_id;
 };
 
 }

@@ -7680,4 +7680,11 @@ Worker::MemoryBlock Worker::GetSourceFileFromCache( const char* file ) const
     return it->second;
 }
 
+const HwSampleData* Worker::GetHwSampleData( uint64_t addr ) const
+{
+    auto it = m_data.hwSamples.find( addr );
+    if( it == m_data.hwSamples.end() ) return nullptr;
+    return &it->second;
+}
+
 }

@@ -449,6 +449,7 @@ public:
     uint64_t GetGhostZonesCount() const { return m_data.ghostCnt; }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }
+    uint64_t GetHwSampleCount() const { return m_data.hwSamples.size(); }
 #ifndef TRACY_NO_STATISTICS
     uint64_t GetChildSamplesCountSyms() const { return m_data.childSamples.size(); }
     uint64_t GetChildSamplesCountFull() const;
@@ -470,6 +471,7 @@ public:
     uint64_t GetSourceFileCacheCount() const { return m_data.sourceFileCache.size(); }
     uint64_t GetSourceFileCacheSize() const;
     MemoryBlock GetSourceFileFromCache( const char* file ) const;
+    const HwSampleData* GetHwSampleData( uint64_t addr ) const;
 
     int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
     int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;

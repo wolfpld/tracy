@@ -678,7 +678,9 @@ static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu
 
 enum TraceEventId
 {
-    EventCallstack
+    EventCallstack,
+    EventCpuCycles,
+    EventInstructionsRetired
 };
 
 static void SetupSampling( int64_t& samplingPeriod )
@@ -690,22 +692,20 @@ static void SetupSampling( int64_t& samplingPeriod )
     samplingPeriod = GetSamplingPeriod();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
-    s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus );
+    s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus * 3 );
     s_numBuffers = 0;
 
+    // Stack traces
     perf_event_attr pe = {};
-
     pe.type = PERF_TYPE_SOFTWARE;
     pe.size = sizeof( perf_event_attr );
     pe.config = PERF_COUNT_SW_CPU_CLOCK;
-
     pe.sample_freq = GetSamplingFrequency();
     pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
     pe.sample_max_stack = 127;
 #endif
     pe.exclude_callchain_kernel = 1;
-
     pe.disabled = 1;
     pe.freq = 1;
 #if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
@@ -725,6 +725,46 @@ static void SetupSampling( int64_t& samplingPeriod )
         new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCallstack );
         s_numBuffers++;
     }
+
+    // CPU cycles
+    pe = {};
+    pe.type = PERF_TYPE_HARDWARE;
+    pe.size = sizeof( perf_event_attr );
+    pe.config = PERF_COUNT_HW_CPU_CYCLES;
+    pe.sample_freq = 25*1000*1000;
+    pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+    pe.disabled = 1;
+    pe.exclude_kernel = 1;
+    pe.exclude_idle = 1;
+    pe.precise_ip = 2;
+#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+    pe.use_clockid = 1;
+    pe.clockid = CLOCK_MONOTONIC_RAW;
+#endif
+
+    for( int i=0; i<s_numCpus; i++ )
+    {
+        const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+        if( fd != -1 )
+        {
+            new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCpuCycles );
+            s_numBuffers++;
+        }
+    }
+
+    // Instructions retired
+    pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+
+    for( int i=0; i<s_numCpus; i++ )
+    {
+        const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+        if( fd != -1 )
+        {
+            new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
+            s_numBuffers++;
+        }
+    }
+
 
     s_threadSampling = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_threadSampling) Thread( [] (void*) {
@@ -760,75 +800,131 @@ static void SetupSampling( int64_t& samplingPeriod )
                 s_ring[i].Read( &hdr, 0, sizeof( perf_event_header ) );
                 if( hdr.type == PERF_RECORD_SAMPLE )
                 {
-                    uint32_t pid, tid;
-                    uint64_t t0;
-                    uint64_t cnt;
-
                     auto offset = sizeof( perf_event_header );
-                    s_ring[i].Read( &pid, offset, sizeof( uint32_t ) );
-                    if( pid == currentPid )
+                    const auto id = s_ring[i].GetId();
+                    if( id == EventCallstack )
                     {
-                        offset += sizeof( uint32_t );
-                        s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
-                        offset += sizeof( uint32_t );
-                        s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
-                        offset += sizeof( uint64_t );
-                        s_ring[i].Read( &cnt, offset, sizeof( uint64_t ) );
-                        offset += sizeof( uint64_t );
+                        // Layout:
+                        //   u32 pid, tid
+                        //   u64 time
+                        //   u64 cnt
+                        //   u64 ip[cnt]
 
-                        if( cnt > 0 )
+                        uint32_t pid;
+                        s_ring[i].Read( &pid, offset, sizeof( uint32_t ) );
+                        if( pid == currentPid )
                         {
-                            auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
-                            s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+                            uint32_t tid;
+                            uint64_t t0;
+                            uint64_t cnt;
+
+                            offset += sizeof( uint32_t );
+                            s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
+                            offset += sizeof( uint32_t );
+                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t );
+                            s_ring[i].Read( &cnt, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t );
+
+                            if( cnt > 0 )
+                            {
+                                auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
+                                s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
 
 #if defined __x86_64__ || defined _M_X64
-                            // remove non-canonical pointers
-                            do
-                            {
-                                const auto test = (int64_t)trace[cnt];
-                                const auto m1 = test >> 63;
-                                const auto m2 = test >> 47;
-                                if( m1 == m2 ) break;
-                            }
-                            while( --cnt > 0 );
-                            for( uint64_t j=1; j<cnt; j++ )
-                            {
-                                const auto test = (int64_t)trace[j];
-                                const auto m1 = test >> 63;
-                                const auto m2 = test >> 47;
-                                if( m1 != m2 ) trace[j] = 0;
-                            }
+                                // remove non-canonical pointers
+                                do
+                                {
+                                    const auto test = (int64_t)trace[cnt];
+                                    const auto m1 = test >> 63;
+                                    const auto m2 = test >> 47;
+                                    if( m1 == m2 ) break;
+                                }
+                                while( --cnt > 0 );
+                                for( uint64_t j=1; j<cnt; j++ )
+                                {
+                                    const auto test = (int64_t)trace[j];
+                                    const auto m1 = test >> 63;
+                                    const auto m2 = test >> 47;
+                                    if( m1 != m2 ) trace[j] = 0;
+                                }
 #endif
 
-                            // skip kernel frames
-                            uint64_t j;
-                            for( j=0; j<cnt; j++ )
-                            {
-                                if( (int64_t)trace[j+1] >= 0 ) break;
-                            }
-                            if( j == cnt )
-                            {
-                                tracy_free( trace );
-                            }
-                            else
-                            {
-                                if( j > 0 )
+                                // skip kernel frames
+                                uint64_t j;
+                                for( j=0; j<cnt; j++ )
                                 {
-                                    cnt -= j;
-                                    memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                                    if( (int64_t)trace[j+1] >= 0 ) break;
                                 }
-                                memcpy( trace, &cnt, sizeof( uint64_t ) );
+                                if( j == cnt )
+                                {
+                                    tracy_free( trace );
+                                }
+                                else
+                                {
+                                    if( j > 0 )
+                                    {
+                                        cnt -= j;
+                                        memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                                    }
+                                    memcpy( trace, &cnt, sizeof( uint64_t ) );
 
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-                                t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                                    t0 = s_ring[i].ConvertTimeToTsc( t0 );
 #endif
 
-                                TracyLfqPrepare( QueueType::CallstackSample );
-                                MemWrite( &item->callstackSampleFat.time, t0 );
-                                MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
-                                MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
-                                TracyLfqCommit;
+                                    TracyLfqPrepare( QueueType::CallstackSample );
+                                    MemWrite( &item->callstackSampleFat.time, t0 );
+                                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
+                                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                                    TracyLfqCommit;
+                                }
                             }
+                        }
+                    }
+                    else
+                    {
+                        // Layout:
+                        //   u64 ip
+                        //   u32 pid, tid
+                        //   u64 time
+
+                        uint32_t pid;
+                        s_ring[i].Read( &pid, offset + sizeof( uint64_t ), sizeof( uint32_t ) );
+                        if( pid == currentPid )
+                        {
+                            uint64_t ip, t0;
+                            uint32_t tid;
+
+                            s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t ) + sizeof( uint32_t );
+                            s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
+                            offset += sizeof( uint32_t );
+                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+                            t0 = s_ring[i].ConvertTimeToTsc( t0 );
+#endif
+
+                            QueueType type;
+                            switch( id )
+                            {
+                            case EventCpuCycles:
+                                type = QueueType::HwSampleCpuCycle;
+                                break;
+                            case EventInstructionsRetired:
+                                type = QueueType::HwSampleInstructionRetired;
+                                break;
+                            default:
+                                assert( false );
+                                break;
+                            }
+
+                            TracyLfqPrepare( type );
+                            MemWrite( &item->hwSample.ip, ip );
+                            MemWrite( &item->hwSample.thread, (uint64_t)tid );
+                            MemWrite( &item->hwSample.time, t0 );
+                            TracyLfqCommit;
                         }
                     }
                 }

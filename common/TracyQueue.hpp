@@ -82,6 +82,8 @@ enum class QueueType : uint8_t
     CodeInformation,
     SysTimeReport,
     TidToPid,
+    HwSampleCpuCycle,
+    HwSampleInstructionRetired,
     PlotConfig,
     ParamSetup,
     AckServerQueryNoop,
@@ -473,6 +475,13 @@ struct QueueTidToPid
     uint64_t pid;
 };
 
+struct QueueHwSample
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t ip;
+};
+
 enum class PlotFormatType : uint8_t
 {
     Number,
@@ -567,6 +576,7 @@ struct QueueItem
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
         QueueTidToPid tidToPid;
+        QueueHwSample hwSample;
         QueuePlotConfig plotConfig;
         QueueParamSetup paramSetup;
         QueueCpuTopology cpuTopology;
@@ -653,6 +663,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cpu cycle
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // instruction retired
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement

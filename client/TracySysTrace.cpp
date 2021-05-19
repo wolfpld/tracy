@@ -897,9 +897,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                             uint32_t tid;
 
                             s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
-                            offset += sizeof( uint64_t ) + sizeof( uint32_t );
-                            s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
-                            offset += sizeof( uint32_t );
+                            offset += sizeof( uint64_t ) + sizeof( uint32_t ) + sizeof( uint32_t );
                             s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
 
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
@@ -922,7 +920,6 @@ static void SetupSampling( int64_t& samplingPeriod )
 
                             TracyLfqPrepare( type );
                             MemWrite( &item->hwSample.ip, ip );
-                            MemWrite( &item->hwSample.thread, (uint64_t)tid );
                             MemWrite( &item->hwSample.time, t0 );
                             TracyLfqCommit;
                         }

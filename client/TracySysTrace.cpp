@@ -1,4 +1,5 @@
 #include "TracySysTrace.hpp"
+#include "../common/TracySystem.hpp"
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
 
@@ -689,6 +690,13 @@ static void SetupSampling( int64_t& samplingPeriod )
     return;
 #endif
 
+#ifdef TRACY_NO_SAMPLE_RETIREMENT
+    const bool noRetirement = true;
+#else
+    const char* noRetirementEnv = GetEnvVar( "TRACY_NO_SAMPLE_RETIREMENT" );
+    const bool noRetirement = noRetirementEnv && noRetirementEnv[0] == '1';
+#endif
+
     samplingPeriod = GetSamplingPeriod();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
@@ -738,26 +746,32 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_idle = 1;
     pe.precise_ip = 2;
 
-    for( int i=0; i<s_numCpus; i++ )
+    if( !noRetirement )
     {
-        const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
-        if( fd != -1 )
+        for( int i=0; i<s_numCpus; i++ )
         {
-            new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCpuCycles );
-            s_numBuffers++;
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCpuCycles );
+                s_numBuffers++;
+            }
         }
     }
 
     // Instructions retired
     pe.config = PERF_COUNT_HW_INSTRUCTIONS;
 
-    for( int i=0; i<s_numCpus; i++ )
+    if( !noRetirement )
     {
-        const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
-        if( fd != -1 )
+        for( int i=0; i<s_numCpus; i++ )
         {
-            new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
-            s_numBuffers++;
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
+                s_numBuffers++;
+            }
         }
     }
 

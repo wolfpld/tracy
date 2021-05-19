@@ -731,16 +731,12 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof( perf_event_attr );
     pe.config = PERF_COUNT_HW_CPU_CYCLES;
-    pe.sample_freq = 25*1000*1000;
-    pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_TIME;
+    pe.sample_freq = 500*1000;
+    pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_idle = 1;
     pe.precise_ip = 2;
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    pe.use_clockid = 1;
-    pe.clockid = CLOCK_MONOTONIC_RAW;
-#endif
 
     for( int i=0; i<s_numCpus; i++ )
     {
@@ -776,7 +772,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
         for( int i=0; i<s_numBuffers; i++ )
         {
-            if( !s_ring[i].CheckTscCaps() )
+            if( s_ring[i].GetId() == EventCallstack && !s_ring[i].CheckTscCaps() )
             {
                 for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
                 tracy_free( s_ring );
@@ -887,22 +883,15 @@ static void SetupSampling( int64_t& samplingPeriod )
                         // Layout:
                         //   u64 ip
                         //   u32 pid, tid
-                        //   u64 time
 
                         uint32_t pid;
                         s_ring[i].Read( &pid, offset + sizeof( uint64_t ), sizeof( uint32_t ) );
                         if( pid == currentPid )
                         {
-                            uint64_t ip, t0;
+                            uint64_t ip;
                             uint32_t tid;
 
                             s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
-                            offset += sizeof( uint64_t ) + sizeof( uint32_t ) + sizeof( uint32_t );
-                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
-
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-                            t0 = s_ring[i].ConvertTimeToTsc( t0 );
-#endif
 
                             QueueType type;
                             switch( id )
@@ -920,7 +909,6 @@ static void SetupSampling( int64_t& samplingPeriod )
 
                             TracyLfqPrepare( type );
                             MemWrite( &item->hwSample.ip, ip );
-                            MemWrite( &item->hwSample.time, t0 );
                             TracyLfqCommit;
                         }
                     }

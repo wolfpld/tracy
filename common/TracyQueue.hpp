@@ -477,7 +477,6 @@ struct QueueTidToPid
 
 struct QueueHwSample
 {
-    int64_t time;
     uint64_t ip;
 };
 

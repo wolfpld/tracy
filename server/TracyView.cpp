@@ -13922,6 +13922,7 @@ void View::DrawInfo()
             ImGui::EndTooltip();
         }
 #endif
+        TextFocused( "Hardware samples:", RealToString( m_worker.GetHwSampleCount() ) );
         TextFocused( "Frame images:", RealToString( ficnt ) );
         if( ficnt != 0 && ImGui::IsItemHovered() )
         {

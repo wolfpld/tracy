@@ -3569,50 +3569,91 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
 void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
 {
     if( !worker.AreSourceLocationZonesReady() ) return;
+    auto sym = worker.GetSymbolData( baseAddr );
+    if( !sym ) return;
+
     auto filename = m_source.filename();
     if( limitView )
     {
+        for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
+        {
+            if( ipcountAsm.find( ip ) != ipcountAsm.end() ) continue;
+            auto cp = worker.GetChildSamples( ip );
+            if( !cp ) continue;
+            auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+            if( it == cp->end() ) continue;
+            auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+            const auto ccnt = uint32_t( end - it );
+            ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
+            iptotalAsm.ext += ccnt;
+            if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
+
+            if( filename )
+            {
+                auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
+                if( frame )
+                {
+                    auto ffn = worker.GetString( frame->data[0].file );
+                    if( strcmp( ffn, filename ) == 0 )
+                    {
+                        const auto line = frame->data[0].line;
+                        if( line != 0 )
+                        {
+                            auto it = ipcountSrc.find( line );
+                            if( it == ipcountSrc.end() )
+                            {
+                                ipcountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
+                            }
+                            else
+                            {
+                                const auto csum = it->second.ext + ccnt;
+                                it->second.ext = csum;
+                                if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
+                            }
+                            iptotalSrc.ext += ccnt;
+                        }
+                    }
+                }
+            }
+        }
     }
     else
     {
-        auto sym = worker.GetSymbolData( baseAddr );
-        if( sym )
+        for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
         {
-            for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
-            {
-                if( ipcountAsm.find( ip ) != ipcountAsm.end() ) continue;
-                auto cp = worker.GetChildSamples( ip );
-                if( !cp ) continue;
-                const auto ccnt = (uint32_t)cp->size();
-                ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
-                iptotalAsm.ext += ccnt;
-                if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
+            if( ipcountAsm.find( ip ) != ipcountAsm.end() ) continue;
+            auto cp = worker.GetChildSamples( ip );
+            if( !cp ) continue;
+            const auto ccnt = (uint32_t)cp->size();
+            ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
+            iptotalAsm.ext += ccnt;
+            if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
 
-                if( filename )
+            if( filename )
+            {
+                auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
+                if( frame )
                 {
-                    auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
-                    if( frame )
+                    auto ffn = worker.GetString( frame->data[0].file );
+                    if( strcmp( ffn, filename ) == 0 )
                     {
-                        auto ffn = worker.GetString( frame->data[0].file );
-                        if( strcmp( ffn, filename ) == 0 )
+                        const auto line = frame->data[0].line;
+                        if( line != 0 )
                         {
-                            const auto line = frame->data[0].line;
-                            if( line != 0 )
+                            auto it = ipcountSrc.find( line );
+                            if( it == ipcountSrc.end() )
                             {
-                                auto it = ipcountSrc.find( line );
-                                if( it == ipcountSrc.end() )
-                                {
-                                    ipcountSrc.emplace( line, AddrStat{ 0, ccnt } );
-                                    if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
-                                }
-                                else
-                                {
-                                    const auto csum = it->second.ext + ccnt;
-                                    it->second.ext = csum;
-                                    if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
-                                }
-                                iptotalSrc.ext += ccnt;
+                                ipcountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
                             }
+                            else
+                            {
+                                const auto csum = it->second.ext + ccnt;
+                                it->second.ext = csum;
+                                if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
+                            }
+                            iptotalSrc.ext += ccnt;
                         }
                     }
                 }

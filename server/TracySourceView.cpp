@@ -2623,6 +2623,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
                     TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 }
+                const auto hw = worker.GetHwSampleData( line.addr );
+                if( hw )
+                {
+                    ImGui::Separator();
+                    if( hw->cycles && hw->retired )
+                    {
+                        char buf[32];
+                        auto end = PrintFloat( buf, buf+32, float( hw->retired ) / hw->cycles, 2 );
+                        *end = '\0';
+                        TextFocused( "IPC:", buf );
+                    }
+                    if( hw->cycles ) TextFocused( "Cycles:", RealToString( hw->cycles ) );
+                    if( hw->retired ) TextFocused( "Retirements:", RealToString( hw->retired ) );
+                }
                 const auto& stats = *worker.GetSymbolStats( symAddrParents );
                 if( !stats.parents.empty() )
                 {

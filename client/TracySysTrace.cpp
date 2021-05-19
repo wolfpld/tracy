@@ -739,7 +739,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof( perf_event_attr );
     pe.config = PERF_COUNT_HW_CPU_CYCLES;
-    pe.sample_freq = 500*1000;
+    pe.sample_freq = 5*1000*1000;
     pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
     pe.disabled = 1;
     pe.exclude_kernel = 1;

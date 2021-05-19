@@ -679,6 +679,8 @@ private:
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
     tracy_force_inline void ProcessThreadWakeup( const QueueThreadWakeup& ev );
     tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
+    tracy_force_inline void ProcessHwSampleCpuCycle( const QueueHwSample& ev );
+    tracy_force_inline void ProcessHwSampleInstructionRetired( const QueueHwSample& ev );
     tracy_force_inline void ProcessParamSetup( const QueueParamSetup& ev );
     tracy_force_inline void ProcessCpuTopology( const QueueCpuTopology& ev );
     tracy_force_inline void ProcessMemNamePayload( const QueueMemNamePayload& ev );

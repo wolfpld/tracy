@@ -4461,6 +4461,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::TidToPid:
         ProcessTidToPid( ev.tidToPid );
         break;
+    case QueueType::HwSampleCpuCycle:
+        ProcessHwSampleCpuCycle( ev.hwSample );
+        break;
+    case QueueType::HwSampleInstructionRetired:
+        ProcessHwSampleInstructionRetired( ev.hwSample );
+        break;
     case QueueType::ParamSetup:
         ProcessParamSetup( ev.paramSetup );
         break;
@@ -6266,6 +6272,14 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
 void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 {
     if( m_data.tidToPid.find( ev.tid ) == m_data.tidToPid.end() ) m_data.tidToPid.emplace( ev.tid, ev.pid );
+}
+
+void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
+{
+}
+
+void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
+{
 }
 
 void Worker::ProcessParamSetup( const QueueParamSetup& ev )

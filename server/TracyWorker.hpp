@@ -449,7 +449,8 @@ public:
     uint64_t GetGhostZonesCount() const { return m_data.ghostCnt; }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }
-    uint64_t GetHwSampleCount() const { return m_data.hwSamples.size(); }
+    uint64_t GetHwSampleCountAddress() const { return m_data.hwSamples.size(); }
+    uint64_t GetHwSampleCount() const;
 #ifndef TRACY_NO_STATISTICS
     uint64_t GetChildSamplesCountSyms() const { return m_data.childSamples.size(); }
     uint64_t GetChildSamplesCountFull() const;

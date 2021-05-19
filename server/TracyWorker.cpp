@@ -7687,4 +7687,15 @@ const HwSampleData* Worker::GetHwSampleData( uint64_t addr ) const
     return &it->second;
 }
 
+uint64_t Worker::GetHwSampleCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& v : m_data.hwSamples )
+    {
+        cnt += v.second.cycles;
+        cnt += v.second.retired;
+    }
+    return cnt;
+}
+
 }

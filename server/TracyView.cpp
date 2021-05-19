@@ -13923,6 +13923,12 @@ void View::DrawInfo()
         }
 #endif
         TextFocused( "Hardware samples:", RealToString( m_worker.GetHwSampleCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Unique addresses:", RealToString( m_worker.GetHwSampleCountAddress() ) );
+            ImGui::EndTooltip();
+        }
         TextFocused( "Frame images:", RealToString( ficnt ) );
         if( ficnt != 0 && ImGui::IsItemHovered() )
         {

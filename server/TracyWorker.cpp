@@ -6276,10 +6276,16 @@ void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 
 void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
 {
+    auto it = m_data.hwSamples.find( ev.ip );
+    if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
+    it->second.cycles++;
 }
 
 void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
 {
+    auto it = m_data.hwSamples.find( ev.ip );
+    if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
+    it->second.retired++;
 }
 
 void Worker::ProcessParamSetup( const QueueParamSetup& ev )

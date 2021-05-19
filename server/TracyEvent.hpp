@@ -251,6 +251,15 @@ struct SampleDataRange
 enum { SampleDataRangeSize = sizeof( SampleDataRange ) };
 
 
+struct HwSampleData
+{
+    uint32_t cycles;
+    uint32_t retired;
+};
+
+enum { HwSampleDataSize = sizeof( HwSampleData ) };
+
+
 struct LockEvent
 {
     enum class Type : uint8_t

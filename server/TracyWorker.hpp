@@ -356,6 +356,8 @@ private:
         unordered_flat_map<uint64_t, Vector<uint64_t>> locationCodeAddressList;
 
         unordered_flat_map<const char*, MemoryBlock, charutil::Hasher, charutil::Comparator> sourceFileCache;
+
+        unordered_flat_map<uint64_t, HwSampleData> hwSamples;
     };
 
     struct MbpsBlock

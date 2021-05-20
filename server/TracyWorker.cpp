@@ -4467,6 +4467,18 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::HwSampleInstructionRetired:
         ProcessHwSampleInstructionRetired( ev.hwSample );
         break;
+    case QueueType::HwSampleCacheReference:
+        ProcessHwSampleCacheReference( ev.hwSample );
+        break;
+    case QueueType::HwSampleCacheMiss:
+        ProcessHwSampleCacheMiss( ev.hwSample );
+        break;
+    case QueueType::HwSampleBranchRetired:
+        ProcessHwSampleBranchRetired( ev.hwSample );
+        break;
+    case QueueType::HwSampleBranchMiss:
+        ProcessHwSampleBranchMiss( ev.hwSample );
+        break;
     case QueueType::ParamSetup:
         ProcessParamSetup( ev.paramSetup );
         break;
@@ -6286,6 +6298,34 @@ void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.retired++;
+}
+
+void Worker::ProcessHwSampleCacheReference( const QueueHwSample& ev )
+{
+    auto it = m_data.hwSamples.find( ev.ip );
+    if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
+    it->second.cacheRef++;
+}
+
+void Worker::ProcessHwSampleCacheMiss( const QueueHwSample& ev )
+{
+    auto it = m_data.hwSamples.find( ev.ip );
+    if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
+    it->second.cacheMiss++;
+}
+
+void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
+{
+    auto it = m_data.hwSamples.find( ev.ip );
+    if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
+    it->second.branchRetired++;
+}
+
+void Worker::ProcessHwSampleBranchMiss( const QueueHwSample& ev )
+{
+    auto it = m_data.hwSamples.find( ev.ip );
+    if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
+    it->second.branchMiss++;
 }
 
 void Worker::ProcessParamSetup( const QueueParamSetup& ev )

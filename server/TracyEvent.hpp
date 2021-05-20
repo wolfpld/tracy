@@ -255,6 +255,10 @@ struct HwSampleData
 {
     uint32_t cycles;
     uint32_t retired;
+    uint32_t cacheRef;
+    uint32_t cacheMiss;
+    uint32_t branchRetired;
+    uint32_t branchMiss;
 };
 
 enum { HwSampleDataSize = sizeof( HwSampleData ) };

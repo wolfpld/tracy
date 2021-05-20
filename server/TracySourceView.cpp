@@ -2636,6 +2636,22 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                     if( hw->cycles ) TextFocused( "Cycles:", RealToString( hw->cycles ) );
                     if( hw->retired ) TextFocused( "Retirements:", RealToString( hw->retired ) );
+                    if( hw->cacheRef && hw->cacheMiss )
+                    {
+                        TextDisabledUnformatted( "Cache miss rate:" );
+                        ImGui::SameLine();
+                        PrintPercentage( float( 100 * hw->cacheMiss ) / hw->cacheRef );
+                    }
+                    if( hw->cacheRef ) TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
+                    if( hw->cacheMiss ) TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
+                    if( hw->branchRetired && hw->branchMiss )
+                    {
+                        TextDisabledUnformatted( "Branch mispredictions rate:" );
+                        ImGui::SameLine();
+                        PrintPercentage( float( 100 * hw->branchMiss ) / hw->branchRetired );
+                    }
+                    if( hw->branchRetired ) TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
+                    if( hw->branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );
                 }
                 const auto& stats = *worker.GetSymbolStats( symAddrParents );
                 if( !stats.parents.empty() )

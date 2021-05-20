@@ -979,8 +979,6 @@ static void SetupSampling( int64_t& samplingPeriod )
                         if( pid == currentPid )
                         {
                             uint64_t ip;
-                            uint32_t tid;
-
                             s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
 
                             QueueType type;

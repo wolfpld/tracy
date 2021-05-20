@@ -1699,6 +1699,19 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 7, 9 ) )
+    {
+        f.Read( sz );
+        m_data.hwSamples.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t addr;
+            HwSampleData data;
+            f.Read2( addr, data );
+            m_data.hwSamples.emplace( addr, data );
+        }
+    }
+
     if( fileVer >= FileVersion( 0, 6, 13 ) )
     {
         f.Read( sz );
@@ -7521,6 +7534,14 @@ void Worker::Write( FileWrite& f, bool fiDict )
             ref += diff;
             f.Write( &diff, sizeof( diff ) );
         }
+    }
+
+    sz = m_data.hwSamples.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.hwSamples )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
     }
 
     sz = m_data.sourceFileCache.size();

@@ -2546,6 +2546,70 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
+static void PrintHwSampleTooltip( const HwSampleData& hw, bool hideFirstSeparator )
+{
+    if( hw.cycles || hw.retired )
+    {
+        if( hideFirstSeparator )
+        {
+            hideFirstSeparator = false;
+        }
+        else
+        {
+            ImGui::Separator();
+        }
+        if( hw.cycles && hw.retired )
+        {
+            char buf[32];
+            auto end = PrintFloat( buf, buf+32, float( hw.retired ) / hw.cycles, 2 );
+            *end = '\0';
+            TextFocused( "IPC:", buf );
+        }
+        if( hw.cycles ) TextFocused( "Cycles:", RealToString( hw.cycles ) );
+        if( hw.retired ) TextFocused( "Retirements:", RealToString( hw.retired ) );
+    }
+    if( hw.cacheRef || hw.cacheMiss )
+    {
+        if( hideFirstSeparator )
+        {
+            hideFirstSeparator = false;
+        }
+        else
+        {
+            ImGui::Separator();
+        }
+        if( hw.cacheRef )
+        {
+            char buf[32];
+            auto end = PrintFloat( buf, buf+32, float( 100 * hw.cacheMiss ) / hw.cacheRef, 2 );
+            memcpy( end, "%", 2 );
+            TextFocused( "Cache miss rate:", buf );
+            TextFocused( "Cache references:", RealToString( hw.cacheRef ) );
+        }
+        if( hw.cacheMiss ) TextFocused( "Cache misses:", RealToString( hw.cacheMiss ) );
+    }
+    if( hw.branchRetired || hw.branchMiss )
+    {
+        if( hideFirstSeparator )
+        {
+            hideFirstSeparator = false;
+        }
+        else
+        {
+            ImGui::Separator();
+        }
+        if( hw.branchRetired )
+        {
+            char buf[32];
+            auto end = PrintFloat( buf, buf+32, float( 100 * hw.branchMiss ) / hw.branchRetired, 2 );
+            memcpy( end, "%", 2 );
+            TextFocused( "Branch mispredictions rate:", buf );
+            TextFocused( "Retired branches:", RealToString( hw.branchRetired ) );
+        }
+        if( hw.branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw.branchMiss ) );
+    }
+}
+
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto ty = ImGui::GetFontSize();
@@ -2574,6 +2638,18 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         {
             const auto ts = ImGui::CalcTextSize( " " );
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+            if( ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( ts.x * 7, ty ) ) )
+            {
+                const auto hw = worker.GetHwSampleData( line.addr );
+                if( hw )
+                {
+                    if( m_font ) ImGui::PopFont();
+                    ImGui::BeginTooltip();
+                    PrintHwSampleTooltip( *hw, true );
+                    ImGui::EndTooltip();
+                    if( m_font ) ImGui::PushFont( m_font );
+                }
+            }
         }
         else
         {
@@ -2623,49 +2699,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
                     TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 }
+
                 const auto hw = worker.GetHwSampleData( line.addr );
-                if( hw )
-                {
-                    if( hw->cycles || hw->retired )
-                    {
-                        ImGui::Separator();
-                        if( hw->cycles && hw->retired )
-                        {
-                            char buf[32];
-                            auto end = PrintFloat( buf, buf+32, float( hw->retired ) / hw->cycles, 2 );
-                            *end = '\0';
-                            TextFocused( "IPC:", buf );
-                        }
-                        if( hw->cycles ) TextFocused( "Cycles:", RealToString( hw->cycles ) );
-                        if( hw->retired ) TextFocused( "Retirements:", RealToString( hw->retired ) );
-                    }
-                    if( hw->cacheRef || hw->cacheMiss )
-                    {
-                        ImGui::Separator();
-                        if( hw->cacheRef )
-                        {
-                            char buf[32];
-                            auto end = PrintFloat( buf, buf+32, float( 100 * hw->cacheMiss ) / hw->cacheRef, 2 );
-                            memcpy( end, "%", 2 );
-                            TextFocused( "Cache miss rate:", buf );
-                            TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
-                        }
-                        if( hw->cacheMiss ) TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
-                    }
-                    if( hw->branchRetired || hw->branchMiss )
-                    {
-                        ImGui::Separator();
-                        if( hw->branchRetired )
-                        {
-                            char buf[32];
-                            auto end = PrintFloat( buf, buf+32, float( 100 * hw->branchMiss ) / hw->branchRetired, 2 );
-                            memcpy( end, "%", 2 );
-                            TextFocused( "Branch mispredictions rate:", buf );
-                            TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
-                        }
-                        if( hw->branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );
-                    }
-                }
+                if( hw ) PrintHwSampleTooltip( *hw, false );
+
                 const auto& stats = *worker.GetSymbolStats( symAddrParents );
                 if( !stats.parents.empty() )
                 {

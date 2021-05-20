@@ -1843,6 +1843,20 @@ By default sampling is performed at 8 kHz frequency on Windows (which is the max
 
 Call stack sampling may be disabled by using the \texttt{TRACY\_NO\_SAMPLING} define.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Linux sampling rate limits}
+The operating system may decide that sampling is taking too much CPU time and reduce the allowed sampling rate. This can be seen in \texttt{dmesg} output as:
+
+\texttt{perf: interrupt took too long, lowering kernel.perf\_event\_max\_sample\_rate to \emph{value}}.
+
+If the \emph{value} goes below the sample rate Tracy wants to use, sampling will be silently disabled. To make it work again, you can set an appropriate value in the \texttt{kernel.perf\_event\_max\_sample\_rate} kernel parameter, using the \texttt{sysctl} utility.
+
+Should you want to disable this mechanism, you can set the \texttt{kernel.perf\_cpu\_time\_max\_percent} parameter to zero. Be sure to read what this would do, as it may have serious consequences that you should be aware of.
+\end{bclogo}
+
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}
 

@@ -2,6 +2,7 @@
 #define __TRACYSOURCECONTENTS_HPP__
 
 #include <stdint.h>
+#include <stddef.h>
 #include <vector>
 
 #include "TracySourceTokenizer.hpp"

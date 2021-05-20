@@ -2626,34 +2626,45 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 const auto hw = worker.GetHwSampleData( line.addr );
                 if( hw )
                 {
-                    ImGui::Separator();
-                    if( hw->cycles && hw->retired )
+                    if( hw->cycles || hw->retired )
                     {
-                        char buf[32];
-                        auto end = PrintFloat( buf, buf+32, float( hw->retired ) / hw->cycles, 2 );
-                        *end = '\0';
-                        TextFocused( "IPC:", buf );
+                        ImGui::Separator();
+                        if( hw->cycles && hw->retired )
+                        {
+                            char buf[32];
+                            auto end = PrintFloat( buf, buf+32, float( hw->retired ) / hw->cycles, 2 );
+                            *end = '\0';
+                            TextFocused( "IPC:", buf );
+                        }
+                        if( hw->cycles ) TextFocused( "Cycles:", RealToString( hw->cycles ) );
+                        if( hw->retired ) TextFocused( "Retirements:", RealToString( hw->retired ) );
                     }
-                    if( hw->cycles ) TextFocused( "Cycles:", RealToString( hw->cycles ) );
-                    if( hw->retired ) TextFocused( "Retirements:", RealToString( hw->retired ) );
-                    if( hw->cacheRef )
+                    if( hw->cacheRef || hw->cacheMiss )
                     {
-                        char buf[32];
-                        auto end = PrintFloat( buf, buf+32, float( 100 * hw->cacheMiss ) / hw->cacheRef, 2 );
-                        memcpy( end, "%", 2 );
-                        TextFocused( "Cache miss rate:", buf );
-                        TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
+                        ImGui::Separator();
+                        if( hw->cacheRef )
+                        {
+                            char buf[32];
+                            auto end = PrintFloat( buf, buf+32, float( 100 * hw->cacheMiss ) / hw->cacheRef, 2 );
+                            memcpy( end, "%", 2 );
+                            TextFocused( "Cache miss rate:", buf );
+                            TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
+                        }
+                        if( hw->cacheMiss ) TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
                     }
-                    if( hw->cacheMiss ) TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
-                    if( hw->branchRetired )
+                    if( hw->branchRetired || hw->branchMiss )
                     {
-                        char buf[32];
-                        auto end = PrintFloat( buf, buf+32, float( 100 * hw->branchMiss ) / hw->branchRetired, 2 );
-                        memcpy( end, "%", 2 );
-                        TextFocused( "Branch mispredictions rate:", buf );
-                        TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
+                        ImGui::Separator();
+                        if( hw->branchRetired )
+                        {
+                            char buf[32];
+                            auto end = PrintFloat( buf, buf+32, float( 100 * hw->branchMiss ) / hw->branchRetired, 2 );
+                            memcpy( end, "%", 2 );
+                            TextFocused( "Branch mispredictions rate:", buf );
+                            TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
+                        }
+                        if( hw->branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );
                     }
-                    if( hw->branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );
                 }
                 const auto& stats = *worker.GetSymbolStats( symAddrParents );
                 if( !stats.parents.empty() )

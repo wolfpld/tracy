@@ -1,3 +1,4 @@
+#include "TracyDebug.hpp"
 #include "TracySysTrace.hpp"
 #include "../common/TracySystem.hpp"
 
@@ -701,6 +702,7 @@ static void ProbePreciseIp( perf_event_attr& pe )
         }
         pe.precise_ip--;
     }
+    TracyDebug( "  Probed precise_ip: %i\n", pe.precise_ip );
 }
 
 static void SetupSampling( int64_t& samplingPeriod )
@@ -779,6 +781,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_idle = 1;
     if( !noRetirement )
     {
+        TracyDebug( "Setup sampling CPU cycles\n" );
         ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -787,6 +790,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCpuCycles );
                 s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
             }
         }
     }
@@ -795,6 +799,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_INSTRUCTIONS;
     if( !noRetirement )
     {
+        TracyDebug( "Setup sampling CPU instruction retirements\n" );
         ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -803,6 +808,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
                 s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
             }
         }
     }
@@ -811,6 +817,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_CACHE_REFERENCES;
     if( !noCache )
     {
+        TracyDebug( "Setup sampling CPU cache references\n" );
         ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -819,6 +826,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheReference );
                 s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
             }
         }
     }
@@ -827,6 +835,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_CACHE_MISSES;
     if( !noCache )
     {
+        TracyDebug( "Setup sampling CPU cache misses\n" );
         ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -835,6 +844,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheMiss );
                 s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
             }
         }
     }
@@ -843,6 +853,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
     if( !noBranch )
     {
+        TracyDebug( "Setup sampling CPU branch retirements\n" );
         ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -851,6 +862,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchRetired );
                 s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
             }
         }
     }
@@ -859,6 +871,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_BRANCH_MISSES;
     if( !noBranch )
     {
+        TracyDebug( "Setup sampling CPU branch misses\n" );
         ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -867,6 +880,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchMiss );
                 s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
             }
         }
     }

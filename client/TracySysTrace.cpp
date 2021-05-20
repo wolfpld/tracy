@@ -993,16 +993,16 @@ static void SetupSampling( int64_t& samplingPeriod )
                                 type = QueueType::HwSampleInstructionRetired;
                                 break;
                             case EventCacheReference:
-                                type = QueueType::HwSampleCpuCycle;
+                                type = QueueType::HwSampleCacheReference;
                                 break;
                             case EventCacheMiss:
-                                type = QueueType::HwSampleInstructionRetired;
+                                type = QueueType::HwSampleCacheMiss;
                                 break;
                             case EventBranchRetired:
-                                type = QueueType::HwSampleCpuCycle;
+                                type = QueueType::HwSampleBranchRetired;
                                 break;
                             case EventBranchMiss:
-                                type = QueueType::HwSampleInstructionRetired;
+                                type = QueueType::HwSampleBranchMiss;
                                 break;
                             default:
                                 assert( false );

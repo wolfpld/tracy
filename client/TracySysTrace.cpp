@@ -681,7 +681,11 @@ enum TraceEventId
 {
     EventCallstack,
     EventCpuCycles,
-    EventInstructionsRetired
+    EventInstructionsRetired,
+    EventCacheReference,
+    EventCacheMiss,
+    EventBranchRetired,
+    EventBranchMiss
 };
 
 static void SetupSampling( int64_t& samplingPeriod )
@@ -697,10 +701,24 @@ static void SetupSampling( int64_t& samplingPeriod )
     const bool noRetirement = noRetirementEnv && noRetirementEnv[0] == '1';
 #endif
 
+#ifdef TRACY_NO_SAMPLE_CACHE
+    const bool noCache = true;
+#else
+    const char* noCacheEnv = GetEnvVar( "TRACY_NO_SAMPLE_CACHE" );
+    const bool noCache = noCacheEnv && noCacheEnv[0] == '1';
+#endif
+
+#ifdef TRACY_NO_SAMPLE_BRANCH
+    const bool noBranch = true;
+#else
+    const char* noBranchEnv = GetEnvVar( "TRACY_NO_SAMPLE_BRANCH" );
+    const bool noBranch = noBranchEnv && noBranchEnv[0] == '1';
+#endif
+
     samplingPeriod = GetSamplingPeriod();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
-    s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus * 3 );
+    s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus * 7 );
     s_numBuffers = 0;
 
     // Stack traces
@@ -745,7 +763,6 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_kernel = 1;
     pe.exclude_idle = 1;
     pe.precise_ip = 2;
-
     if( !noRetirement )
     {
         for( int i=0; i<s_numCpus; i++ )
@@ -761,7 +778,6 @@ static void SetupSampling( int64_t& samplingPeriod )
 
     // Instructions retired
     pe.config = PERF_COUNT_HW_INSTRUCTIONS;
-
     if( !noRetirement )
     {
         for( int i=0; i<s_numCpus; i++ )
@@ -770,6 +786,66 @@ static void SetupSampling( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
+                s_numBuffers++;
+            }
+        }
+    }
+
+    // cache reference
+    pe.config = PERF_COUNT_HW_CACHE_REFERENCES;
+    if( !noCache )
+    {
+        for( int i=0; i<s_numCpus; i++ )
+        {
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheReference );
+                s_numBuffers++;
+            }
+        }
+    }
+
+    // cache miss
+    pe.config = PERF_COUNT_HW_CACHE_MISSES;
+    if( !noCache )
+    {
+        for( int i=0; i<s_numCpus; i++ )
+        {
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheMiss );
+                s_numBuffers++;
+            }
+        }
+    }
+
+    // branch retired
+    pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+    if( !noBranch )
+    {
+        for( int i=0; i<s_numCpus; i++ )
+        {
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchRetired );
+                s_numBuffers++;
+            }
+        }
+    }
+
+    // branch miss
+    pe.config = PERF_COUNT_HW_BRANCH_MISSES;
+    if( !noBranch )
+    {
+        for( int i=0; i<s_numCpus; i++ )
+        {
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchMiss );
                 s_numBuffers++;
             }
         }
@@ -914,6 +990,18 @@ static void SetupSampling( int64_t& samplingPeriod )
                                 type = QueueType::HwSampleCpuCycle;
                                 break;
                             case EventInstructionsRetired:
+                                type = QueueType::HwSampleInstructionRetired;
+                                break;
+                            case EventCacheReference:
+                                type = QueueType::HwSampleCpuCycle;
+                                break;
+                            case EventCacheMiss:
+                                type = QueueType::HwSampleInstructionRetired;
+                                break;
+                            case EventBranchRetired:
+                                type = QueueType::HwSampleCpuCycle;
+                                break;
+                            case EventBranchMiss:
                                 type = QueueType::HwSampleInstructionRetired;
                                 break;
                             default:

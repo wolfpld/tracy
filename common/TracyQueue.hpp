@@ -84,6 +84,10 @@ enum class QueueType : uint8_t
     TidToPid,
     HwSampleCpuCycle,
     HwSampleInstructionRetired,
+    HwSampleCacheReference,
+    HwSampleCacheMiss,
+    HwSampleBranchRetired,
+    HwSampleBranchMiss,
     PlotConfig,
     ParamSetup,
     AckServerQueryNoop,
@@ -663,6 +667,10 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cpu cycle
     sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // instruction retired
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cache reference
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cache miss
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // branch retired
+    sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // branch miss
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement

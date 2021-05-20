@@ -2638,17 +2638,19 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     if( hw->retired ) TextFocused( "Retirements:", RealToString( hw->retired ) );
                     if( hw->cacheRef )
                     {
-                        TextDisabledUnformatted( "Cache miss rate:" );
-                        ImGui::SameLine();
-                        PrintPercentage( float( 100 * hw->cacheMiss ) / hw->cacheRef );
+                        char buf[32];
+                        auto end = PrintFloat( buf, buf+32, float( 100 * hw->cacheMiss ) / hw->cacheRef, 2 );
+                        memcpy( end, "%", 2 );
+                        TextFocused( "Cache miss rate:", buf );
                         TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
                     }
                     if( hw->cacheMiss ) TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
                     if( hw->branchRetired )
                     {
-                        TextDisabledUnformatted( "Branch mispredictions rate:" );
-                        ImGui::SameLine();
-                        PrintPercentage( float( 100 * hw->branchMiss ) / hw->branchRetired );
+                        char buf[32];
+                        auto end = PrintFloat( buf, buf+32, float( 100 * hw->branchMiss ) / hw->branchRetired, 2 );
+                        memcpy( end, "%", 2 );
+                        TextFocused( "Branch mispredictions rate:", buf );
                         TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
                     }
                     if( hw->branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );

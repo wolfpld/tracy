@@ -688,6 +688,21 @@ enum TraceEventId
     EventBranchMiss
 };
 
+static void ProbePreciseIp( perf_event_attr& pe )
+{
+    pe.precise_ip = 3;
+    while( pe.precise_ip != 0 )
+    {
+        const int fd = perf_event_open( &pe, -1, 0, -1, PERF_FLAG_FD_CLOEXEC );
+        if( fd != -1 )
+        {
+            close( fd );
+            break;
+        }
+        pe.precise_ip--;
+    }
+}
+
 static void SetupSampling( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
@@ -762,9 +777,9 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_idle = 1;
-    pe.precise_ip = 2;
     if( !noRetirement )
     {
+        ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -780,6 +795,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_INSTRUCTIONS;
     if( !noRetirement )
     {
+        ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -795,6 +811,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_CACHE_REFERENCES;
     if( !noCache )
     {
+        ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -810,6 +827,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_CACHE_MISSES;
     if( !noCache )
     {
+        ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -825,6 +843,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
     if( !noBranch )
     {
+        ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -840,6 +859,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.config = PERF_COUNT_HW_BRANCH_MISSES;
     if( !noBranch )
     {
+        ProbePreciseIp( pe );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );

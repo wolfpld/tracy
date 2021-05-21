@@ -8,6 +8,7 @@ v0.x.x (xxxx-xx-xx)
 
 - Added TRACY_NO_CALLSTACK_INLINES macro to disable inline functions
   resolution in call stacks on Windows.
+- Limited client query response rate.
 
 
 v0.7.8 (2021-05-19)

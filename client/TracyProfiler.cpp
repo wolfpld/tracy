@@ -1688,9 +1688,12 @@ void Profiler::Worker()
             }
 
             bool connActive = true;
-            while( m_sock->HasData() && connActive )
+            int queryCounter = 0;
+            constexpr int flushPeriod = 500;
+            while ( m_sock->HasData() && connActive && queryCounter < flushPeriod )
             {
                 connActive = HandleServerQuery();
+                queryCounter++;
             }
             if( !connActive ) break;
         }

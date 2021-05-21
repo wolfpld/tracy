@@ -81,6 +81,7 @@ extern "C"
     t_RtlWalkFrameChain RtlWalkFrameChain = 0;
 }
 
+#ifndef TRACY_CALLSTACK_IGNORE_INLINES
 #if defined __MINGW32__ && API_VERSION_NUMBER < 12
 extern "C" {
 // Actual required API_VERSION_NUMBER is unknown because it is undocumented. These functions are not present in at least v11.
@@ -92,6 +93,7 @@ BOOL IMAGEAPI SymFromInlineContext(HANDLE hProcess, DWORD64 Address, ULONG Inlin
 BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext,
     DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64);
 };
+#endif
 #endif
 
 #ifndef __CYGWIN__
@@ -292,7 +294,7 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(TRACY_CALLSTACK_IGNORE_INLINES)
     DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
     DWORD ctx = 0;
     DWORD idx;
@@ -335,7 +337,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(TRACY_CALLSTACK_IGNORE_INLINES)
     DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
     if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
     DWORD ctx = 0;
@@ -393,7 +395,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         }
     }
 
-#ifndef __CYGWIN__
+#if !defined(__CYGWIN__) && !defined(TRACY_CALLSTACK_IGNORE_INLINES)
     if( doInline )
     {
         for( DWORD i=0; i<inlineNum; i++ )

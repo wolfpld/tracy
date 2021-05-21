@@ -292,7 +292,7 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-#ifndef __CYGWIN__
+#if !defined __CYGWIN__ && !defined TRACY_NO_CALLSTACK_INLINES
     DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
     DWORD ctx = 0;
     DWORD idx;
@@ -335,7 +335,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-#ifndef __CYGWIN__
+#if !defined __CYGWIN__ && !defined TRACY_NO_CALLSTACK_INLINES
     DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
     if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
     DWORD ctx = 0;
@@ -393,7 +393,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         }
     }
 
-#ifndef __CYGWIN__
+#if !defined __CYGWIN__ && !defined TRACY_NO_CALLSTACK_INLINES
     if( doInline )
     {
         for( DWORD i=0; i<inlineNum; i++ )

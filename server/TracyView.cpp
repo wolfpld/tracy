@@ -11420,7 +11420,7 @@ void View::DrawCompare()
                                 auto& srcloc = m_compare.second->GetSourceLocation( v );
                                 auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                                 auto file = m_compare.second->GetString( srcloc.file );
-                                if( strcmp( string0, string ) == 0 && strcmp( file0, file) == 0 && srcloc0.line == srcloc.line  )
+                                if( strcmp( string0, string ) == 0 && strcmp( file0, file ) == 0 && srcloc0.line == srcloc.line )
                                 {
                                     m_compare.selMatch[1] = idx;
                                     break;
@@ -11436,7 +11436,7 @@ void View::DrawCompare()
                                 auto& srcloc = m_worker.GetSourceLocation( v );
                                 auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                                 auto file = m_compare.second->GetString( srcloc.file );
-                                if( strcmp( string1, string ) == 0 && strcmp( file1, file) == 0 && srcloc1.line == srcloc.line  )
+                                if( strcmp( string1, string ) == 0 && strcmp( file1, file ) == 0 && srcloc1.line == srcloc.line )
                                 {
                                     m_compare.selMatch[0] = idx;
                                     break;

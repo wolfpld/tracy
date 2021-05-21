@@ -1687,10 +1687,12 @@ void Profiler::Worker()
                 keepAlive = 0;
             }
 
+            int quota = 500;
             bool connActive = true;
-            while( m_sock->HasData() && connActive )
+            while( quota-- && m_sock->HasData() )
             {
                 connActive = HandleServerQuery();
+                if( !connActive ) break;
             }
             if( !connActive ) break;
         }

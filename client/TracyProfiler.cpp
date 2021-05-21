@@ -1676,7 +1676,7 @@ void Profiler::Worker()
 
                     keepAlive = 0;
                 }
-                else
+                else if( !m_sock->HasData() )
                 {
                     keepAlive++;
                     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );

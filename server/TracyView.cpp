@@ -11407,8 +11407,10 @@ void View::DrawCompare()
                     auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
                     auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
                     auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
+                    auto file0 = m_worker.GetString( srcloc0.file );
+                    auto file1 = m_compare.second->GetString( srcloc1.file );
 
-                    if( strcmp( string0, string1 ) != 0 )
+                    if( strcmp( string0, string1 ) != 0 || strcmp( file0, file1 ) != 0 || srcloc0.line != srcloc1.line )
                     {
                         idx = 0;
                         if( prev0 != m_compare.selMatch[0] )
@@ -11417,7 +11419,8 @@ void View::DrawCompare()
                             {
                                 auto& srcloc = m_compare.second->GetSourceLocation( v );
                                 auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                                if( strcmp( string0, string ) == 0 )
+                                auto file = m_compare.second->GetString( srcloc.file );
+                                if( strcmp( string0, string ) == 0 && strcmp( file0, file) == 0 && srcloc0.line == srcloc.line  )
                                 {
                                     m_compare.selMatch[1] = idx;
                                     break;
@@ -11432,7 +11435,8 @@ void View::DrawCompare()
                             {
                                 auto& srcloc = m_worker.GetSourceLocation( v );
                                 auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                                if( strcmp( string1, string ) == 0 )
+                                auto file = m_compare.second->GetString( srcloc.file );
+                                if( strcmp( string1, string ) == 0 && strcmp( file1, file) == 0 && srcloc1.line == srcloc.line  )
                                 {
                                     m_compare.selMatch[0] = idx;
                                     break;

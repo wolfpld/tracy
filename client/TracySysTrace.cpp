@@ -819,6 +819,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     }
 
     // cache reference + miss
+    pe.sample_freq = 200*1000;
     if( !noCache )
     {
         TracyDebug( "Setup sampling CPU cache references + misses\n" );

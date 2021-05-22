@@ -1676,7 +1676,7 @@ void Profiler::Worker()
 
                     keepAlive = 0;
                 }
-                else
+                else if( !m_sock->HasData() )
                 {
                     keepAlive++;
                     std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
@@ -1687,10 +1687,12 @@ void Profiler::Worker()
                 keepAlive = 0;
             }
 
+            int quota = 500;
             bool connActive = true;
-            while( m_sock->HasData() && connActive )
+            while( quota-- && m_sock->HasData() )
             {
                 connActive = HandleServerQuery();
+                if( !connActive ) break;
             }
             if( !connActive ) break;
         }

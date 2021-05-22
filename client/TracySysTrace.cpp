@@ -689,9 +689,21 @@ enum TraceEventId
     EventBranchMiss
 };
 
-static void ProbePreciseIp( perf_event_attr& pe )
+static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, unsigned long long config1 )
 {
+    pe.config = config1;
     pe.precise_ip = 3;
+    while( pe.precise_ip != 0 )
+    {
+        const int fd = perf_event_open( &pe, -1, 0, -1, PERF_FLAG_FD_CLOEXEC );
+        if( fd != -1 )
+        {
+            close( fd );
+            break;
+        }
+        pe.precise_ip--;
+    }
+    pe.config = config0;
     while( pe.precise_ip != 0 )
     {
         const int fd = perf_event_open( &pe, -1, 0, -1, PERF_FLAG_FD_CLOEXEC );
@@ -769,11 +781,10 @@ static void SetupSampling( int64_t& samplingPeriod )
         s_numBuffers++;
     }
 
-    // CPU cycles
+    // CPU cycles + instructions retired
     pe = {};
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof( perf_event_attr );
-    pe.config = PERF_COUNT_HW_CPU_CYCLES;
     pe.sample_freq = 5*1000*1000;
     pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
     pe.disabled = 1;
@@ -781,8 +792,8 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_idle = 1;
     if( !noRetirement )
     {
-        TracyDebug( "Setup sampling CPU cycles\n" );
-        ProbePreciseIp( pe );
+        TracyDebug( "Setup sampling cycles + retirement\n" );
+        ProbePreciseIp( pe, PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -793,14 +804,8 @@ static void SetupSampling( int64_t& samplingPeriod )
                 TracyDebug( "  Core %i ok\n", i );
             }
         }
-    }
 
-    // Instructions retired
-    pe.config = PERF_COUNT_HW_INSTRUCTIONS;
-    if( !noRetirement )
-    {
-        TracyDebug( "Setup sampling CPU instruction retirements\n" );
-        ProbePreciseIp( pe );
+        pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -813,12 +818,11 @@ static void SetupSampling( int64_t& samplingPeriod )
         }
     }
 
-    // cache reference
-    pe.config = PERF_COUNT_HW_CACHE_REFERENCES;
+    // cache reference + miss
     if( !noCache )
     {
-        TracyDebug( "Setup sampling CPU cache references\n" );
-        ProbePreciseIp( pe );
+        TracyDebug( "Setup sampling CPU cache references + misses\n" );
+        ProbePreciseIp( pe, PERF_COUNT_HW_CACHE_REFERENCES, PERF_COUNT_HW_CACHE_MISSES );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -829,14 +833,8 @@ static void SetupSampling( int64_t& samplingPeriod )
                 TracyDebug( "  Core %i ok\n", i );
             }
         }
-    }
 
-    // cache miss
-    pe.config = PERF_COUNT_HW_CACHE_MISSES;
-    if( !noCache )
-    {
-        TracyDebug( "Setup sampling CPU cache misses\n" );
-        ProbePreciseIp( pe );
+        pe.config = PERF_COUNT_HW_CACHE_MISSES;
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -849,12 +847,11 @@ static void SetupSampling( int64_t& samplingPeriod )
         }
     }
 
-    // branch retired
-    pe.config = PERF_COUNT_HW_BRANCH_INSTRUCTIONS;
+    // branch retired + miss
     if( !noBranch )
     {
-        TracyDebug( "Setup sampling CPU branch retirements\n" );
-        ProbePreciseIp( pe );
+        TracyDebug( "Setup sampling CPU branch retirements + misses\n" );
+        ProbePreciseIp( pe, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, PERF_COUNT_HW_BRANCH_MISSES );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -865,14 +862,8 @@ static void SetupSampling( int64_t& samplingPeriod )
                 TracyDebug( "  Core %i ok\n", i );
             }
         }
-    }
 
-    // branch miss
-    pe.config = PERF_COUNT_HW_BRANCH_MISSES;
-    if( !noBranch )
-    {
-        TracyDebug( "Setup sampling CPU branch misses\n" );
-        ProbePreciseIp( pe );
+        pe.config = PERF_COUNT_HW_BRANCH_MISSES;
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );

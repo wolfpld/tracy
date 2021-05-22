@@ -11189,6 +11189,87 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
     ImGui::TreePop();
 }
 
+bool View::FindMatchingZone( int prev0, int prev1, int flags )
+{
+    int idx = 0;
+    bool found = false;
+    auto& srcloc0 = m_worker.GetSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
+    auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+    auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
+    auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
+    auto file0 = m_worker.GetString( srcloc0.file );
+    auto file1 = m_compare.second->GetString( srcloc1.file );
+    bool wrongFile = false;
+    bool wrongLine = false;
+    if( flags & FindMatchingZoneFlagSourceFile )
+    {
+        wrongFile = strcmp( file0, file1 ) != 0;
+    }
+    if( flags & FindMatchingZoneFlagLineNum )
+    {
+        wrongLine = srcloc0.line != srcloc1.line;
+    }
+
+    if( strcmp( string0, string1 ) != 0 || wrongFile || wrongLine )
+    {
+        if( prev0 != m_compare.selMatch[0] )
+        {
+            for( auto& v : m_compare.match[1] )
+            {
+                auto& srcloc = m_compare.second->GetSourceLocation( v );
+                auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                auto file = m_compare.second->GetString( srcloc.file );
+                bool sameFile = true;
+                bool sameLine = true;
+                if( flags & FindMatchingZoneFlagSourceFile )
+                {
+                    sameFile = strcmp( file0, file ) == 0;
+                }
+                if( flags & FindMatchingZoneFlagLineNum )
+                {
+                    sameLine = srcloc0.line == srcloc.line;
+                }
+                if( strcmp( string0, string ) == 0 && sameFile && sameLine )
+                {
+                    m_compare.selMatch[1] = idx;
+                    found = true;
+                    break;
+                }
+                idx++;
+            }
+        }
+        else
+        {
+            assert( prev1 != m_compare.selMatch[1] );
+            for( auto& v : m_compare.match[0] )
+            {
+                auto& srcloc = m_worker.GetSourceLocation( v );
+                auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                auto file = m_worker.GetString( srcloc.file );
+                bool sameFile = true;
+                bool sameLine = true;
+                if( flags & FindMatchingZoneFlagSourceFile )
+                {
+                    sameFile = strcmp( file1, file ) == 0;
+                }
+                if( flags & FindMatchingZoneFlagLineNum )
+                {
+                    sameLine = srcloc1.line == srcloc.line;
+                }
+                if( strcmp( string1, string ) == 0 && sameFile && sameLine )
+                {
+                    m_compare.selMatch[0] = idx;
+                    found = true;
+                    break;
+                }
+                idx++;
+            }
+
+        }
+    }
+    return found;
+}
+
 void View::DrawCompare()
 {
     ImGui::SetNextWindowSize( ImVec2( 590, 800 ), ImGuiCond_FirstUseEver );
@@ -11403,47 +11484,11 @@ void View::DrawCompare()
 
                 if( m_compare.link )
                 {
-                    auto& srcloc0 = m_worker.GetSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
-                    auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
-                    auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
-                    auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
-                    auto file0 = m_worker.GetString( srcloc0.file );
-                    auto file1 = m_compare.second->GetString( srcloc1.file );
-
-                    if( strcmp( string0, string1 ) != 0 || strcmp( file0, file1 ) != 0 || srcloc0.line != srcloc1.line )
+                    if( !FindMatchingZone( prev0, prev1, FindMatchingZoneFlagSourceFile | FindMatchingZoneFlagLineNum ) )
                     {
-                        idx = 0;
-                        if( prev0 != m_compare.selMatch[0] )
+                        if( !FindMatchingZone( prev0, prev1, FindMatchingZoneFlagSourceFile ) )
                         {
-                            for( auto& v : m_compare.match[1] )
-                            {
-                                auto& srcloc = m_compare.second->GetSourceLocation( v );
-                                auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                                auto file = m_compare.second->GetString( srcloc.file );
-                                if( strcmp( string0, string ) == 0 && strcmp( file0, file ) == 0 && srcloc0.line == srcloc.line )
-                                {
-                                    m_compare.selMatch[1] = idx;
-                                    break;
-                                }
-                                idx++;
-                            }
-                        }
-                        else
-                        {
-                            assert( prev1 != m_compare.selMatch[1] );
-                            for( auto& v : m_compare.match[0] )
-                            {
-                                auto& srcloc = m_worker.GetSourceLocation( v );
-                                auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                                auto file = m_compare.second->GetString( srcloc.file );
-                                if( strcmp( string1, string ) == 0 && strcmp( file1, file ) == 0 && srcloc1.line == srcloc.line )
-                                {
-                                    m_compare.selMatch[0] = idx;
-                                    break;
-                                }
-                                idx++;
-                            }
-
+                            FindMatchingZone( prev0, prev1, FindMatchingZoneFlagDefault );
                         }
                     }
                 }

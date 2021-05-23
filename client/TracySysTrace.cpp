@@ -689,13 +689,13 @@ enum TraceEventId
     EventBranchMiss
 };
 
-static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, unsigned long long config1 )
+static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, unsigned long long config1, pid_t pid )
 {
     pe.config = config1;
     pe.precise_ip = 3;
     while( pe.precise_ip != 0 )
     {
-        const int fd = perf_event_open( &pe, -1, 0, -1, PERF_FLAG_FD_CLOEXEC );
+        const int fd = perf_event_open( &pe, pid, 0, -1, PERF_FLAG_FD_CLOEXEC );
         if( fd != -1 )
         {
             close( fd );
@@ -706,7 +706,7 @@ static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, uns
     pe.config = config0;
     while( pe.precise_ip != 0 )
     {
-        const int fd = perf_event_open( &pe, -1, 0, -1, PERF_FLAG_FD_CLOEXEC );
+        const int fd = perf_event_open( &pe, pid, 0, -1, PERF_FLAG_FD_CLOEXEC );
         if( fd != -1 )
         {
             close( fd );
@@ -745,6 +745,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 #endif
 
     samplingPeriod = GetSamplingPeriod();
+    uint32_t currentPid = (uint32_t)getpid();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
     s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * s_numCpus * 7 );
@@ -763,6 +764,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_callchain_kernel = 1;
     pe.disabled = 1;
     pe.freq = 1;
+    pe.inherit = 1;
 #if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     pe.use_clockid = 1;
     pe.clockid = CLOCK_MONOTONIC_RAW;
@@ -770,7 +772,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 
     for( int i=0; i<s_numCpus; i++ )
     {
-        const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+        const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
         if( fd == -1 )
         {
             for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
@@ -792,13 +794,14 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_guest = 1;
     pe.exclude_hv = 1;
     pe.freq = 1;
+    pe.inherit = 1;
     if( !noRetirement )
     {
         TracyDebug( "Setup sampling cycles + retirement\n" );
-        ProbePreciseIp( pe, PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS );
+        ProbePreciseIp( pe, PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, currentPid );
         for( int i=0; i<s_numCpus; i++ )
         {
-            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCpuCycles );
@@ -810,7 +813,7 @@ static void SetupSampling( int64_t& samplingPeriod )
         pe.config = PERF_COUNT_HW_INSTRUCTIONS;
         for( int i=0; i<s_numCpus; i++ )
         {
-            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
@@ -824,10 +827,10 @@ static void SetupSampling( int64_t& samplingPeriod )
     if( !noCache )
     {
         TracyDebug( "Setup sampling CPU cache references + misses\n" );
-        ProbePreciseIp( pe, PERF_COUNT_HW_CACHE_REFERENCES, PERF_COUNT_HW_CACHE_MISSES );
+        ProbePreciseIp( pe, PERF_COUNT_HW_CACHE_REFERENCES, PERF_COUNT_HW_CACHE_MISSES, currentPid );
         for( int i=0; i<s_numCpus; i++ )
         {
-            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheReference );
@@ -839,7 +842,7 @@ static void SetupSampling( int64_t& samplingPeriod )
         pe.config = PERF_COUNT_HW_CACHE_MISSES;
         for( int i=0; i<s_numCpus; i++ )
         {
-            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheMiss );
@@ -853,10 +856,10 @@ static void SetupSampling( int64_t& samplingPeriod )
     if( !noBranch )
     {
         TracyDebug( "Setup sampling CPU branch retirements + misses\n" );
-        ProbePreciseIp( pe, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, PERF_COUNT_HW_BRANCH_MISSES );
+        ProbePreciseIp( pe, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, PERF_COUNT_HW_BRANCH_MISSES, currentPid );
         for( int i=0; i<s_numCpus; i++ )
         {
-            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchRetired );
@@ -868,7 +871,7 @@ static void SetupSampling( int64_t& samplingPeriod )
         pe.config = PERF_COUNT_HW_BRANCH_MISSES;
         for( int i=0; i<s_numCpus; i++ )
         {
-            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchMiss );

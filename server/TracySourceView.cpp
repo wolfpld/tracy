@@ -2848,7 +2848,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 const bool unreliable = hw->cycles < 10 || hw->retired < 10;
                 const float ipc = float( hw->retired ) / hw->cycles;
-                uint32_t col = unreliable ? 0x66FFFFFF : 0xFFFFFFFF;
+                uint32_t col = unreliable ? 0x66FFFFFF : GetGoodnessColor( ipc * 0.25f );
                 if( ipc >= 10 )
                 {
                     TextColoredUnformatted( col, "  10+  " );
@@ -2886,7 +2886,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 const bool unreliable = hw->branchRetired < 10;
                 const float rate = float( hw->branchMiss ) / hw->branchRetired;
-                uint32_t col = unreliable ? 0x66FFFFFF : 0xFFFFFFFF;
+                uint32_t col = unreliable ? 0x66FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
                 if( hw->branchMiss == 0 )
                 {
                     TextColoredUnformatted( col, "   0%  " );
@@ -2936,7 +2936,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 const bool unreliable = hw->cacheRef < 10;
                 const float rate = float( hw->cacheMiss ) / hw->cacheRef;
-                uint32_t col = unreliable ? 0xFF888888 : 0xFFFFFFFF;
+                uint32_t col = unreliable ? 0xFF888888 : GetGoodnessColor( 1.f - rate * 3.f );
                 if( hw->cacheMiss == 0 )
                 {
                     TextColoredUnformatted( col, "   0%" );

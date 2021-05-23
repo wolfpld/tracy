@@ -1306,6 +1306,29 @@ static uint32_t GetHotnessColor( uint32_t count, uint32_t maxCount )
     }
 }
 
+static uint32_t GetHotnessGlow( uint32_t count, uint32_t maxCount )
+{
+    const auto ratio = float( 2 * count ) / maxCount;
+    if( ratio <= 0.5f )
+    {
+        return 0;
+    }
+    else if( ratio <= 1.f )
+    {
+        const auto a = int( ( ratio * 2.f - 1.f ) * 102 );
+        return 0x000000FF | ( a << 24 );
+    }
+    else if( ratio <= 2.f )
+    {
+        const auto g = int( ( ratio - 1.f ) * 192 );
+        return 0x660000FF | ( g << 8 );
+    }
+    else
+    {
+        return 0x6600C0FF;
+    }
+}
+
 static constexpr uint32_t GoodnessColor[256] = {
     0xFF3232FF, 0xFF3235FE, 0xFF3238FE, 0xFF323AFD, 0xFF323DFD, 0xFF323FFC, 0xFF3242FC, 0xFF3244FB,
     0xFF3246FB, 0xFF3248FB, 0xFF324AFA, 0xFF324CFA, 0xFF324EF9, 0xFF3250F9, 0xFF3252F8, 0xFF3254F8,
@@ -2507,14 +2530,24 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                     m_srcGroupSelect = -1;
                 }
             }
+
+            uint32_t col, glow;
             if( m_childCalls )
             {
-                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
+                col = GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
+                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
             }
             else
             {
-                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
+                col = GetHotnessColor( ipcnt.local, ipmax.local );
+                glow = GetHotnessGlow( ipcnt.local, ipmax.local );
             }
+            if( glow )
+            {
+                DrawLine( draw, dpos + ImVec2( 1, 1 ), dpos + ImVec2( 1, ty-2 ), glow );
+                DrawLine( draw, dpos + ImVec2( -1, 1 ), dpos + ImVec2( -1, ty-2 ), glow );
+            }
+            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -2826,14 +2859,24 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     view.ShowSampleParents( symAddrParents );
                 }
             }
+
+            uint32_t col, glow;
             if( m_childCalls )
             {
-                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext ) );
+                col = GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
+                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
             }
             else
             {
-                DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
+                col = GetHotnessColor( ipcnt.local, ipmax.local );
+                glow = GetHotnessGlow( ipcnt.local, ipmax.local );
             }
+            if( glow )
+            {
+                DrawLine( draw, dpos + ImVec2( 1, 1 ), dpos + ImVec2( 1, ty-2 ), glow );
+                DrawLine( draw, dpos + ImVec2( -1, 1 ), dpos + ImVec2( -1, ty-2 ), glow );
+            }
+            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col );
         }
         ImGui::SameLine( 0, ty );
     }

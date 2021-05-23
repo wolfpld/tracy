@@ -785,10 +785,11 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe = {};
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof( perf_event_attr );
-    pe.sample_freq = 1*1000*1000;
+    pe.sample_freq = 10000;
     pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
+    pe.freq = 1;
     if( !noRetirement )
     {
         TracyDebug( "Setup sampling cycles + retirement\n" );
@@ -818,7 +819,6 @@ static void SetupSampling( int64_t& samplingPeriod )
     }
 
     // cache reference + miss
-    pe.sample_freq = 200*1000;
     if( !noCache )
     {
         TracyDebug( "Setup sampling CPU cache references + misses\n" );

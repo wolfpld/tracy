@@ -789,7 +789,6 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
-    pe.exclude_idle = 1;
     if( !noRetirement )
     {
         TracyDebug( "Setup sampling cycles + retirement\n" );

@@ -1282,22 +1282,22 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     }
 }
 
-static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
+static uint32_t GetHotnessColor( uint32_t count, uint32_t maxCount )
 {
-    const auto ipPercent = float( ipSum ) / maxIpCount;
-    if( ipPercent <= 0.5f )
+    const auto ratio = float( 2 * count ) / maxCount;
+    if( ratio <= 0.5f )
     {
-        const auto a = int( ( ipPercent * 1.5f + 0.25f ) * 255 );
+        const auto a = int( ( ratio * 1.5f + 0.25f ) * 255 );
         return 0x000000FF | ( a << 24 );
     }
-    else if( ipPercent <= 1.f )
+    else if( ratio <= 1.f )
     {
-        const auto g = int( ( ipPercent - 0.5f ) * 511 );
+        const auto g = int( ( ratio - 0.5f ) * 511 );
         return 0xFF0000FF | ( g << 8 );
     }
-    else if( ipPercent <= 2.f )
+    else if( ratio <= 2.f )
     {
-        const auto b = int( ( ipPercent - 1.f ) * 255 );
+        const auto b = int( ( ratio - 1.f ) * 255 );
         return 0xFF00FFFF | ( b << 16 );
     }
     else

@@ -4,6 +4,7 @@
 #include "TracyCallstack.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyStackFrames.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -523,9 +524,42 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
+static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
+{
+    if( !fn ) return 1;
+
+    const auto fnsz = strlen( fn );
+#if defined __aarch64__ || defined __ARM_ARCH
+    if( fnsz >= 19 && memcmp( "/include/arm_neon.h", fn + fnsz - 19, 19 ) == 0 ) return 0;
+#else
+    if( fnsz >= 19 )    // minimum length in s_tracySkipSubframes
+    {
+        auto ptr = s_tracySkipSubframes;
+        do
+        {
+            if( fnsz >= ptr->len && memcmp( fn + fnsz - ptr->len, ptr->str, ptr->len ) == 0 ) return 0;
+            ptr++;
+        }
+        while( ptr->str );
+    }
+#endif
+
+    auto& sym = *(CallstackSymbolData*)data;
+    sym.file = CopyString( fn );
+    sym.line = lineno;
+    sym.needFree = true;
+    return 1;
+}
+
+static void CodeErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
+{
+}
+
 CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
-    return DecodeSymbolAddress( ptr );
+    CallstackSymbolData sym = { "[unknown]", 0, false };
+    backtrace_pcinfo( cb_bts, ptr, CodeDataCb, CodeErrorCb, &sym );
+    return sym;
 }
 
 static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )

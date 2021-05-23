@@ -959,56 +959,58 @@ static void SetupSampling( int64_t& samplingPeriod )
 
                         if( cnt > 0 )
                         {
-                            auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
-                            s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+                            t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                            if( t0 != 0 )
+#endif
+                            {
+                                auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
+                                s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
 
 #if defined __x86_64__ || defined _M_X64
-                            // remove non-canonical pointers
-                            do
-                            {
-                                const auto test = (int64_t)trace[cnt];
-                                const auto m1 = test >> 63;
-                                const auto m2 = test >> 47;
-                                if( m1 == m2 ) break;
-                            }
-                            while( --cnt > 0 );
-                            for( uint64_t j=1; j<cnt; j++ )
-                            {
-                                const auto test = (int64_t)trace[j];
-                                const auto m1 = test >> 63;
-                                const auto m2 = test >> 47;
-                                if( m1 != m2 ) trace[j] = 0;
-                            }
-#endif
-
-                            // skip kernel frames
-                            uint64_t j;
-                            for( j=0; j<cnt; j++ )
-                            {
-                                if( (int64_t)trace[j+1] >= 0 ) break;
-                            }
-                            if( j == cnt )
-                            {
-                                tracy_free( trace );
-                            }
-                            else
-                            {
-                                if( j > 0 )
+                                // remove non-canonical pointers
+                                do
                                 {
-                                    cnt -= j;
-                                    memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                                    const auto test = (int64_t)trace[cnt];
+                                    const auto m1 = test >> 63;
+                                    const auto m2 = test >> 47;
+                                    if( m1 == m2 ) break;
                                 }
-                                memcpy( trace, &cnt, sizeof( uint64_t ) );
-
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-                                t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                                while( --cnt > 0 );
+                                for( uint64_t j=1; j<cnt; j++ )
+                                {
+                                    const auto test = (int64_t)trace[j];
+                                    const auto m1 = test >> 63;
+                                    const auto m2 = test >> 47;
+                                    if( m1 != m2 ) trace[j] = 0;
+                                }
 #endif
 
-                                TracyLfqPrepare( QueueType::CallstackSample );
-                                MemWrite( &item->callstackSampleFat.time, t0 );
-                                MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
-                                MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
-                                TracyLfqCommit;
+                                // skip kernel frames
+                                uint64_t j;
+                                for( j=0; j<cnt; j++ )
+                                {
+                                    if( (int64_t)trace[j+1] >= 0 ) break;
+                                }
+                                if( j == cnt )
+                                {
+                                    tracy_free( trace );
+                                }
+                                else
+                                {
+                                    if( j > 0 )
+                                    {
+                                        cnt -= j;
+                                        memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                                    }
+                                    memcpy( trace, &cnt, sizeof( uint64_t ) );
+
+                                    TracyLfqPrepare( QueueType::CallstackSample );
+                                    MemWrite( &item->callstackSampleFat.time, t0 );
+                                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
+                                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                                    TracyLfqCommit;
+                                }
                             }
                         }
                     }

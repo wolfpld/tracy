@@ -90,7 +90,7 @@ public:
 
     int64_t ConvertTimeToTsc( int64_t timestamp ) const
     {
-        assert( m_metadata->cap_user_time_zero );
+        if( !m_metadata->cap_user_time_zero ) return 0;
         const auto time = timestamp - m_metadata->time_zero;
         const auto quot = time / m_metadata->time_mult;
         const auto rem = time % m_metadata->time_mult;

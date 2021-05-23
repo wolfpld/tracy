@@ -787,7 +787,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe = {};
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof( perf_event_attr );
-    pe.sample_freq = 10000;
+    pe.sample_freq = 5000;
     pe.sample_type = PERF_SAMPLE_IP;
     pe.disabled = 1;
     pe.exclude_kernel = 1;

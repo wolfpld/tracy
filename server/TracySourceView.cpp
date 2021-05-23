@@ -89,6 +89,7 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     , m_calcInlineStats( true )
     , m_atnt( false )
     , m_childCalls( false )
+    , m_hwSamples( true )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
@@ -1135,6 +1136,13 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         {
             m_childCalls = !m_childCalls;
         }
+        if( worker.GetHwSampleCountAddress() != 0 )
+        {
+            SmallCheckbox( ICON_FA_HAND_POINT_DOWN " Hardware samples", &m_hwSamples );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+        }
         SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
         if( !slzReady )
         {
@@ -1963,7 +1971,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 const auto ts = ImGui::CalcTextSize( " " );
                 const auto th2 = floor( ts.y / 2 );
                 const auto th4 = floor( ts.y / 4 );
-                const auto xoff = ( ( iptotal.local + iptotal.ext ) == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
+                const auto xoff =
+                    ( ( iptotal.local + iptotal.ext ) == 0 ? 0 : ( 7 * ts.x + ts.y ) ) +
+                    (3+maxAddrLen) * ts.x +
+                    ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) +
+                    ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 ) +
+                    ( ( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) ? ( 19 * ts.x + ts.y ) : 0 );
                 const auto minAddr = m_asm[clipper.DisplayStart].addr;
                 const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                 const auto mjl = m_maxJumpLevel;
@@ -2632,11 +2645,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
     const auto asmIdx = &line - m_asm.data();
 
+    const auto ts = ImGui::CalcTextSize( " " );
     if( iptotal.local + iptotal.ext != 0 )
     {
         if( ( m_childCalls && ipcnt.local + ipcnt.ext == 0 ) || ( !m_childCalls && ipcnt.local == 0 ) )
         {
-            const auto ts = ImGui::CalcTextSize( " " );
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
             if( ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( ts.x * 7, ty ) ) )
             {
@@ -2780,6 +2793,157 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt.local, ipmax.local ) );
             }
+        }
+        ImGui::SameLine( 0, ty );
+    }
+
+    const bool showHwSamples = m_hwSamples && worker.GetHwSampleCountAddress() != 0;
+    if( showHwSamples )
+    {
+        auto hw = worker.GetHwSampleData( line.addr );
+        if( hw )
+        {
+            if( hw->cycles != 0 )
+            {
+                const bool unreliable = hw->cycles < 10 || hw->retired < 10;
+                const float ipc = float( hw->retired ) / hw->cycles;
+                uint32_t col = unreliable ? 0x66FFFFFF : 0xFFFFFFFF;
+                if( ipc >= 10 )
+                {
+                    TextColoredUnformatted( col, "  10+  " );
+                }
+                else
+                {
+                    char buf[16];
+                    *buf = ' ';
+                    const auto end = PrintFloat( buf+1, buf+16, ipc, 2 );
+                    assert( end == buf + 5 );
+                    memcpy( end, "  ", 3 );
+                    TextColoredUnformatted( col, buf );
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    if( m_font ) ImGui::PopFont();
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Instructions Per Cycle (IPC)" );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "Higher is better" );
+                    ImGui::Separator();
+                    TextFocused( "Cycles:", RealToString( hw->cycles ) );
+                    TextFocused( "Retirements:", RealToString( hw->retired ) );
+                    if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
+                    ImGui::EndTooltip();
+                    if( m_font ) ImGui::PushFont( m_font );
+                }
+            }
+            else
+            {
+                ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+            }
+            ImGui::SameLine( 0, 0 );
+            if( hw->branchRetired != 0 )
+            {
+                const bool unreliable = hw->branchRetired < 10;
+                const float rate = float( hw->branchMiss ) / hw->branchRetired;
+                uint32_t col = unreliable ? 0x66FFFFFF : 0xFFFFFFFF;
+                if( hw->branchMiss == 0 )
+                {
+                    TextColoredUnformatted( col, "   0%  " );
+                }
+                else if( rate >= 1.f )
+                {
+                    TextColoredUnformatted( col, " 100%  " );
+                }
+                else
+                {
+                    char buf[16];
+                    if( rate >= 0.1f )
+                    {
+                        const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                        assert( end == buf+4 );
+                    }
+                    else
+                    {
+                        *buf = ' ';
+                        const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
+                        assert( end == buf+4 );
+                    }
+                    memcpy( buf+4, "%  ", 4 );
+                    TextColoredUnformatted( col, buf );
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    if( m_font ) ImGui::PopFont();
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Branch mispredictions rate" );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "Lower is better" );
+                    ImGui::Separator();
+                    TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
+                    TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );
+                    if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
+                    ImGui::EndTooltip();
+                    if( m_font ) ImGui::PushFont( m_font );
+                }
+            }
+            else
+            {
+                ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+            }
+            ImGui::SameLine( 0, 0 );
+            if( hw->cacheRef != 0 )
+            {
+                const bool unreliable = hw->cacheRef < 10;
+                const float rate = float( hw->cacheMiss ) / hw->cacheRef;
+                uint32_t col = unreliable ? 0xFF888888 : 0xFFFFFFFF;
+                if( hw->cacheMiss == 0 )
+                {
+                    TextColoredUnformatted( col, "   0%" );
+                }
+                else if( rate >= 1.f )
+                {
+                    TextColoredUnformatted( col, " 100%" );
+                }
+                else
+                {
+                    char buf[16];
+                    if( rate >= 0.1f )
+                    {
+                        const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                        assert( end == buf+4 );
+                    }
+                    else
+                    {
+                        *buf = ' ';
+                        const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
+                        assert( end == buf+4 );
+                    }
+                    memcpy( buf+4, "%", 2 );
+                    TextColoredUnformatted( col, buf );
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    if( m_font ) ImGui::PopFont();
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Cache miss rate" );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "Lower is better" );
+                    ImGui::Separator();
+                    TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
+                    TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
+                    if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
+                    ImGui::EndTooltip();
+                    if( m_font ) ImGui::PushFont( m_font );
+                }
+            }
+            else
+            {
+                ImGui::ItemSize( ImVec2( 5 * ts.x, ts.y ) );
+            }
+        }
+        else
+        {
+            ImGui::ItemSize( ImVec2( 19 * ts.x, ts.y ) );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -2990,12 +3154,16 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         auto jit = m_jumpOut.find( line.addr );
         if( jit != m_jumpOut.end() )
         {
-            const auto ts = ImGui::CalcTextSize( " " );
             const auto th2 = floor( ts.y / 2 );
             const auto th4 = floor( ts.y / 4 );
             const auto& mjl = m_maxJumpLevel;
             const auto col = GetHsvColor( line.jumpAddr, 6 );
-            const auto xoff = ( ( iptotal.local + iptotal.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
+            const auto xoff =
+                ( ( iptotal.local + iptotal.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) +
+                (3+maxAddrLen) * ts.x +
+                ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) +
+                ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 ) +
+                ( showHwSamples ? ( 19 * ts.x + ts.y ) : 0 );
 
             DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
             DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );

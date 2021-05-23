@@ -183,6 +183,7 @@ private:
     uint8_t m_maxAsmBytes;
     bool m_atnt;
     uint64_t m_jumpPopupAddr;
+    bool m_hwSamples;
     bool m_childCalls;
 
     SourceContents m_source;

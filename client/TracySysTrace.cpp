@@ -789,6 +789,8 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
+    pe.exclude_guest = 1;
+    pe.exclude_hv = 1;
     pe.freq = 1;
     if( !noRetirement )
     {

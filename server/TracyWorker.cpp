@@ -29,11 +29,11 @@
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"
-#include "TracyStackFrames.hpp"
 #include "TracyTaskDispatch.hpp"
 #include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
 #include "TracyYield.hpp"
+#include "../common/TracyStackFrames.hpp"
 
 namespace tracy
 {

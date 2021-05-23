@@ -104,6 +104,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\TracySocket.cpp" />
+    <ClCompile Include="..\..\..\common\TracyStackFrames.cpp" />
     <ClCompile Include="..\..\..\common\TracySystem.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp" />
@@ -126,7 +127,6 @@
     <ClCompile Include="..\..\..\server\TracySourceContents.cpp" />
     <ClCompile Include="..\..\..\server\TracySourceTokenizer.cpp" />
     <ClCompile Include="..\..\..\server\TracySourceView.cpp" />
-    <ClCompile Include="..\..\..\server\TracyStackFrames.cpp" />
     <ClCompile Include="..\..\..\server\TracyStorage.cpp" />
     <ClCompile Include="..\..\..\server\TracyTaskDispatch.cpp" />
     <ClCompile Include="..\..\..\server\TracyTexture.cpp" />
@@ -184,6 +184,7 @@
     <ClInclude Include="..\..\..\common\TracyProtocol.hpp" />
     <ClInclude Include="..\..\..\common\TracyQueue.hpp" />
     <ClInclude Include="..\..\..\common\TracySocket.hpp" />
+    <ClInclude Include="..\..\..\common\TracyStackFrames.hpp" />
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />
@@ -222,7 +223,6 @@
     <ClInclude Include="..\..\..\server\TracySourceContents.hpp" />
     <ClInclude Include="..\..\..\server\TracySourceTokenizer.hpp" />
     <ClInclude Include="..\..\..\server\TracySourceView.hpp" />
-    <ClInclude Include="..\..\..\server\TracyStackFrames.hpp" />
     <ClInclude Include="..\..\..\server\TracyStorage.hpp" />
     <ClInclude Include="..\..\..\server\TracyStringDiscovery.hpp" />
     <ClInclude Include="..\..\..\server\TracyTaskDispatch.hpp" />

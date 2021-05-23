@@ -156,6 +156,9 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c">
       <Filter>zstd\dictBuilder</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\TracyStackFrames.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -337,6 +340,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\zstd\dictBuilder\divsufsort.h">
       <Filter>zstd\dictBuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyStackFrames.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

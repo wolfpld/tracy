@@ -41,6 +41,7 @@
 #  else
 #    include "libbacktrace/elf.cpp"
 #  endif
+#  include "common/TracyStackFrames.cpp"
 #endif
 
 #ifdef _MSC_VER

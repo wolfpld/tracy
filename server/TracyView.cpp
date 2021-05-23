@@ -42,8 +42,8 @@
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
 #include "TracySourceView.hpp"
-#include "TracyStackFrames.hpp"
 #include "TracyView.hpp"
+#include "../common/TracyStackFrames.hpp"
 
 #include "imgui_internal.h"
 

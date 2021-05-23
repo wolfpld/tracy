@@ -86,6 +86,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\TracySocket.cpp" />
+    <ClCompile Include="..\..\..\common\TracyStackFrames.cpp" />
     <ClCompile Include="..\..\..\common\TracySystem.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp" />
@@ -136,6 +137,7 @@
     <ClInclude Include="..\..\..\common\TracyProtocol.hpp" />
     <ClInclude Include="..\..\..\common\TracyQueue.hpp" />
     <ClInclude Include="..\..\..\common\TracySocket.hpp" />
+    <ClInclude Include="..\..\..\common\TracyStackFrames.hpp" />
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />

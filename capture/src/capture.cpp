@@ -14,10 +14,10 @@
 #include <sys/stat.h>
 
 #include "../../common/TracyProtocol.hpp"
+#include "../../common/TracyStackFrames.hpp"
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyPrint.hpp"
-#include "../../server/TracyStackFrames.hpp"
 #include "../../server/TracyWorker.hpp"
 
 #ifdef _WIN32

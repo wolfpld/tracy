@@ -228,6 +228,8 @@ Tracy is aimed at understanding the inner workings of a tight loop of a game (or
 
 Tracy is able to periodically sample what the profiled application is doing, which gives you detailed performance information at the source line/assembly instruction level. This can give you deep understanding of how the program is executed by the processor. Using this information you can get a coarse view at the call stacks, fine-tune your algorithms, or even 'steal' an optimization performed by one compiler and make it available for the others.
 
+On some platforms it is possible to sample the hardware performance counters, which will give you information not only \emph{where} your program is running slowly, but also \emph{why}.
+
 \subsection{Remote or embedded telemetry}
 
 Tracy uses the client-server model to enable a wide range of use-cases (see figure~\ref{clientserver}). For example, a game on a mobile phone may be profiled over the wireless connection, with the profiler running on a desktop computer. Or you can run the client and server on the same machine, using a localhost connection. It is also possible to embed the visualization front-end in the profiled application, making the profiling self-contained\footnote{See section~\ref{embeddingserver} for guidelines.}.
@@ -758,6 +760,7 @@ CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCh
 Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
+Hardware sampling & \faTimes & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
@@ -1843,7 +1846,7 @@ Manual markup of zones doesn't cover every function existing in a program and ca
 
 This feature requires privilege elevation, as described in chapter~\ref{privilegeelevation}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
 
-By default sampling is performed at 8 kHz frequency on Windows (which is the maximum possible value). On Linux and Android it is performed at 10 kHz. This value can be changed by providing the sampling frequency (in Hz) through the \texttt{TRACY\_SAMPLING\_HZ} macro.
+By default sampling is performed at 8 kHz frequency on Windows (which is the maximum possible value). On Linux and Android it is performed at 10 kHz\footnote{The maximum sampling frequency is limited by the \texttt{kernel.perf\_event\_max\_sample\_rate} sysctl parameter.}. This value can be changed by providing the sampling frequency (in Hz) through the \texttt{TRACY\_SAMPLING\_HZ} macro.
 
 Call stack sampling may be disabled by using the \texttt{TRACY\_NO\_SAMPLING} define.
 
@@ -1860,6 +1863,30 @@ If the \emph{value} goes below the sample rate Tracy wants to use, sampling will
 
 Should you want to disable this mechanism, you can set the \texttt{kernel.perf\_cpu\_time\_max\_percent} parameter to zero. Be sure to read what this would do, as it may have serious consequences that you should be aware of.
 \end{bclogo}
+
+\subsubsection{Hardware sampling}
+
+While the call stack sampling is a generic software-implemented functionality of the operating system, there's another way of sampling program execution patterns. Modern processors host a wide array of different hardware performance counters, which are increased when some event in a CPU core happens. These could be as simple as counting each clock cycle, or as implementation specific as counting 'retired instructions that are delivered to the back-end after the front-end had at least 1 bubble-slot for a period of 2 cycles'.
+
+Tracy is able to use these counters to present you the following three statistics, which may help guide you to discover why your code is not as fast as possible:
+
+\begin{enumerate}
+\item \emph{Instructions Per Cycle (IPC)} -- shows how many instructions were executing concurrently within a single core cycle. Higher values are better. The maximum achievable value depends on the design of CPU, including things such as the number of execution units and their individual capabilities. Calculated as $\frac{\text{\#instructions retired}}{\text{\#cycles}}$. Can be disabled with the \texttt{TRACY\_NO\_SAMPLE\_RETIREMENT} macro.
+\item \emph{Branch miss rate} -- shows how frequently the CPU branch predictor makes a wrong choice. Lower values are better. Calculated as $\frac{\text{\#branch misses}}{\text{\#branch instructions}}$. Can be disabled with the \texttt{TRACY\_NO\_SAMPLE\_BRANCH} macro.
+\item \emph{Cache miss rate} -- shows how frequently the CPU has to retrieve data from memory. Lower values are better. The specifics of which cache level is taken into account here vary from one implementation to another. Calculated as $\frac{\text{\#cache misses}}{\text{\#cache references}}$. Can be disabled with the \texttt{TRACY\_NO\_SAMPLE\_CACHE} macro.
+\end{enumerate}
+
+Each performance counter has to be collected by a dedicated Performance Monitoring Unit (PMU). The availability of PMUs is very limited, so you may not be able to capture all the statistics mentioned above at the same time (as each requires capture of two different counters). In such case, you will need to manually select what needs to be sampled.
+
+If the provided measurements are not specific enough for your needs, you will need to use a profiler better tailored to the hardware you are using, such as Intel VTune, or AMD \si{\micro}Prof.
+
+Another problem to consider here is the measurement skid. It is quite hard to accurately pinpoint the exact assembly instruction which has caused the counter to trigger. Due to this the results you'll get may look a bit nonsense at times. For example, a branch miss may be attributed to the multiply instruction. Not much can be done with that, as this is exactly what the hardware is reporting. The amount of skid you will encounter depends on the specific implementation of a processor, and each vendor has their own solution to minimize it. Intel uses Precise Event Based Sampling (PEBS), which is rather good, but it still can, for example, blend the branch statistics across the comparison instruction and the following jump instruction. AMD employs their own Instruction Based Sampling (IBS), which tends to provide worse results in comparison.
+
+Do note that the statistics presented by Tracy are a combination of two randomly sampled counters, so you should take them with a grain of salt. The random nature of sampling\footnote{The hardware counters in practice can be triggered only once per million-or-so events happening.} makes it fully possible to count more branch misses than branch instructions, or some other similar nonsense. You should always cross-check this data with the count of sampled events, in order to decide if the provided values can be reliably acted upon.
+
+\subparagraph{Availability}
+
+Currently the hardware performance counter readings are only available on Linux. Access to them is performed using the kernel-provided infrastructure, so what you get may depend on how your kernel was configured. This also means that the exact set of supported hardware is not known, as it depends on what has been implemented in the Linux itself. At this point the x86 hardware is fully supported (including features such as PEBS or IBS), and there's PMU support on a selection of ARM designs.
 
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}

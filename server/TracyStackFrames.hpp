@@ -4,7 +4,14 @@
 namespace tracy
 {
 
+struct StringMatch
+{
+    const char* str;
+    size_t len;
+};
+
 extern const char** s_tracyStackFrames;
+extern const StringMatch* s_tracySkipSubframes;
 
 }
 

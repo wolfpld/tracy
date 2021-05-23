@@ -29,6 +29,7 @@
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"
+#include "TracyStackFrames.hpp"
 #include "TracyTaskDispatch.hpp"
 #include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
@@ -5973,9 +5974,30 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
     if( m_callstackFrameStaging )
     {
         const auto idx = m_callstackFrameStaging->size - m_pendingCallstackSubframes;
+        const auto file = StringIdx( fitidx );
+
+        if( m_pendingCallstackSubframes > 1 && idx == 0 )
+        {
+            auto fstr = GetString( file );
+            auto flen = strlen( fstr );
+            if( flen >= 19 )    // minimum length in s_tracySkipSubframes
+            {
+                auto ptr = s_tracySkipSubframes;
+                do
+                {
+                    if( flen >= ptr->len && memcmp( fstr + flen - ptr->len, ptr->str, ptr->len ) == 0 )
+                    {
+                        m_pendingCallstackSubframes--;
+                        m_callstackFrameStaging->size--;
+                        return;
+                    }
+                    ptr++;
+                }
+                while( ptr->str );
+            }
+        }
 
         const auto name = StringIdx( nitidx );
-        const auto file = StringIdx( fitidx );
         m_callstackFrameStaging->data[idx].name = name;
         m_callstackFrameStaging->data[idx].file = file;
         m_callstackFrameStaging->data[idx].line = ev.line;

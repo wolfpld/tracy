@@ -130,9 +130,9 @@
 #  include <stdio.h>
 #  include <stdlib.h>
 #  if defined(__APPLE__)
-#if    !TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
-#  include <mach/mach_vm.h>
-#      endif
+#    if !TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
+#    include <mach/mach_vm.h>
+#    endif
 #    include <mach/vm_statistics.h>
 #    include <pthread.h>
 #  endif

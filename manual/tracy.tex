@@ -396,21 +396,21 @@ When using CMake 3.11 or newer, you can use Tracy via CMake FetchContent. In thi
 Add this to your CMakeLists.txt:
 
 \begin{lstlisting}
-    FetchContent_Declare(
+    FetchContent\_Declare(
         tracy
-        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-        GIT_TAG        master
-        GIT_SHALLOW    TRUE
-        GIT_PROGRESS   TRUE
+        GIT\_REPOSITORY https://github.com/wolfpld/tracy.git
+        GIT\_TAG        master
+        GIT\_SHALLOW    TRUE
+        GIT\_PROGRESS   TRUE
     )
 
-    FetchContent_MakeAvailable(tracy)
+    FetchContent\_MakeAvailable(tracy)
 \end{lstlisting}
 
 Add this to any target where you use tracy for profiling:
 
 \begin{lstlisting}
-    target_link_libraries(${_target} PUBLIC TracyClient)
+    target\_link\_libraries(${\_target} PUBLIC TracyClient)
 \end{lstlisting}
 
 \begin{bclogo}[

@@ -423,6 +423,33 @@ The application you want to profile should be compiled with all the usual optimi
 
 Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}. BSD systems will also need to be linked with \texttt{libexecinfo}.
 
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{CMake FetchContent}
+When using CMake 3.11 or newer, you can use Tracy via CMake FetchContent. In this case, you do not need to manually add a git submodule for Tracy. Add this to your CMakeLists.txt:
+
+\begin{lstlisting}
+FetchContent_Declare(
+    tracy
+    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+    GIT_TAG        master
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+
+FetchContent_MakeAvailable(tracy)
+\end{lstlisting}
+
+Then add this to any target where you use tracy for profiling:
+
+\begin{lstlisting}
+target_link_libraries(${_target} PUBLIC TracyClient)
+\end{lstlisting}
+\end{bclogo}
+
 \subsubsection{Short-lived applications}
 
 In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), set the \texttt{TRACY\_NO\_EXIT} environment variable to $1$. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. If your platform doesn't support easy setup of environment variables, you may also add the \texttt{TRACY\_NO\_EXIT} define to your build configuration, which has the same effect.

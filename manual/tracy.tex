@@ -389,6 +389,30 @@ Moreover, the following platforms are not supported due to how secretive their o
 
 The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions. If that's not an option, copy all files from the Tracy checkout directory to your project.
 
+\subsection{Using Tracy via CMake FetchContent}
+
+When using CMake 3.11 or newer, you can use Tracy via CMake FetchContent. In this case, you do not need git submodule for Tracy.
+
+Add this to your CMakeLists.txt:
+
+\begin{lstlisting}
+    FetchContent_Declare(
+        tracy
+        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+        GIT_PROGRESS   TRUE
+    )
+
+    FetchContent_MakeAvailable(tracy)
+\end{lstlisting}
+
+Add this to any target where you use tracy for profiling:
+
+\begin{lstlisting}
+    target_link_libraries(${_target} PUBLIC TracyClient)
+\end{lstlisting}
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

@@ -954,6 +954,10 @@ struct ProfilerThreadData
 #  endif
 };
 
+std::atomic<int> RpInitDone { 0 };
+std::atomic<int> RpInitLock { 0 };
+thread_local bool RpThreadInitDone = false;
+
 #  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
 TRACY_API void StartupProfiler()
@@ -975,9 +979,6 @@ TRACY_API void ShutdownProfiler()
     rpmalloc_finalize();
 }
 #  else
-std::atomic<int> RpInitDone { 0 };
-std::atomic<int> RpInitLock { 0 };
-thread_local bool RpThreadInitDone = false;
 static std::atomic<int> profilerDataLock { 0 };
 static std::atomic<ProfilerData*> profilerData { nullptr };
 

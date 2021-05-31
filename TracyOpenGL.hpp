@@ -53,7 +53,7 @@ public:
 #  define glQueryCounter glQueryCounterEXT
 #endif
 
-#define TracyGpuContext tracy::InitRPMallocThread(); tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
+#define TracyGpuContext tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
 #define TracyGpuContextName( name, size ) tracy::GetGpuCtx().ptr->Name( name, size );
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyGpuNamedZone( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );

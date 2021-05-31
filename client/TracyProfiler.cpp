@@ -64,6 +64,7 @@
 #include "../common/TracyAlign.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
@@ -1030,7 +1031,7 @@ static ProfilerData& GetProfilerData()
     if( !ptr )
     {
         int expected = 0;
-        while( !profilerDataLock.compare_exchange_strong( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; }
+        while( !profilerDataLock.compare_exchange_weak( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; YieldThread(); }
         ptr = profilerData.load( std::memory_order_acquire );
         if( !ptr )
         {

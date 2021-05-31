@@ -26,13 +26,13 @@
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/TracyYield.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"
 #include "TracyTaskDispatch.hpp"
 #include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
-#include "TracyYield.hpp"
 
 namespace tracy
 {

@@ -4,9 +4,8 @@
 #include <stdlib.h>
 
 #ifdef TRACY_ENABLE
-#  include <atomic>
+#  include "TracyApi.h"
 #  include "TracyForceInline.hpp"
-#  include "TracyYield.hpp"
 #  include "../client/tracy_rpmalloc.hpp"
 #endif
 
@@ -14,30 +13,12 @@ namespace tracy
 {
 
 #ifdef TRACY_ENABLE
-extern std::atomic<int> RpInitDone;
-extern std::atomic<int> RpInitLock;
-
-namespace
-{
-static inline void InitRpmallocPlumbing()
-{
-    int expected = 0;
-    while( !RpInitLock.compare_exchange_weak( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; YieldThread(); }
-    const auto done = RpInitDone.load( std::memory_order_acquire );
-    if( !done )
-    {
-        rpmalloc_initialize();
-        RpInitDone.store( 1, std::memory_order_release );
-    }
-    RpInitLock.store( 0, std::memory_order_release );
-}
+extern thread_local bool RpThreadInitDone;
+TRACY_API void InitRpmallocPlumbing();
 
 static tracy_force_inline void InitRpmalloc()
 {
-    const auto done = RpInitDone.load( std::memory_order_acquire );
-    if( !done ) InitRpmallocPlumbing();
-    rpmalloc_thread_initialize();
-}
+    if( !RpThreadInitDone ) InitRpmallocPlumbing();
 }
 #endif
 

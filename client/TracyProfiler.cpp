@@ -977,6 +977,7 @@ TRACY_API void ShutdownProfiler()
 #  else
 std::atomic<int> RpInitDone { 0 };
 std::atomic<int> RpInitLock { 0 };
+thread_local bool RpThreadInitDone = false;
 static std::atomic<int> profilerDataLock { 0 };
 static std::atomic<ProfilerData*> profilerData { nullptr };
 
@@ -1097,6 +1098,7 @@ thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThr
 static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
 std::atomic<int> init_order(102) RpInitDone( 0 );
 std::atomic<int> init_order(102) RpInitLock( 0 );
+thread_local bool RpThreadInitDone = false;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );

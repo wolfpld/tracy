@@ -27,6 +27,7 @@
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
 #include "client/TracyDxt1.cpp"
+#include "client/TracyAlloc.cpp"
 
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
 #  include "libbacktrace/alloc.cpp"

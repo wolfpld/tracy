@@ -22,7 +22,7 @@
 
 #include "TracyFileHeader.hpp"
 #include "TracyMmap.hpp"
-#include "TracyYield.hpp"
+#include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 #include "../zstd/zstd.h"

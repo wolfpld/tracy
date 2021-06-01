@@ -4,15 +4,28 @@
 #include <stdlib.h>
 
 #ifdef TRACY_ENABLE
+#  include "TracyApi.h"
+#  include "TracyForceInline.hpp"
 #  include "../client/tracy_rpmalloc.hpp"
 #endif
 
 namespace tracy
 {
 
+#ifdef TRACY_ENABLE
+extern thread_local bool RpThreadInitDone;
+TRACY_API void InitRpmallocPlumbing();
+
+static tracy_force_inline void InitRpmalloc()
+{
+    if( !RpThreadInitDone ) InitRpmallocPlumbing();
+}
+#endif
+
 static inline void* tracy_malloc( size_t size )
 {
 #ifdef TRACY_ENABLE
+    InitRpmalloc();
     return rpmalloc( size );
 #else
     return malloc( size );
@@ -22,6 +35,7 @@ static inline void* tracy_malloc( size_t size )
 static inline void tracy_free( void* ptr )
 {
 #ifdef TRACY_ENABLE
+    InitRpmalloc();
     rpfree( ptr );
 #else
     free( ptr );
@@ -31,6 +45,7 @@ static inline void tracy_free( void* ptr )
 static inline void* tracy_realloc( void* ptr, size_t size )
 {
 #ifdef TRACY_ENABLE
+    InitRpmalloc();
     return rprealloc( ptr, size );
 #else
     return realloc( ptr, size );

@@ -7,7 +7,7 @@
 #  include <thread>
 #endif
 
-#include "../common/TracyForceInline.hpp"
+#include "TracyForceInline.hpp"
 
 namespace tracy
 {

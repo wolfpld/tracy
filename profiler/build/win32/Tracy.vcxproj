@@ -186,6 +186,7 @@
     <ClInclude Include="..\..\..\common\TracySocket.hpp" />
     <ClInclude Include="..\..\..\common\TracyStackFrames.hpp" />
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
+    <ClInclude Include="..\..\..\common\TracyYield.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />
     <ClInclude Include="..\..\..\imgui\imconfig.h" />
@@ -236,7 +237,6 @@
     <ClInclude Include="..\..\..\server\TracyView.hpp" />
     <ClInclude Include="..\..\..\server\TracyViewData.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
-    <ClInclude Include="..\..\..\server\TracyYield.hpp" />
     <ClInclude Include="..\..\..\server\tracy_pdqsort.h" />
     <ClInclude Include="..\..\..\server\tracy_robin_hood.h" />
     <ClInclude Include="..\..\..\server\tracy_xxh3.h" />

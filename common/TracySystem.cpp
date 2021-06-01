@@ -96,7 +96,6 @@ struct ThreadNameData
     ThreadNameData* next;
 };
 std::atomic<ThreadNameData*>& GetThreadNameData();
-TRACY_API void InitRPMallocThread();
 #endif
 
 #ifdef _MSC_VER
@@ -161,7 +160,6 @@ TRACY_API void SetThreadName( const char* name )
 #endif
 #ifdef TRACY_ENABLE
     {
-        InitRPMallocThread();
         const auto sz = strlen( name );
         char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );

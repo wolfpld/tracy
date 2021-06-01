@@ -1,0 +1,35 @@
+#ifdef TRACY_ENABLE
+
+#include <atomic>
+
+#include "../common/TracyAlloc.hpp"
+#include "../common/TracyYield.hpp"
+
+namespace tracy
+{
+
+extern std::atomic<int> RpInitDone;
+extern std::atomic<int> RpInitLock;
+
+TRACY_API void InitRpmallocPlumbing()
+{
+    const auto done = RpInitDone.load( std::memory_order_acquire );
+    if( !done )
+    {
+        int expected = 0;
+        while( !RpInitLock.compare_exchange_weak( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; YieldThread(); }
+        const auto done = RpInitDone.load( std::memory_order_acquire );
+        if( !done )
+        {
+            rpmalloc_initialize();
+            RpInitDone.store( 1, std::memory_order_release );
+        }
+        RpInitLock.store( 0, std::memory_order_release );
+    }
+    rpmalloc_thread_initialize();
+    RpThreadInitDone = true;
+}
+
+}
+
+#endif

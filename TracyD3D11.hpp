@@ -271,7 +271,7 @@ public:
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
-        
+
         Profiler::QueueSerialFinish();
     }
 
@@ -376,7 +376,7 @@ public:
         MemWrite( &item->gpuZoneEnd.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, m_ctx->GetId() );
-        
+
         Profiler::QueueSerialFinish();
     }
 
@@ -389,7 +389,6 @@ private:
 
 static inline D3D11Ctx* CreateD3D11Context( ID3D11Device* device, ID3D11DeviceContext* devicectx )
 {
-    InitRPMallocThread();
     auto ctx = (D3D11Ctx*)tracy_malloc( sizeof( D3D11Ctx ) );
     new(ctx) D3D11Ctx( device, devicectx );
     return ctx;

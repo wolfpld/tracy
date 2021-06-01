@@ -451,8 +451,6 @@ namespace tracy
 
 	static inline D3D12QueueCtx* CreateD3D12Context(ID3D12Device* device, ID3D12CommandQueue* queue)
 	{
-		InitRPMallocThread();
-
 		auto* ctx = static_cast<D3D12QueueCtx*>(tracy_malloc(sizeof(D3D12QueueCtx)));
 		new (ctx) D3D12QueueCtx{ device, queue };
 

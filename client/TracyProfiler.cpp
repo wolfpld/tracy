@@ -64,6 +64,7 @@
 #include "../common/TracyAlign.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
@@ -117,45 +118,6 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 
 namespace tracy
 {
-
-namespace
-{
-#  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
-    BOOL CALLBACK InitOnceCallback( PINIT_ONCE /*initOnce*/, PVOID /*Parameter*/, PVOID* /*Context*/)
-    {
-        rpmalloc_initialize();
-        return TRUE;
-    }
-    INIT_ONCE InitOnce = INIT_ONCE_STATIC_INIT;
-#  elif defined __linux__
-    void InitOnceCallback()
-    {
-        rpmalloc_initialize();
-    }
-    pthread_once_t once_control = PTHREAD_ONCE_INIT;
-#  else
-    void InitOnceCallback()
-    {
-        rpmalloc_initialize();
-    }
-    std::once_flag once_flag;
-#  endif
-}
-
-struct RPMallocInit
-{
-    RPMallocInit()
-    {
-#  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
-        InitOnceExecuteOnce( &InitOnce, InitOnceCallback, nullptr, nullptr );
-#  elif defined __linux__
-        pthread_once( &once_control, InitOnceCallback );
-#  else
-        std::call_once( once_flag, InitOnceCallback );
-#  endif
-        rpmalloc_thread_initialize();
-    }
-};
 
 #ifndef TRACY_DELAYED_INIT
 
@@ -964,12 +926,6 @@ TRACY_API int64_t GetFrequencyQpc()
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
-TRACY_API void InitRPMallocThread();
-
-void InitRPMallocThread()
-{
-    RPMallocInit rpinit;
-}
 
 struct ProfilerData
 {
@@ -991,7 +947,6 @@ struct ProducerWrapper
 struct ProfilerThreadData
 {
     ProfilerThreadData( ProfilerData& data ) : token( data ), gpuCtx( { nullptr } ) {}
-    RPMallocInit rpmalloc_init;
     ProducerWrapper token;
     GpuCtxWrapper gpuCtx;
 #  ifdef TRACY_ON_DEMAND
@@ -999,11 +954,14 @@ struct ProfilerThreadData
 #  endif
 };
 
+std::atomic<int> RpInitDone { 0 };
+std::atomic<int> RpInitLock { 0 };
+thread_local bool RpThreadInitDone = false;
+
 #  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
 TRACY_API void StartupProfiler()
 {
-    RPMallocInit init;
     s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
     new (s_profilerData) ProfilerData();
     s_profilerData->profiler.SpawnWorkerThreads();
@@ -1030,11 +988,10 @@ static ProfilerData& GetProfilerData()
     if( !ptr )
     {
         int expected = 0;
-        while( !profilerDataLock.compare_exchange_strong( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; }
+        while( !profilerDataLock.compare_exchange_weak( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; YieldThread(); }
         ptr = profilerData.load( std::memory_order_acquire );
         if( !ptr )
         {
-            RPMallocInit init;
             ptr = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
             new (ptr) ProfilerData();
             profilerData.store( ptr, std::memory_order_release );
@@ -1071,7 +1028,6 @@ public:
         void* p = pthread_getspecific(m_key);
         if (!p)
         {
-            RPMallocInit init;
             p = (ProfilerThreadData*)tracy_malloc( sizeof( ProfilerThreadData ) );
             new (p) ProfilerThreadData(GetProfilerData());
             pthread_setspecific(m_key, p);
@@ -1123,17 +1079,11 @@ namespace
 #  endif
 
 #else
-TRACY_API void InitRPMallocThread()
-{
-    rpmalloc_thread_initialize();
-}
 
 // MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
 
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
-
-thread_local RPMallocInit init_order(106) s_rpmalloc_thread_init;
 
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
@@ -1147,7 +1097,9 @@ thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThr
 #  endif
 
 static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
-static RPMallocInit init_order(102) s_rpmalloc_init;
+std::atomic<int> init_order(102) RpInitDone( 0 );
+std::atomic<int> init_order(102) RpInitLock( 0 );
+thread_local bool RpThreadInitDone = false;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
@@ -3611,19 +3563,6 @@ TRACY_API uint64_t ___tracy_alloc_srcloc( uint32_t line, const char* source, siz
 
 TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz ) {
     return tracy::Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
-}
-
-// thread_locals are not initialized on thread creation. At least on GNU/Linux. Instead they are
-// initialized on their first ODR-use. This means that the allocator is not automagically
-// initialized every time a thread is created. As thus, expose to the C API users a simple API to
-// call every time they create a thread. Here we can then put all sorts of per-thread
-// initialization.
-TRACY_API void ___tracy_init_thread(void) {
-#ifdef TRACY_DELAYED_INIT
-    (void)tracy::GetProfilerThreadData();
-#else
-    (void)tracy::s_rpmalloc_thread_init;
-#endif
 }
 
 #ifdef __cplusplus

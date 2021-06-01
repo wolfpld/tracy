@@ -425,9 +425,6 @@
     <ClInclude Include="..\..\..\server\tracy_xxh3.h">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\server\TracyYield.hpp">
-      <Filter>server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\server\TracySort.hpp">
       <Filter>server</Filter>
     </ClInclude>
@@ -576,6 +573,9 @@
       <Filter>zstd\dictBuilder</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\TracyStackFrames.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyYield.hpp">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

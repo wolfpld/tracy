@@ -6,8 +6,8 @@ class RingBuffer
 {
 public:
     RingBuffer( int fd, int id )
-        : m_fd( fd )
-        , m_id( id )
+        : m_id( id )
+        , m_fd( fd )
     {
         const auto pageSize = uint32_t( getpagesize() );
         assert( Size >= pageSize );
@@ -24,6 +24,7 @@ public:
         m_metadata = (perf_event_mmap_page*)mapAddr;
         assert( m_metadata->data_offset == pageSize );
         m_buffer = ((char*)mapAddr) + pageSize;
+        m_tail = m_metadata->data_tail;
     }
 
     ~RingBuffer()
@@ -61,12 +62,12 @@ public:
     bool HasData() const
     {
         const auto head = LoadHead();
-        return head > m_metadata->data_tail;
+        return head > m_tail;
     }
 
     void Read( void* dst, uint64_t offset, uint64_t cnt )
     {
-        auto src = ( m_metadata->data_tail + offset ) % Size;
+        auto src = ( m_tail + offset ) % Size;
         if( src + cnt <= Size )
         {
             memcpy( dst, m_buffer + src, cnt );
@@ -81,7 +82,8 @@ public:
 
     void Advance( uint64_t cnt )
     {
-        StoreTail( m_metadata->data_tail + cnt );
+        m_tail += cnt;
+        StoreTail();
     }
 
     bool CheckTscCaps() const
@@ -104,17 +106,18 @@ private:
         return std::atomic_load_explicit( (const volatile std::atomic<uint64_t>*)&m_metadata->data_head, std::memory_order_acquire );
     }
 
-    void StoreTail( uint64_t tail )
+    void StoreTail()
     {
-        std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, tail, std::memory_order_release );
+        std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, m_tail, std::memory_order_release );
     }
 
-    perf_event_mmap_page* m_metadata;
+    uint64_t m_tail;
     char* m_buffer;
+    int m_id;
+    perf_event_mmap_page* m_metadata;
 
     size_t m_mapSize;
     int m_fd;
-    int m_id;
 };
 
 }

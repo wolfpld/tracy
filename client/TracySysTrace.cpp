@@ -1200,16 +1200,24 @@ static uint64_t ReadNumber( const char*& data )
 {
     auto ptr = data;
     assert( *ptr >= '0' && *ptr <= '9' );
-    uint64_t val = *ptr++ - '0';
+    uint64_t val = 0;
     for(;;)
     {
-        const uint8_t v = uint8_t( *ptr - '0' );
-        if( v > 9 ) break;
-        val = val * 10 + v;
-        ptr++;
+        uint64_t q;
+        memcpy( &q, ptr, 8 );
+        for( int i=0; i<8; i++ )
+        {
+            const uint64_t v = ( q & 0xFF ) - '0';
+            if( v > 9 )
+            {
+                data = ptr + i;
+                return val;
+            }
+            val = val * 10 + v;
+            q >>= 8;
+        }
+        ptr += 8;
     }
-    data = ptr;
-    return val;
 }
 
 static uint8_t ReadState( char state )
@@ -1473,7 +1481,8 @@ void SysTraceWorker( void* ptr )
 #else
 static void ProcessTraceLines( int fd )
 {
-    char* buf = (char*)tracy_malloc( 64*1024 );
+    // 8 bytes buffer space for wide unbound reads
+    char* buf = (char*)tracy_malloc( 64*1024 + 8 );
 
     struct pollfd pfd;
     pfd.fd = fd;

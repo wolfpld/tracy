@@ -17,6 +17,7 @@ public:
         if( !mapAddr )
         {
             m_fd = 0;
+            m_metadata = nullptr;
             close( fd );
             return;
         }

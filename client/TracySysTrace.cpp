@@ -1350,6 +1350,31 @@ static inline void AdvanceToNot( const char*& line, char match )
     }
 }
 
+template<int S>
+static inline void AdvanceTo( const char*& line, const char* match )
+{
+    auto first = uint8_t( match[0] );
+    auto ptr = line;
+    for(;;)
+    {
+        uint64_t l;
+        memcpy( &l, ptr, 8 );
+        for( int i=0; i<8; i++ )
+        {
+            if( ( l & 0xFF ) == first )
+            {
+                if( memcmp( ptr + i, match, S ) == 0 )
+                {
+                    line = ptr + i;
+                    return;
+                }
+            }
+            l >>= 8;
+        }
+        ptr += 8;
+    }
+}
+
 static void HandleTraceLine( const char* line )
 {
     line += 23;
@@ -1373,19 +1398,19 @@ static void HandleTraceLine( const char* line )
     {
         line += 14;
 
-        while( memcmp( line, "prev_pid", 8 ) != 0 ) line++;
+        AdvanceTo<8>( line, "prev_pid" );
         line += 9;
 
         const auto oldPid = ReadNumber( line );
         line++;
 
-        while( memcmp( line, "prev_state", 10 ) != 0 ) line++;
+        AdvanceTo<10>( line, "prev_state" );
         line += 11;
 
         const auto oldState = (uint8_t)ReadState( *line );
         line += 5;
 
-        while( memcmp( line, "next_pid", 8 ) != 0 ) line++;
+        AdvanceTo<8>( line, "next_pid" );
         line += 9;
 
         const auto newPid = ReadNumber( line );
@@ -1405,7 +1430,7 @@ static void HandleTraceLine( const char* line )
     {
         line += 14;
 
-        while( memcmp( line, "pid=", 4 ) != 0 ) line++;
+        AdvanceTo<4>( line, "pid=" );
         line += 4;
 
         const auto pid = ReadNumber( line );

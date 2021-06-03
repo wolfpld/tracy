@@ -652,6 +652,10 @@ void SysTraceSendExternalName( uint64_t thread )
 #      include "TracySysTracePayload.hpp"
 #    endif
 
+#    ifdef __AVX2__
+#      include <immintrin.h>
+#    endif
+
 namespace tracy
 {
 
@@ -1310,6 +1314,25 @@ ssize_t getline(char **buf, size_t *bufsiz, FILE *fp)
 }
 #endif
 
+#ifdef __AVX2__
+static inline void AdvanceTo( const char*& line, char match )
+{
+    __m256i m = _mm256_set1_epi8( match );
+    auto ptr = line;
+    for(;;)
+    {
+        __m256i l = _mm256_loadu_si256( (const __m256i*)ptr );
+        __m256i c = _mm256_cmpeq_epi8( l, m );
+        auto b = uint32_t( _mm256_movemask_epi8( c ) );
+        if( b != 0 )
+        {
+            line = ptr + __builtin_ctz( b );
+            return;
+        }
+        ptr += 32;
+    }
+}
+#else
 static inline void AdvanceTo( const char*& line, char match )
 {
     auto ptr = line;
@@ -1329,7 +1352,27 @@ static inline void AdvanceTo( const char*& line, char match )
         ptr += 8;
     }
 }
+#endif
 
+#ifdef __AVX2__
+static inline void AdvanceToNot( const char*& line, char match )
+{
+    __m256i m = _mm256_set1_epi8( match );
+    auto ptr = line;
+    for(;;)
+    {
+        __m256i l = _mm256_loadu_si256( (const __m256i*)ptr );
+        __m256i c = _mm256_cmpeq_epi8( l, m );
+        auto b = ~uint32_t( _mm256_movemask_epi8( c ) );
+        if( b != 0 )
+        {
+            line = ptr + __builtin_ctz( b );
+            return;
+        }
+        ptr += 32;
+    }
+}
+#else
 static inline void AdvanceToNot( const char*& line, char match )
 {
     auto ptr = line;
@@ -1349,7 +1392,35 @@ static inline void AdvanceToNot( const char*& line, char match )
         ptr += 8;
     }
 }
+#endif
 
+#ifdef __AVX2__
+template<int S>
+static inline void AdvanceTo( const char*& line, const char* match )
+{
+    auto first = uint8_t( match[0] );
+    __m256i m = _mm256_set1_epi8( first );
+    auto ptr = line;
+    for(;;)
+    {
+        __m256i l = _mm256_loadu_si256( (const __m256i*)ptr );
+        __m256i c = _mm256_cmpeq_epi8( l, m );
+        auto b = uint32_t( _mm256_movemask_epi8( c ) );
+        while( b != 0 )
+        {
+            auto bit = __builtin_ctz( b );
+            auto test = ptr + bit;
+            if( memcmp( test, match, S ) == 0 )
+            {
+                line = test;
+                return;
+            }
+            b ^= ( 1u << bit );
+        }
+        ptr += 32;
+    }
+}
+#else
 template<int S>
 static inline void AdvanceTo( const char*& line, const char* match )
 {
@@ -1374,6 +1445,7 @@ static inline void AdvanceTo( const char*& line, const char* match )
         ptr += 8;
     }
 }
+#endif
 
 static void HandleTraceLine( const char* line )
 {
@@ -1546,8 +1618,8 @@ void SysTraceWorker( void* ptr )
 #else
 static void ProcessTraceLines( int fd )
 {
-    // 8 bytes buffer space for wide unbound reads
-    char* buf = (char*)tracy_malloc( 64*1024 + 8 );
+    // 32 bytes buffer space for wide unbound reads
+    char* buf = (char*)tracy_malloc( 64*1024 + 32 );
 
     struct pollfd pfd;
     pfd.fd = fd;

@@ -1310,14 +1310,54 @@ ssize_t getline(char **buf, size_t *bufsiz, FILE *fp)
 }
 #endif
 
+static inline void AdvanceTo( const char*& line, char match )
+{
+    auto ptr = line;
+    for(;;)
+    {
+        uint64_t l;
+        memcpy( &l, ptr, 8 );
+        for( int i=0; i<8; i++ )
+        {
+            if( ( l & 0xFF ) == uint8_t( match ) )
+            {
+                line = ptr + i;
+                return;
+            }
+            l >>= 8;
+        }
+        ptr += 8;
+    }
+}
+
+static inline void AdvanceToNot( const char*& line, char match )
+{
+    auto ptr = line;
+    for(;;)
+    {
+        uint64_t l;
+        memcpy( &l, ptr, 8 );
+        for( int i=0; i<8; i++ )
+        {
+            if( ( l & 0xFF ) != uint8_t( match ) )
+            {
+                line = ptr + i;
+                return;
+            }
+            l >>= 8;
+        }
+        ptr += 8;
+    }
+}
+
 static void HandleTraceLine( const char* line )
 {
     line += 23;
-    while( *line != '[' ) line++;
+    AdvanceTo( line, '[' );
     line++;
     const auto cpu = (uint8_t)ReadNumber( line );
     line++;      // ']'
-    while( *line == ' ' ) line++;
+    AdvanceToNot( line, ' ' );
 
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     const auto time = ReadNumber( line );

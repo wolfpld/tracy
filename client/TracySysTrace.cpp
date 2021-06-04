@@ -807,7 +807,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.type = PERF_TYPE_HARDWARE;
     pe.size = sizeof( perf_event_attr );
     pe.sample_freq = 5000;
-    pe.sample_type = PERF_SAMPLE_IP;
+    pe.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TIME;
     pe.disabled = 1;
     pe.exclude_kernel = 1;
     pe.exclude_guest = 1;
@@ -1022,39 +1022,49 @@ static void SetupSampling( int64_t& samplingPeriod )
                     {
                         // Layout:
                         //   u64 ip
+                        //   u64 time
 
-                        uint64_t ip;
+                        uint64_t ip, t0;
                         s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
+                        offset += sizeof( uint64_t );
+                        s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
 
-                        QueueType type;
-                        switch( id )
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+                        t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                        if( t0 != 0 )
+#endif
                         {
-                        case EventCpuCycles:
-                            type = QueueType::HwSampleCpuCycle;
-                            break;
-                        case EventInstructionsRetired:
-                            type = QueueType::HwSampleInstructionRetired;
-                            break;
-                        case EventCacheReference:
-                            type = QueueType::HwSampleCacheReference;
-                            break;
-                        case EventCacheMiss:
-                            type = QueueType::HwSampleCacheMiss;
-                            break;
-                        case EventBranchRetired:
-                            type = QueueType::HwSampleBranchRetired;
-                            break;
-                        case EventBranchMiss:
-                            type = QueueType::HwSampleBranchMiss;
-                            break;
-                        default:
-                            assert( false );
-                            break;
-                        }
+                            QueueType type;
+                            switch( id )
+                            {
+                            case EventCpuCycles:
+                                type = QueueType::HwSampleCpuCycle;
+                                break;
+                            case EventInstructionsRetired:
+                                type = QueueType::HwSampleInstructionRetired;
+                                break;
+                            case EventCacheReference:
+                                type = QueueType::HwSampleCacheReference;
+                                break;
+                            case EventCacheMiss:
+                                type = QueueType::HwSampleCacheMiss;
+                                break;
+                            case EventBranchRetired:
+                                type = QueueType::HwSampleBranchRetired;
+                                break;
+                            case EventBranchMiss:
+                                type = QueueType::HwSampleBranchMiss;
+                                break;
+                            default:
+                                assert( false );
+                                break;
+                            }
 
-                        TracyLfqPrepare( type );
-                        MemWrite( &item->hwSample.ip, ip );
-                        TracyLfqCommit;
+                            TracyLfqPrepare( type );
+                            MemWrite( &item->hwSample.ip, ip );
+                            MemWrite( &item->hwSample.time, t0 );
+                            TracyLfqCommit;
+                        }
                     }
                 }
                 s_ring[i].Advance( hdr.size );

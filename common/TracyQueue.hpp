@@ -482,6 +482,7 @@ struct QueueTidToPid
 struct QueueHwSample
 {
     uint64_t ip;
+    int64_t time;
 };
 
 enum class PlotFormatType : uint8_t

@@ -36,7 +36,7 @@ void BadVersionImpl( BadVersionState& badVer )
     if( ImGui::BeginPopupModal( "Bad file", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::Text( "The file you are trying to open is not a tracy dump." );
+        ImGui::Text( "The file you are trying to open is not a Tracy dump." );
         ImGui::Separator();
         if( ImGui::Button( "Oops" ) )
         {
@@ -60,7 +60,7 @@ void BadVersionImpl( BadVersionState& badVer )
     if( ImGui::BeginPopupModal( "Unsupported file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         TextCentered( ICON_FA_CLOUD_DOWNLOAD_ALT );
-        ImGui::Text( "The file you are trying to open is unsupported.\nYou should update to tracy %i.%i.%i or newer and try again.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
+        ImGui::Text( "The file you are trying to open is unsupported.\nYou should update to Tracy %i.%i.%i or newer and try again.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
         ImGui::Separator();
         if( ImGui::Button( ICON_FA_DOWNLOAD " Download update" ) )
         {

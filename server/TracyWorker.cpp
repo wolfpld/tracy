@@ -237,6 +237,23 @@ static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEven
     if( range.end < lt ) range.end = lt;
 }
 
+template<int U>
+static void ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& vec, Slab<U>& slab )
+{
+    uint64_t sz;
+    f.Read( sz );
+    if( sz != 0 )
+    {
+        int64_t refTime = 0;
+        vec.reserve_exact( sz, slab );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            vec[i] = ReadTimeOffset( f, refTime );
+        }
+    }
+}
+
+
 LoadProgress Worker::s_loadProgress;
 
 Worker::Worker( const char* addr, uint16_t port )
@@ -1707,9 +1724,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         for( uint64_t i=0; i<sz; i++ )
         {
             uint64_t addr;
-            HwSampleData data;
-            f.Read2( addr, data );
-            m_data.hwSamples.emplace( addr, data );
+            f.Read( addr );
+            auto& data = m_data.hwSamples.emplace( addr, HwSampleData {} ).first->second;
+            ReadHwSampleVec( f, data.cycles, m_slab );
+            ReadHwSampleVec( f, data.retired, m_slab );
+            ReadHwSampleVec( f, data.cacheRef, m_slab );
+            ReadHwSampleVec( f, data.cacheMiss, m_slab );
+            ReadHwSampleVec( f, data.branchRetired, m_slab );
+            ReadHwSampleVec( f, data.branchMiss, m_slab );
         }
     }
 
@@ -6323,44 +6345,50 @@ void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 
 void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
 {
+    const auto time = TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
-    it->second.cycles++;
+    it->second.cycles.push_back( time );
 }
 
 void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
 {
+    const auto time = TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
-    it->second.retired++;
+    it->second.retired.push_back( time );
 }
 
 void Worker::ProcessHwSampleCacheReference( const QueueHwSample& ev )
 {
+    const auto time = TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
-    it->second.cacheRef++;
+    it->second.cacheRef.push_back( time );
 }
 
 void Worker::ProcessHwSampleCacheMiss( const QueueHwSample& ev )
 {
+    const auto time = TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
-    it->second.cacheMiss++;
+    it->second.cacheMiss.push_back( time );
 }
 
 void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
 {
+    const auto time = TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
-    it->second.branchRetired++;
+    it->second.branchRetired.push_back( time );
 }
 
 void Worker::ProcessHwSampleBranchMiss( const QueueHwSample& ev )
 {
+    const auto time = TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
-    it->second.branchMiss++;
+    it->second.branchMiss.push_back( time );
 }
 
 void Worker::ProcessParamSetup( const QueueParamSetup& ev )
@@ -7023,6 +7051,21 @@ void Worker::Disconnect()
     m_disconnect = true;
 }
 
+static void WriteHwSampleVec( FileWrite& f, SortedVector<Int48, Int48Sort>& vec )
+{
+    uint64_t sz = vec.size();
+    f.Write( &sz, sizeof( sz ) );
+    if( sz != 0 )
+    {
+        if( !vec.is_sorted() ) vec.sort();
+        int64_t refTime = 0;
+        for( auto& v : vec )
+        {
+            WriteTimeOffset( f, refTime, v.Val() );
+        }
+    }
+}
+
 void Worker::Write( FileWrite& f, bool fiDict )
 {
     DoPostponedWork();
@@ -7563,7 +7606,12 @@ void Worker::Write( FileWrite& f, bool fiDict )
     for( auto& v : m_data.hwSamples )
     {
         f.Write( &v.first, sizeof( v.first ) );
-        f.Write( &v.second, sizeof( v.second ) );
+        WriteHwSampleVec( f, v.second.cycles );
+        WriteHwSampleVec( f, v.second.retired );
+        WriteHwSampleVec( f, v.second.cacheRef );
+        WriteHwSampleVec( f, v.second.cacheMiss );
+        WriteHwSampleVec( f, v.second.branchRetired );
+        WriteHwSampleVec( f, v.second.branchMiss );
     }
 
     sz = m_data.sourceFileCache.size();
@@ -7775,8 +7823,12 @@ uint64_t Worker::GetHwSampleCount() const
     uint64_t cnt = 0;
     for( auto& v : m_data.hwSamples )
     {
-        cnt += v.second.cycles;
-        cnt += v.second.retired;
+        cnt += v.second.cycles.size();
+        cnt += v.second.retired.size();
+        cnt += v.second.cacheRef.size();
+        cnt += v.second.cacheMiss.size();
+        cnt += v.second.branchRetired.size();
+        cnt += v.second.branchMiss.size();
     }
     return cnt;
 }

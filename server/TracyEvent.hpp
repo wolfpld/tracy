@@ -158,6 +158,8 @@ private:
     uint8_t m_val[6];
 };
 
+struct Int48Sort { bool operator()( const Int48& lhs, const Int48& rhs ) { return lhs.Val() < rhs.Val(); }; };
+
 
 struct SourceLocationBase
 {
@@ -253,12 +255,33 @@ enum { SampleDataRangeSize = sizeof( SampleDataRange ) };
 
 struct HwSampleData
 {
-    uint32_t cycles;
-    uint32_t retired;
-    uint32_t cacheRef;
-    uint32_t cacheMiss;
-    uint32_t branchRetired;
-    uint32_t branchMiss;
+    SortedVector<Int48, Int48Sort> cycles;
+    SortedVector<Int48, Int48Sort> retired;
+    SortedVector<Int48, Int48Sort> cacheRef;
+    SortedVector<Int48, Int48Sort> cacheMiss;
+    SortedVector<Int48, Int48Sort> branchRetired;
+    SortedVector<Int48, Int48Sort> branchMiss;
+
+    bool is_sorted() const
+    {
+        return
+            cycles.is_sorted() &&
+            retired.is_sorted() &&
+            cacheRef.is_sorted() &&
+            cacheMiss.is_sorted() &&
+            branchRetired.is_sorted() &&
+            branchMiss.is_sorted();
+    }
+
+    void sort()
+    {
+        if( !cycles.is_sorted() ) cycles.sort();
+        if( !retired.is_sorted() ) retired.sort();
+        if( !cacheRef.is_sorted() ) cacheRef.sort();
+        if( !cacheMiss.is_sorted() ) cacheMiss.sort();
+        if( !branchRetired.is_sorted() ) branchRetired.sort();
+        if( !branchMiss.is_sorted() ) branchMiss.sort();
+    }
 };
 
 enum { HwSampleDataSize = sizeof( HwSampleData ) };

@@ -2633,9 +2633,9 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-static void PrintHwSampleTooltip( const HwSampleData& hw, bool hideFirstSeparator )
+static void PrintHwSampleTooltip( size_t cycles, size_t retired, size_t cacheRef, size_t cacheMiss, size_t branchRetired, size_t branchMiss, bool hideFirstSeparator )
 {
-    if( hw.cycles || hw.retired )
+    if( cycles || retired )
     {
         if( hideFirstSeparator )
         {
@@ -2645,17 +2645,17 @@ static void PrintHwSampleTooltip( const HwSampleData& hw, bool hideFirstSeparato
         {
             ImGui::Separator();
         }
-        if( hw.cycles && hw.retired )
+        if( cycles && retired )
         {
             char buf[32];
-            auto end = PrintFloat( buf, buf+32, float( hw.retired ) / hw.cycles, 2 );
+            auto end = PrintFloat( buf, buf+32, float( retired ) / cycles, 2 );
             *end = '\0';
             TextFocused( "IPC:", buf );
         }
-        if( hw.cycles ) TextFocused( "Cycles:", RealToString( hw.cycles ) );
-        if( hw.retired ) TextFocused( "Retirements:", RealToString( hw.retired ) );
+        if( cycles ) TextFocused( "Cycles:", RealToString( cycles ) );
+        if( retired ) TextFocused( "Retirements:", RealToString( retired ) );
     }
-    if( hw.cacheRef || hw.cacheMiss )
+    if( cacheRef || cacheMiss )
     {
         if( hideFirstSeparator )
         {
@@ -2665,17 +2665,17 @@ static void PrintHwSampleTooltip( const HwSampleData& hw, bool hideFirstSeparato
         {
             ImGui::Separator();
         }
-        if( hw.cacheRef )
+        if( cacheRef )
         {
             char buf[32];
-            auto end = PrintFloat( buf, buf+32, float( 100 * hw.cacheMiss ) / hw.cacheRef, 2 );
+            auto end = PrintFloat( buf, buf+32, float( 100 * cacheMiss ) / cacheRef, 2 );
             memcpy( end, "%", 2 );
             TextFocused( "Cache miss rate:", buf );
-            TextFocused( "Cache references:", RealToString( hw.cacheRef ) );
+            TextFocused( "Cache references:", RealToString( cacheRef ) );
         }
-        if( hw.cacheMiss ) TextFocused( "Cache misses:", RealToString( hw.cacheMiss ) );
+        if( cacheMiss ) TextFocused( "Cache misses:", RealToString( cacheMiss ) );
     }
-    if( hw.branchRetired || hw.branchMiss )
+    if( branchRetired || branchMiss )
     {
         if( hideFirstSeparator )
         {
@@ -2685,15 +2685,15 @@ static void PrintHwSampleTooltip( const HwSampleData& hw, bool hideFirstSeparato
         {
             ImGui::Separator();
         }
-        if( hw.branchRetired )
+        if( branchRetired )
         {
             char buf[32];
-            auto end = PrintFloat( buf, buf+32, float( 100 * hw.branchMiss ) / hw.branchRetired, 2 );
+            auto end = PrintFloat( buf, buf+32, float( 100 * branchMiss ) / branchRetired, 2 );
             memcpy( end, "%", 2 );
             TextFocused( "Branch mispredictions rate:", buf );
-            TextFocused( "Retired branches:", RealToString( hw.branchRetired ) );
+            TextFocused( "Retired branches:", RealToString( branchRetired ) );
         }
-        if( hw.branchMiss ) TextFocused( "Branch mispredictions:", RealToString( hw.branchMiss ) );
+        if( branchMiss ) TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
     }
 }
 
@@ -2719,6 +2719,18 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
     const auto asmIdx = &line - m_asm.data();
 
+    const auto hw = worker.GetHwSampleData( line.addr );
+    size_t cycles = 0, retired = 0, cacheRef = 0, cacheMiss = 0, branchRetired = 0, branchMiss = 0;
+    if( hw )
+    {
+        cycles = hw->cycles.size();
+        retired = hw->retired.size();
+        cacheRef = hw->cacheRef.size();
+        cacheMiss = hw->cacheMiss.size();
+        branchRetired = hw->branchRetired.size();
+        branchMiss = hw->branchMiss.size();
+    }
+
     const auto ts = ImGui::CalcTextSize( " " );
     if( iptotal.local + iptotal.ext != 0 )
     {
@@ -2732,7 +2744,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 {
                     if( m_font ) ImGui::PopFont();
                     ImGui::BeginTooltip();
-                    PrintHwSampleTooltip( *hw, true );
+                    PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, true );
                     ImGui::EndTooltip();
                     if( m_font ) ImGui::PushFont( m_font );
                 }
@@ -2788,7 +2800,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 }
 
                 const auto hw = worker.GetHwSampleData( line.addr );
-                if( hw ) PrintHwSampleTooltip( *hw, false );
+                if( hw ) PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, false );
 
                 const auto& stats = *worker.GetSymbolStats( symAddrParents );
                 if( !stats.parents.empty() )
@@ -2884,13 +2896,12 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     const bool showHwSamples = m_hwSamples && worker.GetHwSampleCountAddress() != 0;
     if( showHwSamples )
     {
-        auto hw = worker.GetHwSampleData( line.addr );
         if( hw )
         {
-            if( hw->cycles != 0 )
+            if( cycles )
             {
-                const bool unreliable = hw->cycles < 10 || hw->retired < 10;
-                const float ipc = float( hw->retired ) / hw->cycles;
+                const bool unreliable = cycles < 10 || retired < 10;
+                const float ipc = float( retired ) / cycles;
                 uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( ipc * 0.25f );
                 if( ipc >= 10 )
                 {
@@ -2913,8 +2924,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     ImGui::SameLine();
                     TextDisabledUnformatted( "Higher is better" );
                     ImGui::Separator();
-                    TextFocused( "Cycles:", RealToString( hw->cycles ) );
-                    TextFocused( "Retirements:", RealToString( hw->retired ) );
+                    TextFocused( "Cycles:", RealToString( cycles ) );
+                    TextFocused( "Retirements:", RealToString( retired ) );
                     if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
                     ImGui::EndTooltip();
                     if( m_font ) ImGui::PushFont( m_font );
@@ -2925,12 +2936,12 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
             }
             ImGui::SameLine( 0, 0 );
-            if( hw->branchRetired != 0 )
+            if( branchRetired )
             {
-                const bool unreliable = hw->branchRetired < 10;
-                const float rate = float( hw->branchMiss ) / hw->branchRetired;
+                const bool unreliable = branchRetired < 10;
+                const float rate = float( branchMiss ) / branchRetired;
                 uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
-                if( hw->branchMiss == 0 )
+                if( branchMiss == 0 )
                 {
                     TextColoredUnformatted( col, "   0%  " );
                 }
@@ -2963,8 +2974,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     ImGui::SameLine();
                     TextDisabledUnformatted( "Lower is better" );
                     ImGui::Separator();
-                    TextFocused( "Retired branches:", RealToString( hw->branchRetired ) );
-                    TextFocused( "Branch mispredictions:", RealToString( hw->branchMiss ) );
+                    TextFocused( "Retired branches:", RealToString( branchRetired ) );
+                    TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
                     if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
                     ImGui::EndTooltip();
                     if( m_font ) ImGui::PushFont( m_font );
@@ -2975,12 +2986,12 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
             }
             ImGui::SameLine( 0, 0 );
-            if( hw->cacheRef != 0 )
+            if( cacheRef )
             {
-                const bool unreliable = hw->cacheRef < 10;
-                const float rate = float( hw->cacheMiss ) / hw->cacheRef;
+                const bool unreliable = cacheRef < 10;
+                const float rate = float( cacheMiss ) / cacheRef;
                 uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
-                if( hw->cacheMiss == 0 )
+                if( cacheMiss == 0 )
                 {
                     TextColoredUnformatted( col, "   0%" );
                 }
@@ -3013,8 +3024,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     ImGui::SameLine();
                     TextDisabledUnformatted( "Lower is better" );
                     ImGui::Separator();
-                    TextFocused( "Cache references:", RealToString( hw->cacheRef ) );
-                    TextFocused( "Cache misses:", RealToString( hw->cacheMiss ) );
+                    TextFocused( "Cache references:", RealToString( cacheRef ) );
+                    TextFocused( "Cache misses:", RealToString( cacheMiss ) );
                     if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
                     ImGui::EndTooltip();
                     if( m_font ) ImGui::PushFont( m_font );

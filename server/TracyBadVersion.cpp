@@ -3,6 +3,7 @@
 #include "IconsFontAwesome5.h"
 #include "TracyBadVersion.hpp"
 #include "TracyImGui.hpp"
+#include "TracyWeb.hpp"
 
 namespace tracy
 {
@@ -61,7 +62,14 @@ void BadVersionImpl( BadVersionState& badVer )
         TextCentered( ICON_FA_CLOUD_DOWNLOAD_ALT );
         ImGui::Text( "The file you are trying to open is unsupported.\nYou should update to tracy %i.%i.%i or newer and try again.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
         ImGui::Separator();
-        if( ImGui::Button( "I understand" ) )
+        if( ImGui::Button( ICON_FA_DOWNLOAD " Download update" ) )
+        {
+            tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+            ImGui::CloseCurrentPopup();
+            badVer.state = BadVersionState::Ok;
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( "Maybe later" ) )
         {
             ImGui::CloseCurrentPopup();
             badVer.state = BadVersionState::Ok;

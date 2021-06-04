@@ -815,7 +815,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     return true;
 }
 
-void SourceView::Render( const Worker& worker, View& view )
+void SourceView::Render( Worker& worker, View& view )
 {
     m_highlightAddr.Decay( 0 );
     m_hoveredLine.Decay( 0 );
@@ -898,7 +898,7 @@ void SourceView::RenderSimpleSourceView()
     ImGui::EndChild();
 }
 
-void SourceView::RenderSymbolView( const Worker& worker, View& view )
+void SourceView::RenderSymbolView( Worker& worker, View& view )
 {
     assert( m_symAddr != 0 );
 
@@ -1840,7 +1840,7 @@ static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len, CpuArchit
     }
 }
 
-uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, const Worker& worker, View& view )
+uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, Worker& worker, View& view )
 {
     if( m_disasmFail >= 0 )
     {
@@ -2697,7 +2697,16 @@ static void PrintHwSampleTooltip( size_t cycles, size_t retired, size_t cacheRef
     }
 }
 
-void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
+static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
+{
+    if( vec.empty() ) return 0;
+    auto it = std::lower_bound( vec.begin(), vec.end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+    if( it == vec.end() ) return 0;
+    auto end = std::lower_bound( it, vec.end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+    return std::distance( it, end );
+}
+
+void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2723,12 +2732,25 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     size_t cycles = 0, retired = 0, cacheRef = 0, cacheMiss = 0, branchRetired = 0, branchMiss = 0;
     if( hw )
     {
-        cycles = hw->cycles.size();
-        retired = hw->retired.size();
-        cacheRef = hw->cacheRef.size();
-        cacheMiss = hw->cacheMiss.size();
-        branchRetired = hw->branchRetired.size();
-        branchMiss = hw->branchMiss.size();
+        if( view.m_statRange.active )
+        {
+            hw->sort();
+            cycles = CountHwSamples( hw->cycles, view.m_statRange );
+            retired = CountHwSamples( hw->retired, view.m_statRange );
+            cacheRef = CountHwSamples( hw->cacheRef, view.m_statRange );
+            cacheMiss = CountHwSamples( hw->cacheMiss, view.m_statRange );
+            branchRetired = CountHwSamples( hw->branchRetired, view.m_statRange );
+            branchMiss = CountHwSamples( hw->branchMiss, view.m_statRange );
+        }
+        else
+        {
+            cycles = hw->cycles.size();
+            retired = hw->retired.size();
+            cacheRef = hw->cacheRef.size();
+            cacheMiss = hw->cacheMiss.size();
+            branchRetired = hw->branchRetired.size();
+            branchMiss = hw->branchMiss.size();
+        }
     }
 
     const auto ts = ImGui::CalcTextSize( " " );

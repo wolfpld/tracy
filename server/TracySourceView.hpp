@@ -122,7 +122,7 @@ public:
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
     void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view );
-    void Render( const Worker& worker, View& view );
+    void Render( Worker& worker, View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
     bool IsSymbolView() const { return !m_asm.empty(); }
@@ -134,13 +134,13 @@ private:
     void SelectViewMode();
 
     void RenderSimpleSourceView();
-    void RenderSymbolView( const Worker& worker, View& view );
+    void RenderSymbolView( Worker& worker, View& view );
 
     void RenderSymbolSourceView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, const AddrStat& ipmax, const Worker& worker, const View& view );
-    uint64_t RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, const Worker& worker, View& view );
+    uint64_t RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, Worker& worker, View& view );
 
     void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker* worker );
-    void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
+    void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
 
     void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );

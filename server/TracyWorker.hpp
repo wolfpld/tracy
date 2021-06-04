@@ -472,7 +472,7 @@ public:
     uint64_t GetSourceFileCacheCount() const { return m_data.sourceFileCache.size(); }
     uint64_t GetSourceFileCacheSize() const;
     MemoryBlock GetSourceFileFromCache( const char* file ) const;
-    const HwSampleData* GetHwSampleData( uint64_t addr ) const;
+    HwSampleData* GetHwSampleData( uint64_t addr );
 
     int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
     int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;

@@ -237,7 +237,7 @@ static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEven
     if( range.end < lt ) range.end = lt;
 }
 
-template<int U>
+template<size_t U>
 static void ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& vec, Slab<U>& slab )
 {
     uint64_t sz;

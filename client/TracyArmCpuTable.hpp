@@ -61,8 +61,8 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xc09: return " Cortex-A9";
         case 0xc0c: return " Cortex-A12";
         case 0xc0d: return " Rockchip RK3288";
-        case 0xc0f: return " Cortex-A15";
         case 0xc0e: return " Cortex-A17";
+        case 0xc0f: return " Cortex-A15";
         case 0xc14: return " Cortex-R4";
         case 0xc15: return " Cortex-R5";
         case 0xc17: return " Cortex-R7";
@@ -92,11 +92,16 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd13: return " Cortex-R52";
         case 0xd20: return " Cortex-M23";
         case 0xd21: return " Cortex-M33";
-        case 0xd40: return " Zeus";
+        case 0xd40: return " Neoverse V1";
         case 0xd41: return " Cortex-A78";
+        case 0xd42: return " Cortex-A78AE";
         case 0xd43: return " Cortex-A65AE";
         case 0xd44: return " Cortex-X1";
+        case 0xd47: return " Cortex-A710";
+        case 0xd48: return " Cortex-X2";
+        case 0xd49: return " Neoverse N2";
         case 0xd4a: return " Neoverse E1";
+        case 0xd4b: return " Cortex-A78C";
         default: break;
         }
     case 0x42:

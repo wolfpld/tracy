@@ -22,11 +22,6 @@
 #  include "../nfd/nfd.h"
 #endif
 
-#ifdef _WIN32
-#  include <windows.h>
-#  include <shellapi.h>
-#endif
-
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #include "stb_image.h"
@@ -43,6 +38,7 @@
 #include "../../server/TracyStorage.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyView.hpp"
+#include "../../server/TracyWeb.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/IconsFontAwesome5.h"
@@ -59,21 +55,6 @@
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
-}
-
-static void OpenWebpage( const char* url )
-{
-#ifdef _WIN32
-    ShellExecuteA( nullptr, nullptr, url, nullptr, nullptr, 0 );
-#elif defined __APPLE__
-    char buf[1024];
-    sprintf( buf, "open %s", url );
-    system( buf );
-#else
-    char buf[1024];
-    sprintf( buf, "xdg-open %s", url );
-    system( buf );
-#endif
 }
 
 GLFWwindow* s_glfwWindow = nullptr;
@@ -619,7 +600,7 @@ static void DrawContents()
         ImGui::Spacing();
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {
-            OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+            tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
@@ -630,44 +611,44 @@ static void DrawContents()
         {
             if( ImGui::Selectable( ICON_FA_HOME " Tracy Profiler home page" ) )
             {
-                OpenWebpage( "https://github.com/wolfpld/tracy" );
+                tracy::OpenWebpage( "https://github.com/wolfpld/tracy" );
             }
             ImGui::Separator();
             if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.3" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.4" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.5" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.6" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.7" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
             }
             ImGui::EndPopup();
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_COMMENT " Chat" ) )
         {
-            OpenWebpage( "https://discord.gg/pk78auc" );
+            tracy::OpenWebpage( "https://discord.gg/pk78auc" );
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_HEART " Sponsor" ) )
         {
-            OpenWebpage( "https://github.com/sponsors/wolfpld/" );
+            tracy::OpenWebpage( "https://github.com/sponsors/wolfpld/" );
         }
         if( updateVersion != 0 && updateVersion > tracy::FileVersion( tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch ) )
         {
@@ -928,7 +909,7 @@ static void DrawContents()
             ImGui::Begin( "Update available!", &showReleaseNotes );
             if( ImGui::Button( ICON_FA_DOWNLOAD " Download" ) )
             {
-                OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
+                tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
             }
             ImGui::BeginChild( "###notes", ImVec2( 0, 0 ), true );
             if( releaseNotes.empty() )

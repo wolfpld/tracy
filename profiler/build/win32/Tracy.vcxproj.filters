@@ -249,6 +249,9 @@
     <ClCompile Include="..\..\..\common\TracyStackFrames.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyWeb.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -577,6 +580,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TracyYield.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyWeb.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

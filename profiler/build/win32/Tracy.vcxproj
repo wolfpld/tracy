@@ -134,6 +134,7 @@
     <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp" />
     <ClCompile Include="..\..\..\server\TracyUserData.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
+    <ClCompile Include="..\..\..\server\TracyWeb.cpp" />
     <ClCompile Include="..\..\..\server\TracyWorker.cpp" />
     <ClCompile Include="..\..\..\zstd\common\debug.c" />
     <ClCompile Include="..\..\..\zstd\common\entropy_common.c" />
@@ -236,6 +237,7 @@
     <ClInclude Include="..\..\..\server\TracyVersion.hpp" />
     <ClInclude Include="..\..\..\server\TracyView.hpp" />
     <ClInclude Include="..\..\..\server\TracyViewData.hpp" />
+    <ClInclude Include="..\..\..\server\TracyWeb.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
     <ClInclude Include="..\..\..\server\tracy_pdqsort.h" />
     <ClInclude Include="..\..\..\server\tracy_robin_hood.h" />

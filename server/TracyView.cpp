@@ -646,7 +646,7 @@ bool View::Draw()
         {
             if( ImGui::RadioButton( CompressionName[idx], (int)comp == idx ) ) comp = (FileWrite::Compression)idx;
             ImGui::SameLine();
-            ImGui::TextDisabled( CompressionDesc[idx] );
+            TextDisabledUnformatted( CompressionDesc[idx] );
             idx++;
         }
         ImGui::Unindent();

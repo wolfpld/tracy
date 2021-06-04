@@ -1207,14 +1207,6 @@ Profiler::Profiler()
 
 void Profiler::SpawnWorkerThreads()
 {
-    s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
-    new(s_thread) Thread( LaunchWorker, this );
-
-#ifndef TRACY_NO_FRAME_IMAGE
-    s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
-    new(s_compressThread) Thread( LaunchCompressWorker, this );
-#endif
-
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( SysTraceStart( m_samplingPeriod ) )
     {
@@ -1222,6 +1214,14 @@ void Profiler::SpawnWorkerThreads()
         new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
+#endif
+
+    s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_thread) Thread( LaunchWorker, this );
+
+#ifndef TRACY_NO_FRAME_IMAGE
+    s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_compressThread) Thread( LaunchCompressWorker, this );
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__

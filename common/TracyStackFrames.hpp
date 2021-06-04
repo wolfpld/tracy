@@ -1,6 +1,8 @@
 #ifndef __TRACYSTACKFRAMES_HPP__
 #define __TRACYSTACKFRAMES_HPP__
 
+#include <stddef.h>
+
 namespace tracy
 {
 

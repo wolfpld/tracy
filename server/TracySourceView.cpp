@@ -1544,7 +1544,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
                             }
                             else
                             {
-                                ImGui::TextDisabled( "(%.2f%%)", 0 );
+                                TextDisabledUnformatted( "(0.00%%)" );
                             }
                         }
                         ImGui::NextColumn();

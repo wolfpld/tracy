@@ -306,6 +306,8 @@ struct CpuIdMap
     const char* moniker;
 };
 
+// http://instlatx64.atw.hu/ seems to be a good resource
+//
 //                   .------ extended family id
 //                   |.----- extended model id
 //                   || .--- family id

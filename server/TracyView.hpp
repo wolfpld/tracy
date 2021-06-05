@@ -56,13 +56,20 @@ class View
         uint64_t count;
     };
 
+    enum class AccumulationMode
+    {
+        SelfOnly,
+        AllChildren,
+        NonReentrantChildren
+    };
+
     struct StatisticsCache
     {
         RangeSlim range;
+        AccumulationMode accumulationMode;
         size_t sourceCount;
         size_t count;
         int64_t total;
-        int64_t selfTotal;
     };
 
 public:
@@ -187,6 +194,7 @@ private:
     void DrawMessages();
     void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
+    void AccumulationModeRadioButtons();
     void DrawStatistics();
     void DrawMemory();
     void DrawAllocList();
@@ -394,7 +402,7 @@ private:
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;
 
-    bool m_statSelf = true;
+    AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
     bool m_statSampleTime = true;
     int m_statMode = 0;
     int m_statSampleLocation = 2;

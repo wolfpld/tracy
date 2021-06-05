@@ -12269,8 +12269,25 @@ struct SrcLocZonesSlim
     int16_t srcloc;
     size_t numZones;
     int64_t total;
-    int64_t selfTotal;
 };
+
+void View::AccumulationModeRadioButtons()
+{
+    if ( ImGui::RadioButton( ICON_FA_CLOCK " Self time only", m_statAccumulationMode == AccumulationMode::SelfOnly ))
+    {
+        m_statAccumulationMode = AccumulationMode::SelfOnly;
+    }
+    ImGui::SameLine();
+    if ( ImGui::RadioButton( ICON_FA_CLOCK " Child time", m_statAccumulationMode == AccumulationMode::AllChildren ))
+    {
+        m_statAccumulationMode = AccumulationMode::AllChildren;
+    }
+    ImGui::SameLine();
+    if ( ImGui::RadioButton( ICON_FA_CLOCK " Non-reentrant time", m_statAccumulationMode == AccumulationMode::NonReentrantChildren ))
+    {
+        m_statAccumulationMode = AccumulationMode::NonReentrantChildren;
+    }
+}
 
 void View::DrawStatistics()
 {
@@ -12349,19 +12366,18 @@ void View::DrawStatistics()
                     if( !filterActive )
                     {
                         auto cit = m_statCache.find( it->first );
-                        if( cit != m_statCache.end() && cit->second.range == m_statRange && cit->second.sourceCount == it->second.zones.size() )
+                        if( cit != m_statCache.end() && cit->second.range == m_statRange && cit->second.accumulationMode == m_statAccumulationMode && cit->second.sourceCount == it->second.zones.size() )
                         {
                             if( cit->second.count != 0 )
                             {
                                 slzcnt++;
-                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total, cit->second.selfTotal } );
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
                             }
                         }
                         else
                         {
                             size_t cnt = 0;
                             int64_t total = 0;
-                            int64_t selfTotal = 0;
                             for( auto& v : it->second.zones )
                             {
                                 auto& z = *v.Zone();
@@ -12370,17 +12386,24 @@ void View::DrawStatistics()
                                 if( start >= min && end <= max )
                                 {
                                     const auto zt = end - start;
-                                    total += zt;
-                                    if( m_statSelf ) selfTotal += zt - GetZoneChildTimeFast( z );
-                                    cnt++;
+                                    if ( m_statAccumulationMode == AccumulationMode::SelfOnly)
+                                    {
+                                        total += zt - GetZoneChildTimeFast( z );
+                                        cnt++;
+                                    }
+                                    else if ( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry(z) )
+                                    {
+                                        total += zt;
+                                        cnt++;
+                                    }
                                 }
                             }
                             if( cnt != 0 )
                             {
                                 slzcnt++;
-                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total, selfTotal } );
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
                             }
-                            m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, it->second.zones.size(), cnt, total, selfTotal };
+                            m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
                         }
                     }
                     else
@@ -12391,18 +12414,17 @@ void View::DrawStatistics()
                         if( m_statisticsFilter.PassFilter( name ) )
                         {
                             auto cit = m_statCache.find( it->first );
-                            if( cit != m_statCache.end() && cit->second.range == m_statRange && cit->second.sourceCount == it->second.zones.size() )
+                            if( cit != m_statCache.end() && cit->second.range == m_statRange && cit->second.accumulationMode == m_statAccumulationMode && cit->second.sourceCount == it->second.zones.size() )
                             {
                                 if( cit->second.count != 0 )
                                 {
-                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total, cit->second.selfTotal } );
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
                                 }
                             }
                             else
                             {
                                 size_t cnt = 0;
                                 int64_t total = 0;
-                                int64_t selfTotal = 0;
                                 for( auto& v : it->second.zones )
                                 {
                                     auto& z = *v.Zone();
@@ -12411,16 +12433,23 @@ void View::DrawStatistics()
                                     if( start >= min && end <= max )
                                     {
                                         const auto zt = end - start;
-                                        total += zt;
-                                        if( m_statSelf ) selfTotal += zt - GetZoneChildTimeFast( z );
-                                        cnt++;
+                                        if ( m_statAccumulationMode == AccumulationMode::SelfOnly)
+                                        {
+                                            total += zt - GetZoneChildTimeFast( z );
+                                            cnt++;
+                                        }
+                                        else if ( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry(z) )
+                                        {
+                                            total += zt;
+                                            cnt++;
+                                        }
                                     }
                                 }
                                 if( cnt != 0 )
                                 {
-                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total, selfTotal } );
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
                                 }
-                                m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, it->second.zones.size(), cnt, total, selfTotal };
+                                m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
                             }
                         }
                     }
@@ -12434,9 +12463,26 @@ void View::DrawStatistics()
                 if( it->second.total != 0 )
                 {
                     slzcnt++;
+                    size_t count;
+                    int64_t total;
+                    switch( m_statAccumulationMode )
+                    {
+                    case AccumulationMode::SelfOnly:
+                        count = it->second.zones.size();
+                        total = it->second.selfTotal;
+                        break;
+                    case AccumulationMode::AllChildren:
+                        count = it->second.zones.size();
+                        total = it->second.total;
+                        break;
+                    case AccumulationMode::NonReentrantChildren:
+                        count = it->second.nonReentrantCount;
+                        total = it->second.nonReentrantTotal;
+                        break;
+                    }
                     if( !filterActive )
                     {
-                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
+                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
                     }
                     else
                     {
@@ -12444,7 +12490,7 @@ void View::DrawStatistics()
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
                         if( m_statisticsFilter.PassFilter( name ) )
                         {
-                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
                         }
                     }
                 }
@@ -12459,7 +12505,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
+        AccumulationModeRadioButtons();
     }
     else
     {
@@ -12469,7 +12515,7 @@ void View::DrawStatistics()
         {
             ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
             ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
-            m_statSelf = true;
+            m_statAccumulationMode = AccumulationMode::SelfOnly;
             bool val = true;
             ImGui::Checkbox( ICON_FA_CLOCK " Self time", &val );
             ImGui::PopItemFlag();
@@ -12483,7 +12529,7 @@ void View::DrawStatistics()
         }
         else
         {
-            ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
+            AccumulationModeRadioButtons();
         }
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
@@ -12614,27 +12660,13 @@ void View::DrawStatistics()
                     }
                     break;
                 case 2:
-                    if( m_statSelf )
+                    if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
                     {
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal < rhs.selfTotal; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal > rhs.selfTotal; } );
-                        }
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total < rhs.total; } );
                     }
                     else
                     {
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total < rhs.total; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total > rhs.total; } );
-                        }
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total > rhs.total; } );
                     }
                     break;
                 case 3:
@@ -12648,27 +12680,13 @@ void View::DrawStatistics()
                     }
                     break;
                 case 4:
-                    if( m_statSelf )
+                    if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
                     {
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal / lhs.numZones < rhs.selfTotal / rhs.numZones; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal / lhs.numZones > rhs.selfTotal / rhs.numZones; } );
-                        }
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones < rhs.total / rhs.numZones; } );
                     }
                     else
                     {
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones < rhs.total / rhs.numZones; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones > rhs.total / rhs.numZones; } );
-                        }
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones > rhs.total / rhs.numZones; } );
                     }
                     break;
                 default:
@@ -12721,7 +12739,7 @@ void View::DrawStatistics()
                         ImGui::Unindent( indentVal );
                     }
                     ImGui::TableNextColumn();
-                    const auto time = m_statSelf ? v.selfTotal : v.total;
+                    const auto time = v.total;
                     ImGui::TextUnformatted( TimeToString( time ) );
                     ImGui::SameLine();
                     char buf[64];
@@ -12730,7 +12748,7 @@ void View::DrawStatistics()
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted( RealToString( v.numZones ) );
                     ImGui::TableNextColumn();
-                    ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v.selfTotal : v.total ) / v.numZones ) );
+                    ImGui::TextUnformatted( TimeToString( time / v.numZones ) );
                     ImGui::PopID();
                 }
                 ImGui::EndTable();
@@ -12971,7 +12989,7 @@ void View::DrawStatistics()
         }
         else
         {
-            if( m_statSelf )
+            if( m_statAccumulationMode == AccumulationMode::SelfOnly )
             {
                 pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
             }
@@ -13008,7 +13026,7 @@ void View::DrawStatistics()
                 int idx = 0;
                 for( auto& v : data )
                 {
-                    const auto cnt = m_statSelf ? v.excl : v.incl;
+                    const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? v.excl : v.incl;
                     if( cnt > 0 || showAll )
                     {
                         const char* name = "[unknown]";
@@ -13247,7 +13265,7 @@ void View::DrawStatistics()
                                 inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
                             }
 
-                            if( m_statSelf )
+                            if( m_statAccumulationMode == AccumulationMode::SelfOnly )
                             {
                                 pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
                             }
@@ -13261,7 +13279,7 @@ void View::DrawStatistics()
                             {
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                const auto cnt = m_statSelf ? iv.excl : iv.incl;
+                                const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? iv.excl : iv.incl;
                                 if( cnt > 0 || showAll )
                                 {
                                     auto sit = symMap.find( iv.symAddr );

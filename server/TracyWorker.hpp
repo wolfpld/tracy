@@ -831,7 +831,7 @@ private:
     tracy_force_inline void ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz );
 
 #ifndef TRACY_NO_STATISTICS
-    tracy_force_inline void ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread );
+    tracy_force_inline void ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zone, uint16_t thread );
 #else
     tracy_force_inline void CountZoneStatistics( ZoneEvent* zone );
 #endif

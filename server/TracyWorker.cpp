@@ -394,6 +394,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             td->zoneIdStack.pop_back();
             auto& stack = td->stack;
             auto zone = stack.back_and_pop();
+            td->DecStackCount( zone->SrcLoc() );
             zone->SetEnd( v.timestamp );
 
 #ifndef TRACY_NO_STATISTICS
@@ -1819,16 +1820,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 if( mem.second->reconstruct ) jobs.emplace_back( std::thread( [this, mem = mem.second] { ReconstructMemAllocPlot( *mem ); } ) );
             }
 
-            std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
-            ProcessTimeline = [this, &ProcessTimeline] ( Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
+            std::function<void(SrcLocCountMap&, Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
+            ProcessTimeline = [this, &ProcessTimeline] ( SrcLocCountMap& countMap, Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 assert( _vec.is_magic() );
                 auto& vec = *(Vector<ZoneEvent>*)( &_vec );
                 for( auto& zone : vec )
                 {
-                    if( zone.IsEndValid() ) ReconstructZoneStatistics( zone, thread );
-                    if( zone.HasChildren() ) ProcessTimeline( GetZoneChildrenMutable( zone.Child() ), thread );
+                    if( zone.IsEndValid() ) ReconstructZoneStatistics( countMap, zone, thread );
+                    if( zone.HasChildren() )
+                    {
+                        IncSrcLocCount( countMap, zone.SrcLoc() );
+                        ProcessTimeline( countMap, GetZoneChildrenMutable( zone.Child() ), thread );
+                        DecSrcLocCount( countMap, zone.SrcLoc() );
+                    }
                 }
             };
 
@@ -1838,8 +1844,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                     if( !t->timeline.empty() )
                     {
+                        SrcLocCountMap countMap;
                         // Don't touch thread compression cache in a thread.
-                        ProcessTimeline( t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
+                        ProcessTimeline( countMap, t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
                     }
                 }
             } ) );
@@ -3582,6 +3589,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     auto td = m_threadCtxData;
     if( !td ) td = m_threadCtxData = NoticeThread( thread );
     td->count++;
+    td->IncStackCount( zone->SrcLoc() );
     const auto ssz = td->stack.size();
     if( ssz == 0 )
     {
@@ -4736,6 +4744,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( !stack.empty() );
     auto zone = stack.back_and_pop();
     assert( zone->End() == -1 );
+    const auto isReentry = td->DecStackCount( zone->SrcLoc() );
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
     const auto timeEnd = TscTime( refTime - m_data.baseTime );
@@ -7042,7 +7051,7 @@ void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime
 }
 
 #ifndef TRACY_NO_STATISTICS
-void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
+void Worker::ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zone, uint16_t thread )
 {
     assert( zone.IsEndValid() );
     auto timeSpan = zone.End() - zone.Start();

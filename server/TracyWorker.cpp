@@ -2006,6 +2006,7 @@ Worker::~Worker()
     {
         v->timeline.~Vector();
         v->stack.~Vector();
+        v->stackCount.~Table();
         v->messages.~Vector();
         v->zoneIdStack.~Vector();
         v->samples.~Vector();

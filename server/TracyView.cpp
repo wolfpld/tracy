@@ -17523,6 +17523,93 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
     return nullptr;
 }
 
+bool View::IsZoneReentry( const ZoneEvent& zone ) const
+{
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreSourceLocationZonesReady() )
+    {
+        auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
+        if( !slz.zones.empty() )
+        {
+            auto it = std::lower_bound( slz.zones.begin(), slz.zones.end(), zone.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs; } );
+            if( it != slz.zones.end() && it->Zone() == &zone )
+            {
+                return IsZoneReentry( zone, m_worker.DecompressThread( it->Thread() ) );
+            }
+        }
+    }
+#endif
+
+    for( const auto& thread : m_worker.GetThreadData() )
+    {
+        const ZoneEvent* parent = nullptr;
+        const Vector<short_ptr<ZoneEvent>>* timeline = &thread->timeline;
+        if( timeline->empty() ) continue;
+        for(;;)
+        {
+            if( timeline->is_magic() )
+            {
+                auto vec = (Vector<ZoneEvent>*)timeline;
+                auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
+                if( it != vec->begin() ) --it;
+                if( zone.IsEndValid() && it->Start() > zone.End() ) break;
+                if( it == &zone ) return false;
+                if( !it->HasChildren() ) break;
+                parent = it;
+                if (parent->SrcLoc() == zone.SrcLoc() ) return true;
+                timeline = &m_worker.GetZoneChildren( parent->Child() );
+            }
+            else
+            {
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
+                if( it != timeline->begin() ) --it;
+                if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
+                if( *it == &zone ) return false;
+                if( !(*it)->HasChildren() ) break;
+                parent = *it;
+                if (parent->SrcLoc() == zone.SrcLoc() ) return true;
+                timeline = &m_worker.GetZoneChildren( parent->Child() );
+            }
+        }
+    }
+    return false;
+}
+
+bool View::IsZoneReentry( const ZoneEvent& zone, uint64_t tid ) const
+{
+    const auto thread = m_worker.GetThreadData( tid );
+    const ZoneEvent* parent = nullptr;
+    const Vector<short_ptr<ZoneEvent>>* timeline = &thread->timeline;
+    if( timeline->empty() ) return false;
+    for(;;)
+    {
+        if( timeline->is_magic() )
+        {
+            auto vec = (Vector<ZoneEvent>*)timeline;
+            auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
+            if( it != vec->begin() ) --it;
+            if( zone.IsEndValid() && it->Start() > zone.End() ) break;
+            if( it == &zone ) return false;
+            if( !it->HasChildren() ) break;
+            parent = it;
+            if (parent->SrcLoc() == zone.SrcLoc() ) return true;
+            timeline = &m_worker.GetZoneChildren( parent->Child() );
+        }
+        else
+        {
+            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
+            if( it != timeline->begin() ) --it;
+            if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
+            if( *it == &zone ) return false;
+            if( !(*it)->HasChildren() ) break;
+            parent = *it;
+            if (parent->SrcLoc() == zone.SrcLoc() ) return true;
+            timeline = &m_worker.GetZoneChildren( parent->Child() );
+        }
+    }
+    return false;
+}
+
 const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 {
     for( const auto& ctx : m_worker.GetGpuData() )

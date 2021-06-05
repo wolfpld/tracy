@@ -4798,6 +4798,13 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         if( slz->selfMin > selfSpan ) slz->selfMin = selfSpan;
         if( slz->selfMax < selfSpan ) slz->selfMax = selfSpan;
         slz->selfTotal += selfSpan;
+        if ( !isReentry )
+        {
+            slz->nonReentrantCount++;
+            if( slz->nonReentrantMin > timeSpan ) slz->nonReentrantMin = timeSpan;
+            if( slz->nonReentrantMax < timeSpan ) slz->nonReentrantMax = timeSpan;
+            slz->nonReentrantTotal += timeSpan;
+        }
         if( !td->childTimeStack.empty() )
         {
             td->childTimeStack.back() += timeSpan;
@@ -7068,6 +7075,14 @@ void Worker::ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zon
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
+        const auto isReentry = HasSrcLocCount( countMap, zone.SrcLoc() );
+        if ( !isReentry )
+        {
+            slz.nonReentrantCount++;
+            if( slz.nonReentrantMin > timeSpan ) slz.nonReentrantMin = timeSpan;
+            if( slz.nonReentrantMax < timeSpan ) slz.nonReentrantMax = timeSpan;
+            slz.nonReentrantTotal += timeSpan;
+        }
         if( zone.HasChildren() )
         {
             auto& children = GetZoneChildren( zone.Child() );

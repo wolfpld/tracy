@@ -136,10 +136,10 @@ private:
     void RenderSimpleSourceView();
     void RenderSymbolView( Worker& worker, View& view );
 
-    void RenderSymbolSourceView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, const AddrStat& ipmax, const Worker& worker, const View& view );
+    void RenderSymbolSourceView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, const AddrStat& ipmax, Worker& worker, const View& view );
     uint64_t RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, Worker& worker, View& view );
 
-    void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, const Worker* worker );
+    void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker* worker, const View* view );
     void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
 
     void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );

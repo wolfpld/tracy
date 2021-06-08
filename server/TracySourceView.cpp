@@ -1695,6 +1695,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         const auto maxAsm = strlen( tmp ) + 1;
         lx += ts * maxAsm + ty;
     }
+    if( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) lx += 19 * ts + ty;
     DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
     const AddrStat zero = {};
@@ -2509,6 +2510,7 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
 
 void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker* worker, const View* view )
 {
+    const auto ts = ImGui::CalcTextSize( " " );
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_srcWidth, ImGui::GetWindowWidth() );
@@ -2691,6 +2693,20 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         ImGui::SameLine( 0, ty );
     }
 
+    const bool showHwSamples = worker && m_hwSamples && worker->GetHwSampleCountAddress() != 0;
+    if( showHwSamples )
+    {
+        if( hasHwData )
+        {
+            RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, ts );
+        }
+        else
+        {
+            ImGui::ItemSize( ImVec2( 19 * ts.x, ts.y ) );
+        }
+        ImGui::SameLine( 0, ty );
+    }
+
     const auto lineCount = m_source.get().size();
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
@@ -2704,7 +2720,6 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
 
     if( !m_asm.empty() )
     {
-        const auto stw = ImGui::CalcTextSize( " " ).x;
         const auto tmp = RealToString( m_asm.size() );
         const auto maxAsm = strlen( tmp ) + 1;
         if( match > 0 )
@@ -2714,11 +2729,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             const auto asmsz = strlen( buf );
             TextDisabledUnformatted( buf );
             ImGui::SameLine( 0, 0 );
-            ImGui::ItemSize( ImVec2( stw * ( maxAsm - asmsz ), ty ), 0 );
+            ImGui::ItemSize( ImVec2( ts.x * ( maxAsm - asmsz ), ty ), 0 );
         }
         else
         {
-            ImGui::ItemSize( ImVec2( stw * maxAsm, ty ), 0 );
+            ImGui::ItemSize( ImVec2( ts.x * maxAsm, ty ), 0 );
         }
     }
 

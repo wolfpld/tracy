@@ -69,6 +69,80 @@ static_assert( sizeof( s_regNameX86 ) / sizeof( *s_regNameX86 ) == (size_t)Sourc
 static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];
 
 
+static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
+{
+    if( vec.empty() ) return 0;
+    auto it = std::lower_bound( vec.begin(), vec.end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+    if( it == vec.end() ) return 0;
+    auto end = std::lower_bound( it, vec.end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+    return std::distance( it, end );
+}
+
+static void PrintHwSampleTooltip( size_t cycles, size_t retired, size_t cacheRef, size_t cacheMiss, size_t branchRetired, size_t branchMiss, bool hideFirstSeparator )
+{
+    if( cycles || retired )
+    {
+        if( hideFirstSeparator )
+        {
+            hideFirstSeparator = false;
+        }
+        else
+        {
+            ImGui::Separator();
+        }
+        if( cycles && retired )
+        {
+            char buf[32];
+            auto end = PrintFloat( buf, buf+32, float( retired ) / cycles, 2 );
+            *end = '\0';
+            TextFocused( "IPC:", buf );
+        }
+        if( cycles ) TextFocused( "Cycles:", RealToString( cycles ) );
+        if( retired ) TextFocused( "Retirements:", RealToString( retired ) );
+    }
+    if( cacheRef || cacheMiss )
+    {
+        if( hideFirstSeparator )
+        {
+            hideFirstSeparator = false;
+        }
+        else
+        {
+            ImGui::Separator();
+        }
+        if( cacheRef )
+        {
+            char buf[32];
+            auto end = PrintFloat( buf, buf+32, float( 100 * cacheMiss ) / cacheRef, 2 );
+            memcpy( end, "%", 2 );
+            TextFocused( "Cache miss rate:", buf );
+            TextFocused( "Cache references:", RealToString( cacheRef ) );
+        }
+        if( cacheMiss ) TextFocused( "Cache misses:", RealToString( cacheMiss ) );
+    }
+    if( branchRetired || branchMiss )
+    {
+        if( hideFirstSeparator )
+        {
+            hideFirstSeparator = false;
+        }
+        else
+        {
+            ImGui::Separator();
+        }
+        if( branchRetired )
+        {
+            char buf[32];
+            auto end = PrintFloat( buf, buf+32, float( 100 * branchMiss ) / branchRetired, 2 );
+            memcpy( end, "%", 2 );
+            TextFocused( "Branch mispredictions rate:", buf );
+            TextFocused( "Retired branches:", RealToString( branchRetired ) );
+        }
+        if( branchMiss ) TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
+    }
+}
+
+
 enum { JumpSeparation = 6 };
 enum { JumpArrowBase = 9 };
 
@@ -2643,79 +2717,6 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     }
 
     DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
-}
-
-static void PrintHwSampleTooltip( size_t cycles, size_t retired, size_t cacheRef, size_t cacheMiss, size_t branchRetired, size_t branchMiss, bool hideFirstSeparator )
-{
-    if( cycles || retired )
-    {
-        if( hideFirstSeparator )
-        {
-            hideFirstSeparator = false;
-        }
-        else
-        {
-            ImGui::Separator();
-        }
-        if( cycles && retired )
-        {
-            char buf[32];
-            auto end = PrintFloat( buf, buf+32, float( retired ) / cycles, 2 );
-            *end = '\0';
-            TextFocused( "IPC:", buf );
-        }
-        if( cycles ) TextFocused( "Cycles:", RealToString( cycles ) );
-        if( retired ) TextFocused( "Retirements:", RealToString( retired ) );
-    }
-    if( cacheRef || cacheMiss )
-    {
-        if( hideFirstSeparator )
-        {
-            hideFirstSeparator = false;
-        }
-        else
-        {
-            ImGui::Separator();
-        }
-        if( cacheRef )
-        {
-            char buf[32];
-            auto end = PrintFloat( buf, buf+32, float( 100 * cacheMiss ) / cacheRef, 2 );
-            memcpy( end, "%", 2 );
-            TextFocused( "Cache miss rate:", buf );
-            TextFocused( "Cache references:", RealToString( cacheRef ) );
-        }
-        if( cacheMiss ) TextFocused( "Cache misses:", RealToString( cacheMiss ) );
-    }
-    if( branchRetired || branchMiss )
-    {
-        if( hideFirstSeparator )
-        {
-            hideFirstSeparator = false;
-        }
-        else
-        {
-            ImGui::Separator();
-        }
-        if( branchRetired )
-        {
-            char buf[32];
-            auto end = PrintFloat( buf, buf+32, float( 100 * branchMiss ) / branchRetired, 2 );
-            memcpy( end, "%", 2 );
-            TextFocused( "Branch mispredictions rate:", buf );
-            TextFocused( "Retired branches:", RealToString( branchRetired ) );
-        }
-        if( branchMiss ) TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
-    }
-}
-
-static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
-{
-    if( vec.empty() ) return 0;
-    auto it = std::lower_bound( vec.begin(), vec.end(), range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
-    if( it == vec.end() ) return 0;
-    auto end = std::lower_bound( it, vec.end(), range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
-    return std::distance( it, end );
 }
 
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )

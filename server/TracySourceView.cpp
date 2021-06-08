@@ -2771,17 +2771,13 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         if( ( m_childCalls && ipcnt.local + ipcnt.ext == 0 ) || ( !m_childCalls && ipcnt.local == 0 ) )
         {
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
-            if( ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( ts.x * 7, ty ) ) )
+            if( hw && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( ts.x * 7, ty ) ) )
             {
-                const auto hw = worker.GetHwSampleData( line.addr );
-                if( hw )
-                {
-                    if( m_font ) ImGui::PopFont();
-                    ImGui::BeginTooltip();
-                    PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, true );
-                    ImGui::EndTooltip();
-                    if( m_font ) ImGui::PushFont( m_font );
-                }
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, true );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
             }
         }
         else
@@ -2833,7 +2829,6 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 }
 
-                const auto hw = worker.GetHwSampleData( line.addr );
                 if( hw ) PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, false );
 
                 const auto& stats = *worker.GetSymbolStats( symAddrParents );

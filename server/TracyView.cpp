@@ -8510,12 +8510,14 @@ void View::DrawOptions()
     m_vd.drawFrameTargets = val;
     ImGui::Indent();
     int tmp = m_vd.frameTarget;
-    ImGui::SetNextItemWidth( 120 );
+    ImGui::SetNextItemWidth( 90 );
     if( ImGui::InputInt( "Target FPS", &tmp ) )
     {
         if( tmp < 1 ) tmp = 1;
         m_vd.frameTarget = tmp;
     }
+    ImGui::SameLine();
+    TextDisabledUnformatted( TimeToString( 1000*1000*1000 / tmp ) );
     ImGui::Unindent();
     if( m_worker.HasContextSwitches() )
     {

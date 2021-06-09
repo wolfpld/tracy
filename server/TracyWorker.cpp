@@ -5623,20 +5623,13 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     if( zone->GpuStart() < 0 )
     {
         zone->SetGpuStart( gpuTime );
-        if( m_data.lastTime < gpuTime ) m_data.lastTime = gpuTime;
         ctx->count++;
     }
     else
     {
-        if( gpuTime < zone->GpuStart() )
-        {
-            auto tmp = zone->GpuStart();
-            std::swap( gpuTime, tmp );
-            zone->SetGpuStart( tmp );
-        }
         zone->SetGpuEnd( gpuTime );
-        if( m_data.lastTime < gpuTime ) m_data.lastTime = gpuTime;
     }
+    if( m_data.lastTime < gpuTime ) m_data.lastTime = gpuTime;
 }
 
 void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )

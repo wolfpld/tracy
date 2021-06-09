@@ -12,6 +12,13 @@ v0.x.x (xxxx-xx-xx)
 - Improved function matching algorithm in compare traces view.
 - Added minimal CMake integration layer.
 - Reworked rpmalloc initialization.
+- Excluded some uninteresting wrapper functions from call stacks (for
+  example SIMD pass-through intrinsics to the compiler built-ins).
+- Adjusted coloring of instruction hotness in symbol view.
+- Properly handle rare cases when sampling on Linux is momentary not able to
+  resolve time stamps.
+- Added Rocket Lake microarchitectural data.
+- Updated CPU identifier lists.
 
 
 v0.7.8 (2021-05-19)

@@ -67,6 +67,25 @@ static inline char* CopyString( const char* src )
     return dst;
 }
 
+static inline char* CopyStringFast( const char* src, size_t sz )
+{
+    assert( strlen( src ) == sz );
+    auto dst = (char*)tracy_malloc_fast( sz + 1 );
+    memcpy( dst, src, sz );
+    dst[sz] = '\0';
+    return dst;
+}
+
+static inline char* CopyStringFast( const char* src )
+{
+    const auto sz = strlen( src );
+    auto dst = (char*)tracy_malloc_fast( sz + 1 );
+    memcpy( dst, src, sz );
+    dst[sz] = '\0';
+    return dst;
+}
+
+
 
 #if TRACY_HAS_CALLSTACK == 1
 
@@ -146,7 +165,7 @@ void InitCallstack()
                     auto cache = s_modCache->push_next();
                     cache->start = base;
                     cache->end = base + info.SizeOfImage;
-                    cache->name = (char*)tracy_malloc( namelen+3 );
+                    cache->name = (char*)tracy_malloc_fast( namelen+3 );
                     cache->name[0] = '[';
                     memcpy( cache->name+1, ptr, namelen );
                     cache->name[namelen+1] = ']';
@@ -215,6 +234,7 @@ static const char* GetModuleName( uint64_t addr )
     DWORD needed;
     HANDLE proc = GetCurrentProcess();
 
+    InitRpmalloc();
     if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );
@@ -237,7 +257,7 @@ static const char* GetModuleName( uint64_t addr )
                         auto cache = s_modCache->push_next();
                         cache->start = base;
                         cache->end = base + info.SizeOfImage;
-                        cache->name = (char*)tracy_malloc( namelen+3 );
+                        cache->name = (char*)tracy_malloc_fast( namelen+3 );
                         cache->name[0] = '[';
                         memcpy( cache->name+1, ptr, namelen );
                         cache->name[namelen+1] = ']';
@@ -333,6 +353,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     int write;
     const auto proc = GetCurrentProcess();
+    InitRpmalloc();
+
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
@@ -380,8 +402,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb_data[write].line = line.LineNumber;
         }
 
-        cb_data[write].name = symValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName );
-        cb_data[write].file = CopyString( filename );
+        cb_data[write].name = symValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleName );
+        cb_data[write].file = CopyStringFast( filename );
         if( symValid )
         {
             cb_data[write].symLen = si->Size;
@@ -413,8 +435,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
                 cb.line = line.LineNumber;
             }
 
-            cb.name = symInlineValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName );
-            cb.file = CopyString( filename );
+            cb.name = symInlineValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleName );
+            cb.file = CopyStringFast( filename );
             if( symInlineValid )
             {
                 cb.symLen = si->Size;
@@ -594,21 +616,21 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
 
         if( symoff == 0 )
         {
-            cb_data[cb_num].name = CopyString( symname );
+            cb_data[cb_num].name = CopyStringFast( symname );
         }
         else
         {
             char buf[32];
             const auto offlen = sprintf( buf, " + %td", symoff );
             const auto namelen = strlen( symname );
-            auto name = (char*)tracy_malloc( namelen + offlen + 1 );
+            auto name = (char*)tracy_malloc_fast( namelen + offlen + 1 );
             memcpy( name, symname, namelen );
             memcpy( name + namelen, buf, offlen );
             name[namelen + offlen] = '\0';
             cb_data[cb_num].name = name;
         }
 
-        cb_data[cb_num].file = CopyString( "[unknown]" );
+        cb_data[cb_num].file = CopyStringFast( "[unknown]" );
         cb_data[cb_num].line = 0;
     }
     else
@@ -632,8 +654,8 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
             }
         }
 
-        cb_data[cb_num].name = CopyString( function );
-        cb_data[cb_num].file = CopyString( fn );
+        cb_data[cb_num].name = CopyStringFast( function );
+        cb_data[cb_num].file = CopyStringFast( fn );
         cb_data[cb_num].line = lineno;
     }
 
@@ -651,12 +673,12 @@ static void CallstackErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*
 {
     for( int i=0; i<cb_num; i++ )
     {
-        tracy_free( (void*)cb_data[i].name );
-        tracy_free( (void*)cb_data[i].file );
+        tracy_free_fast( (void*)cb_data[i].name );
+        tracy_free_fast( (void*)cb_data[i].file );
     }
 
-    cb_data[0].name = CopyString( "[error]" );
-    cb_data[0].file = CopyString( "[error]" );
+    cb_data[0].name = CopyStringFast( "[error]" );
+    cb_data[0].file = CopyStringFast( "[error]" );
     cb_data[0].line = 0;
 
     cb_num = 1;
@@ -676,6 +698,8 @@ void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
+    InitRpmalloc();
+
     cb_num = 0;
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
     assert( cb_num > 0 );

@@ -910,6 +910,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     new(s_threadSampling) Thread( [] (void*) {
         ThreadExitHandler threadExitHandler;
         SetThreadName( "Tracy Sampling" );
+        InitRpmalloc();
         sched_param sp = { 5 };
         pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
@@ -918,7 +919,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             if( s_ring[i].GetId() == EventCallstack && !s_ring[i].CheckTscCaps() )
             {
                 for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
-                tracy_free( s_ring );
+                tracy_free_fast( s_ring );
                 const char* err = "Tracy Profiler: sampling is disabled due to non-native scheduler clock. Are you running under a VM?";
                 Profiler::MessageAppInfo( err, strlen( err ) );
                 return;
@@ -968,7 +969,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                             if( t0 != 0 )
 #endif
                             {
-                                auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
+                                auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
                                 s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
 
 #if defined __x86_64__ || defined _M_X64
@@ -998,7 +999,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                                 }
                                 if( j == cnt )
                                 {
-                                    tracy_free( trace );
+                                    tracy_free_fast( trace );
                                 }
                                 else
                                 {
@@ -1077,7 +1078,7 @@ static void SetupSampling( int64_t& samplingPeriod )
         }
 
         for( int i=0; i<s_numBuffers; i++ ) s_ring[i].~RingBuffer<RingBufSize>();
-        tracy_free( s_ring );
+        tracy_free_fast( s_ring );
     }, nullptr );
 }
 
@@ -1717,7 +1718,7 @@ void SysTraceSendExternalName( uint64_t thread )
                 break;
             }
         }
-        tracy_free( line );
+        tracy_free_fast( line );
         fclose( f );
         if( pid >= 0 )
         {

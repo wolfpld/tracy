@@ -3143,7 +3143,7 @@ void View::DrawZones()
                         }
                     }
                     TextFocused( "Zone count:", RealToString( v->count ) );
-                    if( isMultithreaded )
+                    if( v->period != 1.f )
                     {
                         TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
                     }

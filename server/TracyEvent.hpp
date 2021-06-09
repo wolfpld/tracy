@@ -617,6 +617,9 @@ struct GpuCtxData
     int64_t calibratedGpuTime;
     int64_t calibratedCpuTime;
     double calibrationMod;
+    int64_t lastGpuTime;
+    uint64_t overflow;
+    uint32_t overflowMul;
     StringIdx name;
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     short_ptr<GpuEvent> query[64*1024];

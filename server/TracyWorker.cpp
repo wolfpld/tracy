@@ -1029,6 +1029,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
             ctx->hasCalibration = false;
         }
+        ctx->overflow = 0;
         ctx->hasPeriod = ctx->period != 1.f;
         m_data.gpuCnt += ctx->count;
         uint64_t tdsz;
@@ -5399,6 +5400,9 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->calibratedGpuTime = gpuTime;
     gpu->calibratedCpuTime = cpuTime;
     gpu->calibrationMod = 1.;
+    gpu->lastGpuTime = 0;
+    gpu->overflow = 0;
+    gpu->overflowMul = 0;
     m_data.gpuData.push_back( gpu );
     m_gpuCtxMap[ev.context] = gpu;
 }
@@ -5571,31 +5575,44 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
-    const int64_t tref = m_refTimeGpu + ev.gpuTime;
-    m_refTimeGpu = tref;
-    const int64_t t = std::max<int64_t>( 0, tref );
+    int64_t tgpu = m_refTimeGpu + ev.gpuTime;
+    m_refTimeGpu = tgpu;
+
+    if( tgpu < ctx->lastGpuTime )
+    {
+        if( ctx->overflow == 0 )
+        {
+            ctx->overflow = uint64_t( 1 ) << ( 64 - TracyLzcnt( ctx->lastGpuTime ) );
+        }
+        ctx->overflowMul++;
+    }
+    ctx->lastGpuTime = tgpu;
+    if( ctx->overflow != 0 )
+    {
+        tgpu += ctx->overflow * ctx->overflowMul;
+    }
 
     int64_t gpuTime;
     if( !ctx->hasPeriod )
     {
         if( !ctx->hasCalibration )
         {
-            gpuTime = t + ctx->timeDiff;
+            gpuTime = tgpu + ctx->timeDiff;
         }
         else
         {
-            gpuTime = int64_t( ( t - ctx->calibratedGpuTime ) * ctx->calibrationMod + ctx->calibratedCpuTime );
+            gpuTime = int64_t( ( tgpu - ctx->calibratedGpuTime ) * ctx->calibrationMod + ctx->calibratedCpuTime );
         }
     }
     else
     {
         if( !ctx->hasCalibration )
         {
-            gpuTime = int64_t( double( ctx->period ) * t ) + ctx->timeDiff;      // precision loss
+            gpuTime = int64_t( double( ctx->period ) * tgpu ) + ctx->timeDiff;      // precision loss
         }
         else
         {
-            gpuTime = int64_t( ( double( ctx->period ) * t - ctx->calibratedGpuTime ) * ctx->calibrationMod + ctx->calibratedCpuTime );
+            gpuTime = int64_t( ( double( ctx->period ) * tgpu - ctx->calibratedGpuTime ) * ctx->calibrationMod + ctx->calibratedCpuTime );
         }
     }
 

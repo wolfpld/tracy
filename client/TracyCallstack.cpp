@@ -529,7 +529,7 @@ static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* 
     if( !fn ) return 1;
 
     const auto fnsz = strlen( fn );
-    if( fnsz >= 19 )    // minimum length in s_tracySkipSubframes
+    if( fnsz >= s_tracySkipSubframesMinLen )
     {
         auto ptr = s_tracySkipSubframes;
         do

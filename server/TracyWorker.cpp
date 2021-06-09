@@ -6002,7 +6002,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
         {
             auto fstr = GetString( file );
             auto flen = strlen( fstr );
-            if( flen >= 19 )    // minimum length in s_tracySkipSubframes
+            if( flen >= s_tracySkipSubframesMinLen )
             {
                 auto ptr = s_tracySkipSubframes;
                 do

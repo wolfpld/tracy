@@ -1003,17 +1003,25 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
-        if( fileVer >= FileVersion( 0, 7, 6 ) )
+        if( fileVer >= FileVersion( 0, 7, 9 ) )
+        {
+            uint8_t calibration;
+            f.Read7( ctx->thread, calibration, ctx->count, ctx->period, ctx->type, ctx->name, ctx->overflow );
+            ctx->hasCalibration = calibration;
+        }
+        else if( fileVer >= FileVersion( 0, 7, 6 ) )
         {
             uint8_t calibration;
             f.Read6( ctx->thread, calibration, ctx->count, ctx->period, ctx->type, ctx->name );
             ctx->hasCalibration = calibration;
+            ctx->overflow = 0;
         }
         else if( fileVer >= FileVersion( 0, 7, 1 ) )
         {
             uint8_t calibration;
             f.Read5( ctx->thread, calibration, ctx->count, ctx->period, ctx->type );
             ctx->hasCalibration = calibration;
+            ctx->overflow = 0;
         }
         else
         {
@@ -1028,8 +1036,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 ctx->type = ctx->thread == 0 ? GpuContextType::Vulkan : GpuContextType::OpenGl;
             }
             ctx->hasCalibration = false;
+            ctx->overflow = 0;
         }
-        ctx->overflow = 0;
         ctx->hasPeriod = ctx->period != 1.f;
         m_data.gpuCnt += ctx->count;
         uint64_t tdsz;
@@ -7339,6 +7347,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &ctx->period, sizeof( ctx->period ) );
         f.Write( &ctx->type, sizeof( ctx->type ) );
         f.Write( &ctx->name, sizeof( ctx->name ) );
+        f.Write( &ctx->overflow, sizeof( ctx->overflow ) );
         sz = ctx->threadData.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& td : ctx->threadData )

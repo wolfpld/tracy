@@ -3147,6 +3147,14 @@ void View::DrawZones()
                     {
                         TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
                     }
+                    if( v->overflow != 0 )
+                    {
+                        ImGui::Separator();
+                        ImGui::TextUnformatted( "GPU timer overflow has been detected." );
+                        TextFocused( "Timer resolution:", RealToString( 63 - TracyLzcnt( v->overflow ) ) );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "bits" );
+                    }
                     ImGui::EndTooltip();
                 }
             }

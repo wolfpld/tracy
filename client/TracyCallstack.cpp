@@ -529,9 +529,6 @@ static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* 
     if( !fn ) return 1;
 
     const auto fnsz = strlen( fn );
-#if defined __aarch64__ || defined __ARM_ARCH
-    if( fnsz >= 19 && memcmp( "/include/arm_neon.h", fn + fnsz - 19, 19 ) == 0 ) return 0;
-#else
     if( fnsz >= 19 )    // minimum length in s_tracySkipSubframes
     {
         auto ptr = s_tracySkipSubframes;
@@ -542,7 +539,6 @@ static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* 
         }
         while( ptr->str );
     }
-#endif
 
     auto& sym = *(CallstackSymbolData*)data;
     sym.file = CopyString( fn );

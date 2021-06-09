@@ -19,6 +19,7 @@ v0.x.x (xxxx-xx-xx)
   resolve time stamps.
 - Added Rocket Lake microarchitectural data.
 - Updated CPU identifier lists.
+- Implemented GPU timer overflow handling heuristics.
 
 
 v0.7.8 (2021-05-19)

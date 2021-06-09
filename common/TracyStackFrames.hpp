@@ -15,7 +15,7 @@ struct StringMatch
 extern const char** s_tracyStackFrames;
 extern const StringMatch* s_tracySkipSubframes;
 
-static constexpr int s_tracySkipSubframesMinLen = 19;
+static constexpr int s_tracySkipSubframesMinLen = 7;
 
 }
 

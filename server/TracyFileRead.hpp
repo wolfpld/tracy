@@ -90,7 +90,6 @@ public:
             ReadBig( &tmp, sizeof( T ) );
             memcpy( &v, &tmp, sizeof( T ) );
         }
-
     }
 
     template<class T, class U>

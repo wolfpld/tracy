@@ -113,6 +113,7 @@ const StringMatch s_tracySkipSubframes_[] = {
     { "/include/xsaveoptintrin.h", 25 },
     { "/include/xsavesintrin.h", 23 },
     { "/include/xtestintrin.h", 22 },
+    { "/bits/atomic_base.h", 19 },
     {}
 };
 

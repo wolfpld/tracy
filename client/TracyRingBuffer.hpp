@@ -59,12 +59,6 @@ public:
         ioctl( m_fd, PERF_EVENT_IOC_ENABLE, 0 );
     }
 
-    bool HasData() const
-    {
-        const auto head = LoadHead();
-        return head > m_tail;
-    }
-
     void Read( void* dst, uint64_t offset, uint64_t cnt )
     {
         auto src = ( m_tail + offset ) % Size;
@@ -100,12 +94,17 @@ public:
         return ( quot << m_metadata->time_shift ) + ( rem << m_metadata->time_shift ) / m_metadata->time_mult;
     }
 
-private:
     uint64_t LoadHead() const
     {
         return std::atomic_load_explicit( (const volatile std::atomic<uint64_t>*)&m_metadata->data_head, std::memory_order_acquire );
     }
 
+    uint64_t GetTail() const
+    {
+        return m_tail;
+    }
+
+private:
     void StoreTail()
     {
         std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, m_tail, std::memory_order_release );

@@ -933,142 +933,152 @@ static void SetupSampling( int64_t& samplingPeriod )
             for( int i=0; i<s_numBuffers; i++ )
             {
                 if( !traceActive.load( std::memory_order_relaxed ) ) break;
-                if( !s_ring[i].HasData() ) continue;
+                const auto head = s_ring[i].LoadHead();
+                const auto tail = s_ring[i].GetTail();
+                if( head == tail ) continue;
+                assert( head > tail );
                 hadData = true;
 
-                perf_event_header hdr;
-                s_ring[i].Read( &hdr, 0, sizeof( perf_event_header ) );
-                if( hdr.type == PERF_RECORD_SAMPLE )
+                const auto end = head - tail;
+                uint64_t pos = 0;
+                while( pos < end )
                 {
-                    auto offset = sizeof( perf_event_header );
-                    const auto id = s_ring[i].GetId();
-                    if( id == EventCallstack )
+                    perf_event_header hdr;
+                    s_ring[i].Read( &hdr, pos, sizeof( perf_event_header ) );
+                    if( hdr.type == PERF_RECORD_SAMPLE )
                     {
-                        // Layout:
-                        //   u32 pid, tid
-                        //   u64 time
-                        //   u64 cnt
-                        //   u64 ip[cnt]
-
-                        uint32_t tid;
-                        uint64_t t0;
-                        uint64_t cnt;
-
-                        offset += sizeof( uint32_t );
-                        s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
-                        offset += sizeof( uint32_t );
-                        s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
-                        offset += sizeof( uint64_t );
-                        s_ring[i].Read( &cnt, offset, sizeof( uint64_t ) );
-                        offset += sizeof( uint64_t );
-
-                        if( cnt > 0 )
+                        auto offset = pos + sizeof( perf_event_header );
+                        const auto id = s_ring[i].GetId();
+                        if( id == EventCallstack )
                         {
+                            // Layout:
+                            //   u32 pid, tid
+                            //   u64 time
+                            //   u64 cnt
+                            //   u64 ip[cnt]
+
+                            uint32_t tid;
+                            uint64_t t0;
+                            uint64_t cnt;
+
+                            offset += sizeof( uint32_t );
+                            s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
+                            offset += sizeof( uint32_t );
+                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t );
+                            s_ring[i].Read( &cnt, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t );
+
+                            if( cnt > 0 )
+                            {
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+                                t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                                if( t0 != 0 )
+#endif
+                                {
+                                    auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
+                                    s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+
+#if defined __x86_64__ || defined _M_X64
+                                    // remove non-canonical pointers
+                                    do
+                                    {
+                                        const auto test = (int64_t)trace[cnt];
+                                        const auto m1 = test >> 63;
+                                        const auto m2 = test >> 47;
+                                        if( m1 == m2 ) break;
+                                    }
+                                    while( --cnt > 0 );
+                                    for( uint64_t j=1; j<cnt; j++ )
+                                    {
+                                        const auto test = (int64_t)trace[j];
+                                        const auto m1 = test >> 63;
+                                        const auto m2 = test >> 47;
+                                        if( m1 != m2 ) trace[j] = 0;
+                                    }
+#endif
+
+                                    // skip kernel frames
+                                    uint64_t j;
+                                    for( j=0; j<cnt; j++ )
+                                    {
+                                        if( (int64_t)trace[j+1] >= 0 ) break;
+                                    }
+                                    if( j == cnt )
+                                    {
+                                        tracy_free_fast( trace );
+                                    }
+                                    else
+                                    {
+                                        if( j > 0 )
+                                        {
+                                            cnt -= j;
+                                            memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                                        }
+                                        memcpy( trace, &cnt, sizeof( uint64_t ) );
+
+                                        TracyLfqPrepare( QueueType::CallstackSample );
+                                        MemWrite( &item->callstackSampleFat.time, t0 );
+                                        MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
+                                        MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                                        TracyLfqCommit;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Layout:
+                            //   u64 ip
+                            //   u64 time
+
+                            uint64_t ip, t0;
+                            s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t );
+                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
                             t0 = s_ring[i].ConvertTimeToTsc( t0 );
                             if( t0 != 0 )
 #endif
                             {
-                                auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
-                                s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+                                QueueType type;
+                                switch( id )
+                                {
+                                case EventCpuCycles:
+                                    type = QueueType::HwSampleCpuCycle;
+                                    break;
+                                case EventInstructionsRetired:
+                                    type = QueueType::HwSampleInstructionRetired;
+                                    break;
+                                case EventCacheReference:
+                                    type = QueueType::HwSampleCacheReference;
+                                    break;
+                                case EventCacheMiss:
+                                    type = QueueType::HwSampleCacheMiss;
+                                    break;
+                                case EventBranchRetired:
+                                    type = QueueType::HwSampleBranchRetired;
+                                    break;
+                                case EventBranchMiss:
+                                    type = QueueType::HwSampleBranchMiss;
+                                    break;
+                                default:
+                                    assert( false );
+                                    break;
+                                }
 
-#if defined __x86_64__ || defined _M_X64
-                                // remove non-canonical pointers
-                                do
-                                {
-                                    const auto test = (int64_t)trace[cnt];
-                                    const auto m1 = test >> 63;
-                                    const auto m2 = test >> 47;
-                                    if( m1 == m2 ) break;
-                                }
-                                while( --cnt > 0 );
-                                for( uint64_t j=1; j<cnt; j++ )
-                                {
-                                    const auto test = (int64_t)trace[j];
-                                    const auto m1 = test >> 63;
-                                    const auto m2 = test >> 47;
-                                    if( m1 != m2 ) trace[j] = 0;
-                                }
-#endif
-
-                                // skip kernel frames
-                                uint64_t j;
-                                for( j=0; j<cnt; j++ )
-                                {
-                                    if( (int64_t)trace[j+1] >= 0 ) break;
-                                }
-                                if( j == cnt )
-                                {
-                                    tracy_free_fast( trace );
-                                }
-                                else
-                                {
-                                    if( j > 0 )
-                                    {
-                                        cnt -= j;
-                                        memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
-                                    }
-                                    memcpy( trace, &cnt, sizeof( uint64_t ) );
-
-                                    TracyLfqPrepare( QueueType::CallstackSample );
-                                    MemWrite( &item->callstackSampleFat.time, t0 );
-                                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
-                                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
-                                    TracyLfqCommit;
-                                }
+                                TracyLfqPrepare( type );
+                                MemWrite( &item->hwSample.ip, ip );
+                                MemWrite( &item->hwSample.time, t0 );
+                                TracyLfqCommit;
                             }
                         }
                     }
-                    else
-                    {
-                        // Layout:
-                        //   u64 ip
-                        //   u64 time
-
-                        uint64_t ip, t0;
-                        s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
-                        offset += sizeof( uint64_t );
-                        s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
-
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-                        t0 = s_ring[i].ConvertTimeToTsc( t0 );
-                        if( t0 != 0 )
-#endif
-                        {
-                            QueueType type;
-                            switch( id )
-                            {
-                            case EventCpuCycles:
-                                type = QueueType::HwSampleCpuCycle;
-                                break;
-                            case EventInstructionsRetired:
-                                type = QueueType::HwSampleInstructionRetired;
-                                break;
-                            case EventCacheReference:
-                                type = QueueType::HwSampleCacheReference;
-                                break;
-                            case EventCacheMiss:
-                                type = QueueType::HwSampleCacheMiss;
-                                break;
-                            case EventBranchRetired:
-                                type = QueueType::HwSampleBranchRetired;
-                                break;
-                            case EventBranchMiss:
-                                type = QueueType::HwSampleBranchMiss;
-                                break;
-                            default:
-                                assert( false );
-                                break;
-                            }
-
-                            TracyLfqPrepare( type );
-                            MemWrite( &item->hwSample.ip, ip );
-                            MemWrite( &item->hwSample.time, t0 );
-                            TracyLfqCommit;
-                        }
-                    }
+                    pos += hdr.size;
                 }
-                s_ring[i].Advance( hdr.size );
+                assert( pos == end );
+                s_ring[i].Advance( end );
             }
             if( !traceActive.load( std::memory_order_relaxed) ) break;
             if( !hadData )

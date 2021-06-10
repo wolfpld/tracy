@@ -5,6 +5,7 @@
 #include "TracyFastVector.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyStackFrames.hpp"
+#include "TracyDebug.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -24,8 +25,11 @@
 #  endif
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
 #  include "../libbacktrace/backtrace.hpp"
+#  include <algorithm>
 #  include <dlfcn.h>
 #  include <cxxabi.h>
+#  include <stdlib.h>
+#  include "TracyFastVector.hpp"
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>
@@ -468,9 +472,108 @@ int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
 
+#ifdef __linux
+struct KernelSymbol
+{
+    uint64_t addr;
+    const char* name;
+    const char* mod;
+};
+
+KernelSymbol* s_kernelSym = nullptr;
+size_t s_kernelSymCnt;
+
+static void InitKernelSymbols()
+{
+    FILE* f = fopen( "/proc/kallsyms", "rb" );
+    if( !f ) return;
+    tracy::FastVector<KernelSymbol> tmpSym( 1024 );
+    size_t linelen = 16 * 1024;     // linelen must be big enough to prevent reallocs in getline()
+    auto linebuf = (char*)tracy_malloc( linelen );
+    ssize_t sz;
+    while( ( sz = getline( &linebuf, &linelen, f ) ) != -1 )
+    {
+        auto ptr = linebuf;
+        uint64_t addr = 0;
+        while( *ptr != ' ' )
+        {
+            auto v = *ptr;
+            if( v >= '0' && v <= '9' )
+            {
+                v -= '0';
+            }
+            else if( v >= 'a' && v <= 'f' )
+            {
+                v -= 'a';
+                v += 10;
+            }
+            else if( v >= 'A' && v <= 'F' )
+            {
+                v -= 'A';
+                v += 10;
+            }
+            else
+            {
+                assert( false );
+            }
+            assert( ( v & ~0xF ) == 0 );
+            addr <<= 4;
+            addr |= v;
+            ptr++;
+        }
+        if( addr == 0 ) continue;
+        ptr++;
+        if( *ptr != 'T' && *ptr != 't' ) continue;
+        ptr += 2;
+        const auto namestart = ptr;
+        while( *ptr != '\t' && *ptr != '\n' ) ptr++;
+        const auto nameend = ptr;
+        const char* modstart = nullptr;
+        const char* modend;
+        if( *ptr == '\t' )
+        {
+            ptr += 2;
+            modstart = ptr;
+            while( *ptr != ']' ) ptr++;
+            modend = ptr;
+        }
+
+        auto strname = (char*)tracy_malloc_fast( nameend - namestart + 1 );
+        memcpy( strname, namestart, nameend - namestart );
+        strname[nameend-namestart] = '\0';
+
+        char* strmod = nullptr;
+        if( modstart )
+        {
+            strmod = (char*)tracy_malloc_fast( modend - modstart + 1 );
+            memcpy( strmod, modstart, modend - modstart );
+            strmod[modend-modstart] = '\0';
+        }
+
+        auto sym = tmpSym.push_next();
+        sym->addr = addr;
+        sym->name = strname;
+        sym->mod = strmod;
+    }
+    tracy_free_fast( linebuf );
+    fclose( f );
+    if( tmpSym.empty() ) return;
+
+    std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr < rhs.addr; } );
+    s_kernelSymCnt = tmpSym.size();
+    s_kernelSym = (KernelSymbol*)tracy_malloc_fast( sizeof( KernelSymbol ) * s_kernelSymCnt );
+    memcpy( s_kernelSym, tmpSym.data(), sizeof( KernelSymbol ) * s_kernelSymCnt );
+    TracyDebug( "Loaded %zu kernel symbols\n", s_kernelSymCnt );
+}
+#endif
+
 void InitCallstack()
 {
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
+
+#ifdef __linux
+    InitKernelSymbols();
+#endif
 }
 
 static int FastCallstackDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )

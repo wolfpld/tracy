@@ -13037,8 +13037,9 @@ void View::DrawStatistics()
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
 
+                        const bool isKernel = v.symAddr >> 63 != 0;
                         const char* parentName = nullptr;
-                        if( symlen == 0 )
+                        if( symlen == 0 && !isKernel )
                         {
                             const auto parentAddr = m_worker.GetSymbolForAddress( v.symAddr );
                             if( parentAddr != 0 )

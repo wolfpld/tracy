@@ -721,6 +721,22 @@ static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, uns
     TracyDebug( "  Probed precise_ip: %i\n", pe.precise_ip );
 }
 
+static void ProbePreciseIp( perf_event_attr& pe, pid_t pid )
+{
+    pe.precise_ip = 3;
+    while( pe.precise_ip != 0 )
+    {
+        const int fd = perf_event_open( &pe, pid, 0, -1, PERF_FLAG_FD_CLOEXEC );
+        if( fd != -1 )
+        {
+            close( fd );
+            break;
+        }
+        pe.precise_ip--;
+    }
+    TracyDebug( "  Probed precise_ip: %i\n", pe.precise_ip );
+}
+
 static bool IsGenuineIntel()
 {
 #if defined __i386 || defined __x86_64__
@@ -788,6 +804,8 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
 
+    TracyDebug( "Setup software sampling\n" );
+    ProbePreciseIp( pe, currentPid );
     for( int i=0; i<s_numCpus; i++ )
     {
         const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );

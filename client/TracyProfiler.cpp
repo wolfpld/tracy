@@ -3260,6 +3260,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     // but not readable.
     if( !EnsureReadable( symbol ) )
     {
+        AckServerQuery();
         return;
     }
 #endif

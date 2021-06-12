@@ -4237,7 +4237,19 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 const auto isInline = ghostKey.inlineFrame != frame->size-1;
                 const auto col = isInline ? DarkenColor( color ) : color;
                 auto symName = m_worker.GetString( sym.name );
-                uint32_t txtColor = symName[0] == '[' ? 0xFF999999 : 0xFFFFFFFF;
+                uint32_t txtColor;
+                if( symName[0] == '[' )
+                {
+                    txtColor = 0xFF999999;
+                }
+                else if( !isInline && ( m_worker.GetCanonicalPointer( ghostKey.frame ) >> 63 != 0 ) )
+                {
+                    txtColor = 0xFF8888FF;
+                }
+                else
+                {
+                    txtColor = 0xFFFFFFFF;
+                }
                 auto tsz = ImGui::CalcTextSize( symName );
 
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), col );

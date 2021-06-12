@@ -780,7 +780,6 @@ static void SetupSampling( int64_t& samplingPeriod )
 #if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
     pe.sample_max_stack = 127;
 #endif
-    pe.exclude_callchain_kernel = 1;
     pe.disabled = 1;
     pe.freq = 1;
     pe.inherit = 1;
@@ -999,31 +998,22 @@ static void SetupSampling( int64_t& samplingPeriod )
                                     }
 #endif
 
-                                    // skip kernel frames
-                                    uint64_t j;
-                                    for( j=0; j<cnt; j++ )
+                                    for( uint64_t j=1; j<=cnt; j++ )
                                     {
-                                        if( (int64_t)trace[j+1] >= 0 ) break;
-                                    }
-                                    if( j == cnt )
-                                    {
-                                        tracy_free_fast( trace );
-                                    }
-                                    else
-                                    {
-                                        if( j > 0 )
+                                        if( trace[j] >= (uint64_t)-4095 )       // PERF_CONTEXT_MAX
                                         {
-                                            cnt -= j;
-                                            memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                                            memmove( trace+j, trace+j+1, sizeof( uint64_t ) * ( cnt - j ) );
+                                            cnt--;
                                         }
-                                        memcpy( trace, &cnt, sizeof( uint64_t ) );
-
-                                        TracyLfqPrepare( QueueType::CallstackSample );
-                                        MemWrite( &item->callstackSampleFat.time, t0 );
-                                        MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
-                                        MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
-                                        TracyLfqCommit;
                                     }
+
+                                    memcpy( trace, &cnt, sizeof( uint64_t ) );
+
+                                    TracyLfqPrepare( QueueType::CallstackSample );
+                                    MemWrite( &item->callstackSampleFat.time, t0 );
+                                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
+                                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                                    TracyLfqCommit;
                                 }
                             }
                         }

@@ -3218,14 +3218,15 @@ static bool EnsureReadable( uintptr_t address )
 void Profiler::HandleSymbolQuery( uint64_t symbol )
 {
 #ifdef TRACY_HAS_CALLSTACK
-#ifdef __ANDROID__
+#  ifdef __ANDROID__
     // On Android it's common for code to be in mappings that are only executable
     // but not readable.
     if( !EnsureReadable( symbol ) )
     {
+        AckServerQuery();
         return;
     }
-#endif
+#  endif
     const auto sym = DecodeSymbolAddress( symbol );
 
     SendSingleString( sym.file );

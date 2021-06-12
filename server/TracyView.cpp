@@ -13559,6 +13559,10 @@ void View::DrawCallstackWindow()
                         {
                             TextDisabledUnformatted( txt );
                         }
+                        else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
+                        {
+                            TextColoredUnformatted( 0xFF8888FF, txt );
+                        }
                         else
                         {
                             ImGui::TextUnformatted( txt );
@@ -15678,6 +15682,10 @@ void View::DrawSampleParents()
                     {
                         TextDisabledUnformatted( txt );
                     }
+                    else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
+                    {
+                        TextColoredUnformatted( 0xFF8888FF, txt );
+                    }
                     else
                     {
                         ImGui::TextUnformatted( txt );
@@ -17444,6 +17452,10 @@ void View::CallstackTooltip( uint32_t idx )
                 if( txt[0] == '[' )
                 {
                     TextDisabledUnformatted( txt );
+                }
+                else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
+                {
+                    TextColoredUnformatted( 0xFF8888FF, txt );
                 }
                 else
                 {

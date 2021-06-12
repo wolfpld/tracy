@@ -13082,15 +13082,22 @@ void View::DrawStatistics()
                         }
                         if( v.symAddr == 0 || excl == 0 )
                         {
-                            ImGui::TextUnformatted( name );
+                            if( isKernel )
+                            {
+                                TextColoredUnformatted( 0xFF8888FF, name );
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( name );
+                            }
                         }
                         else
                         {
                             ImGui::PushID( idx++ );
-                            if( ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
-                            {
-                                ShowSampleParents( v.symAddr );
-                            }
+                            if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
+                            const auto clicked = ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                            if( isKernel ) ImGui::PopStyleColor();
+                            if( clicked ) ShowSampleParents( v.symAddr );
                             ImGui::PopID();
                         }
                         if( parentName )

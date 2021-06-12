@@ -3218,6 +3218,17 @@ static bool EnsureReadable( uintptr_t address )
 void Profiler::HandleSymbolQuery( uint64_t symbol )
 {
 #ifdef TRACY_HAS_CALLSTACK
+    // Special handling for kernel frames
+    if( symbol >> 63 != 0 )
+    {
+        SendSingleString( "<kernel>" );
+        QueueItem item;
+        MemWrite( &item.hdr.type, QueueType::SymbolInformation );
+        MemWrite( &item.symbolInformation.line, 0 );
+        MemWrite( &item.symbolInformation.symAddr, symbol );
+        AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
+        return;
+    }
 #  ifdef __ANDROID__
     // On Android it's common for code to be in mappings that are only executable
     // but not readable.

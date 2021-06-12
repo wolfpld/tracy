@@ -559,7 +559,7 @@ static void InitKernelSymbols()
     fclose( f );
     if( tmpSym.empty() ) return;
 
-    std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr < rhs.addr; } );
+    std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr > rhs.addr; } );
     s_kernelSymCnt = tmpSym.size();
     s_kernelSym = (KernelSymbol*)tracy_malloc_fast( sizeof( KernelSymbol ) * s_kernelSymCnt );
     memcpy( s_kernelSym, tmpSym.data(), sizeof( KernelSymbol ) * s_kernelSymCnt );
@@ -802,18 +802,40 @@ void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     InitRpmalloc();
+    if( ptr >> 63 == 0 )
+    {
+        cb_num = 0;
+        backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
+        assert( cb_num > 0 );
 
-    cb_num = 0;
-    backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
-    assert( cb_num > 0 );
+        backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
 
-    backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
+        const char* symloc = nullptr;
+        Dl_info dlinfo;
+        if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
 
-    const char* symloc = nullptr;
-    Dl_info dlinfo;
-    if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
+        return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };
+    }
+    else if( s_kernelSym )
+    {
+        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
+        if( it != s_kernelSym + s_kernelSymCnt )
+        {
+            cb_data[0].name = CopyStringFast( it->name );
+            cb_data[0].file = CopyStringFast( "<kernel>" );
+            cb_data[0].line = 0;
+            cb_data[0].symLen = 0;
+            cb_data[0].symAddr = it->addr;
+            return { cb_data, 1, it->mod ? it->mod : "<kernel>" };
+        }
+    }
 
-    return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };
+    cb_data[0].name = CopyStringFast( "[unknown]" );
+    cb_data[0].file = CopyStringFast( "<kernel>" );
+    cb_data[0].line = 0;
+    cb_data[0].symLen = 0;
+    cb_data[0].symAddr = 0;
+    return { cb_data, 1, "<kernel>" };
 }
 
 #elif TRACY_HAS_CALLSTACK == 5

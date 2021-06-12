@@ -933,8 +933,9 @@ static void SetupSampling( int64_t& samplingPeriod )
             for( int i=0; i<s_numBuffers; i++ )
             {
                 if( !traceActive.load( std::memory_order_relaxed ) ) break;
-                const auto head = s_ring[i].LoadHead();
-                const auto tail = s_ring[i].GetTail();
+                auto& ring = s_ring[i];
+                const auto head = ring.LoadHead();
+                const auto tail = ring.GetTail();
                 if( head == tail ) continue;
                 assert( head > tail );
                 hadData = true;
@@ -944,11 +945,11 @@ static void SetupSampling( int64_t& samplingPeriod )
                 while( pos < end )
                 {
                     perf_event_header hdr;
-                    s_ring[i].Read( &hdr, pos, sizeof( perf_event_header ) );
+                    ring.Read( &hdr, pos, sizeof( perf_event_header ) );
                     if( hdr.type == PERF_RECORD_SAMPLE )
                     {
                         auto offset = pos + sizeof( perf_event_header );
-                        const auto id = s_ring[i].GetId();
+                        const auto id = ring.GetId();
                         if( id == EventCallstack )
                         {
                             // Layout:
@@ -962,22 +963,22 @@ static void SetupSampling( int64_t& samplingPeriod )
                             uint64_t cnt;
 
                             offset += sizeof( uint32_t );
-                            s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
+                            ring.Read( &tid, offset, sizeof( uint32_t ) );
                             offset += sizeof( uint32_t );
-                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+                            ring.Read( &t0, offset, sizeof( uint64_t ) );
                             offset += sizeof( uint64_t );
-                            s_ring[i].Read( &cnt, offset, sizeof( uint64_t ) );
+                            ring.Read( &cnt, offset, sizeof( uint64_t ) );
                             offset += sizeof( uint64_t );
 
                             if( cnt > 0 )
                             {
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-                                t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                                t0 = ring.ConvertTimeToTsc( t0 );
                                 if( t0 != 0 )
 #endif
                                 {
                                     auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
-                                    s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+                                    ring.Read( trace+1, offset, sizeof( uint64_t ) * cnt );
 
 #if defined __x86_64__ || defined _M_X64
                                     // remove non-canonical pointers
@@ -1033,12 +1034,12 @@ static void SetupSampling( int64_t& samplingPeriod )
                             //   u64 time
 
                             uint64_t ip, t0;
-                            s_ring[i].Read( &ip, offset, sizeof( uint64_t ) );
+                            ring.Read( &ip, offset, sizeof( uint64_t ) );
                             offset += sizeof( uint64_t );
-                            s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+                            ring.Read( &t0, offset, sizeof( uint64_t ) );
 
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-                            t0 = s_ring[i].ConvertTimeToTsc( t0 );
+                            t0 = ring.ConvertTimeToTsc( t0 );
                             if( t0 != 0 )
 #endif
                             {
@@ -1078,7 +1079,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                     pos += hdr.size;
                 }
                 assert( pos == end );
-                s_ring[i].Advance( end );
+                ring.Advance( end );
             }
             if( !traceActive.load( std::memory_order_relaxed) ) break;
             if( !hadData )

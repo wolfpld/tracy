@@ -9454,10 +9454,12 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
     ImGui::TableNextColumn();
+    auto tend = text;
+    while( *tend != '\0' && *tend != '\n' ) tend++;
     ImGui::PushStyleColor( ImGuiCol_Text, msg.color );
     const auto cw = ImGui::GetContentRegionAvail().x;
-    const auto tw = ImGui::CalcTextSize( text ).x;
-    ImGui::TextUnformatted( text );
+    const auto tw = ImGui::CalcTextSize( text, tend ).x;
+    ImGui::TextUnformatted( text, tend );
     if( tw > cw && ImGui::IsItemHovered() )
     {
         ImGui::SetNextWindowSize( ImVec2( 1000, 0 ) );

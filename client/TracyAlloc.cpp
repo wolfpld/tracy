@@ -3,15 +3,17 @@
 #include <atomic>
 
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyForceInline.hpp"
 #include "../common/TracyYield.hpp"
 
 namespace tracy
 {
 
+extern thread_local bool RpThreadInitDone;
 extern std::atomic<int> RpInitDone;
 extern std::atomic<int> RpInitLock;
 
-TRACY_API void InitRpmallocPlumbing()
+tracy_no_inline static void InitRpmallocPlumbing()
 {
     const auto done = RpInitDone.load( std::memory_order_acquire );
     if( !done )
@@ -28,6 +30,11 @@ TRACY_API void InitRpmallocPlumbing()
     }
     rpmalloc_thread_initialize();
     RpThreadInitDone = true;
+}
+
+TRACY_API void InitRpmalloc()
+{
+    if( !RpThreadInitDone ) InitRpmallocPlumbing();
 }
 
 }

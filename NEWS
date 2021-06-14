@@ -12,6 +12,7 @@ v0.x.x (xxxx-xx-xx)
 - Improved function matching algorithm in compare traces view.
 - Added minimal CMake integration layer.
 - Reworked rpmalloc initialization.
+- Fixed display of messages with newlines on messages list.
 - Excluded some uninteresting wrapper functions from call stacks (for
   example SIMD pass-through intrinsics to the compiler built-ins).
 - Adjusted coloring of instruction hotness in symbol view.

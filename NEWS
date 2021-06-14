@@ -12,6 +12,7 @@ v0.x.x (xxxx-xx-xx)
 - Improved function matching algorithm in compare traces view.
 - Added minimal CMake integration layer.
 - Reworked rpmalloc initialization.
+- Fixed display of messages with newlines on messages list.
 
 
 v0.7.8 (2021-05-19)

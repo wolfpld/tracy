@@ -2836,13 +2836,13 @@ void Worker::Exec()
         m_resolution = TscTime( welcome.resolution );
         m_pid = welcome.pid;
         m_samplingPeriod = welcome.samplingPeriod;
-        m_onDemand = welcome.onDemand;
+        m_onDemand = welcome.flags & WelcomeFlag::OnDemand;
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;
         m_executableTime = welcome.exectime;
-        m_ignoreMemFreeFaults = welcome.onDemand || welcome.isApple;
+        m_ignoreMemFreeFaults = ( welcome.flags & WelcomeFlag::OnDemand ) || ( welcome.flags & WelcomeFlag::IsApple );
         m_data.cpuArch = (CpuArchitecture)welcome.cpuArch;
-        m_codeTransfer = welcome.codeTransfer;
+        m_codeTransfer = welcome.flags & WelcomeFlag::CodeTransfer;
         m_data.cpuId = welcome.cpuId;
         memcpy( m_data.cpuManufacturer, welcome.cpuManufacturer, 12 );
         m_data.cpuManufacturer[12] = '\0';
@@ -2857,7 +2857,7 @@ void Worker::Exec()
 
         m_hostInfo = welcome.hostInfo;
 
-        if( welcome.onDemand != 0 )
+        if( m_onDemand )
         {
             OnDemandPayloadMessage onDemand;
             if( !m_sock.Read( &onDemand, sizeof( onDemand ), 10, ShouldExit ) )

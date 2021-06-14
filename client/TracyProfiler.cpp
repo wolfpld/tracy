@@ -1344,16 +1344,16 @@ void Profiler::Worker()
 
     const uint64_t pid = GetPid();
 
-#ifdef TRACY_ON_DEMAND
-    uint8_t onDemand = 1;
-#else
-    uint8_t onDemand = 0;
-#endif
+    uint8_t flags = 0;
 
+#ifdef TRACY_ON_DEMAND
+    flags |= WelcomeFlag::OnDemand;
+#endif
 #ifdef __APPLE__
-    uint8_t isApple = 1;
-#else
-    uint8_t isApple = 0;
+    flags |= WelcomeFlag::IsApple;
+#endif
+#ifndef TRACY_NO_CODE_TRANSFER
+    flags |= WelcomeFlag::CodeTransfer;
 #endif
 
 #if defined __i386 || defined _M_IX86
@@ -1366,12 +1366,6 @@ void Profiler::Worker()
     uint8_t cpuArch = CpuArchArm32;
 #else
     uint8_t cpuArch = CpuArchUnknown;
-#endif
-
-#ifdef TRACY_NO_CODE_TRANSFER
-    uint8_t codeTransfer = 0;
-#else
-    uint8_t codeTransfer = 1;
 #endif
 
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
@@ -1399,10 +1393,8 @@ void Profiler::Worker()
     MemWrite( &welcome.exectime, m_exectime );
     MemWrite( &welcome.pid, pid );
     MemWrite( &welcome.samplingPeriod, m_samplingPeriod );
-    MemWrite( &welcome.onDemand, onDemand );
-    MemWrite( &welcome.isApple, isApple );
+    MemWrite( &welcome.flags, flags );
     MemWrite( &welcome.cpuArch, cpuArch );
-    MemWrite( &welcome.codeTransfer, codeTransfer );
     memcpy( welcome.cpuManufacturer, manufacturer, 12 );
     MemWrite( &welcome.cpuId, cpuId );
     memcpy( welcome.programName, procname, pnsz );

@@ -84,6 +84,7 @@ struct WelcomeFlag
         OnDemand        = 1 << 0,
         IsApple         = 1 << 1,
         CodeTransfer    = 1 << 2,
+        CombineSamples  = 1 << 3,
     };
 };
 

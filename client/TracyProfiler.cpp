@@ -1355,6 +1355,9 @@ void Profiler::Worker()
 #ifndef TRACY_NO_CODE_TRANSFER
     flags |= WelcomeFlag::CodeTransfer;
 #endif
+#ifdef _WIN32
+    flags |= WelcomeFlag::CombineSamples;
+#endif
 
 #if defined __i386 || defined _M_IX86
     uint8_t cpuArch = CpuArchX86;

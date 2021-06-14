@@ -5861,32 +5861,24 @@ void Worker::ProcessCallstack()
     m_pendingCallstackId = 0;
 }
 
-void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
+void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, int64_t t, uint32_t callstack )
 {
-    assert( m_pendingCallstackId != 0 );
+    assert( sd.time.Val() == t );
+    assert( sd.callstack.Val() == callstack );
     m_data.samplesCnt++;
 
-    const auto refTime = m_refTimeCtx + ev.time;
-    m_refTimeCtx = refTime;
-    const auto t = TscTime( refTime - m_data.baseTime );
-
-    SampleData sd;
-    sd.time.SetVal( t );
-    sd.callstack.SetVal( m_pendingCallstackId );
-
-    auto td = NoticeThread( ev.thread );
-    if( td->samples.empty() )
+    if( td.samples.empty() )
     {
-        td->samples.push_back( sd );
+        td.samples.push_back( sd );
     }
     else
     {
         assert( td->samples.back().time.Val() < t );
-        td->samples.push_back_non_empty( sd );
+        td.samples.push_back_non_empty( sd );
     }
 
 #ifndef TRACY_NO_STATISTICS
-    const auto& cs = GetCallstack( m_pendingCallstackId );
+    const auto& cs = GetCallstack( callstack );
     {
         const auto& ip = cs[0];
         auto frame = GetCallstackFrame( ip );
@@ -5964,19 +5956,36 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
         }
     }
 
-    const auto framesKnown = UpdateSampleStatistics( m_pendingCallstackId, 1, true );
-    assert( td->samples.size() > td->ghostIdx );
-    if( framesKnown && td->ghostIdx + 1 == td->samples.size() )
+    const auto framesKnown = UpdateSampleStatistics( callstack, 1, true );
+    assert( td.samples.size() > td.ghostIdx );
+    if( framesKnown && td.ghostIdx + 1 == td.samples.size() )
     {
-        td->ghostIdx++;
-        m_data.ghostCnt += AddGhostZone( cs, &td->ghostZones, t );
+        td.ghostIdx++;
+        m_data.ghostCnt += AddGhostZone( cs, &td.ghostZones, t );
     }
     else
     {
         m_data.ghostZonesPostponed = true;
     }
 #endif
+}
+
+void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
+{
+    assert( m_pendingCallstackId != 0 );
+    const auto callstack = m_pendingCallstackId;
     m_pendingCallstackId = 0;
+
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto t = TscTime( refTime - m_data.baseTime );
+
+    SampleData sd;
+    sd.time.SetVal( t );
+    sd.callstack.SetVal( callstack );
+
+    auto td = NoticeThread( ev.thread );
+    ProcessCallstackSampleImpl( sd, *td, t, callstack );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

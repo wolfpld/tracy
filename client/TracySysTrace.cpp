@@ -203,7 +203,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         if( hdr.EventDescriptor.Opcode == 32 )
         {
             const auto sw = (const StackWalkEvent*)record->UserData;
-            if( sw->stackProcess == s_pid && ( sw->stack[0] & 0x8000000000000000 ) == 0 )
+            if( sw->stackProcess == s_pid )
             {
                 const uint64_t sz = ( record->UserDataLength - 16 ) / 8;
                 if( sz > 0 )

@@ -884,6 +884,7 @@ private:
     bool m_onDemand;
     bool m_ignoreMemFreeFaults;
     bool m_codeTransfer;
+    bool m_combineSamples;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint32_t m_pendingCallstackId = 0;

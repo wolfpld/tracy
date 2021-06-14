@@ -2843,6 +2843,7 @@ void Worker::Exec()
         m_ignoreMemFreeFaults = ( welcome.flags & WelcomeFlag::OnDemand ) || ( welcome.flags & WelcomeFlag::IsApple );
         m_data.cpuArch = (CpuArchitecture)welcome.cpuArch;
         m_codeTransfer = welcome.flags & WelcomeFlag::CodeTransfer;
+        m_combineSamples = welcome.flags & WelcomeFlag::CombineSamples;
         m_data.cpuId = welcome.cpuId;
         memcpy( m_data.cpuManufacturer, welcome.cpuManufacturer, 12 );
         m_data.cpuManufacturer[12] = '\0';

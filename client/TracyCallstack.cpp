@@ -157,6 +157,10 @@ void InitCallstack()
     LPVOID dev[4096];
     if( EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
     {
+        char windir[MAX_PATH];
+        if( !GetWindowsDirectoryA( windir, sizeof( windir ) ) ) memcpy( windir, "c:\\windows", 11 );
+        const auto windirlen = strlen( windir );
+
         const auto sz = needed / sizeof( LPVOID );
         s_krnlCache = (KernelDriver*)tracy_malloc( sizeof(KernelDriver) * sz );
         int cnt = 0;
@@ -171,6 +175,22 @@ void InitCallstack()
                 memcpy( buf+1, fn, len );
                 memcpy( buf+len+1, ">", 2 );
                 s_krnlCache[cnt++] = KernelDriver { (uint64_t)dev[i], buf };
+
+                const auto len = GetDeviceDriverFileNameA( dev[i], fn, sizeof( fn ) );
+                if( len != 0 )
+                {
+                    char full[MAX_PATH];
+                    char* path = fn;
+
+                    if( memcmp( fn, "\\SystemRoot\\", 12 ) == 0 )
+                    {
+                        memcpy( full, windir, windirlen );
+                        strcpy( full + windirlen, fn + 11 );
+                        path = full;
+                    }
+
+                    SymLoadModuleEx( GetCurrentProcess(), nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0 );
+                }
             }
         }
         s_krnlCacheCnt = cnt;

@@ -3501,6 +3501,7 @@ ThreadData* Worker::NewThread( uint64_t thread )
 #ifndef TRACY_NO_STATISTICS
     td->ghostIdx = 0;
 #endif
+    td->pendingSample.time.Clear();
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     m_data.threadDataLast.first = thread;
@@ -5980,12 +5981,67 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     m_refTimeCtx = refTime;
     const auto t = TscTime( refTime - m_data.baseTime );
 
+    auto& td = *NoticeThread( ev.thread );
+
     SampleData sd;
     sd.time.SetVal( t );
     sd.callstack.SetVal( callstack );
 
-    auto td = NoticeThread( ev.thread );
-    ProcessCallstackSampleImpl( sd, *td, t, callstack );
+    if( m_combineSamples )
+    {
+        const auto pendingTime = td.pendingSample.time.Val();
+        if( pendingTime == 0 )
+        {
+            td.pendingSample = sd;
+        }
+        else
+        {
+            if( pendingTime == t )
+            {
+                const auto& cs1 = GetCallstack( td.pendingSample.callstack.Val() );
+                const auto& cs2 = GetCallstack( callstack );
+
+                const auto sz1 = cs1.size();
+                const auto sz2 = cs2.size();
+                const auto tsz = sz1 + sz2;
+
+                size_t memsize = sizeof( VarArray<CallstackFrameId> ) + tsz * sizeof( CallstackFrameId );
+                auto mem = (char*)m_slab.AllocRaw( memsize );
+                memcpy( mem, cs1.data(), sizeof( CallstackFrameId ) * sz1 );
+                memcpy( mem + sizeof( CallstackFrameId ) * sz1, cs2.data(), sizeof( CallstackFrameId ) * sz2 );
+
+                VarArray<CallstackFrameId>* arr = (VarArray<CallstackFrameId>*)( mem + tsz * sizeof( CallstackFrameId ) );
+                new(arr) VarArray<CallstackFrameId>( tsz, (CallstackFrameId*)mem );
+
+                uint32_t idx;
+                auto it = m_data.callstackMap.find( arr );
+                if( it == m_data.callstackMap.end() )
+                {
+                    idx = m_data.callstackPayload.size();
+                    m_data.callstackMap.emplace( arr, idx );
+                    m_data.callstackPayload.push_back( arr );
+                }
+                else
+                {
+                    idx = it->second;
+                    m_slab.Unalloc( memsize );
+                }
+
+                sd.callstack.SetVal( idx );
+                ProcessCallstackSampleImpl( sd, td, pendingTime, idx );
+                td.pendingSample.time.Clear();
+            }
+            else
+            {
+                ProcessCallstackSampleImpl( td.pendingSample, td, pendingTime, td.pendingSample.callstack.Val() );
+                td.pendingSample = sd;
+            }
+        }
+    }
+    else
+    {
+        ProcessCallstackSampleImpl( sd, td, t, callstack );
+    }
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

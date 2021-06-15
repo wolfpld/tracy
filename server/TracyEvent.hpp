@@ -602,6 +602,7 @@ struct ThreadData
     uint64_t ghostIdx;
 #endif
     Vector<SampleData> samples;
+    SampleData pendingSample;
 };
 
 struct GpuCtxThreadData

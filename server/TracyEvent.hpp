@@ -133,6 +133,11 @@ public:
         SetVal( val );
     }
 
+    tracy_force_inline void Clear()
+    {
+        memset( m_val, 0, 6 );
+    }
+
     tracy_force_inline void SetVal( int64_t val )
     {
         memcpy( m_val, &val, 4 );

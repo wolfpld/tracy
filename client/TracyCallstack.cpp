@@ -223,7 +223,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 static const char* GetModuleName( uint64_t addr )
 {
-    if( ( addr & 0x8000000000000000 ) != 0 ) return "[kernel]";
+    if( ( addr >> 63 ) != 0 ) return "<kernel>";
 
 #ifndef __CYGWIN__
     for( auto& v : *s_modCache )

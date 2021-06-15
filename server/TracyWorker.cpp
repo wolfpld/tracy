@@ -5874,7 +5874,7 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
     }
     else
     {
-        assert( td->samples.back().time.Val() < t );
+        assert( td.samples.back().time.Val() < t );
         td.samples.push_back_non_empty( sd );
     }
 

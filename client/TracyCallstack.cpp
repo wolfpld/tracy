@@ -256,7 +256,18 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 static const char* GetModuleName( uint64_t addr )
 {
-    if( ( addr >> 63 ) != 0 ) return "<kernel>";
+    if( ( addr >> 63 ) != 0 )
+    {
+        if( s_krnlCache )
+        {
+            auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
+            if( it != s_krnlCache + s_krnlCacheCnt )
+            {
+                return it->mod;
+            }
+        }
+        return "<kernel>";
+    }
 
 #ifndef __CYGWIN__
     for( auto& v : *s_modCache )

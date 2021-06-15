@@ -398,6 +398,7 @@ private:
     bool m_showUnknownFrames = true;
     bool m_statSeparateInlines = false;
     bool m_statShowAddress = false;
+    bool m_statShowKernel = true;
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;
     bool m_ctxSwitchTimeRelativeToZone = true;

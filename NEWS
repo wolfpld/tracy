@@ -6,6 +6,7 @@ here.
 v0.x.x (xxxx-xx-xx)
 -------------------
 
+- Cygwin and Mingw are deprecated due to lack of interest.
 - Added TRACY_NO_CALLSTACK_INLINES macro to disable inline functions
   resolution in call stacks on Windows.
 - Limited client query response rate.

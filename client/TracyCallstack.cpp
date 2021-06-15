@@ -15,6 +15,7 @@
 #  endif
 #  include <windows.h>
 #  include <psapi.h>
+#  include <algorithm>
 #  ifdef _MSC_VER
 #    pragma warning( push )
 #    pragma warning( disable : 4091 )
@@ -127,6 +128,16 @@ struct ModuleCache
 };
 
 static FastVector<ModuleCache>* s_modCache;
+
+
+struct KernelDriver
+{
+    uint64_t addr;
+    const char* mod;
+};
+
+KernelDriver* s_krnlCache = nullptr;
+size_t s_krnlCacheCnt;
 #endif
 
 void InitCallstack()
@@ -142,13 +153,35 @@ void InitCallstack()
     SymSetOptions( SYMOPT_LOAD_LINES );
 
 #ifndef __CYGWIN__
-    HMODULE mod[1024];
     DWORD needed;
-    HANDLE proc = GetCurrentProcess();
+    LPVOID dev[4096];
+    if( EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
+    {
+        const auto sz = needed / sizeof( LPVOID );
+        s_krnlCache = (KernelDriver*)tracy_malloc( sizeof(KernelDriver) * sz );
+        int cnt = 0;
+        for( size_t i=0; i<sz; i++ )
+        {
+            char fn[MAX_PATH];
+            const auto len = GetDeviceDriverBaseNameA( dev[i], fn, sizeof( fn ) );
+            if( len != 0 )
+            {
+                auto buf = (char*)tracy_malloc_fast( len+3 );
+                buf[0] = '<';
+                memcpy( buf+1, fn, len );
+                memcpy( buf+len+1, ">", 2 );
+                s_krnlCache[cnt++] = KernelDriver { (uint64_t)dev[i], buf };
+            }
+        }
+        s_krnlCacheCnt = cnt;
+        std::sort( s_krnlCache, s_krnlCache + s_krnlCacheCnt, []( const KernelDriver& lhs, const KernelDriver& rhs ) { return lhs.addr > rhs.addr; } );
+    }
 
     s_modCache = (FastVector<ModuleCache>*)tracy_malloc( sizeof( FastVector<ModuleCache> ) );
     new(s_modCache) FastVector<ModuleCache>( 512 );
 
+    HANDLE proc = GetCurrentProcess();
+    HMODULE mod[1024];
     if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );

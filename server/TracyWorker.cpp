@@ -6201,7 +6201,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     sd.size.SetVal( it->second.size );
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
 
-    if( m_codeTransfer && it->second.size > 0 && it->second.size <= 128*1024 )
+    if( m_codeTransfer && it->second.size > 0 && it->second.size <= 128*1024 && ( ev.symAddr >> 63 ) == 0 )
     {
         assert( m_pendingSymbolCode.find( ev.symAddr ) == m_pendingSymbolCode.end() );
         m_pendingSymbolCode.emplace( ev.symAddr );

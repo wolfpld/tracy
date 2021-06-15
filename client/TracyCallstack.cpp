@@ -278,6 +278,7 @@ static const char* GetModuleName( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {
+#ifndef __CYGWIN__
         if( s_krnlCache )
         {
             auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
@@ -286,6 +287,7 @@ static const char* GetModuleName( uint64_t addr )
                 return it->mod;
             }
         }
+#endif
         return "<kernel>";
     }
 

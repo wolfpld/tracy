@@ -3526,6 +3526,12 @@ void View::DrawZones()
                     if( !v->samples.empty() )
                     {
                         TextFocused( "Call stack samples:", RealToString( v->samples.size() ) );
+                        if( v->kernelSampleCnt != 0 )
+                        {
+                            TextFocused( "Kernel samples:", RealToString( v->kernelSampleCnt ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.2f%%)", 100.f * v->kernelSampleCnt / v->samples.size() );
+                        }
                     }
                     ImGui::EndTooltip();
 

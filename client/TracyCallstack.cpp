@@ -78,21 +78,17 @@ CallstackEntry cb_data[MaxCbTrace];
 extern "C"
 {
     typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
-    t_RtlWalkFrameChain RtlWalkFrameChain = 0;
-}
+    typedef DWORD (__stdcall *t_SymAddrIncludeInlineTrace)( HANDLE hProcess, DWORD64 Address );
+    typedef BOOL (__stdcall *t_SymQueryInlineTrace)( HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress, DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex );
+    typedef BOOL (__stdcall *t_SymFromInlineContext)( HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement, PSYMBOL_INFO Symbol );
+    typedef BOOL (__stdcall *t_SymGetLineFromInlineContext)( HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext, DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64 );
 
-#if defined __MINGW32__ && API_VERSION_NUMBER < 12
-extern "C" {
-// Actual required API_VERSION_NUMBER is unknown because it is undocumented. These functions are not present in at least v11.
-DWORD IMAGEAPI SymAddrIncludeInlineTrace(HANDLE hProcess, DWORD64 Address);
-BOOL IMAGEAPI SymQueryInlineTrace(HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress,
-    DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex);
-BOOL IMAGEAPI SymFromInlineContext(HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement,
-    PSYMBOL_INFO Symbol);
-BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext,
-    DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64);
-};
-#endif
+    t_RtlWalkFrameChain RtlWalkFrameChain = 0;
+    t_SymAddrIncludeInlineTrace _SymAddrIncludeInlineTrace = 0;
+    t_SymQueryInlineTrace _SymQueryInlineTrace = 0;
+    t_SymFromInlineContext _SymFromInlineContext = 0;
+    t_SymGetLineFromInlineContext _SymGetLineFromInlineContext = 0;
+}
 
 #ifndef __CYGWIN__
 struct ModuleCache
@@ -108,6 +104,10 @@ static FastVector<ModuleCache>* s_modCache;
 void InitCallstack()
 {
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
+    _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymAddrIncludeInlineTrace" );
+    _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymQueryInlineTrace" );
+    _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymFromInlineContext" );
+    _SymGetLineFromInlineContext = (t_SymGetLineFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymGetLineFromInlineContext" );
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_INIT;
@@ -292,19 +292,22 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-#if !defined __CYGWIN__ && !defined TRACY_NO_CALLSTACK_INLINES
-    DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
-    DWORD ctx = 0;
-    DWORD idx;
-    BOOL doInline = FALSE;
-    if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
-    if( doInline )
+#if !defined TRACY_NO_CALLSTACK_INLINES
+    if( _SymAddrIncludeInlineTrace )
     {
-        if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) != 0 )
+        DWORD inlineNum = _SymAddrIncludeInlineTrace( proc, ptr );
+        DWORD ctx = 0;
+        DWORD idx;
+        BOOL doInline = FALSE;
+        if( inlineNum != 0 ) doInline = _SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
+        if( doInline )
         {
-            sym.file = line.FileName;
-            sym.line = line.LineNumber;
-            done = true;
+            if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) != 0 )
+            {
+                sym.file = line.FileName;
+                sym.line = line.LineNumber;
+                done = true;
+            }
         }
     }
 #endif
@@ -335,13 +338,17 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-#if !defined __CYGWIN__ && !defined TRACY_NO_CALLSTACK_INLINES
-    DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
-    if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
-    DWORD ctx = 0;
-    DWORD idx;
+#if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
-    if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
+    DWORD ctx = 0;
+    DWORD inlineNum;
+    if( _SymAddrIncludeInlineTrace )
+    {
+        inlineNum = _SymAddrIncludeInlineTrace( proc, ptr );
+        if( inlineNum > MaxCbTrace - 1 ) inlineNum = MaxCbTrace - 1;
+        DWORD idx;
+        if( inlineNum != 0 ) doInline = _SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
+    }
     if( doInline )
     {
         write = inlineNum;
@@ -393,15 +400,15 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         }
     }
 
-#if !defined __CYGWIN__ && !defined TRACY_NO_CALLSTACK_INLINES
+#if !defined TRACY_NO_CALLSTACK_INLINES
     if( doInline )
     {
         for( DWORD i=0; i<inlineNum; i++ )
         {
             auto& cb = cb_data[i];
-            const auto symInlineValid = SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
+            const auto symInlineValid = _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
             const char* filename;
-            if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
+            if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
             {
                 filename = "[unknown]";
                 cb.line = 0;

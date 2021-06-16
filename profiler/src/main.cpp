@@ -297,6 +297,13 @@ int main( int argc, char** argv )
 #  endif
 #endif
 
+    const auto envDpiScale = getenv( "TRACY_DPI_SCALE" );
+    if( envDpiScale )
+    {
+        const auto cnv = atof( envDpiScale );
+        if( cnv != 0 ) dpiScale = cnv;
+    }
+
     // Setup ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();

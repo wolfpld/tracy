@@ -603,6 +603,7 @@ struct ThreadData
 #endif
     Vector<SampleData> samples;
     SampleData pendingSample;
+    uint64_t kernelSampleCnt;
 };
 
 struct GpuCtxThreadData

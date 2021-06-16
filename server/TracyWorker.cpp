@@ -920,7 +920,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         auto td = m_slab.AllocInit<ThreadData>();
         uint64_t tid;
-        f.Read2( tid, td->count );
+        if( fileVer >= FileVersion( 0, 7, 9 ) )
+        {
+            f.Read3( tid, td->count, td->kernelSampleCnt );
+        }
+        else
+        {
+            f.Read2( tid, td->count );
+            td->kernelSampleCnt = 0;
+        }
         td->id = tid;
         m_data.zonesCnt += td->count;
         if( fileVer < FileVersion( 0, 6, 3 ) )
@@ -3501,6 +3509,7 @@ ThreadData* Worker::NewThread( uint64_t thread )
 #ifndef TRACY_NO_STATISTICS
     td->ghostIdx = 0;
 #endif
+    td->kernelSampleCnt = 0;
     td->pendingSample.time.Clear();
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
@@ -5868,6 +5877,10 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
     assert( sd.callstack.Val() == callstack );
     m_data.samplesCnt++;
 
+    const auto& cs = GetCallstack( callstack );
+    const auto& ip = cs[0];
+    if( GetCanonicalPointer( ip ) >> 63 != 0 ) td.kernelSampleCnt++;
+
     if( td.samples.empty() )
     {
         td.samples.push_back( sd );
@@ -5879,9 +5892,7 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
     }
 
 #ifndef TRACY_NO_STATISTICS
-    const auto& cs = GetCallstack( callstack );
     {
-        const auto& ip = cs[0];
         auto frame = GetCallstackFrame( ip );
         if( frame )
         {
@@ -7379,6 +7390,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         int64_t refTime = 0;
         f.Write( &thread->id, sizeof( thread->id ) );
         f.Write( &thread->count, sizeof( thread->count ) );
+        f.Write( &thread->kernelSampleCnt, sizeof( thread->kernelSampleCnt ) );
         WriteTimeline( f, thread->timeline, refTime );
         sz = thread->messages.size();
         f.Write( &sz, sizeof( sz ) );

@@ -742,6 +742,10 @@ The following defines may be of interest:
 \item \texttt{TRACY\_NO\_ROOT\_WINDOW} -- the main profiler view won't occupy whole window if this macro is defined. Additional setup is required for this to work. If you are embedding the server into your application you probably want to enable this option.
 \end{itemize}
 
+\subsubsection{DPI scaling}
+
+The graphic server application will adapt to the system DPI scaling. If for some reason this doesn't work in your case, you may try setting the \texttt{TRACY\_DPI\_SCALE} environment variable to a scale fraction, where a value of 1 indicates no scaling.
+
 \subsection{Naming threads}
 \label{namingthreads}
 

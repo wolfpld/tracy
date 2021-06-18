@@ -4298,6 +4298,11 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { ev.start.Val(), ev.end.Val(), true };
                     ImGui::BeginTooltip();
                     TextDisabledUnformatted( ICON_FA_GHOST " Ghost zone" );
+                    if( sym.symAddr >> 63 != 0 )
+                    {
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( ICON_FA_HAT_WIZARD " kernel" );
+                    }
                     ImGui::Separator();
                     ImGui::TextUnformatted( origSymName );
                     if( isInline )

@@ -1739,6 +1739,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     if( fileVer >= FileVersion( 0, 7, 9 ) )
     {
         f.Read( sz );
+        m_data.codeSymbolMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t v1, v2;
+            f.Read2( v1, v2 );
+            m_data.codeSymbolMap.emplace( v1, v2 );
+        }
+
+        f.Read( sz );
         m_data.hwSamples.reserve( sz );
         for( uint64_t i=0; i<sz; i++ )
         {
@@ -7710,6 +7719,14 @@ void Worker::Write( FileWrite& f, bool fiDict )
             ref += diff;
             f.Write( &diff, sizeof( diff ) );
         }
+    }
+
+    sz = m_data.codeSymbolMap.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.codeSymbolMap )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
     }
 
     sz = m_data.hwSamples.size();

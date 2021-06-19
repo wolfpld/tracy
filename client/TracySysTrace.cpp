@@ -831,6 +831,11 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.exclude_hv = 1;
     pe.freq = 1;
     pe.inherit = 1;
+#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+    pe.use_clockid = 1;
+    pe.clockid = CLOCK_MONOTONIC_RAW;
+#endif
+
     if( !noRetirement )
     {
         TracyDebug( "Setup sampling cycles + retirement\n" );

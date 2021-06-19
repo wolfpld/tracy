@@ -1239,7 +1239,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             }
             ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-            ImGui::Combo( "##cost", &m_cost, items, sizeof( items ) / sizeof( *items ) );
+            ImGui::Combo( "##cost", &m_cost, items, sizeof( items ) / sizeof( *items ), 100 );
             ImGui::PopStyleVar();
             ImGui::SameLine();
             ImGui::Spacing();

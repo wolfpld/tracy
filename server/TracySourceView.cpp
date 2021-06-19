@@ -1352,6 +1352,10 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             }
         }
     }
+    else
+    {
+        m_cost = 0;
+    }
 
     ImGui::PopStyleVar();
     ImGui::Separator();

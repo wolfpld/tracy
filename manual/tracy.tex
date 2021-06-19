@@ -1373,6 +1373,18 @@ If the graphic API you are using requires explicitly stating that you start and 
 To fix such issues, add a nested scope, encompassing the command buffer recording section.
 \end{bclogo}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveat emptor}
+The profiling results you will get can be unreliable, or just plainly wrong. It all depends on the quality of graphics drivers and how the underlying hardware implements timers. While Tracy employs a number of heuristics in order to make things as reliable as possible, in the end it has to talk to the GPU through the commonly unreliable API calls.
+
+For example, on Linux the Intel GPU driver will report 64-bit precision of time stamps. This is not true, as the driver will only provide time stamps with 36-bit precision, rolling over the exceeding values. Tracy is able to detect this and employ workarounds. This is, sadly, not enough to make the readings reliable, as this timer we can access through the API is not a real one. Deep down the driver has access to the true timer, which is used to provide the virtual values we can get. This hardware timer has a period which \emph{does not match} the period of the API timer. In result, the virtual timer will sometimes overflow \emph{in midst} of a cycle, making the reported time values jump forward. This is a problem that only the driver vendor can fix.
+
+If you experience crippling problems while profiling the GPU, you might get better results with different driver, different operating system, or different hardware.
+\end{bclogo}
+
 \subsubsection{OpenGL}
 
 You will need to include the \texttt{tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
@@ -1387,8 +1399,7 @@ couleur=black!5,
 logo=\bcattention
 ]{Caveats}
 \begin{itemize}
-\item GPU profiling is not supported on OSX, iOS\footnote{Because Apple is unable to implement standards properly.}.
-\item Android devices do work, if GPU drivers are not broken. Disjoint events are not currently handled, so some readings may be a bit spotty.
+\item OpenGL profiling is not supported on OSX, iOS\footnote{Because Apple is unable to implement standards properly.}.
 \item Nvidia drivers are unable to provide consistent timing results when two OpenGL contexts are used simultaneously.
 \item Calling the \texttt{TracyGpuCollect} macro is a fairly slow operation (couple \si{\micro\second}).
 \end{itemize}

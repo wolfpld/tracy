@@ -4026,10 +4026,10 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
             case CostType::Retirements:     stat = CountHwSamples( hw->retired, view.m_statRange ); break;
             case CostType::BranchesTaken:   stat = CountHwSamples( hw->branchRetired, view.m_statRange ); break;
             case CostType::BranchMiss:      stat = CountHwSamples( hw->branchMiss, view.m_statRange ); break;
-            case CostType::SlowBranches:    stat = CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ); break;
+            case CostType::SlowBranches:    stat = sqrt( CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ) ); break;
             case CostType::CacheAccess:     stat = CountHwSamples( hw->cacheRef, view.m_statRange ); break;
             case CostType::CacheMiss:       stat = CountHwSamples( hw->cacheMiss, view.m_statRange ); break;
-            case CostType::SlowCache:       stat = CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ); break;
+            case CostType::SlowCache:       stat = sqrt( CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ) ); break;
             default: assert( false ); return;
             }
         }
@@ -4041,10 +4041,10 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
             case CostType::Retirements:     stat = hw->retired.size(); break;
             case CostType::BranchesTaken:   stat = hw->branchRetired.size(); break;
             case CostType::BranchMiss:      stat = hw->branchMiss.size(); break;
-            case CostType::SlowBranches:    stat = hw->branchMiss.size() *  hw->branchRetired.size(); break;
+            case CostType::SlowBranches:    stat = sqrt( hw->branchMiss.size() *  hw->branchRetired.size() ); break;
             case CostType::CacheAccess:     stat = hw->cacheRef.size(); break;
             case CostType::CacheMiss:       stat = hw->cacheMiss.size(); break;
-            case CostType::SlowCache:       stat = hw->cacheMiss.size() * hw->cacheRef.size(); break;
+            case CostType::SlowCache:       stat = sqrt( hw->cacheMiss.size() * hw->cacheRef.size() ); break;
             default: assert( false ); return;
             }
         }

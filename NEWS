@@ -27,6 +27,16 @@ v0.x.x (xxxx-xx-xx)
     originating function.
   - If symbol view is restricted to a single inline function, all assembly
     instructions not in this context will be dimmed out.
+- Kernel call stacks will be now properly captured and displayed in the
+  profiler. Kernel functions are marked with the red color.
+- The CPU hardware performance counters can be now sampled on Linux.
+  - Three inferred statistics are displayed for lines in both source and
+    assembly code in the symbol view window:
+    - Instructions executed per cycle.
+    - Branch miss rate.
+    - Cache miss rate.
+  - Instruction cost estimation method is no longer tied to software call
+    stack sampling.
 
 
 v0.7.8 (2021-05-19)

@@ -102,8 +102,8 @@ private:
 
     struct AddrStat
     {
-        uint32_t local;
-        uint32_t ext;
+        uint64_t local;
+        uint64_t ext;
 
         AddrStat& operator+=( const AddrStat& other )
         {

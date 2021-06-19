@@ -3987,7 +3987,7 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
         if( m_calcInlineStats && worker.GetInlineSymbolForAddress( addr ) != m_symAddr ) continue;
         const auto hw = worker.GetHwSampleData( addr );
         if( !hw ) continue;
-        size_t stat;
+        uint64_t stat;
         if( view.m_statRange.active )
         {
             switch( m_cost )
@@ -4017,7 +4017,7 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
             }
         }
         assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
-        ipcountAsm.emplace( addr, AddrStat { (uint32_t)stat, 0 } );
+        ipcountAsm.emplace( addr, AddrStat { stat, 0 } );
         iptotalAsm.local += stat;
         if( ipmaxAsm.local < stat ) ipmaxAsm.local = stat;
 
@@ -4035,7 +4035,7 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
                         auto it = ipcountSrc.find( line );
                         if( it == ipcountSrc.end() )
                         {
-                            ipcountSrc.emplace( line, AddrStat{ (uint32_t)stat, 0 } );
+                            ipcountSrc.emplace( line, AddrStat{ stat, 0 } );
                             if( ipmaxSrc.local < stat ) ipmaxSrc.local = stat;
                         }
                         else
@@ -4121,7 +4121,7 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
             auto addr = worker.GetCanonicalPointer( ip.first );
             assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
             auto cp = slzReady ? worker.GetChildSamples( addr ) : nullptr;
-            const uint32_t ccnt = cp ? (uint32_t)cp->size() : 0;
+            const auto ccnt = cp ? cp->size() : 0;
             ipcountAsm.emplace( addr, AddrStat { ip.second, ccnt } );
             iptotalAsm.local += ip.second;
             iptotalAsm.ext += ccnt;
@@ -4182,7 +4182,7 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSr
             auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
             if( it == cp->end() ) continue;
             auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
-            const auto ccnt = uint32_t( end - it );
+            const auto ccnt = uint64_t( end - it );
             ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
             iptotalAsm.ext += ccnt;
             if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
@@ -4224,7 +4224,7 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSr
             if( ipcountAsm.find( ip ) != ipcountAsm.end() ) continue;
             auto cp = worker.GetChildSamples( ip );
             if( !cp ) continue;
-            const auto ccnt = (uint32_t)cp->size();
+            const auto ccnt = cp->size();
             ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
             iptotalAsm.ext += ccnt;
             if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;

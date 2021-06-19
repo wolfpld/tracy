@@ -411,6 +411,20 @@ const char* MemSizeToString( int64_t val )
     return buf;
 }
 
+const char* LocationToString( const char* fn, uint32_t line )
+{
+    if( line == 0 ) return fn;
+
+    enum { Pool = 8 };
+    static char bufpool[Pool][4096];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    sprintf( buf, "%s:%i", fn, line );
+    return buf;
+}
+
 namespace detail
 {
 

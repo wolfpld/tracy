@@ -126,6 +126,7 @@ static inline const char* RealToString( double val )
 const char* TimeToString( int64_t ns );
 const char* TimeToStringExact( int64_t ns );
 const char* MemSizeToString( int64_t val );
+const char* LocationToString( const char* fn, uint32_t line );
 
 }
 

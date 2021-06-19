@@ -186,6 +186,7 @@ private:
     uint64_t m_jumpPopupAddr;
     bool m_hwSamples;
     bool m_childCalls;
+    int m_cost;
 
     SourceContents m_source;
     SourceContents m_sourceTooltip;

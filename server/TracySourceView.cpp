@@ -165,6 +165,7 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     , m_atnt( false )
     , m_childCalls( false )
     , m_hwSamples( true )
+    , m_cost( 0 )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
@@ -1179,7 +1180,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( ICON_FA_WEIGHT_HANGING " Code size:", MemSizeToString( m_codeLen ) );
+        TextFocused( ICON_FA_WEIGHT_HANGING " Code:", MemSizeToString( m_codeLen ) );
     }
 
     AddrStat iptotalSrc = {}, iptotalAsm = {};
@@ -1212,6 +1213,29 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
+        if( worker.GetHwSampleCountAddress() != 0 )
+        {
+            SmallCheckbox( ICON_FA_HAMMER " Hw samples", &m_hwSamples );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::TextUnformatted( ICON_FA_HIGHLIGHTER " Cost" );
+            ImGui::SameLine();
+            const char* items[] = { "Sample count", "Cycles", "Retirements" };
+            float mw = 0;
+            for( auto& v : items )
+            {
+                const auto w = ImGui::CalcTextSize( v ).x;
+                if( w > mw ) mw = w;
+            }
+            ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ImGui::Combo( "##cost", &m_cost, items, sizeof( items ) / sizeof( *items ) );
+            ImGui::PopStyleVar();
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+        }
         if( !slzReady )
         {
             ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
@@ -1221,13 +1245,6 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         else if( ImGui::IsKeyDown( 'Z' ) )
         {
             m_childCalls = !m_childCalls;
-        }
-        if( worker.GetHwSampleCountAddress() != 0 )
-        {
-            SmallCheckbox( ICON_FA_HAND_POINT_DOWN " Hardware samples", &m_hwSamples );
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
         }
         SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
         if( !slzReady )

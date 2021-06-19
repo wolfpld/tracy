@@ -4100,6 +4100,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
     depth++;
     int maxdepth = depth;
@@ -4170,7 +4171,6 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
             {
                 color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
             }
-            const auto outline = HighlightColor( color );
 
             const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
@@ -4182,9 +4182,12 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 sprintf( symName, "0x%" PRIx64, m_worker.GetCanonicalPointer( ghostKey.frame ) );
                 const auto tsz = ImGui::CalcTextSize( symName );
 
+                const auto accentColor = HighlightColor( color );
+                const auto darkColor = DarkenColor( color );
                 const auto txtColor = 0xFF888888;
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), DarkenColor( color ) );
-                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), outline, 0.f, -1 );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), accentColor, 1.f );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, 1.f );
 
                 if( tsz.x < zsz )
                 {
@@ -4251,8 +4254,11 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 }
                 auto tsz = ImGui::CalcTextSize( symName );
 
+                const auto accentColor = HighlightColor( col );
+                const auto darkColor = DarkenColor( col );
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), col );
-                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), outline, 0.f, -1 );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), accentColor, 1.f );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, 1.f );
 
                 auto origSymName = symName;
                 if( tsz.x > zsz )
@@ -4555,7 +4561,16 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
+            if( zoneColor.highlight )
+            {
+                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
+            }
+            else
+            {
+                const auto darkColor = DarkenColor( zoneColor.color );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), zoneColor.accentColor, zoneColor.thickness );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, zoneColor.thickness );
+            }
             if( dsz > MinVisSize )
             {
                 const auto diff = dsz - MinVisSize;
@@ -4757,6 +4772,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
     depth++;
     int maxdepth = depth;
@@ -4855,7 +4871,16 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             const auto zoneColor = GetZoneColorData( ev );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
+            if( zoneColor.highlight )
+            {
+                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
+            }
+            else
+            {
+                const auto darkColor = DarkenColor( zoneColor.color );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), zoneColor.accentColor, zoneColor.thickness );
+                DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, zoneColor.thickness );
+            }
             if( tsz.x < zsz )
             {
                 const auto x = ( start - m_vd.zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;

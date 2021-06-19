@@ -505,6 +505,8 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     SelectLine( line, &worker, true, symAddr );
 
     SelectViewMode();
+
+    if( !worker.GetInlineSymbolList( baseAddr, m_codeLen ) ) m_calcInlineStats = false;
 }
 
 void SourceView::SelectViewMode()

@@ -2648,8 +2648,15 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 ImGui::BeginTooltip();
                 if( ipcnt.local )
                 {
-                    if( worker ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker->GetSamplingPeriod() ) );
-                    TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                    if( m_cost == 0 )
+                    {
+                        if( worker ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker->GetSamplingPeriod() ) );
+                        TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                    }
+                    else
+                    {
+                        TextFocused( "Events:", RealToString( ipcnt.local ) );
+                    }
                 }
                 if( ipcnt.ext )
                 {
@@ -2924,8 +2931,15 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 ImGui::BeginTooltip();
                 if( ipcnt.local )
                 {
-                    TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
-                    TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                    if( m_cost == 0 )
+                    {
+                        TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
+                        TextFocused( "Local samples:", RealToString( ipcnt.local ) );
+                    }
+                    else
+                    {
+                        TextFocused( "Events:", RealToString( ipcnt.local ) );
+                    }
                 }
                 if( ipcnt.ext )
                 {

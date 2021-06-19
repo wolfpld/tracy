@@ -138,6 +138,14 @@ private:
         LastRange
     };
 
+    struct ZoneColorData
+    {
+        uint32_t color;
+        uint32_t accentColor;
+        float thickness;
+        bool highlight;
+    };
+
     void InitMemory();
     void InitTextEditor( ImFont* font );
 
@@ -222,12 +230,8 @@ private:
     uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    uint32_t GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
-    uint32_t GetRawZoneColor( const GpuEvent& ev );
-    uint32_t GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth );
-    uint32_t GetZoneHighlight( const GpuEvent& ev );
-    float GetZoneThickness( const ZoneEvent& ev );
-    float GetZoneThickness( const GpuEvent& ev );
+    ZoneColorData GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth );
+    ZoneColorData GetZoneColorData( const GpuEvent& ev );
 
     void ZoomToZone( const ZoneEvent& ev );
     void ZoomToZone( const GpuEvent& ev );

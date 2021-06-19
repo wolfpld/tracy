@@ -4534,7 +4534,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
         }
         else
         {
-            const auto color = GetZoneColor( ev, tid, depth );
+            const auto zoneColor = GetZoneColorData( ev, tid, depth );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             if( ev.HasChildren() )
@@ -4554,8 +4554,8 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             const auto pr1 = ( end - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, tid, depth ), 0.f, -1, GetZoneThickness( ev ) );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
             if( dsz > MinVisSize )
             {
                 const auto diff = dsz - MinVisSize;
@@ -4765,7 +4765,6 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
     while( it < zitend )
     {
         auto& ev = a(*it);
-        const auto color = GetZoneColor( ev );
         auto end = m_worker.GetZoneEnd( ev );
         if( end == std::numeric_limits<int64_t>::max() ) break;
         const auto start = AdjustGpuTime( ev.GpuStart(), begin, drift );
@@ -4773,6 +4772,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
+            const auto color = GetZoneColor( ev );
             const auto MinVisNs = MinVisSize * nspx;
             int num = 0;
             const auto px0 = ( start - m_vd.zvStart ) * pxns;
@@ -4853,8 +4853,9 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
             const auto pr1 = ( end - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
+            const auto zoneColor = GetZoneColorData( ev );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.accentColor, 0.f, -1, zoneColor.thickness );
             if( tsz.x < zsz )
             {
                 const auto x = ( start - m_vd.zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
@@ -8152,7 +8153,7 @@ void View::DrawGpuInfoWindow()
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
     ImGui::SameLine();
     if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
-    SmallColorBox( GetRawZoneColor( ev ) );
+    SmallColorBox( GetZoneColor( ev ) );
     ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
@@ -16898,26 +16899,6 @@ const char* View::GetPlotName( const PlotData* plot ) const
     }
 }
 
-uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
-{
-    if( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.SrcLoc() )
-    {
-        if( m_findZone.highlight.active )
-        {
-            const auto zt = m_worker.GetZoneEnd( ev ) - ev.Start();
-            if( zt >= m_findZone.highlight.start && zt <= m_findZone.highlight.end )
-            {
-                return 0xFFFFCC66;
-            }
-        }
-        return 0xFF229999;
-    }
-    else
-    {
-        return GetRawZoneColor( ev, thread, depth );
-    }
-}
-
 uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
     if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
@@ -16952,7 +16933,7 @@ uint32_t View::GetSrcLocColor( const SourceLocation& srcloc, int depth )
     return GetRawSrcLocColor( srcloc, depth );
 }
 
-uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
+uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 {
     const auto sl = ev.SrcLoc();
     const auto& srcloc = m_worker.GetSourceLocation( sl );
@@ -16987,73 +16968,82 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
 
-uint32_t View::GetRawZoneColor( const GpuEvent& ev )
+View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth )
 {
-    return GetZoneColor( ev );
-}
-
-uint32_t View::GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth )
-{
+    ZoneColorData ret;
+    const auto& srcloc = ev.SrcLoc();
     if( m_zoneInfoWindow == &ev )
     {
-        return 0xFF44DD44;
+        ret.color = GetZoneColor( ev, thread, depth );
+        ret.accentColor = 0xFF44DD44;
+        ret.thickness = 3.f;
+        ret.highlight = true;
     }
     else if( m_zoneHighlight == &ev )
     {
-        return 0xFF4444FF;
+        ret.color = GetZoneColor( ev, thread, depth );
+        ret.accentColor = 0xFF4444FF;
+        ret.thickness = 3.f;
+        ret.highlight = true;
     }
-    else if( m_zoneSrcLocHighlight == ev.SrcLoc() )
+    else if( m_zoneSrcLocHighlight == srcloc )
     {
-        return 0xFFEEEEEE;
+        ret.color = GetZoneColor( ev, thread, depth );
+        ret.accentColor = 0xFFEEEEEE;
+        ret.thickness = 1.f;
+        ret.highlight = true;
+    }
+    else if( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == srcloc )
+    {
+        uint32_t color = 0xFF229999;
+        if( m_findZone.highlight.active )
+        {
+            const auto zt = m_worker.GetZoneEnd( ev ) - ev.Start();
+            if( zt >= m_findZone.highlight.start && zt <= m_findZone.highlight.end )
+            {
+                color = 0xFFFFCC66;
+            }
+        }
+        ret.color = color;
+        ret.accentColor = HighlightColor( color );
+        ret.thickness = 3.f;
+        ret.highlight = true;
     }
     else
     {
-        return HighlightColor( GetZoneColor( ev, thread, depth ) );
+        const auto color = GetZoneColor( ev, thread, depth );
+        ret.color = color;
+        ret.accentColor = HighlightColor( color );
+        ret.thickness = 1.f;
+        ret.highlight = false;
     }
+    return ret;
 }
 
-uint32_t View::GetZoneHighlight( const GpuEvent& ev )
+View::ZoneColorData View::GetZoneColorData( const GpuEvent& ev )
 {
+    ZoneColorData ret;
+    const auto color = GetZoneColor( ev );
+    ret.color = color;
     if( m_gpuInfoWindow == &ev )
     {
-        return 0xFF44DD44;
+        ret.accentColor = 0xFF44DD44;
+        ret.thickness = 3.f;
+        ret.highlight = true;
     }
     else if( m_gpuHighlight == &ev )
     {
-        return 0xFF4444FF;
+        ret.accentColor = 0xFF4444FF;
+        ret.thickness = 3.f;
+        ret.highlight = true;
     }
     else
     {
-        const auto color = GetZoneColor( ev );
-        return 0xFF000000 |
-            ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
-            ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
-            ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
+        ret.accentColor = HighlightColor( color );
+        ret.thickness = 1.f;
+        ret.highlight = false;
     }
-}
-
-float View::GetZoneThickness( const ZoneEvent& ev )
-{
-    if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev || ( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.SrcLoc() ) )
-    {
-        return 3.f;
-    }
-    else
-    {
-        return 1.f;
-    }
-}
-
-float View::GetZoneThickness( const GpuEvent& ev )
-{
-    if( m_gpuInfoWindow == &ev || m_gpuHighlight == &ev )
-    {
-        return 3.f;
-    }
-    else
-    {
-        return 1.f;
-    }
+    return ret;
 }
 
 void View::ZoomToZone( const ZoneEvent& ev )

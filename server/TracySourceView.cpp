@@ -3363,9 +3363,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
     }
 
+    const bool isInContext = !m_calcInlineStats || !worker.HasInlineSymbolAddresses() || worker.GetInlineSymbolForAddress( line.addr ) == m_symAddr;
     if( asmIdx == m_asmSelected )
     {
-        TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, 1 ), buf );
+        TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, isInContext ? 1.f : 0.5f ), buf );
     }
     else if( line.regData[0] != 0 )
     {
@@ -3383,16 +3384,30 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
         if( hasDepencency )
         {
-            TextColoredUnformatted( ImVec4( 1, 0.5f, 1, 1 ), buf );
+            TextColoredUnformatted( ImVec4( 1, 0.5f, 1, isInContext ? 1.f : 0.5f ), buf );
         }
         else
         {
-            ImGui::TextUnformatted( buf );
+            if( isInContext )
+            {
+                ImGui::TextUnformatted( buf );
+            }
+            else
+            {
+                TextDisabledUnformatted( buf );
+            }
         }
     }
     else
     {
-        ImGui::TextUnformatted( buf );
+        if( isInContext )
+        {
+            ImGui::TextUnformatted( buf );
+        }
+        else
+        {
+            TextDisabledUnformatted( buf );
+        }
     }
 
     uint32_t jumpOffset;

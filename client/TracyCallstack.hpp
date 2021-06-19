@@ -27,6 +27,7 @@ struct CallstackSymbolData
     const char* file;
     uint32_t line;
     bool needFree;
+    uint64_t symAddr;
 };
 
 struct CallstackEntry

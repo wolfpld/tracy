@@ -397,6 +397,7 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
             {
                 sym.file = line.FileName;
                 sym.line = line.LineNumber;
+                sym.symAddr = line.Address;
                 done = true;
             }
         }
@@ -408,11 +409,13 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
         {
             sym.file = "[unknown]";
             sym.line = 0;
+            sym.symAddr = 0;
         }
         else
         {
             sym.file = line.FileName;
             sym.line = line.LineNumber;
+            sym.symAddr = line.Address;
         }
     }
 #ifdef TRACY_DBGHELP_LOCK
@@ -742,6 +745,7 @@ static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* 
     sym.file = CopyString( fn );
     sym.line = lineno;
     sym.needFree = true;
+    sym.symAddr = lowaddr;
     return 1;
 }
 
@@ -751,7 +755,7 @@ static void CodeErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
 
 CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
-    CallstackSymbolData sym = { "[unknown]", 0, false };
+    CallstackSymbolData sym = { "[unknown]", 0, false, 0 };
     backtrace_pcinfo( cb_bts, ptr, CodeDataCb, CodeErrorCb, &sym );
     return sym;
 }
@@ -944,7 +948,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     Dl_info dlinfo;
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
     if( !symloc ) symloc = "[unknown]";
-    return CallstackSymbolData { symloc, 0, false };
+    return CallstackSymbolData { symloc, 0, false, 0 };
 }
 
 CallstackSymbolData DecodeCodeAddress( uint64_t ptr )

@@ -35,6 +35,19 @@ public:
         NUMBER_OF_ENTRIES
     };
 
+    enum class CostType
+    {
+        SampleCount,
+        SlowBranches,
+        SlowCache,
+        Cycles,
+        Retirements,
+        BranchesTaken,
+        BranchMiss,
+        CacheAccess,
+        CacheMiss
+    };
+
 private:
     struct AsmOpParams
     {
@@ -111,19 +124,6 @@ private:
             ext += other.ext;
             return *this;
         }
-    };
-
-    enum class CostType
-    {
-        SampleCount,
-        SlowBranches,
-        SlowCache,
-        Cycles,
-        Retirements,
-        BranchesTaken,
-        BranchMiss,
-        CacheAccess,
-        CacheMiss
     };
 
 public:

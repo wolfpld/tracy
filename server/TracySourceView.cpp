@@ -81,6 +81,8 @@ static constexpr const char* s_CostName[] = {
     "Cache miss"
 };
 
+static constexpr SourceView::CostType s_costSeparateAfter = SourceView::CostType::SlowCache;
+
 
 static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
 {
@@ -1257,6 +1259,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 for( auto& v : s_CostName )
                 {
                     if( ImGui::Selectable( v, idx == (int)m_cost ) ) m_cost = (CostType)idx;
+                    if( (CostType)idx == s_costSeparateAfter ) ImGui::Separator();
                     idx++;
                 }
                 ImGui::EndCombo();

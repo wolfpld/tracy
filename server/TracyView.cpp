@@ -647,7 +647,10 @@ bool View::Draw()
         ImGui::SameLine();
         TextDisabledUnformatted( "Increasing level decreases file size, but increases save and load times" );
         ImGui::Indent();
-        ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp );
+        if( ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp ) )
+        {
+            comp = FileWrite::Compression::Zstd;
+        }
         ImGui::Unindent();
 
         static bool buildDict = false;

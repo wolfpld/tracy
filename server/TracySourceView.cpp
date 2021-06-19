@@ -3116,6 +3116,18 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 lineHovered = true;
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
+                if( worker.HasInlineSymbolAddresses() )
+                {
+                    const auto symAddr = worker.GetInlineSymbolForAddress( line.addr );
+                    if( symAddr != 0 )
+                    {
+                        const auto symData = worker.GetSymbolData( symAddr );
+                        if( symData )
+                        {
+                            TextFocused( "Function:", worker.GetString( symData->name ) );
+                        }
+                    }
+                }
                 TextFocused( "File:", fileName );
                 TextFocused( "Line:", RealToString( srcline ) );
                 if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )

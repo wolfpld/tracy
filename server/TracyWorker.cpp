@@ -2378,6 +2378,13 @@ uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset ) const
     return it->addr;
 }
 
+uint64_t Worker::GetInlineSymbolForAddress( uint64_t address ) const
+{
+    auto it = m_data.codeSymbolMap.find( address );
+    if( it == m_data.codeSymbolMap.end() ) return 0;
+    return it->second;
+}
+
 StringIdx Worker::GetLocationForAddress( uint64_t address, uint32_t& line ) const
 {
     auto it = m_data.codeAddressToLocation.find( address );

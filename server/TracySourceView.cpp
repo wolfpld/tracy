@@ -1230,7 +1230,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::SameLine();
             ImGui::TextUnformatted( ICON_FA_HIGHLIGHTER " Cost" );
             ImGui::SameLine();
-            const char* items[] = { "Sample count", "Cycles", "Retirements" };
+            const char* items[] = { "Sample count", "Cycles", "Retirements", "Branches taken", "Branch miss", "Cache access", "Cache miss" };
             float mw = 0;
             for( auto& v : items )
             {
@@ -3965,6 +3965,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
 
 void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, bool limitView, const View& view )
 {
+    assert( m_cost >= 1 && m_cost <= 6 );
     auto filename = m_source.filename();
     for( auto& v : m_asm )
     {
@@ -3979,9 +3980,10 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
             {
             case 1: stat = CountHwSamples( hw->cycles, view.m_statRange ); break;
             case 2: stat = CountHwSamples( hw->retired, view.m_statRange ); break;
-            default:
-                assert( false );
-                return;
+            case 3: stat = CountHwSamples( hw->branchRetired, view.m_statRange ); break;
+            case 4: stat = CountHwSamples( hw->branchMiss, view.m_statRange ); break;
+            case 5: stat = CountHwSamples( hw->cacheRef, view.m_statRange ); break;
+            case 6: stat = CountHwSamples( hw->cacheMiss, view.m_statRange ); break;
             }
         }
         else
@@ -3990,9 +3992,10 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
             {
             case 1: stat = hw->cycles.size(); break;
             case 2: stat = hw->retired.size(); break;
-            default:
-                assert( false );
-                return;
+            case 3: stat = hw->branchRetired.size(); break;
+            case 4: stat = hw->branchMiss.size(); break;
+            case 5: stat = hw->cacheRef.size(); break;
+            case 6: stat = hw->cacheMiss.size(); break;
             }
         }
         assert( ipcountAsm.find( addr ) == ipcountAsm.end() );

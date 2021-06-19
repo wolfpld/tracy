@@ -443,6 +443,7 @@ struct QueueCodeInformation
 {
     uint64_t ptr;
     uint32_t line;
+    uint64_t symAddr;
 };
 
 struct QueueCrashReport

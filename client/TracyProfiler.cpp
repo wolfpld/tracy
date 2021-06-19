@@ -3312,6 +3312,7 @@ void Profiler::SendCodeLocation( uint64_t ptr )
     MemWrite( &item.hdr.type, QueueType::CodeInformation );
     MemWrite( &item.codeInformation.ptr, ptr );
     MemWrite( &item.codeInformation.line, sym.line );
+    MemWrite( &item.codeInformation.symAddr, sym.symAddr );
 
     AppendData( &item, QueueDataSize[(int)QueueType::CodeInformation] );
 

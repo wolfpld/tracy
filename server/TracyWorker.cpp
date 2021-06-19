@@ -371,6 +371,8 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         else
         {
             auto td = NoticeThread( v.tid );
+            if (td->zoneIdStack.empty())
+                continue;
             td->zoneIdStack.pop_back();
             auto& stack = td->stack;
             auto zone = stack.back_and_pop();

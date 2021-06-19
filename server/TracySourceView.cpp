@@ -1265,6 +1265,12 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             ImGui::SameLine();
             ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Child call samples" );
+                ImGui::EndTooltip();
+            }
         }
         ImGui::SameLine();
         ImGui::Spacing();
@@ -1281,6 +1287,12 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             ImGui::SameLine();
             ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( iptotalAsm.ext ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Child call samples" );
+                ImGui::EndTooltip();
+            }
         }
         ImGui::SameLine();
         ImGui::Spacing();

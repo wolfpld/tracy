@@ -376,6 +376,11 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
     const auto proc = GetCurrentProcess();
     bool done = false;
 
+    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
+    auto si = (SYMBOL_INFO*)buf;
+    si->SizeOfStruct = sizeof( SYMBOL_INFO );
+    si->MaxNameLen = MaxNameSize;
+
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
@@ -397,8 +402,16 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
             {
                 sym.file = line.FileName;
                 sym.line = line.LineNumber;
-                sym.symAddr = line.Address;
                 done = true;
+
+                if( _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0 )
+                {
+                    sym.symAddr = si->Address;
+                }
+                else
+                {
+                    sym.symAddr = 0;
+                }
             }
         }
     }
@@ -415,7 +428,15 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
         {
             sym.file = line.FileName;
             sym.line = line.LineNumber;
-            sym.symAddr = line.Address;
+
+            if( SymFromAddr( proc, ptr, nullptr, si ) != 0 )
+            {
+                sym.symAddr = si->Address;
+            }
+            else
+            {
+                sym.symAddr = 0;
+            }
         }
     }
 #ifdef TRACY_DBGHELP_LOCK

@@ -1269,80 +1269,87 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::Spacing();
             ImGui::SameLine();
         }
-        if( !slzReady )
+        if( m_cost == CostType::SampleCount )
         {
-            ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
-            ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
-            m_childCalls = false;
-        }
-        else if( ImGui::IsKeyDown( 'Z' ) )
-        {
-            m_childCalls = !m_childCalls;
-        }
-        SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
-        if( !slzReady )
-        {
-            ImGui::PopStyleVar();
-            ImGui::PopItemFlag();
-            if( ImGui::IsItemHovered() )
+            if( !slzReady )
             {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Please wait, processing data..." );
-                ImGui::EndTooltip();
+                ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
+                ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+                m_childCalls = false;
             }
-        }
-        else
-        {
-            if( ImGui::IsItemHovered() )
+            else if( ImGui::IsKeyDown( 'Z' ) )
             {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Press Z key to temporarily reverse selection." );
-                ImGui::EndTooltip();
+                m_childCalls = !m_childCalls;
             }
-        }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        if( m_childCalls )
-        {
-            TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( ( iptotalAsm.local + iptotalAsm.ext ) * worker.GetSamplingPeriod() ) );
-        }
-        else
-        {
-            TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
-        }
-        if( iptotalAsm.ext )
-        {
+            SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
+            if( !slzReady )
+            {
+                ImGui::PopStyleVar();
+                ImGui::PopItemFlag();
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Please wait, processing data..." );
+                    ImGui::EndTooltip();
+                }
+            }
+            else
+            {
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Press Z key to temporarily reverse selection." );
+                    ImGui::EndTooltip();
+                }
+            }
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
-            if( ImGui::IsItemHovered() )
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( m_childCalls )
             {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Child call samples" );
-                ImGui::EndTooltip();
+                TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( ( iptotalAsm.local + iptotalAsm.ext ) * worker.GetSamplingPeriod() ) );
             }
-        }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        if( m_childCalls )
-        {
-            TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local + iptotalAsm.ext ) );
+            else
+            {
+                TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
+            }
+            if( iptotalAsm.ext )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Child call samples" );
+                    ImGui::EndTooltip();
+                }
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( m_childCalls )
+            {
+                TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local + iptotalAsm.ext ) );
+            }
+            else
+            {
+                TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local ) );
+            }
+            if( iptotalAsm.ext )
+            {
+                ImGui::SameLine();
+                ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( iptotalAsm.ext ) );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Child call samples" );
+                    ImGui::EndTooltip();
+                }
+            }
         }
         else
         {
-            TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local ) );
-        }
-        if( iptotalAsm.ext )
-        {
-            ImGui::SameLine();
-            ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( iptotalAsm.ext ) );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Child call samples" );
-                ImGui::EndTooltip();
-            }
+            TextFocused( "Events:", RealToString( iptotalAsm.local ) );
         }
         ImGui::SameLine();
         ImGui::Spacing();

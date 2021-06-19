@@ -472,7 +472,7 @@ bool View::Draw()
             TextFocused( "Function:", s_instance->m_worker.GetString( srcloc.function ) );
             TextDisabledUnformatted( "Location:" );
             ImGui::SameLine();
-            ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
+            ImGui::TextUnformatted( LocationToString( s_instance->m_worker.GetString( srcloc.file ), srcloc.line ) );
         }
         if( data.thread != 0 )
         {
@@ -581,14 +581,7 @@ bool View::Draw()
                                 ImGui::TableNextColumn();
                                 ImGui::PushTextWrapPos( 0.0f );
                                 txt = s_instance->m_worker.GetString( frame.file );
-                                if( frame.line == 0 )
-                                {
-                                    TextDisabledUnformatted( txt );
-                                }
-                                else
-                                {
-                                    ImGui::TextDisabled( "%s:%i", txt, frame.line );
-                                }
+                                TextDisabledUnformatted( LocationToString( txt, frame.line ) );
                                 if( ImGui::IsItemHovered() )
                                 {
                                     ImGui::BeginTooltip();
@@ -4316,7 +4309,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     ImGui::SameLine();
                     const char* file = m_worker.GetString( sym.file );
                     uint32_t line = sym.line;
-                    ImGui::Text( "%s:%i", file, line );
+                    ImGui::TextUnformatted( LocationToString( file, line ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(0x%" PRIx64 ")", sym.symAddr );
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
@@ -5239,7 +5232,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
                 assert( false );
                 break;
             }
-            ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+            ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
             ImGui::Separator();
             TextFocused( ICON_FA_RANDOM " Appeared at", TimeToString( range.start ) );
             TextFocused( ICON_FA_RANDOM " Last event at", TimeToString( range.end ) );
@@ -5537,7 +5530,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
                         }
                         ImGui::Separator();
-                        ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                         TextFocused( "Time:", TimeToString( t1 - t0 ) );
                         ImGui::Separator();
 
@@ -5561,7 +5554,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             const auto& marklocdata = m_worker.GetSourceLocation( markloc );
                             ImGui::TextUnformatted( "Lock event location:" );
                             ImGui::TextUnformatted( m_worker.GetString( marklocdata.function ) );
-                            ImGui::Text( "%s:%i", m_worker.GetString( marklocdata.file ), marklocdata.line );
+                            ImGui::TextUnformatted( LocationToString( m_worker.GetString( marklocdata.file ), marklocdata.line ) );
                             ImGui::Separator();
                         }
 
@@ -6883,14 +6876,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                         ImGui::SameLine();
                     }
                     const auto fileName = worker.GetString( frame->file );
-                    if( frame->line == 0 )
-                    {
-                        TextDisabledUnformatted( fileName );
-                    }
-                    else
-                    {
-                        ImGui::TextDisabled( "%s:%i", fileName, frame->line );
-                    }
+                    TextDisabledUnformatted( LocationToString( fileName, frame->line ) );
                     if( ImGui::IsItemClicked( 1 ) )
                     {
                         if( !view.ViewDispatch( fileName, frame->line, frame->symAddr ) )
@@ -6941,14 +6927,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                 ImGui::SameLine();
             }
             const auto fileName = worker.GetString( frame->file );
-            if( frame->line == 0 )
-            {
-                TextDisabledUnformatted( fileName );
-            }
-            else
-            {
-                ImGui::TextDisabled( "%s:%i", fileName, frame->line );
-            }
+            TextDisabledUnformatted( LocationToString( fileName, frame->line ) );
             if( ImGui::IsItemClicked( 1 ) )
             {
                 if( !view.ViewDispatch( fileName, frame->line, frame->symAddr ) )
@@ -7199,13 +7178,11 @@ void View::DrawZoneInfoWindow()
     ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
-    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
     ImGui::SameLine();
     if( ClipboardButton( 3 ) )
     {
-        char tmp[1024];
-        sprintf( tmp, "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-        ImGui::SetClipboardText( tmp );
+        ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
     }
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
@@ -7697,7 +7674,7 @@ void View::DrawZoneInfoWindow()
         {
             ImGui::SameLine();
         }
-        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->Start() ), fileName, srcloc.line );
+        ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->Start() ), LocationToString( fileName, srcloc.line ) );
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
@@ -7970,7 +7947,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     }
                     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
                     ImGui::Separator();
-                    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                     ImGui::EndTooltip();
                 }
                 ImGui::SameLine();
@@ -8179,13 +8156,11 @@ void View::DrawGpuInfoWindow()
     ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
-    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
     ImGui::SameLine();
     if( ClipboardButton( 3 ) )
     {
-        char tmp[1024];
-        sprintf( tmp, "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-        ImGui::SetClipboardText( tmp );
+        ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
     }
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
@@ -8260,7 +8235,7 @@ void View::DrawGpuInfoWindow()
         {
             ImGui::SameLine();
         }
-        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), fileName, srcloc.line );
+        ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), LocationToString( fileName, srcloc.line ) );
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
@@ -8412,7 +8387,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     }
                     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
                     ImGui::Separator();
-                    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                     ImGui::EndTooltip();
                 }
                 ImGui::SameLine();
@@ -8855,7 +8830,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s", RealToString( l.second->timeline.size() ), LocationToString( fileName, sl.line ) );
                         if( ImGui::IsItemHovered() )
                         {
                             DrawSourceTooltip( fileName, sl.line, 1, 1 );
@@ -8933,7 +8908,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s", RealToString( l.second->timeline.size() ), LocationToString( fileName, sl.line ) );
                         if( ImGui::IsItemHovered() )
                         {
                             DrawSourceTooltip( fileName, sl.line, 1, 1 );
@@ -9011,7 +8986,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s", RealToString( l.second->timeline.size() ), LocationToString( fileName, sl.line ) );
                         if( ImGui::IsItemHovered() )
                         {
                             DrawSourceTooltip( fileName, sl.line, 1, 1 );
@@ -9672,7 +9647,7 @@ void View::DrawFindZone()
                     ImGui::SameLine();
                 }
                 const auto fileName = m_worker.GetString( srcloc.file );
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), fileName, srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( fileName, srcloc.line ) );
                 if( ImGui::IsItemHovered() )
                 {
                     DrawSourceTooltip( fileName, srcloc.line );
@@ -11490,7 +11465,7 @@ void View::DrawCompare()
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
                 ImGui::PopStyleVar();
                 ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                 ImGui::PopID();
             }
             ImGui::NextColumn();
@@ -11506,7 +11481,7 @@ void View::DrawCompare()
                 ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
                 ImGui::PopStyleVar();
                 ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), m_compare.second->GetString( srcloc.file ), srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( m_compare.second->GetString( srcloc.file ), srcloc.line ) );
                 ImGui::PopID();
             }
             ImGui::NextColumn();
@@ -12692,7 +12667,7 @@ void View::DrawStatistics()
                     }
                     const auto file = m_worker.GetString( srcloc.file );
 
-                    ImGui::TextDisabled( "%s:%i", file, srcloc.line );
+                    TextDisabledUnformatted( LocationToString( file, srcloc.line ) );
                     if( ImGui::IsItemHovered() )
                     {
                         DrawSourceTooltip( file, srcloc.line );
@@ -13139,13 +13114,9 @@ void View::DrawStatistics()
                         {
                             ImGui::TextDisabled( "0x%" PRIx64, v.symAddr );
                         }
-                        else if( line > 0 )
-                        {
-                            ImGui::TextDisabled( "%s:%i", file, line );
-                        }
                         else
                         {
-                            TextDisabledUnformatted( file );
+                            TextDisabledUnformatted( LocationToString( file, line ) );
                         }
                         if( ImGui::IsItemHovered() )
                         {
@@ -13316,13 +13287,9 @@ void View::DrawStatistics()
                                     {
                                         ImGui::TextDisabled( "0x%" PRIx64, iv.symAddr );
                                     }
-                                    else if( line > 0 )
-                                    {
-                                        ImGui::TextDisabled( "%s:%i", file, line );
-                                    }
                                     else
                                     {
-                                        TextDisabledUnformatted( file );
+                                        TextDisabledUnformatted( LocationToString( file, line ) );
                                     }
                                     if( ImGui::IsItemHovered() )
                                     {
@@ -13603,14 +13570,7 @@ void View::DrawCallstackWindow()
                     switch( m_showCallstackFrameAddress )
                     {
                     case 0:
-                        if( frame.line == 0 )
-                        {
-                            TextDisabledUnformatted( txt );
-                        }
-                        else
-                        {
-                            ImGui::TextDisabled( "%s:%i", txt, frame.line );
-                        }
+                        TextDisabledUnformatted( LocationToString( txt, frame.line ) );
                         if( ImGui::IsItemClicked() )
                         {
                             ImGui::SetClipboardText( txt );
@@ -13655,14 +13615,7 @@ void View::DrawCallstackWindow()
                         if( sym )
                         {
                             const auto symtxt = m_worker.GetString( sym->file );
-                            if( sym->line == 0 )
-                            {
-                                TextDisabledUnformatted( symtxt );
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled( "%s:%i", symtxt, sym->line );
-                            }
+                            TextDisabledUnformatted( LocationToString( symtxt, sym->line ) );
                             if( ImGui::IsItemClicked() )
                             {
                                 ImGui::SetClipboardText( symtxt );
@@ -14892,7 +14845,7 @@ void View::DrawLockInfoWindow()
     {
         ImGui::SameLine();
     }
-    ImGui::Text( "%s:%i", fileName, srcloc.line );
+    ImGui::TextUnformatted( LocationToString( fileName, srcloc.line ) );
     if( ImGui::IsItemClicked( 1 ) )
     {
         if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
@@ -15582,14 +15535,7 @@ void View::DrawSampleParents()
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     const auto callFile = m_worker.GetString( symbol->callFile );
-    if( symbol->callLine > 0 )
-    {
-        ImGui::Text( "%s:%i", callFile, symbol->callLine );
-    }
-    else
-    {
-        ImGui::TextUnformatted( callFile );
-    }
+    ImGui::TextUnformatted( LocationToString( callFile, symbol->callLine ) );
     if( ImGui::IsItemClicked( 1 ) )
     {
         ViewDispatch( callFile, symbol->callLine, m_sampleParents.symAddr );
@@ -15597,14 +15543,7 @@ void View::DrawSampleParents()
     TextDisabledUnformatted( "Entry point:" );
     ImGui::SameLine();
     const auto file = m_worker.GetString( symbol->file );
-    if( symbol->line > 0 )
-    {
-        ImGui::Text( "%s:%i", file, symbol->line );
-    }
-    else
-    {
-        ImGui::TextUnformatted( file );
-    }
+    ImGui::TextUnformatted( LocationToString( file, symbol->line ) );
     if( ImGui::IsItemClicked( 1 ) )
     {
         ViewDispatch( file, symbol->line, m_sampleParents.symAddr );
@@ -15726,14 +15665,7 @@ void View::DrawSampleParents()
                 switch( m_showCallstackFrameAddress )
                 {
                 case 0:
-                    if( frame.line == 0 )
-                    {
-                        TextDisabledUnformatted( txt );
-                    }
-                    else
-                    {
-                        ImGui::TextDisabled( "%s:%i", txt, frame.line );
-                    }
+                    TextDisabledUnformatted( LocationToString( txt, frame.line ) );
                     if( ImGui::IsItemClicked() )
                     {
                         ImGui::SetClipboardText( txt );
@@ -15771,14 +15703,7 @@ void View::DrawSampleParents()
                     if( sym )
                     {
                         const auto symtxt = m_worker.GetString( sym->file );
-                        if( sym->line == 0 )
-                        {
-                            TextDisabledUnformatted( symtxt );
-                        }
-                        else
-                        {
-                            ImGui::TextDisabled( "%s:%i", symtxt, sym->line );
-                        }
+                        TextDisabledUnformatted( LocationToString( symtxt, sym->line ) );
                         if( ImGui::IsItemClicked() )
                         {
                             ImGui::SetClipboardText( symtxt );
@@ -17310,7 +17235,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Separator();
     SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
     ImGui::SameLine();
-    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
@@ -17377,7 +17302,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Separator();
     SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
     ImGui::SameLine();
-    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );

@@ -1638,28 +1638,35 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
                         assert( fit != fileCounts.end() );
                         if( fit->second.local + fit->second.ext != 0 )
                         {
-                            if( m_childCalls )
+                            if( m_cost == 0 )
                             {
-                                ImGui::TextUnformatted( TimeToString( ( fit->second.local + fit->second.ext ) * worker.GetSamplingPeriod() ) );
+                                if( m_childCalls )
+                                {
+                                    ImGui::TextUnformatted( TimeToString( ( fit->second.local + fit->second.ext ) * worker.GetSamplingPeriod() ) );
+                                }
+                                else
+                                {
+                                    ImGui::TextUnformatted( TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
+                                }
+                                if( ImGui::IsItemHovered() )
+                                {
+                                    ImGui::BeginTooltip();
+                                    if( fit->second.local )
+                                    {
+                                        TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
+                                        TextFocused( "Local samples:", RealToString( fit->second.local ) );
+                                    }
+                                    if( fit->second.ext )
+                                    {
+                                        TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
+                                        TextFocused( "Child samples:", RealToString( fit->second.ext ) );
+                                    }
+                                    ImGui::EndTooltip();
+                                }
                             }
                             else
                             {
-                                ImGui::TextUnformatted( TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
-                            }
-                            if( ImGui::IsItemHovered() )
-                            {
-                                ImGui::BeginTooltip();
-                                if( fit->second.local )
-                                {
-                                    TextFocused( "Local time:", TimeToString( fit->second.local * worker.GetSamplingPeriod() ) );
-                                    TextFocused( "Local samples:", RealToString( fit->second.local ) );
-                                }
-                                if( fit->second.ext )
-                                {
-                                    TextFocused( "Child time:", TimeToString( fit->second.ext * worker.GetSamplingPeriod() ) );
-                                    TextFocused( "Child samples:", RealToString( fit->second.ext ) );
-                                }
-                                ImGui::EndTooltip();
+                                ImGui::TextUnformatted( RealToString( fit->second.local ) );
                             }
                             ImGui::SameLine();
                             if( m_childCalls )

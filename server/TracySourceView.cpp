@@ -69,6 +69,19 @@ static_assert( sizeof( s_regNameX86 ) / sizeof( *s_regNameX86 ) == (size_t)Sourc
 static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];
 
 
+static constexpr const char* s_CostName[] = {
+    "Sample count",
+    "Slow branches",
+    "Slow cache",
+    "Cycles",
+    "Retirements",
+    "Branches taken",
+    "Branch miss",
+    "Cache access",
+    "Cache miss"
+};
+
+
 static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
 {
     if( vec.empty() ) return 0;
@@ -165,7 +178,7 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     , m_atnt( false )
     , m_childCalls( false )
     , m_hwSamples( true )
-    , m_cost( 0 )
+    , m_cost( CostType::SampleCount )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
@@ -1188,7 +1201,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     AddrStat iptotalSrc = {}, iptotalAsm = {};
     AddrStat ipmaxSrc = {}, ipmaxAsm = {};
     unordered_flat_map<uint64_t, AddrStat> ipcountSrc, ipcountAsm;
-    if( m_cost == 0 )
+    if( m_cost == CostType::SampleCount )
     {
         if( m_calcInlineStats )
         {
@@ -1230,16 +1243,24 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::SameLine();
             ImGui::TextUnformatted( ICON_FA_HIGHLIGHTER " Cost" );
             ImGui::SameLine();
-            const char* items[] = { "Sample count", "Cycles", "Retirements", "Branches taken", "Branch miss", "Slow branches", "Cache access", "Cache miss", "Slow cache" };
             float mw = 0;
-            for( auto& v : items )
+            for( auto& v : s_CostName )
             {
                 const auto w = ImGui::CalcTextSize( v ).x;
                 if( w > mw ) mw = w;
             }
             ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-            ImGui::Combo( "##cost", &m_cost, items, sizeof( items ) / sizeof( *items ), 100 );
+            if( ImGui::BeginCombo( "##cost", s_CostName[(int)m_cost], ImGuiComboFlags_HeightLarge ) )
+            {
+                int idx = 0;
+                for( auto& v : s_CostName )
+                {
+                    if( ImGui::Selectable( v, idx == (int)m_cost ) ) m_cost = (CostType)idx;
+                    idx++;
+                }
+                ImGui::EndCombo();
+            }
             ImGui::PopStyleVar();
             ImGui::SameLine();
             ImGui::Spacing();
@@ -1361,7 +1382,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     }
     else
     {
-        m_cost = 0;
+        m_cost = CostType::SampleCount;
     }
 
     ImGui::PopStyleVar();
@@ -1638,7 +1659,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
                         assert( fit != fileCounts.end() );
                         if( fit->second.local + fit->second.ext != 0 )
                         {
-                            if( m_cost == 0 )
+                            if( m_cost == CostType::SampleCount )
                             {
                                 if( m_childCalls )
                                 {
@@ -2655,7 +2676,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 ImGui::BeginTooltip();
                 if( ipcnt.local )
                 {
-                    if( m_cost == 0 )
+                    if( m_cost == CostType::SampleCount )
                     {
                         if( worker ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker->GetSamplingPeriod() ) );
                         TextFocused( "Local samples:", RealToString( ipcnt.local ) );
@@ -2938,7 +2959,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 ImGui::BeginTooltip();
                 if( ipcnt.local )
                 {
-                    if( m_cost == 0 )
+                    if( m_cost == CostType::SampleCount )
                     {
                         TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
                         TextFocused( "Local samples:", RealToString( ipcnt.local ) );
@@ -3986,7 +4007,6 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
 
 void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, bool limitView, const View& view )
 {
-    assert( m_cost >= 1 && m_cost <= 8 );
     auto filename = m_source.filename();
     for( auto& v : m_asm )
     {
@@ -3999,28 +4019,30 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
         {
             switch( m_cost )
             {
-            case 1: stat = CountHwSamples( hw->cycles, view.m_statRange ); break;
-            case 2: stat = CountHwSamples( hw->retired, view.m_statRange ); break;
-            case 3: stat = CountHwSamples( hw->branchRetired, view.m_statRange ); break;
-            case 4: stat = CountHwSamples( hw->branchMiss, view.m_statRange ); break;
-            case 5: stat = CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ); break;
-            case 6: stat = CountHwSamples( hw->cacheRef, view.m_statRange ); break;
-            case 7: stat = CountHwSamples( hw->cacheMiss, view.m_statRange ); break;
-            case 8: stat = CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ); break;
+            case CostType::Cycles:          stat = CountHwSamples( hw->cycles, view.m_statRange ); break;
+            case CostType::Retirements:     stat = CountHwSamples( hw->retired, view.m_statRange ); break;
+            case CostType::BranchesTaken:   stat = CountHwSamples( hw->branchRetired, view.m_statRange ); break;
+            case CostType::BranchMiss:      stat = CountHwSamples( hw->branchMiss, view.m_statRange ); break;
+            case CostType::SlowBranches:    stat = CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ); break;
+            case CostType::CacheAccess:     stat = CountHwSamples( hw->cacheRef, view.m_statRange ); break;
+            case CostType::CacheMiss:       stat = CountHwSamples( hw->cacheMiss, view.m_statRange ); break;
+            case CostType::SlowCache:       stat = CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ); break;
+            default: assert( false ); return;
             }
         }
         else
         {
             switch( m_cost )
             {
-            case 1: stat = hw->cycles.size(); break;
-            case 2: stat = hw->retired.size(); break;
-            case 3: stat = hw->branchRetired.size(); break;
-            case 4: stat = hw->branchMiss.size(); break;
-            case 5: stat = hw->branchMiss.size() *  hw->branchRetired.size(); break;
-            case 6: stat = hw->cacheRef.size(); break;
-            case 7: stat = hw->cacheMiss.size(); break;
-            case 8: stat = hw->cacheMiss.size() * hw->cacheRef.size(); break;
+            case CostType::Cycles:          stat = hw->cycles.size(); break;
+            case CostType::Retirements:     stat = hw->retired.size(); break;
+            case CostType::BranchesTaken:   stat = hw->branchRetired.size(); break;
+            case CostType::BranchMiss:      stat = hw->branchMiss.size(); break;
+            case CostType::SlowBranches:    stat = hw->branchMiss.size() *  hw->branchRetired.size(); break;
+            case CostType::CacheAccess:     stat = hw->cacheRef.size(); break;
+            case CostType::CacheMiss:       stat = hw->cacheMiss.size(); break;
+            case CostType::SlowCache:       stat = hw->cacheMiss.size() * hw->cacheRef.size(); break;
+            default: assert( false ); return;
             }
         }
         assert( ipcountAsm.find( addr ) == ipcountAsm.end() );

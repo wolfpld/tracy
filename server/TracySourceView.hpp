@@ -113,6 +113,19 @@ private:
         }
     };
 
+    enum class CostType
+    {
+        SampleCount,
+        SlowBranches,
+        SlowCache,
+        Cycles,
+        Retirements,
+        BranchesTaken,
+        BranchMiss,
+        CacheAccess,
+        CacheMiss
+    };
+
 public:
     using GetWindowCallback = void*(*)();
 
@@ -187,7 +200,7 @@ private:
     uint64_t m_jumpPopupAddr;
     bool m_hwSamples;
     bool m_childCalls;
-    int m_cost;
+    CostType m_cost;
 
     SourceContents m_source;
     SourceContents m_sourceTooltip;

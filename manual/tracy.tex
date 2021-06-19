@@ -1518,6 +1518,8 @@ You can force call stack capture in the non-\texttt{S} postfixed macros by addin
 
 The maximum call stack depth that can be retrieved is 62 frames. This is a restriction at the level of operating system.
 
+Tracy will automatically exclude certain uninteresting functions from the captured call stacks. For example, the pass-through intrinsic wrapper functions won't be reported.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -1909,9 +1911,9 @@ Should you want to disable this mechanism, you can set the \texttt{kernel.perf\_
 
 \subsubsection{Hardware sampling}
 
-While the call stack sampling is a generic software-implemented functionality of the operating system, there's another way of sampling program execution patterns. Modern processors host a wide array of different hardware performance counters, which are increased when some event in a CPU core happens. These could be as simple as counting each clock cycle, or as implementation specific as counting 'retired instructions that are delivered to the back-end after the front-end had at least 1 bubble-slot for a period of 2 cycles'.
+While the call stack sampling is a generic software-implemented functionality of the operating system, there's another way of sampling program execution patterns. Modern processors host a wide array of different hardware performance counters, which increase when some event in a CPU core happens. These could be as simple as counting each clock cycle, or as implementation specific as counting 'retired instructions that are delivered to the back-end after the front-end had at least 1 bubble-slot for a period of 2 cycles'.
 
-Tracy is able to use these counters to present you the following three statistics, which may help guide you to discover why your code is not as fast as possible:
+Tracy is able to use these counters to present you the following three statistics, which may help guide you in discovery why your code is not as fast as possible:
 
 \begin{enumerate}
 \item \emph{Instructions Per Cycle (IPC)} -- shows how many instructions were executing concurrently within a single core cycle. Higher values are better. The maximum achievable value depends on the design of CPU, including things such as the number of execution units and their individual capabilities. Calculated as $\frac{\text{\#instructions retired}}{\text{\#cycles}}$. Can be disabled with the \texttt{TRACY\_NO\_SAMPLE\_RETIREMENT} macro.
@@ -1919,13 +1921,13 @@ Tracy is able to use these counters to present you the following three statistic
 \item \emph{Cache miss rate} -- shows how frequently the CPU has to retrieve data from memory. Lower values are better. The specifics of which cache level is taken into account here vary from one implementation to another. Calculated as $\frac{\text{\#cache misses}}{\text{\#cache references}}$. Can be disabled with the \texttt{TRACY\_NO\_SAMPLE\_CACHE} macro.
 \end{enumerate}
 
-Each performance counter has to be collected by a dedicated Performance Monitoring Unit (PMU). The availability of PMUs is very limited, so you may not be able to capture all the statistics mentioned above at the same time (as each requires capture of two different counters). In such case, you will need to manually select what needs to be sampled.
+Each performance counter has to be collected by a dedicated Performance Monitoring Unit (PMU). The availability of PMUs is very limited, so you may not be able to capture all the statistics mentioned above at the same time (as each requires capture of two different counters). In such case, you will need to manually select what needs to be sampled, with the macros specified above.
 
 If the provided measurements are not specific enough for your needs, you will need to use a profiler better tailored to the hardware you are using, such as Intel VTune, or AMD \si{\micro}Prof.
 
 Another problem to consider here is the measurement skid. It is quite hard to accurately pinpoint the exact assembly instruction which has caused the counter to trigger. Due to this the results you'll get may look a bit nonsense at times. For example, a branch miss may be attributed to the multiply instruction. Not much can be done with that, as this is exactly what the hardware is reporting. The amount of skid you will encounter depends on the specific implementation of a processor, and each vendor has their own solution to minimize it. Intel uses Precise Event Based Sampling (PEBS), which is rather good, but it still can, for example, blend the branch statistics across the comparison instruction and the following jump instruction. AMD employs their own Instruction Based Sampling (IBS), which tends to provide worse results in comparison.
 
-Do note that the statistics presented by Tracy are a combination of two randomly sampled counters, so you should take them with a grain of salt. The random nature of sampling\footnote{The hardware counters in practice can be triggered only once per million-or-so events happening.} makes it fully possible to count more branch misses than branch instructions, or some other similar nonsense. You should always cross-check this data with the count of sampled events, in order to decide if the provided values can be reliably acted upon.
+Do note that the statistics presented by Tracy are a combination of two randomly sampled counters, so you should take them with a grain of salt. The random nature of sampling\footnote{The hardware counters in practice can be triggered only once per million-or-so events happening.} makes it fully possible to count more branch misses than branch instructions, or some other similar sillyness. You should always cross-check this data with the count of sampled events, in order to decide if the provided values can be reliably acted upon.
 
 \subparagraph{Availability}
 
@@ -1934,7 +1936,7 @@ Currently the hardware performance counter readings are only available on Linux.
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}
 
-To enable deep insight into program execution, Tracy will capture small chunks of the executable image during profiling. The retrieved code can be subsequently disassembled to be inspected in detail. This functionality will be performed only for functions that are no larger than 64 KB and only if symbol information is present.
+To enable deep insight into program execution, Tracy will capture small chunks of the executable image during profiling. The retrieved code can be subsequently disassembled to be inspected in detail. This functionality will be performed only for functions that are no larger than 128 KB and only if symbol information is present.
 
 Discovery of previously unseen executable code may result in reduced performance of real-time capture. This is especially true when the profiling session had just started. Such behavior is expected and will go back to normal after a couple of moments.
 
@@ -2614,7 +2616,7 @@ Ghost zones represent true function calls in the program, periodically reported 
 
 Another common pitfall to watch for is the order of presented functions. \emph{It is not what you expect it to be!} Read chapter~\ref{readingcallstacks} for a critical insight on how call stacks might seem nonsensical at first, and why they aren't.
 
-The available information about ghost zones is quite limited, but it's enough to give you a rough outlook on the execution of your application. The timeline view alone is more than any other statistical profiler is able to present. In addition to that, Tracy properly handles inlined function calls, which are indicated by darker colored ghost zones.
+The available information about ghost zones is quite limited, but it's enough to give you a rough outlook on the execution of your application. The timeline view alone is more than any other statistical profiler is able to present. In addition to that, Tracy properly handles inlined function calls, which are indicated by darker background of ghost zones. Zones representing kernel-mode functions are displayed with red function names.
 
 Clicking the \LMB{}~left mouse button on a ghost zone will open the corresponding source file location, if able (see chapter~\ref{sourceview} for conditions). There are three ways in which source locations can be assigned to a ghost zone:
 
@@ -2832,7 +2834,7 @@ Data displayed in this mode is in essence very similar to the instrumentation on
 
 First and foremost, the presented information is constructed from a number of call stack samples, which represent real addresses in the application's binary code, mapped to the line numbers in the source files. This reverse mapping may not be always possible, or may be erroneous. Furthermore, due to the nature of the sampling process, it is impossible to obtain exact time measurement. Instead, time values are guesstimated by multiplying number of sample counts by mean time between two distinct samples.
 
-The \emph{Name} column contains name of the function in which the sampling was done. If the \emph{\faSitemap{}~Inlines} option is enabled, functions which were inlined will be preceded with a '\faCaretRight{}' symbol and additionally display their parent function name in parenthesis. Otherwise, only non-inlined functions are listed, with count of inlined functions in parenthesis. Any entry containing inlined function may be expanded to display the corresponding functions list (some functions may be hidden if the \emph{\faPuzzlePiece{}~Show all} option is disabled, due to lack of sampling data). Clicking on a function name will open the sample entry call stacks window (see chapter~\ref{sampleparents}). Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, which will prevent, or limit the capability to display parent call stacks.
+The \emph{Name} column contains name of the function in which the sampling was done. Kernel-mode function samples are distinguished with the red color. If the \emph{\faSitemap{}~Inlines} option is enabled, functions which were inlined will be preceded with a '\faCaretRight{}' symbol and additionally display their parent function name in parenthesis. Otherwise, only non-inlined functions are listed, with count of inlined functions in parenthesis. Any entry containing inlined function may be expanded to display the corresponding functions list (some functions may be hidden if the \emph{\faPuzzlePiece{}~Show all} option is disabled, due to lack of sampling data). Clicking on a function name will open the sample entry call stacks window (see chapter~\ref{sampleparents}). Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, which will prevent, or limit the capability to display parent call stacks.
 
 The \emph{Location} column displays the corresponding source file name and line number. Depending on the \emph{Location} option selection it can either show function entry address, or the instruction at which the sampling was performed. The \emph{Entry} mode points at the beginning of a non-inlined function, or at the place where inlined function was inserted in its parent function. The \emph{Sample} mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem enable you to look at both the inlined function code and the place where it was inserted. If the \emph{Smart} location is selected, profiler will display entry point position for non-inlined functions and sample location for inlined functions. Selecting the \emph{\faAt{}~Address} option will instead print the symbol address.
 
@@ -2844,7 +2846,7 @@ The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Sh
 
 The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol, and displayed as 'less than'. In some cases this data won't be available. If the symbol code has been retrieved\footnote{Symbols larger than 64~KB are not captured.}, symbol size will be prepend with the \texttt{\faDatabase}~icon, and clicking the \RMB{}~right mouse button on the location column entry will open symbol view window (section~\ref{symbolview}).
 
-Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. The exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. Limiting the time range is also available, but is restricted to self time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. Display of kernel symbols may be disabled with the \emph{\faHatWizard{}~Include kernel} switch. The exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. Limiting the time range is also available, but is restricted to self time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
 
 \subsection{Find zone window}
 \label{findzone}
@@ -3183,7 +3185,7 @@ Clicking on the \emph{\faClipboard{}~Copy to clipboard} buttons will copy the ap
 \subsection{Call stack window}
 \label{callstackwindow}
 
-This window shows the frames contained in the selected call stack. Each frame is described by a function name, source file location and originating image\footnote{Executable images are called \emph{modules} by Microsoft.} name. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
+This window shows the frames contained in the selected call stack. Each frame is described by a function name, source file location and originating image\footnote{Executable images are called \emph{modules} by Microsoft.} name. Function frames originating from kernel are marked with a red color. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number\footnote{Or '\faCaretRight{}'~icon in case of call stack tooltips.}.
 

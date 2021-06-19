@@ -2567,30 +2567,33 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             {
                 if( addr >= m_baseAddr && addr < m_baseAddr + m_codeLen )
                 {
-                    match++;
-                    const auto hw = worker->GetHwSampleData( addr );
-                    if( hw )
+                    if( !m_calcInlineStats || worker->GetInlineSymbolForAddress( addr ) == m_symAddr )
                     {
-                        hasHwData = true;
-                        auto& statRange = view->m_statRange;
-                        if( statRange.active )
+                        match++;
+                        const auto hw = worker->GetHwSampleData( addr );
+                        if( hw )
                         {
-                            hw->sort();
-                            cycles += CountHwSamples( hw->cycles, statRange );
-                            retired += CountHwSamples( hw->retired, statRange );
-                            cacheRef += CountHwSamples( hw->cacheRef, statRange );
-                            cacheMiss += CountHwSamples( hw->cacheMiss, statRange );
-                            branchRetired += CountHwSamples( hw->branchRetired, statRange );
-                            branchMiss += CountHwSamples( hw->branchMiss, statRange );
-                        }
-                        else
-                        {
-                            cycles += hw->cycles.size();
-                            retired += hw->retired.size();
-                            cacheRef += hw->cacheRef.size();
-                            cacheMiss += hw->cacheMiss.size();
-                            branchRetired += hw->branchRetired.size();
-                            branchMiss += hw->branchMiss.size();
+                            hasHwData = true;
+                            auto& statRange = view->m_statRange;
+                            if( statRange.active )
+                            {
+                                hw->sort();
+                                cycles += CountHwSamples( hw->cycles, statRange );
+                                retired += CountHwSamples( hw->retired, statRange );
+                                cacheRef += CountHwSamples( hw->cacheRef, statRange );
+                                cacheMiss += CountHwSamples( hw->cacheMiss, statRange );
+                                branchRetired += CountHwSamples( hw->branchRetired, statRange );
+                                branchMiss += CountHwSamples( hw->branchMiss, statRange );
+                            }
+                            else
+                            {
+                                cycles += hw->cycles.size();
+                                retired += hw->retired.size();
+                                cacheRef += hw->cacheRef.size();
+                                cacheMiss += hw->cacheMiss.size();
+                                branchRetired += hw->branchRetired.size();
+                                branchMiss += hw->branchMiss.size();
+                            }
                         }
                     }
                 }
@@ -2830,7 +2833,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
     const auto hw = worker.GetHwSampleData( line.addr );
     size_t cycles = 0, retired = 0, cacheRef = 0, cacheMiss = 0, branchRetired = 0, branchMiss = 0;
-    if( hw )
+    if( hw && ( !m_calcInlineStats || worker.GetInlineSymbolForAddress( line.addr ) == m_symAddr ) )
     {
         if( view.m_statRange.active )
         {

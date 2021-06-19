@@ -22,6 +22,11 @@ v0.x.x (xxxx-xx-xx)
 - Added Rocket Lake microarchitectural data.
 - Updated CPU identifier lists.
 - Implemented GPU timer overflow handling heuristics.
+- Assembly instructions are now assigned to inline symbols.
+  - You can not only see the assembly source file and line, but also the
+    originating function.
+  - If symbol view is restricted to a single inline function, all assembly
+    instructions not in this context will be dimmed out.
 
 
 v0.7.8 (2021-05-19)

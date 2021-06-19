@@ -1188,26 +1188,33 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     AddrStat iptotalSrc = {}, iptotalAsm = {};
     AddrStat ipmaxSrc = {}, ipmaxAsm = {};
     unordered_flat_map<uint64_t, AddrStat> ipcountSrc, ipcountAsm;
-    if( m_calcInlineStats )
+    if( m_cost == 0 )
     {
-        GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
-        GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+        if( m_calcInlineStats )
+        {
+            GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+            GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+        }
+        else
+        {
+            GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+            auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+            if( iptr )
+            {
+                const auto symEnd = m_baseAddr + m_codeLen;
+                while( *iptr < symEnd )
+                {
+                    GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+                    iptr++;
+                }
+            }
+            GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+            iptotalSrc = iptotalAsm;
+        }
     }
     else
     {
-        GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
-        auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
-        if( iptr )
-        {
-            const auto symEnd = m_baseAddr + m_codeLen;
-            while( *iptr < symEnd )
-            {
-                GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
-                iptr++;
-            }
-        }
-        GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
-        iptotalSrc = iptotalAsm;
+        GatherIpHwStats( iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
     }
     const auto slzReady = worker.AreSourceLocationZonesReady();
     if( ( iptotalAsm.local + iptotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
@@ -3951,6 +3958,74 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
             if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
             {
                 m_selectedAddressesHover.emplace( v );
+            }
+        }
+    }
+}
+
+void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, bool limitView, const View& view )
+{
+    auto filename = m_source.filename();
+    for( auto& v : m_asm )
+    {
+        const auto& addr = v.addr;
+        if( m_calcInlineStats && worker.GetInlineSymbolForAddress( addr ) != m_symAddr ) continue;
+        const auto hw = worker.GetHwSampleData( addr );
+        if( !hw ) continue;
+        size_t stat;
+        if( view.m_statRange.active )
+        {
+            switch( m_cost )
+            {
+            case 1: stat = CountHwSamples( hw->cycles, view.m_statRange ); break;
+            case 2: stat = CountHwSamples( hw->retired, view.m_statRange ); break;
+            default:
+                assert( false );
+                return;
+            }
+        }
+        else
+        {
+            switch( m_cost )
+            {
+            case 1: stat = hw->cycles.size(); break;
+            case 2: stat = hw->retired.size(); break;
+            default:
+                assert( false );
+                return;
+            }
+        }
+        assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+        ipcountAsm.emplace( addr, AddrStat { (uint32_t)stat, 0 } );
+        iptotalAsm.local += stat;
+        if( ipmaxAsm.local < stat ) ipmaxAsm.local = stat;
+
+        if( filename )
+        {
+            auto frame = worker.GetCallstackFrame( worker.PackPointer( addr ) );
+            if( frame )
+            {
+                auto ffn = worker.GetString( frame->data[0].file );
+                if( strcmp( ffn, filename ) == 0 )
+                {
+                    const auto line = frame->data[0].line;
+                    if( line != 0 )
+                    {
+                        auto it = ipcountSrc.find( line );
+                        if( it == ipcountSrc.end() )
+                        {
+                            ipcountSrc.emplace( line, AddrStat{ (uint32_t)stat, 0 } );
+                            if( ipmaxSrc.local < stat ) ipmaxSrc.local = stat;
+                        }
+                        else
+                        {
+                            const auto sum = it->second.local + stat;
+                            it->second.local = sum;
+                            if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
+                        }
+                        iptotalSrc.local += stat;
+                    }
+                }
             }
         }
     }

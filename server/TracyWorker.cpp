@@ -6268,6 +6268,11 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
         auto cit = m_checkedFileStrings.find( ref );
         if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
     }
+    if( ev.symAddr != 0 )
+    {
+        assert( m_data.codeSymbolMap.find( ev.ptr ) == m_data.codeSymbolMap.end() );
+        m_data.codeSymbolMap.emplace( ev.ptr, ev.symAddr );
+    }
 }
 
 void Worker::ProcessCrashReport( const QueueCrashReport& ev )

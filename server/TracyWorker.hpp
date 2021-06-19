@@ -285,6 +285,7 @@ private:
         Vector<uint64_t> symbolLocInline;
         int64_t newSymbolsIndex = -1;
         int64_t newInlineSymbolsIndex = -1;
+        unordered_flat_map<uint64_t, uint64_t> codeSymbolMap;
 
 #ifndef TRACY_NO_STATISTICS
         unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> parentCallstackMap;

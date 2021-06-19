@@ -4055,29 +4055,26 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
 
         if( filename )
         {
-            auto frame = worker.GetCallstackFrame( worker.PackPointer( addr ) );
-            if( frame )
+            uint32_t line;
+            const auto fref = worker.GetLocationForAddress( addr, line );
+            if( line != 0 )
             {
-                auto ffn = worker.GetString( frame->data[0].file );
+                auto ffn = worker.GetString( fref );
                 if( strcmp( ffn, filename ) == 0 )
                 {
-                    const auto line = frame->data[0].line;
-                    if( line != 0 )
+                    auto it = ipcountSrc.find( line );
+                    if( it == ipcountSrc.end() )
                     {
-                        auto it = ipcountSrc.find( line );
-                        if( it == ipcountSrc.end() )
-                        {
-                            ipcountSrc.emplace( line, AddrStat{ stat, 0 } );
-                            if( ipmaxSrc.local < stat ) ipmaxSrc.local = stat;
-                        }
-                        else
-                        {
-                            const auto sum = it->second.local + stat;
-                            it->second.local = sum;
-                            if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
-                        }
-                        iptotalSrc.local += stat;
+                        ipcountSrc.emplace( line, AddrStat{ stat, 0 } );
+                        if( ipmaxSrc.local < stat ) ipmaxSrc.local = stat;
                     }
+                    else
+                    {
+                        const auto sum = it->second.local + stat;
+                        it->second.local = sum;
+                        if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
+                    }
+                    iptotalSrc.local += stat;
                 }
             }
         }

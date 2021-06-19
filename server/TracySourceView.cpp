@@ -3125,6 +3125,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         if( symData )
                         {
                             TextFocused( "Function:", worker.GetString( symData->name ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(0x%" PRIx64 ")", symAddr );
                         }
                     }
                 }

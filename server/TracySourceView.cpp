@@ -1224,12 +1224,15 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 }
             }
             GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
-            iptotalSrc = iptotalAsm;
         }
     }
     else
     {
         GatherIpHwStats( iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+    }
+    if( !m_calcInlineStats )
+    {
+        iptotalSrc = iptotalAsm;
     }
     const auto slzReady = worker.AreSourceLocationZonesReady();
     if( ( iptotalAsm.local + iptotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )

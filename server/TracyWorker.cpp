@@ -2137,6 +2137,7 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
 #ifndef TRACY_NO_STATISTICS
     if( !m_data.ctxUsage.empty() )
     {
+        auto itBegin = m_data.ctxUsage.begin();
         for( size_t i=0; i<num; i++ )
         {
             const auto time = int64_t( t0 + tstep * i );
@@ -2148,7 +2149,7 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
             else
             {
                 const auto test = ( time << 16 ) | 0xFFFF;
-                auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), test, [] ( const auto& l, const auto& r ) { return l < r._time_other_own; } );
+                auto it = std::upper_bound( itBegin, m_data.ctxUsage.end(), test, [] ( const auto& l, const auto& r ) { return l < r._time_other_own; } );
                 if( it == m_data.ctxUsage.begin() || it == m_data.ctxUsage.end() )
                 {
                     ptr->first = 0;
@@ -2160,6 +2161,7 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
                     ptr->first = it->Own();
                     ptr->second = it->Other();
                 }
+                itBegin = it;
             }
             ptr++;
         }

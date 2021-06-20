@@ -341,7 +341,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
     DWORD ctx = 0;
-    DWORD inlineNum;
+    DWORD inlineNum = 0;
     if( _SymAddrIncludeInlineTrace )
     {
         inlineNum = _SymAddrIncludeInlineTrace( proc, ptr );

@@ -2179,10 +2179,12 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
                 for( size_t i=0; i<num; i++ )
                 {
                     const auto time = int64_t( t0 + tstep * i );
-                    if( time >= 0 && time <= m_data.lastTime )
+                    if( time > m_data.lastTime ) break;
+                    if( time >= 0 )
                     {
                         auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-                        if( it != cs.end() && it->IsEndValid() && it->Start() <= time  )
+                        if( it == cs.end() ) break;
+                        if( it->IsEndValid() && it->Start() <= time  )
                         {
                             if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
                             {

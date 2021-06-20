@@ -2133,10 +2133,10 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
 {
     if( out.size() < num ) out.resize( num );
 
-    auto ptr = out.data();
 #ifndef TRACY_NO_STATISTICS
     if( !m_data.ctxUsage.empty() )
     {
+        auto ptr = out.data();
         auto itBegin = m_data.ctxUsage.begin();
         for( size_t i=0; i<num; i++ )
         {
@@ -2169,41 +2169,34 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
     else
 #endif
     {
-        for( size_t i=0; i<num; i++ )
+        memset( out.data(), 0, sizeof( int ) * 2 * num );
+        for( int i=0; i<m_data.cpuDataCount; i++ )
         {
-            const auto time = int64_t( t0 + tstep * i );
-            if( time < 0 || time > m_data.lastTime )
+            auto& cs = m_data.cpuData[i].cs;
+            if( !cs.empty() )
             {
-                ptr->first = 0;
-                ptr->second = 0;
-            }
-            else
-            {
-                int cntOwn = 0;
-                int cntOther = 0;
-                for( int i=0; i<m_data.cpuDataCount; i++ )
+                auto ptr = out.data();
+                for( size_t i=0; i<num; i++ )
                 {
-                    auto& cs = m_data.cpuData[i].cs;
-                    if( !cs.empty() )
+                    const auto time = int64_t( t0 + tstep * i );
+                    if( time >= 0 && time <= m_data.lastTime )
                     {
                         auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
                         if( it != cs.end() && it->IsEndValid() && it->Start() <= time  )
                         {
                             if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
                             {
-                                cntOwn++;
+                                ptr->first++;
                             }
                             else
                             {
-                                cntOther++;
+                                ptr->second++;
                             }
                         }
                     }
+                    ptr++;
                 }
-                ptr->first = cntOwn;
-                ptr->second = cntOther;
             }
-            ptr++;
         }
     }
 }

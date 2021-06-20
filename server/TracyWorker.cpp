@@ -2133,6 +2133,12 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
 {
     if( out.size() < num ) out.resize( num );
 
+    if( t0 > m_data.lastTime || int64_t( t0 + tstep * num ) < 0 )
+    {
+        memset( out.data(), 0, sizeof( int ) * 2 * num );
+        return;
+    }
+
 #ifndef TRACY_NO_STATISTICS
     if( !m_data.ctxUsage.empty() )
     {

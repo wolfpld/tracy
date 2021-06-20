@@ -5941,49 +5941,51 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
             const auto cpuUsageHeight = floor( 30.f * ImGui::GetTextLineHeight() / 15.f );
             if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
             {
+                const auto iw = (size_t)w;
+                m_worker.GetCpuUsage( m_vd.zvStart, nspxdbl, iw, m_cpuUsageBuf );
+
                 const float cpuCntRev = 1.f / cpuCnt;
                 float pos = 0;
-                int usageOwn, usageOther;
+                auto usage = m_cpuUsageBuf.begin();
                 while( pos < w )
                 {
-                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + pos * nspxdbl, usageOwn, usageOther );
                     float base;
-                    if( usageOwn != 0 )
+                    if( usage->first != 0 )
                     {
-                        base = dpos.y + offset + ( 1.f - usageOwn * cpuCntRev ) * cpuUsageHeight;
+                        base = dpos.y + offset + ( 1.f - usage->first * cpuCntRev ) * cpuUsageHeight;
                         DrawLine( draw, ImVec2( dpos.x + pos, dpos.y + offset + cpuUsageHeight ), ImVec2( dpos.x + pos, base ), 0xFF55BB55 );
                     }
                     else
                     {
                         base = dpos.y + offset + cpuUsageHeight;
                     }
-                    if( usageOther != 0 )
+                    if( usage->second != 0 )
                     {
-                        int usageTotal = usageOwn + usageOther;
+                        int usageTotal = usage->first + usage->second;
                         DrawLine( draw, ImVec2( dpos.x + pos, base ), ImVec2( dpos.x + pos, dpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
                     }
                     pos++;
+                    usage++;
                 }
                 DrawLine( draw, dpos + ImVec2( 0, offset+cpuUsageHeight+2 ), dpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
 
                 if( hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
                 {
-                    const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl;
-                    int usageOwn, usageOther;
-                    m_worker.GetCpuUsageAtTime( mt, usageOwn, usageOther );
+                    const auto& usage = m_cpuUsageBuf[ImGui::GetIO().MousePos.x - wpos.x];
                     ImGui::BeginTooltip();
-                    TextFocused( "Cores used by profiled program:", RealToString( usageOwn ) );
+                    TextFocused( "Cores used by profiled program:", RealToString( usage.first ) );
                     ImGui::SameLine();
                     char buf[64];
-                    PrintStringPercent( buf, usageOwn * cpuCntRev * 100 );
+                    PrintStringPercent( buf, usage.first * cpuCntRev * 100 );
                     TextDisabledUnformatted( buf );
-                    TextFocused( "Cores used by other programs:", RealToString( usageOther ) );
+                    TextFocused( "Cores used by other programs:", RealToString( usage.second ) );
                     ImGui::SameLine();
-                    PrintStringPercent( buf, usageOther * cpuCntRev * 100 );
+                    PrintStringPercent( buf, usage.second * cpuCntRev * 100 );
                     TextDisabledUnformatted( buf );
                     TextFocused( "Number of cores:", RealToString( cpuCnt ) );
-                    if( usageOwn + usageOther != 0 )
+                    if( usage.first + usage.second != 0 )
                     {
+                        const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl;
                         ImGui::Separator();
                         for( int i=0; i<cpuCnt; i++ )
                         {

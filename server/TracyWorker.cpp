@@ -2129,48 +2129,68 @@ uint64_t Worker::GetPidFromTid( uint64_t tid ) const
     return it->second;
 }
 
-void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
+void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std::pair<int, int>>& out )
 {
-    own = other = 0;
-    if( time < 0 || time > m_data.lastTime ) return;
+    if( out.size() < num ) out.resize( num );
 
-#ifndef TRACY_NO_STATISTICS
-    // Remove this check when real-time ctxUsage contruction is implemented.
-    if( !m_data.ctxUsage.empty() )
+    auto ptr = out.data();
+    for( size_t i=0; i<num; i++ )
     {
-        const auto test = ( time << 16 ) | 0xFFFF;
-        auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), test, [] ( const auto& l, const auto& r ) { return l < r._time_other_own; } );
-        if( it == m_data.ctxUsage.begin() || it == m_data.ctxUsage.end() ) return;
-        --it;
-        own = it->Own();
-        other = it->Other();
-        return;
-    }
-#endif
-
-    int cntOwn = 0;
-    int cntOther = 0;
-    for( int i=0; i<m_data.cpuDataCount; i++ )
-    {
-        auto& cs = m_data.cpuData[i].cs;
-        if( !cs.empty() )
+        const auto time = int64_t( t0 + tstep * i );
+        if( time < 0 || time > m_data.lastTime )
         {
-            auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-            if( it != cs.end() && it->IsEndValid() && it->Start() <= time  )
+            ptr->first = 0;
+            ptr->second = 0;
+        }
+        else
+        {
+#ifndef TRACY_NO_STATISTICS
+            if( !m_data.ctxUsage.empty() )
             {
-                if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
+                const auto test = ( time << 16 ) | 0xFFFF;
+                auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), test, [] ( const auto& l, const auto& r ) { return l < r._time_other_own; } );
+                if( it == m_data.ctxUsage.begin() || it == m_data.ctxUsage.end() )
                 {
-                    cntOwn++;
+                    ptr->first = 0;
+                    ptr->second = 0;
                 }
                 else
                 {
-                    cntOther++;
+                    --it;
+                    ptr->first = it->Own();
+                    ptr->second = it->Other();
                 }
             }
+            else
+#endif
+            {
+                int cntOwn = 0;
+                int cntOther = 0;
+                for( int i=0; i<m_data.cpuDataCount; i++ )
+                {
+                    auto& cs = m_data.cpuData[i].cs;
+                    if( !cs.empty() )
+                    {
+                        auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                        if( it != cs.end() && it->IsEndValid() && it->Start() <= time  )
+                        {
+                            if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
+                            {
+                                cntOwn++;
+                            }
+                            else
+                            {
+                                cntOther++;
+                            }
+                        }
+                    }
+                }
+                ptr->first = cntOwn;
+                ptr->second = cntOther;
+            }
         }
+        ptr++;
     }
-    own = cntOwn;
-    other = cntOther;
 }
 
 const ContextSwitch* const Worker::GetContextSwitchDataImpl( uint64_t thread )

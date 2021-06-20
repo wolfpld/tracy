@@ -721,6 +721,8 @@ private:
         uint64_t symAddr = 0;
         int sel;
     } m_sampleParents;
+
+    std::vector<std::pair<int, int>> m_cpuUsageBuf;
 };
 
 }

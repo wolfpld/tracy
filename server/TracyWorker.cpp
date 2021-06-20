@@ -2134,18 +2134,18 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
     if( out.size() < num ) out.resize( num );
 
     auto ptr = out.data();
-    for( size_t i=0; i<num; i++ )
-    {
-        const auto time = int64_t( t0 + tstep * i );
-        if( time < 0 || time > m_data.lastTime )
-        {
-            ptr->first = 0;
-            ptr->second = 0;
-        }
-        else
-        {
 #ifndef TRACY_NO_STATISTICS
-            if( !m_data.ctxUsage.empty() )
+    if( !m_data.ctxUsage.empty() )
+    {
+        for( size_t i=0; i<num; i++ )
+        {
+            const auto time = int64_t( t0 + tstep * i );
+            if( time < 0 || time > m_data.lastTime )
+            {
+                ptr->first = 0;
+                ptr->second = 0;
+            }
+            else
             {
                 const auto test = ( time << 16 ) | 0xFFFF;
                 auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), test, [] ( const auto& l, const auto& r ) { return l < r._time_other_own; } );
@@ -2161,8 +2161,21 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
                     ptr->second = it->Other();
                 }
             }
-            else
+            ptr++;
+        }
+    }
+    else
 #endif
+    {
+        for( size_t i=0; i<num; i++ )
+        {
+            const auto time = int64_t( t0 + tstep * i );
+            if( time < 0 || time > m_data.lastTime )
+            {
+                ptr->first = 0;
+                ptr->second = 0;
+            }
+            else
             {
                 int cntOwn = 0;
                 int cntOther = 0;
@@ -2188,8 +2201,8 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
                 ptr->first = cntOwn;
                 ptr->second = cntOther;
             }
+            ptr++;
         }
-        ptr++;
     }
 }
 

@@ -1936,24 +1936,31 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( m_childCalls )
+        if( m_cost == CostType::SampleCount )
         {
-            TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+            if( m_childCalls )
+            {
+                TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+            }
+            else
+            {
+                TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( m_childCalls )
+            {
+                TextFocused( "Sample count:", RealToString( count.local + count.ext ) );
+            }
+            else
+            {
+                TextFocused( "Sample count:", RealToString( count.local ) );
+            }
         }
         else
         {
-            TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
-        }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        if( m_childCalls )
-        {
-            TextFocused( "Sample count:", RealToString( count.local + count.ext ) );
-        }
-        else
-        {
-            TextFocused( "Sample count:", RealToString( count.local ) );
+            TextFocused( "Events:", RealToString( count.local ) );
         }
         ImGui::SameLine();
         ImGui::Spacing();
@@ -2537,24 +2544,31 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( m_childCalls )
+        if( m_cost == CostType::SampleCount )
         {
-            TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+            if( m_childCalls )
+            {
+                TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+            }
+            else
+            {
+                TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( m_childCalls )
+            {
+                TextFocused( "Sample count:", RealToString( count.local + count.ext ) );
+            }
+            else
+            {
+                TextFocused( "Sample count:", RealToString( count.local ) );
+            }
         }
         else
         {
-            TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
-        }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        if( m_childCalls )
-        {
-            TextFocused( "Sample count:", RealToString( count.local + count.ext ) );
-        }
-        else
-        {
-            TextFocused( "Sample count:", RealToString( count.local ) );
+            TextFocused( "Events:", RealToString( count.local ) );
         }
         ImGui::SameLine();
         ImGui::Spacing();

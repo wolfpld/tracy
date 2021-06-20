@@ -38,9 +38,9 @@ public:
     enum class CostType
     {
         SampleCount,
+        Cycles,
         SlowBranches,
         SlowCache,
-        Cycles,
         Retirements,
         BranchesTaken,
         BranchMiss,

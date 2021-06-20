@@ -914,6 +914,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
         return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };
     }
+#ifdef __linux
     else if( s_kernelSym )
     {
         auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
@@ -927,6 +928,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             return { cb_data, 1, it->mod ? it->mod : "<kernel>" };
         }
     }
+#endif
 
     cb_data[0].name = CopyStringFast( "[unknown]" );
     cb_data[0].file = CopyStringFast( "<kernel>" );

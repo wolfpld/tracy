@@ -2181,6 +2181,7 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
             auto& cs = m_data.cpuData[i].cs;
             if( !cs.empty() )
             {
+                auto itBegin = cs.begin();
                 auto ptr = out.data();
                 for( size_t i=0; i<num; i++ )
                 {
@@ -2188,7 +2189,7 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
                     if( time > m_data.lastTime ) break;
                     if( time >= 0 )
                     {
-                        auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                        auto it = std::lower_bound( itBegin, cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
                         if( it == cs.end() ) break;
                         if( it->IsEndValid() && it->Start() <= time  )
                         {
@@ -2201,6 +2202,7 @@ void Worker::GetCpuUsage( int64_t t0, double tstep, size_t num, std::vector<std:
                                 ptr->second++;
                             }
                         }
+                        itBegin = it;
                     }
                     ptr++;
                 }

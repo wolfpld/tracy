@@ -1910,6 +1910,7 @@ Should you want to disable this mechanism, you can set the \texttt{kernel.perf\_
 \end{bclogo}
 
 \subsubsection{Hardware sampling}
+\label{hardwaresampling}
 
 While the call stack sampling is a generic software-implemented functionality of the operating system, there's another way of sampling program execution patterns. Modern processors host a wide array of different hardware performance counters, which increase when some event in a CPU core happens. These could be as simple as counting each clock cycle, or as implementation specific as counting 'retired instructions that are delivered to the back-end after the front-end had at least 1 bubble-slot for a period of 2 cycles'.
 
@@ -3289,9 +3290,9 @@ This is pretty much the original source file view window, but with the ability t
 
 \paragraph{Assembly mode}
 
-This mode shows the disassembly of the symbol machine code. Each assembly instruction is displayed listed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, an offset from the symbol beginning will be printed instead. Clicking the \LMB{}~left mouse button on the address/offset will switch to counting line numbers, using the selected one as origin (i.e. zero value). Line numbers are displayed inside \texttt{[]} brackets. This display mode can be useful to correlate lines with output of external tools, such as \texttt{llvm-mca}. To disable line numbering click the \RMB{}~right mouse button on a line number.
+This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the \emph{\faSitemap{}~Function} selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, an offset from the symbol beginning will be printed instead. Clicking the \LMB{}~left mouse button on the address/offset will switch to counting line numbers, using the selected one as origin (i.e. zero value). Line numbers are displayed inside \texttt{[]} brackets. This display mode can be useful to correlate lines with output of external tools, such as \texttt{llvm-mca}. To disable line numbering click the \RMB{}~right mouse button on a line number.
 
-If the \emph{\faFileImport{}~Source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. For easier differentiation between different source files, each file is assigned its own color. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on selected line.
+If the \emph{\faFileImport{}~Source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. For easier differentiation between different source files, each file is assigned its own color. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on selected line. Additionally, hovering the \faMousePointer{}~mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment.
 
 Selecting the \emph{\faCogs{}~Machine code} option will enable display of raw machine code bytes for each line.
 
@@ -3301,7 +3302,7 @@ Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol co
 
 The \emph{AT\&T} switch can be used to select between \emph{Intel} and \emph{AT\&T} assembly syntax. Beware that microarchitecture data is only available if Intel syntax is selected.
 
-Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
+Portions of the executable used to show the symbol view are stored within the captured profile and don't rely on the local disk files being available.
 
 \subparagraph{Exploring microarchitecture}
 
@@ -3351,15 +3352,25 @@ logo=\bcbombe
 An assembly instruction may be associated with only a single source line, but a source line might be associated with multiple assembly lines, sometimes intermixed with other assembly instructions.
 \end{bclogo}
 
-\paragraph{Instruction pointer statistics}
+\paragraph{Instruction pointer cost statistics}
 
 If automated call stack sampling (see chapter~\ref{sampling}) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. The displayed percentage values are heat map color coded, with the lowest values mapped to dark red, and the highest values mapped to bright yellow. The color code will appear next to the percentage value, and on the scroll bar, so that 'hot' places in code can be identified at a glance.
 
-By default samples are displayed only from within the selected symbol, in isolation. In some cases you may however want to include samples from functions that were called. To do so, enable the \emph{\faSignOut*{}~Child calls} option, which may also be temporarily toggled by pressing the \keys{Z} key. Make sure to familiarize yourself with section~\ref{readingcallstacks} to be able to properly read the results.
+By default samples are displayed only from within the selected symbol, in isolation. In some cases you may however want to include samples from functions that were called. To do so, enable the \emph{\faSignOut*{}~Child calls} option, which may also be temporarily toggled by holding the \keys{Z} key. Make sure to familiarize yourself with section~\ref{readingcallstacks} to be able to properly read the results.
 
 Instruction timings can be viewed as a group. To begin constructing such group, click the \LMB{}~left mouse button on the percentage value. Additional instructions can be added using the \keys{\ctrl}~key, while holding the \keys{\shift}~key will allow selection of a range. To cancel the selection, click the \RMB{}~right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
 
 Clicking the \MMB{}~middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter~\ref{sampleparents}). This functionality is only available for instructions that have collected sampling data, and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip, for a quick reference.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{How did I get here?}
+In some cases it may be difficult to understand what is being displayed in the disassembly. For example, calling the \texttt{std::lower\_bound} function may generate multiple level of inlined functions: first we enter the search algorithm, then the comparison functions, which in turn may be lambdas that call even more external code, and so on. In such event you will most likely see that some external code is taking a long time to execute and you will be none the wiser on how to improve things.
+
+Using the entry call stacks view can be very helpful in such cases, as you will be able to see the call stack of inline functions, originating from a call site in the code you are familiar with. With this critical piece of information you will be able to make a connection between functions you call and the instructions that are executed.
+\end{bclogo}
 
 Sample data source is controlled by the \emph{\faSitemap{}~Function} control, in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. The currently selected function can be changed by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to total number of samples collected within the symbol.
 
@@ -3372,6 +3383,24 @@ logo=\bcbombe
 ]{Important}
 Be aware that the data is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
 \end{bclogo}
+
+\paragraph{Inspecting hardware samples}
+
+As described in chapter~\ref{hardwaresampling}, on some platforms Tracy is able to capture the internal statistics counted by the CPU hardware. If this data has been collected, a number of additional options become available.
+
+If the \emph{\faHammer{}~Hardware samples} switch is enabled, the instruction pointer percentages column is supplemented with three additional columns, which show, in order: instructions per cycle, branch miss rate and cache miss rate. Refer to the description of hardware sampling to see how these statistics are calculated. The displayed values are color coded, with green color indicating good execution performance, and red color indicating that the CPU pipeline was stalled due to one reason or another.
+
+Be aware that these percentage values do not take into account the relative count of events. For example, you may see 100\% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as impactful as a seemingly better 50\% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. You should always cross-check the presented information with the respective event counts. To help a bit with this, Tracy will dim values that are statistically unimportant.
+
+Another new feature available when hardware samples are present is the \emph{\faHighlighter{}~Cost} selection list, which allows changing what is displayed in the first column of statistics. The following options are available:
+
+\begin{itemize}
+\item \emph{Sample count} -- this selects the default instruction pointer statistics, collected by call stack sampling performed by the operating system.
+\item \emph{Cycles} -- an option very similar to the \emph{sample count}, but the data is collected directly by the CPU hardware counters. This may make the results more reliable.
+\item \emph{Slow branches} -- indicates places where many branch instructions are issued, and at the same time, incorrectly predicted. Calculated as $\sqrt{\text{\#branch instructions}*\text{\#branch misses}}$. This is more useful than the raw branch miss rate, as it takes into account the number of events taking place.
+\item \emph{Slow cache} -- similar to \emph{slow branches}, but it shows cache miss data instead. These values are calculated as $\sqrt{\text{\#cache references}*\text{\#cache misses}}$, and will highlight places with lots of cache accesses that also miss.
+\item The rest of available selections just show raw values gathered from the hardware counters. These are: \emph{Retirements}, \emph{Branches taken}, \emph{Branch miss}, \emph{Cache access} and \emph{Cache miss}.
+\end{itemize}
 
 \subsection{Lock information window}
 \label{lockwindow}

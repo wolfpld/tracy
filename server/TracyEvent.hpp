@@ -589,7 +589,7 @@ enum { GhostZoneSize = sizeof( GhostZone ) };
 
 using SrcLocCountMap = unordered_flat_map<int16_t, size_t>;
 
-tracy_force_inline void IncSrcLocCount(SrcLocCountMap& countMap, int16_t srcloc)
+static tracy_force_inline void IncSrcLocCount( SrcLocCountMap& countMap, int16_t srcloc )
 {
     const auto it = countMap.find( srcloc );
     if( it == countMap.end() )
@@ -602,7 +602,7 @@ tracy_force_inline void IncSrcLocCount(SrcLocCountMap& countMap, int16_t srcloc)
     it->second++;
 }
 
-tracy_force_inline bool DecSrcLocCount(SrcLocCountMap& countMap, int16_t srcloc)
+static tracy_force_inline bool DecSrcLocCount( SrcLocCountMap& countMap, int16_t srcloc )
 {
     const auto it = countMap.find( srcloc );
     assert( it != countMap.end() );
@@ -618,7 +618,7 @@ tracy_force_inline bool DecSrcLocCount(SrcLocCountMap& countMap, int16_t srcloc)
     return true;
 }
 
-tracy_force_inline bool HasSrcLocCount(SrcLocCountMap& countMap, int16_t srcloc)
+static tracy_force_inline bool HasSrcLocCount( const SrcLocCountMap& countMap, int16_t srcloc )
 {
     const auto it = countMap.find( srcloc );
 
@@ -650,9 +650,8 @@ struct ThreadData
     SampleData pendingSample;
     uint64_t kernelSampleCnt;
 
-    tracy_force_inline void IncStackCount(int16_t srcloc) { IncSrcLocCount( stackCount, srcloc ); }
-
-    tracy_force_inline bool DecStackCount(int16_t srcloc) { return DecSrcLocCount( stackCount, srcloc ); }
+    tracy_force_inline void IncStackCount( int16_t srcloc ) { IncSrcLocCount( stackCount, srcloc ); }
+    tracy_force_inline bool DecStackCount( int16_t srcloc ) { return DecSrcLocCount( stackCount, srcloc ); }
 };
 
 struct GpuCtxThreadData

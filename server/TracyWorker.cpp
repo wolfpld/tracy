@@ -389,8 +389,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         else
         {
             auto td = NoticeThread( v.tid );
-            if (td->zoneIdStack.empty())
-                continue;
+            if( td->zoneIdStack.empty() ) continue;
             td->zoneIdStack.pop_back();
             auto& stack = td->stack;
             auto zone = stack.back_and_pop();
@@ -565,8 +564,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         char tmp[1024];
         f.Read( tmp, sz );
         m_captureName = std::string( tmp, tmp+sz );
-        if (m_captureName.empty())
-            m_captureName = f.GetFilename();
+        if( m_captureName.empty() ) m_captureName = f.GetFilename();
     }
     {
         f.Read( sz );
@@ -4798,7 +4796,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         if( slz->selfMin > selfSpan ) slz->selfMin = selfSpan;
         if( slz->selfMax < selfSpan ) slz->selfMax = selfSpan;
         slz->selfTotal += selfSpan;
-        if ( !isReentry )
+        if( !isReentry )
         {
             slz->nonReentrantCount++;
             if( slz->nonReentrantMin > timeSpan ) slz->nonReentrantMin = timeSpan;
@@ -7076,7 +7074,7 @@ void Worker::ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zon
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
         const auto isReentry = HasSrcLocCount( countMap, zone.SrcLoc() );
-        if ( !isReentry )
+        if( !isReentry )
         {
             slz.nonReentrantCount++;
             if( slz.nonReentrantMin > timeSpan ) slz.nonReentrantMin = timeSpan;

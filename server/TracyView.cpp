@@ -12277,32 +12277,9 @@ void View::AccumulationModeComboBox()
     ImGui::SameLine();
     const char* accumulationModeTable = "Self only\0Including children\0Non-reentrant\0";
     ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Including children" ).x + ImGui::GetTextLineHeight() * 2 );
-    int accumulationMode;
-    switch ( m_statAccumulationMode )
-    {
-    case AccumulationMode::SelfOnly:
-        accumulationMode = 0;
-        break;
-    case AccumulationMode::AllChildren:
-        accumulationMode = 1;
-        break;
-    case AccumulationMode::NonReentrantChildren:
-        accumulationMode = 2;
-        break;
-    }
+    int accumulationMode = static_cast<int>( m_statAccumulationMode );
     ImGui::Combo( "##accumulationMode", &accumulationMode, accumulationModeTable );
-    switch ( accumulationMode )
-    {
-    case 0:
-        m_statAccumulationMode = AccumulationMode::SelfOnly;
-        break;
-    case 1:
-        m_statAccumulationMode = AccumulationMode::AllChildren;
-        break;
-    case 2:
-        m_statAccumulationMode = AccumulationMode::NonReentrantChildren;
-        break;
-    }
+    m_statAccumulationMode = static_cast<AccumulationMode>( accumulationMode );
 }
 
 void View::DrawStatistics()

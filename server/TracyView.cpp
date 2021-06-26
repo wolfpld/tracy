@@ -12273,10 +12273,13 @@ struct SrcLocZonesSlim
 
 void View::AccumulationModeComboBox()
 {
-    ImGui::TextUnformatted( "Accumulation mode" );
     ImGui::SameLine();
-    const char* accumulationModeTable = m_statMode == 0 ? "Self only\0Including children\0Non-reentrant\0" : "Self only\0Including children\0";
-    ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Including children" ).x + ImGui::GetTextLineHeight() * 2 );
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::TextUnformatted( "Timing" );
+    ImGui::SameLine();
+    const char* accumulationModeTable = m_statMode == 0 ? "Self only\0With children\0Non-reentrant\0" : "Self only\0With children\0";
+    ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Non-reentrant" ).x + ImGui::GetTextLineHeight() * 2 );
     if ( m_statMode != 0 && m_statAccumulationMode == AccumulationMode::NonReentrantChildren )
     {
         m_statAccumulationMode = AccumulationMode::SelfOnly;
@@ -12284,6 +12287,9 @@ void View::AccumulationModeComboBox()
     int accumulationMode = static_cast<int>( m_statAccumulationMode );
     ImGui::Combo( "##accumulationMode", &accumulationMode, accumulationModeTable );
     m_statAccumulationMode = static_cast<AccumulationMode>( accumulationMode );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
 }
 
 void View::DrawStatistics()
@@ -12499,9 +12505,6 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
         AccumulationModeComboBox();
     }
     else

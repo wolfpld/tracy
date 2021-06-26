@@ -12271,21 +12271,37 @@ struct SrcLocZonesSlim
     int64_t total;
 };
 
-void View::AccumulationModeRadioButtons()
+void View::AccumulationModeComboBox()
 {
-    if ( ImGui::RadioButton( ICON_FA_CLOCK " Self time only", m_statAccumulationMode == AccumulationMode::SelfOnly ))
+    ImGui::TextUnformatted( "Accumulation mode" );
+    ImGui::SameLine();
+    const char* accumulationModeTable = "Self only\0Including children\0Non-reentrant\0";
+    ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Including children" ).x + ImGui::GetTextLineHeight() * 2 );
+    int accumulationMode;
+    switch ( m_statAccumulationMode )
     {
+    case AccumulationMode::SelfOnly:
+        accumulationMode = 0;
+        break;
+    case AccumulationMode::AllChildren:
+        accumulationMode = 1;
+        break;
+    case AccumulationMode::NonReentrantChildren:
+        accumulationMode = 2;
+        break;
+    }
+    ImGui::Combo( "##accumulationMode", &accumulationMode, accumulationModeTable );
+    switch ( accumulationMode )
+    {
+    case 0:
         m_statAccumulationMode = AccumulationMode::SelfOnly;
-    }
-    ImGui::SameLine();
-    if ( ImGui::RadioButton( ICON_FA_CLOCK " Child time", m_statAccumulationMode == AccumulationMode::AllChildren ))
-    {
+        break;
+    case 1:
         m_statAccumulationMode = AccumulationMode::AllChildren;
-    }
-    ImGui::SameLine();
-    if ( ImGui::RadioButton( ICON_FA_CLOCK " Non-reentrant time", m_statAccumulationMode == AccumulationMode::NonReentrantChildren ))
-    {
+        break;
+    case 2:
         m_statAccumulationMode = AccumulationMode::NonReentrantChildren;
+        break;
     }
 }
 
@@ -12505,7 +12521,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        AccumulationModeRadioButtons();
+        AccumulationModeComboBox();
     }
     else
     {
@@ -12529,7 +12545,7 @@ void View::DrawStatistics()
         }
         else
         {
-            AccumulationModeRadioButtons();
+            AccumulationModeComboBox();
         }
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );

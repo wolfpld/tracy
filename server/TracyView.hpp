@@ -194,7 +194,7 @@ private:
     void DrawMessages();
     void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
-    void AccumulationModeRadioButtons();
+    void AccumulationModeComboBox();
     void DrawStatistics();
     void DrawMemory();
     void DrawAllocList();

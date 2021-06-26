@@ -184,6 +184,10 @@ private:
         int64_t selfMin = std::numeric_limits<int64_t>::max();
         int64_t selfMax = std::numeric_limits<int64_t>::min();
         int64_t selfTotal = 0;
+        size_t nonReentrantCount = 0;
+        int64_t nonReentrantMin = std::numeric_limits<int64_t>::max();
+        int64_t nonReentrantMax = std::numeric_limits<int64_t>::min();
+        int64_t nonReentrantTotal = 0;
     };
 
     struct CallstackFrameIdHash
@@ -831,7 +835,7 @@ private:
     tracy_force_inline void ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz );
 
 #ifndef TRACY_NO_STATISTICS
-    tracy_force_inline void ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread );
+    tracy_force_inline void ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zone, uint16_t thread );
 #else
     tracy_force_inline void CountZoneStatistics( ZoneEvent* zone );
 #endif

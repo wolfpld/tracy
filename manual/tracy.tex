@@ -2820,7 +2820,7 @@ If the trace capture was performed with call stack sampling enabled (as describe
 
 Here you will find a multi-column display of captured zones, which contains: the zone \emph{name} and \emph{location}, \emph{total time} spent in the zone, the \emph{count} of zone executions and the \emph{mean time spent in the zone per call}. The view may be sorted according to the three displayed values.
 
-The \emph{\faClock{}~Self time} option determines how the displayed time is calculated. If it is disabled, the measurements will be inclusive, that is, containing execution time of zone's children. Enabling the option switches the measurement to exclusive, displaying just the time spent in zone, subtracting the child calls.
+In the \emph{~Accumulation mode} menu, the \emph{~Including children} selection selection displays inclusive measurements, that is, containing execution time of zone's children. The \emph{~Self only} selection switches the measurement to exclusive, displaying just the time spent in zone, subtracting the child calls. The \emph{~Non-reentrant} selection displays inclusive time, but counting only the first appearance of a given zone on a thread's stack.
 
 Clicking the \LMB{} left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
 
@@ -2847,7 +2847,7 @@ The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Sh
 
 The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol, and displayed as 'less than'. In some cases this data won't be available. If the symbol code has been retrieved\footnote{Symbols larger than 64~KB are not captured.}, symbol size will be prepend with the \texttt{\faDatabase}~icon, and clicking the \RMB{}~right mouse button on the location column entry will open symbol view window (section~\ref{symbolview}).
 
-Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. Display of kernel symbols may be disabled with the \emph{\faHatWizard{}~Include kernel} switch. The exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. Limiting the time range is also available, but is restricted to self time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. Display of kernel symbols may be disabled with the \emph{\faHatWizard{}~Include kernel} switch. The exclusive/inclusive/non-reentrant time counting mode can be switched using the \emph{~Accumulation mode} menu. Limiting the time range is also available, but is restricted to self time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
 
 \subsection{Find zone window}
 \label{findzone}

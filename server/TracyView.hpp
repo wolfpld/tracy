@@ -56,13 +56,20 @@ class View
         uint64_t count;
     };
 
+    enum class AccumulationMode
+    {
+        SelfOnly,
+        AllChildren,
+        NonReentrantChildren
+    };
+
     struct StatisticsCache
     {
         RangeSlim range;
+        AccumulationMode accumulationMode;
         size_t sourceCount;
         size_t count;
         int64_t total;
-        int64_t selfTotal;
     };
 
 public:
@@ -187,6 +194,7 @@ private:
     void DrawMessages();
     void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
+    void AccumulationModeComboBox();
     void DrawStatistics();
     void DrawMemory();
     void DrawAllocList();
@@ -250,6 +258,8 @@ private:
 
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone, uint64_t tid ) const;
+    bool IsZoneReentry( const ZoneEvent& zone ) const;
+    bool IsZoneReentry( const ZoneEvent& zone, uint64_t tid ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
@@ -392,7 +402,7 @@ private:
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;
 
-    bool m_statSelf = true;
+    AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
     bool m_statSampleTime = true;
     int m_statMode = 0;
     int m_statSampleLocation = 2;

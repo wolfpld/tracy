@@ -587,12 +587,57 @@ enum { GhostZoneSize = sizeof( GhostZone ) };
 #pragma pack()
 
 
+using SrcLocCountMap = unordered_flat_map<int16_t, size_t>;
+
+static tracy_force_inline void IncSrcLocCount( SrcLocCountMap& countMap, int16_t srcloc )
+{
+    const auto it = countMap.find( srcloc );
+    if( it == countMap.end() )
+    {
+        countMap.emplace( srcloc, 1 );
+        return;
+    }
+
+    assert( it->second != 0 );
+    it->second++;
+}
+
+static tracy_force_inline bool DecSrcLocCount( SrcLocCountMap& countMap, int16_t srcloc )
+{
+    const auto it = countMap.find( srcloc );
+    assert( it != countMap.end() );
+    assert( it->second != 0 );
+
+    if( it->second == 1 )
+    {
+        countMap.erase( it );
+        return false;
+    }
+
+    it->second--;
+    return true;
+}
+
+static tracy_force_inline bool HasSrcLocCount( const SrcLocCountMap& countMap, int16_t srcloc )
+{
+    const auto it = countMap.find( srcloc );
+
+    if( it != countMap.end() )
+    {
+        assert( it->second != 0 );
+        return true;
+    }
+
+    return false;
+}
+
 struct ThreadData
 {
     uint64_t id;
     uint64_t count;
     Vector<short_ptr<ZoneEvent>> timeline;
     Vector<short_ptr<ZoneEvent>> stack;
+    SrcLocCountMap stackCount;
     Vector<short_ptr<MessageData>> messages;
     uint32_t nextZoneId;
     Vector<uint32_t> zoneIdStack;
@@ -604,6 +649,9 @@ struct ThreadData
     Vector<SampleData> samples;
     SampleData pendingSample;
     uint64_t kernelSampleCnt;
+
+    tracy_force_inline void IncStackCount( int16_t srcloc ) { IncSrcLocCount( stackCount, srcloc ); }
+    tracy_force_inline bool DecStackCount( int16_t srcloc ) { return DecSrcLocCount( stackCount, srcloc ); }
 };
 
 struct GpuCtxThreadData

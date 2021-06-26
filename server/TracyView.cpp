@@ -12273,9 +12273,6 @@ struct SrcLocZonesSlim
 
 void View::AccumulationModeComboBox()
 {
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
     ImGui::TextUnformatted( "Timing" );
     ImGui::SameLine();
     const char* accumulationModeTable = m_statMode == 0 ? "Self only\0With children\0Non-reentrant\0" : "Self only\0With children\0";
@@ -12287,9 +12284,6 @@ void View::AccumulationModeComboBox()
     int accumulationMode = static_cast<int>( m_statAccumulationMode );
     ImGui::Combo( "##accumulationMode", &accumulationMode, accumulationModeTable );
     m_statAccumulationMode = static_cast<AccumulationMode>( accumulationMode );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
 }
 
 void View::DrawStatistics()
@@ -12509,6 +12503,9 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         AccumulationModeComboBox();
     }
     else
@@ -12533,6 +12530,9 @@ void View::DrawStatistics()
         }
         else
         {
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
             AccumulationModeComboBox();
         }
         ImGui::SameLine();

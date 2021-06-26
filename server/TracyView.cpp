@@ -12322,10 +12322,14 @@ void View::DrawStatistics()
 
             if( hasSamples )
             {
+                ImGui::Spacing();
+                ImGui::SameLine();
                 ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
             }
             else
             {
+                ImGui::Spacing();
+                ImGui::SameLine();
                 ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
             }
             ImGui::SameLine();
@@ -12532,13 +12536,23 @@ void View::DrawStatistics()
             AccumulationModeComboBox();
         }
         ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
+        ImGui::SameLine();
+        ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_PUZZLE_PIECE " Show all", &m_showAllSymbols );
         ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
         ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
+        ImGui::SameLine();
+        ImGui::Spacing();
         ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
         ImGui::SameLine();

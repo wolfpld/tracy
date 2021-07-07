@@ -1,5 +1,5 @@
 CFLAGS +=
-CXXFLAGS := $(CFLAGS) -std=gnu++17 -fpic
+CXXFLAGS := $(CFLAGS) -std=c++11 -fpic
 DEFINES += -DTRACY_ENABLE
 INCLUDES :=
 LIBS := -lpthread -ldl

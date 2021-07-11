@@ -95,6 +95,22 @@ private:
     uint8_t m_idx[3];
 };
 
+struct StringIdxHasher
+{
+    size_t operator()( const StringIdx& key ) const
+    {
+        return charutil::hash( (const char*)&key, sizeof( StringIdx ) );
+    }
+};
+
+struct StringIdxComparator
+{
+    bool operator()( const StringIdx& lhs, const StringIdx& rhs ) const
+    {
+        return memcmp( &lhs, &rhs, sizeof( StringIdx ) ) == 0;
+    }
+};
+
 class Int24
 {
 public:

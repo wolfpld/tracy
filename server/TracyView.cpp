@@ -12580,6 +12580,38 @@ void View::DrawStatistics()
         ImGui::SameLine();
         m_statisticsImageFilter.Draw( ICON_FA_FILTER "###imageFilter", 200 );
         ImGui::SameLine();
+        if( ImGui::BeginCombo( "###imageCombo", nullptr, ImGuiComboFlags_NoPreview | ImGuiComboFlags_HeightLarge ) )
+        {
+            unordered_flat_set<StringIdx, StringIdxHasher, StringIdxComparator> set;
+            std::vector<const char*> imgNames;
+            for( auto& v : m_worker.GetSymbolMap() )
+            {
+                auto it = set.find( v.second.imageName );
+                if( it == set.end() )
+                {
+                    set.emplace( v.second.imageName );
+                }
+            }
+            imgNames.reserve( set.size() );
+            for( auto& img : set )
+            {
+                imgNames.emplace_back( m_worker.GetString( img ) );
+            }
+            std::sort( imgNames.begin(), imgNames.end(), [] ( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+            for( auto& img : imgNames )
+            {
+                bool sel = false;
+                if( ImGui::Selectable( img, &sel ) )
+                {
+                    auto len = std::min<size_t>( 255, strlen( img ) );
+                    memcpy( m_statisticsImageFilter.InputBuf, img, len );
+                    m_statisticsImageFilter.InputBuf[len] = 0;
+                    m_statisticsImageFilter.Build();
+                }
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
         if( ImGui::Button( ICON_FA_BACKSPACE " Clear###image" ) )
         {
             m_statisticsImageFilter.Clear();

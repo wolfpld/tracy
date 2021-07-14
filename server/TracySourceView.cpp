@@ -1229,7 +1229,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     }
     else
     {
-        GatherIpHwStats( iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view, m_cost );
+        GatherIpHwStats( iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, view, m_cost );
     }
     if( !m_calcInlineStats )
     {
@@ -4035,7 +4035,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
     }
 }
 
-void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, bool limitView, const View& view, CostType cost )
+void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, const View& view, CostType cost )
 {
     auto filename = m_source.filename();
     for( auto& v : m_asm )

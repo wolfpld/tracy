@@ -198,7 +198,7 @@ private:
     uint8_t m_maxAsmBytes;
     bool m_atnt;
     uint64_t m_jumpPopupAddr;
-    bool m_hwSamples;
+    bool m_hwSamples, m_hwSamplesRelative;
     bool m_childCalls;
     CostType m_cost;
 

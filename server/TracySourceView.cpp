@@ -173,13 +173,14 @@ SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
     , m_asmCountBase( -1 )
-    , m_asmRelative( false )
+    , m_asmRelative( true )
     , m_asmBytes( false )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
     , m_atnt( false )
     , m_childCalls( false )
     , m_hwSamples( true )
+    , m_hwSamplesRelative( true )
     , m_cost( CostType::SampleCount )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
@@ -1243,6 +1244,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         if( worker.GetHwSampleCountAddress() != 0 )
         {
             SmallCheckbox( ICON_FA_HAMMER " Hw samples", &m_hwSamples );
+            ImGui::SameLine();
+            SmallCheckbox( "Relative", &m_hwSamplesRelative );
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();

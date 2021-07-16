@@ -8312,6 +8312,7 @@ void View::DrawGpuInfoWindow()
             {
                 DrawGpuInfoChildren<VectorAdapterPointer<GpuEvent>>( children, ztime );
             }
+            ImGui::TreePop();
         }
     }
 
@@ -8533,7 +8534,6 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
         }
         ImGui::EndColumns();
-        ImGui::TreePop();
     }
 }
 

@@ -7929,7 +7929,9 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
 
         ImGui::Columns( 2 );
+        ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() * 2 );
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+        ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() * 2 );
         ImGui::NextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -7945,11 +7947,11 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             {
                 auto& cev = a(children[cgr.v.front()]);
                 const auto txt = m_worker.GetZoneName( cev );
-                bool b = false;
                 SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                 ImGui::SameLine();
                 ImGui::PushID( (int)cgr.v.front() );
-                if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                ImGui::TreeNodeEx( txt, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen );
+                if( ImGui::IsItemClicked() )
                 {
                     ShowZoneInfo( cev );
                 }
@@ -8064,7 +8066,9 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
         ImGui::Columns( 2 );
+        ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+        ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
         ImGui::NextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -8374,7 +8378,9 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
 
         ImGui::Columns( 2 );
+        ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+        ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
         ImGui::NextColumn();
         char buf[128];
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -8390,9 +8396,9 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             {
                 auto& cev = a(children[cgr.v.front()]);
                 const auto txt = m_worker.GetZoneName( cev );
-                bool b = false;
                 ImGui::PushID( (int)cgr.v.front() );
-                if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                ImGui::TreeNodeEx( txt, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen );
+                if( ImGui::IsItemClicked() )
                 {
                     ShowZoneInfo( cev, m_gpuInfoWindowThread );
                 }

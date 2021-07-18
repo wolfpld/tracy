@@ -72,8 +72,8 @@ static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];
 static constexpr const char* s_CostName[] = {
     "Sample count",
     "Cycles",
-    "Slow branches",
-    "Slow cache",
+    "Branch impact",
+    "Cache impact",
     "Retirements",
     "Branches taken",
     "Branch miss",

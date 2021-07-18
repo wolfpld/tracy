@@ -4200,7 +4200,7 @@ void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& 
             default: assert( false ); return;
             }
         }
-        assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+        assert( as.ipCountAsm.find( addr ) == as.ipCountAsm.end() );
         as.ipCountAsm.emplace( addr, AddrStat { stat, 0 } );
         as.ipTotalAsm.local += stat;
         if( as.ipMaxAsm.local < stat ) as.ipMaxAsm.local = stat;
@@ -4253,7 +4253,7 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
             branch = sqrt( hw->branchMiss.size() *  hw->branchRetired.size() );
             cache = sqrt( hw->cacheMiss.size() * hw->cacheRef.size() );
         }
-        assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+        assert( as.ipCountAsm.find( addr ) == as.ipCountAsm.end() );
         as.hwCountAsm.emplace( addr, AddrStat { branch, cache } );
         if( as.hwMaxAsm.local < branch ) as.hwMaxAsm.local = branch;
         if( as.hwMaxAsm.ext < cache ) as.hwMaxAsm.ext = cache;
@@ -4356,7 +4356,7 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
         for( auto& ip : *ipmap )
         {
             auto addr = worker.GetCanonicalPointer( ip.first );
-            assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+            assert( as.ipCountAsm.find( addr ) == as.ipCountAsm.end() );
             auto cp = slzReady ? worker.GetChildSamples( addr ) : nullptr;
             const auto ccnt = cp ? cp->size() : 0;
             as.ipCountAsm.emplace( addr, AddrStat { ip.second, ccnt } );

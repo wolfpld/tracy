@@ -4106,7 +4106,7 @@ void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& 
     }
 }
 
-void SourceView::CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSrc, unordered_flat_map<uint64_t, AddrStat>& hwCountAsm, AddrStat& hwMaxSrc, AddrStat& hwMaxAsm, Worker& worker, const View& view )
+void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& view )
 {
     auto filename = m_source.filename();
     for( auto& v : m_asm )
@@ -4127,9 +4127,9 @@ void SourceView::CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSr
             cache = sqrt( hw->cacheMiss.size() * hw->cacheRef.size() );
         }
         assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
-        hwCountAsm.emplace( addr, AddrStat { branch, cache } );
-        if( hwMaxAsm.local < branch ) hwMaxAsm.local = branch;
-        if( hwMaxAsm.ext < cache ) hwMaxAsm.ext = cache;
+        as.hwCountAsm.emplace( addr, AddrStat { branch, cache } );
+        if( as.hwMaxAsm.local < branch ) as.hwMaxAsm.local = branch;
+        if( as.hwMaxAsm.ext < cache ) as.hwMaxAsm.ext = cache;
 
         if( filename )
         {
@@ -4140,12 +4140,12 @@ void SourceView::CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSr
                 auto ffn = worker.GetString( fref );
                 if( strcmp( ffn, filename ) == 0 )
                 {
-                    auto it = hwCountSrc.find( line );
-                    if( it == hwCountSrc.end() )
+                    auto it = as.hwCountSrc.find( line );
+                    if( it == as.hwCountSrc.end() )
                     {
-                        hwCountSrc.emplace( line, AddrStat{ branch, cache } );
-                        if( hwMaxSrc.local < branch ) hwMaxSrc.local = branch;
-                        if( hwMaxSrc.ext < cache ) hwMaxSrc.ext = cache;
+                        as.hwCountSrc.emplace( line, AddrStat{ branch, cache } );
+                        if( as.hwMaxSrc.local < branch ) as.hwMaxSrc.local = branch;
+                        if( as.hwMaxSrc.ext < cache ) as.hwMaxSrc.ext = cache;
                     }
                     else
                     {
@@ -4153,8 +4153,8 @@ void SourceView::CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSr
                         const auto cacheSum = it->second.ext + cache;
                         it->second.local = branchSum;
                         it->second.ext = cacheSum;
-                        if( hwMaxSrc.local < branchSum ) hwMaxSrc.local = branchSum;
-                        if( hwMaxSrc.ext < cacheSum ) hwMaxSrc.ext = cacheSum;
+                        if( as.hwMaxSrc.local < branchSum ) as.hwMaxSrc.local = branchSum;
+                        if( as.hwMaxSrc.ext < cacheSum ) as.hwMaxSrc.ext = cacheSum;
                     }
                 }
             }

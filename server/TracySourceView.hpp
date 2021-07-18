@@ -132,7 +132,10 @@ private:
         AddrStat ipTotalAsm = {};
         AddrStat ipMaxSrc = {};
         AddrStat ipMaxAsm = {};
+        AddrStat hwMaxSrc = {};
+        AddrStat hwMaxAsm = {};
         unordered_flat_map<uint64_t, AddrStat> ipCountSrc, ipCountAsm;
+        unordered_flat_map<uint64_t, AddrStat> hwCountSrc, hwCountAsm;
     };
 
 public:
@@ -173,7 +176,7 @@ private:
     void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
     void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
     uint32_t CountAsmIpStats( uint64_t baseAddr, const Worker& worker, bool limitView, const View& view );
-    void CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSrc, unordered_flat_map<uint64_t, AddrStat>& hwCountAsm, AddrStat& hwMaxSrc, AddrStat& hwMaxAsm, Worker& worker, const View& view );
+    void CountHwStats( AddrStatData& as, Worker& worker, const View& view );
 
     void SelectMicroArchitecture( const char* moniker );
 

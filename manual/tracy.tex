@@ -3386,21 +3386,27 @@ Be aware that the data is not fully accurate, as it is the result of random samp
 
 \paragraph{Inspecting hardware samples}
 
-As described in chapter~\ref{hardwaresampling}, on some platforms Tracy is able to capture the internal statistics counted by the CPU hardware. If this data has been collected, a number of additional options become available.
-
-If the \emph{\faHammer{}~Hardware samples} switch is enabled, the instruction pointer percentages column is supplemented with three additional columns, which show, in order: instructions per cycle, branch miss rate and cache miss rate. Refer to the description of hardware sampling to see how these statistics are calculated. The displayed values are color coded, with green color indicating good execution performance, and red color indicating that the CPU pipeline was stalled due to one reason or another.
-
-Be aware that these percentage values do not take into account the relative count of events. For example, you may see 100\% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as impactful as a seemingly better 50\% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. You should always cross-check the presented information with the respective event counts. To help a bit with this, Tracy will dim values that are statistically unimportant.
-
-Another new feature available when hardware samples are present is the \emph{\faHighlighter{}~Cost} selection list, which allows changing what is displayed in the first column of statistics. The following options are available:
+As described in chapter~\ref{hardwaresampling}, on some platforms Tracy is able to capture the internal statistics counted by the CPU hardware. If this data has been collected, the \emph{\faHighlighter{}~Cost} selection list will be available. It allows changing what is taken into consideration for display by the cost statistics. The following options can be selected:
 
 \begin{itemize}
-\item \emph{Sample count} -- this selects the default instruction pointer statistics, collected by call stack sampling performed by the operating system.
+\item \emph{Sample count} -- this selects the instruction pointer statistics, collected by call stack sampling performed by the operating system. This is the default data shown when hardware samples have not been captured.
 \item \emph{Cycles} -- an option very similar to the \emph{sample count}, but the data is collected directly by the CPU hardware counters. This may make the results more reliable.
-\item \emph{Slow branches} -- indicates places where many branch instructions are issued, and at the same time, incorrectly predicted. Calculated as $\sqrt{\text{\#branch instructions}*\text{\#branch misses}}$. This is more useful than the raw branch miss rate, as it takes into account the number of events taking place.
-\item \emph{Slow cache} -- similar to \emph{slow branches}, but it shows cache miss data instead. These values are calculated as $\sqrt{\text{\#cache references}*\text{\#cache misses}}$, and will highlight places with lots of cache accesses that also miss.
+\item \emph{Branch impact} -- indicates places where many branch instructions are issued, and at the same time, incorrectly predicted. Calculated as $\sqrt{\text{\#branch instructions}*\text{\#branch misses}}$. This is more useful than the raw branch miss rate, as it takes into account the number of events taking place.
+\item \emph{Cache impact} -- similar to \emph{branch impact}, but it shows cache miss data instead. These values are calculated as $\sqrt{\text{\#cache references}*\text{\#cache misses}}$, and will highlight places with lots of cache accesses that also miss.
 \item The rest of available selections just show raw values gathered from the hardware counters. These are: \emph{Retirements}, \emph{Branches taken}, \emph{Branch miss}, \emph{Cache access} and \emph{Cache miss}.
 \end{itemize}
+
+If the \emph{\faHammer{}~Hardware samples} switch is enabled, the cost percentages column will be supplemented with three additional columns. The first added column always displays the instructions per cycle (IPC) value. The two remaining columns show branch and cache data, as described below. The displayed values are color coded, with green color indicating good execution performance, and red color indicating that the CPU pipeline was stalled due to one reason or another.
+
+If the \emph{\faCarCrash{}~Impact} switch is enabled, the branch and cache columns will show how much impact the branch mispredictions and cache misses have. The way these statistics are calculated is described in the list above. In the other case, the columns will show the raw branch and cache miss rate ratios, isolated to their respective source and assembly lines, and not relative to the whole symbol.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Isolated values}
+The percentage values when \emph{\faCarCrash{}~Impact} option is not selected will not take into account the relative count of events. For example, you may see 100\% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as important as a seemingly better 50\% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. You should always cross-check the presented information with the respective event counts. To help a bit with this, Tracy will dim values that are statistically unimportant.
+\end{bclogo}
 
 \subsection{Lock information window}
 \label{lockwindow}

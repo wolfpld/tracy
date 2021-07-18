@@ -2810,7 +2810,22 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     {
         if( hasHwData )
         {
-            RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, ts );
+            if( m_hwSamplesRelative )
+            {
+                auto it = as.hwCountSrc.find( lineNum );
+                if( it == as.hwCountSrc.end() )
+                {
+                    RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
+                }
+                else
+                {
+                    RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, it->second.local, as.hwMaxSrc.local, it->second.ext, as.hwMaxSrc.ext, ts );
+                }
+            }
+            else
+            {
+                RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
+            }
         }
         else
         {
@@ -3105,7 +3120,22 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     {
         if( hw )
         {
-            RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, ts );
+            if( m_hwSamplesRelative )
+            {
+                auto it = as.hwCountAsm.find( line.addr );
+                if( it == as.hwCountAsm.end() )
+                {
+                    RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
+                }
+                else
+                {
+                    RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, it->second.local, as.hwMaxAsm.local, it->second.ext, as.hwMaxAsm.ext, ts );
+                }
+            }
+            else
+            {
+                RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
+            }
         }
         else
         {
@@ -3837,7 +3867,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, const ImVec2& ts )
+void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, size_t branchRel, size_t branchRelMax, size_t cacheRel, size_t cacheRelMax, const ImVec2& ts )
 {
     if( cycles )
     {
@@ -3877,104 +3907,197 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
     }
     ImGui::SameLine( 0, 0 );
-    if( branchRetired )
+    if( m_hwSamplesRelative )
     {
-        const bool unreliable = branchRetired < 10;
-        const float rate = float( branchMiss ) / branchRetired;
-        uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
-        if( branchMiss == 0 )
+        if( branchRel && branchRelMax )
         {
-            TextColoredUnformatted( col, "   0%  " );
-        }
-        else if( rate >= 1.f )
-        {
-            TextColoredUnformatted( col, " 100%  " );
-        }
-        else
-        {
-            char buf[16];
-            if( rate >= 0.1f )
+            const float rate = float( branchRel ) / branchRelMax;
+            uint32_t col = GetGoodnessColor( 1.f - rate * 3.f );
+            if( rate >= 1.f )
             {
-                const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                assert( end == buf+4 );
+                TextColoredUnformatted( col, " 100%  " );
             }
             else
             {
-                *buf = ' ';
-                const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
-                assert( end == buf+4 );
+                char buf[16];
+                if( rate >= 0.1f )
+                {
+                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                else
+                {
+                    *buf = ' ';
+                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                memcpy( buf+4, "%  ", 4 );
+                TextColoredUnformatted( col, buf );
             }
-            memcpy( buf+4, "%  ", 4 );
-            TextColoredUnformatted( col, buf );
+            if( ImGui::IsItemHovered() )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Branch mispredictions impact" );
+                ImGui::SameLine();
+                TextDisabledUnformatted( "Lower is better" );
+                ImGui::Separator();
+                TextFocused( "Impact value:", RealToString( branchRel ) );
+                TextFocused( "Relative to:", RealToString( branchRelMax ) );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+            }
         }
-        if( ImGui::IsItemHovered() )
+        else
         {
-            if( m_font ) ImGui::PopFont();
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Branch mispredictions rate" );
-            ImGui::SameLine();
-            TextDisabledUnformatted( "Lower is better" );
-            ImGui::Separator();
-            TextFocused( "Retired branches:", RealToString( branchRetired ) );
-            TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
-            if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
-            ImGui::EndTooltip();
-            if( m_font ) ImGui::PushFont( m_font );
+            ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+        }
+        ImGui::SameLine( 0, 0 );
+        if( cacheRel && cacheRelMax )
+        {
+            const float rate = float( cacheRel ) / cacheRelMax;
+            uint32_t col = GetGoodnessColor( 1.f - rate * 3.f );
+            if( rate >= 1.f )
+            {
+                TextColoredUnformatted( col, " 100%" );
+            }
+            else
+            {
+                char buf[16];
+                if( rate >= 0.1f )
+                {
+                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                else
+                {
+                    *buf = ' ';
+                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                memcpy( buf+4, "%", 2 );
+                TextColoredUnformatted( col, buf );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Cache miss rate impact" );
+                ImGui::SameLine();
+                TextDisabledUnformatted( "Lower is better" );
+                ImGui::Separator();
+                TextFocused( "Impact value:", RealToString( cacheRel ) );
+                TextFocused( "Relative to:", RealToString( cacheRelMax ) );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+            }
+        }
+        else
+        {
+            ImGui::ItemSize( ImVec2( 5 * ts.x, ts.y ) );
         }
     }
     else
     {
-        ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
-    }
-    ImGui::SameLine( 0, 0 );
-    if( cacheRef )
-    {
-        const bool unreliable = cacheRef < 10;
-        const float rate = float( cacheMiss ) / cacheRef;
-        uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
-        if( cacheMiss == 0 )
+        if( branchRetired )
         {
-            TextColoredUnformatted( col, "   0%" );
-        }
-        else if( rate >= 1.f )
-        {
-            TextColoredUnformatted( col, " 100%" );
-        }
-        else
-        {
-            char buf[16];
-            if( rate >= 0.1f )
+            const bool unreliable = branchRetired < 10;
+            const float rate = float( branchMiss ) / branchRetired;
+            uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
+            if( branchMiss == 0 )
             {
-                const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                assert( end == buf+4 );
+                TextColoredUnformatted( col, "   0%  " );
+            }
+            else if( rate >= 1.f )
+            {
+                TextColoredUnformatted( col, " 100%  " );
             }
             else
             {
-                *buf = ' ';
-                const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
-                assert( end == buf+4 );
+                char buf[16];
+                if( rate >= 0.1f )
+                {
+                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                else
+                {
+                    *buf = ' ';
+                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                memcpy( buf+4, "%  ", 4 );
+                TextColoredUnformatted( col, buf );
             }
-            memcpy( buf+4, "%", 2 );
-            TextColoredUnformatted( col, buf );
+            if( ImGui::IsItemHovered() )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Branch mispredictions rate" );
+                ImGui::SameLine();
+                TextDisabledUnformatted( "Lower is better" );
+                ImGui::Separator();
+                TextFocused( "Retired branches:", RealToString( branchRetired ) );
+                TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
+                if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+            }
         }
-        if( ImGui::IsItemHovered() )
+        else
         {
-            if( m_font ) ImGui::PopFont();
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Cache miss rate" );
-            ImGui::SameLine();
-            TextDisabledUnformatted( "Lower is better" );
-            ImGui::Separator();
-            TextFocused( "Cache references:", RealToString( cacheRef ) );
-            TextFocused( "Cache misses:", RealToString( cacheMiss ) );
-            if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
-            ImGui::EndTooltip();
-            if( m_font ) ImGui::PushFont( m_font );
+            ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
         }
-    }
-    else
-    {
-        ImGui::ItemSize( ImVec2( 5 * ts.x, ts.y ) );
+        ImGui::SameLine( 0, 0 );
+        if( cacheRef )
+        {
+            const bool unreliable = cacheRef < 10;
+            const float rate = float( cacheMiss ) / cacheRef;
+            uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
+            if( cacheMiss == 0 )
+            {
+                TextColoredUnformatted( col, "   0%" );
+            }
+            else if( rate >= 1.f )
+            {
+                TextColoredUnformatted( col, " 100%" );
+            }
+            else
+            {
+                char buf[16];
+                if( rate >= 0.1f )
+                {
+                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                else
+                {
+                    *buf = ' ';
+                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
+                    assert( end == buf+4 );
+                }
+                memcpy( buf+4, "%", 2 );
+                TextColoredUnformatted( col, buf );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Cache miss rate" );
+                ImGui::SameLine();
+                TextDisabledUnformatted( "Lower is better" );
+                ImGui::Separator();
+                TextFocused( "Cache references:", RealToString( cacheRef ) );
+                TextFocused( "Cache misses:", RealToString( cacheMiss ) );
+                if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+            }
+        }
+        else
+        {
+            ImGui::ItemSize( ImVec2( 5 * ts.x, ts.y ) );
+        }
     }
 }
 

@@ -1247,7 +1247,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             SmallCheckbox( ICON_FA_HAMMER " Hw samples", &m_hwSamples );
             ImGui::SameLine();
-            SmallCheckbox( "Relative", &m_hwSamplesRelative );
+            SmallCheckbox( ICON_FA_CAR_CRASH " Impact", &m_hwSamplesRelative );
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();

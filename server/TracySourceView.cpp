@@ -971,7 +971,7 @@ void SourceView::RenderSimpleSourceView()
     const auto lx = ts * maxLine + ty + round( ts*0.4f );
     DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
-    const AddrStat zero = {};
+    const AddrStatData zero;
     if( m_targetLine != 0 )
     {
         int lineNum = 1;
@@ -982,7 +982,7 @@ void SourceView::RenderSimpleSourceView()
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++, zero, zero, zero, nullptr, nullptr );
+            RenderLine( line, lineNum++, zero.ipMaxAsm, zero, nullptr, nullptr );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_srcWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -995,7 +995,7 @@ void SourceView::RenderSimpleSourceView()
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                RenderLine( lines[i], i+1, zero, zero, zero, nullptr, nullptr );
+                RenderLine( lines[i], i+1, zero.ipMaxAsm, zero, nullptr, nullptr );
             }
         }
     }
@@ -1201,42 +1201,40 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         TextFocused( ICON_FA_WEIGHT_HANGING " Code:", MemSizeToString( m_codeLen ) );
     }
 
-    AddrStat iptotalSrc = {}, iptotalAsm = {};
-    AddrStat ipmaxSrc = {}, ipmaxAsm = {};
-    unordered_flat_map<uint64_t, AddrStat> ipcountSrc, ipcountAsm;
+    AddrStatData as;
     if( m_cost == CostType::SampleCount )
     {
         if( m_calcInlineStats )
         {
-            GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
-            GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+            GatherIpStats( m_symAddr, as, worker, limitView, view );
+            GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view );
         }
         else
         {
-            GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+            GatherIpStats( m_baseAddr, as, worker, limitView, view );
             auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
             if( iptr )
             {
                 const auto symEnd = m_baseAddr + m_codeLen;
                 while( *iptr < symEnd )
                 {
-                    GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+                    GatherIpStats( *iptr, as, worker, limitView, view );
                     iptr++;
                 }
             }
-            GatherAdditionalIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
+            GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view );
         }
     }
     else
     {
-        GatherIpHwStats( iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, view, m_cost );
+        GatherIpHwStats( as, worker, view, m_cost );
     }
     if( !m_calcInlineStats )
     {
-        iptotalSrc = iptotalAsm;
+        as.ipTotalSrc = as.ipTotalAsm;
     }
     const auto slzReady = worker.AreSourceLocationZonesReady();
-    if( ( iptotalAsm.local + iptotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
+    if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         ImGui::SameLine();
         ImGui::Spacing();
@@ -1313,16 +1311,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::SameLine();
             if( m_childCalls )
             {
-                TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( ( iptotalAsm.local + iptotalAsm.ext ) * worker.GetSamplingPeriod() ) );
+                TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) * worker.GetSamplingPeriod() ) );
             }
             else
             {
-                TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( iptotalAsm.local * worker.GetSamplingPeriod() ) );
+                TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( as.ipTotalAsm.local * worker.GetSamplingPeriod() ) );
             }
-            if( iptotalAsm.ext )
+            if( as.ipTotalAsm.ext )
             {
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( iptotalAsm.ext * worker.GetSamplingPeriod() ) );
+                ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( as.ipTotalAsm.ext * worker.GetSamplingPeriod() ) );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
@@ -1335,16 +1333,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::SameLine();
             if( m_childCalls )
             {
-                TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local + iptotalAsm.ext ) );
+                TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( as.ipTotalAsm.local + as.ipTotalAsm.ext ) );
             }
             else
             {
-                TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm.local ) );
+                TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( as.ipTotalAsm.local ) );
             }
-            if( iptotalAsm.ext )
+            if( as.ipTotalAsm.ext )
             {
                 ImGui::SameLine();
-                ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( iptotalAsm.ext ) );
+                ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( as.ipTotalAsm.ext ) );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
@@ -1355,7 +1353,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         else
         {
-            TextFocused( "Events:", RealToString( iptotalAsm.local ) );
+            TextFocused( "Events:", RealToString( as.ipTotalAsm.local ) );
         }
         ImGui::SameLine();
         ImGui::Spacing();
@@ -1408,16 +1406,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     switch( m_displayMode )
     {
     case DisplaySource:
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker, view );
+        RenderSymbolSourceView( as, worker, view );
         break;
     case DisplayAsm:
-        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
+        jumpOut = RenderSymbolAsmView( as, worker, view );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker, view );
+        RenderSymbolSourceView( as, worker, view );
         ImGui::NextColumn();
-        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
+        jumpOut = RenderSymbolAsmView( as, worker, view );
         ImGui::EndColumns();
         break;
     default:
@@ -1535,7 +1533,7 @@ static uint32_t GetGoodnessColor( float inRatio )
     return GoodnessColor[ratio];
 }
 
-void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, const AddrStat& ipmax, Worker& worker, const View& view )
+void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view )
 {
     if( m_sourceFiles.empty() )
     {
@@ -1626,8 +1624,8 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
                     if( srcline != 0 )
                     {
                         AddrStat cnt = {};
-                        auto ait = ipcountAsm.find( v.addr );
-                        if( ait != ipcountAsm.end() ) cnt = ait->second;
+                        auto ait = as.ipCountAsm.find( v.addr );
+                        if( ait != as.ipCountAsm.end() ) cnt = ait->second;
 
                         auto fit = fileCounts.find( srcidx.Idx() );
                         if( fit == fileCounts.end() )
@@ -1774,7 +1772,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
     const auto tmp = RealToString( lineCount );
     const auto maxLine = strlen( tmp );
     auto lx = ts * maxLine + ty + round( ts*0.4f );
-    if( iptotal.local + iptotal.ext != 0 ) lx += ts * 7 + ty;
+    if( as.ipTotalSrc.local + as.ipTotalSrc.ext != 0 ) lx += ts * 7 + ty;
     if( !m_asm.empty() )
     {
         const auto tmp = RealToString( m_asm.size() );
@@ -1784,7 +1782,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
     if( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) lx += 19 * ts + ty;
     DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
-    const AddrStat zero = {};
+    const AddrStatData zero;
     m_selectedAddressesHover.clear();
     if( m_targetLine != 0 )
     {
@@ -1796,7 +1794,7 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++, zero, iptotal, ipmax, &worker, &view );
+            RenderLine( line, lineNum++, zero.ipMaxAsm, as, &worker, &view );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_srcWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -1807,20 +1805,20 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         clipper.Begin( (int)lines.size() );
         while( clipper.Step() )
         {
-            if( iptotal.local + iptotal.ext == 0 )
+            if( as.ipTotalSrc.local + as.ipTotalSrc.ext == 0 )
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderLine( lines[i], i+1, zero, zero, zero, &worker, &view );
+                    RenderLine( lines[i], i+1, zero.ipMaxAsm, zero, &worker, &view );
                 }
             }
             else
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    auto it = ipcount.find( i+1 );
-                    const auto ipcnt = it == ipcount.end() ? zero : it->second;
-                    RenderLine( lines[i], i+1, ipcnt, iptotal, ipmax, &worker, &view );
+                    auto it = as.ipCountSrc.find( i+1 );
+                    const auto ipcnt = it == as.ipCountSrc.end() ? zero.ipMaxAsm : it->second;
+                    RenderLine( lines[i], i+1, ipcnt, as, &worker, &view );
                 }
             }
         }
@@ -1844,11 +1842,11 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         }
 
         std::vector<std::pair<uint64_t, AddrStat>> ipData;
-        ipData.reserve( ipcount.size() );
-        for( auto& v : ipcount ) ipData.emplace_back( v.first, v.second );
+        ipData.reserve( as.ipCountSrc.size() );
+        for( auto& v : as.ipCountSrc ) ipData.emplace_back( v.first, v.second );
         for( uint32_t lineNum = 1; lineNum <= lines.size(); lineNum++ )
         {
-            if( ipcount.find( lineNum ) == ipcount.end() )
+            if( as.ipCountSrc.find( lineNum ) == as.ipCountSrc.end() )
             {
                 auto addresses = worker.GetAddressesForLocation( m_source.idx(), lineNum );
                 if( addresses )
@@ -1883,12 +1881,12 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
             const auto ly = round( rect.Min.y + float( firstLine ) / lines.size() * rect.GetHeight() );
             if( m_childCalls )
             {
-                const auto color = ( ipSum.local + ipSum.ext == 0 ) ? 0x22FFFFFF : GetHotnessColor( ipSum.local + ipSum.ext, ipmax.local + ipmax.ext );
+                const auto color = ( ipSum.local + ipSum.ext == 0 ) ? 0x22FFFFFF : GetHotnessColor( ipSum.local + ipSum.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
                 draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
             }
             else
             {
-                const auto color = ipSum.local == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum.local, ipmax.local );
+                const auto color = ipSum.local == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum.local, as.ipMaxSrc.local );
                 draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
             }
         }
@@ -1905,8 +1903,8 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         uint32_t numLines = 0;
         for( auto& idx : m_srcSampleSelect )
         {
-            auto it = ipcount.find( idx );
-            if( it != ipcount.end() )
+            auto it = as.ipCountSrc.find( idx );
+            if( it != as.ipCountSrc.end() )
             {
                 count += it->second;
                 numLines++;
@@ -1924,11 +1922,11 @@ void SourceView::RenderSymbolSourceView( const AddrStat& iptotal, const unordere
         char* end;
         if( m_childCalls )
         {
-            end = PrintFloat( buf, buf+16, 100.f * ( count.local + count.ext ) / ( iptotal.local + iptotal.ext ), 2 );
+            end = PrintFloat( buf, buf+16, 100.f * ( count.local + count.ext ) / ( as.ipTotalSrc.local + as.ipTotalSrc.ext ), 2 );
         }
-        else if( iptotal.local != 0 )
+        else if( as.ipTotalSrc.local != 0 )
         {
-            end = PrintFloat( buf, buf+16, 100.f * count.local / iptotal.local, 2 );
+            end = PrintFloat( buf, buf+16, 100.f * count.local / as.ipTotalSrc.local, 2 );
         }
         else
         {
@@ -2020,7 +2018,7 @@ static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len, CpuArchit
     }
 }
 
-uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, Worker& worker, View& view )
+uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view )
 {
     if( m_disasmFail >= 0 )
     {
@@ -2163,7 +2161,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
     uint64_t selJumpTarget;
     uint64_t jumpOut = 0;
 
-    const AddrStat zero = {};
+    const AddrStatData zero;
     if( m_targetAddr != 0 )
     {
         for( auto& line : m_asm )
@@ -2173,7 +2171,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 m_targetAddr = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderAsmLine( line, zero, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
+            RenderAsmLine( line, zero.ipMaxAsm, as, worker, jumpOut, maxAddrLen, view );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_asmWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -2190,11 +2188,11 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
             const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
             static std::vector<uint64_t> insList;
             insList.clear();
-            if( iptotal.local + iptotal.ext == 0 )
+            if( as.ipTotalAsm.local + as.ipTotalAsm.ext == 0 )
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderAsmLine( m_asm[i], zero, zero, zero, worker, jumpOut, maxAddrLen, view );
+                    RenderAsmLine( m_asm[i], zero.ipMaxAsm, zero, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( m_asm[i].addr );
                 }
             }
@@ -2203,9 +2201,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
                     auto& line = m_asm[i];
-                    auto it = ipcount.find( line.addr );
-                    const auto ipcnt = it == ipcount.end() ? zero : it->second;
-                    RenderAsmLine( line, ipcnt, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
+                    auto it = as.ipCountAsm.find( line.addr );
+                    const auto ipcnt = it == as.ipCountAsm.end() ? zero.ipMaxAsm : it->second;
+                    RenderAsmLine( line, ipcnt, as, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( line.addr );
                 }
             }
@@ -2216,7 +2214,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 const auto th2 = floor( ts.y / 2 );
                 const auto th4 = floor( ts.y / 4 );
                 const auto xoff =
-                    ( ( iptotal.local + iptotal.ext ) == 0 ? 0 : ( 7 * ts.x + ts.y ) ) +
+                    ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) == 0 ? 0 : ( 7 * ts.x + ts.y ) ) +
                     (3+maxAddrLen) * ts.x +
                     ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) +
                     ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 ) +
@@ -2404,13 +2402,13 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
 
         uint32_t selJumpLineStart, selJumpLineEnd, selJumpLineTarget;
         std::vector<std::pair<uint64_t, AddrStat>> ipData;
-        ipData.reserve( ipcount.size() );
+        ipData.reserve( as.ipCountAsm.size() );
         if( selJumpStart == 0 )
         {
             for( size_t i=0; i<m_asm.size(); i++ )
             {
-                auto it = ipcount.find( m_asm[i].addr );
-                if( it == ipcount.end() ) continue;
+                auto it = as.ipCountAsm.find( m_asm[i].addr );
+                if( it == as.ipCountAsm.end() ) continue;
                 ipData.emplace_back( i, it->second );
             }
         }
@@ -2422,8 +2420,8 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
                 if( selJumpEnd == m_asm[i].addr ) selJumpLineEnd = i;
                 if( selJumpTarget == m_asm[i].addr ) selJumpLineTarget = i;
 
-                auto it = ipcount.find( m_asm[i].addr );
-                if( it == ipcount.end() ) continue;
+                auto it = as.ipCountAsm.find( m_asm[i].addr );
+                if( it == as.ipCountAsm.end() ) continue;
                 ipData.emplace_back( i, it->second );
             }
         }
@@ -2446,12 +2444,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
             const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
             if( m_childCalls )
             {
-                const auto color = GetHotnessColor( ipSum.local + ipSum.ext, ipmax.local + ipmax.ext );
+                const auto color = GetHotnessColor( ipSum.local + ipSum.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
                 draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
             }
-            else if( ipmax.local != 0 )
+            else if( as.ipMaxAsm.local != 0 )
             {
-                const auto color = GetHotnessColor( ipSum.local, ipmax.local );
+                const auto color = GetHotnessColor( ipSum.local, as.ipMaxAsm.local );
                 draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
             }
         }
@@ -2513,8 +2511,8 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
         uint32_t numLines = 0;
         for( auto& idx : m_asmSampleSelect )
         {
-            auto it = ipcount.find( m_asm[idx].addr );
-            if( it != ipcount.end() )
+            auto it = as.ipCountAsm.find( m_asm[idx].addr );
+            if( it != as.ipCountAsm.end() )
             {
                 count += it->second;
                 numLines++;
@@ -2532,11 +2530,11 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStat& iptotal, const unorder
         char* end;
         if( m_childCalls )
         {
-            end = PrintFloat( buf, buf+16, 100.f * ( count.local + count.ext ) / ( iptotal.local + iptotal.ext ), 2 );
+            end = PrintFloat( buf, buf+16, 100.f * ( count.local + count.ext ) / ( as.ipTotalAsm.local + as.ipTotalAsm.ext ), 2 );
         }
-        else if( iptotal.local != 0 )
+        else if( as.ipTotalAsm.local != 0 )
         {
-            end = PrintFloat( buf, buf+16, 100.f * count.local / iptotal.local, 2 );
+            end = PrintFloat( buf, buf+16, 100.f * count.local / as.ipTotalAsm.local, 2 );
         }
         else
         {
@@ -2608,7 +2606,7 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
-void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker* worker, const View* view )
+void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStatData& as, Worker* worker, const View* view )
 {
     const auto ts = ImGui::CalcTextSize( " " );
     const auto ty = ImGui::GetFontSize();
@@ -2673,7 +2671,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     }
 
     bool mouseHandled = false;
-    if( iptotal.local + iptotal.ext != 0 )
+    if( as.ipTotalSrc.local + as.ipTotalSrc.ext != 0 )
     {
         if( ( m_childCalls && ipcnt.local + ipcnt.ext  == 0 ) || ( !m_childCalls && ipcnt.local == 0 ) )
         {
@@ -2694,11 +2692,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             bool hover;
             if( m_childCalls )
             {
-                hover = PrintPercentage( 100.f * ( ipcnt.local + ipcnt.ext ) / ( iptotal.local + iptotal.ext ), sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+                hover = PrintPercentage( 100.f * ( ipcnt.local + ipcnt.ext ) / ( as.ipTotalSrc.local + as.ipTotalSrc.ext ), sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
             }
             else
             {
-                hover = PrintPercentage( 100.f * ipcnt.local / iptotal.local, sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+                hover = PrintPercentage( 100.f * ipcnt.local / as.ipTotalSrc.local, sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
             }
             if( hover )
             {
@@ -2785,13 +2783,13 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             uint32_t col, glow;
             if( m_childCalls )
             {
-                col = GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
-                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
+                col = GetHotnessColor( ipcnt.local + ipcnt.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
+                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
             }
             else
             {
-                col = GetHotnessColor( ipcnt.local, ipmax.local );
-                glow = GetHotnessGlow( ipcnt.local, ipmax.local );
+                col = GetHotnessColor( ipcnt.local, as.ipMaxSrc.local );
+                glow = GetHotnessGlow( ipcnt.local, as.ipMaxSrc.local );
             }
             if( glow )
             {
@@ -2887,7 +2885,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
+void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2935,7 +2933,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     }
 
     const auto ts = ImGui::CalcTextSize( " " );
-    if( iptotal.local + iptotal.ext != 0 )
+    if( as.ipTotalAsm.local + as.ipTotalAsm.ext != 0 )
     {
         if( ( m_childCalls && ipcnt.local + ipcnt.ext == 0 ) || ( !m_childCalls && ipcnt.local == 0 ) )
         {
@@ -2956,11 +2954,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             bool hover;
             if( m_childCalls )
             {
-                hover = PrintPercentage( 100.f * ( ipcnt.local + ipcnt.ext ) / ( iptotal.local + iptotal.ext ), sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+                hover = PrintPercentage( 100.f * ( ipcnt.local + ipcnt.ext ) / ( as.ipTotalAsm.local + as.ipTotalAsm.ext ), sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
             }
             else
             {
-                hover = PrintPercentage( 100.f * ipcnt.local / iptotal.local, sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
+                hover = PrintPercentage( 100.f * ipcnt.local / as.ipTotalAsm.local, sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF );
             }
             if( hover )
             {
@@ -3080,13 +3078,13 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             uint32_t col, glow;
             if( m_childCalls )
             {
-                col = GetHotnessColor( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
-                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, ipmax.local + ipmax.ext );
+                col = GetHotnessColor( ipcnt.local + ipcnt.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
+                glow = GetHotnessGlow( ipcnt.local + ipcnt.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
             }
             else
             {
-                col = GetHotnessColor( ipcnt.local, ipmax.local );
-                glow = GetHotnessGlow( ipcnt.local, ipmax.local );
+                col = GetHotnessColor( ipcnt.local, as.ipMaxAsm.local );
+                glow = GetHotnessGlow( ipcnt.local, as.ipMaxAsm.local );
             }
             if( glow )
             {
@@ -3337,7 +3335,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto& mjl = m_maxJumpLevel;
             const auto col = GetHsvColor( line.jumpAddr, 6 );
             const auto xoff =
-                ( ( iptotal.local + iptotal.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) +
+                ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) +
                 (3+maxAddrLen) * ts.x +
                 ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) +
                 ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 ) +
@@ -4035,7 +4033,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
     }
 }
 
-void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, const View& view, CostType cost )
+void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& view, CostType cost )
 {
     auto filename = m_source.filename();
     for( auto& v : m_asm )
@@ -4076,9 +4074,9 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
             }
         }
         assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
-        ipcountAsm.emplace( addr, AddrStat { stat, 0 } );
-        iptotalAsm.local += stat;
-        if( ipmaxAsm.local < stat ) ipmaxAsm.local = stat;
+        as.ipCountAsm.emplace( addr, AddrStat { stat, 0 } );
+        as.ipTotalAsm.local += stat;
+        if( as.ipMaxAsm.local < stat ) as.ipMaxAsm.local = stat;
 
         if( filename )
         {
@@ -4089,19 +4087,19 @@ void SourceView::GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, un
                 auto ffn = worker.GetString( fref );
                 if( strcmp( ffn, filename ) == 0 )
                 {
-                    auto it = ipcountSrc.find( line );
-                    if( it == ipcountSrc.end() )
+                    auto it = as.ipCountSrc.find( line );
+                    if( it == as.ipCountSrc.end() )
                     {
-                        ipcountSrc.emplace( line, AddrStat{ stat, 0 } );
-                        if( ipmaxSrc.local < stat ) ipmaxSrc.local = stat;
+                        as.ipCountSrc.emplace( line, AddrStat{ stat, 0 } );
+                        if( as.ipMaxSrc.local < stat ) as.ipMaxSrc.local = stat;
                     }
                     else
                     {
                         const auto sum = it->second.local + stat;
                         it->second.local = sum;
-                        if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
+                        if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
                     }
-                    iptotalSrc.local += stat;
+                    as.ipTotalSrc.local += stat;
                 }
             }
         }
@@ -4164,7 +4162,7 @@ void SourceView::CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSr
     }
 }
 
-void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
+void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view )
 {
     const auto slzReady = worker.AreSourceLocationZonesReady();
     auto filename = m_source.filename();
@@ -4175,7 +4173,7 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
         auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
         if( it == vec->end() ) return;
         auto end = std::lower_bound( it, vec->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-        iptotalAsm.local += end - it;
+        as.ipTotalAsm.local += end - it;
         while( it != end )
         {
             if( filename )
@@ -4189,36 +4187,36 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
                         const auto line = frame->data[0].line;
                         if( line != 0 )
                         {
-                            auto sit = ipcountSrc.find( line );
-                            if( sit == ipcountSrc.end() )
+                            auto sit = as.ipCountSrc.find( line );
+                            if( sit == as.ipCountSrc.end() )
                             {
-                                ipcountSrc.emplace( line, AddrStat { 1, 0 } );
-                                if( ipmaxSrc.local < 1 ) ipmaxSrc.local = 1;
+                                as.ipCountSrc.emplace( line, AddrStat { 1, 0 } );
+                                if( as.ipMaxSrc.local < 1 ) as.ipMaxSrc.local = 1;
                             }
                             else
                             {
                                 const auto sum = sit->second.local + 1;
                                 sit->second.local = sum;
-                                if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
+                                if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
                             }
-                            iptotalSrc.local++;
+                            as.ipTotalSrc.local++;
                         }
                     }
                 }
             }
 
             auto addr = worker.GetCanonicalPointer( it->ip );
-            auto sit = ipcountAsm.find( addr );
-            if( sit == ipcountAsm.end() )
+            auto sit = as.ipCountAsm.find( addr );
+            if( sit == as.ipCountAsm.end() )
             {
-                ipcountAsm.emplace( addr, AddrStat{ 1, 0 } );
-                if( ipmaxAsm.local < 1 ) ipmaxAsm.local = 1;
+                as.ipCountAsm.emplace( addr, AddrStat{ 1, 0 } );
+                if( as.ipMaxAsm.local < 1 ) as.ipMaxAsm.local = 1;
             }
             else
             {
                 const auto sum = sit->second.local + 1;
                 sit->second.local = sum;
-                if( ipmaxAsm.local < sum ) ipmaxAsm.local = sum;
+                if( as.ipMaxAsm.local < sum ) as.ipMaxAsm.local = sum;
             }
 
             ++it;
@@ -4234,11 +4232,11 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
             assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
             auto cp = slzReady ? worker.GetChildSamples( addr ) : nullptr;
             const auto ccnt = cp ? cp->size() : 0;
-            ipcountAsm.emplace( addr, AddrStat { ip.second, ccnt } );
-            iptotalAsm.local += ip.second;
-            iptotalAsm.ext += ccnt;
-            if( ipmaxAsm.local < ip.second ) ipmaxAsm.local = ip.second;
-            if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
+            as.ipCountAsm.emplace( addr, AddrStat { ip.second, ccnt } );
+            as.ipTotalAsm.local += ip.second;
+            as.ipTotalAsm.ext += ccnt;
+            if( as.ipMaxAsm.local < ip.second ) as.ipMaxAsm.local = ip.second;
+            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
 
             if( filename )
             {
@@ -4251,12 +4249,12 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
                         const auto line = frame->data[0].line;
                         if( line != 0 )
                         {
-                            auto it = ipcountSrc.find( line );
-                            if( it == ipcountSrc.end() )
+                            auto it = as.ipCountSrc.find( line );
+                            if( it == as.ipCountSrc.end() )
                             {
-                                ipcountSrc.emplace( line, AddrStat{ ip.second, ccnt } );
-                                if( ipmaxSrc.local < ip.second ) ipmaxSrc.local = ip.second;
-                                if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
+                                as.ipCountSrc.emplace( line, AddrStat{ ip.second, ccnt } );
+                                if( as.ipMaxSrc.local < ip.second ) as.ipMaxSrc.local = ip.second;
+                                if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
                             }
                             else
                             {
@@ -4264,11 +4262,11 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
                                 const auto csum = it->second.ext + ccnt;
                                 it->second.local = sum;
                                 it->second.ext = csum;
-                                if( ipmaxSrc.local < sum ) ipmaxSrc.local = sum;
-                                if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
+                                if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
+                                if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
                             }
-                            iptotalSrc.local += ip.second;
-                            iptotalSrc.ext += ccnt;
+                            as.ipTotalSrc.local += ip.second;
+                            as.ipTotalSrc.ext += ccnt;
                         }
                     }
                 }
@@ -4277,7 +4275,7 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrSta
     }
 }
 
-void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
+void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view )
 {
     if( !worker.AreSourceLocationZonesReady() ) return;
     auto sym = worker.GetSymbolData( baseAddr );
@@ -4288,16 +4286,16 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSr
     {
         for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
         {
-            if( ipcountAsm.find( ip ) != ipcountAsm.end() ) continue;
+            if( as.ipCountAsm.find( ip ) != as.ipCountAsm.end() ) continue;
             auto cp = worker.GetChildSamples( ip );
             if( !cp ) continue;
             auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
             if( it == cp->end() ) continue;
             auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
             const auto ccnt = uint64_t( end - it );
-            ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
-            iptotalAsm.ext += ccnt;
-            if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
+            as.ipCountAsm.emplace( ip, AddrStat { 0, ccnt } );
+            as.ipTotalAsm.ext += ccnt;
+            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
 
             if( filename )
             {
@@ -4310,19 +4308,19 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSr
                         const auto line = frame->data[0].line;
                         if( line != 0 )
                         {
-                            auto it = ipcountSrc.find( line );
-                            if( it == ipcountSrc.end() )
+                            auto it = as.ipCountSrc.find( line );
+                            if( it == as.ipCountSrc.end() )
                             {
-                                ipcountSrc.emplace( line, AddrStat{ 0, ccnt } );
-                                if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
+                                as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
                             }
                             else
                             {
                                 const auto csum = it->second.ext + ccnt;
                                 it->second.ext = csum;
-                                if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
+                                if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
                             }
-                            iptotalSrc.ext += ccnt;
+                            as.ipTotalSrc.ext += ccnt;
                         }
                     }
                 }
@@ -4333,13 +4331,13 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSr
     {
         for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
         {
-            if( ipcountAsm.find( ip ) != ipcountAsm.end() ) continue;
+            if( as.ipCountAsm.find( ip ) != as.ipCountAsm.end() ) continue;
             auto cp = worker.GetChildSamples( ip );
             if( !cp ) continue;
             const auto ccnt = cp->size();
-            ipcountAsm.emplace( ip, AddrStat { 0, ccnt } );
-            iptotalAsm.ext += ccnt;
-            if( ipmaxAsm.ext < ccnt ) ipmaxAsm.ext = ccnt;
+            as.ipCountAsm.emplace( ip, AddrStat { 0, ccnt } );
+            as.ipTotalAsm.ext += ccnt;
+            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
 
             if( filename )
             {
@@ -4352,19 +4350,19 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSr
                         const auto line = frame->data[0].line;
                         if( line != 0 )
                         {
-                            auto it = ipcountSrc.find( line );
-                            if( it == ipcountSrc.end() )
+                            auto it = as.ipCountSrc.find( line );
+                            if( it == as.ipCountSrc.end() )
                             {
-                                ipcountSrc.emplace( line, AddrStat{ 0, ccnt } );
-                                if( ipmaxSrc.ext < ccnt ) ipmaxSrc.ext = ccnt;
+                                as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
                             }
                             else
                             {
                                 const auto csum = it->second.ext + ccnt;
                                 it->second.ext = csum;
-                                if( ipmaxSrc.ext < csum ) ipmaxSrc.ext = csum;
+                                if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
                             }
-                            iptotalSrc.ext += ccnt;
+                            as.ipTotalSrc.ext += ccnt;
                         }
                     }
                 }

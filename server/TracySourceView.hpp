@@ -126,6 +126,15 @@ private:
         }
     };
 
+    struct AddrStatData
+    {
+        AddrStat ipTotalSrc = {};
+        AddrStat ipTotalAsm = {};
+        AddrStat ipMaxSrc = {};
+        AddrStat ipMaxAsm = {};
+        unordered_flat_map<uint64_t, AddrStat> ipCountSrc, ipCountAsm;
+    };
+
 public:
     using GetWindowCallback = void*(*)();
 
@@ -149,20 +158,20 @@ private:
     void RenderSimpleSourceView();
     void RenderSymbolView( Worker& worker, View& view );
 
-    void RenderSymbolSourceView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, const AddrStat& ipmax, Worker& worker, const View& view );
-    uint64_t RenderSymbolAsmView( const AddrStat& iptotal, const unordered_flat_map<uint64_t, AddrStat>& ipcount, const AddrStat& ipmax, Worker& worker, View& view );
+    void RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view );
+    uint64_t RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view );
 
-    void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker* worker, const View* view );
-    void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStat& iptotal, const AddrStat& ipmax, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
+    void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStatData& as, Worker* worker, const View* view );
+    void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
     void RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, const ImVec2& ts );
 
     void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
-    void GatherIpHwStats( AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, Worker& worker, const View& view, CostType cost );
-    void GatherIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view );
-    void GatherAdditionalIpStats( uint64_t baseAddr, AddrStat& iptotalSrc, AddrStat& iptotalAsm, unordered_flat_map<uint64_t, AddrStat>& ipcountSrc, unordered_flat_map<uint64_t, AddrStat>& ipcountAsm, AddrStat& ipmaxSrc, AddrStat& ipmaxAsm, const Worker& worker, bool limitView, const View& view );
+    void GatherIpHwStats( AddrStatData& as, Worker& worker, const View& view, CostType cost );
+    void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
+    void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
     uint32_t CountAsmIpStats( uint64_t baseAddr, const Worker& worker, bool limitView, const View& view );
     void CountHwStats( unordered_flat_map<uint64_t, AddrStat>& hwCountSrc, unordered_flat_map<uint64_t, AddrStat>& hwCountAsm, AddrStat& hwMaxSrc, AddrStat& hwMaxAsm, Worker& worker, const View& view );
 

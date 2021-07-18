@@ -1233,6 +1233,10 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     {
         as.ipTotalSrc = as.ipTotalAsm;
     }
+    if( m_hwSamplesRelative )
+    {
+        CountHwStats( as, worker, view );
+    }
     const auto slzReady = worker.AreSourceLocationZonesReady();
     if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {

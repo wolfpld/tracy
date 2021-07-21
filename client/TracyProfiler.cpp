@@ -963,7 +963,7 @@ ProfilerData* s_profilerData = nullptr;
 static ProfilerThreadData& GetProfilerThreadData();
 TRACY_API void StartupProfiler()
 {
-    s_profilerData = (ProfilerData*)tracy_malloc(sizeof(ProfilerData));
+    s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ));
     new (s_profilerData) ProfilerData();
     s_profilerData->profiler.SpawnWorkerThreads();
     GetProfilerThreadData().token = ProducerWrapper(*s_profilerData);
@@ -976,7 +976,7 @@ static ProfilerData& GetProfilerData()
 TRACY_API void ShutdownProfiler()
 {
     s_profilerData->~ProfilerData();
-    tracy_free(s_profilerData);
+    tracy_free( s_profilerData );
     s_profilerData = nullptr;
     rpmalloc_finalize();
     RpThreadInitDone = false;

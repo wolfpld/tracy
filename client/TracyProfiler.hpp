@@ -811,6 +811,12 @@ private:
 
     char* m_queryData;
     char* m_queryDataPtr;
+
+#ifdef __linux__
+    struct {
+        struct sigaction pwr, ill, fpe, segv, pipe, bus, abrt;
+    } m_prevSignal;
+#endif
 };
 
 }

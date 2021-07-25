@@ -1236,17 +1236,17 @@ void Profiler::SpawnWorkerThreads()
 #ifdef __linux__
     struct sigaction threadFreezer = {};
     threadFreezer.sa_handler = ThreadFreezer;
-    sigaction( SIGPWR, &threadFreezer, nullptr );
+    sigaction( SIGPWR, &threadFreezer, &m_prevSignal.pwr );
 
     struct sigaction crashHandler = {};
     crashHandler.sa_sigaction = CrashHandler;
     crashHandler.sa_flags = SA_SIGINFO;
-    sigaction( SIGILL, &crashHandler, nullptr );
-    sigaction( SIGFPE, &crashHandler, nullptr );
-    sigaction( SIGSEGV, &crashHandler, nullptr );
-    sigaction( SIGPIPE, &crashHandler, nullptr );
-    sigaction( SIGBUS, &crashHandler, nullptr );
-    sigaction( SIGABRT, &crashHandler, nullptr );
+    sigaction( SIGILL, &crashHandler, &m_prevSignal.ill );
+    sigaction( SIGFPE, &crashHandler, &m_prevSignal.fpe );
+    sigaction( SIGSEGV, &crashHandler, &m_prevSignal.segv );
+    sigaction( SIGPIPE, &crashHandler, &m_prevSignal.pipe );
+    sigaction( SIGBUS, &crashHandler, &m_prevSignal.bus );
+    sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
@@ -1259,6 +1259,16 @@ void Profiler::SpawnWorkerThreads()
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
+
+#ifdef __linux__
+    sigaction( SIGPWR, &m_prevSignal.pwr, nullptr );
+    sigaction( SIGILL, &m_prevSignal.ill, nullptr );
+    sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
+    sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
+    sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
+    sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
+    sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
+#endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( s_sysTraceThread )

@@ -1924,7 +1924,7 @@ Tracy is able to use these counters to present you the following three statistic
 
 Each performance counter has to be collected by a dedicated Performance Monitoring Unit (PMU). The availability of PMUs is very limited, so you may not be able to capture all the statistics mentioned above at the same time (as each requires capture of two different counters). In such case, you will need to manually select what needs to be sampled, with the macros specified above.
 
-If the provided measurements are not specific enough for your needs, you will need to use a profiler better tailored to the hardware you are using, such as Intel VTune, or AMD \si{\micro}Prof.
+If the provided measurements are not specific enough for your needs, you will need to use a profiler better tailored to the hardware you are using, such as Intel VTune, or AMD \si{\micro\relax}Prof.
 
 Another problem to consider here is the measurement skid. It is quite hard to accurately pinpoint the exact assembly instruction which has caused the counter to trigger. Due to this the results you'll get may look a bit nonsense at times. For example, a branch miss may be attributed to the multiply instruction. Not much can be done with that, as this is exactly what the hardware is reporting. The amount of skid you will encounter depends on the specific implementation of a processor, and each vendor has their own solution to minimize it. Intel uses Precise Event Based Sampling (PEBS), which is rather good, but it still can, for example, blend the branch statistics across the comparison instruction and the following jump instruction. AMD employs their own Instruction Based Sampling (IBS), which tends to provide worse results in comparison.
 

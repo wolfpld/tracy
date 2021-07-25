@@ -4253,7 +4253,7 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
             branch = sqrt( hw->branchMiss.size() *  hw->branchRetired.size() );
             cache = sqrt( hw->cacheMiss.size() * hw->cacheRef.size() );
         }
-        assert( as.ipCountAsm.find( addr ) == as.ipCountAsm.end() );
+        assert( as.hwCountAsm.find( addr ) == as.hwCountAsm.end() );
         as.hwCountAsm.emplace( addr, AddrStat { branch, cache } );
         if( as.hwMaxAsm.local < branch ) as.hwMaxAsm.local = branch;
         if( as.hwMaxAsm.ext < cache ) as.hwMaxAsm.ext = cache;

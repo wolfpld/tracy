@@ -1231,7 +1231,7 @@ void Profiler::SpawnWorkerThreads()
 
 #if defined _WIN32 || defined __CYGWIN__
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
-    AddVectoredExceptionHandler( 1, CrashFilter );
+    m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
 #ifdef __linux__
@@ -1262,6 +1262,10 @@ void Profiler::SpawnWorkerThreads()
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
+
+#if defined _WIN32 || defined __CYGWIN__
+    if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
+#endif
 
 #ifdef __linux__
     if( m_crashHandlerInstalled )

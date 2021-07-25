@@ -812,6 +812,9 @@ private:
     char* m_queryData;
     char* m_queryDataPtr;
 
+#if defined _WIN32 || defined __CYGWIN__
+    void* m_exceptionHandler;
+#endif
 #ifdef __linux__
     struct {
         struct sigaction pwr, ill, fpe, segv, pipe, bus, abrt;

@@ -53,13 +53,14 @@ struct backtrace_state;
    invalid after this function returns.
 
    As a special case, the ERRNUM argument will be passed as -1 if no
-   debug info can be found for the executable, but the function
-   requires debug info (e.g., backtrace_full, backtrace_pcinfo).  The
-   MSG in this case will be something along the lines of "no debug
-   info".  Similarly, ERRNUM will be passed as -1 if there is no
-   symbol table, but the function requires a symbol table (e.g.,
-   backtrace_syminfo).  This may be used as a signal that some other
-   approach should be tried.  */
+   debug info can be found for the executable, or if the debug info
+   exists but has an unsupported version, but the function requires
+   debug info (e.g., backtrace_full, backtrace_pcinfo).  The MSG in
+   this case will be something along the lines of "no debug info".
+   Similarly, ERRNUM will be passed as -1 if there is no symbol table,
+   but the function requires a symbol table (e.g., backtrace_syminfo).
+   This may be used as a signal that some other approach should be
+   tried.  */
 
 typedef void (*backtrace_error_callback) (void *data, const char *msg,
 					  int errnum);

@@ -1173,6 +1173,7 @@ Profiler::Profiler()
 #endif
     , m_paramCallback( nullptr )
     , m_queryData( nullptr )
+    , m_crashHandlerInstalled( false )
 {
     assert( !s_instance );
     s_instance = this;
@@ -1249,6 +1250,8 @@ void Profiler::SpawnWorkerThreads()
     sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
 #endif
 
+    m_crashHandlerInstalled = true;
+
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();
 #endif
@@ -1261,13 +1264,16 @@ Profiler::~Profiler()
     m_shutdown.store( true, std::memory_order_relaxed );
 
 #ifdef __linux__
-    sigaction( SIGPWR, &m_prevSignal.pwr, nullptr );
-    sigaction( SIGILL, &m_prevSignal.ill, nullptr );
-    sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
-    sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
-    sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
-    sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
-    sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
+    if( m_crashHandlerInstalled )
+    {
+        sigaction( SIGPWR, &m_prevSignal.pwr, nullptr );
+        sigaction( SIGILL, &m_prevSignal.ill, nullptr );
+        sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
+        sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
+        sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
+        sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
+        sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
+    }
 #endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING

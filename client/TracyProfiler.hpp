@@ -817,6 +817,7 @@ private:
         struct sigaction pwr, ill, fpe, segv, pipe, bus, abrt;
     } m_prevSignal;
 #endif
+    bool m_crashHandlerInstalled;
 };
 
 }

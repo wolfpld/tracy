@@ -4118,27 +4118,50 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
         const auto& addr = *addresses;
         if( changeAsmLine )
         {
+            for( auto& v : addr )
+            {
+                if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
+                {
+                    m_selectedAddresses.emplace( v );
+                }
+            }
             if( targetAddr != 0 )
             {
                 m_targetAddr = targetAddr;
             }
             else
             {
-                for( auto& v : addr )
+                if( m_asmTarget.file != file || m_asmTarget.line != line )
                 {
-                    if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
+                    m_asmTarget.file = file;
+                    m_asmTarget.line = line;
+                    m_asmTarget.sel = 0;
+                    m_asmTarget.target.clear();
+
+                    std::vector<uint64_t> tmp;
+                    tmp.reserve( m_selectedAddresses.size() );
+                    for( auto& v : m_selectedAddresses ) tmp.emplace_back( v );
+                    pdqsort_branchless( tmp.begin(), tmp.end() );
+
+                    bool first = true;
+                    auto lit = m_asm.begin();
+                    for( auto& v : tmp )
                     {
-                        m_targetAddr = v;
-                        break;
+                        const auto prev = lit;
+                        while( lit->addr != v ) lit++;
+                        if( first || lit - prev > 1 )
+                        {
+                            first = false;
+                            m_asmTarget.target.emplace_back( v );
+                        }
                     }
+                    m_targetAddr = m_asmTarget.target[0];
                 }
-            }
-        }
-        for( auto& v : addr )
-        {
-            if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
-            {
-                m_selectedAddresses.emplace( v );
+                else
+                {
+                    m_asmTarget.sel = ( m_asmTarget.sel + 1 ) % m_asmTarget.target.size();
+                    m_targetAddr = m_asmTarget.target[m_asmTarget.sel];
+                }
             }
         }
     }

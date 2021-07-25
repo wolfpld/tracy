@@ -248,6 +248,14 @@ private:
 
     GetWindowCallback m_gwcb;
     Tokenizer m_tokenizer;
+
+    struct
+    {
+        uint32_t file = 0;
+        uint32_t line = 0;
+        size_t sel;
+        std::vector<uint64_t> target;
+    } m_asmTarget;
 };
 
 }

@@ -55,10 +55,3 @@ set_option(TRACY_NO_FRAME_IMAGE)
 set_option(TRACE_NO_SAMPLING)
 set_option(TRACY_NO_VERIFY)
 set_option(TRACY_NO_VSYNC_CAPTURE)
-
-if(NOT TRACY_PORT)
-    set(TRACY_PORT 8086)
-endif()
-
-message(STATUS "TRACY_PORT: ${TRACY_PORT}")
-target_compile_definitions(TracyClient PUBLIC TRACY_PORT=${TRACY_PORT})

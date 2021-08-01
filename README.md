@@ -6,13 +6,13 @@
 
 Tracy supports profiling CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, OpenCL, Direct3D 11/12), memory, locks, context switches, per-frame screenshots and more.
 
-For usage **and build process** instructions, consult the user manual [at the following address](https://github.com/wolfpld/tracy/releases).
+- [Documentation](https://github.com/wolfpld/tracy/releases/latest/download/tracy.pdf) for usage and build process instructions
+- [Releases](https://github.com/wolfpld/tracy/releases) containing the documentation (`tracy.pdf`) and compiled Windows x64 binaries (`Tracy-<version>.7z`) as assets
+- [Changelog](NEWS)
 
 ![](doc/profiler.png)
 
 ![](doc/profiler2.png)
-
-[Changelog](NEWS)
 
 [Introduction to Tracy Profiler v0.2](https://www.youtube.com/watch?v=fB5B46lbapc)  
 [New features in Tracy Profiler v0.3](https://www.youtube.com/watch?v=3SXpDpDh2Uo)  

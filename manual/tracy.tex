@@ -425,6 +425,27 @@ The application you want to profile should be compiled with all the usual optimi
 
 Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}. BSD systems will also need to be linked with \texttt{libexecinfo}.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{CMake integration}
+You can integrate Tracy easily with CMake by adding the git submodule folder as a subdirectory.
+
+\begin{lstlisting}
+# set options before add_subdirectory
+# available options: TRACY_ENABLE, TRACY_ON_DEMAND, TRACY_NO_BROADCAST, TRACY_NO_CODE_TRANSFER, ...
+option(TRACY_ENABLE "" ON)
+option(TRACY_ON_DEMAND "" ON)
+add_subdirectory(3rdparty/tracy)  # target: TracyClient or alias Tracy::TracyClient
+\end{lstlisting}
+
+Link \texttt{Tracy::TracyClient} to any target where you use Tracy for profiling:
+
+\begin{lstlisting}
+target_link_libraries(<TARGET> PUBLIC Tracy::TracyClient)
+\end{lstlisting}
+\end{bclogo}
 
 \begin{bclogo}[
 noborder=true,
@@ -448,7 +469,7 @@ FetchContent_MakeAvailable(tracy)
 Then add this to any target where you use tracy for profiling:
 
 \begin{lstlisting}
-target_link_libraries(${_target} PUBLIC TracyClient)
+target_link_libraries(<TARGET> PUBLIC TracyClient)
 \end{lstlisting}
 \end{bclogo}
 

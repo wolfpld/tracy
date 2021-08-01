@@ -11,7 +11,7 @@ v0.x.x (xxxx-xx-xx)
   resolution in call stacks on Windows.
 - Limited client query response rate.
 - Improved function matching algorithm in compare traces view.
-- Added minimal CMake integration layer.
+- Added CMake integration.
 - Reworked rpmalloc initialization.
 - Fixed display of messages with newlines on messages list.
 - Excluded some uninteresting wrapper functions from call stacks (for

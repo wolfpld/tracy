@@ -29,9 +29,12 @@ using TracyVkCtx = void*;
 
 #else
 
+#if !defined VK_NULL_HANDLE
+#  error "You must include Vulkan headers before including TracyVulkan.hpp"
+#endif
+
 #include <assert.h>
 #include <stdlib.h>
-#include <vulkan/vulkan.h>
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
 #include "client/TracyCallstack.hpp"

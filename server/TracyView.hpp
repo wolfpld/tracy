@@ -485,7 +485,8 @@ private:
     UserData m_userData;
 
     bool m_reconnectRequested = false;
-    int m_firstFrame = 10;
+    bool m_firstFrame = true;
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_firstFrameTime;
     float m_yDelta;
 
     std::vector<SourceRegex> m_sourceSubstitutions;

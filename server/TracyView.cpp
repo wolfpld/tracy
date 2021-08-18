@@ -1166,7 +1166,21 @@ bool View::DrawImpl()
     m_lockInfoAnim.Update( io.DeltaTime );
     m_statBuzzAnim.Update( io.DeltaTime );
 
-    if( m_firstFrame > 0 ) m_firstFrame--;
+    if( m_firstFrame )
+    {
+        const auto now = std::chrono::high_resolution_clock::now();
+        if( m_firstFrameTime.time_since_epoch().count() == 0 )
+        {
+            m_firstFrameTime = now;
+        }
+        else
+        {
+            if( std::chrono::duration_cast<std::chrono::milliseconds>( now - m_firstFrameTime ).count() > 500 )
+            {
+                m_firstFrame = false;
+            }
+        }
+    }
 
     if( m_reactToCrash )
     {
@@ -2784,7 +2798,7 @@ void View::AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
     }
     else if( vis.height < h )
     {
-        if( m_firstFrame > 0 )
+        if( m_firstFrame )
         {
             vis.height = h;
             offset = oldOffset + h;

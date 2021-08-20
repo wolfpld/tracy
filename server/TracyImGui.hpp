@@ -116,9 +116,9 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 {
     if( disabled )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
-        ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled );
-        ImGui::PopStyleColor( 1 );
+        ImGui::BeginDisabled();
+        ImGui::Button( label );
+        ImGui::EndDisabled();
         return false;
     }
     else
@@ -131,13 +131,9 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 {
     if( disabled )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
-        ImGuiContext& g = *GImGui;
-        float backup_padding_y = g.Style.FramePadding.y;
-        g.Style.FramePadding.y = 0.0f;
-        ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled | ImGuiButtonFlags_AlignTextBaseLine );
-        g.Style.FramePadding.y = backup_padding_y;
-        ImGui::PopStyleColor( 1 );
+        ImGui::BeginDisabled();
+        ImGui::SmallButton( label );
+        ImGui::EndDisabled();
         return false;
     }
     else

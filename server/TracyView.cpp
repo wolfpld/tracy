@@ -841,9 +841,9 @@ bool View::DrawImpl()
         }
         else
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
-            ImGui::ButtonEx( MainWindowButtons[2], ImVec2( bw, 0 ), ImGuiButtonFlags_Disabled );
-            ImGui::PopStyleColor( 1 );
+            ImGui::BeginDisabled();
+            ImGui::ButtonEx( MainWindowButtons[2], ImVec2( bw, 0 ) );
+            ImGui::EndDisabled();
         }
         if( ImGui::BeginPopup( "viewMode" ) )
         {
@@ -1589,9 +1589,9 @@ bool View::DrawConnection()
     }
     else
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
-        ImGui::ButtonEx( stopStr, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled );
-        ImGui::PopStyleColor( 1 );
+        ImGui::BeginDisabled();
+        ImGui::Button( stopStr );
+        ImGui::EndDisabled();
     }
 
     ImGui::SameLine();

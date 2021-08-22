@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "../profiler/src/imgui_impl_opengl3_loader.h"
 #include "TracyTexture.hpp"
 

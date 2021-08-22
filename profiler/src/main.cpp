@@ -6,13 +6,13 @@
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "imgui_impl_opengl3_loader.h"
 #include <mutex>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <unordered_map>
-#include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <sys/stat.h>
@@ -20,6 +20,10 @@
 
 #ifndef TRACY_NO_FILESELECTOR
 #  include "../nfd/nfd.h"
+#endif
+
+#ifdef _WIN32
+#  include <windows.h>
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -256,7 +260,6 @@ int main( int argc, char** argv )
     s_glfwWindow = window;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
-    gl3wInit();
     glfwSetWindowRefreshCallback( window, WindowRefreshCallback );
 
 #ifdef _WIN32

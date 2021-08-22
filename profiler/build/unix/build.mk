@@ -1,7 +1,7 @@
 CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=c++17
-DEFINES += -DIMGUI_IMPL_OPENGL_LOADER_GL3W -DIMGUI_ENABLE_FREETYPE
-INCLUDES := $(shell pkg-config --cflags glfw3 freetype2 capstone) -I../../../imgui -I../../libs/gl3w
+DEFINES += -DIMGUI_ENABLE_FREETYPE
+INCLUDES := $(shell pkg-config --cflags glfw3 freetype2 capstone) -I../../../imgui
 LIBS := $(shell pkg-config --libs glfw3 freetype2 capstone) -lpthread -ldl
 
 DISPLAY_SERVER := X11

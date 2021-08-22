@@ -57,7 +57,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgInstalledDir)$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgInstalledDir)$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
@@ -83,7 +83,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\libs\gl3w;..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgInstalledDir)$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgInstalledDir)$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -165,7 +165,6 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\divsufsort.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c" />
-    <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c" />
     <ClCompile Include="..\..\src\HttpRequest.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp" />
@@ -277,8 +276,6 @@
     <ClInclude Include="..\..\..\zstd\zdict.h" />
     <ClInclude Include="..\..\..\zstd\zstd.h" />
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
-    <ClInclude Include="..\..\libs\gl3w\GL\gl3w.h" />
-    <ClInclude Include="..\..\libs\gl3w\GL\glcorearb.h" />
     <ClInclude Include="..\..\src\Arimo.hpp" />
     <ClInclude Include="..\..\src\Cousine.hpp" />
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp" />
@@ -286,6 +283,7 @@
     <ClInclude Include="..\..\src\icon.hpp" />
     <ClInclude Include="..\..\src\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\..\src\imgui_impl_opengl3_loader.h" />
     <ClInclude Include="..\..\src\NativeWindow.hpp" />
     <ClInclude Include="..\..\src\ResolvService.hpp" />
     <ClInclude Include="..\..\src\stb_image.h" />

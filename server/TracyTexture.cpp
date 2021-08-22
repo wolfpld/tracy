@@ -1,5 +1,4 @@
-#include <GL/gl3w.h>
-
+#include "../profiler/src/imgui_impl_opengl3_loader.h"
 #include "TracyTexture.hpp"
 
 #ifndef COMPRESSED_RGB_S3TC_DXT1_EXT

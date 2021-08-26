@@ -2017,6 +2017,7 @@ You can capture a trace using a command line utility contained in the \texttt{ca
 \item \texttt{-a address} -- specifies the IP address (or a domain name) of the client application (uses \texttt{localhost} if not provided).
 \item \texttt{-p port} -- network port which should be used (optional).
 \item \texttt{-f} -- force overwrite, if output file already exists.
+\item \texttt{-s seconds} -- number of seconds to capture before automatically disconnecting (optional).
 \end{itemize}
 
 If there is no client running at the given address, the server will wait until a connection can be made. During the capture the following information will be displayed:
@@ -2031,7 +2032,7 @@ Timer resolution: 3 ns
 
 The \emph{queue delay} and \emph{timer resolution} parameters are calibration results of timers used by the client. The next line is a status bar, which displays: network connection speed, connection compression ratio, and the resulting uncompressed data rate; total amount of data transferred over the network; memory usage of the capture utility; time extent of the captured data.
 
-You can disconnect from the client and save the captured trace by pressing \keys{\ctrl + C}.
+You can disconnect from the client and save the captured trace by pressing \keys{\ctrl + C}. If you prefer to disconnect after a fixed time, use the \texttt{-s seconds} parameter.
 
 \subsection{Interactive profiling}
 \label{interactiveprofiling}

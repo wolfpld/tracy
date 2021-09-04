@@ -10753,6 +10753,8 @@ void View::DrawFindZone()
         const auto limitRange = m_findZone.range.active;
         FindZone::Group* group = nullptr;
         uint64_t lastGid = std::numeric_limits<uint64_t>::max() - 1;
+        Vector<short_ptr<ZoneEvent>>* threadZones = nullptr;
+        uint16_t lastTid = std::numeric_limits<uint16_t>::max();
         auto zptr = zones.data() + m_findZone.processed;
         const auto zend = zones.data() + zones.size();
         while( zptr < zend )
@@ -10853,6 +10855,13 @@ void View::DrawFindZone()
             }
             group->time += timespan;
             group->zones.push_back_non_empty( ev.Zone() );
+
+            if (lastTid != ev.Thread()) {
+                lastTid = ev.Thread();
+                threadZones = &m_findZone.samplesCache.threads[lastTid];
+                threadZones->reserve( 1024 );
+            }
+            threadZones->push_back_non_empty(ev.Zone());
         }
         m_findZone.processed = zptr - zones.data();
 
@@ -11070,6 +11079,73 @@ void View::DrawFindZone()
                 }
             }
         }
+
+        if( ImGui::TreeNodeEx( "Samples", ImGuiTreeNodeFlags_None ) )
+        {
+            {
+                ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel );
+            }
+            
+            for (auto& t: m_findZone.threads) {
+                pdqsort_branchless( t.second.begin(), t.second.end(), []( const auto& lhs, const auto& rhs ) { return (*lhs).Start() < (*rhs).Start(); } );
+            }
+
+            const auto& symMap = m_worker.GetSymbolMap();
+            Vector<SymList> data;
+            data.reserve( symMap.size() );
+            for( auto& v : symMap )
+            {
+                bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
+                if( !pass && v.second.size.Val() == 0 )
+                {
+                    const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
+                    if( parentAddr != 0 )
+                    {
+                        auto pit = symMap.find( parentAddr );
+                        if( pit != symMap.end() )
+                        {
+                            pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
+                        }
+                    }
+                }
+                if (!pass) continue;
+
+                auto samples = m_worker.GetSamplesForSymbol( v.first );
+                if( !samples )  continue;
+
+                uint32_t count = 0;
+                for (auto it: *samples) {
+                    const auto time = it.time.Val();
+                    const auto& zones = m_findZone.threads[it.thread];
+                    auto z = std::lower_bound( zones.begin(), zones.end(), time, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+                    if( z == zones.end() ) continue;
+                    if (z != zones.begin()) --z;
+                    if (time >= (*z)->Start() && time < (*z)->End())
+                        count++;
+                }
+                if (count > 0)
+                    data.push_back_no_space_check( SymList { v.first, 0, count } );
+            }
+            DrawSamplesStatistics(data, m_worker.GetLastTime(), AccumulationMode::SelfOnly);
+            ImGui::TreePop();
+        } 
+
         ImGui::EndChild();
     }
 #endif
@@ -12993,14 +13069,14 @@ void View::DrawStatistics()
             }
         }
 
-        DrawSamplesStatistics(data, timeRange);
+        DrawSamplesStatistics(data, timeRange, m_statAccumulationMode);
     }
 #endif
     ImGui::End();
 }
 
 
-void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange)
+void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode)
 {
     static unordered_flat_map<uint64_t, SymList> inlineMap;
     assert( inlineMap.empty() );
@@ -13042,7 +13118,7 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange)
     {
         const auto& symMap = m_worker.GetSymbolMap();
 
-        if( m_statAccumulationMode == AccumulationMode::SelfOnly )
+        if( accumulationMode == AccumulationMode::SelfOnly )
         {
             pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
         }
@@ -13079,7 +13155,7 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange)
             int idx = 0;
             for( auto& v : data )
             {
-                const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? v.excl : v.incl;
+                const auto cnt = accumulationMode == AccumulationMode::SelfOnly ? v.excl : v.incl;
                 if( cnt > 0 || showAll )
                 {
                     const char* name = "[unknown]";
@@ -13318,7 +13394,7 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange)
                             inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
                         }
 
-                        if( m_statAccumulationMode == AccumulationMode::SelfOnly )
+                        if( accumulationMode == AccumulationMode::SelfOnly )
                         {
                             pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
                         }
@@ -13332,7 +13408,7 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange)
                         {
                             ImGui::TableNextRow();
                             ImGui::TableNextColumn();
-                            const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? iv.excl : iv.incl;
+                            const auto cnt = accumulationMode == AccumulationMode::SelfOnly ? iv.excl : iv.incl;
                             if( cnt > 0 || showAll )
                             {
                                 auto sit = symMap.find( iv.symAddr );

@@ -203,7 +203,7 @@ private:
     void DrawFindZone();
     void AccumulationModeComboBox();
     void DrawStatistics();
-    void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange);
+    void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode);
     void DrawMemory();
     void DrawAllocList();
     void DrawCompare();
@@ -523,6 +523,7 @@ private:
         bool ignoreCase = false;
         std::vector<int16_t> match;
         unordered_flat_map<uint64_t, Group> groups;
+        unordered_flat_map<uint16_t, Vector<short_ptr<ZoneEvent>> > threads;
         size_t processed;
         uint16_t groupId;
         int selMatch = 0;
@@ -587,6 +588,7 @@ private:
         {
             ResetSelection();
             groups.clear();
+            threads.clear();
             processed = 0;
             groupId = 0;
             selCs = 0;

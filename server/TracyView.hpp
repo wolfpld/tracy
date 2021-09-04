@@ -153,6 +153,13 @@ private:
         bool highlight;
     };
 
+    struct SymList
+    {
+        uint64_t symAddr;
+        uint32_t incl, excl;
+        uint32_t count;
+    };
+
     void InitMemory();
     void InitTextEditor( ImFont* font );
 
@@ -196,6 +203,7 @@ private:
     void DrawFindZone();
     void AccumulationModeComboBox();
     void DrawStatistics();
+    void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange);
     void DrawMemory();
     void DrawAllocList();
     void DrawCompare();

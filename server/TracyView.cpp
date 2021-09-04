@@ -12810,13 +12810,6 @@ void View::DrawStatistics()
         const auto& symMap = m_worker.GetSymbolMap();
         const auto& symStat = m_worker.GetSymbolStats();
 
-        struct SymList
-        {
-            uint64_t symAddr;
-            uint32_t incl, excl;
-            uint32_t count;
-        };
-
         Vector<SymList> data;
         if( m_showAllSymbols )
         {
@@ -13000,465 +12993,473 @@ void View::DrawStatistics()
             }
         }
 
-        static unordered_flat_map<uint64_t, SymList> inlineMap;
-        assert( inlineMap.empty() );
-        if( !m_statSeparateInlines )
-        {
-            static unordered_flat_map<uint64_t, SymList> baseMap;
-            assert( baseMap.empty() );
-            for( auto& v : data )
-            {
-                auto sym = m_worker.GetSymbolData( v.symAddr );
-                const auto symAddr = ( sym && sym->isInline ) ? m_worker.GetSymbolForAddress( v.symAddr ) : v.symAddr;
-                auto it = baseMap.find( symAddr );
-                if( it == baseMap.end() )
-                {
-                    baseMap.emplace( symAddr, SymList { symAddr, v.incl, v.excl, 0 } );
-                }
-                else
-                {
-                    assert( symAddr == it->second.symAddr );
-                    it->second.incl += v.incl;
-                    it->second.excl += v.excl;
-                    it->second.count++;
-                }
-            }
-            for( auto& v : data ) inlineMap.emplace( v.symAddr, SymList { v.symAddr, v.incl, v.excl, v.count } );
-            data.clear();
-            for( auto& v : baseMap )
-            {
-                data.push_back_no_space_check( v.second );
-            }
-            baseMap.clear();
-        }
+        DrawSamplesStatistics(data, timeRange);
+    }
+#endif
+    ImGui::End();
+}
 
-        if( data.empty() )
+
+void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange)
+{
+    static unordered_flat_map<uint64_t, SymList> inlineMap;
+    assert( inlineMap.empty() );
+    if( !m_statSeparateInlines )
+    {
+        static unordered_flat_map<uint64_t, SymList> baseMap;
+        assert( baseMap.empty() );
+        for( auto& v : data )
         {
-            ImGui::TextUnformatted( "No entries to be displayed." );
-        }
-        else
-        {
-            if( m_statAccumulationMode == AccumulationMode::SelfOnly )
+            auto sym = m_worker.GetSymbolData( v.symAddr );
+            const auto symAddr = ( sym && sym->isInline ) ? m_worker.GetSymbolForAddress( v.symAddr ) : v.symAddr;
+            auto it = baseMap.find( symAddr );
+            if( it == baseMap.end() )
             {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
+                baseMap.emplace( symAddr, SymList { symAddr, v.incl, v.excl, 0 } );
             }
             else
             {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.incl != r.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+                assert( symAddr == it->second.symAddr );
+                it->second.incl += v.incl;
+                it->second.excl += v.excl;
+                it->second.count++;
+            }
+        }
+        for( auto& v : data ) inlineMap.emplace( v.symAddr, SymList { v.symAddr, v.incl, v.excl, v.count } );
+        data.clear();
+        for( auto& v : baseMap )
+        {
+            data.push_back_no_space_check( v.second );
+        }
+        baseMap.clear();
+    }
+
+    if( data.empty() )
+    {
+        ImGui::TextUnformatted( "No entries to be displayed." );
+    }
+    else
+    {
+        const auto& symMap = m_worker.GetSymbolMap();
+
+        if( m_statAccumulationMode == AccumulationMode::SelfOnly )
+        {
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
+        }
+        else
+        {
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.incl != r.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+        }
+
+        ImGui::BeginChild( "##statisticsSampling" );
+        if( ImGui::BeginTable( "##statisticsSampling", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
+        {
+            ImGui::TableSetupScrollFreeze( 0, 1 );
+            ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
+            ImGui::TableSetupColumn( "Location", ImGuiTableColumnFlags_NoSort );
+            ImGui::TableSetupColumn( "Image" );
+            ImGui::TableSetupColumn( m_statSampleTime ? "Time" : "Count", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+            ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+            ImGui::TableHeadersRow();
+
+            double revSampleCount100;
+            if( m_statRange.active && m_worker.GetSamplingPeriod() != 0 )
+            {
+                const auto st = m_statRange.max - m_statRange.min;
+                const auto cnt = st / m_worker.GetSamplingPeriod();
+                revSampleCount100 = 100. / cnt;
+            }
+            else
+            {
+                revSampleCount100 = 100. / m_worker.GetCallstackSampleCount();
             }
 
-            ImGui::BeginChild( "##statisticsSampling" );
-            if( ImGui::BeginTable( "##statisticsSampling", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
+            const bool showAll = m_showAllSymbols;
+            const auto period = m_worker.GetSamplingPeriod();
+            int idx = 0;
+            for( auto& v : data )
             {
-                ImGui::TableSetupScrollFreeze( 0, 1 );
-                ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
-                ImGui::TableSetupColumn( "Location", ImGuiTableColumnFlags_NoSort );
-                ImGui::TableSetupColumn( "Image" );
-                ImGui::TableSetupColumn( m_statSampleTime ? "Time" : "Count", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                ImGui::TableSetupColumn( "Code size", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                ImGui::TableHeadersRow();
+                const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? v.excl : v.incl;
+                if( cnt > 0 || showAll )
+                {
+                    const char* name = "[unknown]";
+                    const char* file = "[unknown]";
+                    const char* imageName = "[unknown]";
+                    uint32_t line = 0;
+                    bool isInline = false;
+                    uint32_t symlen = 0;
+                    auto codeAddr = v.symAddr;
 
-                double revSampleCount100;
-                if( m_statRange.active && m_worker.GetSamplingPeriod() != 0 )
-                {
-                    const auto st = m_statRange.max - m_statRange.min;
-                    const auto cnt = st / m_worker.GetSamplingPeriod();
-                    revSampleCount100 = 100. / cnt;
-                }
-                else
-                {
-                    revSampleCount100 = 100. / m_worker.GetCallstackSampleCount();
-                }
-
-                const bool showAll = m_showAllSymbols;
-                const auto period = m_worker.GetSamplingPeriod();
-                int idx = 0;
-                for( auto& v : data )
-                {
-                    const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? v.excl : v.incl;
-                    if( cnt > 0 || showAll )
+                    auto sit = symMap.find( v.symAddr );
+                    if( sit != symMap.end() )
                     {
-                        const char* name = "[unknown]";
-                        const char* file = "[unknown]";
-                        const char* imageName = "[unknown]";
-                        uint32_t line = 0;
-                        bool isInline = false;
-                        uint32_t symlen = 0;
-                        auto codeAddr = v.symAddr;
-
-                        auto sit = symMap.find( v.symAddr );
-                        if( sit != symMap.end() )
+                        name = m_worker.GetString( sit->second.name );
+                        imageName = m_worker.GetString( sit->second.imageName );
+                        isInline = sit->second.isInline;
+                        switch( m_statSampleLocation )
                         {
-                            name = m_worker.GetString( sit->second.name );
-                            imageName = m_worker.GetString( sit->second.imageName );
-                            isInline = sit->second.isInline;
-                            switch( m_statSampleLocation )
+                        case 0:
+                            file = m_worker.GetString( sit->second.file );
+                            line = sit->second.line;
+                            break;
+                        case 1:
+                            file = m_worker.GetString( sit->second.callFile );
+                            line = sit->second.callLine;
+                            break;
+                        case 2:
+                            if( sit->second.isInline )
                             {
-                            case 0:
-                                file = m_worker.GetString( sit->second.file );
-                                line = sit->second.line;
-                                break;
-                            case 1:
                                 file = m_worker.GetString( sit->second.callFile );
                                 line = sit->second.callLine;
-                                break;
-                            case 2:
-                                if( sit->second.isInline )
-                                {
-                                    file = m_worker.GetString( sit->second.callFile );
-                                    line = sit->second.callLine;
-                                }
-                                else
-                                {
-                                    file = m_worker.GetString( sit->second.file );
-                                    line = sit->second.line;
-                                }
-                                break;
-                            default:
-                                assert( false );
-                                break;
-                            }
-                            if( m_statHideUnknown && file[0] == '[' ) continue;
-                            symlen = sit->second.size.Val();
-                        }
-                        else if( m_statHideUnknown )
-                        {
-                            continue;
-                        }
-
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-
-                        const bool isKernel = v.symAddr >> 63 != 0;
-                        const char* parentName = nullptr;
-                        if( symlen == 0 && !isKernel )
-                        {
-                            const auto parentAddr = m_worker.GetSymbolForAddress( v.symAddr );
-                            if( parentAddr != 0 )
-                            {
-                                auto pit = symMap.find( parentAddr );
-                                if( pit != symMap.end() )
-                                {
-                                    codeAddr = parentAddr;
-                                    symlen = pit->second.size.Val();
-                                    parentName = m_worker.GetString( pit->second.name );
-                                }
-                            }
-                        }
-
-                        bool expand = false;
-                        if( !m_statSeparateInlines )
-                        {
-                            if( v.count > 0 && v.symAddr != 0 )
-                            {
-                                ImGui::PushID( v.symAddr );
-                                expand = ImGui::TreeNodeEx( "", v.count == 0 ? ImGuiTreeNodeFlags_Leaf : 0 );
-                                ImGui::PopID();
-                                ImGui::SameLine();
-                            }
-                        }
-                        else if( isInline )
-                        {
-                            TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
-                            ImGui::SameLine();
-                        }
-                        uint32_t excl;
-                        if( m_statSeparateInlines )
-                        {
-                            excl = v.excl;
-                        }
-                        else
-                        {
-                            auto it = inlineMap.find( v.symAddr );
-                            excl = it != inlineMap.end() ? it->second.excl : 0;
-                        }
-                        if( v.symAddr == 0 || excl == 0 )
-                        {
-                            if( isKernel )
-                            {
-                                TextColoredUnformatted( 0xFF8888FF, name );
                             }
                             else
                             {
-                                ImGui::TextUnformatted( name );
+                                file = m_worker.GetString( sit->second.file );
+                                line = sit->second.line;
+                            }
+                            break;
+                        default:
+                            assert( false );
+                            break;
+                        }
+                        if( m_statHideUnknown && file[0] == '[' ) continue;
+                        symlen = sit->second.size.Val();
+                    }
+                    else if( m_statHideUnknown )
+                    {
+                        continue;
+                    }
+
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+
+                    const bool isKernel = v.symAddr >> 63 != 0;
+                    const char* parentName = nullptr;
+                    if( symlen == 0 && !isKernel )
+                    {
+                        const auto parentAddr = m_worker.GetSymbolForAddress( v.symAddr );
+                        if( parentAddr != 0 )
+                        {
+                            auto pit = symMap.find( parentAddr );
+                            if( pit != symMap.end() )
+                            {
+                                codeAddr = parentAddr;
+                                symlen = pit->second.size.Val();
+                                parentName = m_worker.GetString( pit->second.name );
                             }
                         }
-                        else
+                    }
+
+                    bool expand = false;
+                    if( !m_statSeparateInlines )
+                    {
+                        if( v.count > 0 && v.symAddr != 0 )
                         {
-                            ImGui::PushID( idx++ );
-                            if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
-                            const auto clicked = ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
-                            if( isKernel ) ImGui::PopStyleColor();
-                            if( clicked ) ShowSampleParents( v.symAddr );
+                            ImGui::PushID( v.symAddr );
+                            expand = ImGui::TreeNodeEx( "", v.count == 0 ? ImGuiTreeNodeFlags_Leaf : 0 );
                             ImGui::PopID();
-                        }
-                        if( parentName )
-                        {
                             ImGui::SameLine();
-                            ImGui::TextDisabled( "(%s)", parentName );
                         }
-                        if( !m_statSeparateInlines && v.count > 0 && v.symAddr != 0 )
+                    }
+                    else if( isInline )
+                    {
+                        TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
+                        ImGui::SameLine();
+                    }
+                    uint32_t excl;
+                    if( m_statSeparateInlines )
+                    {
+                        excl = v.excl;
+                    }
+                    else
+                    {
+                        auto it = inlineMap.find( v.symAddr );
+                        excl = it != inlineMap.end() ? it->second.excl : 0;
+                    }
+                    if( v.symAddr == 0 || excl == 0 )
+                    {
+                        if( isKernel )
                         {
-                            ImGui::SameLine();
-                            ImGui::TextDisabled( "(+%s)", RealToString( v.count ) );
-                        }
-                        ImGui::TableNextColumn();
-                        float indentVal = 0.f;
-                        if( m_statBuzzAnim.Match( v.symAddr ) )
-                        {
-                            const auto time = m_statBuzzAnim.Time();
-                            indentVal = sin( time * 60.f ) * 10.f * time;
-                            ImGui::Indent( indentVal );
-                        }
-                        if( m_statShowAddress )
-                        {
-                            ImGui::TextDisabled( "0x%" PRIx64, v.symAddr );
+                            TextColoredUnformatted( 0xFF8888FF, name );
                         }
                         else
                         {
-                            TextDisabledUnformatted( LocationToString( file, line ) );
+                            ImGui::TextUnformatted( name );
                         }
-                        if( ImGui::IsItemHovered() )
+                    }
+                    else
+                    {
+                        ImGui::PushID( idx++ );
+                        if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
+                        const auto clicked = ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                        if( isKernel ) ImGui::PopStyleColor();
+                        if( clicked ) ShowSampleParents( v.symAddr );
+                        ImGui::PopID();
+                    }
+                    if( parentName )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", parentName );
+                    }
+                    if( !m_statSeparateInlines && v.count > 0 && v.symAddr != 0 )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(+%s)", RealToString( v.count ) );
+                    }
+                    ImGui::TableNextColumn();
+                    float indentVal = 0.f;
+                    if( m_statBuzzAnim.Match( v.symAddr ) )
+                    {
+                        const auto time = m_statBuzzAnim.Time();
+                        indentVal = sin( time * 60.f ) * 10.f * time;
+                        ImGui::Indent( indentVal );
+                    }
+                    if( m_statShowAddress )
+                    {
+                        ImGui::TextDisabled( "0x%" PRIx64, v.symAddr );
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( LocationToString( file, line ) );
+                    }
+                    if( ImGui::IsItemHovered() )
+                    {
+                        DrawSourceTooltip( file, line );
+                        if( ImGui::IsItemClicked( 1 ) )
                         {
-                            DrawSourceTooltip( file, line );
-                            if( ImGui::IsItemClicked( 1 ) )
+                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
                             {
-                                if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                ViewSymbol( file, line, codeAddr, v.symAddr );
+                                if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                            }
+                            else if( symlen != 0 )
+                            {
+                                uint32_t len;
+                                if( m_worker.GetSymbolCode( codeAddr, len ) )
                                 {
-                                    ViewSymbol( file, line, codeAddr, v.symAddr );
+                                    ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
                                     if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
-                                }
-                                else if( symlen != 0 )
-                                {
-                                    uint32_t len;
-                                    if( m_worker.GetSymbolCode( codeAddr, len ) )
-                                    {
-                                        ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
-                                        if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
-                                    }
-                                    else
-                                    {
-                                        m_statBuzzAnim.Enable( v.symAddr, 0.5f );
-                                    }
                                 }
                                 else
                                 {
                                     m_statBuzzAnim.Enable( v.symAddr, 0.5f );
                                 }
                             }
-                        }
-                        if( indentVal != 0.f )
-                        {
-                            ImGui::Unindent( indentVal );
-                        }
-                        ImGui::TableNextColumn();
-                        TextDisabledUnformatted( imageName );
-                        ImGui::TableNextColumn();
-                        if( cnt > 0 )
-                        {
-                            char buf[64];
-                            if( m_statSampleTime )
+                            else
                             {
-                                const auto t = cnt * period;
-                                ImGui::TextUnformatted( TimeToString( t ) );
-                                PrintStringPercent( buf, 100. * t / timeRange );
+                                m_statBuzzAnim.Enable( v.symAddr, 0.5f );
+                            }
+                        }
+                    }
+                    if( indentVal != 0.f )
+                    {
+                        ImGui::Unindent( indentVal );
+                    }
+                    ImGui::TableNextColumn();
+                    TextDisabledUnformatted( imageName );
+                    ImGui::TableNextColumn();
+                    if( cnt > 0 )
+                    {
+                        char buf[64];
+                        if( m_statSampleTime )
+                        {
+                            const auto t = cnt * period;
+                            ImGui::TextUnformatted( TimeToString( t ) );
+                            PrintStringPercent( buf, 100. * t / timeRange );
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted( RealToString( cnt ) );
+                            PrintStringPercent( buf, cnt * revSampleCount100 );
+                        }
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( buf );
+                    }
+                    ImGui::TableNextColumn();
+                    if( symlen != 0 )
+                    {
+                        if( m_worker.HasSymbolCode( codeAddr ) )
+                        {
+                            TextDisabledUnformatted( ICON_FA_DATABASE );
+                            ImGui::SameLine();
+                        }
+                        if( isInline )
+                        {
+                            TextDisabledUnformatted( "<" );
+                            ImGui::SameLine();
+                        }
+                        TextDisabledUnformatted( MemSizeToString( symlen ) );
+                    }
+
+                    if( !m_statSeparateInlines && expand )
+                    {
+                        assert( v.count > 0 );
+                        assert( symlen != 0 );
+                        auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
+                        assert( inSym != 0 );
+                        const auto symEnd = v.symAddr + symlen;
+                        Vector<SymList> inSymList;
+                        while( *inSym < symEnd )
+                        {
+                            auto sit = inlineMap.find( *inSym );
+                            if( sit != inlineMap.end() )
+                            {
+                                inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
                             }
                             else
                             {
-                                ImGui::TextUnformatted( RealToString( cnt ) );
-                                PrintStringPercent( buf, cnt * revSampleCount100 );
+                                inSymList.push_back( SymList { *inSym, 0, 0 } );
                             }
-                            ImGui::SameLine();
-                            TextDisabledUnformatted( buf );
+                            inSym++;
                         }
-                        ImGui::TableNextColumn();
-                        if( symlen != 0 )
+                        auto statIt = inlineMap.find( v.symAddr );
+                        if( statIt != inlineMap.end() )
                         {
-                            if( m_worker.HasSymbolCode( codeAddr ) )
-                            {
-                                TextDisabledUnformatted( ICON_FA_DATABASE );
-                                ImGui::SameLine();
-                            }
-                            if( isInline )
-                            {
-                                TextDisabledUnformatted( "<" );
-                                ImGui::SameLine();
-                            }
-                            TextDisabledUnformatted( MemSizeToString( symlen ) );
+                            inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
                         }
 
-                        if( !m_statSeparateInlines && expand )
+                        if( m_statAccumulationMode == AccumulationMode::SelfOnly )
                         {
-                            assert( v.count > 0 );
-                            assert( symlen != 0 );
-                            auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
-                            assert( inSym != 0 );
-                            const auto symEnd = v.symAddr + symlen;
-                            Vector<SymList> inSymList;
-                            while( *inSym < symEnd )
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+                        }
+
+                        ImGui::Indent();
+                        for( auto& iv : inSymList )
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? iv.excl : iv.incl;
+                            if( cnt > 0 || showAll )
                             {
-                                auto sit = inlineMap.find( *inSym );
-                                if( sit != inlineMap.end() )
+                                auto sit = symMap.find( iv.symAddr );
+                                assert( sit != symMap.end() );
+                                name = m_worker.GetString( sit->second.name );
+                                switch( m_statSampleLocation )
                                 {
-                                    inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
+                                case 0:
+                                    file = m_worker.GetString( sit->second.file );
+                                    line = sit->second.line;
+                                    break;
+                                case 1:
+                                    file = m_worker.GetString( sit->second.callFile );
+                                    line = sit->second.callLine;
+                                    break;
+                                case 2:
+                                    if( sit->second.isInline )
+                                    {
+                                        file = m_worker.GetString( sit->second.callFile );
+                                        line = sit->second.callLine;
+                                    }
+                                    else
+                                    {
+                                        file = m_worker.GetString( sit->second.file );
+                                        line = sit->second.line;
+                                    }
+                                    break;
+                                default:
+                                    assert( false );
+                                    break;
+                                }
+
+                                const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
+                                if( iv.excl == 0 )
+                                {
+                                    ImGui::TextUnformatted( sn );
                                 }
                                 else
                                 {
-                                    inSymList.push_back( SymList { *inSym, 0, 0 } );
+                                    ImGui::PushID( idx++ );
+                                    if( ImGui::Selectable( sn, m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                                    {
+                                        ShowSampleParents( iv.symAddr );
+                                    }
+                                    ImGui::PopID();
                                 }
-                                inSym++;
-                            }
-                            auto statIt = inlineMap.find( v.symAddr );
-                            if( statIt != inlineMap.end() )
-                            {
-                                inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
-                            }
-
-                            if( m_statAccumulationMode == AccumulationMode::SelfOnly )
-                            {
-                                pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
-                            }
-                            else
-                            {
-                                pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
-                            }
-
-                            ImGui::Indent();
-                            for( auto& iv : inSymList )
-                            {
-                                ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-                                const auto cnt = m_statAccumulationMode == AccumulationMode::SelfOnly ? iv.excl : iv.incl;
-                                if( cnt > 0 || showAll )
+                                float indentVal = 0.f;
+                                if( m_statBuzzAnim.Match( iv.symAddr ) )
                                 {
-                                    auto sit = symMap.find( iv.symAddr );
-                                    assert( sit != symMap.end() );
-                                    name = m_worker.GetString( sit->second.name );
-                                    switch( m_statSampleLocation )
+                                    const auto time = m_statBuzzAnim.Time();
+                                    indentVal = sin( time * 60.f ) * 10.f * time;
+                                    ImGui::Indent( indentVal );
+                                }
+                                if( m_statShowAddress )
+                                {
+                                    ImGui::TextDisabled( "0x%" PRIx64, iv.symAddr );
+                                }
+                                else
+                                {
+                                    TextDisabledUnformatted( LocationToString( file, line ) );
+                                }
+                                if( ImGui::IsItemHovered() )
+                                {
+                                    DrawSourceTooltip( file, line );
+                                    if( ImGui::IsItemClicked( 1 ) )
                                     {
-                                    case 0:
-                                        file = m_worker.GetString( sit->second.file );
-                                        line = sit->second.line;
-                                        break;
-                                    case 1:
-                                        file = m_worker.GetString( sit->second.callFile );
-                                        line = sit->second.callLine;
-                                        break;
-                                    case 2:
-                                        if( sit->second.isInline )
+                                        if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
                                         {
-                                            file = m_worker.GetString( sit->second.callFile );
-                                            line = sit->second.callLine;
+                                            ViewSymbol( file, line, codeAddr, iv.symAddr );
+                                            if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
                                         }
-                                        else
+                                        else if( symlen != 0 )
                                         {
-                                            file = m_worker.GetString( sit->second.file );
-                                            line = sit->second.line;
-                                        }
-                                        break;
-                                    default:
-                                        assert( false );
-                                        break;
-                                    }
-
-                                    const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
-                                    if( iv.excl == 0 )
-                                    {
-                                        ImGui::TextUnformatted( sn );
-                                    }
-                                    else
-                                    {
-                                        ImGui::PushID( idx++ );
-                                        if( ImGui::Selectable( sn, m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
-                                        {
-                                            ShowSampleParents( iv.symAddr );
-                                        }
-                                        ImGui::PopID();
-                                    }
-                                    ImGui::TableNextColumn();
-                                    float indentVal = 0.f;
-                                    if( m_statBuzzAnim.Match( iv.symAddr ) )
-                                    {
-                                        const auto time = m_statBuzzAnim.Time();
-                                        indentVal = sin( time * 60.f ) * 10.f * time;
-                                        ImGui::Indent( indentVal );
-                                    }
-                                    if( m_statShowAddress )
-                                    {
-                                        ImGui::TextDisabled( "0x%" PRIx64, iv.symAddr );
-                                    }
-                                    else
-                                    {
-                                        TextDisabledUnformatted( LocationToString( file, line ) );
-                                    }
-                                    if( ImGui::IsItemHovered() )
-                                    {
-                                        DrawSourceTooltip( file, line );
-                                        if( ImGui::IsItemClicked( 1 ) )
-                                        {
-                                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                            uint32_t len;
+                                            if( m_worker.GetSymbolCode( codeAddr, len ) )
                                             {
-                                                ViewSymbol( file, line, codeAddr, iv.symAddr );
+                                                ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
                                                 if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
-                                            }
-                                            else if( symlen != 0 )
-                                            {
-                                                uint32_t len;
-                                                if( m_worker.GetSymbolCode( codeAddr, len ) )
-                                                {
-                                                    ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
-                                                    if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
-                                                }
-                                                else
-                                                {
-                                                    m_statBuzzAnim.Enable( iv.symAddr, 0.5f );
-                                                }
                                             }
                                             else
                                             {
                                                 m_statBuzzAnim.Enable( iv.symAddr, 0.5f );
                                             }
                                         }
-                                    }
-                                    if( indentVal != 0.f )
-                                    {
-                                        ImGui::Unindent( indentVal );
-                                    }
-                                    ImGui::TableNextColumn();
-                                    ImGui::TableNextColumn();
-                                    if( cnt > 0 )
-                                    {
-                                        char buf[64];
-                                        if( m_statSampleTime )
-                                        {
-                                            const auto t = cnt * period;
-                                            ImGui::TextUnformatted( TimeToString( t ) );
-                                            PrintStringPercent( buf, 100. * t / timeRange );
-                                        }
                                         else
                                         {
-                                            ImGui::TextUnformatted( RealToString( cnt ) );
-                                            PrintStringPercent( buf, cnt * revSampleCount100 );
+                                            m_statBuzzAnim.Enable( iv.symAddr, 0.5f );
                                         }
-                                        ImGui::SameLine();
-                                        TextDisabledUnformatted( buf );
                                     }
                                 }
+                                if( indentVal != 0.f )
+                                {
+                                    ImGui::Unindent( indentVal );
+                                }
+                                ImGui::TableNextColumn();
+                                ImGui::TableNextColumn();
+                                if( cnt > 0 )
+                                {
+                                    char buf[64];
+                                    if( m_statSampleTime )
+                                    {
+                                        const auto t = cnt * period;
+                                        ImGui::TextUnformatted( TimeToString( t ) );
+                                        PrintStringPercent( buf, 100. * t / timeRange );
+                                    }
+                                    else
+                                    {
+                                        ImGui::TextUnformatted( RealToString( cnt ) );
+                                        PrintStringPercent( buf, cnt * revSampleCount100 );
+                                    }
+                                    ImGui::SameLine();
+                                    TextDisabledUnformatted( buf );
+                                }
                             }
-                            ImGui::Unindent();
-                            ImGui::TreePop();
                         }
+                        ImGui::Unindent();
+                        ImGui::TreePop();
                     }
                 }
-                ImGui::EndTable();
             }
-            ImGui::EndChild();
-
-            inlineMap.clear();
+            ImGui::EndTable();
         }
+        ImGui::EndChild();
+
+        inlineMap.clear();
     }
-#endif
-    ImGui::End();
 }
 
 void View::DrawCallstackWindow()

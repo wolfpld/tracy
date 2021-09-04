@@ -523,7 +523,6 @@ private:
         bool ignoreCase = false;
         std::vector<int16_t> match;
         unordered_flat_map<uint64_t, Group> groups;
-        unordered_flat_map<uint16_t, Vector<short_ptr<ZoneEvent>> > threads;
         size_t processed;
         uint16_t groupId;
         int selMatch = 0;
@@ -563,6 +562,13 @@ private:
             ptrdiff_t distEnd;
         } binCache;
 
+        struct {
+            unordered_flat_map<uint16_t, Vector<short_ptr<ZoneEvent>> > threads;
+            Vector<SymList> counts;
+            int64_t timeRange = 0;
+            bool scheduleUpdate = false;
+        } samplesCache;
+
         void Reset()
         {
             ResetMatch();
@@ -588,7 +594,8 @@ private:
         {
             ResetSelection();
             groups.clear();
-            threads.clear();
+            samplesCache.threads.clear();
+            samplesCache.counts.clear();
             processed = 0;
             groupId = 0;
             selCs = 0;

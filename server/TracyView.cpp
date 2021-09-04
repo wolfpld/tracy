@@ -10862,6 +10862,7 @@ void View::DrawFindZone()
                 threadZones->reserve( 1024 );
             }
             threadZones->push_back_non_empty(ev.Zone());
+            m_findZone.samplesCache.scheduleUpdate = true;
         }
         m_findZone.processed = zptr - zones.data();
 
@@ -11099,50 +11100,75 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::Spacing();
                 ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel );
+                if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel ))
+                {
+                    m_findZone.samplesCache.scheduleUpdate = true;
+                }
             }
             
-            for (auto& t: m_findZone.threads) {
-                pdqsort_branchless( t.second.begin(), t.second.end(), []( const auto& lhs, const auto& rhs ) { return (*lhs).Start() < (*rhs).Start(); } );
-            }
+            if (m_findZone.samplesCache.scheduleUpdate && !m_findZone.scheduleResetMatch) {
+                m_findZone.samplesCache.scheduleUpdate = false;
 
-            const auto& symMap = m_worker.GetSymbolMap();
-            Vector<SymList> data;
-            data.reserve( symMap.size() );
-            for( auto& v : symMap )
-            {
-                bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
-                if( !pass && v.second.size.Val() == 0 )
-                {
-                    const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
-                    if( parentAddr != 0 )
+                m_findZone.samplesCache.timeRange = 0;
+                for (auto& t: m_findZone.samplesCache.threads) {
+                    pdqsort_branchless( t.second.begin(), t.second.end(), []( const auto& lhs, const auto& rhs ) { return (*lhs).Start() < (*rhs).Start(); } );
+                    int64_t prevEnd = 0;
+                    for (const auto& it : t.second)
                     {
-                        auto pit = symMap.find( parentAddr );
-                        if( pit != symMap.end() )
-                        {
-                            pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
+                        int64_t start =  (*it).Start();
+                        int64_t end =  (*it).End();
+                        if (start < prevEnd) start = prevEnd;
+                        if (start < end) {
+                            prevEnd = end;
+                            m_findZone.samplesCache.timeRange += end - start;
                         }
                     }
                 }
-                if (!pass) continue;
 
-                auto samples = m_worker.GetSamplesForSymbol( v.first );
-                if( !samples )  continue;
+                const auto& symMap = m_worker.GetSymbolMap();
+                m_findZone.samplesCache.counts.clear();
+                m_findZone.samplesCache.counts.reserve( symMap.size() );
 
-                uint32_t count = 0;
-                for (auto it: *samples) {
-                    const auto time = it.time.Val();
-                    const auto& zones = m_findZone.threads[it.thread];
-                    auto z = std::lower_bound( zones.begin(), zones.end(), time, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
-                    if( z == zones.end() ) continue;
-                    if (z != zones.begin()) --z;
-                    if (time >= (*z)->Start() && time < (*z)->End())
-                        count++;
+                for( auto& v : symMap )
+                {
+                    bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
+                    if( !pass && v.second.size.Val() == 0 )
+                    {
+                        const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
+                        if( parentAddr != 0 )
+                        {
+                            auto pit = symMap.find( parentAddr );
+                            if( pit != symMap.end() )
+                            {
+                                pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
+                            }
+                        }
+                    }
+                    if (!pass) continue;
+
+                    auto samples = m_worker.GetSamplesForSymbol( v.first );
+                    if( !samples )  continue;
+
+                    uint32_t count = 0;
+                    for (auto it: *samples) {
+                        const auto time = it.time.Val();
+                        const auto& zones = m_findZone.samplesCache.threads[it.thread];
+                        auto z = std::lower_bound( zones.begin(), zones.end(), time, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+                        if( z == zones.end() ) continue;
+                        if (z != zones.begin()) --z;
+                        if (time >= (*z)->Start() && time < (*z)->End())
+                            count++;
+                    }
+                    if (count > 0)
+                        m_findZone.samplesCache.counts.push_back_no_space_check( SymList { v.first, 0, count } );
                 }
-                if (count > 0)
-                    data.push_back_no_space_check( SymList { v.first, 0, count } );
             }
-            DrawSamplesStatistics(data, m_worker.GetLastTime(), AccumulationMode::SelfOnly);
+
+            Vector<SymList> data;
+            data.reserve(m_findZone.samplesCache.counts.size());
+            for (auto it: m_findZone.samplesCache.counts) data.push_back_no_space_check(it);
+            DrawSamplesStatistics(data, m_findZone.samplesCache.timeRange, AccumulationMode::SelfOnly);
+
             ImGui::TreePop();
         } 
 

@@ -567,6 +567,7 @@ private:
             Vector<SymList> counts;
             int64_t timeRange = 0;
             bool scheduleUpdate = false;
+            bool needZonesPerThread = false;
         } samplesCache;
 
         void Reset()

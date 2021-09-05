@@ -10699,7 +10699,8 @@ void View::DrawFindZone()
         SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
         ImGui::Separator();
 
-        if( ImGui::TreeNodeEx( "Samples", ImGuiTreeNodeFlags_None ) )
+        const bool hasSamples = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
+        if( hasSamples && ImGui::TreeNodeEx( "Samples", ImGuiTreeNodeFlags_None ) )
         {
             {
                 ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
@@ -10722,6 +10723,12 @@ void View::DrawFindZone()
                 {
                     m_findZone.samplesCache.scheduleUpdate = true;
                 }
+            }
+
+            if( !m_findZone.samplesCache.needZonesPerThread )
+            {
+                m_findZone.samplesCache.needZonesPerThread = true;
+                m_findZone.scheduleResetMatch = true;
             }
             
             if( m_findZone.samplesCache.scheduleUpdate && !m_findZone.scheduleResetMatch )
@@ -10793,6 +10800,16 @@ void View::DrawFindZone()
 
             ImGui::TreePop();
         } 
+        else
+        {
+            if( m_findZone.samplesCache.needZonesPerThread )
+            {
+                m_findZone.samplesCache.needZonesPerThread = false;
+                m_findZone.samplesCache.scheduleUpdate = false;
+                m_findZone.samplesCache.counts = Vector<SymList>();
+                m_findZone.samplesCache.threads = unordered_flat_map<uint16_t, Vector<short_ptr<ZoneEvent>> >();
+            }
+        }
         ImGui::Separator();
 
         ImGui::TextUnformatted( "Found zones:" );
@@ -10953,14 +10970,18 @@ void View::DrawFindZone()
             group->time += timespan;
             group->zones.push_back_non_empty( ev.Zone() );
 
-            if( lastTid != ev.Thread() )
+
+            if( m_findZone.samplesCache.needZonesPerThread )
             {
-                lastTid = ev.Thread();
-                threadZones = &m_findZone.samplesCache.threads[lastTid];
-                threadZones->reserve( 1024 );
+                if( lastTid != ev.Thread() )
+                {
+                    lastTid = ev.Thread();
+                    threadZones = &m_findZone.samplesCache.threads[lastTid];
+                    threadZones->reserve( 1024 );
+                }
+                threadZones->push_back_non_empty( ev.Zone() );
+                m_findZone.samplesCache.scheduleUpdate = true;
             }
-            threadZones->push_back_non_empty( ev.Zone() );
-            m_findZone.samplesCache.scheduleUpdate = true;
         }
         m_findZone.processed = zptr - zones.data();
 

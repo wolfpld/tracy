@@ -10732,109 +10732,6 @@ void View::DrawFindZone()
                 m_findZone.scheduleResetMatch = true;
             }
             
-            if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch )
-            {
-                m_findZone.samples.scheduleUpdate = false;
-
-                const auto& symMap = m_worker.GetSymbolMap();
-                m_findZone.samples.counts.clear();
-                m_findZone.samples.counts.reserve( symMap.size() );
-
-                struct GroupRange {
-                    const FindZone::Group* group;
-                    Vector<short_ptr<ZoneEvent>>::const_iterator begin;
-                    Vector<short_ptr<ZoneEvent>>::const_iterator end;
-                };
-                Vector<GroupRange> selectedGroups;
-                selectedGroups.reserve( m_findZone.groups.size() );
-                for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
-                {
-                    assert( it->second.zones.size() == it->second.zonesTids.size() );
-                    if( ( m_findZone.selGroup == m_findZone.Unselected || it->first == m_findZone.selGroup )
-                        && !it->second.zones.empty() )
-                    {
-                        selectedGroups.push_back_no_space_check( GroupRange{&it->second} );
-                    }
-                }
-
-                for( auto& v : symMap )
-                {
-                    bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
-                    if( !pass && v.second.size.Val() == 0 )
-                    {
-                        const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
-                        if( parentAddr != 0 )
-                        {
-                            auto pit = symMap.find( parentAddr );
-                            if( pit != symMap.end() )
-                            {
-                                pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
-                            }
-                        }
-                    }
-                    if( !pass ) continue;
-
-                    auto samples = m_worker.GetSamplesForSymbol( v.first );
-                    if( !samples )  continue;
-                    if( samples->empty() )  continue;
-
-                    auto samplesBegin = samples->begin();
-                    auto samplesEnd = samples->end();
-                    if( m_findZone.range.active )
-                    {
-                        const auto rangeMin = m_findZone.range.min;
-                        const auto rangeMax = m_findZone.range.max;
-                        samplesBegin = std::lower_bound( samplesBegin, samplesEnd, rangeMin, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-                        if( samplesBegin != samplesEnd )
-                        {
-                            samplesEnd = std::lower_bound( samplesBegin, samplesEnd, rangeMax, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
-                        }
-                    }
-                    if( samplesBegin == samplesEnd )  continue;
-
-                    bool empty = true;
-                    const auto firstTime = samplesBegin->time.Val();
-                    const auto lastTime = samplesEnd->time.Val();
-                    for( auto& g: selectedGroups )
-                    {
-                        const auto& zones = g.group->zones;
-                        auto begin = std::lower_bound( zones.begin(), zones.end(), firstTime, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
-                        auto end = std::upper_bound( begin, zones.end(), lastTime, [] ( const auto& l, const auto& r ) { return l <= r->Start(); } );
-                        g.begin = begin;
-                        g.end = end;
-                        empty = empty && (begin == end);
-                    }
-                    if (empty) continue;
-                    
-                    uint32_t count = 0;
-                    for( auto it = samplesBegin; it != samplesEnd; ++it )
-                    {
-                        const auto time = it->time.Val();
-                        bool pass = false;
-                        for( auto& g: selectedGroups )
-                        {
-                            while( g.begin != g.end && time > (*g.begin)->End() ) ++g.begin;
-                            if( g.begin == g.end ) continue;
-                            if( time < (*g.begin)->Start() ) continue;
-
-                            const auto& tids = g.group->zonesTids;
-                            const auto firstZone = g.group->zones.begin();
-                            for (auto z = g.begin; z != g.end && (*z)->Start() <= time; ++z)
-                            {
-                                auto zoneIndex = z - firstZone;
-                                if( (*z)->End() > time && it->thread == tids[zoneIndex] )
-                                {
-                                    pass = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if( pass ) count ++;
-                    }
-                    if( count > 0 )  m_findZone.samples.counts.push_back_no_space_check( SymList { v.first, 0, count } );
-                }
-            }
-
             Vector<SymList> data;
             data.reserve( m_findZone.samples.counts.size() );
             for( auto it: m_findZone.samples.counts ) data.push_back_no_space_check( it );
@@ -11237,6 +11134,105 @@ void View::DrawFindZone()
                 {
                     DrawZoneList( v->second.id, v->second.zones );
                 }
+            }
+        }
+
+        if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch )
+        {
+            m_findZone.samples.scheduleUpdate = false;
+
+            const auto& symMap = m_worker.GetSymbolMap();
+            m_findZone.samples.counts.clear();
+            m_findZone.samples.counts.reserve( symMap.size() );
+
+            struct GroupRange {
+                const FindZone::Group* group;
+                Vector<short_ptr<ZoneEvent>>::const_iterator begin;
+                Vector<short_ptr<ZoneEvent>>::const_iterator end;
+            };
+            Vector<GroupRange> selectedGroups;
+            selectedGroups.reserve( m_findZone.groups.size() );
+            for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
+            {
+                assert( it->second.zones.size() == it->second.zonesTids.size() );
+                if( ( m_findZone.selGroup == m_findZone.Unselected || it->first == m_findZone.selGroup )
+                    && !it->second.zones.empty() )
+                {
+                    selectedGroups.push_back_no_space_check( GroupRange{&it->second} );
+                }
+            }
+
+            for( auto& v : symMap )
+            {
+                bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 );
+                if( !pass && v.second.size.Val() == 0 )
+                {
+                    const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
+                    if( parentAddr != 0 )
+                    {
+                        auto pit = symMap.find( parentAddr );
+                        if( pit != symMap.end() )
+                        {
+                            pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 );
+                        }
+                    }
+                }
+                if( !pass ) continue;
+
+                auto samples = m_worker.GetSamplesForSymbol( v.first );
+                if( !samples )  continue;
+
+                auto samplesBegin = samples->begin();
+                auto samplesEnd = samples->end();
+                if( m_findZone.range.active )
+                {
+                    const auto rangeMin = m_findZone.range.min;
+                    const auto rangeMax = m_findZone.range.max;
+                    samplesBegin = std::lower_bound( samplesBegin, samplesEnd, rangeMin, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                    samplesEnd = std::lower_bound( samplesBegin, samplesEnd, rangeMax, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                }
+                if( samplesBegin == samplesEnd )  continue;
+
+                bool empty = true;
+                const auto firstTime = samplesBegin->time.Val();
+                const auto lastTime = samplesEnd->time.Val();
+                for( auto& g: selectedGroups )
+                {
+                    const auto& zones = g.group->zones;
+                    auto begin = std::lower_bound( zones.begin(), zones.end(), firstTime, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+                    auto end = std::upper_bound( begin, zones.end(), lastTime, [] ( const auto& l, const auto& r ) { return l <= r->Start(); } );
+                    g.begin = begin;
+                    g.end = end;
+                    empty = empty && (begin == end);
+                }
+                if (empty) continue;
+                
+                uint32_t count = 0;
+                for( auto it = samplesBegin; it != samplesEnd; ++it )
+                {
+                    const auto time = it->time.Val();
+                    bool pass = false;
+                    for( auto& g: selectedGroups )
+                    {
+                        while( g.begin != g.end && time > (*g.begin)->End() ) ++g.begin;
+                        if( g.begin == g.end ) continue;
+                        if( time < (*g.begin)->Start() ) continue;
+
+                        const auto& tids = g.group->zonesTids;
+                        const auto firstZone = g.group->zones.begin();
+                        for (auto z = g.begin; z != g.end && (*z)->Start() <= time; ++z)
+                        {
+                            auto zoneIndex = z - firstZone;
+                            if( (*z)->End() > time && it->thread == tids[zoneIndex] )
+                            {
+                                pass = true;
+                                break;
+                            }
+                        }
+                    }
+                    if( pass ) count ++;
+                }
+                if( count > 0 )  m_findZone.samples.counts.push_back_no_space_check( SymList { v.first, 0, count } );
             }
         }
 

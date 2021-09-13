@@ -576,6 +576,7 @@ private:
             selMatch = 0;
             selGroup = Unselected;
             highlight.active = false;
+            samples.counts.clear();
         }
 
         void ResetMatch()
@@ -610,7 +611,6 @@ private:
             selTotal = 0;
             selTime = 0;
             binCache.numBins = -1;
-            samples.counts.clear();
             samples.scheduleUpdate = true;
         }
 

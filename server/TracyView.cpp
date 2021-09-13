@@ -10721,42 +10721,41 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel ))
                 {
-                    m_findZone.samplesCache.scheduleUpdate = true;
+                    m_findZone.samples.scheduleUpdate = true;
                 }
             }
 
-            if( !m_findZone.samplesCache.needZonesPerThread )
+            if( !m_findZone.samples.enabled )
             {
-                m_findZone.samplesCache.needZonesPerThread = true;
+                m_findZone.samples.enabled = true;
+                m_findZone.samples.scheduleUpdate = true;
                 m_findZone.scheduleResetMatch = true;
             }
             
-            if( m_findZone.samplesCache.scheduleUpdate && !m_findZone.scheduleResetMatch )
+            if( m_findZone.samples.enabled && m_findZone.samples.scheduleUpdate && !m_findZone.scheduleResetMatch )
             {
-                m_findZone.samplesCache.scheduleUpdate = false;
-
-                m_findZone.samplesCache.timeRange = 0;
-                for( auto& t: m_findZone.samplesCache.threads )
-                {
-                    pdqsort_branchless( t.second.begin(), t.second.end(), []( const auto& lhs, const auto& rhs ) { return (*lhs).Start() < (*rhs).Start(); } );
-
-                    int64_t prevEnd = 0;
-                    for( const auto& it : t.second )
-                    {
-                        int64_t start =  (*it).Start();
-                        int64_t end =  (*it).End();
-                        if( start < prevEnd ) start = prevEnd;
-                        if( start < end )
-                        {
-                            prevEnd = end;
-                            m_findZone.samplesCache.timeRange += end - start;
-                        }
-                    }
-                }
+                m_findZone.samples.scheduleUpdate = false;
 
                 const auto& symMap = m_worker.GetSymbolMap();
-                m_findZone.samplesCache.counts.clear();
-                m_findZone.samplesCache.counts.reserve( symMap.size() );
+                m_findZone.samples.counts.clear();
+                m_findZone.samples.counts.reserve( symMap.size() );
+
+                struct GroupRange {
+                    const FindZone::Group* group;
+                    Vector<short_ptr<ZoneEvent>>::const_iterator begin;
+                    Vector<short_ptr<ZoneEvent>>::const_iterator end;
+                };
+                Vector<GroupRange> selectedGroups;
+                selectedGroups.reserve( m_findZone.groups.size() );
+                for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
+                {
+                    assert( it->second.zones.size() == it->second.zonesTids.size() );
+                    if( ( m_findZone.selGroup == m_findZone.Unselected || it->first == m_findZone.selGroup )
+                        && !it->second.zones.empty() )
+                    {
+                        selectedGroups.push_back_no_space_check( GroupRange{&it->second} );
+                    }
+                }
 
                 for( auto& v : symMap )
                 {
@@ -10777,37 +10776,81 @@ void View::DrawFindZone()
 
                     auto samples = m_worker.GetSamplesForSymbol( v.first );
                     if( !samples )  continue;
+                    if( samples->empty() )  continue;
 
-                    uint32_t count = 0;
-                    for( auto it: *samples )
+                    auto samplesBegin = samples->begin();
+                    auto samplesEnd = samples->end();
+                    if( m_findZone.range.active )
                     {
-                        const auto time = it.time.Val();
-                        const auto& zones = m_findZone.samplesCache.threads[it.thread];
-                        auto z = std::lower_bound( zones.begin(), zones.end(), time, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
-                        if( z == zones.end() ) continue;
-                        if( z != zones.begin() ) --z;
-                        if( time >= (*z)->Start() && time < (*z)->End() )
-                            count++;
+                        const auto rangeMin = m_findZone.range.min;
+                        const auto rangeMax = m_findZone.range.max;
+                        samplesBegin = std::lower_bound( samplesBegin, samplesEnd, rangeMin, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                        if( samplesBegin != samplesEnd )
+                        {
+                            samplesEnd = std::lower_bound( samplesBegin, samplesEnd, rangeMax, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                        }
                     }
-                    if( count > 0 )  m_findZone.samplesCache.counts.push_back_no_space_check( SymList { v.first, 0, count } );
+                    if( samplesBegin == samplesEnd )  continue;
+
+                    bool empty = true;
+                    const auto firstTime = samplesBegin->time.Val();
+                    const auto lastTime = samplesEnd->time.Val();
+                    for( auto& g: selectedGroups )
+                    {
+                        const auto& zones = g.group->zones;
+                        auto begin = std::lower_bound( zones.begin(), zones.end(), firstTime, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+                        auto end = std::upper_bound( begin, zones.end(), lastTime, [] ( const auto& l, const auto& r ) { return l <= r->Start(); } );
+                        g.begin = begin;
+                        g.end = end;
+                        empty = empty && (begin == end);
+                    }
+                    if (empty) continue;
+                    
+                    uint32_t count = 0;
+                    for( auto it = samplesBegin; it != samplesEnd; ++it )
+                    {
+                        const auto time = it->time.Val();
+                        bool pass = false;
+                        for( auto& g: selectedGroups )
+                        {
+                            while( g.begin != g.end && time > (*g.begin)->End() ) ++g.begin;
+                            if( g.begin == g.end ) continue;
+                            if( time < (*g.begin)->Start() ) continue;
+
+                            const auto& tids = g.group->zonesTids;
+                            const auto firstZone = g.group->zones.begin();
+                            for (auto z = g.begin; z != g.end && (*z)->Start() <= time; ++z)
+                            {
+                                auto zoneIndex = z - firstZone;
+                                if( (*z)->End() > time && it->thread == tids[zoneIndex] )
+                                {
+                                    pass = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if( pass ) count ++;
+                    }
+                    if( count > 0 )  m_findZone.samples.counts.push_back_no_space_check( SymList { v.first, 0, count } );
                 }
             }
 
             Vector<SymList> data;
-            data.reserve( m_findZone.samplesCache.counts.size() );
-            for( auto it: m_findZone.samplesCache.counts ) data.push_back_no_space_check( it );
-            DrawSamplesStatistics( data, m_findZone.samplesCache.timeRange, AccumulationMode::SelfOnly );
+            data.reserve( m_findZone.samples.counts.size() );
+            for( auto it: m_findZone.samples.counts ) data.push_back_no_space_check( it );
+            int64_t timeRange = ( m_findZone.selGroup != m_findZone.Unselected ) ? m_findZone.selTotal : m_findZone.total;
+            DrawSamplesStatistics( data, timeRange, AccumulationMode::SelfOnly );
 
             ImGui::TreePop();
         } 
         else
         {
-            if( m_findZone.samplesCache.needZonesPerThread )
+            if( m_findZone.samples.enabled )
             {
-                m_findZone.samplesCache.needZonesPerThread = false;
-                m_findZone.samplesCache.scheduleUpdate = false;
-                m_findZone.samplesCache.counts = Vector<SymList>();
-                m_findZone.samplesCache.threads = unordered_flat_map<uint16_t, Vector<short_ptr<ZoneEvent>> >();
+                m_findZone.samples.enabled = false;
+                m_findZone.samples.scheduleUpdate = false;
+                m_findZone.samples.counts = Vector<SymList>();
+                for( auto& it: m_findZone.groups ) it.second.zonesTids.clear();
             }
         }
         ImGui::Separator();
@@ -10866,9 +10909,8 @@ void View::DrawFindZone()
         const auto highlightActive = m_findZone.highlight.active;
         const auto limitRange = m_findZone.range.active;
         FindZone::Group* group = nullptr;
-        uint64_t lastGid = std::numeric_limits<uint64_t>::max() - 1;
-        Vector<short_ptr<ZoneEvent>>* threadZones = nullptr;
-        uint16_t lastTid = std::numeric_limits<uint16_t>::max();
+        const uint64_t invalidGid = std::numeric_limits<uint64_t>::max() - 1;
+        uint64_t lastGid = invalidGid;
         auto zptr = zones.data() + m_findZone.processed;
         const auto zend = zones.data() + zones.size();
         while( zptr < zend )
@@ -10964,26 +11006,24 @@ void View::DrawFindZone()
                 {
                     it = m_findZone.groups.emplace( gid, FindZone::Group { m_findZone.groupId++ } ).first;
                     it->second.zones.reserve( 1024 );
+                    if( m_findZone.samples.enabled )
+                        it->second.zonesTids.reserve( 1024 );
                 }
                 group = &it->second;
             }
             group->time += timespan;
             group->zones.push_back_non_empty( ev.Zone() );
-
-
-            if( m_findZone.samplesCache.needZonesPerThread )
-            {
-                if( lastTid != ev.Thread() )
-                {
-                    lastTid = ev.Thread();
-                    threadZones = &m_findZone.samplesCache.threads[lastTid];
-                    threadZones->reserve( 1024 );
-                }
-                threadZones->push_back_non_empty( ev.Zone() );
-                m_findZone.samplesCache.scheduleUpdate = true;
-            }
+            if( m_findZone.samples.enabled )
+                group->zonesTids.push_back_non_empty( ev.Thread() );
         }
         m_findZone.processed = zptr - zones.data();
+
+        const bool groupsUpdated = lastGid != invalidGid;
+        if( m_findZone.samples.enabled && groupsUpdated )
+        {
+            m_findZone.samples.scheduleUpdate = true;
+        }
+
 
         Vector<decltype( m_findZone.groups )::iterator> groups;
         groups.reserve_and_use( m_findZone.groups.size() );

@@ -516,6 +516,7 @@ private:
         {
             uint16_t id;
             Vector<short_ptr<ZoneEvent>> zones;
+            Vector<uint16_t> zonesTids;
             int64_t time = 0;
         };
 
@@ -563,12 +564,10 @@ private:
         } binCache;
 
         struct {
-            unordered_flat_map<uint16_t, Vector<short_ptr<ZoneEvent>> > threads;
             Vector<SymList> counts;
-            int64_t timeRange = 0;
             bool scheduleUpdate = false;
-            bool needZonesPerThread = false;
-        } samplesCache;
+            bool enabled = false;
+        } samples;
 
         void Reset()
         {
@@ -595,8 +594,6 @@ private:
         {
             ResetSelection();
             groups.clear();
-            samplesCache.threads.clear();
-            samplesCache.counts.clear();
             processed = 0;
             groupId = 0;
             selCs = 0;
@@ -613,6 +610,8 @@ private:
             selTotal = 0;
             selTime = 0;
             binCache.numBins = -1;
+            samples.counts.clear();
+            samples.scheduleUpdate = true;
         }
 
         void ShowZone( int16_t srcloc, const char* name )

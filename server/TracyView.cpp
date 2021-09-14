@@ -10699,59 +10699,6 @@ void View::DrawFindZone()
         SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
         ImGui::Separator();
 
-        const bool hasSamples = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
-        if( hasSamples && ImGui::TreeNodeEx( "Samples", ImGuiTreeNodeFlags_None ) )
-        {
-            {
-                ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel ))
-                {
-                    m_findZone.samples.scheduleUpdate = true;
-                }
-            }
-
-            if( !m_findZone.samples.enabled )
-            {
-                m_findZone.samples.enabled = true;
-                m_findZone.samples.scheduleUpdate = true;
-                m_findZone.scheduleResetMatch = true;
-            }
-            
-            Vector<SymList> data;
-            data.reserve( m_findZone.samples.counts.size() );
-            for( auto it: m_findZone.samples.counts ) data.push_back_no_space_check( it );
-            int64_t timeRange = ( m_findZone.selGroup != m_findZone.Unselected ) ? m_findZone.selTotal : m_findZone.total;
-            DrawSamplesStatistics( data, timeRange, AccumulationMode::SelfOnly );
-
-            ImGui::TreePop();
-        } 
-        else
-        {
-            if( m_findZone.samples.enabled )
-            {
-                m_findZone.samples.enabled = false;
-                m_findZone.samples.scheduleUpdate = false;
-                m_findZone.samples.counts = Vector<SymList>();
-                for( auto& it: m_findZone.groups ) it.second.zonesTids.clear();
-            }
-        }
-        ImGui::Separator();
-
         ImGui::TextUnformatted( "Found zones:" );
         ImGui::SameLine();
         DrawHelpMarker( "Left click to highlight entry." );
@@ -11233,6 +11180,59 @@ void View::DrawFindZone()
                     if( pass ) count ++;
                 }
                 if( count > 0 )  m_findZone.samples.counts.push_back_no_space_check( SymList { v.first, 0, count } );
+            }
+        }
+
+        ImGui::Separator();
+        const bool hasSamples = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
+        if( hasSamples && ImGui::TreeNodeEx( "Samples", ImGuiTreeNodeFlags_None ) )
+        {
+            {
+                ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel ))
+                {
+                    m_findZone.samples.scheduleUpdate = true;
+                }
+            }
+
+            if( !m_findZone.samples.enabled )
+            {
+                m_findZone.samples.enabled = true;
+                m_findZone.samples.scheduleUpdate = true;
+                m_findZone.scheduleResetMatch = true;
+            }
+            
+            Vector<SymList> data;
+            data.reserve( m_findZone.samples.counts.size() );
+            for( auto it: m_findZone.samples.counts ) data.push_back_no_space_check( it );
+            int64_t timeRange = ( m_findZone.selGroup != m_findZone.Unselected ) ? m_findZone.selTotal : m_findZone.total;
+            DrawSamplesStatistics( data, timeRange, AccumulationMode::SelfOnly );
+
+            ImGui::TreePop();
+        } 
+        else
+        {
+            if( m_findZone.samples.enabled )
+            {
+                m_findZone.samples.enabled = false;
+                m_findZone.samples.scheduleUpdate = false;
+                m_findZone.samples.counts = Vector<SymList>();
+                for( auto& it: m_findZone.groups ) it.second.zonesTids.clear();
             }
         }
 

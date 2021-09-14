@@ -52,6 +52,21 @@ static constexpr int GetSamplingPeriod()
 #    include "TracyProfiler.hpp"
 #    include "TracyThread.hpp"
 
+// Note: Mingw-w64 currently does not provide below declarations so we add them here.
+#ifdef __MINGW64__
+
+#define EVENT_FILTER_TYPE_EVENT_ID 0x80000200
+#define EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0 0x010
+
+typedef struct _EVENT_FILTER_EVENT_ID {
+  BOOLEAN FilterIn;
+  UCHAR   Reserved;
+  USHORT  Count;
+  USHORT  Events[ANYSIZE_ARRAY];
+} EVENT_FILTER_EVENT_ID, *PEVENT_FILTER_EVENT_ID;
+
+#endif
+
 namespace tracy
 {
 

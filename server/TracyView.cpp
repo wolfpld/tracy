@@ -8363,7 +8363,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             Vector<uint32_t> v;
         };
         uint64_t ctime = 0;
-        unordered_flat_map<int16_t, ChildGroup> cmap;
+        unordered_flat_map<StringRef, ChildGroup, StringRefHasher, StringRefComparator> cmap;
         cmap.reserve( 128 );
         for( size_t i=0; i<children.size(); i++ )
         {
@@ -8371,10 +8371,11 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             const auto cend = m_worker.GetZoneEnd( child );
             const auto ct = cend - child.GpuStart();
             const auto srcloc = child.SrcLoc();
+            const auto name = m_worker.GetSourceLocation( srcloc ).name;
             ctime += ct;
 
-            auto it = cmap.find( srcloc );
-            if( it == cmap.end() ) it = cmap.emplace( srcloc, ChildGroup { srcloc } ).first;
+            auto it = cmap.find( name );
+            if( it == cmap.end() ) it = cmap.emplace( name, ChildGroup { srcloc } ).first;
 
             it->second.t += ct;
             it->second.v.push_back( i );

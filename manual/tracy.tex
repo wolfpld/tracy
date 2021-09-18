@@ -1793,7 +1793,8 @@ You can collect call stacks of zones and memory allocation events, as described 
 Tracy C API exposes functions with the \texttt{\_\_\_tracy} prefix that may be used to write bindings to other programming languages. Most of the functions available are a counterpart to macros described in section~\ref{capi}. Some functions do not have macro equivalents and are dedicated expressly for binding implementation purposes. This includes the following:
 
 \begin{itemize}
-\item \texttt{\_\_\_tracy\_init\_thread(void)}
+\item \texttt{\_\_\_tracy\_startup\_profiler(void)}
+\item \texttt{\_\_\_tracy\_shutdown\_profiler(void)}
 \item \texttt{\_\_\_tracy\_alloc\_srcloc(uint32\_t line, const char* source, size\_t sourceSz, const char* function, size\_t functionSz)}
 \item \texttt{\_\_\_tracy\_alloc\_srcloc\_name(uint32\_t line, const char* source, size\_t sourceSz, const char* function, size\_t functionSz, const char* name, size\_t nameSz)}
 \end{itemize}
@@ -1808,11 +1809,6 @@ return an \texttt{uint64\_t} source location identifier corresponding to an \emp
 location}. As these functions do not require for the provided string data to be available after they
 return, calling code is free to deallocate them at any time afterwards. This way the string
 lifetime requirements described in section~\ref{textstrings} are relaxed.
-
-Before the \texttt{\_\_\_tracy\_alloc\_*} functions are called on a non-main thread for the first
-time, care should be taken to ensure that \texttt{\_\_\_tracy\_init\_thread} has been called first.
-The \texttt{\_\_\_tracy\_init\_thread} function initializes per-thread structures Tracy uses and
-can be safely called multiple times.
 
 The \texttt{uint64\_t} return value from allocation functions must be passed to one of the zone
 begin functions:

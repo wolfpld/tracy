@@ -3602,6 +3602,18 @@ TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source
     return tracy::Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
 }
 
+#  ifdef TRACY_MANUAL_LIFETIME
+TRACY_API void ___tracy_startup_profiler( void )
+{
+    tracy::StartupProfiler();
+}
+
+TRACY_API void ___tracy_shutdown_profiler( void )
+{
+    tracy::ShutdownProfiler();
+}
+#  endif
+
 #ifdef __cplusplus
 }
 #endif

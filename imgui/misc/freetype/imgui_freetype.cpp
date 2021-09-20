@@ -539,7 +539,8 @@ bool ImFontAtlasBuildWithFreeTypeEx(FT_Library ft_library, ImFontAtlas* atlas, u
 
             // Render glyph into a bitmap (currently held by FreeType)
             const FT_Bitmap* ft_bitmap = src_tmp.Font.RenderGlyphAndGetInfo(&src_glyph.Info);
-            IM_ASSERT(ft_bitmap);
+            if (ft_bitmap == NULL)
+                continue;
 
             // Allocate new temporary chunk if needed
             const int bitmap_size_in_bytes = src_glyph.Info.Width * src_glyph.Info.Height * 4;

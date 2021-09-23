@@ -416,6 +416,12 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         msg->thread = CompressThread( v.tid );
         msg->color = 0xFFFFFFFF;
         msg->callstack.SetVal( 0 );
+
+        if( m_threadCtx != v.tid )
+        {
+            m_threadCtx = v.tid;
+            m_threadCtxData = nullptr;
+        }
         InsertMessageData( msg );
     }
 

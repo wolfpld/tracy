@@ -47,6 +47,9 @@ v0.x.x (xxxx-xx-xx)
   line.
 - Vulkan headers must be now explicitly included before including
   TracyVulkan.hpp.
+- The capture utility may now limit capture time to a specified number of
+  seconds.
+- Fixed message thread assignment in the import-chrome utility.
 
 
 v0.7.8 (2021-05-19)

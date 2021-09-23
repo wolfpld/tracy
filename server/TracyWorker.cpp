@@ -1931,6 +1931,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 jobs.emplace_back( std::thread( [this] {
                     for( auto& t : m_data.threads )
                     {
+                        uint16_t tid = CompressThread( t->id );
                         for( auto& v : t->samples )
                         {
                             const auto& time = v.time;
@@ -1944,11 +1945,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                 auto it = m_data.symbolSamples.find( symAddr );
                                 if( it == m_data.symbolSamples.end() )
                                 {
-                                    m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { time, ip } ) );
+                                    m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { time, tid, ip } ) );
                                 }
                                 else
                                 {
-                                    it->second.push_back_non_empty( SampleDataRange { time, ip } );
+                                    it->second.push_back_non_empty( SampleDataRange { time, tid, ip } );
                                 }
                             }
                             for( uint16_t i=1; i<callstack.size(); i++ )
@@ -5970,6 +5971,8 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
 
 #ifndef TRACY_NO_STATISTICS
     {
+        uint16_t tid = CompressThread( td.id );
+
         auto frame = GetCallstackFrame( ip );
         if( frame )
         {
@@ -5994,18 +5997,18 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
             auto sit = m_data.symbolSamples.find( symAddr );
             if( sit == m_data.symbolSamples.end() )
             {
-                m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { sd.time, ip } ) );
+                m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { sd.time, tid, ip } ) );
             }
             else
             {
                 if( sit->second.back().time.Val() <= sd.time.Val() )
                 {
-                    sit->second.push_back_non_empty( SampleDataRange { sd.time, ip } );
+                    sit->second.push_back_non_empty( SampleDataRange { sd.time, tid, ip } );
                 }
                 else
                 {
                     auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), sd.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.time.Val(); } );
-                    sit->second.insert( iit, SampleDataRange { sd.time, ip } );
+                    sit->second.insert( iit, SampleDataRange { sd.time, tid, ip } );
                 }
             }
         }
@@ -6023,11 +6026,11 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
             auto sit = m_data.pendingSymbolSamples.find( ip );
             if( sit == m_data.pendingSymbolSamples.end() )
             {
-                m_data.pendingSymbolSamples.emplace( ip, Vector<SampleDataRange>( SampleDataRange { sd.time, ip } ) );
+                m_data.pendingSymbolSamples.emplace( ip, Vector<SampleDataRange>( SampleDataRange { sd.time, tid,  ip } ) );
             }
             else
             {
-                sit->second.push_back_non_empty( SampleDataRange { sd.time, ip } );
+                sit->second.push_back_non_empty( SampleDataRange { sd.time, tid, ip } );
             }
         }
     }

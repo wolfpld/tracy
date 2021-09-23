@@ -268,6 +268,7 @@ enum { SampleDataSize = sizeof( SampleData ) };
 struct SampleDataRange
 {
     Int48 time;
+    uint16_t thread;
     CallstackFrameId ip;
 };
 

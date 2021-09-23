@@ -153,6 +153,13 @@ private:
         bool highlight;
     };
 
+    struct SymList
+    {
+        uint64_t symAddr;
+        uint32_t incl, excl;
+        uint32_t count;
+    };
+
     void InitMemory();
     void InitTextEditor( ImFont* font );
 
@@ -196,6 +203,7 @@ private:
     void DrawFindZone();
     void AccumulationModeComboBox();
     void DrawStatistics();
+    void DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode);
     void DrawMemory();
     void DrawAllocList();
     void DrawCompare();
@@ -508,6 +516,7 @@ private:
         {
             uint16_t id;
             Vector<short_ptr<ZoneEvent>> zones;
+            Vector<uint16_t> zonesTids;
             int64_t time = 0;
         };
 
@@ -554,6 +563,12 @@ private:
             ptrdiff_t distEnd;
         } binCache;
 
+        struct {
+            Vector<SymList> counts;
+            bool scheduleUpdate = false;
+            bool enabled = false;
+        } samples;
+
         void Reset()
         {
             ResetMatch();
@@ -561,6 +576,7 @@ private:
             selMatch = 0;
             selGroup = Unselected;
             highlight.active = false;
+            samples.counts.clear();
         }
 
         void ResetMatch()
@@ -595,6 +611,7 @@ private:
             selTotal = 0;
             selTime = 0;
             binCache.numBins = -1;
+            samples.scheduleUpdate = true;
         }
 
         void ShowZone( int16_t srcloc, const char* name )

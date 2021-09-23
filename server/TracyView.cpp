@@ -12323,38 +12323,31 @@ void View::DrawStatistics()
     }
 
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
-
+    ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
+    ImGui::SameLine();
     if( m_worker.AreCallstackSamplesReady() )
     {
-        const auto hasSamples = m_worker.GetCallstackSampleCount() > 0;
-        const auto hasSymbols = m_worker.GetSymbolsCount() > 0;
-
-        if( hasSamples || hasSymbols )
+        if( m_worker.GetCallstackSampleCount() > 0 )
         {
-            ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
-            ImGui::SameLine();
-
-            if( hasSamples )
-            {
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
-            }
-            else
-            {
-                ImGui::Spacing();
-                ImGui::SameLine();
-                ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
-            }
-            ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
-            ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
-            ImGui::SameLine();
+            ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
+        }
+        else if( m_worker.GetSymbolsCount() > 0 )
+        {
             ImGui::Spacing();
             ImGui::SameLine();
+            ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
         }
     }
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+
 
     Vector<SrcLocZonesSlim> srcloc;
 

@@ -11153,7 +11153,7 @@ void View::DrawFindZone()
                     empty = empty && (begin == end);
                 }
                 if (empty) continue;
-                
+
                 uint32_t count = 0;
                 for( auto it = samplesBegin; it != samplesEnd; ++it )
                 {
@@ -11216,7 +11216,7 @@ void View::DrawFindZone()
                 m_findZone.samples.scheduleUpdate = true;
                 m_findZone.scheduleResetMatch = true;
             }
-            
+
             Vector<SymList> data;
             data.reserve( m_findZone.samples.counts.size() );
             for( auto it: m_findZone.samples.counts ) data.push_back_no_space_check( it );
@@ -11224,7 +11224,7 @@ void View::DrawFindZone()
             DrawSamplesStatistics( data, timeRange, AccumulationMode::SelfOnly );
 
             ImGui::TreePop();
-        } 
+        }
         else
         {
             if( m_findZone.samples.enabled )

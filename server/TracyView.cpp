@@ -13496,11 +13496,11 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                         ImGui::Indent();
                         for( auto& iv : inSymList )
                         {
-                            ImGui::TableNextRow();
-                            ImGui::TableNextColumn();
                             const auto cnt = accumulationMode == AccumulationMode::SelfOnly ? iv.excl : iv.incl;
                             if( cnt > 0 || showAll )
                             {
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
                                 auto sit = symMap.find( iv.symAddr );
                                 assert( sit != symMap.end() );
                                 name = m_worker.GetString( sit->second.name );

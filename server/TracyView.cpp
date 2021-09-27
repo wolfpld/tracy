@@ -11185,7 +11185,7 @@ void View::DrawFindZone()
 
         ImGui::Separator();
         const bool hasSamples = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
-        if( hasSamples && ImGui::TreeNodeEx( "Samples", ImGuiTreeNodeFlags_None ) )
+        if( hasSamples && ImGui::TreeNodeEx( ICON_FA_EYE_DROPPER " Samples", ImGuiTreeNodeFlags_None ) )
         {
             {
                 ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );

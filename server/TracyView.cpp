@@ -10109,7 +10109,8 @@ void View::DrawFindZone()
                             {
                                 tmin = *sortedBegin;
                                 tmax = *(sortedEnd-1);
-                                total = tmax - tmin;
+                                total = 0;
+                                for( auto ptr = sortedBegin; ptr != sortedEnd; ptr++ ) total += *ptr;
                             }
                         }
 

@@ -3064,7 +3064,14 @@ void View::DrawZones()
                             {
                                 // FIXME
                                 t0 = std::min( t0, _t0 );
-                                t1 = std::max( t1, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *td.second.timeline.back() ) ) );
+                                if( td.second.timeline.is_magic() )
+                                {
+                                    t1 = std::max( t1, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( ((Vector<GpuEvent>*)&td.second.timeline)->back() ) ) );
+                                }
+                                else
+                                {
+                                    t1 = std::max( t1, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *td.second.timeline.back() ) ) );
+                                }
                             }
                         }
                         if( t0 < t1 )

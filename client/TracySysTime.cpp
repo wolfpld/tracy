@@ -62,7 +62,7 @@ void SysTime::ReadTimes()
 {
     host_cpu_load_info_data_t info;
     mach_msg_type_number_t cnt = HOST_CPU_LOAD_INFO_COUNT;
-    host_statistics( mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>( &info ), &cnt ); 
+    host_statistics( mach_host_self(), HOST_CPU_LOAD_INFO, reinterpret_cast<host_info_t>( &info ), &cnt );
     used = info.cpu_ticks[CPU_STATE_USER] + info.cpu_ticks[CPU_STATE_NICE] + info.cpu_ticks[CPU_STATE_SYSTEM];
     idle = info.cpu_ticks[CPU_STATE_IDLE];
 }

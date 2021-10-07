@@ -159,10 +159,8 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
 
             TracyLfqPrepare( QueueType::ContextSwitch );
             MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
-            memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
-            memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
-            memset( ((char*)&item->contextSwitch.oldThread)+4, 0, 4 );
-            memset( ((char*)&item->contextSwitch.newThread)+4, 0, 4 );
+            MemWrite( &item->contextSwitch.oldThread, cswitch->oldThreadId );
+            MemWrite( &item->contextSwitch.newThread, cswitch->newThreadId );
             MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
             MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
             MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
@@ -174,8 +172,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
 
             TracyLfqPrepare( QueueType::ThreadWakeup );
             MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
-            memcpy( &item->threadWakeup.thread, &rt->threadId, sizeof( rt->threadId ) );
-            memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
+            MemWrite( &item->threadWakeup.thread, rt->threadId );
             TracyLfqCommit;
         }
         else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
@@ -205,7 +202,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
                     memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
                     TracyLfqPrepare( QueueType::CallstackSample );
                     MemWrite( &item->callstackSampleFat.time, sw->eventTimeStamp );
-                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)sw->stackThread );
+                    MemWrite( &item->callstackSampleFat.thread, sw->stackThread );
                     MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
                     TracyLfqCommit;
                 }
@@ -1026,7 +1023,7 @@ static void SetupSampling( int64_t& samplingPeriod )
 
                                     TracyLfqPrepare( QueueType::CallstackSample );
                                     MemWrite( &item->callstackSampleFat.time, t0 );
-                                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
+                                    MemWrite( &item->callstackSampleFat.thread, tid );
                                     MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
                                     TracyLfqCommit;
                                 }
@@ -1500,7 +1497,7 @@ static void HandleTraceLine( const char* line )
         AdvanceTo<8>( line, "prev_pid" );
         line += 9;
 
-        const auto oldPid = ReadNumber( line );
+        const auto oldPid = uint32_t( ReadNumber( line ) );
         line++;
 
         AdvanceTo<10>( line, "prev_state" );
@@ -1512,7 +1509,7 @@ static void HandleTraceLine( const char* line )
         AdvanceTo<8>( line, "next_pid" );
         line += 9;
 
-        const auto newPid = ReadNumber( line );
+        const auto newPid = uint32_t( ReadNumber( line ) );
 
         uint8_t reason = 100;
 
@@ -1532,7 +1529,7 @@ static void HandleTraceLine( const char* line )
         AdvanceTo<4>( line, "pid=" );
         line += 4;
 
-        const auto pid = ReadNumber( line );
+        const auto pid = uint32_t( ReadNumber( line ) );
 
         TracyLfqPrepare( QueueType::ThreadWakeup );
         MemWrite( &item->threadWakeup.time, time );

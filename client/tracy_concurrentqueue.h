@@ -202,7 +202,7 @@ namespace details
 		ConcurrentQueueProducerTypelessBase* next;
 		std::atomic<bool> inactive;
 		ProducerToken* token;
-        uint64_t threadId;
+        uint32_t threadId;
 
 		ConcurrentQueueProducerTypelessBase()
 			: next(nullptr), inactive(false), token(nullptr), threadId(0)

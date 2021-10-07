@@ -62,7 +62,7 @@ TRACY_API Profiler& GetProfiler();
 TRACY_API std::atomic<uint32_t>& GetLockCounter();
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
-TRACY_API uint64_t GetThreadHandle();
+TRACY_API uint32_t GetThreadHandle();
 TRACY_API bool ProfilerAvailable();
 TRACY_API int64_t GetFrequencyQpc();
 
@@ -704,7 +704,7 @@ private:
 #endif
     }
 
-    static tracy_force_inline void SendMemAlloc( QueueType type, const uint64_t thread, const void* ptr, size_t size )
+    static tracy_force_inline void SendMemAlloc( QueueType type, const uint32_t thread, const void* ptr, size_t size )
     {
         assert( type == QueueType::MemAlloc || type == QueueType::MemAllocCallstack || type == QueueType::MemAllocNamed || type == QueueType::MemAllocCallstackNamed );
 
@@ -727,7 +727,7 @@ private:
         GetProfiler().m_serialQueue.commit_next();
     }
 
-    static tracy_force_inline void SendMemFree( QueueType type, const uint64_t thread, const void* ptr )
+    static tracy_force_inline void SendMemFree( QueueType type, const uint32_t thread, const void* ptr )
     {
         assert( type == QueueType::MemFree || type == QueueType::MemFreeCallstack || type == QueueType::MemFreeNamed || type == QueueType::MemFreeCallstackNamed );
 
@@ -756,7 +756,7 @@ private:
     uint64_t m_resolution;
     uint64_t m_delay;
     std::atomic<int64_t> m_timeBegin;
-    uint64_t m_mainThread;
+    uint32_t m_mainThread;
     uint64_t m_epoch, m_exectime;
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_shutdownManual;
@@ -768,7 +768,7 @@ private:
     std::atomic<uint32_t> m_zoneId;
     int64_t m_samplingPeriod;
 
-    uint64_t m_threadCtx;
+    uint32_t m_threadCtx;
     int64_t m_refTimeThread;
     int64_t m_refTimeSerial;
     int64_t m_refTimeCtx;

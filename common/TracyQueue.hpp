@@ -115,7 +115,7 @@ enum class QueueType : uint8_t
 
 struct QueueThreadContext
 {
-    uint64_t thread;
+    uint32_t thread;
 };
 
 struct QueueZoneBeginLean
@@ -213,28 +213,28 @@ struct QueueLockTerminate
 
 struct QueueLockWait
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockObtain
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockRelease
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockMark
 {
-    uint64_t thread;
+    uint32_t thread;
     uint32_t id;
     uint64_t srcloc;    // ptr
 };
@@ -324,7 +324,7 @@ struct QueueGpuNewContext
 {
     int64_t cpuTime;
     int64_t gpuTime;
-    uint64_t thread;
+    uint32_t thread;
     float period;
     uint8_t context;
     GpuContextFlags flags;
@@ -334,7 +334,7 @@ struct QueueGpuNewContext
 struct QueueGpuZoneBeginLean
 {
     int64_t cpuTime;
-    uint64_t thread;
+    uint32_t thread;
     uint16_t queryId;
     uint8_t context;
 };
@@ -347,7 +347,7 @@ struct QueueGpuZoneBegin : public QueueGpuZoneBeginLean
 struct QueueGpuZoneEnd
 {
     int64_t cpuTime;
-    uint64_t thread;
+    uint32_t thread;
     uint16_t queryId;
     uint8_t context;
 };
@@ -386,7 +386,7 @@ struct QueueMemNamePayload
 struct QueueMemAlloc
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
     uint64_t ptr;
     char size[6];
 };
@@ -394,7 +394,7 @@ struct QueueMemAlloc
 struct QueueMemFree
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
     uint64_t ptr;
 };
 
@@ -412,7 +412,7 @@ struct QueueCallstackAllocFat
 struct QueueCallstackSample
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
 };
 
 struct QueueCallstackSampleFat : public QueueCallstackSample
@@ -461,8 +461,8 @@ struct QueueSysTime
 struct QueueContextSwitch
 {
     int64_t time;
-    uint64_t oldThread;
-    uint64_t newThread;
+    uint32_t oldThread;
+    uint32_t newThread;
     uint8_t cpu;
     uint8_t reason;
     uint8_t state;
@@ -471,7 +471,7 @@ struct QueueContextSwitch
 struct QueueThreadWakeup
 {
     int64_t time;
-    uint64_t thread;
+    uint32_t thread;
 };
 
 struct QueueTidToPid

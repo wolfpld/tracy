@@ -127,7 +127,7 @@ struct ProducerWrapper
 
 struct ThreadHandleWrapper
 {
-    uint64_t val;
+    uint32_t val;
 };
 #endif
 
@@ -1057,7 +1057,7 @@ TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
-TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
+TRACY_API uint32_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
 std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
 
 #  ifdef TRACY_ON_DEMAND
@@ -1116,7 +1116,7 @@ TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
-TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
+TRACY_API uint32_t GetThreadHandle() { return s_threadHandle.val; }
 
 std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 
@@ -1957,7 +1957,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
     bool connectionLost = false;
     const auto sz = GetQueue().try_dequeue_bulk_single( token,
-        [this, &connectionLost] ( const uint64_t& threadId )
+        [this, &connectionLost] ( const uint32_t& threadId )
         {
             if( threadId != m_threadCtx )
             {

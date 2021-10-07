@@ -2,7 +2,7 @@
 
 #ifdef TRACY_HAS_SYSTIME
 
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
 #    include <windows.h>
 #  elif defined __linux__
 #    include <stdio.h>
@@ -18,7 +18,7 @@
 namespace tracy
 {
 
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
 
 static inline uint64_t ConvertTime( const FILETIME& t )
 {
@@ -95,7 +95,7 @@ float SysTime::Get()
     const auto diffIdle = idle - oldIdle;
     const auto diffUsed = used - oldUsed;
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     return diffUsed == 0 ? -1 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
 #elif defined __linux__ || defined __APPLE__ || defined BSD
     const auto total = diffUsed + diffIdle;

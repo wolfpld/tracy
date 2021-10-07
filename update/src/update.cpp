@@ -15,9 +15,7 @@
 #include "../../zstd/zstd.h"
 #include "../../getopt/getopt.h"
 
-#ifdef __CYGWIN__
-#  define ftello64(x) ftello(x)
-#elif defined __APPLE__
+#ifdef __APPLE__
 #  define ftello64(x) ftello(x)
 #elif defined _WIN32
 #  define ftello64(x) _ftelli64(x)

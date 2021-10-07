@@ -17,7 +17,7 @@
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyProtocol.hpp"
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  include <intrin.h>
 #endif
 #ifdef __APPLE__
@@ -25,7 +25,7 @@
 #  include <mach/mach_time.h>
 #endif
 
-#if !defined TRACY_TIMER_FALLBACK && ( defined _WIN32 || defined __CYGWIN__ || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) )
+#if !defined TRACY_TIMER_FALLBACK && ( defined _WIN32 || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) )
 #  define TRACY_HW_TIMER
 #endif
 
@@ -130,7 +130,7 @@ public:
 #ifdef TRACY_HW_TIMER
 #  if defined TARGET_OS_IOS && TARGET_OS_IOS == 1
         return mach_absolute_time();
-#  elif defined _WIN32 || defined __CYGWIN__
+#  elif defined _WIN32
 #    ifdef TRACY_TIMER_QPC
         return GetTimeQpc();
 #    else
@@ -748,7 +748,7 @@ private:
         GetProfiler().m_serialQueue.commit_next();
     }
 
-#if ( defined _WIN32 || defined __CYGWIN__ ) && defined TRACY_TIMER_QPC
+#if defined _WIN32 && defined TRACY_TIMER_QPC
     static int64_t GetTimeQpc();
 #endif
 
@@ -812,7 +812,7 @@ private:
     char* m_queryData;
     char* m_queryDataPtr;
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     void* m_exceptionHandler;
 #endif
 #ifdef __linux__

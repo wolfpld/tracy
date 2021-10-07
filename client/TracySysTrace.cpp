@@ -5,7 +5,7 @@
 #ifdef TRACY_HAS_SYSTEM_TRACING
 
 #ifndef TRACY_SAMPLING_HZ
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
 #    define TRACY_SAMPLING_HZ 8000
 #  elif defined __linux__
 #    define TRACY_SAMPLING_HZ 10000
@@ -17,7 +17,7 @@ namespace tracy
 
 static constexpr int GetSamplingFrequency()
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     return TRACY_SAMPLING_HZ > 8000 ? 8000 : ( TRACY_SAMPLING_HZ < 1 ? 1 : TRACY_SAMPLING_HZ );
 #else
     return TRACY_SAMPLING_HZ > 1000000 ? 1000000 : ( TRACY_SAMPLING_HZ < 1 ? 1 : TRACY_SAMPLING_HZ );
@@ -31,7 +31,7 @@ static constexpr int GetSamplingPeriod()
 
 }
 
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
 
 #    ifndef NOMINMAX
 #      define NOMINMAX
@@ -128,14 +128,6 @@ struct VSyncInfo
     uint32_t    flipType;
     uint64_t    flipFenceId;
 };
-
-#ifdef __CYGWIN__
-extern "C" typedef DWORD (WINAPI *t_GetProcessIdOfThread)( HANDLE );
-extern "C" typedef DWORD (WINAPI *t_GetProcessImageFileNameA)( HANDLE, LPSTR, DWORD );
-extern "C" ULONG WMIAPI TraceSetInformation(TRACEHANDLE SessionHandle, TRACE_INFO_CLASS InformationClass, PVOID TraceInformation, ULONG InformationLength);
-t_GetProcessIdOfThread GetProcessIdOfThread = (t_GetProcessIdOfThread)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetProcessIdOfThread" );
-t_GetProcessImageFileNameA GetProcessImageFileNameA = (t_GetProcessImageFileNameA)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "K32GetProcessImageFileNameA" );
-#endif
 
 extern "C" typedef NTSTATUS (WINAPI *t_NtQueryInformationThread)( HANDLE, THREADINFOCLASS, PVOID, ULONG, PULONG );
 extern "C" typedef BOOL (WINAPI *t_EnumProcessModules)( HANDLE, HMODULE*, DWORD, LPDWORD );

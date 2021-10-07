@@ -7,7 +7,7 @@
 #include "../server/TracyVersion.hpp"
 #include "HttpRequest.hpp"
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  include <windows.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #elif defined __linux__
@@ -21,13 +21,11 @@ static constexpr char CRLF[2] = { '\r', '\n' };
 static const char* GetOsInfo()
 {
     static char buf[1024];
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlGetVersion" );
     if( !RtlGetVersion )
     {
-#  ifdef __CYGWIN__
-        sprintf( buf, "Windows (Cygwin)" );
-#  elif defined __MINGW32__
+#  ifdef __MINGW32__
         sprintf( buf, "Windows (MingW)" );
 #  else
         sprintf( buf, "Windows" );
@@ -38,9 +36,7 @@ static const char* GetOsInfo()
         RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
         RtlGetVersion( &ver );
 
-#  ifdef __CYGWIN__
-        sprintf( buf, "Windows %i.%i.%i (Cygwin)", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
-#  elif defined __MINGW32__
+#  ifdef __MINGW32__
         sprintf( buf, "Windows %i.%i.%i (MingW)", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
         sprintf( buf, "Windows %i.%i.%i", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );

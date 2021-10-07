@@ -14,12 +14,6 @@
 #  include <sys/param.h>
 #endif
 
-#ifdef __CYGWIN__
-#  include <windows.h>
-#  include <unistd.h>
-#  include <tlhelp32.h>
-#endif
-
 #ifdef _GNU_SOURCE
 #  include <errno.h>
 #endif
@@ -95,7 +89,7 @@
 #  endif
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PROCESSOR_RELATIONSHIP, PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, PDWORD );
@@ -108,11 +102,11 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 #  include <sys/utsname.h>
 #endif
 
-#if !defined _WIN32 && !defined __CYGWIN__ && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if !defined _WIN32 && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
 #  include <cpuid.h>
 #endif
 
-#if !( ( ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA ) || defined __linux__ )
+#if !( ( defined _WIN32 && _WIN32_WINNT >= _WIN32_WINNT_VISTA ) || defined __linux__ )
 #  include <mutex>
 #endif
 
@@ -142,7 +136,7 @@ struct ThreadHandleWrapper
 static inline void CpuId( uint32_t* regs, uint32_t leaf )
 {
     memset(regs, 0, sizeof(uint32_t) * 4);
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     __cpuidex( (int*)regs, leaf, 0 );
 #else
     __get_cpuid( leaf, regs, regs+1, regs+2, regs+3 );
@@ -151,7 +145,7 @@ static inline void CpuId( uint32_t* regs, uint32_t leaf )
 
 static void InitFailure( const char* msg )
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     bool hasConsole = false;
     bool reopen = false;
     const auto attached = AttachConsole( ATTACH_PARENT_PROCESS );
@@ -199,7 +193,7 @@ static int64_t SetupHwTimer()
         const char* noCheck = GetEnvVar( "TRACY_NO_INVARIANT_CHECK" );
         if( !noCheck || noCheck[0] != '1' )
         {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
             InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*.\nAlternatively you may rebuild the application with the TRACY_TIMER_QPC or TRACY_TIMER_FALLBACK define to use lower resolution timer." );
 #else
             InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*.\nAlternatively you may rebuild the application with the TRACY_TIMER_FALLBACK define to use lower resolution timer." );
@@ -233,7 +227,7 @@ static const char* GetProcessName()
     auto buf = getprogname();
     if( buf ) processName = buf;
 #  endif
-#elif defined _GNU_SOURCE || defined __CYGWIN__
+#elif defined _GNU_SOURCE
     if( program_invocation_short_name ) processName = program_invocation_short_name;
 #elif defined __APPLE__ || defined BSD
     auto buf = getprogname();
@@ -250,7 +244,7 @@ static const char* GetProcessExecutablePath()
     return buf;
 #elif defined __ANDROID__
     return nullptr;
-#elif defined _GNU_SOURCE || defined __CYGWIN__
+#elif defined _GNU_SOURCE
     return program_invocation_name;
 #elif defined __APPLE__
     static char buf[1024];
@@ -304,13 +298,11 @@ static const char* GetHostInfo()
 {
     static char buf[1024];
     auto ptr = buf;
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlGetVersion" );
     if( !RtlGetVersion )
     {
-#  ifdef __CYGWIN__
-        ptr += sprintf( ptr, "OS: Windows (Cygwin)\n" );
-#  elif defined __MINGW32__
+#  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows (MingW)\n" );
 #  else
         ptr += sprintf( ptr, "OS: Windows\n" );
@@ -321,9 +313,7 @@ static const char* GetHostInfo()
         RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
         RtlGetVersion( &ver );
 
-#  ifdef __CYGWIN__
-        ptr += sprintf( ptr, "OS: Windows %i.%i.%i (Cygwin)\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
-#  elif defined __MINGW32__
+#  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
@@ -371,10 +361,9 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "Compiler: unknown\n" );
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
-#  ifndef __CYGWIN__
+#if defined _WIN32
     InitWinSock();
-#  endif
+
     char hostname[512];
     gethostname( hostname, 512 );
 
@@ -492,7 +481,7 @@ static const char* GetHostInfo()
 
     ptr += sprintf( ptr, "CPU cores: %i\n", std::thread::hardware_concurrency() );
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
@@ -524,7 +513,7 @@ static const char* GetHostInfo()
 
 static uint64_t GetPid()
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     return uint64_t( GetCurrentProcessId() );
 #else
     return uint64_t( getpid() );
@@ -562,7 +551,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     return msg;
 }
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
@@ -914,7 +903,7 @@ TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
 
 TRACY_API int64_t GetFrequencyQpc()
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     LARGE_INTEGER t;
     QueryPerformanceFrequency( &t );
     return t.QuadPart;
@@ -1127,12 +1116,7 @@ TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
-#  ifdef __CYGWIN__
-// Hackfix for cygwin reporting memory frees without matching allocations. WTF?
-TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
-#  else
 TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
-#  endif
 
 std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 
@@ -1229,7 +1213,7 @@ void Profiler::SpawnWorkerThreads()
     new(s_compressThread) Thread( LaunchCompressWorker, this );
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
@@ -1263,7 +1247,7 @@ Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
 #endif
 
@@ -2899,7 +2883,7 @@ void Profiler::ReportTopology()
         uint32_t thread;
     };
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetLogicalProcessorInformationEx" );
     if( !_GetLogicalProcessorInformationEx ) return;
 
@@ -3344,7 +3328,7 @@ void Profiler::SendCodeLocation( uint64_t ptr )
 #endif
 }
 
-#if ( defined _WIN32 || defined __CYGWIN__ ) && defined TRACY_TIMER_QPC
+#if defined _WIN32 && defined TRACY_TIMER_QPC
 int64_t Profiler::GetTimeQpc()
 {
     LARGE_INTEGER t;

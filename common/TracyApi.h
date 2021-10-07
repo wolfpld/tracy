@@ -1,7 +1,7 @@
 #ifndef __TRACYAPI_H__
 #define __TRACYAPI_H__
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  if defined TRACY_EXPORTS
 #    define TRACY_API __declspec(dllexport)
 #  elif defined TRACY_IMPORTS

@@ -1,15 +1,13 @@
-#if defined _MSC_VER || defined __CYGWIN__ || defined _WIN32
-# ifndef WIN32_LEAN_AND_MEAN
-#  define WIN32_LEAN_AND_MEAN
-# endif
-# ifndef NOMINMAX
-#  define NOMINMAX
-# endif
-#endif
 #ifdef _MSC_VER
 #  pragma warning(disable:4996)
 #endif
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
 #  include <windows.h>
 #  include <malloc.h>
 #else
@@ -40,7 +38,7 @@
 
 #include "TracySystem.hpp"
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 extern "C" typedef HRESULT (WINAPI *t_SetThreadDescription)( HANDLE, PCWSTR );
 extern "C" typedef HRESULT (WINAPI *t_GetThreadDescription)( HANDLE, PWSTR* );
 #endif
@@ -58,7 +56,7 @@ namespace detail
 
 TRACY_API uint64_t GetThreadHandleImpl()
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( GetCurrentThreadId() );
 #elif defined __APPLE__
@@ -123,7 +121,7 @@ void ThreadNameMsvcMagic( const THREADNAME_INFO& info )
 
 TRACY_API void SetThreadName( const char* name )
 {
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     static auto _SetThreadDescription = (t_SetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "SetThreadDescription" );
     if( _SetThreadDescription )
     {
@@ -142,7 +140,7 @@ TRACY_API void SetThreadName( const char* name )
         ThreadNameMsvcMagic( info );
 #  endif
     }
-#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__ && !defined __CYGWIN__
+#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
     {
         const auto sz = strlen( name );
         if( sz <= 15 )
@@ -187,7 +185,7 @@ TRACY_API const char* GetThreadName( uint64_t id )
         ptr = ptr->next;
     }
 #else
-#  if defined _WIN32 || defined __CYGWIN__
+#  if defined _WIN32
     static auto _GetThreadDescription = (t_GetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetThreadDescription" );
     if( _GetThreadDescription )
     {

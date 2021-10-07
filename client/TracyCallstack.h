@@ -1,11 +1,11 @@
 #ifndef __TRACYCALLSTACK_H__
 #define __TRACYCALLSTACK_H__
 
-#if !defined _WIN32 && !defined __CYGWIN__
+#if !defined _WIN32
 #  include <sys/param.h>
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #  define TRACY_HAS_CALLSTACK 1
 #elif defined __ANDROID__
 #  if !defined __arm__ || __ANDROID_API__ >= 21

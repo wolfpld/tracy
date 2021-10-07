@@ -489,7 +489,7 @@ bool ListenSocket::Listen( uint16_t port, int backlog )
         m_sock = addrinfo_and_socket_for_family( port, AF_INET, &res );
         if( m_sock == -1 ) return false;
     }
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
 #elif defined BSD

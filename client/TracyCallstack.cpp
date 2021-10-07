@@ -115,7 +115,7 @@ extern "C"
     t_SymGetLineFromInlineContext _SymGetLineFromInlineContext = 0;
 }
 
-#ifndef __CYGWIN__
+
 struct ModuleCache
 {
     uint64_t start;
@@ -134,7 +134,7 @@ struct KernelDriver
 
 KernelDriver* s_krnlCache = nullptr;
 size_t s_krnlCacheCnt;
-#endif
+
 
 void InitCallstack()
 {
@@ -152,7 +152,6 @@ void InitCallstack()
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 
-#ifndef __CYGWIN__
     DWORD needed;
     LPVOID dev[4096];
     if( EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
@@ -231,7 +230,6 @@ void InitCallstack()
             }
         }
     }
-#endif
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
@@ -278,7 +276,6 @@ static const char* GetModuleName( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {
-#ifndef __CYGWIN__
         if( s_krnlCache )
         {
             auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
@@ -287,11 +284,9 @@ static const char* GetModuleName( uint64_t addr )
                 return it->mod;
             }
         }
-#endif
         return "<kernel>";
     }
 
-#ifndef __CYGWIN__
     for( auto& v : *s_modCache )
     {
         if( addr >= v.start && addr < v.end )
@@ -338,8 +333,6 @@ static const char* GetModuleName( uint64_t addr )
             }
         }
     }
-#endif
-
     return "[unknown]";
 }
 

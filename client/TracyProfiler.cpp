@@ -2261,6 +2261,9 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         InitRpmalloc();
         int64_t refSerial = m_refTimeSerial;
         int64_t refGpu = m_refTimeGpu;
+#ifdef TRACY_FIBERS
+        int64_t refThread = m_refTimeThread;
+#endif
         auto item = m_serialDequeue.data();
         auto end = item + sz;
         while( item != end )
@@ -2382,6 +2385,60 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
 #endif
                     break;
                 }
+#ifdef TRACY_FIBERS
+                case QueueType::ZoneBegin:
+                case QueueType::ZoneBeginCallstack:
+                {
+                    ThreadCtxCheckSerial( zoneBeginThread );
+                    int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
+                    int64_t dt = t - refThread;
+                    refThread = t;
+                    MemWrite( &item->zoneBegin.time, dt );
+                    break;
+                }
+                case QueueType::ZoneBeginAllocSrcLoc:
+                case QueueType::ZoneBeginAllocSrcLocCallstack:
+                {
+                    ThreadCtxCheckSerial( zoneBeginThread );
+                    int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
+                    int64_t dt = t - refThread;
+                    refThread = t;
+                    MemWrite( &item->zoneBegin.time, dt );
+                    ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                    SendSourceLocationPayload( ptr );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
+                case QueueType::ZoneEnd:
+                {
+                    ThreadCtxCheckSerial( zoneEndThread );
+                    int64_t t = MemRead<int64_t>( &item->zoneEnd.time );
+                    int64_t dt = t - refThread;
+                    refThread = t;
+                    MemWrite( &item->zoneEnd.time, dt );
+                    break;
+                }
+                case QueueType::ZoneText:
+                case QueueType::ZoneName:
+                {
+                    ThreadCtxCheckSerial( zoneTextFatThread );
+                    ptr = MemRead<uint64_t>( &item->zoneTextFat.text );
+                    uint16_t size = MemRead<uint16_t>( &item->zoneTextFat.size );
+                    SendSingleString( (const char*)ptr, size );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
+                case QueueType::ZoneColor:
+                {
+                    ThreadCtxCheckSerial( zoneColorThread );
+                    break;
+                }
+                case QueueType::ZoneValue:
+                {
+                    ThreadCtxCheckSerial( zoneValueThread );
+                    break;
+                }
+#endif
                 default:
                     assert( false );
                     break;
@@ -2392,6 +2449,9 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         }
         m_refTimeSerial = refSerial;
         m_refTimeGpu = refGpu;
+#ifdef TRACY_FIBERS
+        m_refTimeThread = refThread;
+#endif
         m_serialDequeue.clear();
     }
     else

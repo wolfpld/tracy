@@ -2226,6 +2226,16 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     return ( timeStop == -1 || sz > 0 ) ? DequeueStatus::DataDequeued : DequeueStatus::QueueEmpty;
 }
 
+#define ThreadCtxCheckSerial( _name ) \
+    uint32_t thread = MemRead<uint32_t>( &item->_name.thread ); \
+    switch( ThreadCtxCheck( thread ) ) \
+    { \
+    case ThreadCtxStatus::Same: break; \
+    case ThreadCtxStatus::Changed: assert( m_refTimeThread == 0 ); refThread = 0; break; \
+    case ThreadCtxStatus::ConnectionLost: return DequeueStatus::ConnectionLost; \
+    default: assert( false ); break; \
+    }
+
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {

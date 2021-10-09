@@ -643,6 +643,7 @@ public:
 
 private:
     enum class DequeueStatus { DataDequeued, ConnectionLost, QueueEmpty };
+    enum class ThreadCtxStatus { Same, Changed, ConnectionLost };
 
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
@@ -657,6 +658,7 @@ private:
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop );
     DequeueStatus DequeueSerial();
+    ThreadCtxStatus ThreadCtxCheck( uint32_t threadId );
     bool CommitData();
 
     tracy_force_inline bool AppendData( const void* data, size_t len )

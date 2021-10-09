@@ -1959,15 +1959,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     const auto sz = GetQueue().try_dequeue_bulk_single( token,
         [this, &connectionLost] ( const uint32_t& threadId )
         {
-            if( threadId != m_threadCtx )
-            {
-                QueueItem item;
-                MemWrite( &item.hdr.type, QueueType::ThreadContext );
-                MemWrite( &item.threadCtx.thread, threadId );
-                if( !AppendData( &item, QueueDataSize[(int)QueueType::ThreadContext] ) ) connectionLost = true;
-                m_threadCtx = threadId;
-                m_refTimeThread = 0;
-            }
+            if( ThreadCtxCheck( threadId ) == ThreadCtxStatus::ConnectionLost ) connectionLost = true;
         },
         [this, &connectionLost] ( QueueItem* item, size_t sz )
         {
@@ -2397,6 +2389,18 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         return DequeueStatus::QueueEmpty;
     }
     return DequeueStatus::DataDequeued;
+}
+
+Profiler::ThreadCtxStatus Profiler::ThreadCtxCheck( uint32_t threadId )
+{
+    if( m_threadCtx == threadId ) return ThreadCtxStatus::Same;
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::ThreadContext );
+    MemWrite( &item.threadCtx.thread, threadId );
+    if( !AppendData( &item, QueueDataSize[(int)QueueType::ThreadContext] ) ) return ThreadCtxStatus::ConnectionLost;
+    m_threadCtx = threadId;
+    m_refTimeThread = 0;
+    return ThreadCtxStatus::Changed;
 }
 
 bool Profiler::CommitData()

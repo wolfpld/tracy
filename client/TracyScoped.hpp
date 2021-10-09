@@ -32,10 +32,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
 #endif
-        TracyLfqPrepare( QueueType::ZoneBegin );
+        TracyQueuePrepare( QueueType::ZoneBegin );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneBeginThread );
     }
 
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
@@ -51,10 +51,10 @@ public:
 #endif
         GetProfiler().SendCallstack( depth );
 
-        TracyLfqPrepare( QueueType::ZoneBeginCallstack );
+        TracyQueuePrepare( QueueType::ZoneBeginCallstack );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneBeginThread );
     }
 
     tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active = true )
@@ -68,11 +68,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
 #endif
-        TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
+        TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLoc );
         const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, srcloc );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneBeginThread );
     }
 
     tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true )
@@ -88,11 +88,11 @@ public:
 #endif
         GetProfiler().SendCallstack( depth );
 
-        TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
+        TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
         const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, srcloc );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneBeginThread );
     }
 
     tracy_force_inline ~ScopedZone()
@@ -101,9 +101,9 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        TracyLfqPrepare( QueueType::ZoneEnd );
+        TracyQueuePrepare( QueueType::ZoneEnd );
         MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneEndThread );
     }
 
     tracy_force_inline void Text( const char* txt, size_t size )
@@ -115,10 +115,10 @@ public:
 #endif
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        TracyLfqPrepare( QueueType::ZoneText );
+        TracyQueuePrepare( QueueType::ZoneText );
         MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
         MemWrite( &item->zoneTextFat.size, (uint16_t)size );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneTextFatThread );
     }
 
     tracy_force_inline void Name( const char* txt, size_t size )
@@ -130,10 +130,10 @@ public:
 #endif
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        TracyLfqPrepare( QueueType::ZoneName );
+        TracyQueuePrepare( QueueType::ZoneName );
         MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
         MemWrite( &item->zoneTextFat.size, (uint16_t)size );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneTextFatThread );
     }
 
     tracy_force_inline void Color( uint32_t color )
@@ -142,11 +142,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        TracyLfqPrepare( QueueType::ZoneColor );
+        TracyQueuePrepare( QueueType::ZoneColor );
         MemWrite( &item->zoneColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->zoneColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->zoneColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneColorThread );
     }
 
     tracy_force_inline void Value( uint64_t value )
@@ -155,9 +155,9 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        TracyLfqPrepare( QueueType::ZoneValue );
+        TracyQueuePrepare( QueueType::ZoneValue );
         MemWrite( &item->zoneValue.value, value );
-        TracyLfqCommit;
+        TracyQueueCommit( zoneValueThread );
     }
 
     tracy_force_inline bool IsActive() const { return m_active; }

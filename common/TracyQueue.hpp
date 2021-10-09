@@ -128,9 +128,19 @@ struct QueueZoneBegin : public QueueZoneBeginLean
     uint64_t srcloc;    // ptr
 };
 
+struct QueueZoneBeginThread : public QueueZoneBegin
+{
+    uint32_t thread;
+};
+
 struct QueueZoneEnd
 {
     int64_t time;
+};
+
+struct QueueZoneEndThread : public QueueZoneEnd
+{
+    uint32_t thread;
 };
 
 struct QueueZoneValidation
@@ -145,9 +155,19 @@ struct QueueZoneColor
     uint8_t b;
 };
 
+struct QueueZoneColorThread : public QueueZoneColor
+{
+    uint32_t thread;
+};
+
 struct QueueZoneValue
 {
     uint64_t value;
+};
+
+struct QueueZoneValueThread : public QueueZoneValue
+{
+    uint32_t thread;
 };
 
 struct QueueStringTransfer
@@ -189,6 +209,11 @@ struct QueueZoneTextFat
 {
     uint64_t text;      // ptr
     uint16_t size;
+};
+
+struct QueueZoneTextFatThread : public QueueZoneTextFat
+{
+    uint32_t thread;
 };
 
 enum class LockType : uint8_t
@@ -531,16 +556,21 @@ struct QueueItem
         QueueThreadContext threadCtx;
         QueueZoneBegin zoneBegin;
         QueueZoneBeginLean zoneBeginLean;
+        QueueZoneBeginThread zoneBeginThread;
         QueueZoneEnd zoneEnd;
+        QueueZoneEndThread zoneEndThread;
         QueueZoneValidation zoneValidation;
         QueueZoneColor zoneColor;
+        QueueZoneColorThread zoneColorThread;
         QueueZoneValue zoneValue;
+        QueueZoneValueThread zoneValueThread;
         QueueStringTransfer stringTransfer;
         QueueFrameMark frameMark;
         QueueFrameImage frameImage;
         QueueFrameImageFat frameImageFat;
         QueueSourceLocation srcloc;
         QueueZoneTextFat zoneTextFat;
+        QueueZoneTextFatThread zoneTextFatThread;
         QueueLockAnnounce lockAnnounce;
         QueueLockTerminate lockTerminate;
         QueueLockWait lockWait;

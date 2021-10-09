@@ -105,6 +105,19 @@ struct LuaZoneState
     __tail.store( __magic + 1, std::memory_order_release );
 
 
+#ifdef TRACY_FIBERS
+#  define TracyQueuePrepare( _type ) \
+    auto item = Profiler::QueueSerial(); \
+    MemWrite( &item->hdr.type, _type );
+#  define TracyQueueCommit( _name ) \
+    MemWrite( &item->_name.thread, GetThreadHandle() ); \
+    Profiler::QueueSerialFinish();
+#else
+#  define TracyQueuePrepare( _type ) TracyLfqPrepare( _type )
+#  define TracyQueueCommit( _name ) TracyLfqCommit
+#endif
+
+
 typedef void(*ParameterCallback)( uint32_t idx, int32_t val );
 
 class Profiler

@@ -148,6 +148,11 @@ struct QueueZoneValidation
     uint32_t id;
 };
 
+struct QueueZoneValidationThread
+{
+    uint32_t thread;
+};
+
 struct QueueZoneColor
 {
     uint8_t r;
@@ -560,6 +565,7 @@ struct QueueItem
         QueueZoneEnd zoneEnd;
         QueueZoneEndThread zoneEndThread;
         QueueZoneValidation zoneValidation;
+        QueueZoneValidationThread zoneValidationThread;
         QueueZoneColor zoneColor;
         QueueZoneColorThread zoneColorThread;
         QueueZoneValue zoneValue;

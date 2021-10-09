@@ -2438,6 +2438,11 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     ThreadCtxCheckSerial( zoneValueThread );
                     break;
                 }
+                case QueueType::ZoneValidation:
+                {
+                    ThreadCtxCheckSerial( zoneValidationThread );
+                    break;
+                }
 #endif
                 default:
                     assert( false );

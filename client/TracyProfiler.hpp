@@ -112,9 +112,17 @@ struct LuaZoneState
 #  define TracyQueueCommit( _name ) \
     MemWrite( &item->_name.thread, GetThreadHandle() ); \
     Profiler::QueueSerialFinish();
+#  define TracyQueuePrepareC( _type ) \
+    auto item = tracy::Profiler::QueueSerial(); \
+    tracy::MemWrite( &item->hdr.type, _type );
+#  define TracyQueueCommitC( _name ) \
+    tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
+    tracy::Profiler::QueueSerialFinish();
 #else
 #  define TracyQueuePrepare( _type ) TracyLfqPrepare( _type )
 #  define TracyQueueCommit( _name ) TracyLfqCommit
+#  define TracyQueuePrepareC( _type ) TracyLfqPrepareC( _type )
+#  define TracyQueueCommitC( _name ) TracyLfqCommitC
 #endif
 
 

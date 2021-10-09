@@ -3436,16 +3436,16 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_l
 
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneBegin );
+        TracyQueuePrepareC( tracy::QueueType::ZoneBegin );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneBeginThread );
     }
     return ctx;
 }
@@ -3464,17 +3464,17 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
 
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     tracy::GetProfiler().SendCallstack( depth );
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneBeginCallstack );
+        TracyQueuePrepareC( tracy::QueueType::ZoneBeginCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneBeginThread );
     }
     return ctx;
 }
@@ -3497,16 +3497,16 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int act
 
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneBeginAllocSrcLoc );
+        TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLoc );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneBeginThread );
     }
     return ctx;
 }
@@ -3529,17 +3529,17 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
 
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     tracy::GetProfiler().SendCallstack( depth );
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
+        TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneBeginThread );
     }
     return ctx;
 }
@@ -3549,15 +3549,15 @@ TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     if( !ctx.active ) return;
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneEnd );
+        TracyQueuePrepareC( tracy::QueueType::ZoneEnd );
         tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime() );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneEndThread );
     }
 }
 
@@ -3569,16 +3569,16 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
     memcpy( ptr, txt, size );
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneText );
+        TracyQueuePrepareC( tracy::QueueType::ZoneText );
         tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
         tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneTextFatThread );
     }
 }
 
@@ -3590,16 +3590,16 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
     memcpy( ptr, txt, size );
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneName );
+        TracyQueuePrepareC( tracy::QueueType::ZoneName );
         tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
         tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneTextFatThread );
     }
 }
 
@@ -3607,17 +3607,17 @@ TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color ) {
     if( !ctx.active ) return;
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneColor );
+        TracyQueuePrepareC( tracy::QueueType::ZoneColor );
         tracy::MemWrite( &item->zoneColor.r, uint8_t( ( color       ) & 0xFF ) );
         tracy::MemWrite( &item->zoneColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         tracy::MemWrite( &item->zoneColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneColorThread );
     }
 }
 
@@ -3626,15 +3626,15 @@ TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value )
     if( !ctx.active ) return;
 #ifndef TRACY_NO_VERIFY
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValidationThread );
     }
 #endif
     {
-        TracyLfqPrepareC( tracy::QueueType::ZoneValue );
+        TracyQueuePrepareC( tracy::QueueType::ZoneValue );
         tracy::MemWrite( &item->zoneValue.value, value );
-        TracyLfqCommitC;
+        TracyQueueCommitC( zoneValueThread );
     }
 }
 

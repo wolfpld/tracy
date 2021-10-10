@@ -183,6 +183,10 @@ int main( int argc, char** argv )
     {
         printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
         auto& fd = worker.GetFailureData();
+        if( !fd.message.empty() )
+        {
+            printf( "\nContext: %s", fd.message.c_str() );
+        }
         if( fd.callstack != 0 )
         {
             printf( "\n\033[1mFailure callstack:\033[0m\n" );

@@ -4844,6 +4844,12 @@ void Worker::ZoneTextFailure( uint64_t thread )
     m_failureData.thread = thread;
 }
 
+void Worker::ZoneValueFailure( uint64_t thread )
+{
+    m_failure = Failure::ZoneValue;
+    m_failureData.thread = thread;
+}
+
 void Worker::ZoneColorFailure( uint64_t thread )
 {
     m_failure = Failure::ZoneColor;
@@ -5114,7 +5120,7 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
     auto td = RetrieveThread( m_threadCtx );
     if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
     {
-        ZoneTextFailure( m_threadCtx );
+        ZoneValueFailure( m_threadCtx );
         return;
     }
 
@@ -7912,6 +7918,7 @@ static const char* s_failureReasons[] = {
     "Invalid order of zone begin and end events.",
     "Zone is ended twice.",
     "Zone text transfer destination doesn't match active zone.",
+    "Zone value transfer destination doesn't match active zone.",
     "Zone color transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",

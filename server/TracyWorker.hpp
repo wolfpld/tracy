@@ -396,6 +396,7 @@ public:
         ZoneStack,
         ZoneDoubleEnd,
         ZoneText,
+        ZoneValue,
         ZoneColor,
         ZoneName,
         MemFree,
@@ -714,6 +715,7 @@ private:
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneTextFailure( uint64_t thread );
+    void ZoneValueFailure( uint64_t thread );
     void ZoneColorFailure( uint64_t thread );
     void ZoneNameFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );

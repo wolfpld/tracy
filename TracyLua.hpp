@@ -383,11 +383,11 @@ static inline int LuaMessage( lua_State* L )
     auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
 
-    TracyLfqPrepare( QueueType::Message );
+    TracyQueuePrepare( QueueType::Message );
     MemWrite( &item->messageFat.time, Profiler::GetTime() );
     MemWrite( &item->messageFat.text, (uint64_t)ptr );
     MemWrite( &item->messageFat.size, (uint16_t)size );
-    TracyLfqCommit;
+    TracyQueueCommit( messageFatThread );
     return 0;
 }
 

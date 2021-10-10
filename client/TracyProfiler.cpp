@@ -2448,6 +2448,29 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
                     break;
                 }
+                case QueueType::Callstack:
+                {
+                    ThreadCtxCheckSerial( callstackFatThread );
+                    ptr = MemRead<uint64_t>( &item->callstackFat.ptr );
+                    SendCallstackPayload( ptr );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
+                case QueueType::CallstackAlloc:
+                {
+                    ThreadCtxCheckSerial( callstackAllocFatThread );
+                    ptr = MemRead<uint64_t>( &item->callstackAllocFat.nativePtr );
+                    if( ptr != 0 )
+                    {
+                        CutCallstack( (void*)ptr, "lua_pcall" );
+                        SendCallstackPayload( ptr );
+                        tracy_free_fast( (void*)ptr );
+                    }
+                    ptr = MemRead<uint64_t>( &item->callstackAllocFat.ptr );
+                    SendCallstackAlloc( ptr );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
 #endif
                 default:
                     assert( false );
@@ -3141,11 +3164,12 @@ void Profiler::ReportTopology()
 void Profiler::SendCallstack( int depth, const char* skipBefore )
 {
 #ifdef TRACY_HAS_CALLSTACK
-    TracyLfqPrepare( QueueType::Callstack );
     auto ptr = Callstack( depth );
     CutCallstack( ptr, skipBefore );
+
+    TracyQueuePrepare( QueueType::Callstack );
     MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
-    TracyLfqCommit;
+    TracyQueueCommit( callstackFatThread );
 #endif
 }
 

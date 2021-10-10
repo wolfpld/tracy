@@ -453,10 +453,20 @@ struct QueueCallstackFat
     uint64_t ptr;
 };
 
+struct QueueCallstackFatThread : public QueueCallstackFat
+{
+    uint32_t thread;
+};
+
 struct QueueCallstackAllocFat
 {
     uint64_t ptr;
     uint64_t nativePtr;
+};
+
+struct QueueCallstackAllocFatThread : public QueueCallstackAllocFat
+{
+    uint32_t thread;
 };
 
 struct QueueCallstackSample
@@ -633,7 +643,9 @@ struct QueueItem
         QueueMemFree memFree;
         QueueMemNamePayload memName;
         QueueCallstackFat callstackFat;
+        QueueCallstackFatThread callstackFatThread;
         QueueCallstackAllocFat callstackAllocFat;
+        QueueCallstackAllocFatThread callstackAllocFatThread;
         QueueCallstackSample callstackSample;
         QueueCallstackSampleFat callstackSampleFat;
         QueueCallstackFrameSize callstackFrameSize;

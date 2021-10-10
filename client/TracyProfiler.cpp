@@ -2428,6 +2428,17 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
                     break;
                 }
+#endif
+                default:
+                    assert( false );
+                    break;
+                }
+            }
+#ifdef TRACY_FIBERS
+            else
+            {
+                switch( (QueueType)idx )
+                {
                 case QueueType::ZoneColor:
                 {
                     ThreadCtxCheckSerial( zoneColorThread );
@@ -2443,12 +2454,11 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     ThreadCtxCheckSerial( zoneValidationThread );
                     break;
                 }
-#endif
                 default:
-                    assert( false );
                     break;
                 }
             }
+#endif
             if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }

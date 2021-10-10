@@ -611,10 +611,10 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     {
         GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
 
-        TracyLfqPrepare( QueueType::CrashReport );
+        TracyQueuePrepare( QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
-        TracyLfqCommit;
+        TracyQueueCommit( crashReportThread );
     }
 
     HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
@@ -850,10 +850,10 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     {
         GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
 
-        TracyLfqPrepare( QueueType::CrashReport );
+        TracyQueuePrepare( QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
-        TracyLfqCommit;
+        TracyQueueCommit( crashReportThread );
     }
 
     DIR* dp = opendir( "/proc/self/task" );
@@ -2484,6 +2484,11 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::MessageLiteralColorCallstack:
                 {
                     ThreadCtxCheckSerial( messageColorLiteralThread );
+                    break;
+                }
+                case QueueType::CrashReport:
+                {
+                    ThreadCtxCheckSerial( crashReportThread );
                     break;
                 }
                 default:

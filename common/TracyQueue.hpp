@@ -502,6 +502,11 @@ struct QueueCrashReport
     uint64_t text;      // ptr
 };
 
+struct QueueCrashReportThread
+{
+    uint32_t thread;
+};
+
 struct QueueSysTime
 {
     int64_t time;
@@ -636,6 +641,7 @@ struct QueueItem
         QueueSymbolInformation symbolInformation;
         QueueCodeInformation codeInformation;
         QueueCrashReport crashReport;
+        QueueCrashReportThread crashReportThread;
         QueueSysTime sysTime;
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;

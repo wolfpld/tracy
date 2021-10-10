@@ -318,13 +318,14 @@ public:
             tracy::GetProfiler().SendCallstack( callstack );
         }
 
-        TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
+
+        TracyQueuePrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->messageFat.time, GetTime() );
         MemWrite( &item->messageFat.text, (uint64_t)ptr );
         MemWrite( &item->messageFat.size, (uint16_t)size );
-        TracyLfqCommit;
+        TracyQueueCommit( messageFatThread );
     }
 
     static tracy_force_inline void Message( const char* txt, int callstack )
@@ -337,10 +338,10 @@ public:
             tracy::GetProfiler().SendCallstack( callstack );
         }
 
-        TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
+        TracyQueuePrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->messageLiteral.time, GetTime() );
         MemWrite( &item->messageLiteral.text, (uint64_t)txt );
-        TracyLfqCommit;
+        TracyQueueCommit( messageLiteralThread );
     }
 
     static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
@@ -354,16 +355,17 @@ public:
             tracy::GetProfiler().SendCallstack( callstack );
         }
 
-        TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
+
+        TracyQueuePrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColorFat.time, GetTime() );
         MemWrite( &item->messageColorFat.text, (uint64_t)ptr );
         MemWrite( &item->messageColorFat.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColorFat.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColorFat.b, uint8_t( ( color >> 16 ) & 0xFF ) );
         MemWrite( &item->messageColorFat.size, (uint16_t)size );
-        TracyLfqCommit;
+        TracyQueueCommit( messageColorFatThread );
     }
 
     static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int callstack )
@@ -376,13 +378,13 @@ public:
             tracy::GetProfiler().SendCallstack( callstack );
         }
 
-        TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
+        TracyQueuePrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColorLiteral.time, GetTime() );
         MemWrite( &item->messageColorLiteral.text, (uint64_t)txt );
         MemWrite( &item->messageColorLiteral.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColorLiteral.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        TracyLfqCommit;
+        TracyQueueCommit( messageColorLiteralThread );
     }
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )

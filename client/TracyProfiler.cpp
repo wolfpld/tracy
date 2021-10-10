@@ -2428,6 +2428,26 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
                     break;
                 }
+                case QueueType::Message:
+                case QueueType::MessageCallstack:
+                {
+                    ThreadCtxCheckSerial( messageFatThread );
+                    ptr = MemRead<uint64_t>( &item->messageFat.text );
+                    uint16_t size = MemRead<uint16_t>( &item->messageFat.size );
+                    SendSingleString( (const char*)ptr, size );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
+                case QueueType::MessageColor:
+                case QueueType::MessageColorCallstack:
+                {
+                    ThreadCtxCheckSerial( messageColorFatThread );
+                    ptr = MemRead<uint64_t>( &item->messageColorFat.text );
+                    uint16_t size = MemRead<uint16_t>( &item->messageColorFat.size );
+                    SendSingleString( (const char*)ptr, size );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
 #endif
                 default:
                     assert( false );
@@ -2452,6 +2472,18 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::ZoneValidation:
                 {
                     ThreadCtxCheckSerial( zoneValidationThread );
+                    break;
+                }
+                case QueueType::MessageLiteral:
+                case QueueType::MessageLiteralCallstack:
+                {
+                    ThreadCtxCheckSerial( messageLiteralThread );
+                    break;
+                }
+                case QueueType::MessageLiteralColor:
+                case QueueType::MessageLiteralColorCallstack:
+                {
+                    ThreadCtxCheckSerial( messageColorLiteralThread );
                     break;
                 }
                 default:

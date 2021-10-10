@@ -317,9 +317,19 @@ struct QueueMessageLiteral : public QueueMessage
     uint64_t text;      // ptr
 };
 
+struct QueueMessageLiteralThread : public QueueMessageLiteral
+{
+    uint32_t thread;
+};
+
 struct QueueMessageColorLiteral : public QueueMessageColor
 {
     uint64_t text;      // ptr
+};
+
+struct QueueMessageColorLiteralThread : public QueueMessageColorLiteral
+{
+    uint32_t thread;
 };
 
 struct QueueMessageFat : public QueueMessage
@@ -328,10 +338,20 @@ struct QueueMessageFat : public QueueMessage
     uint16_t size;
 };
 
+struct QueueMessageFatThread : public QueueMessageFat
+{
+    uint32_t thread;
+};
+
 struct QueueMessageColorFat : public QueueMessageColor
 {
     uint64_t text;      // ptr
     uint16_t size;
+};
+
+struct QueueMessageColorFatThread : public QueueMessageColorFat
+{
+    uint32_t thread;
 };
 
 // Don't change order, only add new entries at the end, this is also used on trace dumps!
@@ -589,9 +609,13 @@ struct QueueItem
         QueueMessage message;
         QueueMessageColor messageColor;
         QueueMessageLiteral messageLiteral;
+        QueueMessageLiteralThread messageLiteralThread;
         QueueMessageColorLiteral messageColorLiteral;
+        QueueMessageColorLiteralThread messageColorLiteralThread;
         QueueMessageFat messageFat;
+        QueueMessageFatThread messageFatThread;
         QueueMessageColorFat messageColorFat;
+        QueueMessageColorFatThread messageColorFatThread;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneBeginLean gpuZoneBeginLean;

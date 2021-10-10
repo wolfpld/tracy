@@ -480,6 +480,10 @@ bool View::Draw()
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( data.thread ) );
         }
+        if( !data.message.empty() )
+        {
+            TextFocused( "Context:", data.message.c_str() );
+        }
         if( data.callstack != 0 )
         {
             if( ImGui::TreeNode( "Call stack" ) )

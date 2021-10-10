@@ -4844,10 +4844,21 @@ void Worker::ZoneTextFailure( uint64_t thread )
     m_failureData.thread = thread;
 }
 
-void Worker::ZoneValueFailure( uint64_t thread )
+void Worker::ZoneValueFailure( uint64_t thread, uint64_t value )
 {
+    char buf[128];
+    if( (int64_t)value < 0 )
+    {
+        sprintf( buf, "Zone value was: %" PRIu64 " (unsigned), %" PRIi64 " (signed)", value, (int64_t)value );
+    }
+    else
+    {
+        sprintf( buf, "Zone value was: %" PRIu64, value );
+    }
+
     m_failure = Failure::ZoneValue;
     m_failureData.thread = thread;
+    m_failureData.message = buf;
 }
 
 void Worker::ZoneColorFailure( uint64_t thread )
@@ -5120,7 +5131,7 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
     auto td = RetrieveThread( m_threadCtx );
     if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
     {
-        ZoneValueFailure( m_threadCtx );
+        ZoneValueFailure( m_threadCtx, ev.value );
         return;
     }
 

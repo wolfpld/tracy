@@ -715,7 +715,7 @@ private:
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev );
-    void ZoneTextFailure( uint64_t thread );
+    void ZoneTextFailure( uint64_t thread, const char* text );
     void ZoneValueFailure( uint64_t thread, uint64_t value );
     void ZoneColorFailure( uint64_t thread );
     void ZoneNameFailure( uint64_t thread );

@@ -4838,10 +4838,11 @@ void Worker::ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev )
     m_failureData.srcloc = ev ? ev->SrcLoc() : 0;
 }
 
-void Worker::ZoneTextFailure( uint64_t thread )
+void Worker::ZoneTextFailure( uint64_t thread, const char* text )
 {
     m_failure = Failure::ZoneText;
     m_failureData.thread = thread;
+    m_failureData.message = text;
 }
 
 void Worker::ZoneValueFailure( uint64_t thread, uint64_t value )
@@ -5054,7 +5055,7 @@ void Worker::ProcessZoneText()
     auto td = RetrieveThread( m_threadCtx );
     if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
     {
-        ZoneTextFailure( m_threadCtx );
+        ZoneTextFailure( m_threadCtx, m_pendingSingleString.ptr );
         return;
     }
 

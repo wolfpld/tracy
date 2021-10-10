@@ -5693,7 +5693,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     int64_t tgpu = m_refTimeGpu + ev.gpuTime;
     m_refTimeGpu = tgpu;
 
-    if( tgpu < ctx->lastGpuTime )
+    if( tgpu < ctx->lastGpuTime - ( 1u << 31 ) )
     {
         if( ctx->overflow == 0 )
         {

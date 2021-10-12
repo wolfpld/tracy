@@ -1,4 +1,4 @@
-// dear imgui, v1.84
+// dear imgui, v1.85
 // (tables and columns code)
 
 /*
@@ -324,7 +324,7 @@ bool    ImGui::BeginTableEx(const char* name, ImGuiID id, int columns_count, ImG
     const ImVec2 avail_size = GetContentRegionAvail();
     ImVec2 actual_outer_size = CalcItemSize(outer_size, ImMax(avail_size.x, 1.0f), use_child_window ? ImMax(avail_size.y, 1.0f) : 0.0f);
     ImRect outer_rect(outer_window->DC.CursorPos, outer_window->DC.CursorPos + actual_outer_size);
-    if (use_child_window && IsClippedEx(outer_rect, 0, false))
+    if (use_child_window && IsClippedEx(outer_rect, 0))
     {
         ItemSize(outer_rect);
         return false;
@@ -564,6 +564,7 @@ bool    ImGui::BeginTableEx(const char* name, ImGuiID id, int columns_count, ImG
 // + 0 (for ImGuiTable instance, we are pooling allocations in g.Tables)
 // + 1 (for table->RawData allocated below)
 // + 1 (for table->ColumnsNames, if names are used)
+// Shared allocations per number of nested tables
 // + 1 (for table->Splitter._Channels)
 // + 2 * active_channels_count (for ImDrawCmd and ImDrawIdx buffers inside channels)
 // Where active_channels_count is variable but often == columns_count or columns_count + 1, see TableSetupDrawChannels() for details.
@@ -1170,7 +1171,7 @@ void ImGui::TableUpdateBorders(ImGuiTable* table)
         KeepAliveID(column_id);
 
         bool hovered = false, held = false;
-        bool pressed = ButtonBehavior(hit_rect, column_id, &hovered, &held, ImGuiButtonFlags_FlattenChildren | ImGuiButtonFlags_AllowItemOverlap | ImGuiButtonFlags_PressedOnClick | ImGuiButtonFlags_PressedOnDoubleClick);
+        bool pressed = ButtonBehavior(hit_rect, column_id, &hovered, &held, ImGuiButtonFlags_FlattenChildren | ImGuiButtonFlags_AllowItemOverlap | ImGuiButtonFlags_PressedOnClick | ImGuiButtonFlags_PressedOnDoubleClick | ImGuiButtonFlags_NoNavFocus);
         if (pressed && IsMouseDoubleClicked(0))
         {
             TableSetColumnWidthAutoSingle(table, column_n);
@@ -1479,6 +1480,7 @@ void ImGui::TableSetupScrollFreeze(int columns, int rows)
     table->IsUnfrozenRows = (table->FreezeRowsCount == 0); // Make sure this is set before TableUpdateLayout() so ImGuiListClipper can benefit from it.b
 
     // Ensure frozen columns are ordered in their section. We still allow multiple frozen columns to be reordered.
+    // FIXME-TABLE: This work for preserving 2143 into 21|43. How about 4321 turning into 21|43? (preserve relative order in each section)
     for (int column_n = 0; column_n < table->FreezeColumnsRequest; column_n++)
     {
         int order_n = table->DisplayOrderToIndex[column_n];
@@ -3987,7 +3989,7 @@ void ImGui::EndColumns()
             const float column_hit_hw = COLUMNS_HIT_RECT_HALF_WIDTH;
             const ImRect column_hit_rect(ImVec2(x - column_hit_hw, y1), ImVec2(x + column_hit_hw, y2));
             KeepAliveID(column_id);
-            if (IsClippedEx(column_hit_rect, column_id, false))
+            if (IsClippedEx(column_hit_rect, column_id)) // FIXME: Can be removed or replaced with a lower-level test
                 continue;
 
             bool hovered = false, held = false;

@@ -3464,11 +3464,12 @@ void Profiler::SendCodeLocation( uint64_t ptr )
 #ifdef TRACY_HAS_CALLSTACK
     const auto sym = DecodeCodeAddress( ptr );
 
+    const uint64_t offset = ptr - sym.symAddr;
     SendSingleString( sym.file );
 
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::CodeInformation );
-    MemWrite( &item.codeInformation.ptr, ptr );
+    MemWrite( &item.codeInformation.ptrOffset, offset );
     MemWrite( &item.codeInformation.line, sym.line );
     MemWrite( &item.codeInformation.symAddr, sym.symAddr );
 

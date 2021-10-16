@@ -6344,22 +6344,23 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
     m_pendingCodeInformation--;
 
     const auto idx = GetSingleStringIdx();
+    const uint64_t ptr = ev.symAddr + ev.ptrOffset;
 
     if( ev.line != 0 )
     {
-        assert( m_data.codeAddressToLocation.find( ev.ptr ) == m_data.codeAddressToLocation.end() );
+        assert( m_data.codeAddressToLocation.find( ptr ) == m_data.codeAddressToLocation.end() );
         const auto packed = PackFileLine( idx, ev.line );
-        m_data.codeAddressToLocation.emplace( ev.ptr, packed );
+        m_data.codeAddressToLocation.emplace( ptr, packed );
 
         auto lit = m_data.locationCodeAddressList.find( packed );
         if( lit == m_data.locationCodeAddressList.end() )
         {
-            m_data.locationCodeAddressList.emplace( packed, Vector<uint64_t>( ev.ptr ) );
+            m_data.locationCodeAddressList.emplace( packed, Vector<uint64_t>( ptr ) );
         }
         else
         {
-            const bool needSort = lit->second.back() > ev.ptr;
-            lit->second.push_back( ev.ptr );
+            const bool needSort = lit->second.back() > ptr;
+            lit->second.push_back( ptr );
             if( needSort ) pdqsort_branchless( lit->second.begin(), lit->second.end() );
         }
 
@@ -6369,8 +6370,8 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
     }
     if( ev.symAddr != 0 )
     {
-        assert( m_data.codeSymbolMap.find( ev.ptr ) == m_data.codeSymbolMap.end() );
-        m_data.codeSymbolMap.emplace( ev.ptr, ev.symAddr );
+        assert( m_data.codeSymbolMap.find( ptr ) == m_data.codeSymbolMap.end() );
+        m_data.codeSymbolMap.emplace( ptr, ev.symAddr );
     }
 }
 

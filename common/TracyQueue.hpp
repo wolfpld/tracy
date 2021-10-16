@@ -501,9 +501,9 @@ struct QueueSymbolInformation
 
 struct QueueCodeInformation
 {
-    uint64_t ptr;
-    uint32_t line;
     uint64_t symAddr;
+    uint32_t line;
+    uint64_t ptrOffset;
 };
 
 struct QueueCrashReport

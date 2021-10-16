@@ -1318,6 +1318,17 @@ void View::DrawNotificationArea()
             }
         }
     }
+    if( m_worker.AreSamplesInconsistent() )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE_DROPPER );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Sampling data and ghost zones may be displayed wrongly due to data inconsistency. Save and reload the trace to fix this." );
+            ImGui::EndTooltip();
+        }
+    }
     if( m_vd.drawEmptyLabels )
     {
         ImGui::SameLine();

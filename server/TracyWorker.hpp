@@ -597,6 +597,7 @@ public:
     int GetTraceVersion() const { return m_traceVersion; }
     uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
     int64_t GetSamplingPeriod() const { return m_samplingPeriod; }
+    bool AreSamplesInconsistent() const { return m_inconsistentSamples; }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
     int64_t GetLoadTime() const { return m_loadTime; }
@@ -896,6 +897,7 @@ private:
     bool m_ignoreMemFreeFaults;
     bool m_codeTransfer;
     bool m_combineSamples;
+    bool m_inconsistentSamples;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint32_t m_pendingCallstackId = 0;

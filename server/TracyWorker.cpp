@@ -263,6 +263,7 @@ Worker::Worker( const char* addr, uint16_t port )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
+    , m_inconsistentSamples( false )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
     , m_pendingExternalNames( 0 )
@@ -306,6 +307,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_executableTime( 0 )
     , m_pid( 0 )
     , m_samplingPeriod( 0 )
+    , m_inconsistentSamples( false )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_traceVersion( CurrentVersion )
@@ -510,6 +512,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
+    , m_inconsistentSamples( false )
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
@@ -5983,7 +5986,7 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, i
     }
     else
     {
-        assert( td.samples.back().time.Val() < t );
+        if( !m_inconsistentSamples && td.samples.back().time.Val() >= t ) m_inconsistentSamples = true;
         td.samples.push_back_non_empty( sd );
     }
 

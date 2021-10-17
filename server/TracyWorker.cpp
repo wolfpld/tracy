@@ -4099,12 +4099,14 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
     {
         plot->min = val;
         plot->max = val;
+        plot->sum = val;
         plot->data.push_back( { Int48( time ), val } );
     }
     else
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
+        plot->sum += val;
         plot->data.push_back( { Int48( time ), val } );
     }
 }
@@ -6408,6 +6410,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         m_sysTimePlot->format = PlotValueFormatting::Percentage;
         m_sysTimePlot->min = val;
         m_sysTimePlot->max = val;
+        m_sysTimePlot->sum = val;
         m_sysTimePlot->data.push_back( { time, val } );
         m_data.plots.Data().push_back( m_sysTimePlot );
     }
@@ -6417,6 +6420,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         assert( m_sysTimePlot->data.back().time.Val() <= time );
         if( m_sysTimePlot->min > val ) m_sysTimePlot->min = val;
         else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
+        m_sysTimePlot->sum += val;
         m_sysTimePlot->data.push_back( { time, val } );
     }
 }
@@ -6625,6 +6629,7 @@ void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
         CreateMemAllocPlot( memdata );
         memdata.plot->min = val;
         memdata.plot->max = val;
+        memdata.plot->sum = val;
         memdata.plot->data.push_back( { time, val } );
     }
     else
@@ -6633,6 +6638,7 @@ void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
         assert( memdata.plot->data.back().time.Val() <= time );
         if( memdata.plot->min > val ) memdata.plot->min = val;
         else if( memdata.plot->max < val ) memdata.plot->max = val;
+        memdata.plot->sum += val;
         memdata.plot->data.push_back( { time, val } );
     }
 }

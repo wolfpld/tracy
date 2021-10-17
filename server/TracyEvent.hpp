@@ -753,6 +753,7 @@ struct PlotData
     uint64_t name;
     double min;
     double max;
+    double sum;
     SortedVector<PlotItem, PlotItemSort> data;
     PlotType type;
     PlotValueFormatting format;

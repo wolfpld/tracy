@@ -442,6 +442,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         plot->type = PlotType::User;
         plot->format = v.format;
 
+        double sum = 0;
         double min = v.data.begin()->second;
         double max = v.data.begin()->second;
         plot->data.reserve_exact( v.data.size(), m_slab );
@@ -453,9 +454,11 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             idx++;
             if( min > p.second ) min = p.second;
             else if( max < p.second ) max = p.second;
+            sum += p.second;
         }
         plot->min = min;
         plot->max = max;
+        plot->sum = sum;
 
         m_data.plots.Data().push_back( plot );
     }

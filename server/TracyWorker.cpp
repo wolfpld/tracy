@@ -6683,6 +6683,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     auto fptr = mem.frees.begin();
     auto fend = mem.frees.end();
 
+    double sum = 0;
     double max = 0;
     double usage = 0;
 
@@ -6703,6 +6704,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
                 usage += int64_t( aptr->Size() );
                 assert( usage >= 0 );
                 if( max < usage ) max = usage;
+                sum += usage;
                 ptr->time = atime;
                 ptr->val = usage;
                 ptr++;
@@ -6715,6 +6717,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
                 usage -= int64_t( mem.data[*fptr].Size() );
                 assert( usage >= 0 );
                 if( max < usage ) max = usage;
+                sum += usage;
                 ptr->time = ftime;
                 ptr->val = usage;
                 ptr++;
@@ -6732,6 +6735,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
         usage += int64_t( aptr->Size() );
         assert( usage >= 0 );
         if( max < usage ) max = usage;
+        sum += usage;
         ptr->time = time;
         ptr->val = usage;
         ptr++;
@@ -6744,6 +6748,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
         usage -= int64_t( memData.Size() );
         assert( usage >= 0 );
         assert( max >= usage );
+        sum += usage;
         ptr->time = time;
         ptr->val = usage;
         ptr++;
@@ -6752,6 +6757,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
 
     plot->min = 0;
     plot->max = max;
+    plot->sum = sum;
 
     std::lock_guard<std::mutex> lock( m_data.lock );
     m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );

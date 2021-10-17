@@ -6454,6 +6454,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 TextFocused( "Data range:", FormatPlotValue( v->max - v->min, v->format ) );
                 TextFocused( "Min value:", FormatPlotValue( v->min, v->format ) );
                 TextFocused( "Max value:", FormatPlotValue( v->max, v->format ) );
+                TextFocused( "Avg value:", FormatPlotValue( v->sum / v->data.size(), v->format ) );
                 TextFocused( "Data/second:", RealToString( double( v->data.size() ) / activity * 1000000000ll ) );
 
                 const auto it = std::lower_bound( v->data.begin(), v->data.end(), last - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );

@@ -203,7 +203,7 @@ TRACY_API void ___tracy_emit_plot( const char* name, double val );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
-#define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
+#define TracyCAppInfo( txt, size ) ___tracy_emit_message_appinfo( txt, size );
 
 
 #ifdef TRACY_HAS_CALLSTACK

@@ -1917,10 +1917,10 @@ void Profiler::Worker()
 void Profiler::CompressWorker()
 {
     ThreadExitHandler threadExitHandler;
-
     SetThreadName( "Tracy DXT1" );
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     rpmalloc_thread_initialize();
+
     for(;;)
     {
         const auto shouldExit = ShouldExit();

@@ -1146,8 +1146,7 @@ Profiler::Profiler()
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
 #ifndef TRACY_NO_FRAME_IMAGE
-    , m_fiQueue( 16 )
-    , m_fiDequeue( 16 )
+    , m_fiQueue( 64 )
 #endif
     , m_frameCount( 0 )
     , m_isConnected( false )
@@ -1785,59 +1784,29 @@ void Profiler::CompressWorker()
     for(;;)
     {
         const auto shouldExit = ShouldExit();
-
+        FrameImageQueueItem fi;
+        if( m_fiQueue.try_dequeue( fi ) )
         {
-            bool lockHeld = true;
-            while( !m_fiLock.try_lock() )
-            {
-                if( m_shutdownManual.load( std::memory_order_relaxed ) )
-                {
-                    lockHeld = false;
-                    break;
-                }
-            }
-            if( !m_fiQueue.empty() ) m_fiQueue.swap( m_fiDequeue );
-            if( lockHeld )
-            {
-                m_fiLock.unlock();
-            }
-        }
+            const auto w = fi.w;
+            const auto h = fi.h;
+            const auto csz = size_t( w * h / 2 );
+            auto etc1buf = (char*)tracy_malloc( csz );
+            CompressImageDxt1( (const char*)fi.image, etc1buf, w, h );
+            tracy_free( fi.image );
 
-        const auto sz = m_fiDequeue.size();
-        if( sz > 0 )
-        {
-            auto fi = m_fiDequeue.data();
-            auto end = fi + sz;
-            while( fi != end )
-            {
-                const auto w = fi->w;
-                const auto h = fi->h;
-                const auto csz = size_t( w * h / 2 );
-                auto etc1buf = (char*)tracy_malloc( csz );
-                CompressImageDxt1( (const char*)fi->image, etc1buf, w, h );
-                tracy_free( fi->image );
-
-                TracyLfqPrepare( QueueType::FrameImage );
-                MemWrite( &item->frameImageFat.image, (uint64_t)etc1buf );
-                MemWrite( &item->frameImageFat.frame, fi->frame );
-                MemWrite( &item->frameImageFat.w, w );
-                MemWrite( &item->frameImageFat.h, h );
-                uint8_t flip = fi->flip;
-                MemWrite( &item->frameImageFat.flip, flip );
-                TracyLfqCommit;
-
-                fi++;
-            }
-            m_fiDequeue.clear();
+            TracyLfqPrepare( QueueType::FrameImage );
+            MemWrite( &item->frameImageFat.image, (uint64_t)etc1buf );
+            MemWrite( &item->frameImageFat.frame, fi.frame );
+            MemWrite( &item->frameImageFat.w, w );
+            MemWrite( &item->frameImageFat.h, h );
+            uint8_t flip = fi.flip;
+            MemWrite( &item->frameImageFat.flip, flip );
+            TracyLfqCommit;
         }
         else
         {
+            if( shouldExit ) return;
             std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
-        }
-
-        if( shouldExit )
-        {
-            return;
         }
     }
 }

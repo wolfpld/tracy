@@ -346,9 +346,6 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     DBGHELP_LOCK;
 #endif
     const auto res = SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line );
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
     if( res == 0 )
     {
         sym.file = "[unknown]";
@@ -361,6 +358,9 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
         sym.line = line.LineNumber;
         sym.needFree = true;
     }
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
     return sym;
 }
 

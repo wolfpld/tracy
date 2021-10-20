@@ -137,7 +137,6 @@ class Profiler
         uint32_t frame;
         uint16_t w;
         uint16_t h;
-        uint8_t offset;
         bool flip;
     };
 
@@ -249,7 +248,6 @@ public:
             uint32_t( profiler.m_frameCount.load( std::memory_order_relaxed ) - offset ),
             w,
             h,
-            0,
             flip
         } );
 #endif

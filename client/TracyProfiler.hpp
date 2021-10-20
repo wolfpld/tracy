@@ -8,7 +8,6 @@
 #include <time.h>
 
 #include "tracy_concurrentqueue.h"
-#include "tracy_readerwriterqueue.h"
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
@@ -243,13 +242,15 @@ public:
         auto ptr = (char*)tracy_malloc( sz );
         memcpy( ptr, image, sz );
 
-        profiler.m_fiQueue.emplace( FrameImageQueueItem {
-            ptr,
-            uint32_t( profiler.m_frameCount.load( std::memory_order_relaxed ) - offset ),
-            w,
-            h,
-            flip
-        } );
+        profiler.m_fiLock.lock();
+        auto fi = profiler.m_fiQueue.prepare_next();
+        fi->image = ptr;
+        fi->frame = uint32_t( profiler.m_frameCount.load( std::memory_order_relaxed ) - offset );
+        fi->w = w;
+        fi->h = h;
+        fi->flip = flip;
+        profiler.m_fiQueue.commit_next();
+        profiler.m_fiLock.unlock();
 #endif
     }
 
@@ -808,7 +809,8 @@ private:
     TracyMutex m_serialLock;
 
 #ifndef TRACY_NO_FRAME_IMAGE
-    ReaderWriterQueue<FrameImageQueueItem> m_fiQueue;
+    FastVector<FrameImageQueueItem> m_fiQueue, m_fiDequeue;
+    TracyMutex m_fiLock;
 #endif
 
     std::atomic<uint64_t> m_frameCount;

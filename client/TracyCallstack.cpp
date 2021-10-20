@@ -353,13 +353,14 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     {
         sym.file = "[unknown]";
         sym.line = 0;
+        sym.needFree = false;
     }
     else
     {
-        sym.file = line.FileName;
+        sym.file = CopyString( line.FileName );
         sym.line = line.LineNumber;
+        sym.needFree = true;
     }
-    sym.needFree = false;
     return sym;
 }
 
@@ -393,8 +394,9 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
         {
             if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) != 0 )
             {
-                sym.file = line.FileName;
+                sym.file = CopyString( line.FileName );
                 sym.line = line.LineNumber;
+                sym.needFree = true;
                 done = true;
 
                 if( _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0 )
@@ -416,11 +418,13 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
             sym.file = "[unknown]";
             sym.line = 0;
             sym.symAddr = 0;
+            sym.needFree = false;
         }
         else
         {
-            sym.file = line.FileName;
+            sym.file = CopyString( line.FileName );
             sym.line = line.LineNumber;
+            sym.needFree = true;
 
             if( SymFromAddr( proc, ptr, nullptr, si ) != 0 )
             {
@@ -435,7 +439,6 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
 #endif
-    sym.needFree = false;
     return sym;
 }
 

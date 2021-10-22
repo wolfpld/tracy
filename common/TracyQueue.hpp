@@ -486,6 +486,12 @@ struct QueueCallstackFrameSize
     uint8_t size;
 };
 
+struct QueueCallstackFrameSizeFat : public QueueCallstackFrameSize
+{
+    uint64_t data;
+    uint64_t imageName;
+};
+
 struct QueueCallstackFrame
 {
     uint32_t line;
@@ -499,11 +505,23 @@ struct QueueSymbolInformation
     uint64_t symAddr;
 };
 
+struct QueueSymbolInformationFat : public QueueSymbolInformation
+{
+    uint64_t fileString;
+    uint8_t needFree;
+};
+
 struct QueueCodeInformation
 {
     uint64_t symAddr;
     uint32_t line;
     uint64_t ptrOffset;
+};
+
+struct QueueCodeInformationFat : public QueueCodeInformation
+{
+    uint64_t fileString;
+    uint8_t needFree;
 };
 
 struct QueueCrashReport
@@ -579,6 +597,13 @@ struct QueueCpuTopology
     uint32_t thread;
 };
 
+struct QueueExternalNameMetadata
+{
+    uint64_t thread;
+    uint64_t name;
+    uint64_t threadName;
+};
+
 struct QueueHeader
 {
     union
@@ -649,9 +674,12 @@ struct QueueItem
         QueueCallstackSample callstackSample;
         QueueCallstackSampleFat callstackSampleFat;
         QueueCallstackFrameSize callstackFrameSize;
+        QueueCallstackFrameSizeFat callstackFrameSizeFat;
         QueueCallstackFrame callstackFrame;
         QueueSymbolInformation symbolInformation;
+        QueueSymbolInformationFat symbolInformationFat;
         QueueCodeInformation codeInformation;
+        QueueCodeInformationFat codeInformationFat;
         QueueCrashReport crashReport;
         QueueCrashReportThread crashReportThread;
         QueueSysTime sysTime;
@@ -662,6 +690,7 @@ struct QueueItem
         QueuePlotConfig plotConfig;
         QueueParamSetup paramSetup;
         QueueCpuTopology cpuTopology;
+        QueueExternalNameMetadata externalNameMetadata;
     };
 };
 #pragma pack()

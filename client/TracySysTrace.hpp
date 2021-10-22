@@ -16,7 +16,7 @@ bool SysTraceStart( int64_t& samplingPeriod );
 void SysTraceStop();
 void SysTraceWorker( void* ptr );
 
-void SysTraceSendExternalName( uint64_t thread );
+void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name );
 
 }
 

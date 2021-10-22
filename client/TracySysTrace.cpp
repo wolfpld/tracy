@@ -1,4 +1,5 @@
 #include "TracyDebug.hpp"
+#include "TracyStringHelpers.hpp"
 #include "TracySysTrace.hpp"
 #include "../common/TracySystem.hpp"
 
@@ -499,7 +500,7 @@ void SysTraceWorker( void* ptr )
     tracy_free( s_prop );
 }
 
-void SysTraceSendExternalName( uint64_t thread )
+void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )
 {
     bool threadSent = false;
     auto hnd = OpenThread( THREAD_QUERY_INFORMATION, FALSE, DWORD( thread ) );
@@ -519,7 +520,7 @@ void SysTraceSendExternalName( uint64_t thread )
                 auto ret = wcstombs( buf, tmp, 256 );
                 if( ret != 0 )
                 {
-                    GetProfiler().SendString( thread, buf, ret, QueueType::ExternalThreadName );
+                    threadName = CopyString( buf, ret );
                     threadSent = true;
                 }
             }
@@ -551,7 +552,7 @@ void SysTraceSendExternalName( uint64_t thread )
                                     const auto modlen = _GetModuleBaseNameA( phnd, modules[i], buf2, 1024 );
                                     if( modlen != 0 )
                                     {
-                                        GetProfiler().SendString( thread, buf2, modlen, QueueType::ExternalThreadName );
+                                        threadName = CopyString( buf2, modlen );
                                         threadSent = true;
                                     }
                                 }
@@ -565,7 +566,7 @@ void SysTraceSendExternalName( uint64_t thread )
         CloseHandle( hnd );
         if( !threadSent )
         {
-            GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
+            threadName = CopyString( "???", 3 );
             threadSent = true;
         }
         if( pid != 0 )
@@ -579,7 +580,7 @@ void SysTraceSendExternalName( uint64_t thread )
             }
             if( pid == 4 )
             {
-                GetProfiler().SendString( thread, "System", 6, QueueType::ExternalName );
+                name = CopyStringFast( "System", 6 );
                 return;
             }
             else
@@ -595,7 +596,7 @@ void SysTraceSendExternalName( uint64_t thread )
                         auto ptr = buf2 + sz - 1;
                         while( ptr > buf2 && *ptr != '\\' ) ptr--;
                         if( *ptr == '\\' ) ptr++;
-                        GetProfiler().SendString( thread, ptr, QueueType::ExternalName );
+                        name = CopyStringFast( ptr );
                         return;
                     }
                 }
@@ -605,9 +606,9 @@ void SysTraceSendExternalName( uint64_t thread )
 
     if( !threadSent )
     {
-        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
+        threadName = CopyString( "???", 3 );
     }
-    GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
+    name = CopyStringFast( "???", 3 );
 }
 
 }
@@ -1695,7 +1696,7 @@ void SysTraceWorker( void* ptr )
 }
 #endif
 
-void SysTraceSendExternalName( uint64_t thread )
+void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )
 {
     FILE* f;
     char fn[256];
@@ -1706,12 +1707,12 @@ void SysTraceSendExternalName( uint64_t thread )
         char buf[256];
         const auto sz = fread( buf, 1, 256, f );
         if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
-        GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
+        threadName = CopyString( buf );
         fclose( f );
     }
     else
     {
-        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
+        threadName = CopyString( "???", 3 );
     }
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
@@ -1720,7 +1721,7 @@ void SysTraceSendExternalName( uint64_t thread )
     {
         int pid = -1;
         size_t lsz = 1024;
-        auto line = (char*)tracy_malloc( lsz );
+        auto line = (char*)tracy_malloc_fast( lsz );
         for(;;)
         {
             auto rd = getline( &line, &lsz, f );
@@ -1749,13 +1750,13 @@ void SysTraceSendExternalName( uint64_t thread )
                 char buf[256];
                 const auto sz = fread( buf, 1, 256, f );
                 if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
-                GetProfiler().SendString( thread, buf, QueueType::ExternalName );
+                name = CopyStringFast( buf );
                 fclose( f );
                 return;
             }
         }
     }
-    GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
+    name = CopyStringFast( "???", 3 );
 }
 
 }

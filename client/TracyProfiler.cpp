@@ -3047,6 +3047,77 @@ void Profiler::QueueExternalName( uint64_t ptr )
 }
 
 #ifdef TRACY_HAS_CALLSTACK
+void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
+{
+    switch( si.type )
+    {
+    case SymbolQueueItemType::CallstackFrame:
+    {
+        const auto frameData = DecodeCallstackPtr( si.ptr );
+        auto data = tracy_malloc_fast( sizeof( CallstackEntry ) * frameData.size );
+        memcpy( data, frameData.data, sizeof( CallstackEntry ) * frameData.size );
+        TracyLfqPrepare( QueueType::CallstackFrameSize );
+        MemWrite( &item->callstackFrameSizeFat.ptr, si.ptr );
+        MemWrite( &item->callstackFrameSizeFat.size, frameData.size );
+        MemWrite( &item->callstackFrameSizeFat.data, (uint64_t)data );
+        MemWrite( &item->callstackFrameSizeFat.imageName, (uint64_t)frameData.imageName );
+        TracyLfqCommit;
+        break;
+    }
+    case SymbolQueueItemType::SymbolQuery:
+    {
+#ifdef __ANDROID__
+        // On Android it's common for code to be in mappings that are only executable
+        // but not readable.
+        if( !EnsureReadable( si.ptr ) )
+        {
+            TracyLfqPrepare( QueueType::AckServerQueryNoop );
+            TracyLfqCommit;
+            break;
+        }
+#endif
+        const auto sym = DecodeSymbolAddress( si.ptr );
+        TracyLfqPrepare( QueueType::SymbolInformation );
+        MemWrite( &item->symbolInformationFat.line, sym.line );
+        MemWrite( &item->symbolInformationFat.symAddr, si.ptr );
+        MemWrite( &item->symbolInformationFat.fileString, (uint64_t)sym.file );
+        MemWrite( &item->symbolInformationFat.needFree, (uint8_t)sym.needFree );
+        TracyLfqCommit;
+        break;
+    }
+    case SymbolQueueItemType::CodeLocation:
+    {
+        const auto sym = DecodeCodeAddress( si.ptr );
+        const uint64_t offset = si.ptr - sym.symAddr;
+        TracyLfqPrepare( QueueType::CodeInformation );
+        MemWrite( &item->codeInformationFat.ptrOffset, offset );
+        MemWrite( &item->codeInformationFat.line, sym.line );
+        MemWrite( &item->codeInformationFat.symAddr, sym.symAddr );
+        MemWrite( &item->codeInformationFat.fileString, (uint64_t)sym.file );
+        MemWrite( &item->codeInformationFat.needFree, (uint8_t)sym.needFree );
+        TracyLfqCommit;
+        break;
+    }
+#ifdef TRACY_HAS_SYSTEM_TRACING
+    case SymbolQueueItemType::ExternalName:
+    {
+        const char* threadName;
+        const char* name;
+        SysTraceGetExternalName( si.ptr, threadName, name );
+        TracyLfqPrepare( QueueType::ExternalNameMetadata );
+        MemWrite( &item->externalNameMetadata.thread, si.ptr );
+        MemWrite( &item->externalNameMetadata.name, (uint64_t)name );
+        MemWrite( &item->externalNameMetadata.threadName, (uint64_t)threadName );
+        TracyLfqCommit;
+        break;
+    }
+#endif
+    default:
+        assert( false );
+        break;
+    }
+}
+
 void Profiler::SymbolWorker()
 {
     ThreadExitHandler threadExitHandler;
@@ -3061,73 +3132,7 @@ void Profiler::SymbolWorker()
         SymbolQueueItem si;
         if( m_symbolQueue.try_dequeue( si ) )
         {
-            switch( si.type )
-            {
-            case SymbolQueueItemType::CallstackFrame:
-            {
-                const auto frameData = DecodeCallstackPtr( si.ptr );
-                auto data = tracy_malloc_fast( sizeof( CallstackEntry ) * frameData.size );
-                memcpy( data, frameData.data, sizeof( CallstackEntry ) * frameData.size );
-                TracyLfqPrepare( QueueType::CallstackFrameSize );
-                MemWrite( &item->callstackFrameSizeFat.ptr, si.ptr );
-                MemWrite( &item->callstackFrameSizeFat.size, frameData.size );
-                MemWrite( &item->callstackFrameSizeFat.data, (uint64_t)data );
-                MemWrite( &item->callstackFrameSizeFat.imageName, (uint64_t)frameData.imageName );
-                TracyLfqCommit;
-                break;
-            }
-            case SymbolQueueItemType::SymbolQuery:
-            {
-#ifdef __ANDROID__
-                // On Android it's common for code to be in mappings that are only executable
-                // but not readable.
-                if( !EnsureReadable( si.ptr ) )
-                {
-                    TracyLfqPrepare( QueueType::AckServerQueryNoop );
-                    TracyLfqCommit;
-                    break;
-                }
-#endif
-                const auto sym = DecodeSymbolAddress( si.ptr );
-                TracyLfqPrepare( QueueType::SymbolInformation );
-                MemWrite( &item->symbolInformationFat.line, sym.line );
-                MemWrite( &item->symbolInformationFat.symAddr, si.ptr );
-                MemWrite( &item->symbolInformationFat.fileString, (uint64_t)sym.file );
-                MemWrite( &item->symbolInformationFat.needFree, (uint8_t)sym.needFree );
-                TracyLfqCommit;
-                break;
-            }
-            case SymbolQueueItemType::CodeLocation:
-            {
-                const auto sym = DecodeCodeAddress( si.ptr );
-                const uint64_t offset = si.ptr - sym.symAddr;
-                TracyLfqPrepare( QueueType::CodeInformation );
-                MemWrite( &item->codeInformationFat.ptrOffset, offset );
-                MemWrite( &item->codeInformationFat.line, sym.line );
-                MemWrite( &item->codeInformationFat.symAddr, sym.symAddr );
-                MemWrite( &item->codeInformationFat.fileString, (uint64_t)sym.file );
-                MemWrite( &item->codeInformationFat.needFree, (uint8_t)sym.needFree );
-                TracyLfqCommit;
-                break;
-            }
-#ifdef TRACY_HAS_SYSTEM_TRACING
-            case SymbolQueueItemType::ExternalName:
-            {
-                const char* threadName;
-                const char* name;
-                SysTraceGetExternalName( si.ptr, threadName, name );
-                TracyLfqPrepare( QueueType::ExternalNameMetadata );
-                MemWrite( &item->externalNameMetadata.thread, si.ptr );
-                MemWrite( &item->externalNameMetadata.name, (uint64_t)name );
-                MemWrite( &item->externalNameMetadata.threadName, (uint64_t)threadName );
-                TracyLfqCommit;
-                break;
-            }
-#endif
-            default:
-                assert( false );
-                break;
-            }
+            HandleSymbolQueueItem( si );
         }
         else
         {

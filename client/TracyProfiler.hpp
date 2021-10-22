@@ -680,6 +680,7 @@ private:
 #ifdef TRACY_HAS_CALLSTACK
     static void LaunchSymbolWorker( void* ptr ) { ((Profiler*)ptr)->SymbolWorker(); }
     void SymbolWorker();
+    void HandleSymbolQueueItem( const SymbolQueueItem& si );
 #endif
 
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );

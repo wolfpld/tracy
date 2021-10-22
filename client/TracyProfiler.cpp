@@ -3144,8 +3144,16 @@ void Profiler::SymbolWorker()
     for(;;)
     {
         const auto shouldExit = ShouldExit();
-
         SymbolQueueItem si;
+#ifdef TRACY_ON_DEMAND
+        if( !IsConnected() )
+        {
+            if( shouldExit ) return;
+            while( m_symbolQueue.pop() ) {}
+            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+            continue;
+        }
+#endif
         if( m_symbolQueue.try_dequeue( si ) )
         {
             HandleSymbolQueueItem( si );

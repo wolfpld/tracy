@@ -47,6 +47,8 @@
 #include <cstdint>
 #include <ctime>
 
+#include "../common/TracyAlloc.hpp"
+
 // Platform detection
 #if defined(__INTEL_COMPILER)
 #define AE_ICC
@@ -587,7 +589,7 @@ public:
 
 			auto rawBlock = block->rawThis;
 			block->~Block();
-			std::free(rawBlock);
+			tracy_free(rawBlock);
 			block = nextBlock;
 		} while (block != frontBlock_);
 	}
@@ -1095,7 +1097,7 @@ private:
 		// Allocate enough memory for the block itself, as well as all the elements it will contain
 		auto size = sizeof(Block) + std::alignment_of<Block>::value - 1;
 		size += sizeof(T) * capacity + std::alignment_of<T>::value - 1;
-		auto newBlockRaw = static_cast<char*>(std::malloc(size));
+		auto newBlockRaw = static_cast<char*>(tracy_malloc(size));
 		if (newBlockRaw == nullptr) {
 			return nullptr;
 		}

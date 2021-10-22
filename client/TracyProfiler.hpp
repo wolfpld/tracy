@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "tracy_concurrentqueue.h"
+#include "tracy_readerwriterqueue.h"
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
@@ -137,6 +138,20 @@ class Profiler
         uint16_t w;
         uint16_t h;
         bool flip;
+    };
+
+    enum class SymbolQueueItemType
+    {
+        CallstackFrame,
+        SymbolQuery,
+        CodeLocation,
+        ExternalName
+    };
+
+    struct SymbolQueueItem
+    {
+        SymbolQueueItemType type;
+        uint64_t ptr;
     };
 
 public:
@@ -812,6 +827,8 @@ private:
     FastVector<FrameImageQueueItem> m_fiQueue, m_fiDequeue;
     TracyMutex m_fiLock;
 #endif
+
+    ReaderWriterQueue<SymbolQueueItem> m_symbolQueue;
 
     std::atomic<uint64_t> m_frameCount;
     std::atomic<bool> m_isConnected;

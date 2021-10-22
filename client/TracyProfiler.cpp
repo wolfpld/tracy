@@ -1036,6 +1036,7 @@ static Thread* s_compressThread;
 #endif
 #ifdef TRACY_HAS_CALLSTACK
 static Thread* s_symbolThread;
+std::atomic<bool> s_symbolThreadGone { false };
 #endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static Thread* s_sysTraceThread = nullptr;
@@ -1424,6 +1425,7 @@ Profiler::~Profiler()
 #ifdef TRACY_HAS_CALLSTACK
     s_symbolThread->~Thread();
     tracy_free( s_symbolThread );
+    s_symbolThreadGone.store( true, std::memory_order_release );
 #endif
 
 #ifndef TRACY_NO_FRAME_IMAGE

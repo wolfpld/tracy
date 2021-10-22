@@ -55,6 +55,10 @@ enum class QueueType : uint8_t
     ThreadWakeup,
     GpuTime,
     GpuContextName,
+    CallstackFrameSize,
+    SymbolInformation,
+    CodeInformation,
+    ExternalNameMetadata,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -76,10 +80,7 @@ enum class QueueType : uint8_t
     MessageLiteralCallstack,
     MessageLiteralColorCallstack,
     GpuNewContext,
-    CallstackFrameSize,
     CallstackFrame,
-    SymbolInformation,
-    CodeInformation,
     SysTimeReport,
     TidToPid,
     HwSampleCpuCycle,
@@ -746,6 +747,10 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     sizeof( QueueHeader ) + sizeof( QueueGpuContextName ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
+    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
+    sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
+    sizeof( QueueHeader),                                   // ExternalNameMetadata - not for wire transfer
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
@@ -768,10 +773,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessageLiteral ),  // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessageColorLiteral ), // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
-    sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
-    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
-    sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cpu cycle

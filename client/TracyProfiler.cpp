@@ -1034,7 +1034,9 @@ static Thread* s_thread;
 #ifndef TRACY_NO_FRAME_IMAGE
 static Thread* s_compressThread;
 #endif
-
+#ifdef TRACY_HAS_CALLSTACK
+static Thread* s_symbolThread;
+#endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static Thread* s_sysTraceThread = nullptr;
 #endif
@@ -1354,6 +1356,11 @@ void Profiler::SpawnWorkerThreads()
     new(s_compressThread) Thread( LaunchCompressWorker, this );
 #endif
 
+#ifdef TRACY_HAS_CALLSTACK
+    s_symbolThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_symbolThread) Thread( LaunchSymbolWorker, this );
+#endif
+
 #if defined _WIN32
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
@@ -1412,6 +1419,11 @@ Profiler::~Profiler()
         s_sysTraceThread->~Thread();
         tracy_free( s_sysTraceThread );
     }
+#endif
+
+#ifdef TRACY_HAS_CALLSTACK
+    s_symbolThread->~Thread();
+    tracy_free( s_symbolThread );
 #endif
 
 #ifndef TRACY_NO_FRAME_IMAGE
@@ -2039,6 +2051,42 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.frameImageFat.image );
         tracy_free( (void*)ptr );
         break;
+#ifdef TRACY_HAS_CALLSTACK
+    case QueueType::CallstackFrameSize:
+    {
+        InitRpmalloc();
+        auto size = MemRead<uint8_t>( &item.callstackFrameSizeFat.size );
+        auto data = (const CallstackEntry*)MemRead<uint64_t>( &item.callstackFrameSizeFat.data );
+        for( uint8_t i=0; i<size; i++ )
+        {
+            const auto& frame = data[i];
+            tracy_free_fast( (void*)frame.name );
+            tracy_free_fast( (void*)frame.file );
+        }
+        tracy_free_fast( (void*)data );
+        break;
+    }
+    case QueueType::SymbolInformation:
+    {
+        uint8_t needFree = MemRead<uint8_t>( &item.symbolInformationFat.needFree );
+        if( needFree )
+        {
+            ptr = MemRead<uint64_t>( &item.symbolInformationFat.fileString );
+            tracy_free( (void*)ptr );
+        }
+        break;
+    }
+    case QueueType::CodeInformation:
+    {
+        uint8_t needFree = MemRead<uint8_t>( &item.codeInformationFat.needFree );
+        if( needFree )
+        {
+            ptr = MemRead<uint64_t>( &item.codeInformationFat.fileString );
+            tracy_free( (void*)ptr );
+        }
+        break;
+    }
+#endif
 #ifndef TRACY_ON_DEMAND
     case QueueType::LockName:
         ptr = MemRead<uint64_t>( &item.lockNameFat.name );
@@ -2053,6 +2101,14 @@ static void FreeAssociatedMemory( const QueueItem& item )
     case QueueType::MessageAppInfo:
     case QueueType::GpuContextName:
         // Don't free memory associated with deferred messages.
+        break;
+#endif
+#ifdef TRACY_HAS_SYSTEM_TRACING
+    case QueueType::ExternalNameMetadata:
+        ptr = MemRead<uint64_t>( &item.externalNameMetadata.name );
+        tracy_free( (void*)ptr );
+        ptr = MemRead<uint64_t>( &item.externalNameMetadata.threadName );
+        tracy_free_fast( (void*)ptr );
         break;
 #endif
     default:
@@ -2283,6 +2339,67 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         MemWrite( &item->gpuTime.gpuTime, dt );
                         break;
                     }
+#ifdef TRACY_HAS_CALLSTACK
+                    case QueueType::CallstackFrameSize:
+                    {
+                        auto data = (const CallstackEntry*)MemRead<uint64_t>( &item->callstackFrameSizeFat.data );
+                        auto datasz = MemRead<uint8_t>( &item->callstackFrameSizeFat.size );
+                        auto imageName = (const char*)MemRead<uint64_t>( &item->callstackFrameSizeFat.imageName );
+                        SendSingleString( imageName );
+                        AppendData( item++, QueueDataSize[idx] );
+
+                        for( uint8_t i=0; i<datasz; i++ )
+                        {
+                            const auto& frame = data[i];
+
+                            SendSingleString( frame.name );
+                            SendSecondString( frame.file );
+
+                            QueueItem item;
+                            MemWrite( &item.hdr.type, QueueType::CallstackFrame );
+                            MemWrite( &item.callstackFrame.line, frame.line );
+                            MemWrite( &item.callstackFrame.symAddr, frame.symAddr );
+                            MemWrite( &item.callstackFrame.symLen, frame.symLen );
+
+                            AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
+
+                            tracy_free_fast( (void*)frame.name );
+                            tracy_free_fast( (void*)frame.file );
+                        }
+                        tracy_free_fast( (void*)data );
+                        continue;
+                    }
+                    case QueueType::SymbolInformation:
+                    {
+                        auto fileString = (const char*)MemRead<uint64_t>( &item->symbolInformationFat.fileString );
+                        auto needFree = MemRead<uint8_t>( &item->symbolInformationFat.needFree );
+                        SendSingleString( fileString );
+                        if( needFree ) tracy_free_fast( (void*)fileString );
+                        break;
+                    }
+                    case QueueType::CodeInformation:
+                    {
+                        auto fileString = (const char*)MemRead<uint64_t>( &item->codeInformationFat.fileString );
+                        auto needFree = MemRead<uint8_t>( &item->codeInformationFat.needFree );
+                        SendSingleString( fileString );
+                        if( needFree ) tracy_free_fast( (void*)fileString );
+                        break;
+                    }
+#endif
+#ifdef TRACY_HAS_SYSTEM_TRACING
+                    case QueueType::ExternalNameMetadata:
+                    {
+                        auto thread = MemRead<uint64_t>( &item->externalNameMetadata.thread );
+                        auto name = (const char*)MemRead<uint64_t>( &item->externalNameMetadata.name );
+                        auto threadName = (const char*)MemRead<uint64_t>( &item->externalNameMetadata.threadName );
+                        SendString( thread, threadName, QueueType::ExternalThreadName );
+                        SendString( thread, name, QueueType::ExternalName );
+                        tracy_free( (void*)threadName );
+                        tracy_free_fast( (void*)name );
+                        ++item;
+                        continue;
+                    }
+#endif
                     default:
                         assert( false );
                         break;
@@ -2882,6 +2999,146 @@ void Profiler::SendCallstackAlloc( uint64_t _ptr )
     AppendDataUnsafe( ptr, len );
 }
 
+void Profiler::QueueCallstackFrame( uint64_t ptr )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CallstackFrame, ptr } );
+#else
+    AckServerQuery();
+#endif
+}
+
+void Profiler::QueueSymbolQuery( uint64_t symbol )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    // Special handling for kernel frames
+    if( symbol >> 63 != 0 )
+    {
+        SendSingleString( "<kernel>" );
+        QueueItem item;
+        MemWrite( &item.hdr.type, QueueType::SymbolInformation );
+        MemWrite( &item.symbolInformation.line, 0 );
+        MemWrite( &item.symbolInformation.symAddr, symbol );
+        AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
+    }
+    else
+    {
+        m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SymbolQuery, symbol } );
+    }
+#else
+    AckServerQuery();
+#endif
+}
+
+void Profiler::QueueCodeLocation( uint64_t ptr )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CodeLocation, ptr } );
+#else
+    AckServerQuery();
+#endif
+}
+
+void Profiler::QueueExternalName( uint64_t ptr )
+{
+#ifdef TRACY_HAS_SYSTEM_TRACING
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::ExternalName, ptr } );
+#endif
+}
+
+#ifdef TRACY_HAS_CALLSTACK
+void Profiler::SymbolWorker()
+{
+    ThreadExitHandler threadExitHandler;
+    SetThreadName( "Tracy Symbol Worker" );
+    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+    rpmalloc_thread_initialize();
+
+    for(;;)
+    {
+        const auto shouldExit = ShouldExit();
+
+        SymbolQueueItem si;
+        if( m_symbolQueue.try_dequeue( si ) )
+        {
+            switch( si.type )
+            {
+            case SymbolQueueItemType::CallstackFrame:
+            {
+                const auto frameData = DecodeCallstackPtr( si.ptr );
+                auto data = tracy_malloc_fast( sizeof( CallstackEntry ) * frameData.size );
+                memcpy( data, frameData.data, sizeof( CallstackEntry ) * frameData.size );
+                TracyLfqPrepare( QueueType::CallstackFrameSize );
+                MemWrite( &item->callstackFrameSizeFat.ptr, si.ptr );
+                MemWrite( &item->callstackFrameSizeFat.size, frameData.size );
+                MemWrite( &item->callstackFrameSizeFat.data, (uint64_t)data );
+                MemWrite( &item->callstackFrameSizeFat.imageName, (uint64_t)frameData.imageName );
+                TracyLfqCommit;
+                break;
+            }
+            case SymbolQueueItemType::SymbolQuery:
+            {
+#ifdef __ANDROID__
+                // On Android it's common for code to be in mappings that are only executable
+                // but not readable.
+                if( !EnsureReadable( si.ptr ) )
+                {
+                    TracyLfqPrepare( QueueType::AckServerQueryNoop );
+                    TracyLfqCommit;
+                    break;
+                }
+#endif
+                const auto sym = DecodeSymbolAddress( si.ptr );
+                TracyLfqPrepare( QueueType::SymbolInformation );
+                MemWrite( &item->symbolInformationFat.line, sym.line );
+                MemWrite( &item->symbolInformationFat.symAddr, si.ptr );
+                MemWrite( &item->symbolInformationFat.fileString, (uint64_t)sym.file );
+                MemWrite( &item->symbolInformationFat.needFree, (uint8_t)sym.needFree );
+                TracyLfqCommit;
+                break;
+            }
+            case SymbolQueueItemType::CodeLocation:
+            {
+                const auto sym = DecodeCodeAddress( si.ptr );
+                const uint64_t offset = si.ptr - sym.symAddr;
+                TracyLfqPrepare( QueueType::CodeInformation );
+                MemWrite( &item->codeInformationFat.ptrOffset, offset );
+                MemWrite( &item->codeInformationFat.line, sym.line );
+                MemWrite( &item->codeInformationFat.symAddr, sym.symAddr );
+                MemWrite( &item->codeInformationFat.fileString, (uint64_t)sym.file );
+                MemWrite( &item->codeInformationFat.needFree, (uint8_t)sym.needFree );
+                TracyLfqCommit;
+                break;
+            }
+#ifdef TRACY_HAS_SYSTEM_TRACING
+            case SymbolQueueItemType::ExternalName:
+            {
+                const char* threadName;
+                const char* name;
+                SysTraceGetExternalName( si.ptr, threadName, name );
+                TracyLfqPrepare( QueueType::ExternalNameMetadata );
+                MemWrite( &item->externalNameMetadata.thread, si.ptr );
+                MemWrite( &item->externalNameMetadata.name, (uint64_t)name );
+                MemWrite( &item->externalNameMetadata.threadName, (uint64_t)threadName );
+                TracyLfqCommit;
+                break;
+            }
+#endif
+            default:
+                assert( false );
+                break;
+            }
+        }
+        else
+        {
+            if( shouldExit ) return;
+            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        }
+    }
+}
+#endif
+
+#if 0
 void Profiler::SendCallstackFrame( uint64_t ptr )
 {
 #ifdef TRACY_HAS_CALLSTACK
@@ -2919,6 +3176,7 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
     }
 #endif
 }
+#endif
 
 
 bool Profiler::HandleServerQuery()
@@ -2957,7 +3215,7 @@ bool Profiler::HandleServerQuery()
     case ServerQueryTerminate:
         return false;
     case ServerQueryCallstackFrame:
-        SendCallstackFrame( ptr );
+        QueueCallstackFrame( ptr );
         break;
     case ServerQueryFrameName:
         SendString( ptr, (const char*)ptr, QueueType::FrameName );
@@ -2967,14 +3225,14 @@ bool Profiler::HandleServerQuery()
         return false;
 #ifdef TRACY_HAS_SYSTEM_TRACING
     case ServerQueryExternalName:
-        SysTraceSendExternalName( ptr );
+        QueueExternalName( ptr );
         break;
 #endif
     case ServerQueryParameter:
         HandleParameter( ptr );
         break;
     case ServerQuerySymbol:
-        HandleSymbolQuery( ptr );
+        QueueSymbolQuery( ptr );
         break;
 #ifndef TRACY_NO_CODE_TRANSFER
     case ServerQuerySymbolCode:
@@ -2982,7 +3240,7 @@ bool Profiler::HandleServerQuery()
         break;
 #endif
     case ServerQueryCodeLocation:
-        SendCodeLocation( ptr );
+        QueueCodeLocation( ptr );
         break;
     case ServerQuerySourceCode:
         HandleSourceCodeQuery();
@@ -3368,6 +3626,7 @@ void Profiler::HandleParameter( uint64_t payload )
     AckServerQuery();
 }
 
+#if 0
 void Profiler::HandleSymbolQuery( uint64_t symbol )
 {
 #ifdef TRACY_HAS_CALLSTACK
@@ -3405,6 +3664,7 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
     if( sym.needFree ) tracy_free( (void*)sym.file );
 #endif
 }
+#endif
 
 void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 {
@@ -3459,6 +3719,7 @@ void Profiler::HandleSourceCodeQuery()
     m_queryData = nullptr;
 }
 
+#if 0
 void Profiler::SendCodeLocation( uint64_t ptr )
 {
 #ifdef TRACY_HAS_CALLSTACK
@@ -3478,6 +3739,7 @@ void Profiler::SendCodeLocation( uint64_t ptr )
     if( sym.needFree ) tracy_free( (void*)sym.file );
 #endif
 }
+#endif
 
 #if defined _WIN32 && defined TRACY_TIMER_QPC
 int64_t Profiler::GetTimeQpc()

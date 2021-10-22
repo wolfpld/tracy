@@ -677,6 +677,11 @@ private:
     void CompressWorker();
 #endif
 
+#ifdef TRACY_HAS_CALLSTACK
+    static void LaunchSymbolWorker( void* ptr ) { ((Profiler*)ptr)->SymbolWorker(); }
+    void SymbolWorker();
+#endif
+
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );
     void ClearSerial();
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
@@ -716,13 +721,15 @@ private:
     void SendCallstackPayload( uint64_t ptr );
     void SendCallstackPayload64( uint64_t ptr );
     void SendCallstackAlloc( uint64_t ptr );
-    void SendCallstackFrame( uint64_t ptr );
-    void SendCodeLocation( uint64_t ptr );
+
+    void QueueCallstackFrame( uint64_t ptr );
+    void QueueSymbolQuery( uint64_t symbol );
+    void QueueCodeLocation( uint64_t ptr );
+    void QueueExternalName( uint64_t ptr );
 
     bool HandleServerQuery();
     void HandleDisconnect();
     void HandleParameter( uint64_t payload );
-    void HandleSymbolQuery( uint64_t symbol );
     void HandleSymbolCodeQuery( uint64_t symbol, uint32_t size );
     void HandleSourceCodeQuery();
 

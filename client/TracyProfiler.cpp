@@ -1862,6 +1862,11 @@ void Profiler::Worker()
     }
     // End of connections loop
 
+    // Wait for symbols thread to terminate. Symbol resolution will continue in this thread.
+#ifdef TRACY_HAS_CALLSTACK
+    while( s_symbolThreadGone.load() == false ) { YieldThread(); }
+#endif
+
     // Client is exiting. Send items remaining in queues.
     for(;;)
     {
@@ -1886,6 +1891,11 @@ void Profiler::Worker()
                 return;
             }
         }
+
+#ifdef TRACY_HAS_CALLSTACK
+        SymbolQueueItem si;
+        while( m_symbolQueue.try_dequeue( si ) ) HandleSymbolQueueItem( si );
+#endif
     }
 
     // Send client termination notice to the server
@@ -1909,6 +1919,10 @@ void Profiler::Worker()
                     return;
                 }
             }
+#ifdef TRACY_HAS_CALLSTACK
+            SymbolQueueItem si;
+            while( m_symbolQueue.try_dequeue( si ) ) HandleSymbolQueueItem( si );
+#endif
             while( Dequeue( token ) == DequeueStatus::DataDequeued ) {}
             while( DequeueSerial() == DequeueStatus::DataDequeued ) {}
             if( m_bufferOffset != m_bufferStart )

@@ -11,8 +11,6 @@ v0.x.x (xxxx-xx-xx)
 - Mingw is deprecated due to lack of interest.
 - Added TRACY_NO_CALLSTACK_INLINES macro to disable inline functions
   resolution in call stacks on Windows.
-- Limited client query response rate in order to improve apparent profiling
-  performance.
 - Improved function matching algorithm in compare traces view.
 - Added CMake integration.
 - Reworked rpmalloc initialization.
@@ -58,6 +56,10 @@ v0.x.x (xxxx-xx-xx)
   that was to be set.
 - A warning is now displayed when sampling data is out-of-order.
 - Average value for plots can be now viewed.
+- Moved symbol resolution to a separate thread. Profiling will no longer be
+  stuck when there is a large number of symbols to resolve. This not only
+  improves user experience, but also prevents buildup of data (and memory
+  consumption) on the client side.
 
 
 v0.7.8 (2021-05-19)

@@ -38,6 +38,7 @@
 
 #ifdef __ANDROID__
 #  include <sys/mman.h>
+#  include <sys/system_properties.h>
 #  include <stdio.h>
 #  include <stdint.h>
 #  include <algorithm>
@@ -617,6 +618,13 @@ static const char* GetHostInfo()
     }
 #else
     ptr += sprintf( ptr, "CPU: unknown\n" );
+#endif
+#ifdef __ANDROID__
+    char deviceModel[PROP_VALUE_MAX+1];
+    char deviceManufacturer[PROP_VALUE_MAX+1];
+    __system_property_get( "ro.product.model", deviceModel );
+    __system_property_get( "ro.product.manufacturer", deviceManufacturer );
+    ptr += sprintf( ptr, "Device: %s %s\n", deviceManufacturer, deviceModel );
 #endif
 
     ptr += sprintf( ptr, "CPU cores: %i\n", std::thread::hardware_concurrency() );

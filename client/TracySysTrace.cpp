@@ -1435,7 +1435,7 @@ static inline void AdvanceTo( const char*& line, const char* match )
         {
             auto bit = __builtin_ctz( b );
             auto test = ptr + bit;
-            if( memcmp( test, match, S ) == 0 )
+            if( memcmp( test + 1, match + 1, S - 1 ) == 0 )
             {
                 line = test;
                 return;
@@ -1459,7 +1459,7 @@ static inline void AdvanceTo( const char*& line, const char* match )
         {
             if( ( l & 0xFF ) == first )
             {
-                if( memcmp( ptr + i, match, S ) == 0 )
+                if( memcmp( ptr + i + 1, match + 1, S - 1 ) == 0 )
                 {
                     line = ptr + i;
                     return;

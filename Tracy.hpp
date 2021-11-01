@@ -97,6 +97,9 @@
 #define TracyParameterSetup(x,y,z,w)
 #define TracyIsConnected false
 
+#define TracyFiberEnter(x)
+#define TracyFiberLeave
+
 #else
 
 #include <string.h>
@@ -253,6 +256,11 @@
 #define TracyParameterRegister( cb ) tracy::Profiler::ParameterRegister( cb );
 #define TracyParameterSetup( idx, name, isBool, val ) tracy::Profiler::ParameterSetup( idx, name, isBool, val );
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
+
+#ifdef TRACY_FIBERS
+#  define TracyFiberEnter( fiber ) tracy::Profiler::EnterFiber( fiber );
+#  define TracyFiberLeave tracy::Profiler::LeaveFiber();
+#endif
 
 #endif
 

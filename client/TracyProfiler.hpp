@@ -584,6 +584,23 @@ public:
         TracyLfqCommit;
     }
 
+#ifdef TRACY_FIBERS
+    static tracy_force_inline void EnterFiber( const char* fiber )
+    {
+        TracyQueuePrepare( QueueType::FiberEnter );
+        MemWrite( &item->fiberEnter.time, GetTime() );
+        MemWrite( &item->fiberEnter.fiber, (uint64_t)fiber );
+        TracyQueueCommit( fiberEnter );
+    }
+
+    static tracy_force_inline void LeaveFiber()
+    {
+        TracyQueuePrepare( QueueType::FiberLeave );
+        MemWrite( &item->fiberLeave.time, GetTime() );
+        TracyQueueCommit( fiberLeave );
+    }
+#endif
+
     void SendCallstack( int depth, const char* skipBefore );
     static void CutCallstack( void* callstack, const char* skipBefore );
 

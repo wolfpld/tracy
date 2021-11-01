@@ -59,6 +59,8 @@ enum class QueueType : uint8_t
     SymbolInformation,
     CodeInformation,
     ExternalNameMetadata,
+    FiberEnter,
+    FiberLeave,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -234,6 +236,19 @@ struct QueueLockAnnounce
     int64_t time;
     uint64_t lckloc;    // ptr
     LockType type;
+};
+
+struct QueueFiberEnter
+{
+    int64_t time;
+    uint64_t fiber;     // ptr
+    uint32_t thread;
+};
+
+struct QueueFiberLeave
+{
+    int64_t time;
+    uint32_t thread;
 };
 
 struct QueueLockTerminate
@@ -692,6 +707,8 @@ struct QueueItem
         QueueParamSetup paramSetup;
         QueueCpuTopology cpuTopology;
         QueueExternalNameMetadata externalNameMetadata;
+        QueueFiberEnter fiberEnter;
+        QueueFiberLeave fiberLeave;
     };
 };
 #pragma pack()
@@ -750,7 +767,9 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
     sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
-    sizeof( QueueHeader),                                   // ExternalNameMetadata - not for wire transfer
+    sizeof( QueueHeader ),                                  // ExternalNameMetadata - not for wire transfer
+    sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
+    sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

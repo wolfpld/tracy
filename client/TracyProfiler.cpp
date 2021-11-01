@@ -2752,6 +2752,24 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
                     break;
                 }
+                case QueueType::FiberEnter:
+                {
+                    ThreadCtxCheckSerial( fiberEnter );
+                    int64_t t = MemRead<int64_t>( &item->fiberEnter.time );
+                    int64_t dt = t - refThread;
+                    refThread = t;
+                    MemWrite( &item->fiberEnter.time, dt );
+                    break;
+                }
+                case QueueType::FiberLeave:
+                {
+                    ThreadCtxCheckSerial( fiberLeave );
+                    int64_t t = MemRead<int64_t>( &item->fiberLeave.time );
+                    int64_t dt = t - refThread;
+                    refThread = t;
+                    MemWrite( &item->fiberLeave.time, dt );
+                    break;
+                }
 #endif
                 default:
                     assert( false );

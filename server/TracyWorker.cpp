@@ -3558,31 +3558,55 @@ void Worker::InsertMessageData( MessageData* msg )
 
 ThreadData* Worker::NoticeThreadReal( uint64_t thread )
 {
-    auto it = m_threadMap.find( thread );
-    if( it != m_threadMap.end() )
+    auto fit = m_data.threadToFiberMap.find( thread );
+    if( fit == m_data.threadToFiberMap.end() )
     {
-        m_data.threadDataLast.first = thread;
-        m_data.threadDataLast.second = it->second;
-        return it->second;
+        auto it = m_threadMap.find( thread );
+        if( it != m_threadMap.end() )
+        {
+            m_data.threadDataLast.first = thread;
+            m_data.threadDataLast.second = it->second;
+            return it->second;
+        }
+        else
+        {
+            return NewThread( thread, false );
+        }
     }
     else
     {
-        return NewThread( thread, false );
+        auto it = m_threadMap.find( fit->second );
+        assert( it != m_threadMap.end() );
+        m_data.threadDataLast.first = thread;
+        m_data.threadDataLast.second = it->second;
+        return it->second;
     }
 }
 
 ThreadData* Worker::RetrieveThreadReal( uint64_t thread )
 {
-    auto it = m_threadMap.find( thread );
-    if( it != m_threadMap.end() )
+    auto fit = m_data.threadToFiberMap.find( thread );
+    if( fit == m_data.threadToFiberMap.end() )
     {
-        m_data.threadDataLast.first = thread;
-        m_data.threadDataLast.second = it->second;
-        return it->second;
+        auto it = m_threadMap.find( thread );
+        if( it != m_threadMap.end() )
+        {
+            m_data.threadDataLast.first = thread;
+            m_data.threadDataLast.second = it->second;
+            return it->second;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
     else
     {
-        return nullptr;
+        auto it = m_threadMap.find( fit->second );
+        assert( it != m_threadMap.end() );
+        m_data.threadDataLast.first = thread;
+        m_data.threadDataLast.second = it->second;
+        return it->second;
     }
 }
 

@@ -3470,6 +3470,11 @@ void View::DrawZones()
                         ImGui::SameLine();
                         TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
                     }
+                    if( v->isFiber )
+                    {
+                        ImGui::SameLine();
+                        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                    }
 
                     const auto ctx = m_worker.GetContextSwitchData( v->id );
 
@@ -9195,6 +9200,11 @@ void View::DrawOptions()
                         CenterAtTime( crash.time );
                     }
                 }
+            }
+            if( t->isFiber )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
             }
             ImGui::SameLine();
             ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size() ) );

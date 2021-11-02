@@ -743,7 +743,7 @@ private:
     void InsertMessageData( MessageData* msg );
 
     ThreadData* NoticeThreadReal( uint64_t thread );
-    ThreadData* NewThread( uint64_t thread );
+    ThreadData* NewThread( uint64_t thread, bool fiber );
     tracy_force_inline ThreadData* NoticeThread( uint64_t thread )
     {
         if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;

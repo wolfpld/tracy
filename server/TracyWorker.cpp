@@ -3561,7 +3561,7 @@ ThreadData* Worker::NoticeThreadReal( uint64_t thread )
     }
     else
     {
-        return NewThread( thread );
+        return NewThread( thread, false );
     }
 }
 
@@ -3614,9 +3614,9 @@ const MemData& Worker::GetMemoryNamed( uint64_t name ) const
     return *it->second;
 }
 
-ThreadData* Worker::NewThread( uint64_t thread )
+ThreadData* Worker::NewThread( uint64_t thread, bool fiber )
 {
-    CheckThreadString( thread );
+    if( !fiber ) CheckThreadString( thread );
     auto td = m_slab.AllocInit<ThreadData>();
     td->id = thread;
     td->count = 0;
@@ -3626,6 +3626,7 @@ ThreadData* Worker::NewThread( uint64_t thread )
 #endif
     td->kernelSampleCnt = 0;
     td->pendingSample.time.Clear();
+    td->isFiber = fiber;
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     m_data.threadDataLast.first = thread;

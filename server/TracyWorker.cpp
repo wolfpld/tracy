@@ -4701,6 +4701,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MemNamePayload:
         ProcessMemNamePayload( ev.memName );
         break;
+    case QueueType::FiberEnter:
+        ProcessFiberEnter( ev.fiberEnter );
+        break;
+    case QueueType::FiberLeave:
+        ProcessFiberLeave( ev.fiberLeave );
+        break;
     default:
         assert( false );
         break;
@@ -6703,6 +6709,60 @@ void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )
 {
     assert( m_memNamePayload == 0 );
     m_memNamePayload = ev.name;
+}
+
+void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
+{
+    const auto refTime = m_refTimeThread + ev.time;
+    m_refTimeThread = refTime;
+    const auto t = TscTime( refTime - m_data.baseTime );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+
+    uint64_t tid;
+    auto it = m_data.fiberToThreadMap.find( ev.fiber );
+    if( it == m_data.fiberToThreadMap.end() )
+    {
+        tid = ( uint64_t(1) << 32 ) | m_data.fiberToThreadMap.size();
+        m_data.fiberToThreadMap.emplace( ev.fiber, tid );
+        NewThread( tid, true );
+    }
+    else
+    {
+        tid = it->second;
+    }
+
+    if( m_data.threadToFiberMap.find( ev.thread ) != m_data.threadToFiberMap.end() )
+    {
+        FiberEnterFailure();
+    }
+    else
+    {
+        m_data.threadToFiberMap.emplace( ev.thread, tid );
+    }
+
+    m_data.threadDataLast.first = 0;
+    m_threadCtxData = nullptr;
+}
+
+void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
+{
+    const auto refTime = m_refTimeThread + ev.time;
+    m_refTimeThread = refTime;
+    const auto t = TscTime( refTime - m_data.baseTime );
+    if( m_data.lastTime < t ) m_data.lastTime = t;
+
+    auto it = m_data.threadToFiberMap.find( ev.thread );
+    if( it == m_data.threadToFiberMap.end() )
+    {
+        FiberLeaveFailure();
+    }
+    else
+    {
+        m_data.threadToFiberMap.erase( it );
+    }
+
+    m_data.threadDataLast.first = 0;
+    m_threadCtxData = nullptr;
 }
 
 void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )

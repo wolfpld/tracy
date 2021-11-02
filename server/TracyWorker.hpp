@@ -364,6 +364,7 @@ private:
 
         unordered_flat_map<uint64_t, HwSampleData> hwSamples;
 
+        unordered_flat_map<uint64_t, uint64_t> fiberToThreadMap;
         unordered_flat_map<uint64_t, uint64_t> threadToFiberMap;
     };
 
@@ -707,6 +708,8 @@ private:
     tracy_force_inline void ProcessParamSetup( const QueueParamSetup& ev );
     tracy_force_inline void ProcessCpuTopology( const QueueCpuTopology& ev );
     tracy_force_inline void ProcessMemNamePayload( const QueueMemNamePayload& ev );
+    tracy_force_inline void ProcessFiberEnter( const QueueFiberEnter& ev );
+    tracy_force_inline void ProcessFiberLeave( const QueueFiberLeave& ev );
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

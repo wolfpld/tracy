@@ -4809,7 +4809,7 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
     auto td = m_threadCtxData;
-    assert( td );
+    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
 
     if( td->zoneIdStack.empty() )
     {

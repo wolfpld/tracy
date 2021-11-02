@@ -3304,7 +3304,10 @@ void View::DrawZones()
         {
             DrawLine( draw, dpos + ImVec2( 0, oldOffset + ostep - 1 ), dpos + ImVec2( w, oldOffset + ostep - 1 ), 0x33FFFFFF );
 
-            const auto labelColor = crash.thread == v->id ? ( showFull ? 0xFF2222FF : 0xFF111188 ) : ( showFull ? 0xFFFFFFFF : 0xFF888888 );
+            uint32_t labelColor;
+            if( crash.thread == v->id ) labelColor = showFull ? 0xFF2222FF : 0xFF111188;
+            else if( v->isFiber ) labelColor = showFull ? 0xFF88FF88 : 0xFF448844;
+            else labelColor = showFull ? 0xFFFFFFFF : 0xFF888888;
 
             if( showFull )
             {

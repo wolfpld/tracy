@@ -4958,6 +4958,16 @@ void Worker::FrameImageTwiceFailure()
     m_failure = Failure::FrameImageTwice;
 }
 
+void Worker::FiberEnterFailure()
+{
+    m_failure = Failure::FiberEnter;
+}
+
+void Worker::FiberLeaveFailure()
+{
+    m_failure = Failure::FiberLeave;
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = m_threadCtxData;
@@ -8006,6 +8016,8 @@ static const char* s_failureReasons[] = {
     "Discontinuous frame begin/end mismatch.",
     "Frame image offset is invalid.",
     "Multiple frame images were sent for a single frame.",
+    "Fiber execution started on a thread which is already executing a fiber.",
+    "Fiber execution stopped on a thread which is not executing a fiber.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

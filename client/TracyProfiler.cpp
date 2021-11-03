@@ -3194,47 +3194,6 @@ void Profiler::SymbolWorker()
 }
 #endif
 
-#if 0
-void Profiler::SendCallstackFrame( uint64_t ptr )
-{
-#ifdef TRACY_HAS_CALLSTACK
-    const auto frameData = DecodeCallstackPtr( ptr );
-
-    {
-        SendSingleString( frameData.imageName );
-
-        QueueItem item;
-        MemWrite( &item.hdr.type, QueueType::CallstackFrameSize );
-        MemWrite( &item.callstackFrameSize.ptr, ptr );
-        MemWrite( &item.callstackFrameSize.size, frameData.size );
-
-        AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrameSize] );
-    }
-
-    InitRpmalloc();
-    for( uint8_t i=0; i<frameData.size; i++ )
-    {
-        const auto& frame = frameData.data[i];
-
-        SendSingleString( frame.name );
-        SendSecondString( frame.file );
-
-        QueueItem item;
-        MemWrite( &item.hdr.type, QueueType::CallstackFrame );
-        MemWrite( &item.callstackFrame.line, frame.line );
-        MemWrite( &item.callstackFrame.symAddr, frame.symAddr );
-        MemWrite( &item.callstackFrame.symLen, frame.symLen );
-
-        AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
-
-        tracy_free_fast( (void*)frame.name );
-        tracy_free_fast( (void*)frame.file );
-    }
-#endif
-}
-#endif
-
-
 bool Profiler::HandleServerQuery()
 {
     ServerQueryPacket payload;
@@ -3687,46 +3646,6 @@ void Profiler::HandleParameter( uint64_t payload )
     AckServerQuery();
 }
 
-#if 0
-void Profiler::HandleSymbolQuery( uint64_t symbol )
-{
-#ifdef TRACY_HAS_CALLSTACK
-    // Special handling for kernel frames
-    if( symbol >> 63 != 0 )
-    {
-        SendSingleString( "<kernel>" );
-        QueueItem item;
-        MemWrite( &item.hdr.type, QueueType::SymbolInformation );
-        MemWrite( &item.symbolInformation.line, 0 );
-        MemWrite( &item.symbolInformation.symAddr, symbol );
-        AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
-        return;
-    }
-#  ifdef __ANDROID__
-    // On Android it's common for code to be in mappings that are only executable
-    // but not readable.
-    if( !EnsureReadable( symbol ) )
-    {
-        AckServerQuery();
-        return;
-    }
-#  endif
-    const auto sym = DecodeSymbolAddress( symbol );
-
-    SendSingleString( sym.file );
-
-    QueueItem item;
-    MemWrite( &item.hdr.type, QueueType::SymbolInformation );
-    MemWrite( &item.symbolInformation.line, sym.line );
-    MemWrite( &item.symbolInformation.symAddr, symbol );
-
-    AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
-
-    if( sym.needFree ) tracy_free( (void*)sym.file );
-#endif
-}
-#endif
-
 void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 {
 #ifdef __ANDROID__
@@ -3779,28 +3698,6 @@ void Profiler::HandleSourceCodeQuery()
     }
     m_queryData = nullptr;
 }
-
-#if 0
-void Profiler::SendCodeLocation( uint64_t ptr )
-{
-#ifdef TRACY_HAS_CALLSTACK
-    const auto sym = DecodeCodeAddress( ptr );
-
-    const uint64_t offset = ptr - sym.symAddr;
-    SendSingleString( sym.file );
-
-    QueueItem item;
-    MemWrite( &item.hdr.type, QueueType::CodeInformation );
-    MemWrite( &item.codeInformation.ptrOffset, offset );
-    MemWrite( &item.codeInformation.line, sym.line );
-    MemWrite( &item.codeInformation.symAddr, sym.symAddr );
-
-    AppendData( &item, QueueDataSize[(int)QueueType::CodeInformation] );
-
-    if( sym.needFree ) tracy_free( (void*)sym.file );
-#endif
-}
-#endif
 
 #if defined _WIN32 && defined TRACY_TIMER_QPC
 int64_t Profiler::GetTimeQpc()

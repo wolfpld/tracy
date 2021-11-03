@@ -787,6 +787,7 @@ private:
 
     bool CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
+    void CheckFiberName( uint64_t id, uint64_t tid );
     void CheckExternalName( uint64_t id );
 
     void AddSourceLocation( const QueueSourceLocation& srcloc );
@@ -794,6 +795,7 @@ private:
 
     void AddString( uint64_t ptr, const char* str, size_t sz );
     void AddThreadString( uint64_t id, const char* str, size_t sz );
+    void AddFiberName( uint64_t id, const char* str, size_t sz );
     void AddSingleString( const char* str, size_t sz );
     void AddSingleStringFailure( const char* str, size_t sz );
     void AddSecondString( const char* str, size_t sz );
@@ -924,6 +926,7 @@ private:
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;
+    uint32_t m_pendingFibers;
     uint32_t m_pendingExternalNames;
     uint32_t m_pendingSourceLocation;
     uint32_t m_pendingCallstackFrames;

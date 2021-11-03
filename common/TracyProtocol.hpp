@@ -54,7 +54,8 @@ enum ServerQuery : uint8_t
     ServerQueryCodeLocation,
     ServerQuerySourceCode,
     ServerQueryDataTransfer,
-    ServerQueryDataTransferPart
+    ServerQueryDataTransferPart,
+    ServerQueryFiberName
 };
 
 struct ServerQueryPacket

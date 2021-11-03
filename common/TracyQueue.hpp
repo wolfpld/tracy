@@ -111,6 +111,7 @@ enum class QueueType : uint8_t
     ExternalThreadName,
     SymbolCode,
     SourceCode,
+    FiberName,
     NUM_TYPES
 };
 
@@ -822,6 +823,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external thread name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // symbol code
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // source code
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // fiber name
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

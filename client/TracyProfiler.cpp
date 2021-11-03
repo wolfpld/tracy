@@ -2869,7 +2869,8 @@ void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType 
             type == QueueType::PlotName ||
             type == QueueType::FrameName ||
             type == QueueType::ExternalName ||
-            type == QueueType::ExternalThreadName );
+            type == QueueType::ExternalThreadName ||
+            type == QueueType::FiberName );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -3311,6 +3312,11 @@ bool Profiler::HandleServerQuery()
         m_queryDataPtr += 12;
         AckServerQuery();
         break;
+#ifdef TRACY_FIBERS
+    case ServerQueryFiberName:
+        SendString( ptr, (const char*)ptr, QueueType::FiberName );
+        break;
+#endif
     default:
         assert( false );
         break;

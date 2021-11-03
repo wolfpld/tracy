@@ -266,6 +266,7 @@ Worker::Worker( const char* addr, uint16_t port )
     , m_inconsistentSamples( false )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
+    , m_pendingFibers( 0 )
     , m_pendingExternalNames( 0 )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
@@ -3084,7 +3085,7 @@ void Worker::Exec()
                 m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr || !m_pendingSymbols.empty() ||
                 !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() ||
                 m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr ||
-                !m_sourceCodeQuery.empty() )
+                !m_sourceCodeQuery.empty() || m_pendingFibers != 0 )
             {
                 continue;
             }
@@ -3241,6 +3242,10 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 break;
             case QueueType::ThreadName:
                 AddThreadString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::FiberName:
+                AddFiberName( ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
             case QueueType::PlotName:
@@ -3404,6 +3409,10 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
                 break;
             case QueueType::ThreadName:
                 AddThreadString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::FiberName:
+                AddFiberName( ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
             case QueueType::PlotName:
@@ -3570,6 +3579,7 @@ ThreadData* Worker::NoticeThreadReal( uint64_t thread )
         }
         else
         {
+            CheckThreadString( thread );
             return NewThread( thread, false );
         }
     }
@@ -3646,7 +3656,6 @@ const MemData& Worker::GetMemoryNamed( uint64_t name ) const
 
 ThreadData* Worker::NewThread( uint64_t thread, bool fiber )
 {
-    if( !fiber ) CheckThreadString( thread );
     auto td = m_slab.AllocInit<ThreadData>();
     td->id = thread;
     td->count = 0;
@@ -3767,6 +3776,16 @@ void Worker::CheckThreadString( uint64_t id )
     m_pendingThreads++;
 
     if( m_sock.IsValid() ) Query( ServerQueryThreadString, id );
+}
+
+void Worker::CheckFiberName( uint64_t id, uint64_t tid )
+{
+    if( m_data.threadNames.find( tid ) != m_data.threadNames.end() ) return;
+
+    m_data.threadNames.emplace( tid, "???" );
+    m_pendingFibers++;
+
+    if( m_sock.IsValid() ) Query( ServerQueryFiberName, id );
 }
 
 void Worker::CheckExternalName( uint64_t id )
@@ -3893,6 +3912,18 @@ void Worker::AddThreadString( uint64_t id, const char* str, size_t sz )
     assert( it != m_data.threadNames.end() && strcmp( it->second, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
     it->second = sl.ptr;
+}
+
+void Worker::AddFiberName( uint64_t id, const char* str, size_t sz )
+{
+    assert( m_pendingFibers > 0 );
+    m_pendingFibers--;
+    auto it = m_data.fiberToThreadMap.find( id );
+    assert( it != m_data.fiberToThreadMap.end() );
+    auto tit = m_data.threadNames.find( it->second );
+    assert( tit != m_data.threadNames.end() && strcmp( tit->second, "???" ) == 0 );
+    const auto sl = StoreString( str, sz );
+    tit->second = sl.ptr;
 }
 
 void Worker::AddSingleString( const char* str, size_t sz )
@@ -6725,6 +6756,7 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
         tid = ( uint64_t(1) << 32 ) | m_data.fiberToThreadMap.size();
         m_data.fiberToThreadMap.emplace( ev.fiber, tid );
         NewThread( tid, true );
+        CheckFiberName( ev.fiber, tid );
     }
     else
     {

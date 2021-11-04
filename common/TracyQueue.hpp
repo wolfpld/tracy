@@ -152,7 +152,7 @@ struct QueueZoneValidation
     uint32_t id;
 };
 
-struct QueueZoneValidationThread
+struct QueueZoneValidationThread : public QueueZoneValidation
 {
     uint32_t thread;
 };

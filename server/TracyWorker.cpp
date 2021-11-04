@@ -5019,11 +5019,6 @@ void Worker::FrameImageTwiceFailure()
     m_failure = Failure::FrameImageTwice;
 }
 
-void Worker::FiberEnterFailure()
-{
-    m_failure = Failure::FiberEnter;
-}
-
 void Worker::FiberLeaveFailure()
 {
     m_failure = Failure::FiberLeave;
@@ -6763,9 +6758,10 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
         tid = it->second;
     }
 
-    if( m_data.threadToFiberMap.find( ev.thread ) != m_data.threadToFiberMap.end() )
+    auto tit = m_data.threadToFiberMap.find( ev.thread );
+    if( tit != m_data.threadToFiberMap.end() )
     {
-        FiberEnterFailure();
+        tit->second = tid;
     }
     else
     {
@@ -8132,7 +8128,6 @@ static const char* s_failureReasons[] = {
     "Discontinuous frame begin/end mismatch.",
     "Frame image offset is invalid.",
     "Multiple frame images were sent for a single frame.",
-    "Fiber execution started on a thread which is already executing a fiber.",
     "Fiber execution stopped on a thread which is not executing a fiber.",
 };
 

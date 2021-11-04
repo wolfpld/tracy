@@ -408,7 +408,6 @@ public:
         FrameEnd,
         FrameImageIndex,
         FrameImageTwice,
-        FiberEnter,
         FiberLeave,
 
         NUM_FAILURES
@@ -732,7 +731,6 @@ private:
     void FrameEndFailure();
     void FrameImageIndexFailure();
     void FrameImageTwiceFailure();
-    void FiberEnterFailure();
     void FiberLeaveFailure();
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );

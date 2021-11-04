@@ -461,6 +461,7 @@ public:
         SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         profiler.m_serialLock.unlock();
 #else
+        static_cast<void>(depth); // unused
         MemAlloc( ptr, size, secure );
 #endif
     }
@@ -482,6 +483,7 @@ public:
         SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         profiler.m_serialLock.unlock();
 #else
+        static_cast<void>(depth); // unused
         MemFree( ptr, secure );
 #endif
     }
@@ -532,6 +534,8 @@ public:
         SendMemAlloc( QueueType::MemAllocCallstackNamed, thread, ptr, size );
         profiler.m_serialLock.unlock();
 #else
+        static_cast<void>(depth); // unused
+        static_cast<void>(name); // unused
         MemAlloc( ptr, size, secure );
 #endif
     }
@@ -554,6 +558,8 @@ public:
         SendMemFree( QueueType::MemFreeCallstackNamed, thread, ptr );
         profiler.m_serialLock.unlock();
 #else
+        static_cast<void>(depth); // unused
+        static_cast<void>(name); // unused
         MemFree( ptr, secure );
 #endif
     }
@@ -565,6 +571,8 @@ public:
         TracyQueuePrepare( QueueType::Callstack );
         MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
         TracyQueueCommit( callstackFatThread );
+#else
+        static_cast<void>(depth); // unused
 #endif
     }
 
@@ -765,6 +773,8 @@ private:
         MemWrite( &item->hdr.type, QueueType::CallstackSerial );
         MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
         GetProfiler().m_serialQueue.commit_next();
+#else
+        static_cast<void>(ptr); // unused
 #endif
     }
 

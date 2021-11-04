@@ -31,10 +31,6 @@ public:
 
 #else
 
-#if !defined GL_TIMESTAMP && !defined GL_TIMESTAMP_EXT
-#  error "You must include OpenGL 3.2 headers before including TracyOpenGL.hpp"
-#endif
-
 #include <atomic>
 #include <assert.h>
 #include <stdlib.h>

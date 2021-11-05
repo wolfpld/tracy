@@ -226,10 +226,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        TracyLfqPrepare( QueueType::FrameMarkMsg );
+        auto item = QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
-        TracyLfqCommit;
+        QueueSerialFinish();
     }
 
     static tracy_force_inline void SendFrameMark( const char* name, QueueType type )

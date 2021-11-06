@@ -174,7 +174,7 @@ private:
     void DrawZoneFramesHeader();
     void DrawZoneFrames( const FrameData& frames );
     void DrawZones();
-    void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset );
+    void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber );
     void DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
 #ifndef TRACY_NO_STATISTICS
     int DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );

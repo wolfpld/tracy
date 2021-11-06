@@ -3287,7 +3287,7 @@ void View::DrawZones()
                 auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
                 if( ctxSwitch )
                 {
-                    DrawContextSwitches( ctxSwitch, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset );
+                    DrawContextSwitches( ctxSwitch, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset, v->isFiber );
                 }
             }
 
@@ -3875,7 +3875,7 @@ static const char* DecodeContextSwitchState( uint8_t state )
     }
 }
 
-void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset )
+void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber )
 {
     auto& vec = ctx->v;
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
@@ -3920,27 +3920,35 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 if( ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( pxw, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
-                    TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
-                    TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - pit->End() ) );
-                    if( migration )
+                    if( isFiber )
                     {
-                        TextFocused( "CPU:", RealToString( pit->Cpu() ) );
-                        ImGui::SameLine();
-                        TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu() ) );
+                        TextFocused( "Fiber is", "yielding" );
+                        TextFocused( "Yield time:", TimeToString( ev.Start() - pit->End() ) );
                     }
                     else
                     {
-                        TextFocused( "CPU:", RealToString( ev.Cpu() ) );
-                    }
-                    if( pit->Reason() != 100 )
-                    {
-                        TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
+                        TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
+                        TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - pit->End() ) );
+                        if( migration )
+                        {
+                            TextFocused( "CPU:", RealToString( pit->Cpu() ) );
+                            ImGui::SameLine();
+                            TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu() ) );
+                        }
+                        else
+                        {
+                            TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                        }
+                        if( pit->Reason() != 100 )
+                        {
+                            TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
+                            ImGui::SameLine();
+                            TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
+                        }
+                        TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
                         ImGui::SameLine();
-                        TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
+                        TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
                     }
-                    TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
                     ImGui::EndTooltip();
 
                     if( IsMouseClicked( 2 ) )
@@ -3950,6 +3958,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 }
                 else if( ev.WakeupVal() != ev.Start() && ImGui::IsMouseHoveringRect( wpos + ImVec2( pxw, offset ), wpos + ImVec2( px1, offset + ty ) ) )
                 {
+                    assert( !isFiber );
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "waking up" );
                     TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.WakeupVal() ) );
@@ -3994,9 +4003,21 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
                 {
                     ImGui::BeginTooltip();
-                    TextFocused( "Thread is", "running" );
-                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                    if( isFiber )
+                    {
+                        const auto tid = m_worker.DecompressThread( ev.Thread() );
+                        TextFocused( "Fiber is", "running" );
+                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    }
+                    else
+                    {
+                        TextFocused( "Thread is", "running" );
+                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                    }
                     ImGui::EndTooltip();
 
                     if( IsMouseClicked( 2 ) )
@@ -4011,7 +4032,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
                 {
                     ImGui::BeginTooltip();
-                    TextFocused( "Thread is", "changing activity multiple times" );
+                    TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
                     TextFocused( "Number of running regions:", RealToString( num ) );
                     TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();
@@ -4032,9 +4053,21 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
             {
                 ImGui::BeginTooltip();
-                TextFocused( "Thread is", "running" );
-                TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                if( isFiber )
+                {
+                    const auto tid = m_worker.DecompressThread( ev.Thread() );
+                    TextFocused( "Fiber is", "running" );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                }
+                else
+                {
+                    TextFocused( "Thread is", "running" );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                }
                 ImGui::EndTooltip();
 
                 if( IsMouseClicked( 2 ) )
@@ -7352,7 +7385,7 @@ void View::DrawZoneInfoWindow()
                     TextDisabledUnformatted( "(100%)" );
                     ImGui::Separator();
                     TextFocused( "Running state regions:", "1" );
-                    TextFocused( "CPU:", RealToString( it->Cpu() ) );
+                    if( !threadData->isFiber ) TextFocused( "CPU:", RealToString( it->Cpu() ) );
                 }
             }
             else if( cnt > 1 )
@@ -7385,53 +7418,56 @@ void View::DrawZoneInfoWindow()
                 }
                 TextFocused( "Running state regions:", RealToString( cnt ) );
 
-                int numCpus = 0;
-                for( int i=0; i<256; i++ ) numCpus += cpus[i];
-                if( numCpus == 1 )
+                if( !threadData->isFiber )
                 {
-                    TextFocused( "CPU:", RealToString( it->Cpu() ) );
-                }
-                else
-                {
-                    ImGui::TextDisabled( "CPUs (%i):", numCpus );
-                    for( int i=0;; i++ )
+                    int numCpus = 0;
+                    for( int i=0; i<256; i++ ) numCpus += cpus[i];
+                    if( numCpus == 1 )
                     {
-                        if( cpus[i] != 0 )
+                        TextFocused( "CPU:", RealToString( it->Cpu() ) );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "CPUs (%i):", numCpus );
+                        for( int i=0;; i++ )
                         {
-                            ImGui::SameLine();
-                            numCpus--;
-                            if( numCpus == 0 )
+                            if( cpus[i] != 0 )
                             {
-                                ImGui::Text( "%i", i );
-                                break;
-                            }
-                            else
-                            {
-                                int consecutive = 1;
-                                int remaining = numCpus;
-                                for(;;)
+                                ImGui::SameLine();
+                                numCpus--;
+                                if( numCpus == 0 )
                                 {
-                                    if( cpus[i+consecutive] == 0 ) break;
-                                    consecutive++;
-                                    if( --remaining == 0 ) break;
-                                }
-                                if( consecutive > 2 )
-                                {
-                                    if( remaining == 0 )
-                                    {
-                                        ImGui::Text( "%i \xE2\x80\x93 %i", i, i+consecutive-1 );
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        ImGui::Text( "%i \xE2\x80\x93 %i,", i, i+consecutive-1 );
-                                        i += consecutive - 1;
-                                        numCpus = remaining;
-                                    }
+                                    ImGui::Text( "%i", i );
+                                    break;
                                 }
                                 else
                                 {
-                                    ImGui::Text( "%i,", i );
+                                    int consecutive = 1;
+                                    int remaining = numCpus;
+                                    for(;;)
+                                    {
+                                        if( cpus[i+consecutive] == 0 ) break;
+                                        consecutive++;
+                                        if( --remaining == 0 ) break;
+                                    }
+                                    if( consecutive > 2 )
+                                    {
+                                        if( remaining == 0 )
+                                        {
+                                            ImGui::Text( "%i \xE2\x80\x93 %i", i, i+consecutive-1 );
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            ImGui::Text( "%i \xE2\x80\x93 %i,", i, i+consecutive-1 );
+                                            i += consecutive - 1;
+                                            numCpus = remaining;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        ImGui::Text( "%i,", i );
+                                    }
                                 }
                             }
                         }
@@ -7448,15 +7484,23 @@ void View::DrawZoneInfoWindow()
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
                     const auto wrsz = eit - bit;
 
-                    if( ImGui::BeginTable( "##waitregions", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
+                    const auto numColumns = threadData->isFiber ? 4 : 6;
+                    if( ImGui::BeginTable( "##waitregions", numColumns, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
                     {
                         ImGui::TableSetupScrollFreeze( 0, 1 );
                         ImGui::TableSetupColumn( "Begin" );
                         ImGui::TableSetupColumn( "End" );
                         ImGui::TableSetupColumn( "Time" );
-                        ImGui::TableSetupColumn( "Wakeup" );
-                        ImGui::TableSetupColumn( "CPU" );
-                        ImGui::TableSetupColumn( "State" );
+                        if( threadData->isFiber )
+                        {
+                            ImGui::TableSetupColumn( "Thread" );
+                        }
+                        else
+                        {
+                            ImGui::TableSetupColumn( "Wakeup" );
+                            ImGui::TableSetupColumn( "CPU" );
+                            ImGui::TableSetupColumn( "State" );
+                        }
                         ImGui::TableHeadersRow();
 
                         ImGuiListClipper clipper;
@@ -7466,12 +7510,8 @@ void View::DrawZoneInfoWindow()
                             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                             {
                                 const auto cend = bit[i].End();
-                                const auto state = bit[i].State();
-                                const auto reason = bit[i].Reason();
-                                const auto cpu0 = bit[i].Cpu();
                                 const auto cstart = bit[i+1].Start();
                                 const auto cwakeup = bit[i+1].WakeupVal();
-                                const auto cpu1 = bit[i+1].Cpu();
 
                                 ImGui::PushID( i );
                                 ImGui::TableNextRow();
@@ -7494,58 +7534,73 @@ void View::DrawZoneInfoWindow()
                                     ZoomToRange( cend, cwakeup );
                                 }
                                 ImGui::TableNextColumn();
-                                if( cstart != cwakeup )
+                                if( threadData->isFiber )
                                 {
-                                    if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
-                                    {
-                                        ZoomToRange( cwakeup, cstart );
-                                    }
+                                    const auto ftid = m_worker.DecompressThread( bit[i].Thread() );
+                                    ImGui::TextUnformatted( m_worker.GetThreadName( ftid ) );
+                                    ImGui::SameLine();
+                                    ImGui::TextDisabled( "(%s)", RealToString( ftid ) );
                                 }
                                 else
                                 {
-                                    ImGui::TextUnformatted( "-" );
-                                }
-                                ImGui::TableNextColumn();
-                                if( cpu0 == cpu1 )
-                                {
-                                    ImGui::TextUnformatted( RealToString( cpu0 ) );
-                                }
-                                else
-                                {
-                                    ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
-                                    const auto tt0 = m_worker.GetThreadTopology( cpu0 );
-                                    const auto tt1 = m_worker.GetThreadTopology( cpu1 );
-                                    if( tt0 && tt1 )
+                                    const auto cpu0 = bit[i].Cpu();
+                                    const auto reason = bit[i].Reason();
+                                    const auto state = bit[i].State();
+                                    const auto cpu1 = bit[i+1].Cpu();
+
+                                    if( cstart != cwakeup )
                                     {
-                                        if( tt0->package != tt1->package )
+                                        if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
                                         {
-                                            ImGui::SameLine();
-                                            TextDisabledUnformatted( "P" );
-                                        }
-                                        else if( tt0->core != tt1->core )
-                                        {
-                                            ImGui::SameLine();
-                                            TextDisabledUnformatted( "C" );
+                                            ZoomToRange( cwakeup, cstart );
                                         }
                                     }
-                                }
-                                ImGui::TableNextColumn();
-                                const char* desc;
-                                if( reason == ContextSwitchData::NoState )
-                                {
-                                    ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
-                                    desc = DecodeContextSwitchState( state );
-                                }
-                                else
-                                {
-                                    ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
-                                    desc = DecodeContextSwitchReason( reason );
-                                }
-                                if( *desc && ImGui::IsItemHovered() )
-                                {
-                                    ImGui::BeginTooltip();
-                                    ImGui::TextUnformatted( desc );
-                                    ImGui::EndTooltip();
+                                    else
+                                    {
+                                        ImGui::TextUnformatted( "-" );
+                                    }
+                                    ImGui::TableNextColumn();
+                                    if( cpu0 == cpu1 )
+                                    {
+                                        ImGui::TextUnformatted( RealToString( cpu0 ) );
+                                    }
+                                    else
+                                    {
+                                        ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
+                                        const auto tt0 = m_worker.GetThreadTopology( cpu0 );
+                                        const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                                        if( tt0 && tt1 )
+                                        {
+                                            if( tt0->package != tt1->package )
+                                            {
+                                                ImGui::SameLine();
+                                                TextDisabledUnformatted( "P" );
+                                            }
+                                            else if( tt0->core != tt1->core )
+                                            {
+                                                ImGui::SameLine();
+                                                TextDisabledUnformatted( "C" );
+                                            }
+                                        }
+                                    }
+                                    ImGui::TableNextColumn();
+                                    const char* desc;
+                                    if( reason == ContextSwitchData::NoState )
+                                    {
+                                        ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
+                                        desc = DecodeContextSwitchState( state );
+                                    }
+                                    else
+                                    {
+                                        ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
+                                        desc = DecodeContextSwitchReason( reason );
+                                    }
+                                    if( *desc && ImGui::IsItemHovered() )
+                                    {
+                                        ImGui::BeginTooltip();
+                                        ImGui::TextUnformatted( desc );
+                                        ImGui::EndTooltip();
+                                    }
                                 }
                                 ImGui::PopID();
                             }

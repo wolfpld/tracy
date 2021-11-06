@@ -484,6 +484,7 @@ enum { CrashEventSize = sizeof( CrashEvent ) };
 
 struct ContextSwitchData
 {
+    enum : int8_t { Fiber = 99 };
     enum : int8_t { NoState = 100 };
     enum : int8_t { Wakeup = -2 };
 
@@ -500,6 +501,8 @@ struct ContextSwitchData
     tracy_force_inline void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
     tracy_force_inline int64_t WakeupVal() const { return _wakeup.Val(); }
     tracy_force_inline void SetWakeup( int64_t wakeup ) { assert( wakeup < (int64_t)( 1ull << 47 ) ); _wakeup.SetVal( wakeup ); }
+    tracy_force_inline uint16_t Thread() const { return _thread; }
+    tracy_force_inline void SetThread( uint16_t thread ) { _thread = thread; }
 
     tracy_force_inline void SetStartCpu( int64_t start, uint8_t cpu ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_cpu = ( uint64_t( start ) << 16 ) | cpu; }
     tracy_force_inline void SetEndReasonState( int64_t end, int8_t reason, int8_t state ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_reason_state = ( uint64_t( end ) << 16 ) | ( uint64_t( reason ) << 8 ) | uint8_t( state ); }
@@ -507,6 +510,7 @@ struct ContextSwitchData
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
     Int48 _wakeup;
+    uint16_t _thread;
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };

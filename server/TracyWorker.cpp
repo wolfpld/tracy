@@ -1550,20 +1550,43 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             int64_t runningTime = 0;
             int64_t refTime = 0;
             auto ptr = data->v.data();
-            for( uint64_t j=0; j<csz; j++ )
+            if( fileVer >= FileVersion( 0, 7, 12 ) )
             {
-                int64_t deltaWakeup, deltaStart, diff;
-                uint8_t cpu;
-                int8_t reason, state;
-                f.Read6( deltaWakeup, deltaStart, diff, cpu, reason, state );
-                refTime += deltaWakeup;
-                ptr->SetWakeup( refTime );
-                refTime += deltaStart;
-                ptr->SetStartCpu( refTime, cpu );
-                if( diff > 0 ) runningTime += diff;
-                refTime += diff;
-                ptr->SetEndReasonState( refTime, reason, state );
-                ptr++;
+                for( uint64_t j=0; j<csz; j++ )
+                {
+                    int64_t deltaWakeup, deltaStart, diff, thread;
+                    uint8_t cpu;
+                    int8_t reason, state;
+                    f.Read7( deltaWakeup, deltaStart, diff, cpu, reason, state, thread );
+                    refTime += deltaWakeup;
+                    ptr->SetWakeup( refTime );
+                    refTime += deltaStart;
+                    ptr->SetStartCpu( refTime, cpu );
+                    if( diff > 0 ) runningTime += diff;
+                    refTime += diff;
+                    ptr->SetEndReasonState( refTime, reason, state );
+                    ptr->SetThread( CompressThread( thread ) );
+                    ptr++;
+                }
+            }
+            else
+            {
+                for( uint64_t j=0; j<csz; j++ )
+                {
+                    int64_t deltaWakeup, deltaStart, diff;
+                    uint8_t cpu;
+                    int8_t reason, state;
+                    f.Read6( deltaWakeup, deltaStart, diff, cpu, reason, state );
+                    refTime += deltaWakeup;
+                    ptr->SetWakeup( refTime );
+                    refTime += deltaStart;
+                    ptr->SetStartCpu( refTime, cpu );
+                    if( diff > 0 ) runningTime += diff;
+                    refTime += diff;
+                    ptr->SetEndReasonState( refTime, reason, state );
+                    ptr->SetThread( 0 );
+                    ptr++;
+                }
             }
             data->runningTime = runningTime;
             m_data.ctxSwitch.emplace( thread, data );
@@ -1579,7 +1602,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             f.Skip( sizeof( uint64_t ) );
             uint64_t csz;
             f.Read( csz );
-            f.Skip( csz * ( sizeof( int64_t ) * 3 + sizeof( int8_t ) * 3 ) );
+            if( fileVer >= FileVersion( 0, 7, 12 ) )
+            {
+                f.Skip( csz * ( sizeof( int64_t ) * 4 + sizeof( int8_t ) * 3 ) );
+            }
+            else
+            {
+                f.Skip( csz * ( sizeof( int64_t ) * 3 + sizeof( int8_t ) * 3 ) );
+            }
         }
     }
 
@@ -6640,6 +6670,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         item->SetCpu( ev.cpu );
         item->SetReason( -1 );
         item->SetState( -1 );
+        item->SetThread( 0 );
 
         auto& cx = cs.push_next();
         cx.SetStart( time );
@@ -6682,6 +6713,7 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
     item.SetCpu( 0 );
     item.SetReason( ContextSwitchData::Wakeup );
     item.SetState( -1 );
+    item.SetThread( 0 );
 }
 
 void Worker::ProcessTidToPid( const QueueTidToPid& ev )
@@ -6785,6 +6817,19 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
     auto td = NoticeThread( ev.thread );
     td->fiber = RetrieveThread( tid );
     assert( td->fiber );
+
+    auto cit = m_data.ctxSwitch.find( tid );
+    if( cit == m_data.ctxSwitch.end() )
+    {
+        auto ctx = m_slab.AllocInit<ContextSwitch>();
+        cit = m_data.ctxSwitch.emplace( tid, ctx ).first;
+    }
+    auto& data = cit->second->v;
+    auto& item = data.push_next();
+    item.SetStartCpu( t, 0 );
+    item.SetWakeup( t );
+    item.SetEndReasonState( -1, ContextSwitchData::Fiber, -1 );
+    item.SetThread( CompressThread( ev.thread ) );
 }
 
 void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
@@ -6798,11 +6843,20 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
     if( !td->fiber )
     {
         FiberLeaveFailure();
+        return;
     }
-    else
-    {
-        td->fiber = nullptr;
-    }
+
+    auto cit = m_data.ctxSwitch.find( td->fiber->id );
+    assert( cit != m_data.ctxSwitch.end() );
+    auto& data = cit->second->v;
+    assert( !data.empty() );
+    auto& item = data.back();
+    item.SetEnd( t );
+
+    const auto dt = t - item.Start();
+    cit->second->runningTime += dt;
+
+    td->fiber = nullptr;
 }
 
 void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
@@ -7935,9 +7989,11 @@ void Worker::Write( FileWrite& f, bool fiDict )
             uint8_t cpu = cs.Cpu();
             int8_t reason = cs.Reason();
             int8_t state = cs.State();
+            uint64_t thread = DecompressThread( cs.Thread() );
             f.Write( &cpu, sizeof( cpu ) );
             f.Write( &reason, sizeof( reason ) );
             f.Write( &state, sizeof( state ) );
+            f.Write( &thread, sizeof( thread ) );
         }
     }
 

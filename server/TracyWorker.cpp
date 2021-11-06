@@ -386,8 +386,12 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
                 extra.text = StringIdx( StoreString( v.text.c_str(), v.text.size() ).idx );
             }
 
-            m_threadCtxData = NoticeThread( v.tid );
-            NewZone( zone, v.tid );
+            if( m_threadCtx != v.tid )
+            {
+                m_threadCtx = v.tid;
+                m_threadCtxData = NoticeThread( v.tid );
+            }
+            NewZone( zone );
         }
         else
         {
@@ -3547,8 +3551,7 @@ void Worker::InsertMessageData( MessageData* msg )
         m_data.messages.insert( mit, msg );
     }
 
-    auto td = m_threadCtxData;
-    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
+    auto td = GetCurrentThreadData();
     auto vec = &td->messages;
     if( vec->empty() )
     {
@@ -3567,57 +3570,41 @@ void Worker::InsertMessageData( MessageData* msg )
 
 ThreadData* Worker::NoticeThreadReal( uint64_t thread )
 {
-    auto fit = m_data.threadToFiberMap.find( thread );
-    if( fit == m_data.threadToFiberMap.end() )
+    auto it = m_threadMap.find( thread );
+    if( it != m_threadMap.end() )
     {
-        auto it = m_threadMap.find( thread );
-        if( it != m_threadMap.end() )
-        {
-            m_data.threadDataLast.first = thread;
-            m_data.threadDataLast.second = it->second;
-            return it->second;
-        }
-        else
-        {
-            CheckThreadString( thread );
-            return NewThread( thread, false );
-        }
-    }
-    else
-    {
-        auto it = m_threadMap.find( fit->second );
-        assert( it != m_threadMap.end() );
         m_data.threadDataLast.first = thread;
         m_data.threadDataLast.second = it->second;
         return it->second;
+    }
+    else
+    {
+        CheckThreadString( thread );
+        return NewThread( thread, false );
     }
 }
 
 ThreadData* Worker::RetrieveThreadReal( uint64_t thread )
 {
-    auto fit = m_data.threadToFiberMap.find( thread );
-    if( fit == m_data.threadToFiberMap.end() )
+    auto it = m_threadMap.find( thread );
+    if( it != m_threadMap.end() )
     {
-        auto it = m_threadMap.find( thread );
-        if( it != m_threadMap.end() )
-        {
-            m_data.threadDataLast.first = thread;
-            m_data.threadDataLast.second = it->second;
-            return it->second;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-    else
-    {
-        auto it = m_threadMap.find( fit->second );
-        assert( it != m_threadMap.end() );
         m_data.threadDataLast.first = thread;
         m_data.threadDataLast.second = it->second;
         return it->second;
     }
+    else
+    {
+        return nullptr;
+    }
+}
+
+ThreadData* Worker::GetCurrentThreadData()
+{
+    auto td = m_threadCtxData;
+    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
+    if( td->fiber ) td = td->fiber;
+    return td;
 }
 
 #ifndef TRACY_NO_STATISTICS
@@ -3666,6 +3653,7 @@ ThreadData* Worker::NewThread( uint64_t thread, bool fiber )
     td->kernelSampleCnt = 0;
     td->pendingSample.time.Clear();
     td->isFiber = fiber;
+    td->fiber = nullptr;
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     m_data.threadDataLast.first = thread;
@@ -3673,12 +3661,11 @@ ThreadData* Worker::NewThread( uint64_t thread, bool fiber )
     return td;
 }
 
-void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
+void Worker::NewZone( ZoneEvent* zone )
 {
     m_data.zonesCnt++;
 
-    auto td = m_threadCtxData;
-    if( !td ) td = m_threadCtxData = NoticeThread( thread );
+    auto td = GetCurrentThreadData();
     td->count++;
     td->IncStackCount( zone->SrcLoc() );
     const auto ssz = td->stack.size();
@@ -4769,7 +4756,7 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 
     if( m_data.lastTime < start ) m_data.lastTime = start;
 
-    NewZone( zone, m_threadCtx );
+    NewZone( zone );
 }
 
 void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev )
@@ -4785,7 +4772,7 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 
     if( m_data.lastTime < start ) m_data.lastTime = start;
 
-    NewZone( zone, m_threadCtx );
+    NewZone( zone );
 
     m_pendingSourceLocationPayload = 0;
 }
@@ -4819,7 +4806,8 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
 {
     auto zone = AllocZoneEvent();
     ProcessZoneBeginImpl( zone, ev );
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto td = GetCurrentThreadData();
+    auto it = m_nextCallstack.find( td->id );
     assert( it != m_nextCallstack.end() );
     auto& extra = RequestZoneExtra( *zone );
     extra.callstack.SetVal( it->second );
@@ -4836,7 +4824,8 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev 
 {
     auto zone = AllocZoneEvent();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto td = GetCurrentThreadData();
+    auto it = m_nextCallstack.find( td->id );
     assert( it != m_nextCallstack.end() );
     auto& extra = RequestZoneExtra( *zone );
     extra.callstack.SetVal( it->second );
@@ -4845,18 +4834,16 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev 
 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
-    auto td = m_threadCtxData;
-    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
-
+    auto td = GetCurrentThreadData();
     if( td->zoneIdStack.empty() )
     {
-        ZoneDoubleEndFailure( m_threadCtx, td->timeline.empty() ? nullptr : td->timeline.back() );
+        ZoneDoubleEndFailure( td->id, td->timeline.empty() ? nullptr : td->timeline.back() );
         return;
     }
     auto zoneId = td->zoneIdStack.back_and_pop();
     if( zoneId != td->nextZoneId )
     {
-        ZoneStackFailure( m_threadCtx, td->stack.back() );
+        ZoneStackFailure( td->id, td->stack.back() );
         return;
     }
     td->nextZoneId = 0;
@@ -4908,7 +4895,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     {
         ZoneThreadData ztd;
         ztd.SetZone( zone );
-        ztd.SetThread( CompressThread( m_threadCtx ) );
+        ztd.SetThread( CompressThread( td->id ) );
         auto slz = GetSourceLocationZones( zone->SrcLoc() );
         slz->zones.push_back( ztd );
         if( slz->min > timeSpan ) slz->min = timeSpan;
@@ -5026,8 +5013,7 @@ void Worker::FiberLeaveFailure()
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
-    auto td = m_threadCtxData;
-    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
+    auto td = GetCurrentThreadData();
     td->nextZoneId = ev.id;
 }
 
@@ -5174,9 +5160,15 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 void Worker::ProcessZoneText()
 {
     auto td = RetrieveThread( m_threadCtx );
-    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    if( !td )
     {
-        ZoneTextFailure( m_threadCtx, m_pendingSingleString.ptr );
+        ZoneTextFailure( td->id, m_pendingSingleString.ptr );
+        return;
+    }
+    if( td->fiber ) td = td->fiber;
+    if( td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneTextFailure( td->id, m_pendingSingleString.ptr );
         return;
     }
 
@@ -5215,9 +5207,15 @@ void Worker::ProcessZoneText()
 void Worker::ProcessZoneName()
 {
     auto td = RetrieveThread( m_threadCtx );
-    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    if( !td )
     {
-        ZoneNameFailure( m_threadCtx );
+        ZoneNameFailure( td->id );
+        return;
+    }
+    if( td->fiber ) td = td->fiber;
+    if( td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneNameFailure( td->id );
         return;
     }
 
@@ -5231,9 +5229,15 @@ void Worker::ProcessZoneName()
 void Worker::ProcessZoneColor( const QueueZoneColor& ev )
 {
     auto td = RetrieveThread( m_threadCtx );
-    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    if( !td )
     {
-        ZoneColorFailure( m_threadCtx );
+        ZoneColorFailure( td->id );
+        return;
+    }
+    if( td->fiber ) td = td->fiber;
+    if( td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneColorFailure( td->id );
         return;
     }
 
@@ -5251,9 +5255,15 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
     const auto tsz = sprintf( tmp, "%" PRIu64, ev.value );
 
     auto td = RetrieveThread( m_threadCtx );
-    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    if( !td )
     {
-        ZoneValueFailure( m_threadCtx, ev.value );
+        ZoneValueFailure( td->id, ev.value );
+        return;
+    }
+    if( td->fiber ) td = td->fiber;
+    if( td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneValueFailure( td->id, ev.value );
         return;
     }
 
@@ -5509,11 +5519,12 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
 
 void Worker::ProcessMessage( const QueueMessage& ev )
 {
+    auto td = GetCurrentThreadData();
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time - m_data.baseTime );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
-    msg->thread = CompressThread( m_threadCtx );
+    msg->thread = CompressThread( td->id );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5522,12 +5533,13 @@ void Worker::ProcessMessage( const QueueMessage& ev )
 
 void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
 {
+    auto td = GetCurrentThreadData();
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time - m_data.baseTime );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    msg->thread = CompressThread( m_threadCtx );
+    msg->thread = CompressThread( td->id );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5536,11 +5548,12 @@ void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
 
 void Worker::ProcessMessageColor( const QueueMessageColor& ev )
 {
+    auto td = GetCurrentThreadData();
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time - m_data.baseTime );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
-    msg->thread = CompressThread( m_threadCtx );
+    msg->thread = CompressThread( td->id );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5549,12 +5562,13 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
 
 void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
 {
+    auto td = GetCurrentThreadData();
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time - m_data.baseTime );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    msg->thread = CompressThread( m_threadCtx );
+    msg->thread = CompressThread( td->id );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5563,41 +5577,41 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
 
 void Worker::ProcessMessageCallstack( const QueueMessage& ev )
 {
+    auto td = GetCurrentThreadData();
     ProcessMessage( ev );
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto it = m_nextCallstack.find( td->id );
     assert( it != m_nextCallstack.end() );
-    assert( m_threadCtxData );
-    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    td->messages.back()->callstack.SetVal( it->second );
     it->second = 0;
 }
 
 void Worker::ProcessMessageLiteralCallstack( const QueueMessageLiteral& ev )
 {
+    auto td = GetCurrentThreadData();
     ProcessMessageLiteral( ev );
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto it = m_nextCallstack.find( td->id );
     assert( it != m_nextCallstack.end() );
-    assert( m_threadCtxData );
-    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    td->messages.back()->callstack.SetVal( it->second );
     it->second = 0;
 }
 
 void Worker::ProcessMessageColorCallstack( const QueueMessageColor& ev )
 {
+    auto td = GetCurrentThreadData();
     ProcessMessageColor( ev );
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto it = m_nextCallstack.find( td->id );
     assert( it != m_nextCallstack.end() );
-    assert( m_threadCtxData );
-    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    td->messages.back()->callstack.SetVal( it->second );
     it->second = 0;
 }
 
 void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColorLiteral& ev )
 {
+    auto td = GetCurrentThreadData();
     ProcessMessageLiteralColor( ev );
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto it = m_nextCallstack.find( td->id );
     assert( it != m_nextCallstack.end() );
-    assert( m_threadCtxData );
-    m_threadCtxData->messages.back()->callstack.SetVal( it->second );
+    td->messages.back()->callstack.SetVal( it->second );
     it->second = 0;
 }
 
@@ -5744,7 +5758,8 @@ void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool ser
     }
     else
     {
-        auto it = m_nextCallstack.find( m_threadCtx );
+        auto td = GetCurrentThreadData();
+        auto it = m_nextCallstack.find( td->id );
         assert( it != m_nextCallstack.end() );
         zone->callstack.SetVal( it->second );
         it->second = 0;
@@ -5769,7 +5784,8 @@ void Worker::ProcessGpuZoneBeginAllocSrcLocCallstack( const QueueGpuZoneBeginLea
     }
     else
     {
-        auto it = m_nextCallstack.find( m_threadCtx );
+        auto td = GetCurrentThreadData();
+        auto it = m_nextCallstack.find( td->id );
         assert( it != m_nextCallstack.end() );
         zone->callstack.SetVal( it->second );
         it->second = 0;
@@ -6081,8 +6097,9 @@ void Worker::ProcessCallstackSerial()
 void Worker::ProcessCallstack()
 {
     assert( m_pendingCallstackId != 0 );
-    auto it = m_nextCallstack.find( m_threadCtx );
-    if( it == m_nextCallstack.end() ) it = m_nextCallstack.emplace( m_threadCtx, 0 ).first;
+    auto td = GetCurrentThreadData();
+    auto it = m_nextCallstack.find( td->id );
+    if( it == m_nextCallstack.end() ) it = m_nextCallstack.emplace( td->id, 0 ).first;
     assert( it->second == 0 );
     it->second = m_pendingCallstackId;
     m_pendingCallstackId = 0;
@@ -6497,11 +6514,12 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 {
     CheckString( ev.text );
 
-    m_data.crashEvent.thread = m_threadCtx;
+    auto td = GetCurrentThreadData();
+    m_data.crashEvent.thread = td->id;
     m_data.crashEvent.time = TscTime( ev.time - m_data.baseTime );
     m_data.crashEvent.message = ev.text;
 
-    auto it = m_nextCallstack.find( m_threadCtx );
+    auto it = m_nextCallstack.find( td->id );
     if( it != m_nextCallstack.end() && it->second != 0 )
     {
         m_data.crashEvent.callstack = it->second;
@@ -6758,18 +6776,9 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
         tid = it->second;
     }
 
-    auto tit = m_data.threadToFiberMap.find( ev.thread );
-    if( tit != m_data.threadToFiberMap.end() )
-    {
-        tit->second = tid;
-    }
-    else
-    {
-        m_data.threadToFiberMap.emplace( ev.thread, tid );
-    }
-
-    m_data.threadDataLast.first = 0;
-    m_threadCtxData = nullptr;
+    auto td = NoticeThread( ev.thread );
+    td->fiber = RetrieveThread( tid );
+    assert( td->fiber );
 }
 
 void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
@@ -6779,18 +6788,15 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
     const auto t = TscTime( refTime - m_data.baseTime );
     if( m_data.lastTime < t ) m_data.lastTime = t;
 
-    auto it = m_data.threadToFiberMap.find( ev.thread );
-    if( it == m_data.threadToFiberMap.end() )
+    auto td = RetrieveThread( ev.thread );
+    if( !td->fiber )
     {
         FiberLeaveFailure();
     }
     else
     {
-        m_data.threadToFiberMap.erase( it );
+        td->fiber = nullptr;
     }
-
-    m_data.threadDataLast.first = 0;
-    m_threadCtxData = nullptr;
 }
 
 void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )

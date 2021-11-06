@@ -365,7 +365,6 @@ private:
         unordered_flat_map<uint64_t, HwSampleData> hwSamples;
 
         unordered_flat_map<uint64_t, uint64_t> fiberToThreadMap;
-        unordered_flat_map<uint64_t, uint64_t> threadToFiberMap;
     };
 
     struct MbpsBlock
@@ -763,6 +762,8 @@ private:
         return RetrieveThreadReal( thread );
     }
 
+    tracy_force_inline ThreadData* GetCurrentThreadData();
+
 #ifndef TRACY_NO_STATISTICS
     SourceLocationZones* GetSourceLocationZones( uint16_t srcloc )
     {
@@ -779,7 +780,7 @@ private:
     uint64_t* GetSourceLocationZonesCntReal( uint16_t srcloc );
 #endif
 
-    tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
+    tracy_force_inline void NewZone( ZoneEvent* zone );
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time );
 

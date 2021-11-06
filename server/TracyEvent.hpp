@@ -667,6 +667,7 @@ struct ThreadData
     SampleData pendingSample;
     uint64_t kernelSampleCnt;
     uint8_t isFiber;
+    ThreadData* fiber;
 
     tracy_force_inline void IncStackCount( int16_t srcloc ) { IncSrcLocCount( stackCount, srcloc ); }
     tracy_force_inline bool DecStackCount( int16_t srcloc ) { return DecSrcLocCount( stackCount, srcloc ); }

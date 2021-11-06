@@ -479,6 +479,11 @@ bool View::Draw()
             TextFocused( "Thread:", s_instance->m_worker.GetThreadName( data.thread ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( data.thread ) );
+            if( s_instance->m_worker.IsThreadFiber( data.thread ) )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+            }
         }
         if( !data.message.empty() )
         {
@@ -1209,6 +1214,11 @@ bool View::DrawImpl()
         TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( crash.thread ) );
+        if( m_worker.IsThreadFiber( crash.thread ) )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+        }
         TextFocused( "Reason:", m_worker.GetString( crash.message ) );
         if( crash.callstack != 0 )
         {
@@ -3133,6 +3143,11 @@ void View::DrawZones()
                                 TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                                 ImGui::SameLine();
                                 ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                                if( m_worker.IsThreadFiber( tid ) )
+                                {
+                                    ImGui::SameLine();
+                                    TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                                }
                             }
                             else
                             {
@@ -4271,6 +4286,11 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    if( m_worker.IsThreadFiber( tid ) )
+                    {
+                        ImGui::SameLine();
+                        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                    }
                     ImGui::Separator();
                     TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
                     ImGui::EndTooltip();
@@ -4368,6 +4388,11 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    if( m_worker.IsThreadFiber( tid ) )
+                    {
+                        ImGui::SameLine();
+                        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                    }
                     ImGui::Separator();
                     TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
                     ImGui::EndTooltip();
@@ -6835,7 +6860,11 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-
+                    if( m_worker.IsThreadFiber( tid ) )
+                    {
+                        ImGui::SameLine();
+                        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                    }
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
                     m_memoryAllocHoverPool = name;
@@ -7267,6 +7296,11 @@ void View::DrawZoneInfoWindow()
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
     if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
     {
         TextFocused( "User text:", m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
@@ -8249,7 +8283,11 @@ void View::DrawGpuInfoWindow()
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
     ImGui::Separator();
     ImGui::BeginChild( "##gpuinfo" );
 
@@ -9377,6 +9415,11 @@ void View::DrawMessages()
                 ImGui::SameLine();
                 TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
             }
+            if( t->isFiber )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+            }
         }
         ImGui::TreePop();
     }
@@ -9547,7 +9590,14 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     ImGui::TableNextColumn();
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
-    ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        TextColoredUnformatted( 0xFF88FF88, m_worker.GetThreadName( tid ) );
+    }
+    else
+    {
+        ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
+    }
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
     ImGui::TableNextColumn();
@@ -11044,6 +11094,7 @@ void View::DrawFindZone()
         {
             for( auto& v : groups )
             {
+                bool isFiber = false;
                 const char* hdrString;
                 switch( groupBy )
                 {
@@ -11054,6 +11105,7 @@ void View::DrawFindZone()
                     SmallColorBox( threadColor );
                     ImGui::SameLine();
                     hdrString = m_worker.GetThreadName( tid );
+                    isFiber = m_worker.IsThreadFiber( tid );
                     break;
                     }
                 case FindZone::GroupBy::UserText:
@@ -11112,6 +11164,11 @@ void View::DrawFindZone()
                     m_findZone.ResetSelection();
                 }
                 ImGui::PopID();
+                if( isFiber )
+                {
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                }
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size() ), TimeToString( v->second.time ) );
                 if( expand )
@@ -14038,6 +14095,11 @@ void View::DrawMemoryAllocWindow()
     TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tidAlloc ) );
+    if( m_worker.IsThreadFiber( tidAlloc ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
     if( ev.CsAlloc() != 0 )
     {
         const auto cs = ev.CsAlloc();
@@ -14059,6 +14121,11 @@ void View::DrawMemoryAllocWindow()
         TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( tidFree ) );
+        if( m_worker.IsThreadFiber( tidFree ) )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+        }
         if( ev.csFree.Val() != 0 )
         {
             const auto cs = ev.csFree.Val();
@@ -15008,6 +15075,11 @@ void View::DrawInfo()
         TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( crash.thread ) );
+        if( m_worker.IsThreadFiber( crash.thread ) )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+        }
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
@@ -17534,6 +17606,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
@@ -17601,6 +17678,11 @@ void View::ZoneTooltip( const GpuEvent& ev )
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );

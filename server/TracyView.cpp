@@ -5956,6 +5956,10 @@ const char* View::GetThreadContextData( uint64_t thread, bool& _local, bool& _un
 
 int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
+    auto cpuData = m_worker.GetCpuData();
+    const auto cpuCnt = m_worker.GetCpuDataCpuCount();
+    if( cpuCnt == 0 ) return offset;
+
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
@@ -5997,10 +6001,6 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
     if( showFull )
     {
-        auto cpuData = m_worker.GetCpuData();
-        const auto cpuCnt = m_worker.GetCpuDataCpuCount();
-        assert( cpuCnt != 0 );
-
 #ifdef TRACY_NO_STATISTICS
         if( m_vd.drawCpuUsageGraph )
 #else

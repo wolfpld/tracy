@@ -6815,6 +6815,15 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
     }
 
     auto td = NoticeThread( ev.thread );
+    if( td->fiber )
+    {
+        auto cit = m_data.ctxSwitch.find( td->fiber->id );
+        assert( cit != m_data.ctxSwitch.end() );
+        auto& data = cit->second->v;
+        assert( !data.empty() );
+        auto& item = data.back();
+        item.SetEnd( t );
+    }
     td->fiber = RetrieveThread( tid );
     assert( td->fiber );
 

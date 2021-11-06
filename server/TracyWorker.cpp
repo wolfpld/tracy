@@ -1901,7 +1901,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         m_threadBackground = std::thread( [this, eventMask] {
             std::vector<std::thread> jobs;
 
-            if( !m_data.ctxSwitch.empty() )
+            if( !m_data.ctxSwitch.empty() && m_data.cpuDataCount != 0 )
             {
                 jobs.emplace_back( std::thread( [this] { ReconstructContextSwitchUsage(); } ) );
             }

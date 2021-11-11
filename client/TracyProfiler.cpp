@@ -319,7 +319,7 @@ static void InitFailure( const char* msg )
 #else
     fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
 #endif
-    exit( 0 );
+    exit( 1 );
 }
 
 static int64_t SetupHwTimer()

@@ -58,6 +58,7 @@ namespace tracy
 
 static const GUID PerfInfoGuid = { 0xce1dbfb4, 0x137e, 0x4da6, { 0x87, 0xb0, 0x3f, 0x59, 0xaa, 0x10, 0x2c, 0xbc } };
 static const GUID DxgKrnlGuid  = { 0x802ec45a, 0x1e99, 0x4b83, { 0x99, 0x20, 0x87, 0xc9, 0x82, 0x77, 0xba, 0x9d } };
+static const GUID ThreadV2Guid = { 0x3d6fa8d1, 0xfe05, 0x11d0, { 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c } };
 
 
 static TRACEHANDLE s_traceHandle;
@@ -439,9 +440,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     if( isOs64Bit )
     {
-        CLASSIC_EVENT_ID stackId;
-        stackId.EventGuid = PerfInfoGuid;
-        stackId.Type = 46;
+        CLASSIC_EVENT_ID stackId[2] = {};
+        stackId[0].EventGuid = PerfInfoGuid;
+        stackId[0].Type = 46;
+        stackId[1].EventGuid = ThreadV2Guid;
+        stackId[1].Type = 36;
         const auto stackStatus = TraceSetInformation( s_traceHandle, TraceStackTracingInfo, &stackId, sizeof( stackId ) );
         if( stackStatus != ERROR_SUCCESS )
         {

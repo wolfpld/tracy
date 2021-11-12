@@ -7,7 +7,7 @@ if [ ! -f vswhere.exe ]; then
     wget https://github.com/microsoft/vswhere/releases/download/2.8.4/vswhere.exe
 fi
 
-MSVC=`./vswhere.exe -property installationPath -version '[16.0,16.999]' | head -n 1`
+MSVC=`./vswhere.exe -property installationPath -version '[17.0,17.999]' | head -n 1`
 MSVC=`wslpath "$MSVC" | tr -d '\r'`
 MSBUILD=$MSVC/MSBuild/Current/Bin/MSBuild.exe
 

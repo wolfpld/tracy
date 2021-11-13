@@ -17853,6 +17853,14 @@ void View::CallstackTooltipContents( uint32_t idx )
                 {
                     ImGui::TextUnformatted( txt );
                 }
+                if( frameData->imageName.Active() )
+                {
+                    ImGui::SameLine();
+                    if( m_smallFont ) ImGui::PushFont( m_smallFont );
+                    ImGui::AlignTextToFramePadding();
+                    TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                    if( m_smallFont ) ImGui::PopFont();
+                }
             }
         }
     }

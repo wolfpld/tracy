@@ -115,6 +115,7 @@ public:
 
     bool m_showRanges = false;
     Range m_statRange;
+    Range m_waitStackRange;
 
 private:
     enum class Namespace : uint8_t

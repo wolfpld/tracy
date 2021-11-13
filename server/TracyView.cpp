@@ -1123,6 +1123,12 @@ bool View::DrawImpl()
             m_statRange.min = s;
             m_statRange.max = e;
         }
+        if( ImGui::Selectable( ICON_FA_HOURGLASS_HALF " Limit wait stack range" ) )
+        {
+            m_waitStackRange.active = true;
+            m_waitStackRange.min = s;
+            m_waitStackRange.max = e;
+        }
         if( ImGui::Selectable( ICON_FA_STICKY_NOTE " Add annotation" ) )
         {
             auto ann = std::make_unique<Annotation>();
@@ -2850,6 +2856,7 @@ void View::DrawZones()
     m_zoneHover2.Decay( nullptr );
     m_findZone.range.StartFrame();
     m_statRange.StartFrame();
+    m_waitStackRange.StartFrame();
     m_yDelta = 0;
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
@@ -2888,6 +2895,7 @@ void View::DrawZones()
     {
         HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_statRange, timespan, ImGui::GetCursorScreenPos(), w );
+        HandleRange( m_waitStackRange, timespan, ImGui::GetCursorScreenPos(), w );
         for( auto& v : m_annotations )
         {
             v->range.StartFrame();
@@ -3711,6 +3719,15 @@ void View::DrawZones()
         DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x228888EE, true, false );
         DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_statRange.hiMin ? 0x998888EE : 0x338888EE, m_statRange.hiMin ? 2 : 1 );
         DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_statRange.hiMax ? 0x998888EE : 0x338888EE, m_statRange.hiMax ? 2 : 1 );
+    }
+
+    if( m_waitStackRange.active && ( m_showWaitStacks || m_showRanges ) )
+    {
+        const auto px0 = ( m_waitStackRange.min - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_waitStackRange.max - m_vd.zvStart ) * pxns );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x22EEB588, true, false );
+        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMin ? 0x99EEB588 : 0x33EEB588, m_waitStackRange.hiMin ? 2 : 1 );
+        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMax ? 0x99EEB588 : 0x33EEB588, m_waitStackRange.hiMax ? 2 : 1 );
     }
 
     if( m_setRangePopup.active || m_setRangePopupOpen )
@@ -16251,10 +16268,12 @@ void View::DrawSampleParents()
 
 void View::DrawRanges()
 {
-    ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Time range limits", &m_showRanges );
+    ImGui::Begin( "Time range limits", &m_showRanges, ImGuiWindowFlags_AlwaysAutoResize );
     DrawRangeEntry( m_findZone.range, ICON_FA_SEARCH " Find zone", 0x4488DD88, "RangeFindZoneCopyFrom", 0 );
+    ImGui::Separator();
     DrawRangeEntry( m_statRange, ICON_FA_SORT_AMOUNT_UP " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
+    ImGui::Separator();
+    DrawRangeEntry( m_waitStackRange, ICON_FA_HOURGLASS_HALF " Wait stacks", 0x44EEB588, "RangeWaitStackCopyFrom", 2 );
     ImGui::End();
 }
 
@@ -16314,6 +16333,11 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
             ImGui::SameLine();
             if( SmallButtonDisablable( ICON_FA_SORT_AMOUNT_UP " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_statRange;
         }
+        if( id != 2 )
+        {
+            ImGui::SameLine();
+            if( SmallButtonDisablable( ICON_FA_HOURGLASS_HALF " Copy from wait stacks", m_waitStackRange.min == 0 && m_waitStackRange.max == 0 ) ) range = m_waitStackRange;
+        }
     }
 }
 
@@ -16330,19 +16354,27 @@ void View::DrawWaitStacks()
     {
         if( WaitStackThread( t->id ) )
         {
-            totalCount += t->ctxSwitchSamples.size();
-            for( auto& sd : t->ctxSwitchSamples )
+            auto it = t->ctxSwitchSamples.begin();
+            auto end = t->ctxSwitchSamples.end();
+            if( m_waitStackRange.active )
             {
-                auto cs = sd.callstack.Val();
-                auto it = stacks.find( cs );
-                if( it == stacks.end() )
+                it = std::lower_bound( it, end, m_waitStackRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                end = std::lower_bound( it, end, m_waitStackRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            }
+            totalCount += std::distance( it, end );
+            while( it != end )
+            {
+                auto cs = it->callstack.Val();
+                auto cit = stacks.find( cs );
+                if( cit == stacks.end() )
                 {
                     stacks.emplace( cs, 1 );
                 }
                 else
                 {
-                    it->second++;
+                    cit->second++;
                 }
+                ++it;
             }
         }
     }
@@ -16352,6 +16384,24 @@ void View::DrawWaitStacks()
     ImGui::Spacing();
     ImGui::SameLine();
     TextFocused( "Selected:", RealToString( totalCount ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( SmallCheckbox( "Limit range", &m_waitStackRange.active ) )
+    {
+        if( m_waitStackRange.active && m_waitStackRange.min == 0 && m_waitStackRange.max == 0 )
+        {
+            m_waitStackRange.min = m_vd.zvStart;
+            m_waitStackRange.max = m_vd.zvEnd;
+        }
+    }
+    if( m_waitStackRange.active )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        SmallToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+    }
 
     bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );

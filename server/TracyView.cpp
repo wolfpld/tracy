@@ -3287,7 +3287,7 @@ void View::DrawZones()
                 auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
                 if( ctxSwitch )
                 {
-                    DrawContextSwitches( ctxSwitch, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset, v->isFiber );
+                    DrawContextSwitches( ctxSwitch, v->samples, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset, v->isFiber );
                 }
             }
 
@@ -3875,7 +3875,7 @@ static const char* DecodeContextSwitchState( uint8_t state )
     }
 }
 
-void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber )
+void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleData>& sampleData, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber )
 {
     auto& vec = ctx->v;
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
@@ -3917,6 +3917,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
 
             if( hover )
             {
+                bool tooltip = false;
                 if( ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( pxw, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
@@ -3949,7 +3950,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                         ImGui::SameLine();
                         TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
                     }
-                    ImGui::EndTooltip();
+                    tooltip = true;
 
                     if( IsMouseClicked( 2 ) )
                     {
@@ -3966,6 +3967,20 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     if( IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( pit->End(), ev.WakeupVal() );
+                    }
+                    tooltip = true;
+                }
+                if( tooltip )
+                {
+                    if( !sampleData.empty() )
+                    {
+                        auto sdit = std::lower_bound( sampleData.begin(), sampleData.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                        if( sdit != sampleData.end() && sdit->time.Val() == ev.Start() )
+                        {
+                            ImGui::Separator();
+                            TextDisabledUnformatted( "Wait stack:" );
+                            CallstackTooltipContents( sdit->callstack.Val() );
+                        }
                     }
                     ImGui::EndTooltip();
                 }

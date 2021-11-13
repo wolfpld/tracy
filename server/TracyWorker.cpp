@@ -6162,70 +6162,106 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     }
 
 #ifndef TRACY_NO_STATISTICS
+    bool postpone = false;
+    auto ctx = GetContextSwitchData( td.id );
+    if( !ctx )
     {
-        uint16_t tid = CompressThread( td.id );
-
-        auto frame = GetCallstackFrame( ip );
-        if( frame )
+        postpone = true;
+    }
+    else
+    {
+        auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), sd.time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+        if( it == ctx->v.end() )
         {
-            const auto symAddr = frame->data[0].symAddr;
-            auto it = m_data.instructionPointersMap.find( symAddr );
-            if( it == m_data.instructionPointersMap.end() )
-            {
-                m_data.instructionPointersMap.emplace( symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { ip, 1 } } );
-            }
-            else
-            {
-                auto fit = it->second.find( ip );
-                if( fit == it->second.end() )
-                {
-                    it->second.emplace( ip, 1 );
-                }
-                else
-                {
-                    fit->second++;
-                }
-            }
-            auto sit = m_data.symbolSamples.find( symAddr );
-            if( sit == m_data.symbolSamples.end() )
-            {
-                m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { sd.time, tid, ip } ) );
-            }
-            else
-            {
-                if( sit->second.back().time.Val() <= sd.time.Val() )
-                {
-                    sit->second.push_back_non_empty( SampleDataRange { sd.time, tid, ip } );
-                }
-                else
-                {
-                    auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), sd.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.time.Val(); } );
-                    sit->second.insert( iit, SampleDataRange { sd.time, tid, ip } );
-                }
-            }
+            postpone = true;
+        }
+        else if( sd.time.Val() == it->Start() )
+        {
+            td.ctxSwitchSamples.push_back( sd );
         }
         else
         {
-            auto it = m_data.pendingInstructionPointers.find( ip );
-            if( it == m_data.pendingInstructionPointers.end() )
+            ProcessCallstackSampleImplStats( sd, td );
+        }
+    }
+    if( postpone )
+    {
+        td.postponedSamples.push_back( sd );
+    }
+#endif
+}
+
+#ifndef TRACY_NO_STATISTICS
+void Worker::ProcessCallstackSampleImplStats( const SampleData& sd, ThreadData& td )
+{
+    const auto t = sd.time.Val();
+    const auto callstack = sd.callstack.Val();
+    const auto& cs = GetCallstack( callstack );
+    const auto& ip = cs[0];
+
+    uint16_t tid = CompressThread( td.id );
+
+    auto frame = GetCallstackFrame( ip );
+    if( frame )
+    {
+        const auto symAddr = frame->data[0].symAddr;
+        auto it = m_data.instructionPointersMap.find( symAddr );
+        if( it == m_data.instructionPointersMap.end() )
+        {
+            m_data.instructionPointersMap.emplace( symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { ip, 1 } } );
+        }
+        else
+        {
+            auto fit = it->second.find( ip );
+            if( fit == it->second.end() )
             {
-                m_data.pendingInstructionPointers.emplace( ip, 1 );
+                it->second.emplace( ip, 1 );
             }
             else
             {
-                it->second++;
+                fit->second++;
             }
-            auto sit = m_data.pendingSymbolSamples.find( ip );
-            if( sit == m_data.pendingSymbolSamples.end() )
-            {
-                m_data.pendingSymbolSamples.emplace( ip, Vector<SampleDataRange>( SampleDataRange { sd.time, tid,  ip } ) );
-            }
-            else
+        }
+        auto sit = m_data.symbolSamples.find( symAddr );
+        if( sit == m_data.symbolSamples.end() )
+        {
+            m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { sd.time, tid, ip } ) );
+        }
+        else
+        {
+            if( sit->second.back().time.Val() <= sd.time.Val() )
             {
                 sit->second.push_back_non_empty( SampleDataRange { sd.time, tid, ip } );
             }
+            else
+            {
+                auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), sd.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.time.Val(); } );
+                sit->second.insert( iit, SampleDataRange { sd.time, tid, ip } );
+            }
         }
     }
+    else
+    {
+        auto it = m_data.pendingInstructionPointers.find( ip );
+        if( it == m_data.pendingInstructionPointers.end() )
+        {
+            m_data.pendingInstructionPointers.emplace( ip, 1 );
+        }
+        else
+        {
+            it->second++;
+        }
+        auto sit = m_data.pendingSymbolSamples.find( ip );
+        if( sit == m_data.pendingSymbolSamples.end() )
+        {
+            m_data.pendingSymbolSamples.emplace( ip, Vector<SampleDataRange>( SampleDataRange { sd.time, tid,  ip } ) );
+        }
+        else
+        {
+            sit->second.push_back_non_empty( SampleDataRange { sd.time, tid, ip } );
+        }
+    }
+
     for( uint16_t i=1; i<cs.size(); i++ )
     {
         auto addr = GetCanonicalPointer( cs[i] );
@@ -6251,8 +6287,8 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     {
         m_data.ghostZonesPostponed = true;
     }
-#endif
 }
+#endif
 
 void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
 {

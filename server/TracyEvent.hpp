@@ -666,9 +666,11 @@ struct ThreadData
     Vector<int64_t> childTimeStack;
     Vector<GhostZone> ghostZones;
     uint64_t ghostIdx;
+    Vector<SampleData> postponedSamples;
 #endif
     Vector<SampleData> samples;
     SampleData pendingSample;
+    Vector<SampleData> ctxSwitchSamples;
     uint64_t kernelSampleCnt;
     uint8_t isFiber;
     ThreadData* fiber;

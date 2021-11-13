@@ -1036,6 +1036,17 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
     if( inlineList )
     {
+        if( m_calcInlineStats )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Context is limited to an inline function" );
+                ImGui::EndTooltip();
+            }
+        }
         SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats );
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );

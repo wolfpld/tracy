@@ -16862,7 +16862,6 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
-
     if( m_memInfo.restrictTime )
     {
         for( auto& ev : mem.data )
@@ -16914,7 +16913,6 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeB
         for( auto& path : pathSum )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -16938,13 +16936,11 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeB
         for( auto& path : pathSum )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second.cnt;
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
-
             for( int i = int( cs.size() ) - 2; i >= 0; i-- )
             {
                 treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
@@ -16965,7 +16961,6 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -16987,7 +16982,6 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second;
@@ -17014,7 +17008,6 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeT
         for( auto& path : pathSum )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -17022,7 +17015,6 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeT
                 treePtr->count += path.second.cnt;
                 treePtr->alloc += path.second.mem;
                 treePtr->callstacks.emplace( path.first );
-
                 for( uint16_t i = 1; i < cs.size(); i++ )
                 {
                     treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
@@ -17039,13 +17031,11 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeT
         for( auto& path : pathSum )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second.cnt;
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
-
             for( uint16_t i = 1; i < cs.size(); i++ )
             {
                 treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
@@ -17066,7 +17056,6 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
             if( treePtr )
@@ -17089,7 +17078,6 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetCallstack( path.first );
-
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second;

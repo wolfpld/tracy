@@ -16966,13 +16966,11 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
             if( treePtr )
             {
                 treePtr->count += path.second;
-                treePtr->callstacks.emplace( path.first );
                 for( int i = int( cs.size() ) - 2; i >= 0; i-- )
                 {
                     treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
                     if( !treePtr ) break;
                     treePtr->count += path.second;
-                    treePtr->callstacks.emplace( path.first );
                 }
             }
         }
@@ -16985,13 +16983,10 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second;
-            treePtr->callstacks.emplace( path.first );
-
             for( int i = int( cs.size() ) - 2; i >= 0; i-- )
             {
                 treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
                 treePtr->count += path.second;
-                treePtr->callstacks.emplace( path.first );
             }
         }
     }
@@ -17061,14 +17056,11 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
             if( treePtr )
             {
                 treePtr->count += path.second;
-                treePtr->callstacks.emplace( path.first );
-
                 for( uint16_t i = 1; i < cs.size(); i++ )
                 {
                     treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
                     if( !treePtr ) break;
                     treePtr->count += path.second;
-                    treePtr->callstacks.emplace( path.first );
                 }
             }
         }
@@ -17081,13 +17073,10 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second;
-            treePtr->callstacks.emplace( path.first );
-
             for( uint16_t i = 1; i < cs.size(); i++ )
             {
                 treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
                 treePtr->count += path.second;
-                treePtr->callstacks.emplace( path.first );
             }
         }
     }

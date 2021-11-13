@@ -17776,9 +17776,14 @@ void View::ZoneTooltip( const GpuEvent& ev )
 
 void View::CallstackTooltip( uint32_t idx )
 {
-    auto& cs = m_worker.GetCallstack( idx );
-
     ImGui::BeginTooltip();
+    CallstackTooltipContents( idx );
+    ImGui::EndTooltip();
+}
+
+void View::CallstackTooltipContents( uint32_t idx )
+{
+    auto& cs = m_worker.GetCallstack( idx );
     int fidx = 0;
     for( auto& entry : cs )
     {
@@ -17836,7 +17841,6 @@ void View::CallstackTooltip( uint32_t idx )
             }
         }
     }
-    ImGui::EndTooltip();
 }
 
 void View::CrashTooltip()

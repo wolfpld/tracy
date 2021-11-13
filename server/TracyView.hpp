@@ -262,6 +262,7 @@ private:
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
     void CallstackTooltip( uint32_t idx );
+    void CallstackTooltipContents( uint32_t idx );
     void CrashTooltip();
 
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;

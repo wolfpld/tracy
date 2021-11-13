@@ -133,7 +133,7 @@ private:
 
     enum { InvalidId = 0xFFFFFFFF };
 
-    struct PathData
+    struct MemPathData
     {
         uint32_t cnt;
         uint64_t mem;
@@ -226,7 +226,7 @@ private:
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1, uint64_t pool = 0 );
 
-    unordered_flat_map<uint32_t, PathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
+    unordered_flat_map<uint32_t, MemPathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFrameTree>& tree, int& idx );

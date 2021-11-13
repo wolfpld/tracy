@@ -16783,9 +16783,9 @@ static tracy_force_inline MemCallstackFrameTree* GetFrameTreeItemGroup( unordere
     return &it->second;
 }
 
-unordered_flat_map<uint32_t, View::PathData> View::GetCallstackPaths( const MemData& mem, bool onlyActive ) const
+unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const MemData& mem, bool onlyActive ) const
 {
-    unordered_flat_map<uint32_t, PathData> pathSum;
+    unordered_flat_map<uint32_t, MemPathData> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
@@ -16801,7 +16801,7 @@ unordered_flat_map<uint32_t, View::PathData> View::GetCallstackPaths( const MemD
             auto it = pathSum.find( ev.CsAlloc() );
             if( it == pathSum.end() )
             {
-                pathSum.emplace( ev.CsAlloc(), PathData { 1, ev.Size() } );
+                pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
             }
             else
             {
@@ -16820,7 +16820,7 @@ unordered_flat_map<uint32_t, View::PathData> View::GetCallstackPaths( const MemD
             auto it = pathSum.find( ev.CsAlloc() );
             if( it == pathSum.end() )
             {
-                pathSum.emplace( ev.CsAlloc(), PathData { 1, ev.Size() } );
+                pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
             }
             else
             {

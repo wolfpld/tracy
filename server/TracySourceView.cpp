@@ -1047,7 +1047,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 ImGui::EndTooltip();
             }
         }
-        SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats );
+        if( SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats ) )
+        {
+            m_asmTarget.line = 0;
+            SelectLine( m_selectedLine, &worker, true, 0, false );
+        }
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -4112,35 +4116,35 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
     }
 }
 
-void SourceView::SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine, uint64_t targetAddr )
+void SourceView::SelectLine( uint32_t line, const Worker* worker, bool updateAsmLine, uint64_t targetAddr, bool changeAsmLine )
 {
     m_selectedLine = line;
     if( m_symAddr == 0 ) return;
     assert( worker );
-    SelectAsmLines( m_source.idx(), line, *worker, changeAsmLine, targetAddr );
+    SelectAsmLines( m_source.idx(), line, *worker, updateAsmLine, targetAddr, changeAsmLine );
 }
 
-void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine, uint64_t targetAddr )
+void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool updateAsmLine, uint64_t targetAddr, bool changeAsmLine )
 {
     m_selectedAddresses.clear();
     auto addresses = worker.GetAddressesForLocation( file, line );
     if( addresses )
     {
         const auto& addr = *addresses;
-        if( changeAsmLine )
+        if( updateAsmLine )
         {
             for( auto& v : addr )
             {
                 if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
                 {
-                    m_selectedAddresses.emplace( v );
+                    if( IsInContext( worker, v ) ) m_selectedAddresses.emplace( v );
                 }
             }
             if( targetAddr != 0 )
             {
-                m_targetAddr = targetAddr;
+                if( changeAsmLine ) m_targetAddr = targetAddr;
             }
-            else
+            else if( !m_selectedAddresses.empty() )
             {
                 if( m_asmTarget.file != file || m_asmTarget.line != line )
                 {
@@ -4166,9 +4170,9 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
                             m_asmTarget.target.emplace_back( v );
                         }
                     }
-                    m_targetAddr = m_asmTarget.target[0];
+                    if( changeAsmLine ) m_targetAddr = m_asmTarget.target[0];
                 }
-                else
+                else if( changeAsmLine )
                 {
                     m_asmTarget.sel = ( m_asmTarget.sel + 1 ) % m_asmTarget.target.size();
                     m_targetAddr = m_asmTarget.target[m_asmTarget.sel];

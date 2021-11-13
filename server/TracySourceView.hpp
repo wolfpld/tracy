@@ -168,8 +168,8 @@ private:
     void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
     void RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, size_t branchRel, size_t branchRelMax, size_t cacheRel, size_t cacheRelMax, const ImVec2& ts );
 
-    void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
-    void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
+    void SelectLine( uint32_t line, const Worker* worker, bool updateAsmLine = true, uint64_t targetAddr = 0, bool changeAsmLine = true );
+    void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool updateAsmLine = true, uint64_t targetAddr = 0, bool changeAsmLine = true );
     void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
     void GatherIpHwStats( AddrStatData& as, Worker& worker, const View& view, CostType cost );

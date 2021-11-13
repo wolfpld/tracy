@@ -6141,10 +6141,10 @@ void Worker::ProcessCallstack()
     m_pendingCallstackId = 0;
 }
 
-void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td, int64_t t, uint32_t callstack )
+void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
 {
-    assert( sd.time.Val() == t );
-    assert( sd.callstack.Val() == callstack );
+    const auto t = sd.time.Val();
+    const auto callstack = sd.callstack.Val();
     m_data.samplesCnt++;
 
     const auto& cs = GetCallstack( callstack );
@@ -6311,19 +6311,19 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
                 }
 
                 sd.callstack.SetVal( idx );
-                ProcessCallstackSampleImpl( sd, td, pendingTime, idx );
+                ProcessCallstackSampleImpl( sd, td );
                 td.pendingSample.time.Clear();
             }
             else
             {
-                ProcessCallstackSampleImpl( td.pendingSample, td, pendingTime, td.pendingSample.callstack.Val() );
+                ProcessCallstackSampleImpl( td.pendingSample, td );
                 td.pendingSample = sd;
             }
         }
     }
     else
     {
-        ProcessCallstackSampleImpl( sd, td, t, callstack );
+        ProcessCallstackSampleImpl( sd, td );
     }
 }
 

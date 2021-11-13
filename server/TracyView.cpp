@@ -3980,6 +3980,10 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                             ImGui::Separator();
                             TextDisabledUnformatted( "Wait stack:" );
                             CallstackTooltipContents( sdit->callstack.Val() );
+                            if( ImGui::IsMouseClicked( 0 ) )
+                            {
+                                m_callstackInfoWindow = sdit->callstack.Val();
+                            }
                         }
                     }
                     ImGui::EndTooltip();

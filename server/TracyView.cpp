@@ -388,7 +388,9 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        if( s_instance->m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
         ImGui::Separator();
         if( ImGui::Button( "My bad" ) )
@@ -410,7 +412,9 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client not ready", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_LIGHTBULB );
+        if( s_instance->m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
@@ -432,7 +436,9 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client disconnected", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_HANDSHAKE );
+        if( s_instance->m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
         ImGui::Separator();
         if( ImGui::Button( "Will do" ) )
@@ -455,8 +461,9 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         const auto& data = s_instance->m_worker.GetFailureData();
-
+        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_SKULL );
+        if( s_instance->m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
         ImGui::TextUnformatted( "Reason:" );
         ImGui::SameLine();
@@ -690,7 +697,9 @@ bool View::Draw()
     if( saveFailed ) ImGui::OpenPopup( "Save failed" );
     if( ImGui::BeginPopupModal( "Save failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        if( s_instance->m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted( "Could not save trace at the specified location. Try again somewhere else." );
         ImGui::Separator();
         if( ImGui::Button( "Oh well" ) ) ImGui::CloseCurrentPopup();
@@ -1266,7 +1275,9 @@ bool View::DrawImpl()
     }
     if( ImGui::BeginPopupModal( "Connection lost!", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextCentered( ICON_FA_PLUG );
+        if( m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted(
             "Connection to the profiled application was lost\n"
             "before all required profiling data could be retrieved.\n"
@@ -1635,7 +1646,9 @@ bool View::DrawConnection()
 
     if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        if( m_bigFont ) ImGui::PopFont();
         ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );
         ImGui::TextUnformatted( "Are you sure you want to proceed?" );
         ImGui::Separator();

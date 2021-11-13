@@ -3485,7 +3485,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
     }
 
-    const bool isInContext = !m_calcInlineStats || !worker.HasInlineSymbolAddresses() || worker.GetInlineSymbolForAddress( line.addr ) == m_symAddr;
+    const bool isInContext = IsInContext( worker, line.addr );
     if( asmIdx == m_asmSelected )
     {
         TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, isInContext ? 1.f : 0.5f ), buf );
@@ -4730,6 +4730,11 @@ void SourceView::CheckWrite( size_t line, RegsX86 reg, size_t limit )
         }
         idx++;
     }
+}
+
+bool SourceView::IsInContext( const Worker& worker, uint64_t addr ) const
+{
+    return !m_calcInlineStats || !worker.HasInlineSymbolAddresses() || worker.GetInlineSymbolForAddress( addr ) == m_symAddr;
 }
 
 #ifndef TRACY_NO_FILESELECTOR

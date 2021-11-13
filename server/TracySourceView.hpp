@@ -186,6 +186,8 @@ private:
     void CheckRead( size_t line, RegsX86 reg, size_t limit );
     void CheckWrite( size_t line, RegsX86 reg, size_t limit );
 
+    bool IsInContext( const Worker& worker, uint64_t addr ) const;
+
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
 #endif

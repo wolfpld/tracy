@@ -17473,7 +17473,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             const char* fileName = nullptr;
             if( frame.line == 0 )
             {
-                TextDisabledUnformatted( m_worker.GetString( frameDataPtr->imageName ) );
+                if( frameDataPtr->imageName.Active() ) TextDisabledUnformatted( m_worker.GetString( frameDataPtr->imageName ) );
             }
             else
             {

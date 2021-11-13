@@ -304,6 +304,7 @@ private:
         unordered_flat_map<uint64_t, Vector<Int48>> childSamples;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
+        bool newContextSwitchesReceived = false;
         bool ghostZonesReady = false;
         bool ghostZonesPostponed = false;
         bool symbolSamplesReady = false;

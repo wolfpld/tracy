@@ -6597,6 +6597,10 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
 
 void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 {
+#ifndef TRACY_NO_STATISTICS
+    m_data.newContextSwitchesReceived = true;
+#endif
+
     const auto refTime = m_refTimeCtx + ev.time;
     m_refTimeCtx = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );

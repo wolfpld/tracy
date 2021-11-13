@@ -16006,10 +16006,19 @@ void View::DrawSampleParents()
     }
     ImGui::SameLine();
     ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.parents.size() ) );
+    if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "EntryCallStackPopup" );
     ImGui::SameLine();
     if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
     {
         m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.parents.size() - 1 );
+    }
+    if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
+    {
+        int sel = m_sampleParents.sel + 1;
+        ImGui::SetNextItemWidth( 120 );
+        const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+        if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.parents.size() ) ) - 1;
+        ImGui::EndPopup();
     }
     Vector<decltype(stats.parents.begin())> data;
     data.reserve( stats.parents.size() );

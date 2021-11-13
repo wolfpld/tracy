@@ -4188,7 +4188,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
         {
             if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
             {
-                m_selectedAddressesHover.emplace( v );
+                if( IsInContext( worker, v ) ) m_selectedAddressesHover.emplace( v );
             }
         }
     }

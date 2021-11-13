@@ -11074,10 +11074,19 @@ void View::DrawFindZone()
                 }
                 ImGui::SameLine();
                 ImGui::Text( "%s / %s", RealToString( m_findZone.selCs + 1 ), RealToString( gsz ) );
+                if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "FindZoneCallstackPopup" );
                 ImGui::SameLine();
                 if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
                 {
                     m_findZone.selCs = std::min<int>( m_findZone.selCs + 1, gsz - 1 );
+                }
+                if( ImGui::BeginPopup( "FindZoneCallstackPopup" ) )
+                {
+                    int sel = m_findZone.selCs + 1;
+                    ImGui::SetNextItemWidth( 120 );
+                    const bool clicked = ImGui::InputInt( "##findZoneCallstack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+                    if( clicked ) m_findZone.selCs = std::min( std::max( sel, 1 ), int( gsz ) ) - 1;
+                    ImGui::EndPopup();
                 }
 
                 ImGui::SameLine();

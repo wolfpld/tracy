@@ -13804,8 +13804,14 @@ void View::DrawCallstackWindow()
     bool show = true;
     ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    DrawCallstackTable( m_callstackInfoWindow, true );
+    ImGui::End();
+    if( !show ) m_callstackInfoWindow = 0;
+}
 
-    auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
+void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
+{
+    auto& cs = m_worker.GetCallstack( callstack );
     if( ClipboardButton() )
     {
         std::ostringstream s;
@@ -13890,7 +13896,7 @@ void View::DrawCallstackWindow()
     ImGui::SameLine();
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
 
-    if( m_worker.AreCallstackSamplesReady() )
+    if( globalEntriesButton && m_worker.AreCallstackSamplesReady() )
     {
         auto frame = m_worker.GetCallstackFrame( *cs.begin() );
         if( frame && frame->data[0].symAddr != 0 )
@@ -14125,12 +14131,6 @@ void View::DrawCallstackWindow()
             }
         }
         ImGui::EndTable();
-    }
-    ImGui::End();
-
-    if( !show )
-    {
-        m_callstackInfoWindow = 0;
     }
 }
 

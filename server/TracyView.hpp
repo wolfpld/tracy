@@ -208,6 +208,7 @@ private:
     void DrawAllocList();
     void DrawCompare();
     void DrawCallstackWindow();
+    void DrawCallstackTable( uint32_t callstack, bool globalEntriesButton );
     void DrawMemoryAllocWindow();
     void DrawInfo();
     void DrawTextEditor();

@@ -16756,17 +16756,17 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
     }
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItemNoGroup( unordered_flat_map<uint64_t, CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
+static tracy_force_inline MemCallstackFrameTree* GetFrameTreeItemNoGroup( unordered_flat_map<uint64_t, MemCallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
 {
     auto it = tree.find( idx.data );
     if( it == tree.end() )
     {
-        it = tree.emplace( idx.data, CallstackFrameTree( idx ) ).first;
+        it = tree.emplace( idx.data, MemCallstackFrameTree( idx ) ).first;
     }
     return &it->second;
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( unordered_flat_map<uint64_t, CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
+static tracy_force_inline MemCallstackFrameTree* GetFrameTreeItemGroup( unordered_flat_map<uint64_t, MemCallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
 {
     auto frameDataPtr = worker.GetCallstackFrame( idx );
     if( !frameDataPtr ) return nullptr;
@@ -16778,7 +16778,7 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( unordered_f
     auto it = tree.find( fidx );
     if( it == tree.end() )
     {
-        it = tree.emplace( fidx, CallstackFrameTree( idx ) ).first;
+        it = tree.emplace( fidx, MemCallstackFrameTree( idx ) ).first;
     }
     return &it->second;
 }
@@ -16832,9 +16832,9 @@ unordered_flat_map<uint32_t, View::PathData> View::GetCallstackPaths( const MemD
     return pathSum;
 }
 
-unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
+unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
 {
-    unordered_flat_map<uint64_t, CallstackFrameTree> root;
+    unordered_flat_map<uint64_t, MemCallstackFrameTree> root;
     auto pathSum = GetCallstackPaths( mem, m_activeOnlyBottomUp );
     if( m_groupCallstackTreeByNameBottomUp )
     {
@@ -16885,9 +16885,9 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
     return root;
 }
 
-unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
+unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
 {
-    unordered_flat_map<uint64_t, CallstackFrameTree> root;
+    unordered_flat_map<uint64_t, MemCallstackFrameTree> root;
     auto pathSum = GetCallstackPaths( mem, m_activeOnlyTopDown );
     if( m_groupCallstackTreeByNameTopDown )
     {
@@ -17392,11 +17392,11 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx )
+void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFrameTree>& tree, int& idx )
 {
     auto& io = ImGui::GetIO();
 
-    std::vector<unordered_flat_map<uint64_t, CallstackFrameTree>::const_iterator> sorted;
+    std::vector<unordered_flat_map<uint64_t, MemCallstackFrameTree>::const_iterator> sorted;
     sorted.reserve( tree.size() );
     for( auto it = tree.begin(); it != tree.end(); ++it )
     {

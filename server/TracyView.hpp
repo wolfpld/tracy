@@ -227,9 +227,9 @@ private:
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1, uint64_t pool = 0 );
 
     unordered_flat_map<uint32_t, PathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
-    unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
-    unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
-    void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
+    unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
+    unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
+    void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFrameTree>& tree, int& idx );
     void DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones );
 
     void DrawInfoWindow();

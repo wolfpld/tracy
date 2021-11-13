@@ -28,6 +28,8 @@ v0.x.x (xxxx-xx-xx)
     originating function.
   - If symbol view is restricted to a single inline function, all assembly
     instructions not in this context will be dimmed out.
+  - Likewise, the navigation in assembly code will be limited just to the
+    inline context, if a single function is selected.
 - Kernel call stacks will be now properly captured and displayed in the
   profiler. Kernel functions are marked with the red color.
 - The CPU hardware performance counters can be now sampled on Linux.
@@ -60,6 +62,25 @@ v0.x.x (xxxx-xx-xx)
   stuck when there is a large number of symbols to resolve. This not only
   improves user experience, but also prevents buildup of data (and memory
   consumption) on the client side.
+- Android device name will be now reported.
+- Added support for capturing fibers.
+  - Fibers require additional processing, which has to be enabled by adding
+    the TRACY_FIBERS define on the client side.
+  - Client code requires additional instrumentation using the new macros
+    TracyFiberEnter and TracyFiberLeave.
+  - Fibers are represented in traces as separate threads, and are
+    distinguished by green color. Faux context switch regions are used to
+    indicate when a fiber is being run by the worker thread.
+- Continuous frame marks no longer need to be issued from a single thread.
+- Context switch call stacks are now captured on Windows.
+  - Hovering the context switch wait region will now display wait stack,
+    which may provide additional insight into why the switch happened.
+  - Wait stacks inspection can be performed in a new view.
+    - Stacks can be limited to certain threads and to a selected time range.
+    - Stacks are presented either as a sorted list, or as a bottom-up and
+      top-down trees.
+- Updated project build files to MSVC 2022.
+- Call stack tooltips now also show the executable image name.
 
 
 v0.7.8 (2021-05-19)

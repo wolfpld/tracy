@@ -2220,6 +2220,16 @@ uint64_t Worker::GetChildSamplesCountFull() const
     }
     return cnt;
 }
+
+uint64_t Worker::GetContextSwitchSampleCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& v : m_data.threads )
+    {
+        cnt += v->ctxSwitchSamples.size();
+    }
+    return cnt;
+}
 #endif
 
 uint64_t Worker::GetPidFromTid( uint64_t tid ) const

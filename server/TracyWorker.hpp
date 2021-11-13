@@ -465,6 +465,7 @@ public:
 #ifndef TRACY_NO_STATISTICS
     uint64_t GetChildSamplesCountSyms() const { return m_data.childSamples.size(); }
     uint64_t GetChildSamplesCountFull() const;
+    uint64_t GetContextSwitchSampleCount() const;
 #endif
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
     const FrameData* GetFramesBase() const { return m_data.framesBase; }

@@ -1953,40 +1953,59 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         for( auto& t : m_data.threads )
                         {
                             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                            auto ctx = GetContextSwitchData( t->id );
+                            Vector<ContextSwitchData>::const_iterator cit = nullptr;
+                            if( ctx ) cit = ctx->v.begin();
                             for( auto& sd : t->samples )
                             {
-                                const auto cs = sd.callstack.Val();
-                                auto it = counts.find( cs );
-                                if( it == counts.end() )
+                                bool isCtxSwitch = false;
+                                if( ctx )
                                 {
-                                    counts.emplace( cs, 1 );
-                                }
-                                else
-                                {
-                                    it->second++;
-                                }
-
-                                const auto& callstack = GetCallstack( cs );
-                                auto& ip = callstack[0];
-                                auto frame = GetCallstackFrame( ip );
-                                if( frame )
-                                {
-                                    const auto symAddr = frame->data[0].symAddr;
-                                    auto it = m_data.instructionPointersMap.find( symAddr );
-                                    if( it == m_data.instructionPointersMap.end() )
+                                    cit = std::lower_bound( cit, ctx->v.end(), sd.time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                                    if( cit != ctx->v.end() )
                                     {
-                                        m_data.instructionPointersMap.emplace( symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { ip, 1 } } );
+                                        if( sd.time.Val() == cit->Start() )
+                                        {
+                                            isCtxSwitch = true;
+                                            t->ctxSwitchSamples.push_back( sd );
+                                        }
+                                    }
+                                }
+                                if( !isCtxSwitch )
+                                {
+                                    const auto cs = sd.callstack.Val();
+                                    auto it = counts.find( cs );
+                                    if( it == counts.end() )
+                                    {
+                                        counts.emplace( cs, 1 );
                                     }
                                     else
                                     {
-                                        auto fit = it->second.find( ip );
-                                        if( fit == it->second.end() )
+                                        it->second++;
+                                    }
+
+                                    const auto& callstack = GetCallstack( cs );
+                                    auto& ip = callstack[0];
+                                    auto frame = GetCallstackFrame( ip );
+                                    if( frame )
+                                    {
+                                        const auto symAddr = frame->data[0].symAddr;
+                                        auto it = m_data.instructionPointersMap.find( symAddr );
+                                        if( it == m_data.instructionPointersMap.end() )
                                         {
-                                            it->second.emplace( ip, 1 );
+                                            m_data.instructionPointersMap.emplace( symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { ip, 1 } } );
                                         }
                                         else
                                         {
-                                            fit->second++;
+                                            auto fit = it->second.find( ip );
+                                            if( fit == it->second.end() )
+                                            {
+                                                it->second.emplace( ip, 1 );
+                                            }
+                                            else
+                                            {
+                                                fit->second++;
+                                            }
                                         }
                                     }
                                 }

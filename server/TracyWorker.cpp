@@ -4282,6 +4282,45 @@ void Worker::DoPostponedWork()
             if( !slz.second.zones.is_sorted() ) slz.second.zones.sort();
         }
     }
+
+    if( m_data.newContextSwitchesReceived )
+    {
+        for( auto& td : m_data.threads )
+        {
+            if( !td->postponedSamples.empty() )
+            {
+                auto ctx = GetContextSwitchData( td->id );
+                if( ctx )
+                {
+#ifdef NO_PARALLEL_SORT
+                    pdqsort_branchless( td->postponedSamples.begin(), td->postponedSamples.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
+#else
+                    std::sort( std::execution::par_unseq, td->postponedSamples.begin(), td->postponedSamples.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
+#endif
+                    auto sit = td->postponedSamples.begin();
+                    auto cit = std::lower_bound( ctx->v.begin(), ctx->v.end(), sit->time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                    if( cit != ctx->v.end() )
+                    {
+                        do
+                        {
+                            if( sit->time.Val() == cit->Start() )
+                            {
+                                td->ctxSwitchSamples.push_back( *sit );
+                            }
+                            else
+                            {
+                                ProcessCallstackSampleImplStats( *sit, *td );
+                            }
+                            if( ++sit == td->postponedSamples.end() ) break;
+                            cit = std::lower_bound( cit, ctx->v.end(), sit->time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                        }
+                        while( cit != ctx->v.end() );
+                    }
+                }
+            }
+        }
+        m_data.newContextSwitchesReceived = false;
+    }
 #endif
 
     if( m_data.newSymbolsIndex >= 0 )

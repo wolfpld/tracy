@@ -1898,6 +1898,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
+        if( fileVer < FileVersion( 0, 7, 13 ) )
+        {
+            for( auto& t : m_data.threads )
+            {
+                pdqsort_branchless( t->samples.begin(), t->samples.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
+            }
+        }
+
         m_threadBackground = std::thread( [this, eventMask] {
             std::vector<std::thread> jobs;
 
@@ -2022,8 +2030,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( auto& t : m_data.threads )
                     {
                         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                        // TODO remove when proper sample order is achieved during capture
-                        pdqsort_branchless( t->samples.begin(), t->samples.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
                         for( auto& sd : t->samples )
                         {
                             gcnt += AddGhostZone( GetCallstack( sd.callstack.Val() ), &t->ghostZones, sd.time.Val() );
@@ -7881,6 +7887,14 @@ void Worker::Write( FileWrite& f, bool fiDict )
         {
             auto ptr = uint64_t( (MessageData*)v );
             f.Write( &ptr, sizeof( ptr ) );
+        }
+        if( m_inconsistentSamples )
+        {
+#ifdef NO_PARALLEL_SORT
+            pdqsort_branchless( thread->samples.begin(), thread->samples.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
+#else
+            std::sort( std::execution::par_unseq, thread->samples.begin(), thread->samples.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
+#endif
         }
         sz = thread->samples.size();
         f.Write( &sz, sizeof( sz ) );

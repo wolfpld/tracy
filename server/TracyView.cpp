@@ -16031,10 +16031,7 @@ void View::DrawSampleParents()
     }
     Vector<decltype(stats.parents.begin())> data;
     data.reserve( stats.parents.size() );
-    for( auto it = stats.parents.begin(); it != stats.parents.end(); ++it )
-    {
-        data.push_back( it );
-    }
+    for( auto it = stats.parents.begin(); it != stats.parents.end(); ++it ) data.push_back( it );
     pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
     ImGui::SameLine();
     ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );

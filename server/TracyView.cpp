@@ -16379,6 +16379,23 @@ void View::DrawWaitStacks()
         }
     }
 
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+    if( ImGui::RadioButton( ICON_FA_TABLE " List", m_waitStackMode == 0 ) ) m_waitStackMode = 0;
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::RadioButton( ICON_FA_TREE " Bottom-up tree", m_waitStackMode == 1 ) ) m_waitStackMode = 1;
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_waitStackMode == 2 ) ) m_waitStackMode = 2;
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     TextFocused( "Total wait stacks:", RealToString( m_worker.GetContextSwitchSampleCount() ) );
     ImGui::SameLine();
     ImGui::Spacing();
@@ -16387,7 +16404,11 @@ void View::DrawWaitStacks()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    if( SmallCheckbox( "Limit range", &m_waitStackRange.active ) )
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::Checkbox( "Limit range", &m_waitStackRange.active ) )
     {
         if( m_waitStackRange.active && m_waitStackRange.min == 0 && m_waitStackRange.max == 0 )
         {
@@ -16400,8 +16421,20 @@ void View::DrawWaitStacks()
         ImGui::SameLine();
         TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
         ImGui::SameLine();
-        SmallToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
+    if( m_waitStackMode != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::Checkbox( "Group by function name", m_waitStackMode == 1 ? &m_groupWaitStackBottomUp : &m_groupWaitStackTopDown );
+    }
+    ImGui::PopStyleVar();
 
     bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
@@ -16467,42 +16500,62 @@ void View::DrawWaitStacks()
     }
     else
     {
-        TextDisabledUnformatted( "Wait stack:" );
-        ImGui::SameLine();
-        if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+        switch( m_waitStackMode )
         {
-            m_waitStack = std::max( m_waitStack - 1, 0 );
-        }
-        ImGui::SameLine();
-        ImGui::Text( "%s / %s", RealToString( m_waitStack + 1 ), RealToString( stacks.size() ) );
-        if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "WaitStacksPopup" );
-        ImGui::SameLine();
-        if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+        case 0:
         {
-            m_waitStack = std::min<int>( m_waitStack + 1, stacks.size() - 1 );
+            TextDisabledUnformatted( "Wait stack:" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+            {
+                m_waitStack = std::max( m_waitStack - 1, 0 );
+            }
+            ImGui::SameLine();
+            ImGui::Text( "%s / %s", RealToString( m_waitStack + 1 ), RealToString( stacks.size() ) );
+            if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "WaitStacksPopup" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+            {
+                m_waitStack = std::min<int>( m_waitStack + 1, stacks.size() - 1 );
+            }
+            if( ImGui::BeginPopup( "WaitStacksPopup" ) )
+            {
+                int sel = m_waitStack + 1;
+                ImGui::SetNextItemWidth( 120 );
+                const bool clicked = ImGui::InputInt( "##waitStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+                if( clicked ) m_waitStack = std::min( std::max( sel, 1 ), int( stacks.size() ) ) - 1;
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            Vector<decltype(stacks.begin())> data;
+            data.reserve( stacks.size() );
+            for( auto it = stacks.begin(); it != stacks.end(); ++it ) data.push_back( it );
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
+            TextFocused( "Counts:", RealToString( data[m_waitStack]->second ) );
+            ImGui::SameLine();
+            char buf[64];
+            PrintStringPercent( buf, 100. * data[m_waitStack]->second / totalCount );
+            TextDisabledUnformatted( buf );
+            ImGui::Separator();
+            DrawCallstackTable( data[m_waitStack]->first, false );
+            break;
         }
-        if( ImGui::BeginPopup( "WaitStacksPopup" ) )
+        case 1:
         {
-            int sel = m_waitStack + 1;
-            ImGui::SetNextItemWidth( 120 );
-            const bool clicked = ImGui::InputInt( "##waitStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-            if( clicked ) m_waitStack = std::min( std::max( sel, 1 ), int( stacks.size() ) ) - 1;
-            ImGui::EndPopup();
+            auto tree = GetCallstackFrameTreeBottomUp( stacks, m_groupCallstackTreeByNameBottomUp );
+            break;
         }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        Vector<decltype(stacks.begin())> data;
-        data.reserve( stacks.size() );
-        for( auto it = stacks.begin(); it != stacks.end(); ++it ) data.push_back( it );
-        pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
-        TextFocused( "Counts:", RealToString( data[m_waitStack]->second ) );
-        ImGui::SameLine();
-        char buf[64];
-        PrintStringPercent( buf, 100. * data[m_waitStack]->second / totalCount );
-        TextDisabledUnformatted( buf );
-        ImGui::Separator();
-        DrawCallstackTable( data[m_waitStack]->first, false );
+        case 2:
+        {
+            auto tree = GetCallstackFrameTreeTopDown( stacks, m_groupCallstackTreeByNameTopDown );
+            break;
+        }
+        default:
+            assert( false );
+            break;
+        }
     }
 #endif
     ImGui::End();

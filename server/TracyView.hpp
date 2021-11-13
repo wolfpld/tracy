@@ -446,6 +446,9 @@ private:
     bool m_messageTimeRelativeToZone = true;
     uint64_t m_zoneInfoMemPool = 0;
     int m_waitStack = 0;
+    int m_waitStackMode = 0;
+    bool m_groupWaitStackBottomUp = true;
+    bool m_groupWaitStackTopDown = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Short;

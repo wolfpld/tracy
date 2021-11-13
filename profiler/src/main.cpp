@@ -973,7 +973,9 @@ static void DrawContents()
     }
     if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
+        ImGui::PushFont( bigFont );
         tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
+        ImGui::PopFont();
 
         animTime += ImGui::GetIO().DeltaTime;
         tracy::DrawWaitingDots( animTime );
@@ -1057,7 +1059,9 @@ static void DrawContents()
     if( ImGui::BeginPopupModal( "Capture cleanup...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         if( viewShutdown.load( std::memory_order_relaxed ) != ViewShutdown::True ) ImGui::CloseCurrentPopup();
+        ImGui::PushFont( bigFont );
         tracy::TextCentered( ICON_FA_BROOM );
+        ImGui::PopFont();
         animTime += ImGui::GetIO().DeltaTime;
         tracy::DrawWaitingDots( animTime );
         ImGui::TextUnformatted( "Please wait, cleanup is in progress" );

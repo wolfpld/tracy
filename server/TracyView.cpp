@@ -17328,7 +17328,7 @@ void View::DrawMemory()
 
     ImGui::PushID( m_memInfo.pool );
     ImGui::Separator();
-    if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Bottom-up call stack tree" ) )
+    if( ImGui::TreeNode( ICON_FA_TREE " Bottom-up call stack tree" ) )
     {
         ImGui::SameLine();
         DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
@@ -17358,7 +17358,7 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
-    if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Top-down call stack tree" ) )
+    if( ImGui::TreeNode( ICON_FA_TREE " Top-down call stack tree" ) )
     {
         ImGui::SameLine();
         DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );

@@ -3118,7 +3118,7 @@ This view may be helpful in assessing the general memory behavior of the applica
 \subsubsection{Bottom-up call stack tree}
 \label{callstacktree}
 
-The \emph{\faAlignJustify{}~Bottom-up call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
+The \emph{\faTree{}~Bottom-up call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
 
 Each tree node consists of three elements: the function name, the source file location and the memory allocation data. The memory allocation data is either yellow \emph{inclusive} events count (allocations performed by children), or the cyan \emph{exclusive} events count (allocations that took place in the node)\footnote{Due to the way call stacks work there is no possibility for an entry to have both inclusive and exclusive counts, in a properly instrumented program.}. There are two values that are counted: total memory size and number of allocations.
 

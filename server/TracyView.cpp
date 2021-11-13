@@ -16545,11 +16545,29 @@ void View::DrawWaitStacks()
         case 1:
         {
             auto tree = GetCallstackFrameTreeBottomUp( stacks, m_groupCallstackTreeByNameBottomUp );
+            if( !tree.empty() )
+            {
+                int idx = 0;
+                DrawFrameTreeLevel( tree, idx );
+            }
+            else
+            {
+                TextDisabledUnformatted( "No call stacks to show" );
+            }
             break;
         }
         case 2:
         {
             auto tree = GetCallstackFrameTreeTopDown( stacks, m_groupCallstackTreeByNameTopDown );
+            if( !tree.empty() )
+            {
+                int idx = 0;
+                DrawFrameTreeLevel( tree, idx );
+            }
+            else
+            {
+                TextDisabledUnformatted( "No call stacks to show" );
+            }
             break;
         }
         default:
@@ -17650,6 +17668,100 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
             else
             {
                 ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count ) );
+            }
+
+            if( expand )
+            {
+                DrawFrameTreeLevel( v.children, idx );
+                ImGui::TreePop();
+            }
+        }
+    }
+}
+
+void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx )
+{
+    auto& io = ImGui::GetIO();
+
+    std::vector<unordered_flat_map<uint64_t, CallstackFrameTree>::const_iterator> sorted;
+    sorted.reserve( tree.size() );
+    for( auto it = tree.begin(); it != tree.end(); ++it )
+    {
+        sorted.emplace_back( it );
+    }
+    pdqsort_branchless( sorted.begin(), sorted.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
+
+    int lidx = 0;
+    for( auto& _v : sorted )
+    {
+        auto& v = _v->second;
+        idx++;
+        auto frameDataPtr = m_worker.GetCallstackFrame( v.frame );
+        if( frameDataPtr )
+        {
+            auto& frameData = *frameDataPtr;
+            auto frame = frameData.data[frameData.size-1];
+            bool expand = false;
+            if( v.children.empty() )
+            {
+                ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
+                ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
+            }
+            else
+            {
+                ImGui::PushID( lidx++ );
+                if( tree.size() == 1 )
+                {
+                    expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
+                }
+                else
+                {
+                    expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
+                }
+                ImGui::PopID();
+            }
+
+            if( m_callstackTreeBuzzAnim.Match( idx ) )
+            {
+                const auto time = m_callstackTreeBuzzAnim.Time();
+                const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+            }
+            else
+            {
+                ImGui::SameLine();
+            }
+            const char* fileName = nullptr;
+            if( frame.line == 0 )
+            {
+                TextDisabledUnformatted( m_worker.GetString( frameDataPtr->imageName ) );
+            }
+            else
+            {
+                fileName = m_worker.GetString( frame.file );
+                ImGui::TextDisabled( "%s:%i", fileName, frame.line );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                DrawSourceTooltip( fileName, frame.line );
+                if( ImGui::IsItemClicked( 1 ) )
+                {
+                    if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
+                    {
+                        m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+                    }
+                }
+            }
+
+            ImGui::SameLine();
+            if( v.children.empty() )
+            {
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", RealToString( v.count ) );
+            }
+            else
+            {
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "(%s)", RealToString( v.count ) );
             }
 
             if( expand )

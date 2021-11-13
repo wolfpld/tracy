@@ -471,6 +471,19 @@ struct MemCallstackFrameTree
 enum { MemCallstackFrameTreeSize = sizeof( MemCallstackFrameTree ) };
 
 
+struct CallstackFrameTree
+{
+    CallstackFrameTree( CallstackFrameId id ) : frame( id ), count( 0 ) {}
+
+    CallstackFrameId frame;
+    uint32_t count;
+    unordered_flat_map<uint64_t, CallstackFrameTree> children;
+    unordered_flat_set<uint32_t> callstacks;
+};
+
+enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
+
+
 struct CrashEvent
 {
     uint64_t thread = 0;

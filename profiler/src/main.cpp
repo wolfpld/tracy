@@ -787,7 +787,7 @@ static void DrawContents()
         if( badVer.state != tracy::BadVersionState::Ok )
         {
             if( loadThread.joinable() ) { loadThread.join(); }
-            tracy::BadVersion( badVer );
+            tracy::BadVersion( badVer, bigFont );
         }
 #endif
 

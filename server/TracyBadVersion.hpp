@@ -1,6 +1,7 @@
 #ifndef __TRACYBADVERSION_HPP__
 #define __TRACYBADVERSION_HPP__
 
+#include <imgui.h>
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy
@@ -23,10 +24,10 @@ struct BadVersionState
 
 namespace detail
 {
-void BadVersionImpl( BadVersionState& badVer );
+void BadVersionImpl( BadVersionState& badVer, ImFont* big );
 }
 
-tracy_force_inline void BadVersion( BadVersionState& badVer ) { if( badVer.state != BadVersionState::Ok ) detail::BadVersionImpl( badVer ); }
+tracy_force_inline void BadVersion( BadVersionState& badVer, ImFont* big ) { if( badVer.state != BadVersionState::Ok ) detail::BadVersionImpl( badVer, big ); }
 
 }
 

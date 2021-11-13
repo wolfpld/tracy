@@ -11744,7 +11744,7 @@ void View::DrawCompare()
                 }
             }
         }
-        tracy::BadVersion( m_compare.badVer );
+        tracy::BadVersion( m_compare.badVer, m_bigFont );
         ImGui::End();
         return;
     }

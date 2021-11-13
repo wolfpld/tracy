@@ -221,6 +221,7 @@ private:
     void DrawRanges();
     void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id );
     void DrawSourceTooltip( const char* filename, uint32_t line, int before = 3, int after = 3, bool separateTooltip = true );
+    void DrawWaitStacks();
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1, uint64_t pool = 0 );
 
@@ -411,6 +412,7 @@ private:
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;
+    bool m_showWaitStacks = false;
 
     AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
     bool m_statSampleTime = true;
@@ -428,6 +430,7 @@ private:
     bool m_ctxSwitchTimeRelativeToZone = true;
     bool m_messageTimeRelativeToZone = true;
     uint64_t m_zoneInfoMemPool = 0;
+    int m_waitStack = 0;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Short;

@@ -925,6 +925,11 @@ bool View::DrawImpl()
             m_showAnnotationList = true;
         }
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+        const auto cscnt = m_worker.GetContextSwitchSampleCount();
+        if( ButtonDisablable( ICON_FA_HOURGLASS_HALF " Wait stacks", cscnt == 0 ) )
+        {
+            m_showWaitStacks = true;
+        }
         ImGui::EndPopup();
     }
     ImGui::SameLine();
@@ -1095,6 +1100,7 @@ bool View::DrawImpl()
     if( m_showAnnotationList ) DrawAnnotationList();
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
+    if( m_showWaitStacks ) DrawWaitStacks();
 
     if( m_setRangePopup.active )
     {
@@ -3972,7 +3978,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                         if( sdit != sampleData.end() && sdit->time.Val() == ev.Start() )
                         {
                             ImGui::Separator();
-                            TextDisabledUnformatted( "Wait stack:" );
+                            TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
                             CallstackTooltipContents( sdit->callstack.Val() );
                             if( ImGui::IsMouseClicked( 0 ) )
                             {
@@ -16309,6 +16315,75 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
             if( SmallButtonDisablable( ICON_FA_SORT_AMOUNT_UP " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_statRange;
         }
     }
+}
+
+void View::DrawWaitStacks()
+{
+    ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Wait stacks", &m_showWaitStacks, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+#ifdef TRACY_NO_STATISTICS
+    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable wait stacks." );
+#else
+    unordered_flat_map<uint32_t, uint64_t> stacks;
+    auto& td = m_worker.GetThreadData();
+    for( auto& t : td )
+    {
+        for( auto& sd : t->ctxSwitchSamples )
+        {
+            auto cs = sd.callstack.Val();
+            auto it = stacks.find( cs );
+            if( it == stacks.end() )
+            {
+                stacks.emplace( cs, 1 );
+            }
+            else
+            {
+                it->second++;
+            }
+        }
+    }
+
+    const auto totalSamples = m_worker.GetContextSwitchSampleCount();
+    TextFocused( "Total wait stacks:", RealToString( totalSamples ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Wait stack:" );
+    ImGui::SameLine();
+    if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+    {
+        m_waitStack = std::max( m_waitStack - 1, 0 );
+    }
+    ImGui::SameLine();
+    ImGui::Text( "%s / %s", RealToString( m_waitStack + 1 ), RealToString( stacks.size() ) );
+    if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "WaitStacksPopup" );
+    ImGui::SameLine();
+    if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+    {
+        m_waitStack = std::min<int>( m_waitStack + 1, stacks.size() - 1 );
+    }
+    if( ImGui::BeginPopup( "WaitStacksPopup" ) )
+    {
+        int sel = m_waitStack + 1;
+        ImGui::SetNextItemWidth( 120 );
+        const bool clicked = ImGui::InputInt( "##waitStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+        if( clicked ) m_waitStack = std::min( std::max( sel, 1 ), int( stacks.size() ) ) - 1;
+        ImGui::EndPopup();
+    }
+    Vector<decltype(stacks.begin())> data;
+    data.reserve( stacks.size() );
+    for( auto it = stacks.begin(); it != stacks.end(); ++it ) data.push_back( it );
+    pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
+    ImGui::SameLine();
+    TextFocused( "Counts:", RealToString( data[m_waitStack]->second ) );
+    ImGui::SameLine();
+    char buf[64];
+    PrintStringPercent( buf, 100. * data[m_waitStack]->second / totalSamples );
+    TextDisabledUnformatted( buf );
+    ImGui::Separator();
+    DrawCallstackTable( data[m_waitStack]->first, false );
+#endif
+    ImGui::End();
 }
 
 void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime, uint64_t pool )

@@ -16438,17 +16438,6 @@ void View::DrawWaitStacks()
         ImGui::SameLine();
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
-    if( m_waitStackMode != 0 )
-    {
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        ImGui::Checkbox( "Group by function name", m_waitStackMode == 1 ? &m_groupWaitStackBottomUp : &m_groupWaitStackTopDown );
-    }
     ImGui::PopStyleVar();
 
     bool threadsChanged = false;
@@ -16559,6 +16548,7 @@ void View::DrawWaitStacks()
         }
         case 1:
         {
+            SmallCheckbox( "Group by function name", &m_groupWaitStackBottomUp );
             auto tree = GetCallstackFrameTreeBottomUp( stacks, m_groupCallstackTreeByNameBottomUp );
             if( !tree.empty() )
             {
@@ -16573,6 +16563,7 @@ void View::DrawWaitStacks()
         }
         case 2:
         {
+            SmallCheckbox( "Group by function name", &m_groupWaitStackTopDown );
             auto tree = GetCallstackFrameTreeTopDown( stacks, m_groupCallstackTreeByNameTopDown );
             if( !tree.empty() )
             {

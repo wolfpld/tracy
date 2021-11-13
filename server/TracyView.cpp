@@ -14419,6 +14419,7 @@ void View::DrawInfo()
             TextFocused( "Child samples:", RealToString( m_worker.GetChildSamplesCountFull() ) );
             ImGui::EndTooltip();
         }
+        TextFocused( "Context switch samples:", RealToString( m_worker.GetContextSwitchSampleCount() ) );
 #endif
         TextFocused( "Hardware samples:", RealToString( m_worker.GetHwSampleCount() ) );
         if( ImGui::IsItemHovered() )

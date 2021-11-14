@@ -1922,40 +1922,37 @@ void Profiler::Worker()
     // Handle remaining server queries
     for(;;)
     {
-        if( m_sock->HasData() )
+        while( m_sock->HasData() )
         {
-            while( m_sock->HasData() )
+            if( !HandleServerQuery() )
             {
-                if( !HandleServerQuery() )
-                {
-                    m_shutdownFinished.store( true, std::memory_order_relaxed );
-                    return;
-                }
-            }
-#ifdef TRACY_HAS_CALLSTACK
-            for(;;)
-            {
-                auto si = m_symbolQueue.front();
-                if( !si ) break;
-                HandleSymbolQueueItem( *si );
-                m_symbolQueue.pop();
-            }
-#endif
-            while( Dequeue( token ) == DequeueStatus::DataDequeued ) {}
-            while( DequeueSerial() == DequeueStatus::DataDequeued ) {}
-            if( m_bufferOffset != m_bufferStart )
-            {
-                if( !CommitData() )
-                {
-                    m_shutdownFinished.store( true, std::memory_order_relaxed );
-                    return;
-                }
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
             }
         }
-        else
+#ifdef TRACY_HAS_CALLSTACK
+        for(;;)
         {
-            if( m_bufferOffset != m_bufferStart ) CommitData();
-            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            auto si = m_symbolQueue.front();
+            if( !si ) break;
+            HandleSymbolQueueItem( *si );
+            m_symbolQueue.pop();
+        }
+#endif
+        const auto status = Dequeue( token );
+        const auto serialStatus = DequeueSerial();
+        if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
+        {
+            m_shutdownFinished.store( true, std::memory_order_relaxed );
+            return;
+        }
+        if( m_bufferOffset != m_bufferStart )
+        {
+            if( !CommitData() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
         }
     }
 }

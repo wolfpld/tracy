@@ -17559,6 +17559,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
     for( auto& _v : sorted )
     {
         auto& v = _v->second;
+        const auto isKernel = ( m_worker.GetCanonicalPointer( v.frame ) >> 63 ) != 0;
         idx++;
         auto frameDataPtr = m_worker.GetCallstackFrame( v.frame );
         if( frameDataPtr )
@@ -17566,15 +17567,24 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
             auto& frameData = *frameDataPtr;
             auto frame = frameData.data[frameData.size-1];
             bool expand = false;
+
             if( v.children.empty() )
             {
                 ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-                ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                if( isKernel )
+                {
+                    TextColoredUnformatted( 0xFF8888FF, m_worker.GetString( frame.name ) );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                }
                 ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
             }
             else
             {
                 ImGui::PushID( lidx++ );
+                if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
                     expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
@@ -17583,6 +17593,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
                 {
                     expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
                 }
+                if( isKernel ) ImGui::PopStyleColor();
                 ImGui::PopID();
             }
 
@@ -17678,6 +17689,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
     for( auto& _v : sorted )
     {
         auto& v = _v->second;
+        const auto isKernel = ( m_worker.GetCanonicalPointer( v.frame ) >> 63 ) != 0;
         idx++;
         auto frameDataPtr = m_worker.GetCallstackFrame( v.frame );
         if( frameDataPtr )
@@ -17688,12 +17700,20 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             if( v.children.empty() )
             {
                 ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-                ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                if( isKernel )
+                {
+                    TextColoredUnformatted( 0xFF8888FF, m_worker.GetString( frame.name ) );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                }
                 ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
             }
             else
             {
                 ImGui::PushID( lidx++ );
+                if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
                     expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
@@ -17702,6 +17722,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 {
                     expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
                 }
+                if( isKernel ) ImGui::PopStyleColor();
                 ImGui::PopID();
             }
 

@@ -86,6 +86,7 @@ public:
     tracy_force_inline void clear() { v.clear(); sortedEnd = 0; }
 
     tracy_force_inline void sort() { sort( CompareDefault() ); }
+    tracy_force_inline void ensure_sorted() { if( !is_sorted() ) sort(); }
 
     template<class Compare>
     void sort( Compare comp )

@@ -1901,8 +1901,13 @@ void Profiler::Worker()
         }
 
 #ifdef TRACY_HAS_CALLSTACK
-        SymbolQueueItem si;
-        while( m_symbolQueue.try_dequeue( si ) ) HandleSymbolQueueItem( si );
+        for(;;)
+        {
+            auto si = m_symbolQueue.front();
+            if( !si ) break;
+            HandleSymbolQueueItem( *si );
+            m_symbolQueue.pop();
+        }
 #endif
     }
 
@@ -1928,8 +1933,13 @@ void Profiler::Worker()
                 }
             }
 #ifdef TRACY_HAS_CALLSTACK
-            SymbolQueueItem si;
-            while( m_symbolQueue.try_dequeue( si ) ) HandleSymbolQueueItem( si );
+            for(;;)
+            {
+                auto si = m_symbolQueue.front();
+                if( !si ) break;
+                HandleSymbolQueueItem( *si );
+                m_symbolQueue.pop();
+            }
 #endif
             while( Dequeue( token ) == DequeueStatus::DataDequeued ) {}
             while( DequeueSerial() == DequeueStatus::DataDequeued ) {}
@@ -3171,19 +3181,20 @@ void Profiler::SymbolWorker()
     for(;;)
     {
         const auto shouldExit = ShouldExit();
-        SymbolQueueItem si;
 #ifdef TRACY_ON_DEMAND
         if( !IsConnected() )
         {
             if( shouldExit ) return;
-            while( m_symbolQueue.pop() ) {}
+            while( m_symbolQueue.front() ) m_symbolQueue.pop();
             std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
             continue;
         }
 #endif
-        if( m_symbolQueue.try_dequeue( si ) )
+        auto si = m_symbolQueue.front();
+        if( si )
         {
-            HandleSymbolQueueItem( si );
+            HandleSymbolQueueItem( *si );
+            m_symbolQueue.pop();
         }
         else
         {

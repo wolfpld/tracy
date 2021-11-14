@@ -8,7 +8,7 @@
 #include <time.h>
 
 #include "tracy_concurrentqueue.h"
-#include "tracy_readerwriterqueue.h"
+#include "tracy_SPSCQueue.h"
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
@@ -864,7 +864,7 @@ private:
     TracyMutex m_fiLock;
 #endif
 
-    ReaderWriterQueue<SymbolQueueItem> m_symbolQueue;
+    SPSCQueue<SymbolQueueItem> m_symbolQueue;
 
     std::atomic<uint64_t> m_frameCount;
     std::atomic<bool> m_isConnected;

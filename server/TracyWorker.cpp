@@ -1919,8 +1919,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 if( mem.second->reconstruct ) jobs.emplace_back( std::thread( [this, mem = mem.second] { ReconstructMemAllocPlot( *mem ); } ) );
             }
 
-            std::function<void(SrcLocCountMap&, Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
-            ProcessTimeline = [this, &ProcessTimeline] ( SrcLocCountMap& countMap, Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
+            std::function<void(uint8_t*, Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
+            ProcessTimeline = [this, &ProcessTimeline] ( uint8_t* countMap, Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 assert( _vec.is_magic() );
@@ -1930,9 +1930,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     if( zone.IsEndValid() ) ReconstructZoneStatistics( countMap, zone, thread );
                     if( zone.HasChildren() )
                     {
-                        IncSrcLocCount( countMap, zone.SrcLoc() );
+                        countMap[uint16_t(zone.SrcLoc())]++;
                         ProcessTimeline( countMap, GetZoneChildrenMutable( zone.Child() ), thread );
-                        DecSrcLocCount( countMap, zone.SrcLoc() );
+                        countMap[uint16_t(zone.SrcLoc())]--;
                     }
                 }
             };
@@ -1943,7 +1943,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                     if( !t->timeline.empty() )
                     {
-                        SrcLocCountMap countMap;
+                        uint8_t countMap[64*1024];
                         // Don't touch thread compression cache in a thread.
                         ProcessTimeline( countMap, t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
                     }
@@ -2121,7 +2121,6 @@ Worker::~Worker()
     {
         v->timeline.~Vector();
         v->stack.~Vector();
-        v->stackCount.~Table();
         v->messages.~Vector();
         v->zoneIdStack.~Vector();
         v->samples.~Vector();
@@ -3727,6 +3726,8 @@ ThreadData* Worker::NewThread( uint64_t thread, bool fiber )
     td->pendingSample.time.Clear();
     td->isFiber = fiber;
     td->fiber = nullptr;
+    td->stackCount = (uint8_t*)m_slab.AllocBig( sizeof( uint8_t ) * 64*1024 );
+    memset( td->stackCount, 0, sizeof( uint8_t ) * 64*1024 );
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     m_data.threadDataLast.first = thread;
@@ -7467,7 +7468,7 @@ void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime
 }
 
 #ifndef TRACY_NO_STATISTICS
-void Worker::ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zone, uint16_t thread )
+void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint16_t thread )
 {
     assert( zone.IsEndValid() );
     auto timeSpan = zone.End() - zone.Start();
@@ -7484,8 +7485,7 @@ void Worker::ReconstructZoneStatistics( SrcLocCountMap& countMap, ZoneEvent& zon
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
-        const auto isReentry = HasSrcLocCount( countMap, zone.SrcLoc() );
-        if( !isReentry )
+        if( countMap[uint16_t(zone.SrcLoc())] == 0 )
         {
             slz.nonReentrantCount++;
             if( slz.nonReentrantMin > timeSpan ) slz.nonReentrantMin = timeSpan;

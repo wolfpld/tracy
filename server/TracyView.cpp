@@ -6519,7 +6519,6 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
     for( const auto& v : m_worker.GetPlots() )
     {
-        assert( v->data.is_sorted() );
         auto& vis = Vis( v );
         if( !vis.visible )
         {
@@ -6602,7 +6601,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             if( yPos + PlotHeight >= yMin && yPos <= yMax )
             {
                 auto& vec = v->data;
-                if( !vec.is_sorted() ) vec.sort();
+                vec.ensure_sorted();
 
                 if( v->type == PlotType::Memory )
                 {

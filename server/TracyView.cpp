@@ -17570,32 +17570,38 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
             auto frame = frameData.data[frameData.size-1];
             bool expand = false;
 
+            const auto frameName = m_worker.GetString( frame.name );
             if( v.children.empty() )
             {
                 ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-                if( isKernel )
+                if( frameName[0] == '[' )
                 {
-                    TextColoredUnformatted( 0xFF8888FF, m_worker.GetString( frame.name ) );
+                    TextDisabledUnformatted( frameName );
+                }
+                else if( isKernel )
+                {
+                    TextColoredUnformatted( 0xFF8888FF, frameName );
                 }
                 else
                 {
-                    ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                    ImGui::TextUnformatted( frameName );
                 }
                 ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
             }
             else
             {
                 ImGui::PushID( lidx++ );
-                if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
+                if( frameName[0] == '[' ) ImGui::PushStyleColor( ImGuiCol_Text, 0x88FFFFFF );
+                else if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
-                    expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
+                    expand = ImGui::TreeNodeEx( frameName, ImGuiTreeNodeFlags_DefaultOpen );
                 }
                 else
                 {
-                    expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
+                    expand = ImGui::TreeNode( frameName );
                 }
-                if( isKernel ) ImGui::PopStyleColor();
+                if( isKernel || frameName[0] == '[' ) ImGui::PopStyleColor();
                 ImGui::PopID();
             }
 
@@ -17699,32 +17705,39 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             auto& frameData = *frameDataPtr;
             auto frame = frameData.data[frameData.size-1];
             bool expand = false;
+
+            const auto frameName = m_worker.GetString( frame.name );
             if( v.children.empty() )
             {
                 ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-                if( isKernel )
+                if( frameName[0] == '[' )
                 {
-                    TextColoredUnformatted( 0xFF8888FF, m_worker.GetString( frame.name ) );
+                    TextDisabledUnformatted( frameName );
+                }
+                else if( isKernel )
+                {
+                    TextColoredUnformatted( 0xFF8888FF, frameName );
                 }
                 else
                 {
-                    ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                    ImGui::TextUnformatted( frameName );
                 }
                 ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
             }
             else
             {
                 ImGui::PushID( lidx++ );
-                if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
+                if( frameName[0] == '[' ) ImGui::PushStyleColor( ImGuiCol_Text, 0x88FFFFFF );
+                else if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
-                    expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
+                    expand = ImGui::TreeNodeEx( frameName, ImGuiTreeNodeFlags_DefaultOpen );
                 }
                 else
                 {
-                    expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
+                    expand = ImGui::TreeNode( frameName );
                 }
-                if( isKernel ) ImGui::PopStyleColor();
+                if( isKernel || frameName[0] == '[' ) ImGui::PopStyleColor();
                 ImGui::PopID();
             }
 

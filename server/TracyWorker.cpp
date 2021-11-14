@@ -4377,6 +4377,14 @@ void Worker::DoPostponedWork()
                             cit = std::lower_bound( cit, ctx->v.end(), sit->time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
                         }
                         while( cit != ctx->v.end() );
+                        if( sit == td->postponedSamples.end() )
+                        {
+                            td->postponedSamples.clear();
+                        }
+                        else
+                        {
+                            td->postponedSamples.erase( td->postponedSamples.begin(), sit );
+                        }
                     }
                 }
             }

@@ -1300,7 +1300,7 @@ Profiler::Profiler()
     , m_fiQueue( 16 )
     , m_fiDequeue( 16 )
 #endif
-    , m_symbolQueue( 64*1024 )
+    , m_symbolQueue( 8*1024 )
     , m_frameCount( 0 )
     , m_isConnected( false )
 #ifdef TRACY_ON_DEMAND

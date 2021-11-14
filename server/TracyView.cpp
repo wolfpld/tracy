@@ -6600,7 +6600,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             auto yPos = wpos.y + offset;
             if( yPos + PlotHeight >= yMin && yPos <= yMax )
             {
-                const auto& vec = v->data;
+                auto& vec = v->data;
+                if( !vec.is_sorted() ) vec.sort();
 
                 if( v->type == PlotType::Memory )
                 {

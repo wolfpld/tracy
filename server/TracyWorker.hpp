@@ -624,6 +624,7 @@ public:
     std::pair<uint64_t, uint64_t> GetTextureCompressionBytes() const { return std::make_pair( m_texcomp.GetInputBytesCount(), m_texcomp.GetOutputBytesCount() ); }
 
     void DoPostponedWork();
+    void DoPostponedWorkAll();
 
 private:
     void Network();

@@ -4295,13 +4295,18 @@ void Worker::HandleFrameName( uint64_t name, const char* str, size_t sz )
     } );
 }
 
-void Worker::DoPostponedWork()
+void Worker::DoPostponedWorkAll()
 {
+    DoPostponedWork();
+
     for( auto& plot : m_data.plots.Data() )
     {
         if( !plot->data.is_sorted() ) plot->data.sort();
     }
+}
 
+void Worker::DoPostponedWork()
+{
 #ifndef TRACY_NO_STATISTICS
     if( m_data.newFramesWereReceived )
     {
@@ -7651,7 +7656,7 @@ static void WriteHwSampleVec( FileWrite& f, SortedVector<Int48, Int48Sort>& vec 
 
 void Worker::Write( FileWrite& f, bool fiDict )
 {
-    DoPostponedWork();
+    DoPostponedWorkAll();
 
     f.Write( FileHeader, sizeof( FileHeader ) );
 

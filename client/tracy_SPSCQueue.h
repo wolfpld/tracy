@@ -25,30 +25,18 @@ SOFTWARE.
 #include <atomic>
 #include <cassert>
 #include <cstddef>
-#include <memory> // std::allocator
 #include <new>    // std::hardware_destructive_interference_size
 #include <stdexcept>
 #include <type_traits> // std::enable_if, std::is_*_constructible
 
+#include "../common/TracyAlloc.hpp"
+
 namespace tracy {
 
-template <typename T, typename Allocator = std::allocator<T>> class SPSCQueue {
-
-#if defined(__cpp_if_constexpr) && defined(__cpp_lib_void_t)
-  template <typename Alloc2, typename = void>
-  struct has_allocate_at_least : std::false_type {};
-
-  template <typename Alloc2>
-  struct has_allocate_at_least<
-      Alloc2, std::void_t<typename Alloc2::value_type,
-                          decltype(std::declval<Alloc2 &>().allocate_at_least(
-                              size_t{}))>> : std::true_type {};
-#endif
-
+template <typename T> class SPSCQueue {
 public:
-  explicit SPSCQueue(const size_t capacity,
-                     const Allocator &allocator = Allocator())
-      : capacity_(capacity), allocator_(allocator) {
+  explicit SPSCQueue(const size_t capacity)
+      : capacity_(capacity) {
     // The queue needs at least one element
     if (capacity_ < 1) {
       capacity_ = 1;
@@ -59,19 +47,7 @@ public:
       capacity_ = SIZE_MAX - 2 * kPadding;
     }
 
-#if defined(__cpp_if_constexpr) && defined(__cpp_lib_void_t)
-    if constexpr (has_allocate_at_least<Allocator>::value) {
-      auto res = allocator_.allocate_at_least(capacity_ + 2 * kPadding);
-      slots_ = res.ptr;
-      capacity_ = res.count - 2 * kPadding;
-    } else {
-      slots_ = std::allocator_traits<Allocator>::allocate(
-          allocator_, capacity_ + 2 * kPadding);
-    }
-#else
-    slots_ = std::allocator_traits<Allocator>::allocate(
-        allocator_, capacity_ + 2 * kPadding);
-#endif
+    slots_ = (T*)tracy_malloc(sizeof(T) * (capacity_ + 2 * kPadding));
 
     static_assert(alignof(SPSCQueue<T>) == kCacheLineSize, "");
     static_assert(sizeof(SPSCQueue<T>) >= 3 * kCacheLineSize, "");
@@ -84,8 +60,7 @@ public:
     while (front()) {
       pop();
     }
-    std::allocator_traits<Allocator>::deallocate(allocator_, slots_,
-                                                 capacity_ + 2 * kPadding);
+    tracy_free(slots_);
   }
 
   // non-copyable and non-movable
@@ -206,11 +181,6 @@ private:
 private:
   size_t capacity_;
   T *slots_;
-#if defined(__has_cpp_attribute) && __has_cpp_attribute(no_unique_address)
-  Allocator allocator_ [[no_unique_address]];
-#else
-  Allocator allocator_;
-#endif
 
   // Align to cache line size in order to avoid false sharing
   // readIdxCache_ and writeIdxCache_ is used to reduce the amount of cache

@@ -12776,12 +12776,12 @@ void View::DrawStatistics()
                                 if( start >= min && end <= max )
                                 {
                                     const auto zt = end - start;
-                                    if ( m_statAccumulationMode == AccumulationMode::SelfOnly)
+                                    if( m_statAccumulationMode == AccumulationMode::SelfOnly )
                                     {
                                         total += zt - GetZoneChildTimeFast( z );
                                         cnt++;
                                     }
-                                    else if ( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry(z) )
+                                    else if( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry( z ) )
                                     {
                                         total += zt;
                                         cnt++;
@@ -12823,12 +12823,12 @@ void View::DrawStatistics()
                                     if( start >= min && end <= max )
                                     {
                                         const auto zt = end - start;
-                                        if ( m_statAccumulationMode == AccumulationMode::SelfOnly)
+                                        if( m_statAccumulationMode == AccumulationMode::SelfOnly )
                                         {
                                             total += zt - GetZoneChildTimeFast( z );
                                             cnt++;
                                         }
-                                        else if ( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry(z) )
+                                        else if( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry( z ) )
                                         {
                                             total += zt;
                                             cnt++;

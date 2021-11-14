@@ -3934,7 +3934,6 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz
         auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );
         m_data.srclocZonesLast.first = key;
         m_data.srclocZonesLast.second = &res.first->second;
-
 #else
         auto res = m_data.sourceLocationZonesCnt.emplace( key, 0 );
         m_data.srclocCntLast.first = key;

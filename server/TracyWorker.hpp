@@ -566,6 +566,7 @@ public:
     std::vector<int16_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
 #ifndef TRACY_NO_STATISTICS
+    SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc );
     const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
     const unordered_flat_map<int16_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }

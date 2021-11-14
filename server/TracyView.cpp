@@ -1980,6 +1980,7 @@ void View::DrawFrames()
     if( m_worker.AreSourceLocationZonesReady() && m_findZone.show && m_findZone.showZoneInFrames && !m_findZone.match.empty() )
     {
         auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+        zoneData.zones.ensure_sorted();
         auto begin = zoneData.zones.begin();
         while( i < onScreen && m_vd.frameStart + idx < total )
         {
@@ -9927,11 +9928,12 @@ void View::DrawFindZone()
         ImGui::Separator();
 
         auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+        auto& zones = zoneData.zones;
+        zones.ensure_sorted();
         if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
         {
             const auto ty = ImGui::GetFontSize();
 
-            auto& zones = zoneData.zones;
             int64_t tmin = m_findZone.tmin;
             int64_t tmax = m_findZone.tmax;
             int64_t total = m_findZone.total;
@@ -10940,7 +10942,6 @@ void View::DrawFindZone()
         ImGui::SameLine();
         DrawHelpMarker( "Mean time per call" );
 
-        auto& zones = zoneData.zones;
         const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto groupBy = m_findZone.groupBy;
@@ -12061,6 +12062,8 @@ void View::DrawCompare()
             auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
             auto& zones0 = zoneData0.zones;
             auto& zones1 = zoneData1.zones;
+            zones0.ensure_sorted();
+            zones1.ensure_sorted();
 
             tmin = std::min( zoneData0.min, zoneData1.min );
             tmax = std::max( zoneData0.max, zoneData1.max );
@@ -18374,7 +18377,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
-        if( !slz.zones.empty() )
+        if( !slz.zones.empty() && slz.zones.is_sorted() )
         {
             auto it = std::lower_bound( slz.zones.begin(), slz.zones.end(), zone.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs; } );
             if( it != slz.zones.end() && it->Zone() == &zone )
@@ -18457,7 +18460,7 @@ bool View::IsZoneReentry( const ZoneEvent& zone ) const
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
-        if( !slz.zones.empty() )
+        if( !slz.zones.empty() && slz.zones.is_sorted() )
         {
             auto it = std::lower_bound( slz.zones.begin(), slz.zones.end(), zone.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs; } );
             if( it != slz.zones.end() && it->Zone() == &zone )
@@ -18582,7 +18585,7 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& slz = m_worker.GetZonesForSourceLocation( zone.SrcLoc() );
-        if( !slz.zones.empty() )
+        if( !slz.zones.empty() && slz.zones.is_sorted() )
         {
             auto it = std::lower_bound( slz.zones.begin(), slz.zones.end(), zone.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs; } );
             if( it != slz.zones.end() && it->Zone() == &zone )

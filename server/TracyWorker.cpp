@@ -1948,6 +1948,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         ProcessTimeline( countMap, t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
                     }
                 }
+                std::lock_guard<std::mutex> lock( m_data.lock );
+                m_data.sourceLocationZonesReady = true;
             } ) );
 
             if( eventMask & EventType::Samples )
@@ -2093,17 +2095,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
 
             for( auto& job : jobs ) job.join();
-
-            for( auto& v : m_data.sourceLocationZones )
-            {
-                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                if( !v.second.zones.is_sorted() ) v.second.zones.sort();
-            }
-            {
-                std::lock_guard<std::mutex> lock( m_data.lock );
-                m_data.sourceLocationZonesReady = true;
-            }
-
             m_backgroundDone.store( true, std::memory_order_relaxed );
         } );
 #else
@@ -2904,6 +2895,14 @@ std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool 
 }
 
 #ifndef TRACY_NO_STATISTICS
+Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc )
+{
+    assert( AreSourceLocationZonesReady() );
+    static SourceLocationZones empty;
+    auto it = m_data.sourceLocationZones.find( srcloc );
+    return it != m_data.sourceLocationZones.end() ? it->second : empty;
+}
+
 const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc ) const
 {
     assert( AreSourceLocationZonesReady() );
@@ -4347,14 +4346,6 @@ void Worker::DoPostponedWork()
         HandlePostponedSamples();
         HandlePostponedGhostZones();
         m_data.newFramesWereReceived = false;
-    }
-
-    if( m_data.sourceLocationZonesReady )
-    {
-        for( auto& slz : m_data.sourceLocationZones )
-        {
-            if( !slz.second.zones.is_sorted() ) slz.second.zones.sort();
-        }
     }
 
     if( m_data.newContextSwitchesReceived )

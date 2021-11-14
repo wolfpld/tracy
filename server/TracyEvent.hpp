@@ -264,6 +264,8 @@ struct SampleData
 
 enum { SampleDataSize = sizeof( SampleData ) };
 
+struct SampleDataSort { bool operator()( const SampleData& lhs, const SampleData& rhs ) { return lhs.time.Val() < rhs.time.Val(); }; };
+
 
 struct SampleDataRange
 {
@@ -633,7 +635,7 @@ struct ThreadData
     Vector<int64_t> childTimeStack;
     Vector<GhostZone> ghostZones;
     uint64_t ghostIdx;
-    Vector<SampleData> postponedSamples;
+    SortedVector<SampleData, SampleDataSort> postponedSamples;
 #endif
     Vector<SampleData> samples;
     SampleData pendingSample;

@@ -30,7 +30,7 @@ SOFTWARE.
 #include <stdexcept>
 #include <type_traits> // std::enable_if, std::is_*_constructible
 
-namespace rigtorp {
+namespace tracy {
 
 template <typename T, typename Allocator = std::allocator<T>> class SPSCQueue {
 

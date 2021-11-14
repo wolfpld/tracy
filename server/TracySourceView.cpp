@@ -1252,7 +1252,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     {
         CountHwStats( as, worker, view );
     }
-    const auto slzReady = worker.AreSourceLocationZonesReady();
+    const auto samplesReady = worker.AreSymbolSamplesReady();
     if( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         ImGui::SameLine();
@@ -1294,7 +1294,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         if( m_cost == CostType::SampleCount )
         {
-            if( !slzReady )
+            if( !samplesReady )
             {
                 ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
                 ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
@@ -1305,7 +1305,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 m_childCalls = !m_childCalls;
             }
             SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
-            if( !slzReady )
+            if( !samplesReady )
             {
                 ImGui::PopStyleVar();
                 ImGui::PopItemFlag();
@@ -1442,7 +1442,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         break;
     }
 
-    if( slzReady && ImGui::IsKeyDown( 'Z' ) ) m_childCalls = !m_childCalls;
+    if( samplesReady && ImGui::IsKeyDown( 'Z' ) ) m_childCalls = !m_childCalls;
 
     if( jumpOut != 0 )
     {
@@ -4329,7 +4329,7 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
 
 void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view )
 {
-    const auto slzReady = worker.AreSourceLocationZonesReady();
+    const auto samplesReady = worker.AreSymbolSamplesReady();
     auto filename = m_source.filename();
     if( limitView )
     {
@@ -4395,7 +4395,7 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
         {
             auto addr = worker.GetCanonicalPointer( ip.first );
             assert( as.ipCountAsm.find( addr ) == as.ipCountAsm.end() );
-            auto cp = slzReady ? worker.GetChildSamples( addr ) : nullptr;
+            auto cp = samplesReady ? worker.GetChildSamples( addr ) : nullptr;
             const auto ccnt = cp ? cp->size() : 0;
             as.ipCountAsm.emplace( addr, AddrStat { ip.second, ccnt } );
             as.ipTotalAsm.local += ip.second;
@@ -4442,7 +4442,7 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
 
 void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view )
 {
-    if( !worker.AreSourceLocationZonesReady() ) return;
+    if( !worker.AreSymbolSamplesReady() ) return;
     auto sym = worker.GetSymbolData( baseAddr );
     if( !sym ) return;
 

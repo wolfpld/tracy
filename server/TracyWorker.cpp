@@ -2545,15 +2545,17 @@ const char* Worker::GetSymbolCode( uint64_t sym, uint32_t& len ) const
     return it->second.data;
 }
 
-uint64_t Worker::GetSymbolForAddress( uint64_t address ) const
+uint64_t Worker::GetSymbolForAddress( uint64_t address )
 {
+    DoPostponedSymbols();
     auto it = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), address, [] ( const auto& l, const auto& r ) { return l.addr + l.len < r; } );
     if( it == m_data.symbolLoc.end() || address < it->addr ) return 0;
     return it->addr;
 }
 
-uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset ) const
+uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset )
 {
+    DoPostponedSymbols();
     auto it = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), address, [] ( const auto& l, const auto& r ) { return l.addr + l.len < r; } );
     if( it == m_data.symbolLoc.end() || address < it->addr ) return 0;
     offset = address - it->addr;
@@ -2595,8 +2597,9 @@ const Vector<uint64_t>* Worker::GetAddressesForLocation( uint32_t fileStringIdx,
     }
 }
 
-const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len ) const
+const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len )
 {
+    DoPostponedInlineSymbols();
     auto it = std::lower_bound( m_data.symbolLocInline.begin(), m_data.symbolLocInline.end(), sym );
     if( it == m_data.symbolLocInline.end() ) return nullptr;
     if( *it >= sym + len ) return nullptr;
@@ -4295,9 +4298,41 @@ void Worker::HandleFrameName( uint64_t name, const char* str, size_t sz )
     } );
 }
 
+void Worker::DoPostponedSymbols()
+{
+    if( m_data.newSymbolsIndex >= 0 )
+    {
+#ifdef NO_PARALLEL_SORT
+        pdqsort_branchless( m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#else
+        std::sort( std::execution::par_unseq, m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#endif
+        const auto ms = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc[m_data.newSymbolsIndex], [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+        std::inplace_merge( ms, m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+        m_data.newSymbolsIndex = -1;
+    }
+}
+
+void Worker::DoPostponedInlineSymbols()
+{
+    if( m_data.newInlineSymbolsIndex >= 0 )
+    {
+#ifdef NO_PARALLEL_SORT
+        pdqsort_branchless( m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
+#else
+        std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
+#endif
+        const auto ms = std::lower_bound( m_data.symbolLocInline.begin(), m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline[m_data.newInlineSymbolsIndex] );
+        std::inplace_merge( ms, m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
+        m_data.newInlineSymbolsIndex = -1;
+    }
+}
+
 void Worker::DoPostponedWorkAll()
 {
     DoPostponedWork();
+    DoPostponedSymbols();
+    DoPostponedInlineSymbols();
 
     for( auto& plot : m_data.plots.Data() )
     {
@@ -4362,29 +4397,6 @@ void Worker::DoPostponedWork()
         m_data.newContextSwitchesReceived = false;
     }
 #endif
-
-    if( m_data.newSymbolsIndex >= 0 )
-    {
-#ifdef NO_PARALLEL_SORT
-        pdqsort_branchless( m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
-#else
-        std::sort( std::execution::par_unseq, m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
-#endif
-        const auto ms = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc[m_data.newSymbolsIndex], [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
-        std::inplace_merge( ms, m_data.symbolLoc.begin() + m_data.newSymbolsIndex, m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
-        m_data.newSymbolsIndex = -1;
-    }
-    if( m_data.newInlineSymbolsIndex >= 0 )
-    {
-#ifdef NO_PARALLEL_SORT
-        pdqsort_branchless( m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
-#else
-        std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
-#endif
-        const auto ms = std::lower_bound( m_data.symbolLocInline.begin(), m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline[m_data.newInlineSymbolsIndex] );
-        std::inplace_merge( ms, m_data.symbolLocInline.begin() + m_data.newInlineSymbolsIndex, m_data.symbolLocInline.end() );
-        m_data.newInlineSymbolsIndex = -1;
-    }
 }
 
 #ifndef TRACY_NO_STATISTICS

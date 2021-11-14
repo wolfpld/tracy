@@ -146,7 +146,7 @@ public:
     void SetCpuId( uint32_t cpuid );
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
-    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view );
+    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view );
     void Render( Worker& worker, View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }

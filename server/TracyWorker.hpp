@@ -511,13 +511,13 @@ public:
     const SymbolData* GetSymbolData( uint64_t sym ) const;
     bool HasSymbolCode( uint64_t sym ) const;
     const char* GetSymbolCode( uint64_t sym, uint32_t& len ) const;
-    uint64_t GetSymbolForAddress( uint64_t address ) const;
-    uint64_t GetSymbolForAddress( uint64_t address, uint32_t& offset ) const;
+    uint64_t GetSymbolForAddress( uint64_t address );
+    uint64_t GetSymbolForAddress( uint64_t address, uint32_t& offset );
     uint64_t GetInlineSymbolForAddress( uint64_t address ) const;
     bool HasInlineSymbolAddresses() const { return !m_data.codeSymbolMap.empty(); }
     StringIdx GetLocationForAddress( uint64_t address, uint32_t& line ) const;
     const Vector<uint64_t>* GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const;
-    const uint64_t* GetInlineSymbolList( uint64_t sym, uint32_t len ) const;
+    const uint64_t* GetInlineSymbolList( uint64_t sym, uint32_t len );
 
 #ifndef TRACY_NO_STATISTICS
     const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }
@@ -623,6 +623,8 @@ public:
 
     std::pair<uint64_t, uint64_t> GetTextureCompressionBytes() const { return std::make_pair( m_texcomp.GetInputBytesCount(), m_texcomp.GetOutputBytesCount() ); }
 
+    void DoPostponedSymbols();
+    void DoPostponedInlineSymbols();
     void DoPostponedWork();
     void DoPostponedWorkAll();
 

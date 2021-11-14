@@ -506,7 +506,7 @@ void SourceView::OpenSource( const char* fileName, int line, const View& view, c
     assert( !m_source.empty() );
 }
 
-void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view )
+void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view )
 {
     m_targetLine = line;
     m_targetAddr = symAddr;

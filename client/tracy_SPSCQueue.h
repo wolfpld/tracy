@@ -37,16 +37,7 @@ template <typename T> class SPSCQueue {
 public:
   explicit SPSCQueue(const size_t capacity)
       : capacity_(capacity) {
-    // The queue needs at least one element
-    if (capacity_ < 1) {
-      capacity_ = 1;
-    }
     capacity_++; // Needs one slack element
-    // Prevent overflowing size_t
-    if (capacity_ > SIZE_MAX - 2 * kPadding) {
-      capacity_ = SIZE_MAX - 2 * kPadding;
-    }
-
     slots_ = (T*)tracy_malloc(sizeof(T) * (capacity_ + 2 * kPadding));
 
     static_assert(alignof(SPSCQueue<T>) == kCacheLineSize, "");

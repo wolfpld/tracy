@@ -16498,6 +16498,7 @@ void View::DrawWaitStacks()
     if( threadsChanged ) m_waitStack = 0;
 
     ImGui::Separator();
+    ImGui::BeginChild( "##waitstacks" );
     if( stacks.empty() )
     {
         ImGui::TextUnformatted( "No wait stacks to display." );
@@ -16582,6 +16583,7 @@ void View::DrawWaitStacks()
         }
     }
 #endif
+    ImGui::EndChild();
     ImGui::End();
 }
 

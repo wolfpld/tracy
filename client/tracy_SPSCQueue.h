@@ -84,52 +84,6 @@ public:
     writeIdx_.store(nextWriteIdx, std::memory_order_release);
   }
 
-  template <typename... Args>
-  bool try_emplace(Args &&...args) noexcept(
-      std::is_nothrow_constructible<T, Args &&...>::value) {
-    static_assert(std::is_constructible<T, Args &&...>::value,
-                  "T must be constructible with Args&&...");
-    auto const writeIdx = writeIdx_.load(std::memory_order_relaxed);
-    auto nextWriteIdx = writeIdx + 1;
-    if (nextWriteIdx == capacity_) {
-      nextWriteIdx = 0;
-    }
-    if (nextWriteIdx == readIdxCache_) {
-      readIdxCache_ = readIdx_.load(std::memory_order_acquire);
-      if (nextWriteIdx == readIdxCache_) {
-        return false;
-      }
-    }
-    new (&slots_[writeIdx + kPadding]) T(std::forward<Args>(args)...);
-    writeIdx_.store(nextWriteIdx, std::memory_order_release);
-    return true;
-  }
-
-  void push(const T &v) noexcept(std::is_nothrow_copy_constructible<T>::value) {
-    static_assert(std::is_copy_constructible<T>::value,
-                  "T must be copy constructible");
-    emplace(v);
-  }
-
-  template <typename P, typename = typename std::enable_if<
-                            std::is_constructible<T, P &&>::value>::type>
-  void push(P &&v) noexcept(std::is_nothrow_constructible<T, P &&>::value) {
-    emplace(std::forward<P>(v));
-  }
-
-  bool
-  try_push(const T &v) noexcept(std::is_nothrow_copy_constructible<T>::value) {
-    static_assert(std::is_copy_constructible<T>::value,
-                  "T must be copy constructible");
-    return try_emplace(v);
-  }
-
-  template <typename P, typename = typename std::enable_if<
-                            std::is_constructible<T, P &&>::value>::type>
-  bool try_push(P &&v) noexcept(std::is_nothrow_constructible<T, P &&>::value) {
-    return try_emplace(std::forward<P>(v));
-  }
-
   T *front() noexcept {
     auto const readIdx = readIdx_.load(std::memory_order_relaxed);
     if (readIdx == writeIdxCache_) {

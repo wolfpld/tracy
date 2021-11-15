@@ -15509,7 +15509,25 @@ void View::DrawPlayback()
         }
     }
     int tmp = m_playback.frame + 1;
-    if( ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" ) )
+    bool changed = ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" );
+    ImGui::SetItemUsingMouseWheel();
+    if( ImGui::IsItemHovered() )
+    {
+        const auto wheel = ImGui::GetIO().MouseWheel;
+        if( wheel )
+        {
+            if( ImGui::IsItemActive() )
+            {
+                ImGui::ClearActiveID();
+            }
+            else
+            {
+                tmp -= (int)wheel;
+                changed = true;
+            }
+        }
+    }
+    if( changed )
     {
         if( tmp < 1 ) tmp = 1;
         else if( (uint32_t)tmp > ficnt ) tmp = ficnt;

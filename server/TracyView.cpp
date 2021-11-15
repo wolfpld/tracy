@@ -15441,7 +15441,7 @@ void View::DrawPlayback()
     const auto scale = ImGui::GetTextLineHeight() / 15.f;
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
-    const auto fi = frameImages[m_playback.frame];
+    const auto& fi = frameImages[m_playback.frame];
     const auto ficnt = m_worker.GetFrameImageCount();
 
     const auto tstart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );

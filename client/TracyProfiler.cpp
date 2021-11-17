@@ -3996,7 +3996,7 @@ TRACY_API void ___tracy_emit_gpu_zone_end( const struct ___tracy_gpu_zone_end_da
     {
         TracyLfqPrepareC( tracy::QueueType::GpuZoneEnd );
         tracy::MemWrite( &item->gpuZoneEnd.cpuTime, tracy::Profiler::GetTime() );
-        tracy::MemWrite( &item->gpuNewContext.thread, tracy::GetThreadHandle() );
+        memset( &item->gpuZoneEnd.thread, 0, sizeof( item->gpuZoneEnd.thread ) );
         tracy::MemWrite( &item->gpuZoneEnd.queryId, data.queryId );
         tracy::MemWrite( &item->gpuZoneEnd.context, data.context );
         TracyLfqCommitC;

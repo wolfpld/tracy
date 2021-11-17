@@ -3965,6 +3965,75 @@ TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source
     return tracy::Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
 }
 
+TRACY_API void ___tracy_emit_gpu_zone_begin_alloc( const struct ___tracy_gpu_zone_begin_data data, int active )
+{
+    if( !active ) return;
+
+    {
+        TracyLfqPrepareC( tracy::QueueType::GpuZoneBeginAllocSrcLoc  );
+        tracy::MemWrite( &item->gpuZoneBegin.cpuTime, tracy::Profiler::GetTime() );
+        tracy::MemWrite( &item->gpuNewContext.thread, tracy::GetThreadHandle() );
+        tracy::MemWrite( &item->gpuZoneBegin.srcloc, data.srcloc );
+        tracy::MemWrite( &item->gpuZoneBegin.queryId, data.queryId );
+        tracy::MemWrite( &item->gpuZoneBegin.context, data.context );
+        TracyLfqCommitC;
+    }
+}
+
+TRACY_API void ___tracy_emit_gpu_time( const struct ___tracy_gpu_time_data data )
+{
+    {
+        TracyLfqPrepareC( tracy::QueueType::GpuTime );
+        tracy::MemWrite( &item->gpuTime.gpuTime, data.gpuTime );
+        tracy::MemWrite( &item->gpuTime.queryId, data.queryId );
+        tracy::MemWrite( &item->gpuTime.context, data.context );
+        TracyLfqCommitC;
+    }
+}
+
+TRACY_API void ___tracy_emit_gpu_zone_end( const struct ___tracy_gpu_zone_end_data data, int active )
+{
+    if( !active ) return;
+    {
+        TracyLfqPrepareC( tracy::QueueType::GpuZoneEnd );
+        tracy::MemWrite( &item->gpuZoneEnd.cpuTime, tracy::Profiler::GetTime() );
+        tracy::MemWrite( &item->gpuNewContext.thread, tracy::GetThreadHandle() );
+        tracy::MemWrite( &item->gpuZoneEnd.queryId, data.queryId );
+        tracy::MemWrite( &item->gpuZoneEnd.context, data.context );
+        TracyLfqCommitC;
+    }
+}
+
+
+TRACY_API void ___tracy_emit_gpu_new_context( ___tracy_gpu_new_context_data data )
+{
+    {
+        TracyLfqPrepareC( tracy::QueueType::GpuNewContext );
+        tracy::MemWrite( &item->gpuNewContext.cpuTime, tracy::Profiler::GetTime() );
+        tracy::MemWrite( &item->gpuNewContext.thread, tracy::GetThreadHandle() );
+        tracy::MemWrite( &item->gpuNewContext.gpuTime, data.gpuTime );
+        tracy::MemWrite( &item->gpuNewContext.period, data.period );
+        tracy::MemWrite( &item->gpuNewContext.context, data.context );
+        tracy::MemWrite( &item->gpuNewContext.flags, data.flags );
+        tracy::MemWrite( &item->gpuNewContext.type, data.type );
+        TracyLfqCommitC;
+    }
+}
+
+TRACY_API void ___tracy_emit_gpu_context_name( const struct ___tracy_gpu_context_name_data data )
+{
+    {
+        auto ptr = (char*)tracy::tracy_malloc( data.len );
+        memcpy( ptr, data.name, data.len );
+
+        TracyLfqPrepareC( tracy::QueueType::GpuContextName );
+        tracy::MemWrite( &item->gpuContextNameFat.context, data.context );
+        tracy::MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
+        tracy::MemWrite( &item->gpuContextNameFat.size, data.len );
+        TracyLfqCommitC;
+    }
+}
+
 #  ifdef TRACY_MANUAL_LIFETIME
 TRACY_API void ___tracy_startup_profiler( void )
 {

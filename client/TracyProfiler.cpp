@@ -3968,7 +3968,6 @@ TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source
 TRACY_API void ___tracy_emit_gpu_zone_begin_alloc( const struct ___tracy_gpu_zone_begin_data data, int active )
 {
     if( !active ) return;
-
     {
         TracyLfqPrepareC( tracy::QueueType::GpuZoneBeginAllocSrcLoc  );
         tracy::MemWrite( &item->gpuZoneBegin.cpuTime, tracy::Profiler::GetTime() );

@@ -133,6 +133,7 @@ struct ___tracy_gpu_context_name_data {
 // This struct, as visible to user, is immutable, so treat it as if const was declared here.
 typedef /*const*/ struct ___tracy_c_zone_context TracyCZoneCtx;
 
+
 #ifdef TRACY_MANUAL_LIFETIME
 TRACY_API void ___tracy_startup_profiler(void);
 TRACY_API void ___tracy_shutdown_profiler(void);

@@ -951,6 +951,28 @@ bool View::DrawImpl()
         }
         ImGui::EndPopup();
     }
+    if( m_sscb )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_SEARCH_PLUS ) ) ImGui::OpenPopup( "ZoomPopup" );
+        if( ImGui::BeginPopup( "ZoomPopup" ) )
+        {
+            if( ImGui::Button( "50%" ) )  m_sscb( 1.f/2,     m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "57%" ) )  m_sscb( 1.f/1.75f, m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "66%" ) )  m_sscb( 1.f/1.5f,  m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "80%" ) )  m_sscb( 1.f/1.25f, m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "100%" ) ) m_sscb( 1.f,       m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "125%" ) ) m_sscb( 1.25f,     m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "150%" ) ) m_sscb( 1.5f,      m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "175%" ) ) m_sscb( 1.75f,     m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "200%" ) ) m_sscb( 2.f,       m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "225%" ) ) m_sscb( 2.25f,     m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "250%" ) ) m_sscb( 2.5f,      m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "275%" ) ) m_sscb( 2.75f,     m_fixedFont, m_bigFont, m_smallFont );
+            if( ImGui::Button( "300%" ) ) m_sscb( 3.f,       m_fixedFont, m_bigFont, m_smallFont );
+            ImGui::EndPopup();
+        }
+    }
     ImGui::SameLine();
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
     ImGui::SameLine();

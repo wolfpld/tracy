@@ -1527,6 +1527,7 @@ void View::DrawNotificationArea()
 
 bool View::DrawConnection()
 {
+    const auto scale = GetScale();
     const auto ty = ImGui::GetFontSize();
     const auto cs = ty * 0.9f;
     const auto isConnected = m_worker.IsConnected();
@@ -1547,7 +1548,7 @@ bool View::DrawConnection()
         }
         ImGui::Dummy( ImVec2( cs, 0 ) );
         ImGui::SameLine();
-        ImGui::PlotLines( buf, mbpsVector.data(), mbpsVector.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
+        ImGui::PlotLines( buf, mbpsVector.data(), mbpsVector.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150 * scale, 0 ) );
         TextDisabledUnformatted( "Ratio" );
         ImGui::SameLine();
         ImGui::Text( "%.1f%%", m_worker.GetCompRatio() * 100.f );
@@ -1582,7 +1583,7 @@ bool View::DrawConnection()
     const auto& fis = m_worker.GetFrameImages();
     if( !fis.empty() )
     {
-        const auto scale = GetScale() * 0.5f;
+        const auto fiScale = scale * 0.5f;
         const auto& fi = fis.back();
         if( fi != m_frameTextureConnPtr )
         {
@@ -1593,11 +1594,11 @@ bool View::DrawConnection()
         ImGui::Separator();
         if( fi->flip )
         {
-            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * fiScale, fi->h * fiScale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
         }
         else
         {
-            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * scale, fi->h * scale ) );
+            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * fiScale, fi->h * fiScale ) );
         }
     }
 

@@ -197,7 +197,7 @@ static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, I
 
 static void SetupScaleCallback( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
 {
-    SetupDPIScale( scale * dpiScale, fixedWidth, bigFont, smallFont );
+    RunOnMainThread( [scale, &fixedWidth, &bigFont, &smallFont] { SetupDPIScale( scale * dpiScale, fixedWidth, bigFont, smallFont ); }, true );
 }
 
 int main( int argc, char** argv )

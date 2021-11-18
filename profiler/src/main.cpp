@@ -143,6 +143,54 @@ void RunOnMainThread( std::function<void()> cb )
     }
 }
 
+static void LoadFonts( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
+{
+    static const ImWchar rangesBasic[] = {
+        0x0020, 0x00FF, // Basic Latin + Latin Supplement
+        0x03BC, 0x03BC, // micro
+        0x03C3, 0x03C3, // small sigma
+        0x2013, 0x2013, // en dash
+        0x2264, 0x2264, // less-than or equal to
+        0,
+    };
+    static const ImWchar rangesIcons[] = {
+        ICON_MIN_FA, ICON_MAX_FA,
+        0
+    };
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImFontConfig configBasic;
+    configBasic.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    ImFontConfig configMerge;
+    configMerge.MergeMode = true;
+    configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+
+    io.Fonts->Clear();
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * scale, &configBasic, rangesBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * scale, &configMerge, rangesIcons );
+    fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * scale, &configBasic );
+    bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 20.0f * scale, &configBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 19.0f * scale, &configMerge, rangesIcons );
+    smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 10.0f * scale, &configBasic );
+}
+
+static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
+{
+    LoadFonts( scale, fixedWidth, bigFont, smallFont );
+
+    ImGui::StyleColorsDark();
+    auto& style = ImGui::GetStyle();
+    style.WindowBorderSize = 1.f * scale;
+    style.FrameBorderSize = 1.f * scale;
+    style.FrameRounding = 5.f;
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
+    style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
+    style.ScaleAllSizes( scale );
+}
+
 int main( int argc, char** argv )
 {
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
@@ -299,42 +347,7 @@ int main( int argc, char** argv )
     ImGui_ImplGlfw_InitForOpenGL( window, true );
     ImGui_ImplOpenGL3_Init( "#version 150" );
 
-    static const ImWchar rangesBasic[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
-        0x03BC, 0x03BC, // micro
-        0x03C3, 0x03C3, // small sigma
-        0x2013, 0x2013, // en dash
-        0x2264, 0x2264, // less-than or equal to
-        0,
-    };
-    static const ImWchar rangesIcons[] = {
-        ICON_MIN_FA, ICON_MAX_FA,
-        0
-    };
-
-    ImFontConfig configBasic;
-    configBasic.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
-    ImFontConfig configMerge;
-    configMerge.MergeMode = true;
-    configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
-
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, &configBasic, rangesBasic );
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons );
-    fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * dpiScale, &configBasic );
-    bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 20.0f * dpiScale, &configBasic );
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 19.0f * dpiScale, &configMerge, rangesIcons );
-    smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 10.0f * dpiScale, &configBasic );
-
-    ImGui::StyleColorsDark();
-    auto& style = ImGui::GetStyle();
-    style.WindowBorderSize = 1.f * dpiScale;
-    style.FrameBorderSize = 1.f * dpiScale;
-    style.FrameRounding = 5.f;
-    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
-    style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
-    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
-    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
-    style.ScaleAllSizes( dpiScale );
+    SetupDPIScale( dpiScale, fixedWidth, bigFont, smallFont );
 
     if( argc == 2 )
     {

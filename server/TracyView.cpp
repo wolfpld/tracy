@@ -993,7 +993,7 @@ bool View::DrawImpl()
         const bool mainFrameSet = m_frames->name == 0;
         const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
         const auto frameOffset = mainFrameSet ? 0 : 1;
-        ImGui::SetNextItemWidth( 120 );
+        ImGui::SetNextItemWidth( 120 * GetScale() );
         const bool clicked = ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
         frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
         if( clicked ) ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
@@ -8746,6 +8746,7 @@ void View::DrawOptions()
 {
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
 
+    const auto scale = GetScale();
     bool val = m_vd.drawEmptyLabels;
     ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &val );
     m_vd.drawEmptyLabels = val;
@@ -8754,7 +8755,7 @@ void View::DrawOptions()
     m_vd.drawFrameTargets = val;
     ImGui::Indent();
     int tmp = m_vd.frameTarget;
-    ImGui::SetNextItemWidth( 90 );
+    ImGui::SetNextItemWidth( 90 * scale );
     if( ImGui::InputInt( "Target FPS", &tmp ) )
     {
         if( tmp < 1 ) tmp = 1;
@@ -8828,7 +8829,7 @@ void View::DrawOptions()
                 {
                     ImGui::TreePush();
                     auto& drift = GpuDrift( gpuData[i] );
-                    ImGui::SetNextItemWidth( 120 );
+                    ImGui::SetNextItemWidth( 120 * scale );
                     ImGui::PushID( i );
                     ImGui::InputInt( "Drift (ns/s)", &drift );
                     ImGui::PopID();
@@ -11133,7 +11134,7 @@ void View::DrawFindZone()
                 if( ImGui::BeginPopup( "FindZoneCallstackPopup" ) )
                 {
                     int sel = m_findZone.selCs + 1;
-                    ImGui::SetNextItemWidth( 120 );
+                    ImGui::SetNextItemWidth( 120 * scale );
                     const bool clicked = ImGui::InputInt( "##findZoneCallstack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
                     if( clicked ) m_findZone.selCs = std::min( std::max( sel, 1 ), int( gsz ) ) - 1;
                     ImGui::EndPopup();
@@ -16102,7 +16103,7 @@ void View::DrawSampleParents()
     if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
     {
         int sel = m_sampleParents.sel + 1;
-        ImGui::SetNextItemWidth( 120 );
+        ImGui::SetNextItemWidth( 120 * scale );
         const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
         if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.parents.size() ) ) - 1;
         ImGui::EndPopup();
@@ -16567,7 +16568,7 @@ void View::DrawWaitStacks()
             if( ImGui::BeginPopup( "WaitStacksPopup" ) )
             {
                 int sel = m_waitStack + 1;
-                ImGui::SetNextItemWidth( 120 );
+                ImGui::SetNextItemWidth( 120 * scale );
                 const bool clicked = ImGui::InputInt( "##waitStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
                 if( clicked ) m_waitStack = std::min( std::max( sel, 1 ), int( stacks.size() ) ) - 1;
                 ImGui::EndPopup();

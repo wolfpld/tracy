@@ -81,6 +81,12 @@ constexpr const char* GpuContextNames[] = {
 };
 
 
+static inline float GetScale()
+{
+    return ImGui::GetTextLineHeight() / 15.f;
+}
+
+
 static inline uint64_t GetThreadBit( uint8_t thread )
 {
     return uint64_t( 1 ) << thread;
@@ -1576,7 +1582,7 @@ bool View::DrawConnection()
     const auto& fis = m_worker.GetFrameImages();
     if( !fis.empty() )
     {
-        const auto scale = ImGui::GetTextLineHeight() / 15.f * 0.5f;
+        const auto scale = GetScale() * 0.5f;
         const auto& fi = fis.back();
         if( fi != m_frameTextureConnPtr )
         {
@@ -1755,7 +1761,7 @@ void View::DrawFrames()
 {
     assert( m_worker.GetFrameCount( *m_frames ) != 0 );
 
-    const auto scale = ImGui::GetTextLineHeight() / 15.f;
+    const auto scale = GetScale();
     const auto Height = 50 * scale;
 
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
@@ -2639,7 +2645,7 @@ void View::DrawZoneFrames( const FrameData& frames )
                 auto fi = m_worker.GetFrameImage( frames, i );
                 if( fi )
                 {
-                    const auto scale = ImGui::GetTextLineHeight() / 15.f;
+                    const auto scale = GetScale();
                     if( fi != m_frameTexturePtr )
                     {
                         if( !m_frameTexture ) m_frameTexture = MakeTexture();
@@ -3719,11 +3725,12 @@ void View::DrawZones()
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
+    const auto scale = GetScale();
     if( m_findZone.range.active && ( m_findZone.show || m_showRanges ) )
     {
         const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.range.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x2288DD88, true, true );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * scale, 0x2288DD88, true, true );
         DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_findZone.range.hiMin ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMin ? 2 : 1 );
         DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_findZone.range.hiMax ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMax ? 2 : 1 );
     }
@@ -3732,7 +3739,7 @@ void View::DrawZones()
     {
         const auto px0 = ( m_statRange.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_statRange.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x228888EE, true, false );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * scale, 0x228888EE, true, false );
         DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_statRange.hiMin ? 0x998888EE : 0x338888EE, m_statRange.hiMin ? 2 : 1 );
         DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_statRange.hiMax ? 0x998888EE : 0x338888EE, m_statRange.hiMax ? 2 : 1 );
     }
@@ -3741,7 +3748,7 @@ void View::DrawZones()
     {
         const auto px0 = ( m_waitStackRange.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_waitStackRange.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x22EEB588, true, false );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * scale, 0x22EEB588, true, false );
         DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMin ? 0x99EEB588 : 0x33EEB588, m_waitStackRange.hiMin ? 2 : 1 );
         DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMax ? 0x99EEB588 : 0x33EEB588, m_waitStackRange.hiMax ? 2 : 1 );
     }
@@ -3750,7 +3757,7 @@ void View::DrawZones()
     {
         const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
         const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
-        DrawStripedRect( draw, wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y, wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh, 5 * ImGui::GetTextLineHeight() / 15.f, 0x55DD8888, true, false );
+        DrawStripedRect( draw, wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y, wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh, 5 * scale, 0x55DD8888, true, false );
         draw->AddRect( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x77DD8888 );
     }
 
@@ -6092,7 +6099,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         if( m_vd.drawCpuUsageGraph && m_worker.IsCpuUsageReady() )
 #endif
         {
-            const auto cpuUsageHeight = floor( 30.f * ImGui::GetTextLineHeight() / 15.f );
+            const auto cpuUsageHeight = floor( 30.f * GetScale() );
             if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
             {
                 const auto iw = (size_t)w;
@@ -6504,7 +6511,7 @@ static const char* FormatPlotValue( double val, PlotValueFormatting format )
 
 int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
-    const auto PlotHeight = 100 * ImGui::GetTextLineHeight() / 15.f;
+    const auto PlotHeight = 100 * GetScale();
 
     enum { MaxPoints = 128 };
     float tmpvec[MaxPoints*2];
@@ -8695,7 +8702,6 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
 
         pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
-        const auto ty = ImGui::GetTextLineHeight();
         ImGui::Columns( 2 );
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
         ImGui::NextColumn();
@@ -10580,7 +10586,7 @@ void View::DrawFindZone()
                         }
                         ImGui::PopStyleVar();
 
-                        const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
+                        const auto Height = 200 * GetScale();
                         const auto wpos = ImGui::GetCursorScreenPos();
                         const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
@@ -12436,7 +12442,7 @@ void View::DrawCompare()
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "Overlap" );
 
-                    const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
+                    const auto Height = 200 * GetScale();
                     const auto wpos = ImGui::GetCursorScreenPos();
                     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
@@ -14814,7 +14820,7 @@ void View::DrawInfo()
                             ImGui::TextUnformatted( "Median time" );
                             ImGui::PopStyleVar();
 
-                            const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
+                            const auto Height = 200 * GetScale();
                             const auto wpos = ImGui::GetCursorScreenPos();
                             const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
@@ -15438,7 +15444,7 @@ enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *P
 
 void View::DrawPlayback()
 {
-    const auto scale = ImGui::GetTextLineHeight() / 15.f;
+    const auto scale = GetScale();
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
     const auto& fi = frameImages[m_playback.frame];

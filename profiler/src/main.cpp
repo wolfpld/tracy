@@ -173,6 +173,9 @@ static void LoadFonts( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFon
     bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 20.0f * scale, &configBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 19.0f * scale, &configMerge, rangesIcons );
     smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 10.0f * scale, &configBasic );
+
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+    ImGui_ImplOpenGL3_CreateFontsTexture();
 }
 
 static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )

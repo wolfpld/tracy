@@ -130,9 +130,9 @@ static uint32_t updateVersion = 0;
 static bool showReleaseNotes = false;
 static std::string releaseNotes;
 
-void RunOnMainThread( std::function<void()> cb )
+void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
-    if( std::this_thread::get_id() == mainThread )
+    if( !forceDelay && std::this_thread::get_id() == mainThread )
     {
         cb();
     }

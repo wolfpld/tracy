@@ -7,7 +7,7 @@ namespace tracy
 {
 
 void* MakeTexture();
-void FreeTexture( void* tex, void(*runOnMainThread)(std::function<void()>) );
+void FreeTexture( void* tex, void(*runOnMainThread)(std::function<void()>, bool) );
 void UpdateTexture( void* tex, const char* data, int w, int h );
 
 }

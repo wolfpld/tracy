@@ -182,8 +182,9 @@ static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, I
 {
     LoadFonts( scale, fixedWidth, bigFont, smallFont );
 
-    ImGui::StyleColorsDark();
     auto& style = ImGui::GetStyle();
+    style = ImGuiStyle();
+    ImGui::StyleColorsDark();
     style.WindowBorderSize = 1.f * scale;
     style.FrameBorderSize = 1.f * scale;
     style.FrameRounding = 5.f;

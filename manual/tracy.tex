@@ -788,7 +788,10 @@ noborder=true,
 couleur=black!5,
 logo=\bcattention
 ]{Caveats}
-On MSVC the debugger has priority over the application in handling exceptions. If you want to finish the profiler data collection with the debugger hooked-up, select the \emph{continue} option in the debugger pop-up dialog.
+\begin{itemize}
+\item On MSVC the debugger has priority over the application in handling exceptions. If you want to finish the profiler data collection with the debugger hooked-up, select the \emph{continue} option in the debugger pop-up dialog.
+\item On Linux crashes are handled with signals. Tracy needs to have \texttt{SIGPWR} available, which is rather rarely used, but the program you are profiling may expect to employ it for its own purposes, which would cause a conflict\footnote{For example, it may be used by Mono to trigger garbage collection.}. To workaround such cases you may set the \texttt{TRACY\_CRASH\_SIGNAL} macro value to some other signal (see \texttt{man 7 signal} for a list of signals). Make sure that you avoid conflicts by selecting a signal that the application wouldn't normally receive or emit.
+\end{itemize}
 \end{bclogo}
 
 \subsection{Feature support matrix}

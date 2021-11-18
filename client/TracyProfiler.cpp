@@ -809,6 +809,10 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 #endif
 
 #ifdef __linux__
+#  ifndef TRACY_CRASH_SIGNAL
+#    define TRACY_CRASH_SIGNAL SIGPWR
+#  endif
+
 static long s_profilerTid = 0;
 static char s_crashText[1024];
 static std::atomic<bool> s_alreadyCrashed( false );
@@ -1016,7 +1020,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
         int tid = atoi( ep->d_name );
         if( tid != selfTid && tid != s_profilerTid )
         {
-            syscall( SYS_tkill, tid, SIGPWR );
+            syscall( SYS_tkill, tid, TRACY_CRASH_SIGNAL );
         }
     }
     closedir( dp );
@@ -1378,7 +1382,7 @@ void Profiler::SpawnWorkerThreads()
 #ifdef __linux__
     struct sigaction threadFreezer = {};
     threadFreezer.sa_handler = ThreadFreezer;
-    sigaction( SIGPWR, &threadFreezer, &m_prevSignal.pwr );
+    sigaction( TRACY_CRASH_SIGNAL, &threadFreezer, &m_prevSignal.pwr );
 
     struct sigaction crashHandler = {};
     crashHandler.sa_sigaction = CrashHandler;
@@ -1411,7 +1415,7 @@ Profiler::~Profiler()
 #ifdef __linux__
     if( m_crashHandlerInstalled )
     {
-        sigaction( SIGPWR, &m_prevSignal.pwr, nullptr );
+        sigaction( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr, nullptr );
         sigaction( SIGILL, &m_prevSignal.ill, nullptr );
         sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
         sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );

@@ -7244,7 +7244,8 @@ void View::DrawZoneInfoWindow()
 
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
-    ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 500 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
@@ -8310,7 +8311,8 @@ void View::DrawGpuInfoWindow()
     auto& ev = *m_gpuInfoWindow;
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
-    ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 500 * scale, 600 * scale), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
@@ -9445,7 +9447,8 @@ void View::DrawMessages()
 {
     const auto& msgs = m_worker.GetMessages();
 
-    ImGui::SetNextWindowSize( ImVec2( 1200, 600 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Messages", &m_showMessages );
 
     if( msgs.empty() )
@@ -9722,7 +9725,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     ImGui::TextUnformatted( text, tend );
     if( tw > cw && ImGui::IsItemHovered() )
     {
-        ImGui::SetNextWindowSize( ImVec2( 1000, 0 ) );
+        ImGui::SetNextWindowSize( ImVec2( 1000 * GetScale(), 0 ) );
         ImGui::BeginTooltip();
         ImGui::TextWrapped( "%s", text );
         ImGui::EndTooltip();
@@ -9799,7 +9802,8 @@ void View::DrawFindZone()
 {
     if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
 
-    ImGui::SetNextWindowSize( ImVec2( 520, 800 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 520 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Find zone", &m_findZone.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -10586,7 +10590,7 @@ void View::DrawFindZone()
                         }
                         ImGui::PopStyleVar();
 
-                        const auto Height = 200 * GetScale();
+                        const auto Height = 200 * scale;
                         const auto wpos = ImGui::GetCursorScreenPos();
                         const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
@@ -11717,7 +11721,8 @@ bool View::FindMatchingZone( int prev0, int prev1, int flags )
 
 void View::DrawCompare()
 {
-    ImGui::SetNextWindowSize( ImVec2( 590, 800 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 590 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Compare traces", &m_compare.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -12442,7 +12447,7 @@ void View::DrawCompare()
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "Overlap" );
 
-                    const auto Height = 200 * GetScale();
+                    const auto Height = 200 * scale;
                     const auto wpos = ImGui::GetCursorScreenPos();
                     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
@@ -12692,7 +12697,8 @@ void View::AccumulationModeComboBox()
 
 void View::DrawStatistics()
 {
-    ImGui::SetNextWindowSize( ImVec2( 1400, 600 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -13849,7 +13855,8 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
 void View::DrawCallstackWindow()
 {
     bool show = true;
-    ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     DrawCallstackTable( m_callstackInfoWindow, true );
     ImGui::End();
@@ -14329,7 +14336,8 @@ void View::DrawInfo()
     auto lt = localtime( &date );
     strftime( dtmp, 64, "%F %T", lt );
 
-    ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 400 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( m_bigFont ) ImGui::PushFont( m_bigFont );
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
@@ -14820,7 +14828,7 @@ void View::DrawInfo()
                             ImGui::TextUnformatted( "Median time" );
                             ImGui::PopStyleVar();
 
-                            const auto Height = 200 * GetScale();
+                            const auto Height = 200 * scale;
                             const auto wpos = ImGui::GetCursorScreenPos();
                             const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
@@ -15241,7 +15249,8 @@ void View::DrawInfo()
 
 void View::DrawTextEditor()
 {
-    ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1800 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
     m_sourceView->Render( m_worker, *this );
@@ -15648,7 +15657,8 @@ void View::DrawCpuDataWindow()
         it->second.data.migrations += v.second.migrations;
     }
 
-    ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 700 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size() ) );
     ImGui::SameLine();
@@ -15969,7 +15979,8 @@ void View::DrawSelectedAnnotation()
 
 void View::DrawAnnotationList()
 {
-    ImGui::SetNextWindowSize( ImVec2( 600, 300 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 600 * scale, 300 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Annotation list", &m_showAnnotationList );
     if( m_annotations.empty() )
     {
@@ -16041,7 +16052,8 @@ void View::DrawSampleParents()
     assert( !stats.parents.empty() );
 
     bool show = true;
-    ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Sample entry call stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     ImGui::PushFont( m_bigFont );
     TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
@@ -16385,7 +16397,8 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
 
 void View::DrawWaitStacks()
 {
-    ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Wait stacks", &m_showWaitStacks );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable wait stacks." );
@@ -17278,7 +17291,8 @@ std::vector<MemoryPage> View::GetMemoryPages() const
 
 void View::DrawMemory()
 {
-    ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Memory", &m_memInfo.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     auto& memNameMap = m_worker.GetMemNameMap();
@@ -17829,7 +17843,8 @@ void View::DrawAllocList()
         data.emplace_back( basePtr + idx );
     }
 
-    ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
     ListMemData( data, []( auto v ) {

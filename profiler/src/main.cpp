@@ -916,7 +916,7 @@ static void DrawContents()
         if( showReleaseNotes )
         {
             assert( updateNotesThread.joinable() );
-            ImGui::SetNextWindowSize( ImVec2( 600, 400 ), ImGuiCond_FirstUseEver );
+            ImGui::SetNextWindowSize( ImVec2( 600 * dpiScale, 400 * dpiScale ), ImGuiCond_FirstUseEver );
             ImGui::Begin( "Update available!", &showReleaseNotes );
             if( ImGui::Button( ICON_FA_DOWNLOAD " Download" ) )
             {

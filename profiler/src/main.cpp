@@ -143,7 +143,7 @@ void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
     }
 }
 
-static void LoadFonts( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
+static void LoadFonts( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
 {
     static const ImWchar rangesBasic[] = {
         0x0020, 0x00FF, // Basic Latin + Latin Supplement
@@ -169,18 +169,18 @@ static void LoadFonts( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFon
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * scale, &configBasic, rangesBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * scale, &configMerge, rangesIcons );
-    fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * scale, &configBasic );
-    bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 20.0f * scale, &configBasic );
+    fixedWidth = cb_fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * scale, &configBasic );
+    bigFont = cb_bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 20.0f * scale, &configBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 19.0f * scale, &configMerge, rangesIcons );
-    smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 10.0f * scale, &configBasic );
+    smallFont = cb_smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 10.0f * scale, &configBasic );
 
     ImGui_ImplOpenGL3_DestroyFontsTexture();
     ImGui_ImplOpenGL3_CreateFontsTexture();
 }
 
-static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
+static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
 {
-    LoadFonts( scale, fixedWidth, bigFont, smallFont );
+    LoadFonts( scale, cb_fixedWidth, cb_bigFont, cb_smallFont );
 
     auto& style = ImGui::GetStyle();
     style = ImGuiStyle();
@@ -195,9 +195,9 @@ static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, I
     style.ScaleAllSizes( scale );
 }
 
-static void SetupScaleCallback( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
+static void SetupScaleCallback( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
 {
-    RunOnMainThread( [scale, &fixedWidth, &bigFont, &smallFont] { SetupDPIScale( scale * dpiScale, fixedWidth, bigFont, smallFont ); }, true );
+    RunOnMainThread( [scale, &cb_fixedWidth, &cb_bigFont, &cb_smallFont] { SetupDPIScale( scale * dpiScale, cb_fixedWidth, cb_bigFont, cb_smallFont ); }, true );
 }
 
 int main( int argc, char** argv )

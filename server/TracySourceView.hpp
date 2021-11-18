@@ -143,6 +143,7 @@ public:
 
     SourceView( ImFont* font, GetWindowCallback gwcb );
 
+    void UpdateFont( ImFont* font ) { m_font = font; }
     void SetCpuId( uint32_t cpuid );
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );

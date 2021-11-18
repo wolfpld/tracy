@@ -191,6 +191,11 @@ static void SetupDPIScale( float scale, ImFont*& fixedWidth, ImFont*& bigFont, I
     style.ScaleAllSizes( scale );
 }
 
+static void SetupScaleCallback( float scale, ImFont*& fixedWidth, ImFont*& bigFont, ImFont*& smallFont )
+{
+    SetupDPIScale( scale * dpiScale, fixedWidth, bigFont, smallFont );
+}
+
 int main( int argc, char** argv )
 {
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
@@ -354,7 +359,7 @@ int main( int argc, char** argv )
         auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
         if( f )
         {
-            view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+            view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
         }
     }
     else
@@ -380,7 +385,7 @@ int main( int argc, char** argv )
     }
     if( connectTo )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
     }
 
     glfwShowWindow( window );
@@ -747,11 +752,11 @@ static void DrawContents()
             {
                 std::string addrPart = std::string( addr, ptr );
                 uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
             }
             else
             {
-                view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
             }
         }
         ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
@@ -771,7 +776,7 @@ static void DrawContents()
                         loadThread = std::thread( [f] {
                             try
                             {
-                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -894,7 +899,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -1063,7 +1068,7 @@ static void DrawContents()
         viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
         if( reconnect )
         {
-            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative );
+            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
         }
         break;
     default:

@@ -90,10 +90,11 @@ public:
 
     using SetTitleCallback = void(*)( const char* );
     using GetWindowCallback = void*(*)();
+    using SetScaleCallback = void(*)( float, ImFont*&, ImFont*&, ImFont*& );
 
-    View( void(*cbMainThread)(std::function<void()>), ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr ) : View( cbMainThread, "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb, gwcb ) {}
-    View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16_t port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
-    View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
+    View( void(*cbMainThread)(std::function<void()>), ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr, SetScaleCallback sscb = nullptr ) : View( cbMainThread, "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb, gwcb, sscb ) {}
+    View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16_t port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr, SetScaleCallback sscb = nullptr );
+    View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr, SetScaleCallback sscb = nullptr );
     ~View();
 
     static bool Draw();
@@ -479,6 +480,7 @@ private:
     SetTitleCallback m_stcb;
     bool m_titleSet = false;
     GetWindowCallback m_gwcb;
+    SetScaleCallback m_sscb;
 
     float m_notificationTime = 0;
     std::string m_notificationText;

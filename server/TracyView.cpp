@@ -134,7 +134,7 @@ enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
-View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb )
+View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb, SetScaleCallback sscb )
     : m_worker( addr, port )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
@@ -149,6 +149,7 @@ View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16
     , m_fixedFont( fixedWidth )
     , m_stcb( stcb )
     , m_gwcb( gwcb )
+    , m_sscb( sscb )
     , m_userData()
     , m_cbMainThread( cbMainThread )
 {
@@ -159,7 +160,7 @@ View::View( void(*cbMainThread)(std::function<void()>), const char* addr, uint16
     InitTextEditor( fixedWidth );
 }
 
-View::View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb )
+View::View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb, SetScaleCallback sscb )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
@@ -171,6 +172,7 @@ View::View( void(*cbMainThread)(std::function<void()>), FileRead& f, ImFont* fix
     , m_fixedFont( fixedWidth )
     , m_stcb( stcb )
     , m_gwcb( gwcb )
+    , m_sscb( sscb )
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
     , m_cbMainThread( cbMainThread )
 {

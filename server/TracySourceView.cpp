@@ -2232,12 +2232,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 const auto ts = ImGui::CalcTextSize( " " );
                 const auto th2 = floor( ts.y / 2 );
                 const auto th4 = floor( ts.y / 4 );
-                const auto xoff =
+                const auto xoff = round(
                     ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) == 0 ? 0 : ( 7 * ts.x + ts.y ) ) +
                     (3+maxAddrLen) * ts.x +
                     ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) +
                     ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 ) +
-                    ( ( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) ? ( 19 * ts.x + ts.y ) : 0 );
+                    ( ( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) ? ( 19 * ts.x + ts.y ) : 0 ) );
                 const auto minAddr = m_asm[clipper.DisplayStart].addr;
                 const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                 const auto mjl = m_maxJumpLevel;
@@ -3383,12 +3383,12 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto th4 = floor( ts.y / 4 );
             const auto& mjl = m_maxJumpLevel;
             const auto col = GetHsvColor( line.jumpAddr, 6 );
-            const auto xoff =
+            const auto xoff = round(
                 ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext == 0 ) ? 0 : ( 7 * ts.x + ts.y ) ) +
                 (3+maxAddrLen) * ts.x +
                 ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) +
                 ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 ) +
-                ( showHwSamples ? ( 19 * ts.x + ts.y ) : 0 );
+                ( showHwSamples ? ( 19 * ts.x + ts.y ) : 0 ) );
 
             DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
             DrawLine( draw, dpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), dpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );

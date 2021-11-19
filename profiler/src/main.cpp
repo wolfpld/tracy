@@ -49,7 +49,7 @@
 
 #include "misc/freetype/imgui_freetype.h"
 #include "Arimo.hpp"
-#include "Cousine.hpp"
+#include "FiraCodeRetina.hpp"
 #include "FontAwesomeSolid.hpp"
 #include "icon.hpp"
 #include "ResolvService.hpp"
@@ -169,7 +169,7 @@ static void LoadFonts( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont,
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * scale, &configBasic, rangesBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * scale, &configMerge, rangesIcons );
-    fixedWidth = cb_fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 14.0f * scale, &configBasic );
+    fixedWidth = cb_fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FiraCodeRetina_compressed_data, tracy::FiraCodeRetina_compressed_size, 15.0f * scale, &configBasic );
     bigFont = cb_bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 20.0f * scale, &configBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 19.0f * scale, &configMerge, rangesIcons );
     smallFont = cb_smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 10.0f * scale, &configBasic );

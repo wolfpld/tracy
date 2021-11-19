@@ -278,6 +278,7 @@
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
     <ClInclude Include="..\..\src\Arimo.hpp" />
     <ClInclude Include="..\..\src\Cousine.hpp" />
+    <ClInclude Include="..\..\src\FiraCodeRetina.hpp" />
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp" />
     <ClInclude Include="..\..\src\HttpRequest.hpp" />
     <ClInclude Include="..\..\src\icon.hpp" />

@@ -575,6 +575,9 @@
     <ClInclude Include="..\..\src\imgui_impl_opengl3_loader.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\FiraCodeRetina.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

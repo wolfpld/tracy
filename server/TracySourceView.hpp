@@ -10,6 +10,7 @@
 #include "TracyDecayValue.hpp"
 #include "TracySourceContents.hpp"
 #include "TracySourceTokenizer.hpp"
+#include "../common/TracyForceInline.hpp"
 #include "../common/TracyProtocol.hpp"
 
 struct ImFont;
@@ -192,6 +193,9 @@ private:
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
 #endif
+
+    tracy_force_inline void SetFont();
+    tracy_force_inline void UnsetFont();
 
     ImFont* m_font;
     uint64_t m_symAddr;

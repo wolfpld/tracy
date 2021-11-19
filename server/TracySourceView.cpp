@@ -4837,4 +4837,14 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
 }
 #endif
 
+void SourceView::SetFont()
+{
+    if( m_font ) ImGui::PushFont( m_font );
+}
+
+void SourceView::UnsetFont()
+{
+    if( m_font ) ImGui::PopFont();
+}
+
 }

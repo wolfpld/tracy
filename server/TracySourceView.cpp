@@ -956,7 +956,7 @@ void SourceView::RenderSimpleSourceView()
 {
     ImGui::SetNextWindowContentSize( ImVec2( m_srcWidth, 0 ) );
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_HorizontalScrollbar );
-    if( m_font ) ImGui::PushFont( m_font );
+    SetFont();
 
     auto& lines = m_source.get();
     auto draw = ImGui::GetWindowDrawList();
@@ -999,7 +999,7 @@ void SourceView::RenderSimpleSourceView()
             }
         }
     }
-    if( m_font ) ImGui::PopFont();
+    UnsetFont();
     ImGui::EndChild();
 }
 
@@ -1778,7 +1778,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
     const float bottom = m_srcSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
     ImGui::SetNextWindowContentSize( ImVec2( m_srcWidth, 0 ) );
     ImGui::BeginChild( "##sourceView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar );
-    if( m_font ) ImGui::PushFont( m_font );
+    SetFont();
 
     auto& lines = m_source.get();
     auto draw = ImGui::GetWindowDrawList();
@@ -1913,7 +1913,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         ImGui::PopClipRect();
     }
 
-    if( m_font ) ImGui::PopFont();
+    UnsetFont();
     ImGui::EndChild();
 
     if( !m_srcSampleSelect.empty() )
@@ -2166,7 +2166,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
     const float bottom = m_asmSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
     ImGui::SetNextWindowContentSize( ImVec2( m_asmWidth, 0 ) );
     ImGui::BeginChild( "##asmView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar );
-    if( m_font ) ImGui::PushFont( m_font );
+    SetFont();
 
     int maxAddrLen;
     {
@@ -2259,7 +2259,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     if( ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ) - JumpSeparation / 2, y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ) + JumpSeparation / 2, y1 + th2 ) ) )
                     {
                         thickness = 2;
-                        if( m_font ) ImGui::PopFont();
+                        UnsetFont();
                         ImGui::BeginTooltip();
                         char tmp[32];
                         sprintf( tmp, "+%" PRIu64, v.first - m_baseAddr );
@@ -2286,7 +2286,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         TextFocused( "Jump range:", MemSizeToString( v.second.max - v.second.min ) );
                         TextFocused( "Jump sources:", RealToString( v.second.source.size() ) );
                         ImGui::EndTooltip();
-                        if( m_font ) ImGui::PushFont( m_font );
+                        SetFont();
                         if( ImGui::IsMouseClicked( 0 ) )
                         {
                             m_targetAddr = v.first;
@@ -2331,7 +2331,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
 
 #ifndef TRACY_NO_FILESELECTOR
-        if( m_font ) ImGui::PopFont();
+        UnsetFont();
         if( ImGui::BeginPopup( "jumpPopup" ) )
         {
             if( ImGui::Button( ICON_FA_FILE_IMPORT " Save jump range" ) )
@@ -2365,7 +2365,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             }
             ImGui::EndPopup();
         }
-        if( m_font ) ImGui::PushFont( m_font );
+        SetFont();
 #endif
     }
 
@@ -2521,7 +2521,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
     }
 
-    if( m_font ) ImGui::PopFont();
+    UnsetFont();
     ImGui::EndChild();
 
     if( !m_asmSampleSelect.empty() )
@@ -2698,11 +2698,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
             if( hasHwData && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( ts.x * 7, ty ) ) )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, true );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         else
@@ -2719,7 +2719,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             }
             if( hover )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 if( ipcnt.local )
                 {
@@ -2740,7 +2740,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 }
                 if( hasHwData ) PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, false );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
 
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
@@ -2974,11 +2974,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
             if( hw && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( ts.x * 7, ty ) ) )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, true );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         else
@@ -3017,7 +3017,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                 }
 
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 if( ipcnt.local )
                 {
@@ -3048,7 +3048,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     TextDisabledUnformatted( "(middle click to view)" );
                 }
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
 
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
@@ -3185,7 +3185,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     }
     if( ImGui::IsItemHovered() )
     {
-        if( m_font ) ImGui::PopFont();
+        UnsetFont();
         ImGui::BeginTooltip();
         if( m_asmCountBase >= 0 )
         {
@@ -3209,7 +3209,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             ImGui::Text( "+%" PRIx64, line.addr - m_baseAddr );
         }
         ImGui::EndTooltip();
-        if( m_font ) ImGui::PushFont( m_font );
+        SetFont();
 
         if( ImGui::IsItemClicked( 0 ) )
         {
@@ -3249,7 +3249,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             if( ImGui::IsItemHovered() )
             {
                 lineHovered = true;
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 if( worker.HasInlineSymbolAddresses() )
                 {
@@ -3273,7 +3273,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     if( !m_sourceTooltip.empty() )
                     {
                         ImGui::Separator();
-                        if( m_font ) ImGui::PushFont( m_font );
+                        SetFont();
                         auto& lines = m_sourceTooltip.get();
                         const int start = std::max( 0, (int)srcline - 4 );
                         const int end = std::min<int>( m_sourceTooltip.get().size(), srcline + 3 );
@@ -3318,11 +3318,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                                 ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
                             }
                         }
-                        if( m_font ) ImGui::PopFont();
+                        UnsetFont();
                     }
                 }
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
                 if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )
                 {
                     if( m_source.filename() == fileName )
@@ -3563,7 +3563,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         if( asmVar )
         {
             const auto& var = *asmVar;
-            if( m_font ) ImGui::PopFont();
+            UnsetFont();
             ImGui::BeginTooltip();
             if( jumpName || opdesc != 0 )
             {
@@ -3688,11 +3688,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 }
             }
             ImGui::EndTooltip();
-            if( m_font ) ImGui::PushFont( m_font );
+            SetFont();
         }
         else if( jumpName )
         {
-            if( m_font ) ImGui::PopFont();
+            UnsetFont();
             ImGui::BeginTooltip();
             if( jumpBase == m_baseAddr )
             {
@@ -3705,13 +3705,13 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             ImGui::SameLine();
             ImGui::Text( "%s+%" PRIu32, jumpName, jumpOffset );
             ImGui::EndTooltip();
-            if( m_font ) ImGui::PushFont( m_font );
+            SetFont();
         }
         if( m_cpuArch == CpuArchX86 || m_cpuArch == CpuArchX64 )
         {
             if( line.readX86[0] != RegsX86::invalid || line.writeX86[0] != RegsX86::invalid )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 if( asmVar ) ImGui::Separator();
                 if( line.readX86[0] != RegsX86::invalid )
@@ -3753,7 +3753,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                 }
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         if( ImGui::IsMouseClicked( 0 ) )
@@ -3904,7 +3904,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         }
         if( ImGui::IsItemHovered() )
         {
-            if( m_font ) ImGui::PopFont();
+            UnsetFont();
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Instructions Per Cycle (IPC)" );
             ImGui::SameLine();
@@ -3914,7 +3914,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             TextFocused( "Retirements:", RealToString( retired ) );
             if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
             ImGui::EndTooltip();
-            if( m_font ) ImGui::PushFont( m_font );
+            SetFont();
         }
     }
     else
@@ -3951,7 +3951,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             }
             if( ImGui::IsItemHovered() )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Branch mispredictions impact" );
                 ImGui::SameLine();
@@ -3960,7 +3960,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
                 TextFocused( "Impact value:", RealToString( branchRel ) );
                 TextFocused( "Relative to:", RealToString( branchRelMax ) );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         else
@@ -3995,7 +3995,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             }
             if( ImGui::IsItemHovered() )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Cache miss rate impact" );
                 ImGui::SameLine();
@@ -4004,7 +4004,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
                 TextFocused( "Impact value:", RealToString( cacheRel ) );
                 TextFocused( "Relative to:", RealToString( cacheRelMax ) );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         else
@@ -4046,7 +4046,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             }
             if( ImGui::IsItemHovered() )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Branch mispredictions rate" );
                 ImGui::SameLine();
@@ -4056,7 +4056,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
                 TextFocused( "Branch mispredictions:", RealToString( branchMiss ) );
                 if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         else
@@ -4096,7 +4096,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             }
             if( ImGui::IsItemHovered() )
             {
-                if( m_font ) ImGui::PopFont();
+                UnsetFont();
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Cache miss rate" );
                 ImGui::SameLine();
@@ -4106,7 +4106,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
                 TextFocused( "Cache misses:", RealToString( cacheMiss ) );
                 if( unreliable ) TextColoredUnformatted( 0xFF4444FF, "Not enough samples for reliable data!" );
                 ImGui::EndTooltip();
-                if( m_font ) ImGui::PushFont( m_font );
+                SetFont();
             }
         }
         else

@@ -2226,7 +2226,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     insList.emplace_back( line.addr );
                 }
             }
-            if( m_showJumps && !m_jumpTable.empty() )
+            if( m_showJumps && !m_jumpTable.empty() && clipper.DisplayStart != clipper.DisplayEnd )
             {
                 auto draw = ImGui::GetWindowDrawList();
                 const auto ts = ImGui::CalcTextSize( " " );

@@ -4211,7 +4211,7 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
         }
         if( visible )
         {
-            draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888, 7 );
+            draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888 );
             if( !tooltipDisplayed && hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0 - ty02 - 2, y0 ), wpos + ImVec2( px0 + ty02 + 1, y1 ) ) )
             {
                 tooltipDisplayed = true;

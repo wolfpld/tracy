@@ -142,7 +142,7 @@ private:
 public:
     using GetWindowCallback = void*(*)();
 
-    SourceView( ImFont* font, GetWindowCallback gwcb );
+    SourceView( GetWindowCallback gwcb );
 
     void UpdateFont( ImFont* font ) { m_font = font; }
     void SetCpuId( uint32_t cpuid );

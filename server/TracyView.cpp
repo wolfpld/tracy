@@ -234,7 +234,7 @@ void View::InitMemory()
 
 void View::InitTextEditor( ImFont* font )
 {
-    m_sourceView = std::make_unique<SourceView>( font, m_gwcb );
+    m_sourceView = std::make_unique<SourceView>( m_gwcb );
     m_sourceViewFile = nullptr;
 }
 

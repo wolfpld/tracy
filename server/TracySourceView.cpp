@@ -161,8 +161,8 @@ static void PrintHwSampleTooltip( size_t cycles, size_t retired, size_t cacheRef
 enum { JumpSeparation = 6 };
 enum { JumpArrowBase = 9 };
 
-SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
-    : m_font( font )
+SourceView::SourceView( GetWindowCallback gwcb )
+    : m_font( nullptr )
     , m_symAddr( 0 )
     , m_targetAddr( 0 )
     , m_targetLine( 0 )

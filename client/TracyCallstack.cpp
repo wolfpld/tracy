@@ -309,7 +309,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     DBGHELP_LOCK;
 #endif
     const auto res = SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line );
-    if( res == 0 )
+    if( res == 0 || line.LineNumber >= 0xF00000 )
     {
         sym.file = "[unknown]";
         sym.line = 0;
@@ -376,7 +376,8 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 #endif
     if( !done )
     {
-        if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
+        const auto res = SymGetLineFromAddr64( proc, ptr, &displacement, &line );
+        if( res == 0 || line.LineNumber >= 0xF00000 )
         {
             sym.file = "[unknown]";
             sym.line = 0;
@@ -451,7 +452,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     {
         const char* filename;
-        if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
+        const auto res = SymGetLineFromAddr64( proc, ptr, &displacement, &line );
+        if( res == 0 || line.LineNumber >= 0xF00000 )
         {
             filename = "[unknown]";
             cb_data[write].line = 0;

@@ -163,6 +163,7 @@ enum { JumpArrowBase = 9 };
 
 SourceView::SourceView( GetWindowCallback gwcb )
     : m_font( nullptr )
+    , m_smallFont( nullptr )
     , m_symAddr( 0 )
     , m_targetAddr( 0 )
     , m_targetLine( 0 )

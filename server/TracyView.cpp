@@ -15277,7 +15277,7 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 1800 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
-    m_sourceView->UpdateFont( m_fixedFont );
+    m_sourceView->UpdateFont( m_fixedFont, m_smallFont );
     m_sourceView->Render( m_worker, *this );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;

@@ -150,7 +150,8 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 
 [[maybe_unused]] static inline void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
 {
-    draw->AddText( pos + ImVec2( 1, 1 ), 0xAA000000, text );
+    const auto scale = GetScale();
+    draw->AddText( pos + ImVec2( scale, scale ), 0xAA000000, text );
     draw->AddText( pos, color, text );
 }
 

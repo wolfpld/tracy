@@ -1491,6 +1491,48 @@ Remember that you need to provide your own name for the created stack variable a
 
 Transient zones (see section~\ref{transientzones} for details) are available in OpenGL, Vulkan, and Direct3D 11/12 macros.
 
+\subsection{Fibers}
+\label{fibers}
+
+Fibers are lightweight threads, which are not under control of the operating system and need to be manually scheduled by the application. There are other cooperative multitasking primitives, like coroutines, or green threads, which also fall under this umbrella, as far as Tracy is concerned.
+
+To enable fiber support in the client code you will need to add the \texttt{TRACY\_FIBERS} define to your project. You need to do this explicitly, as there is a small performance hit due to the required additional processing.
+
+In order to properly instrument fibers you will need to modify the fiber dispatch code in your program. You will need to insert the \texttt{TracyFiberEnter(fiber)} macro every time a fiber starts or resumes execution. You will also need to insert the \texttt{TracyFiberLeave} macro when the execution control in a thread returns to the non-fiber part of the code. Note that you can safely call \texttt{TracyFiberEnter} multiple times in succession, without an intermediate \texttt{TracyFiberLeave}, if one fiber is directly switching to another, without returning control to the fiber dispatch worker.
+
+Fibers are identified by unique \texttt{const char*} string names. Remember that you should observe the rules laid out in section~\ref{uniquepointers} while handling such strings.
+
+No additional instrumentation is needed in other parts of the code. Zones, messages and other such events will be properly attributed to the currently running fiber in its own separate track.
+
+A very simple example, which is not actually using any OS fiber functionality, is presented below:
+
+\begin{lstlisting}
+const char* fiber = "job1";
+TracyCZoneCtx zone;
+
+int main()
+{
+    std::thread t1([]{
+        TracyFiberEnter(fiber);
+        TracyCZone(ctx, 1);
+        zone = ctx;
+        sleep(1);
+        TracyFiberLeave;
+    });
+    t1.join();
+
+    std::thread t2([]{
+        TracyFiberEnter(fiber);
+        sleep(1);
+        TracyCZoneEnd(zone);
+        TracyFiberLeave;
+    });
+    t2.join();
+}
+\end{lstlisting}
+
+As you can see, there are two threads, \texttt{t1} and \texttt{t2}, which are simulating worker threads which would be used by a real fiber library. A C API zone is created in thread \texttt{t1} and is ended in thread \texttt{t2}. Without the fiber markup this would be an invalid operation, but with fibers the zone is attributed to fiber \texttt{job1}, and not to thread \texttt{t1} or \texttt{t2}.
+
 \subsection{Collecting call stacks}
 \label{collectingcallstacks}
 
@@ -1931,6 +1973,17 @@ If the \emph{value} goes below the sample rate Tracy wants to use, sampling will
 Should you want to disable this mechanism, you can set the \texttt{kernel.perf\_cpu\_time\_max\_percent} parameter to zero. Be sure to read what this would do, as it may have serious consequences that you should be aware of.
 \end{bclogo}
 
+\paragraph{Wait stacks}
+\label{waitstacks}
+
+On Windows sampling functionality also captures call stacks for context switch events. Such call stacks will show you what the application was doing when the thread was suspended and subsequently resumed, hence the name. We can categorize wait stacks into the following categories:
+
+\begin{enumerate}
+\item Random preemptive multitasking events, which are expected and do not have any significance.
+\item Expected waits, which may be caused by issuing sleep commands, waiting for a lock to become available, performing I/O, and so on. Quantitative analysis of such events may (but probably won't) direct you to some problems in your code.
+\item Unexpected waits, which should be immediately taken care of. After all, what's the point of profiling and optimizing your program, if it is constantly waiting? An example of such unexpected wait may be some anti-virus service interfering with each of your file reads, when your assumption was that the operating system will buffer a large chunk of the data after the first read and make it immediately available to the application in the following calls.
+\end{enumerate}
+
 \subsubsection{Hardware sampling}
 \label{hardwaresampling}
 
@@ -2296,8 +2349,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0) rectangle (15.5, -5.5);
-\draw[pattern=crosshatch dots] (0, 0) rectangle+(15.5, 0.3);
+\draw (0, 0) rectangle (16.1, -5.5);
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(16.1, 0.3);
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(0.5, -0.5) node [midway] {\faPowerOff};
 \draw[rounded corners=5pt] (0.7, -0.1) rectangle+(1.8, -0.5) node [midway] {\faCog{} Options};
 \draw[rounded corners=5pt] (2.6, -0.1) rectangle+(2.2, -0.5) node [midway] {\faTags{} Messages};
@@ -2307,6 +2360,7 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw[rounded corners=5pt] (11.3, -0.1) rectangle+(2.1, -0.5) node [midway] {\faBalanceScale{} Compare};
 \draw[rounded corners=5pt] (13.5, -0.1) rectangle+(1.3, -0.5) node [midway] {\faFingerprint{} Info};
 \draw[rounded corners=5pt] (14.9, -0.1) rectangle+(0.5, -0.5) node [midway] {\faTools{}};
+\draw[rounded corners=5pt] (15.5, -0.1) rectangle+(0.5, -0.5) node [midway] {\faSearchPlus{}};
 \draw[rounded corners=5pt] (0.1, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretLeft};
 \draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
@@ -2314,8 +2368,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw (4, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s \hspace{5pt} \faMemory~195.2 MB};
 \draw[dashed] (10.1, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
 
-\draw (0.1, -1.3) rectangle+(15.3, -1) node [midway] {Frame time graph};
-\draw (0.1, -2.4) rectangle+(15.3, -3) node [midway] {Timeline view};
+\draw (0.1, -1.3) rectangle+(15.9, -1) node [midway] {Frame time graph};
+\draw (0.1, -2.4) rectangle+(15.9, -3) node [midway] {Timeline view};
 \end{tikzpicture}
 \caption{Main profiler window. Note that the top line of buttons has been split into two rows in this manual.}
 \label{mainwindow}
@@ -2345,7 +2399,9 @@ The control menu (top row of buttons) provides access to various features of the
 \item \emph{\faSlidersH{}~CPU~data} -- If context switch data was captured (section~\ref{contextswitches}), this button will allow inspecting what was the processor load during the capture, as described in section~\ref{cpudata}.
 \item \emph{\faStickyNote{}~Annotations} -- If annotations have been made (section~\ref{annotatingtrace}), you can open a list of all annotations, described in chapter~\ref{annotationlist}.
 \item \emph{\faRuler{}~Limits} -- Displays time range limits window (section~\ref{timeranges}).
+\item \emph{\faHourglassHalf{}~Wait stacks} -- If sampling was performed, an option to display wait stacks may be available. See chapter~\ref{waitstacks} for more details.
 \end{itemize}
+\item \emph{\faSearchPlus{}~Display scale} -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings.
 \end{itemize}
 
 The frame information block consists of four elements: the current frame set name along with the number of captured frames (click on it with the \LMB{}~left mouse button to go to a specified frame), the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. For more information about marking frames, see section~\ref{markingframes}.
@@ -2596,6 +2652,7 @@ The left hand side \emph{index area} of the timeline view displays various label
 \item \emph{Light blue label} -- GPU context. Multi-threaded Vulkan, OpenCL and Direct3D 12 contexts are additionally split into separate threads.
 \item \emph{Pink label} -- CPU data graph.
 \item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed (section~\ref{crashhandling}). If automated sampling was performed, clicking the~\LMB{}~left mouse button on the \emph{\faGhost{}~ghost zones} button will switch zone display mode between 'instrumented' and 'ghost'.
+\item \emph{Green label} -- Fiber, coroutine, or any other sort of cooperative multitasking 'green thread'.
 \item \emph{Light red label} -- Indicates a lock.
 \item \emph{Yellow label} -- Plot.
 \end{itemize}
@@ -2662,10 +2719,12 @@ Context switch regions are using the following color key:
 
 \begin{itemize}
 \item \emph{Green} -- Thread is running.
-\item \emph{Red} -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \faMousePointer{}~mouse pointer over the region will display more information.
+\item \emph{Red} -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \faMousePointer{}~mouse pointer over the region will display more information. If sampling was performed, a wait stack may be displayed. See section~\ref{waitstacks} for additional details.
 \item \emph{Blue} -- Thread is waiting to be resumed and is migrating to another CPU core. This might have visible performance effects, because low level CPU caches are not shared between cores, which may result in additional cache misses. To avoid this problem, you may pin a thread to a specific core, by setting its affinity.
 \item \emph{Bronze} -- Thread has been placed in the scheduler's run queue and is about to be resumed.
 \end{itemize}
+
+Fiber work and yield states are presented in the same way as context switch regions.
 
 \subparagraph{CPU data}
 
@@ -3429,6 +3488,19 @@ logo=\bcattention
 The percentage values when \emph{\faCarCrash{}~Impact} option is not selected will not take into account the relative count of events. For example, you may see 100\% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as important as a seemingly better 50\% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. You should always cross-check the presented information with the respective event counts. To help a bit with this, Tracy will dim values that are statistically unimportant.
 \end{bclogo}
 
+\subsection{Wait stacks window}
+\label{waitstackswindow}
+
+If wait stack information has been captured (chapter~\ref{waitstacks}), here you will be able to inspect the collected data. There are three different views available:
+
+\begin{itemize}
+\item \emph{\faTable{}~List} -- shows all unique wait stacks, sorted by number of times they were observed.
+\item \emph{\faTree{}~Bottom-up tree} -- displays wait stacks in form of a collapsible tree, which starts at the bottom of the call stack.
+\item \emph{\faTree{}~Top-down tree} -- displays wait stacks in form of a collapsible tree, which starts at the top of the call stack.
+\end{itemize}
+
+Displayed data may be narrowed down to a specific time range and/or to include only selected threads.
+
 \subsection{Lock information window}
 \label{lockwindow}
 
@@ -3487,7 +3559,7 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 \subsection{Time range limits}
 \label{timerangelimits}
 
-This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}) and statistics (section~\ref{statistics}) results. Each limit can be enabled or disabled and adjusted through the following options:
+This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}) and wait stacks (section~\ref{waitstackswindow}) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 \begin{itemize}
 \item \emph{Limit to view} -- Set the time range limit to current view.
@@ -3495,6 +3567,7 @@ This window displays information about time range limits (section~\ref{timerange
 \item \emph{\faStickyNote{}~Set from annotation} -- Allows using the annotation region for limiting purposes.
 \item \emph{\faSortAmountUp{}~Copy from statistics} -- Copies the statistics time range limit.
 \item \emph{\faSearch{}~Copy from find zone} -- Copies the find zone time range limit.
+\item \emph{\faHourglassHalf{}~Copy from wait stacks} -- Copies the wait stacks time range limit.
 \end{itemize}
 
 Note that ranges displayed in the window have color hints that match color of the striped regions on the timeline.

@@ -4175,7 +4175,7 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
     const auto y1 = ty0375 + ty02 - 1;
     auto draw = ImGui::GetWindowDrawList();
 
-    enum { MinVis = 6 };
+    const auto MinVis = 6 * GetScale();
     bool tooltipDisplayed = false;
 
     while( it < itend )

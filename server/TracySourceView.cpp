@@ -2286,7 +2286,31 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                             ImGui::Text( "%s:%i", fileName, srcline );
                         }
                         TextFocused( "Jump range:", MemSizeToString( v.second.max - v.second.min ) );
+                        ImGui::Separator();
                         TextFocused( "Jump sources:", RealToString( v.second.source.size() ) );
+                        const auto ssz = std::min<size_t>( v.second.source.size(), 10 );
+                        for( int j=0; j<ssz; j++ )
+                        {
+                            const auto sidx = worker.GetLocationForAddress( v.second.source[j], srcline );
+                            if( srcline == 0 )
+                            {
+                                SmallColorBox( 0 );
+                                ImGui::SameLine();
+                                ImGui::TextDisabled( "%i. 0x%" PRIx64, j+1, v.second.source[j] );
+                            }
+                            else
+                            {
+                                const auto fn = worker.GetString( sidx );
+                                const auto fc = GetHsvColor( srcidx.Idx(), 0 );
+                                SmallColorBox( fc );
+                                ImGui::SameLine();
+                                ImGui::Text( "%i. %s:%i", j+1, fn, srcline );
+                            }
+                        }
+                        if( ssz != v.second.source.size() )
+                        {
+                            ImGui::TextUnformatted( "..." );
+                        }
                         ImGui::EndTooltip();
                         SetFont();
                         if( ImGui::IsMouseClicked( 0 ) )

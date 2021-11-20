@@ -14052,7 +14052,9 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                     else
                     {
+                        if( m_smallFont ) ImGui::PushFont( m_smallFont );
                         TextDisabledUnformatted( "inline" );
+                        if( m_smallFont ) ImGui::PopFont();
                     }
                     ImGui::TableNextColumn();
                     {
@@ -16187,7 +16189,9 @@ void View::DrawSampleParents()
                 }
                 else
                 {
+                    if( m_smallFont ) ImGui::PushFont( m_smallFont );
                     TextDisabledUnformatted( "inline" );
+                    if( m_smallFont ) ImGui::PopFont();
                 }
                 ImGui::TableNextColumn();
                 {

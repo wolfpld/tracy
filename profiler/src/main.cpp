@@ -167,12 +167,12 @@ static void LoadFonts( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont,
     configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
 
     io.Fonts->Clear();
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, 15.0f * scale, &configBasic, rangesBasic );
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * scale, &configMerge, rangesIcons );
-    fixedWidth = cb_fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FiraCodeRetina_compressed_data, tracy::FiraCodeRetina_compressed_size, 15.0f * scale, &configBasic );
-    bigFont = cb_bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, 20.0f * scale, &configBasic );
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 19.0f * scale, &configMerge, rangesIcons );
-    smallFont = cb_smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, 10.0f * scale, &configBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 15.0f * scale ), &configBasic, rangesBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, round( 14.0f * scale ), &configMerge, rangesIcons );
+    fixedWidth = cb_fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FiraCodeRetina_compressed_data, tracy::FiraCodeRetina_compressed_size, round( 15.0f * scale ), &configBasic );
+    bigFont = cb_bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 20.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, round( 19.0f * scale ), &configMerge, rangesIcons );
+    smallFont = cb_smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 10.0f * scale ), &configBasic );
 
     ImGui_ImplOpenGL3_DestroyFontsTexture();
     ImGui_ImplOpenGL3_CreateFontsTexture();

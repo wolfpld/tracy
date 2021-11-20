@@ -3936,6 +3936,8 @@ static const char* DecodeContextSwitchState( uint8_t state )
 
 void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleData>& sampleData, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber )
 {
+    const auto lineSize = 2 * GetScale();
+
     auto& vec = ctx->v;
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
     if( it == vec.end() ) return;
@@ -3968,10 +3970,10 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
             {
                 draw->AddRectFilled( dpos + ImVec2( px0, offset + ty05 ), dpos + ImVec2( px1, endOffset ), 0x661C2321 );
             }
-            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( std::min( pxw, w+10.0 ), offset + ty05 - 0.5f ), color, 2 );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( std::min( pxw, w+10.0 ), offset + ty05 - 0.5f ), color, lineSize );
             if( ev.WakeupVal() != ev.Start() )
             {
-                DrawLine( draw, dpos + ImVec2( std::max( pxw, 10.0 ), offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF2280A0, 2 );
+                DrawLine( draw, dpos + ImVec2( std::max( pxw, 10.0 ), offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF2280A0, lineSize );
             }
 
             if( hover )
@@ -4077,7 +4079,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
             minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
             if( num == 1 )
             {
-                DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, 2 );
+                DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
                 {
                     ImGui::BeginTooltip();
@@ -4127,7 +4129,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
         {
             const auto px0 = std::max( { ( ev.Start() - m_vd.zvStart ) * pxns, -10.0, minpx } );
             const auto px1 = std::min( ( end - m_vd.zvStart ) * pxns, w + 10.0 );
-            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, 2 );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
             {
                 ImGui::BeginTooltip();

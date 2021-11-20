@@ -1554,6 +1554,7 @@ static uint32_t GetGoodnessColor( float inRatio )
 
 void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view )
 {
+    const auto scale = GetScale();
     if( m_sourceFiles.empty() )
     {
         if( m_source.is_cached() )
@@ -1901,12 +1902,12 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
             if( m_childCalls )
             {
                 const auto color = ( ipSum.local + ipSum.ext == 0 ) ? 0x22FFFFFF : GetHotnessColor( ipSum.local + ipSum.ext, as.ipMaxSrc.local + as.ipMaxSrc.ext );
-                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3*scale ), color );
             }
             else
             {
                 const auto color = ipSum.local == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum.local, as.ipMaxSrc.local );
-                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3*scale ), color );
             }
         }
 
@@ -2039,6 +2040,7 @@ static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len, CpuArchit
 
 uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view )
 {
+    const auto scale = GetScale();
     if( m_disasmFail >= 0 )
     {
         TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
@@ -2464,12 +2466,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             if( m_childCalls )
             {
                 const auto color = GetHotnessColor( ipSum.local + ipSum.ext, as.ipMaxAsm.local + as.ipMaxAsm.ext );
-                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
+                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3*scale ), color );
             }
             else if( as.ipMaxAsm.local != 0 )
             {
                 const auto color = GetHotnessColor( ipSum.local, as.ipMaxAsm.local );
-                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
+                draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3*scale ), color );
             }
         }
 
@@ -2627,6 +2629,7 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
 
 void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStatData& as, Worker* worker, const View* view )
 {
+    const auto scale = GetScale();
     const auto ts = ImGui::CalcTextSize( " " );
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2812,10 +2815,10 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             }
             if( glow )
             {
-                DrawLine( draw, dpos + ImVec2( 1, 1 ), dpos + ImVec2( 1, ty-2 ), glow );
-                DrawLine( draw, dpos + ImVec2( -1, 1 ), dpos + ImVec2( -1, ty-2 ), glow );
+                DrawLine( draw, dpos + ImVec2( scale, 1 ), dpos + ImVec2( scale, ty-2 ), glow, scale );
+                DrawLine( draw, dpos + ImVec2( -scale, 1 ), dpos + ImVec2( -scale, ty-2 ), glow, scale );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col );
+            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, scale );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -2921,6 +2924,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
 
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
+    const auto scale = GetScale();
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_asmWidth, ImGui::GetWindowWidth() );
@@ -3122,10 +3126,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             }
             if( glow )
             {
-                DrawLine( draw, dpos + ImVec2( 1, 1 ), dpos + ImVec2( 1, ty-2 ), glow );
-                DrawLine( draw, dpos + ImVec2( -1, 1 ), dpos + ImVec2( -1, ty-2 ), glow );
+                DrawLine( draw, dpos + ImVec2( scale, 1 ), dpos + ImVec2( scale, ty-2 ), glow, scale );
+                DrawLine( draw, dpos + ImVec2( -scale, 1 ), dpos + ImVec2( -scale, ty-2 ), glow, scale );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col );
+            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, scale );
         }
         ImGui::SameLine( 0, ty );
     }

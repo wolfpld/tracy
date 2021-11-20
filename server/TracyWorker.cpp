@@ -8077,13 +8077,23 @@ void Worker::Write( FileWrite& f, bool fiDict )
             params.zParams.compressionLevel = 3;
 
             auto dict = new char[DictSize];
-            const auto finalDictSize = (uint32_t)ZDICT_optimizeTrainFromBuffer_fastCover( dict, DictSize, sdata, ssize, sNum, &params );
-            auto zdict = ZSTD_createCDict( dict, finalDictSize, 3 );
+            const auto dictret = ZDICT_optimizeTrainFromBuffer_fastCover( dict, DictSize, sdata, ssize, sNum, &params );
+            if( dictret <= DictSize )
+            {
+                const auto finalDictSize = uint32_t( dictret );
+                auto zdict = ZSTD_createCDict( dict, finalDictSize, 3 );
 
-            f.Write( &finalDictSize, sizeof( finalDictSize ) );
-            f.Write( dict, finalDictSize );
+                f.Write( &finalDictSize, sizeof( finalDictSize ) );
+                f.Write( dict, finalDictSize );
 
-            ZSTD_freeCDict( zdict );
+                ZSTD_freeCDict( zdict );
+            }
+            else
+            {
+                uint32_t zero = 0;
+                f.Write( &zero, sizeof( zero ) );
+            }
+
             delete[] dict;
             delete[] ssize;
             delete[] sdata;

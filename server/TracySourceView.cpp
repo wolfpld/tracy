@@ -2281,10 +2281,21 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                             const auto fileName = worker.GetString( srcidx );
                             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
                             TextDisabledUnformatted( "Target location:" );
-                            ImGui::SameLine();
                             SmallColorBox( fileColor );
                             ImGui::SameLine();
                             ImGui::Text( "%s:%i", fileName, srcline );
+                            const auto symAddr = worker.GetInlineSymbolForAddress( v.first );
+                            if( symAddr != 0 )
+                            {
+                                const auto symData = worker.GetSymbolData( symAddr );
+                                if( symData )
+                                {
+                                    ImGui::SameLine();
+                                    if( m_smallFont ) { ImGui::PushFont( m_smallFont ); ImGui::AlignTextToFramePadding(); }
+                                    TextDisabledUnformatted( worker.GetString( symData->name ) );
+                                    if( m_smallFont ) ImGui::PopFont();
+                                }
+                            }
                         }
                         TextFocused( "Jump range:", MemSizeToString( v.second.max - v.second.min ) );
                         ImGui::Separator();
@@ -2306,6 +2317,19 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                 SmallColorBox( fc );
                                 ImGui::SameLine();
                                 ImGui::Text( "%i. %s:%i", j+1, fn, srcline );
+
+                                const auto symAddr = worker.GetInlineSymbolForAddress( v.second.source[j] );
+                                if( symAddr != 0 )
+                                {
+                                    const auto symData = worker.GetSymbolData( symAddr );
+                                    if( symData )
+                                    {
+                                        ImGui::SameLine();
+                                        if( m_smallFont ) { ImGui::PushFont( m_smallFont ); ImGui::AlignTextToFramePadding(); }
+                                        TextDisabledUnformatted( worker.GetString( symData->name ) );
+                                        if( m_smallFont ) ImGui::PopFont();
+                                    }
+                                }
                             }
                         }
                         if( ssz != v.second.source.size() )

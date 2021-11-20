@@ -49,6 +49,12 @@ static const ImVec4 SyntaxColorsDimmed[] = {
     { 0.21f, 0.69f, 0.89f, 0.6f },    // special
 };
 
+
+[[maybe_unused]] static inline float GetScale()
+{
+    return ImGui::GetTextLineHeight() / 15.f;
+}
+
 [[maybe_unused]] static inline void TextCentered( const char* text )
 {
     const auto tw = ImGui::CalcTextSize( text ).x;

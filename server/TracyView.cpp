@@ -81,12 +81,6 @@ constexpr const char* GpuContextNames[] = {
 };
 
 
-static inline float GetScale()
-{
-    return ImGui::GetTextLineHeight() / 15.f;
-}
-
-
 static inline uint64_t GetThreadBit( uint8_t thread )
 {
     return uint64_t( 1 ) << thread;

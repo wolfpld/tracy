@@ -7269,824 +7269,826 @@ void View::DrawZoneInfoWindow()
     ImGui::SetNextWindowSize( ImVec2( 500 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
-
-    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        ZoomToZone( ev );
-    }
-    auto parent = GetZoneParent( ev );
-    if( parent )
-    {
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+        if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
         {
-            ShowZoneInfo( *parent );
+            ZoomToZone( ev );
         }
-    }
-#ifndef TRACY_NO_STATISTICS
-    if( m_worker.AreSourceLocationZonesReady() )
-    {
-        const auto sl = ev.SrcLoc();
-        const auto& slz = m_worker.GetZonesForSourceLocation( sl );
-        if( !slz.zones.empty() )
+        auto parent = GetZoneParent( ev );
+        if( parent )
         {
             ImGui::SameLine();
-            if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
+            if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
             {
-                m_findZone.ShowZone( sl, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                ShowZoneInfo( *parent );
             }
         }
-    }
+#ifndef TRACY_NO_STATISTICS
+        if( m_worker.AreSourceLocationZonesReady() )
+        {
+            const auto sl = ev.SrcLoc();
+            const auto& slz = m_worker.GetZonesForSourceLocation( sl );
+            if( !slz.zones.empty() )
+            {
+                ImGui::SameLine();
+                if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
+                {
+                    m_findZone.ShowZone( sl, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                }
+            }
+        }
 #endif
-    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).callstack.Val() != 0 )
-    {
-        const auto& extra = m_worker.GetZoneExtra( ev );
-        ImGui::SameLine();
-        bool hilite = m_callstackInfoWindow == extra.callstack.Val();
-        if( hilite )
+        if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).callstack.Val() != 0 )
         {
-            SetButtonHighlightColor();
+            const auto& extra = m_worker.GetZoneExtra( ev );
+            ImGui::SameLine();
+            bool hilite = m_callstackInfoWindow == extra.callstack.Val();
+            if( hilite )
+            {
+                SetButtonHighlightColor();
+            }
+            if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
+            {
+                m_callstackInfoWindow = extra.callstack.Val();
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
+            }
         }
-        if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
-        {
-            m_callstackInfoWindow = extra.callstack.Val();
-        }
-        if( hilite )
-        {
-            ImGui::PopStyleColor( 3 );
-        }
-    }
-    const auto fileName = m_worker.GetString( srcloc.file );
-    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
-    {
-        ImGui::SameLine();
-        bool hilite = m_sourceViewFile == fileName;
-        if( hilite )
-        {
-            SetButtonHighlightColor();
-        }
-        if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
-        {
-            ViewSource( fileName, srcloc.line );
-        }
-        if( hilite )
-        {
-            ImGui::PopStyleColor( 3 );
-        }
-    }
-    if( !m_zoneInfoStack.empty() )
-    {
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
-        {
-            m_zoneInfoWindow = m_zoneInfoStack.back_and_pop();
-        }
-    }
-
-    ImGui::Separator();
-
-    auto threadData = GetZoneThreadData( ev );
-    assert( threadData );
-    const auto tid = threadData->id;
-    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).name.Active() )
-    {
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
-        TextFocused( "Zone name:", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
-        if( m_bigFont ) ImGui::PopFont();
-        if( srcloc.name.active )
+        const auto fileName = m_worker.GetString( srcloc.file );
+        if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
         {
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", m_worker.GetString( srcloc.name ) );
+            bool hilite = m_sourceViewFile == fileName;
+            if( hilite )
+            {
+                SetButtonHighlightColor();
+            }
+            if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
+            {
+                ViewSource( fileName, srcloc.line );
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
+            }
         }
-        ImGui::SameLine();
-        if( ClipboardButton( 1 ) )
+        if( !m_zoneInfoStack.empty() )
         {
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
+            {
+                m_zoneInfoWindow = m_zoneInfoStack.back_and_pop();
+            }
+        }
+
+        ImGui::Separator();
+
+        auto threadData = GetZoneThreadData( ev );
+        assert( threadData );
+        const auto tid = threadData->id;
+        if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).name.Active() )
+        {
+            if( m_bigFont ) ImGui::PushFont( m_bigFont );
+            TextFocused( "Zone name:", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
+            if( m_bigFont ) ImGui::PopFont();
             if( srcloc.name.active )
             {
-                char tmp[1024];
-                sprintf( tmp, "%s (%s)", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ), m_worker.GetString( srcloc.name ) );
-                ImGui::SetClipboardText( tmp );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", m_worker.GetString( srcloc.name ) );
             }
-            else
-            {
-                ImGui::SetClipboardText( m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
-            }
-        }
-        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-        ImGui::SameLine();
-        if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
-    }
-    else if( srcloc.name.active )
-    {
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
-        TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
-        if( m_bigFont ) ImGui::PopFont();
-        ImGui::SameLine();
-        if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
-        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-        ImGui::SameLine();
-        if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
-    }
-    else
-    {
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
-        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-        if( m_bigFont ) ImGui::PopFont();
-        ImGui::SameLine();
-        if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
-    }
-    SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( ev.SrcLoc() ), 0 ) );
-    ImGui::SameLine();
-    TextDisabledUnformatted( "Location:" );
-    ImGui::SameLine();
-    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-    ImGui::SameLine();
-    if( ClipboardButton( 3 ) )
-    {
-        ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-    }
-    SmallColorBox( GetThreadColor( tid, 0 ) );
-    ImGui::SameLine();
-    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-    if( m_worker.IsThreadFiber( tid ) )
-    {
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-    }
-    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
-    {
-        TextFocused( "User text:", m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
-    }
-
-    ImGui::Separator();
-    ImGui::BeginChild( "##zoneinfo" );
-
-    const auto end = m_worker.GetZoneEnd( ev );
-    const auto ztime = end - ev.Start();
-    const auto selftime = GetZoneSelfTime( ev );
-    TextFocused( "Time from start of program:", TimeToStringExact( ev.Start() ) );
-    TextFocused( "Execution time:", TimeToString( ztime ) );
-#ifndef TRACY_NO_STATISTICS
-    if( m_worker.AreSourceLocationZonesReady() )
-    {
-        auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
-        if( zoneData.total > 0 )
-        {
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
-        }
-    }
-#endif
-    TextFocused( "Self time:", TimeToString( selftime ) );
-    if( ztime != 0 )
-    {
-        char buf[64];
-        PrintStringPercent( buf, 100.f * selftime / ztime );
-        ImGui::SameLine();
-        TextDisabledUnformatted( buf );
-    }
-    const auto ctx = m_worker.GetContextSwitchData( tid );
-    if( ctx )
-    {
-        auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-        if( it != ctx->v.end() )
-        {
-            const auto end = m_worker.GetZoneEnd( ev );
-            auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
-            bool incomplete = eit == ctx->v.end();
-            uint64_t cnt = std::distance( it, eit );
-            if( cnt == 1 )
+            if( ClipboardButton( 1 ) )
             {
-                if( !incomplete )
+                if( srcloc.name.active )
                 {
-                    TextFocused( "Running state time:", TimeToString( ztime ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( "(100%)" );
-                    ImGui::Separator();
-                    TextFocused( "Running state regions:", "1" );
-                    if( !threadData->isFiber ) TextFocused( "CPU:", RealToString( it->Cpu() ) );
-                }
-            }
-            else if( cnt > 1 )
-            {
-                uint8_t cpus[256] = {};
-                auto bit = it;
-                int64_t running = it->End() - ev.Start();
-                cpus[it->Cpu()] = 1;
-                ++it;
-                for( uint64_t i=0; i<cnt-2; i++ )
-                {
-                    running += it->End() - it->Start();
-                    cpus[it->Cpu()] = 1;
-                    ++it;
-                }
-                running += end - it->Start();
-                cpus[it->Cpu()] = 1;
-                TextFocused( "Running state time:", TimeToString( running ) );
-                if( ztime != 0 )
-                {
-                    char buf[64];
-                    PrintStringPercent( buf, 100.f * running / ztime );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( buf );
-                }
-                ImGui::Separator();
-                if( incomplete )
-                {
-                    TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Incomplete context switch data!" );
-                }
-                TextFocused( "Running state regions:", RealToString( cnt ) );
-
-                if( !threadData->isFiber )
-                {
-                    int numCpus = 0;
-                    for( int i=0; i<256; i++ ) numCpus += cpus[i];
-                    if( numCpus == 1 )
-                    {
-                        TextFocused( "CPU:", RealToString( it->Cpu() ) );
-                    }
-                    else
-                    {
-                        ImGui::TextDisabled( "CPUs (%i):", numCpus );
-                        for( int i=0;; i++ )
-                        {
-                            if( cpus[i] != 0 )
-                            {
-                                ImGui::SameLine();
-                                numCpus--;
-                                if( numCpus == 0 )
-                                {
-                                    ImGui::Text( "%i", i );
-                                    break;
-                                }
-                                else
-                                {
-                                    int consecutive = 1;
-                                    int remaining = numCpus;
-                                    for(;;)
-                                    {
-                                        if( cpus[i+consecutive] == 0 ) break;
-                                        consecutive++;
-                                        if( --remaining == 0 ) break;
-                                    }
-                                    if( consecutive > 2 )
-                                    {
-                                        if( remaining == 0 )
-                                        {
-                                            ImGui::Text( "%i \xE2\x80\x93 %i", i, i+consecutive-1 );
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            ImGui::Text( "%i \xE2\x80\x93 %i,", i, i+consecutive-1 );
-                                            i += consecutive - 1;
-                                            numCpus = remaining;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        ImGui::Text( "%i,", i );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                --eit;
-                if( ImGui::TreeNode( "Wait regions" ) )
-                {
-                    ImGui::SameLine();
-                    ImGui::Spacing();
-                    ImGui::SameLine();
-                    SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
-                    const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
-                    const auto wrsz = eit - bit;
-
-                    const auto numColumns = threadData->isFiber ? 4 : 6;
-                    if( ImGui::BeginTable( "##waitregions", numColumns, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
-                    {
-                        ImGui::TableSetupScrollFreeze( 0, 1 );
-                        ImGui::TableSetupColumn( "Begin" );
-                        ImGui::TableSetupColumn( "End" );
-                        ImGui::TableSetupColumn( "Time" );
-                        if( threadData->isFiber )
-                        {
-                            ImGui::TableSetupColumn( "Thread" );
-                        }
-                        else
-                        {
-                            ImGui::TableSetupColumn( "Wakeup" );
-                            ImGui::TableSetupColumn( "CPU" );
-                            ImGui::TableSetupColumn( "State" );
-                        }
-                        ImGui::TableHeadersRow();
-
-                        ImGuiListClipper clipper;
-                        clipper.Begin( wrsz );
-                        while( clipper.Step() )
-                        {
-                            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
-                            {
-                                const auto cend = bit[i].End();
-                                const auto cstart = bit[i+1].Start();
-                                const auto cwakeup = bit[i+1].WakeupVal();
-
-                                ImGui::PushID( i );
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-
-                                auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
-                                if( ImGui::Selectable( tt ) )
-                                {
-                                    CenterAtTime( cend );
-                                }
-                                ImGui::TableNextColumn();
-                                tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
-                                if( ImGui::Selectable( tt ) )
-                                {
-                                    CenterAtTime( cstart );
-                                }
-                                ImGui::TableNextColumn();
-                                if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
-                                {
-                                    ZoomToRange( cend, cwakeup );
-                                }
-                                ImGui::TableNextColumn();
-                                if( threadData->isFiber )
-                                {
-                                    const auto ftid = m_worker.DecompressThread( bit[i].Thread() );
-                                    ImGui::TextUnformatted( m_worker.GetThreadName( ftid ) );
-                                    ImGui::SameLine();
-                                    ImGui::TextDisabled( "(%s)", RealToString( ftid ) );
-                                }
-                                else
-                                {
-                                    const auto cpu0 = bit[i].Cpu();
-                                    const auto reason = bit[i].Reason();
-                                    const auto state = bit[i].State();
-                                    const auto cpu1 = bit[i+1].Cpu();
-
-                                    if( cstart != cwakeup )
-                                    {
-                                        if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
-                                        {
-                                            ZoomToRange( cwakeup, cstart );
-                                        }
-                                    }
-                                    else
-                                    {
-                                        ImGui::TextUnformatted( "-" );
-                                    }
-                                    ImGui::TableNextColumn();
-                                    if( cpu0 == cpu1 )
-                                    {
-                                        ImGui::TextUnformatted( RealToString( cpu0 ) );
-                                    }
-                                    else
-                                    {
-                                        ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
-                                        const auto tt0 = m_worker.GetThreadTopology( cpu0 );
-                                        const auto tt1 = m_worker.GetThreadTopology( cpu1 );
-                                        if( tt0 && tt1 )
-                                        {
-                                            if( tt0->package != tt1->package )
-                                            {
-                                                ImGui::SameLine();
-                                                TextDisabledUnformatted( "P" );
-                                            }
-                                            else if( tt0->core != tt1->core )
-                                            {
-                                                ImGui::SameLine();
-                                                TextDisabledUnformatted( "C" );
-                                            }
-                                        }
-                                    }
-                                    ImGui::TableNextColumn();
-                                    const char* desc;
-                                    if( reason == ContextSwitchData::NoState )
-                                    {
-                                        ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
-                                        desc = DecodeContextSwitchState( state );
-                                    }
-                                    else
-                                    {
-                                        ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
-                                        desc = DecodeContextSwitchReason( reason );
-                                    }
-                                    if( *desc && ImGui::IsItemHovered() )
-                                    {
-                                        ImGui::BeginTooltip();
-                                        ImGui::TextUnformatted( desc );
-                                        ImGui::EndTooltip();
-                                    }
-                                }
-                                ImGui::PopID();
-                            }
-                        }
-                        ImGui::EndTable();
-                    }
-                    ImGui::TreePop();
-                }
-            }
-        }
-    }
-
-    ImGui::Separator();
-    auto& memNameMap = m_worker.GetMemNameMap();
-    if( memNameMap.size() > 1 )
-    {
-        ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( ICON_FA_ARCHIVE " Memory pool:" );
-        ImGui::SameLine();
-        if( ImGui::BeginCombo( "##memoryPool", m_zoneInfoMemPool == 0 ? "Default allocator" : m_worker.GetString( m_zoneInfoMemPool ) ) )
-        {
-            for( auto& v : memNameMap )
-            {
-                if( ImGui::Selectable( v.first == 0 ? "Default allocator" : m_worker.GetString( v.first ) ) )
-                {
-                    m_zoneInfoMemPool = v.first;
-                }
-            }
-            ImGui::EndCombo();
-        }
-    }
-    auto& mem = m_worker.GetMemoryNamed( m_zoneInfoMemPool );
-    if( mem.data.empty() )
-    {
-        TextDisabledUnformatted( "No memory events." );
-    }
-    else
-    {
-        if( !mem.plot )
-        {
-            ImGui::Text( "Please wait, computing data..." );
-            DrawWaitingDots( s_time );
-        }
-        else
-        {
-            const auto thread = m_worker.CompressThread( tid );
-
-            auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.TimeAlloc() < r; } );
-            const auto aend = std::upper_bound( ait, mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.TimeAlloc(); } );
-
-            auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.Start(), [&mem] ( const auto& l, const auto& r ) { return mem.data[l].TimeFree() < r; } );
-            const auto fend = std::upper_bound( fit, mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].TimeFree(); } );
-
-            const auto aDist = std::distance( ait, aend );
-            const auto fDist = std::distance( fit, fend );
-            if( aDist == 0 && fDist == 0 )
-            {
-                TextDisabledUnformatted( "No memory events." );
-            }
-            else
-            {
-                int64_t cAlloc = 0;
-                int64_t cFree = 0;
-                int64_t nAlloc = 0;
-                int64_t nFree = 0;
-
-                auto ait2 = ait;
-                auto fit2 = fit;
-
-                while( ait != aend )
-                {
-                    if( ait->ThreadAlloc() == thread )
-                    {
-                        cAlloc += ait->Size();
-                        nAlloc++;
-                    }
-                    ait++;
-                }
-                while( fit != fend )
-                {
-                    if( mem.data[*fit].ThreadFree() == thread )
-                    {
-                        cFree += mem.data[*fit].Size();
-                        nFree++;
-                    }
-                    fit++;
-                }
-
-                if( nAlloc == 0 && nFree == 0 )
-                {
-                    TextDisabledUnformatted( "No memory events." );
+                    char tmp[1024];
+                    sprintf( tmp, "%s (%s)", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ), m_worker.GetString( srcloc.name ) );
+                    ImGui::SetClipboardText( tmp );
                 }
                 else
                 {
-                    ImGui::TextUnformatted( RealToString( nAlloc + nFree ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( "memory events." );
-                    ImGui::TextUnformatted( RealToString( nAlloc ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( "allocs," );
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted( RealToString( nFree ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( "frees." );
-                    TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
-                    TextFocused( "Memory freed:", MemSizeToString( cFree ) );
-                    TextFocused( "Overall change:", MemSizeToString( cAlloc - cFree ) );
+                    ImGui::SetClipboardText( m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
+                }
+            }
+            TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+            ImGui::SameLine();
+            if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
+        }
+        else if( srcloc.name.active )
+        {
+            if( m_bigFont ) ImGui::PushFont( m_bigFont );
+            TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+            if( m_bigFont ) ImGui::PopFont();
+            ImGui::SameLine();
+            if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
+            TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+            ImGui::SameLine();
+            if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
+        }
+        else
+        {
+            if( m_bigFont ) ImGui::PushFont( m_bigFont );
+            TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+            if( m_bigFont ) ImGui::PopFont();
+            ImGui::SameLine();
+            if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
+        }
+        SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( ev.SrcLoc() ), 0 ) );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Location:" );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+        ImGui::SameLine();
+        if( ClipboardButton( 3 ) )
+        {
+            ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+        }
+        SmallColorBox( GetThreadColor( tid, 0 ) );
+        ImGui::SameLine();
+        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+        if( m_worker.IsThreadFiber( tid ) )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+        }
+        if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
+        {
+            TextFocused( "User text:", m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+        }
 
-                    if( ImGui::TreeNode( "Allocations list" ) )
+        ImGui::Separator();
+        ImGui::BeginChild( "##zoneinfo" );
+
+        const auto end = m_worker.GetZoneEnd( ev );
+        const auto ztime = end - ev.Start();
+        const auto selftime = GetZoneSelfTime( ev );
+        TextFocused( "Time from start of program:", TimeToStringExact( ev.Start() ) );
+        TextFocused( "Execution time:", TimeToString( ztime ) );
+#ifndef TRACY_NO_STATISTICS
+        if( m_worker.AreSourceLocationZonesReady() )
+        {
+            auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
+            if( zoneData.total > 0 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+            }
+        }
+#endif
+        TextFocused( "Self time:", TimeToString( selftime ) );
+        if( ztime != 0 )
+        {
+            char buf[64];
+            PrintStringPercent( buf, 100.f * selftime / ztime );
+            ImGui::SameLine();
+            TextDisabledUnformatted( buf );
+        }
+        const auto ctx = m_worker.GetContextSwitchData( tid );
+        if( ctx )
+        {
+            auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+            if( it != ctx->v.end() )
+            {
+                const auto end = m_worker.GetZoneEnd( ev );
+                auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
+                bool incomplete = eit == ctx->v.end();
+                uint64_t cnt = std::distance( it, eit );
+                if( cnt == 1 )
+                {
+                    if( !incomplete )
+                    {
+                        TextFocused( "Running state time:", TimeToString( ztime ) );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "(100%)" );
+                        ImGui::Separator();
+                        TextFocused( "Running state regions:", "1" );
+                        if( !threadData->isFiber ) TextFocused( "CPU:", RealToString( it->Cpu() ) );
+                    }
+                }
+                else if( cnt > 1 )
+                {
+                    uint8_t cpus[256] = {};
+                    auto bit = it;
+                    int64_t running = it->End() - ev.Start();
+                    cpus[it->Cpu()] = 1;
+                    ++it;
+                    for( uint64_t i=0; i<cnt-2; i++ )
+                    {
+                        running += it->End() - it->Start();
+                        cpus[it->Cpu()] = 1;
+                        ++it;
+                    }
+                    running += end - it->Start();
+                    cpus[it->Cpu()] = 1;
+                    TextFocused( "Running state time:", TimeToString( running ) );
+                    if( ztime != 0 )
+                    {
+                        char buf[64];
+                        PrintStringPercent( buf, 100.f * running / ztime );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( buf );
+                    }
+                    ImGui::Separator();
+                    if( incomplete )
+                    {
+                        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Incomplete context switch data!" );
+                    }
+                    TextFocused( "Running state regions:", RealToString( cnt ) );
+
+                    if( !threadData->isFiber )
+                    {
+                        int numCpus = 0;
+                        for( int i=0; i<256; i++ ) numCpus += cpus[i];
+                        if( numCpus == 1 )
+                        {
+                            TextFocused( "CPU:", RealToString( it->Cpu() ) );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "CPUs (%i):", numCpus );
+                            for( int i=0;; i++ )
+                            {
+                                if( cpus[i] != 0 )
+                                {
+                                    ImGui::SameLine();
+                                    numCpus--;
+                                    if( numCpus == 0 )
+                                    {
+                                        ImGui::Text( "%i", i );
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        int consecutive = 1;
+                                        int remaining = numCpus;
+                                        for(;;)
+                                        {
+                                            if( cpus[i+consecutive] == 0 ) break;
+                                            consecutive++;
+                                            if( --remaining == 0 ) break;
+                                        }
+                                        if( consecutive > 2 )
+                                        {
+                                            if( remaining == 0 )
+                                            {
+                                                ImGui::Text( "%i \xE2\x80\x93 %i", i, i+consecutive-1 );
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                ImGui::Text( "%i \xE2\x80\x93 %i,", i, i+consecutive-1 );
+                                                i += consecutive - 1;
+                                                numCpus = remaining;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            ImGui::Text( "%i,", i );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    --eit;
+                    if( ImGui::TreeNode( "Wait regions" ) )
                     {
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        SmallCheckbox( "Time relative to zone start", &m_allocTimeRelativeToZone );
+                        SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
+                        const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
+                        const auto wrsz = eit - bit;
 
-                        std::vector<const MemEvent*> v;
-                        v.reserve( nAlloc + nFree );
-
-                        auto it = ait2;
-                        while( it != aend )
+                        const auto numColumns = threadData->isFiber ? 4 : 6;
+                        if( ImGui::BeginTable( "##waitregions", numColumns, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+wrsz, 15 ) ) ) )
                         {
-                            if( it->ThreadAlloc() == thread )
+                            ImGui::TableSetupScrollFreeze( 0, 1 );
+                            ImGui::TableSetupColumn( "Begin" );
+                            ImGui::TableSetupColumn( "End" );
+                            ImGui::TableSetupColumn( "Time" );
+                            if( threadData->isFiber )
                             {
-                                v.emplace_back( it );
+                                ImGui::TableSetupColumn( "Thread" );
                             }
-                            it++;
-                        }
-                        while( fit2 != fend )
-                        {
-                            const auto ptr = &mem.data[*fit2++];
-                            if( ptr->ThreadFree() == thread )
+                            else
                             {
-                                if( ptr < ait2 || ptr >= aend )
+                                ImGui::TableSetupColumn( "Wakeup" );
+                                ImGui::TableSetupColumn( "CPU" );
+                                ImGui::TableSetupColumn( "State" );
+                            }
+                            ImGui::TableHeadersRow();
+
+                            ImGuiListClipper clipper;
+                            clipper.Begin( wrsz );
+                            while( clipper.Step() )
+                            {
+                                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                                 {
-                                    v.emplace_back( ptr );
+                                    const auto cend = bit[i].End();
+                                    const auto cstart = bit[i+1].Start();
+                                    const auto cwakeup = bit[i+1].WakeupVal();
+
+                                    ImGui::PushID( i );
+                                    ImGui::TableNextRow();
+                                    ImGui::TableNextColumn();
+
+                                    auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
+                                    if( ImGui::Selectable( tt ) )
+                                    {
+                                        CenterAtTime( cend );
+                                    }
+                                    ImGui::TableNextColumn();
+                                    tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
+                                    if( ImGui::Selectable( tt ) )
+                                    {
+                                        CenterAtTime( cstart );
+                                    }
+                                    ImGui::TableNextColumn();
+                                    if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
+                                    {
+                                        ZoomToRange( cend, cwakeup );
+                                    }
+                                    ImGui::TableNextColumn();
+                                    if( threadData->isFiber )
+                                    {
+                                        const auto ftid = m_worker.DecompressThread( bit[i].Thread() );
+                                        ImGui::TextUnformatted( m_worker.GetThreadName( ftid ) );
+                                        ImGui::SameLine();
+                                        ImGui::TextDisabled( "(%s)", RealToString( ftid ) );
+                                    }
+                                    else
+                                    {
+                                        const auto cpu0 = bit[i].Cpu();
+                                        const auto reason = bit[i].Reason();
+                                        const auto state = bit[i].State();
+                                        const auto cpu1 = bit[i+1].Cpu();
+
+                                        if( cstart != cwakeup )
+                                        {
+                                            if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
+                                            {
+                                                ZoomToRange( cwakeup, cstart );
+                                            }
+                                        }
+                                        else
+                                        {
+                                            ImGui::TextUnformatted( "-" );
+                                        }
+                                        ImGui::TableNextColumn();
+                                        if( cpu0 == cpu1 )
+                                        {
+                                            ImGui::TextUnformatted( RealToString( cpu0 ) );
+                                        }
+                                        else
+                                        {
+                                            ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
+                                            const auto tt0 = m_worker.GetThreadTopology( cpu0 );
+                                            const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                                            if( tt0 && tt1 )
+                                            {
+                                                if( tt0->package != tt1->package )
+                                                {
+                                                    ImGui::SameLine();
+                                                    TextDisabledUnformatted( "P" );
+                                                }
+                                                else if( tt0->core != tt1->core )
+                                                {
+                                                    ImGui::SameLine();
+                                                    TextDisabledUnformatted( "C" );
+                                                }
+                                            }
+                                        }
+                                        ImGui::TableNextColumn();
+                                        const char* desc;
+                                        if( reason == ContextSwitchData::NoState )
+                                        {
+                                            ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
+                                            desc = DecodeContextSwitchState( state );
+                                        }
+                                        else
+                                        {
+                                            ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
+                                            desc = DecodeContextSwitchReason( reason );
+                                        }
+                                        if( *desc && ImGui::IsItemHovered() )
+                                        {
+                                            ImGui::BeginTooltip();
+                                            ImGui::TextUnformatted( desc );
+                                            ImGui::EndTooltip();
+                                        }
+                                    }
+                                    ImGui::PopID();
                                 }
                             }
+                            ImGui::EndTable();
                         }
-                        pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->TimeAlloc() < r->TimeAlloc(); } );
-
-                        ListMemData( v, []( auto v ) {
-                            ImGui::Text( "0x%" PRIx64, v->Ptr() );
-                        }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1, m_zoneInfoMemPool );
                         ImGui::TreePop();
                     }
                 }
             }
         }
-    }
 
-    ImGui::Separator();
-    {
-        if( threadData->messages.empty() )
+        ImGui::Separator();
+        auto& memNameMap = m_worker.GetMemNameMap();
+        if( memNameMap.size() > 1 )
         {
-            TextDisabledUnformatted( "No messages" );
+            ImGui::AlignTextToFramePadding();
+            TextDisabledUnformatted( ICON_FA_ARCHIVE " Memory pool:" );
+            ImGui::SameLine();
+            if( ImGui::BeginCombo( "##memoryPool", m_zoneInfoMemPool == 0 ? "Default allocator" : m_worker.GetString( m_zoneInfoMemPool ) ) )
+            {
+                for( auto& v : memNameMap )
+                {
+                    if( ImGui::Selectable( v.first == 0 ? "Default allocator" : m_worker.GetString( v.first ) ) )
+                    {
+                        m_zoneInfoMemPool = v.first;
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+        auto& mem = m_worker.GetMemoryNamed( m_zoneInfoMemPool );
+        if( mem.data.empty() )
+        {
+            TextDisabledUnformatted( "No memory events." );
         }
         else
         {
-            auto msgit = std::lower_bound( threadData->messages.begin(), threadData->messages.end(), ev.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-            auto msgend = std::lower_bound( msgit, threadData->messages.end(), end+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+            if( !mem.plot )
+            {
+                ImGui::Text( "Please wait, computing data..." );
+                DrawWaitingDots( s_time );
+            }
+            else
+            {
+                const auto thread = m_worker.CompressThread( tid );
 
-            const auto dist = std::distance( msgit, msgend );
-            if( dist == 0 )
+                auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.TimeAlloc() < r; } );
+                const auto aend = std::upper_bound( ait, mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.TimeAlloc(); } );
+
+                auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.Start(), [&mem] ( const auto& l, const auto& r ) { return mem.data[l].TimeFree() < r; } );
+                const auto fend = std::upper_bound( fit, mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].TimeFree(); } );
+
+                const auto aDist = std::distance( ait, aend );
+                const auto fDist = std::distance( fit, fend );
+                if( aDist == 0 && fDist == 0 )
+                {
+                    TextDisabledUnformatted( "No memory events." );
+                }
+                else
+                {
+                    int64_t cAlloc = 0;
+                    int64_t cFree = 0;
+                    int64_t nAlloc = 0;
+                    int64_t nFree = 0;
+
+                    auto ait2 = ait;
+                    auto fit2 = fit;
+
+                    while( ait != aend )
+                    {
+                        if( ait->ThreadAlloc() == thread )
+                        {
+                            cAlloc += ait->Size();
+                            nAlloc++;
+                        }
+                        ait++;
+                    }
+                    while( fit != fend )
+                    {
+                        if( mem.data[*fit].ThreadFree() == thread )
+                        {
+                            cFree += mem.data[*fit].Size();
+                            nFree++;
+                        }
+                        fit++;
+                    }
+
+                    if( nAlloc == 0 && nFree == 0 )
+                    {
+                        TextDisabledUnformatted( "No memory events." );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( RealToString( nAlloc + nFree ) );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "memory events." );
+                        ImGui::TextUnformatted( RealToString( nAlloc ) );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "allocs," );
+                        ImGui::SameLine();
+                        ImGui::TextUnformatted( RealToString( nFree ) );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "frees." );
+                        TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
+                        TextFocused( "Memory freed:", MemSizeToString( cFree ) );
+                        TextFocused( "Overall change:", MemSizeToString( cAlloc - cFree ) );
+
+                        if( ImGui::TreeNode( "Allocations list" ) )
+                        {
+                            ImGui::SameLine();
+                            ImGui::Spacing();
+                            ImGui::SameLine();
+                            SmallCheckbox( "Time relative to zone start", &m_allocTimeRelativeToZone );
+
+                            std::vector<const MemEvent*> v;
+                            v.reserve( nAlloc + nFree );
+
+                            auto it = ait2;
+                            while( it != aend )
+                            {
+                                if( it->ThreadAlloc() == thread )
+                                {
+                                    v.emplace_back( it );
+                                }
+                                it++;
+                            }
+                            while( fit2 != fend )
+                            {
+                                const auto ptr = &mem.data[*fit2++];
+                                if( ptr->ThreadFree() == thread )
+                                {
+                                    if( ptr < ait2 || ptr >= aend )
+                                    {
+                                        v.emplace_back( ptr );
+                                    }
+                                }
+                            }
+                            pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->TimeAlloc() < r->TimeAlloc(); } );
+
+                            ListMemData( v, []( auto v ) {
+                                ImGui::Text( "0x%" PRIx64, v->Ptr() );
+                            }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1, m_zoneInfoMemPool );
+                            ImGui::TreePop();
+                        }
+                    }
+                }
+            }
+        }
+
+        ImGui::Separator();
+        {
+            if( threadData->messages.empty() )
             {
                 TextDisabledUnformatted( "No messages" );
             }
             else
             {
-                bool expand = ImGui::TreeNode( "Messages" );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( dist ) );
-                if( expand )
+                auto msgit = std::lower_bound( threadData->messages.begin(), threadData->messages.end(), ev.Start(), [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+                auto msgend = std::lower_bound( msgit, threadData->messages.end(), end+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+
+                const auto dist = std::distance( msgit, msgend );
+                if( dist == 0 )
                 {
-                    ImGui::SameLine();
-                    SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
-                    if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
-                    {
-                        ImGui::TableSetupScrollFreeze( 0, 1 );
-                        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                        ImGui::TableSetupColumn( "Message" );
-                        ImGui::TableHeadersRow();
-                        do
-                        {
-                            ImGui::PushID( *msgit );
-                            ImGui::TableNextRow();
-                            ImGui::TableNextColumn();
-                            if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
-                            {
-                                CenterAtTime( (*msgit)->time );
-                            }
-                            if( ImGui::IsItemHovered() )
-                            {
-                                m_msgHighlight = *msgit;
-                            }
-                            ImGui::PopID();
-                            ImGui::TableNextColumn();
-                            ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
-                            ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
-                            ImGui::PopStyleColor();
-                        }
-                        while( ++msgit != msgend );
-                        ImGui::EndTable();
-                    }
-                    ImGui::TreePop();
-                    ImGui::Spacing();
-                }
-            }
-        }
-    }
-
-    ImGui::Separator();
-
-    std::vector<const ZoneEvent*> zoneTrace;
-    while( parent )
-    {
-         zoneTrace.emplace_back( parent );
-         parent = GetZoneParent( *parent );
-    }
-    int idx = 0;
-    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
-        ImGui::TextDisabled( "%i.", fidx++ );
-        ImGui::SameLine();
-        const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
-        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
-        ImGui::SameLine();
-        const auto txt = m_worker.GetZoneName( *v, srcloc );
-        ImGui::PushID( idx++ );
-        auto sel = ImGui::Selectable( txt, false );
-        auto hover = ImGui::IsItemHovered();
-        const auto fileName = m_worker.GetString( srcloc.file );
-        if( m_zoneinfoBuzzAnim.Match( v ) )
-        {
-            const auto time = m_zoneinfoBuzzAnim.Time();
-            const auto indentVal = sin( time * 60.f ) * 10.f * time;
-            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-        }
-        else
-        {
-            ImGui::SameLine();
-        }
-        ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->Start() ), LocationToString( fileName, srcloc.line ) );
-        ImGui::PopID();
-        if( ImGui::IsItemClicked( 1 ) )
-        {
-            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
-            {
-                ViewSource( fileName, srcloc.line );
-            }
-            else
-            {
-                m_zoneinfoBuzzAnim.Enable( v, 0.5f );
-            }
-        }
-        if( sel )
-        {
-            ShowZoneInfo( *v );
-        }
-        if( hover )
-        {
-            m_zoneHighlight = v;
-            if( IsMouseClicked( 2 ) )
-            {
-                ZoomToZone( *v );
-            }
-            ZoneTooltip( *v );
-        }
-    } );
-
-    if( ev.HasChildren() )
-    {
-        const auto& children = m_worker.GetZoneChildren( ev.Child() );
-        bool expand = ImGui::TreeNode( "Child zones" );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( children.size() ) );
-        if( expand )
-        {
-            if( children.is_magic() )
-            {
-                DrawZoneInfoChildren<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ztime );
-            }
-            else
-            {
-                DrawZoneInfoChildren<VectorAdapterPointer<ZoneEvent>>( children, ztime );
-            }
-            ImGui::TreePop();
-        }
-
-        expand = ImGui::TreeNode( "Time distribution" );
-        if( expand )
-        {
-            ImGui::SameLine();
-            if( SmallCheckbox( "Self time", &m_timeDist.exclusiveTime ) ) m_timeDist.dataValidFor = nullptr;
-            if( ctx )
-            {
-                ImGui::SameLine();
-                if( SmallCheckbox( "Running time", &m_timeDist.runningTime ) ) m_timeDist.dataValidFor = nullptr;
-            }
-            if( m_timeDist.dataValidFor != &ev )
-            {
-                m_timeDist.data.clear();
-                if( ev.IsEndValid() ) m_timeDist.dataValidFor = &ev;
-
-                if( m_timeDist.runningTime )
-                {
-                    assert( ctx );
-                    int64_t time;
-                    uint64_t cnt;
-                    if( !GetZoneRunningTime( ctx, ev, time, cnt ) )
-                    {
-                        TextDisabledUnformatted( "Incomplete context switch data." );
-                        m_timeDist.dataValidFor = nullptr;
-                    }
-                    else
-                    {
-                        auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ time, 1 } ).first;
-                        CalcZoneTimeData( ctx, m_timeDist.data, it->second.time, ev );
-                    }
-                    m_timeDist.fztime = 100.f / time;
+                    TextDisabledUnformatted( "No messages" );
                 }
                 else
                 {
-                    auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ ztime, 1 } ).first;
-                    CalcZoneTimeData( m_timeDist.data, it->second.time, ev );
-                    m_timeDist.fztime = 100.f / ztime;
+                    bool expand = ImGui::TreeNode( "Messages" );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( dist ) );
+                    if( expand )
+                    {
+                        ImGui::SameLine();
+                        SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
+                        if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
+                        {
+                            ImGui::TableSetupScrollFreeze( 0, 1 );
+                            ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                            ImGui::TableSetupColumn( "Message" );
+                            ImGui::TableHeadersRow();
+                            do
+                            {
+                                ImGui::PushID( *msgit );
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+                                if( ImGui::Selectable( m_messageTimeRelativeToZone ? TimeToString( (*msgit)->time - ev.Start() ) : TimeToStringExact( (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
+                                {
+                                    CenterAtTime( (*msgit)->time );
+                                }
+                                if( ImGui::IsItemHovered() )
+                                {
+                                    m_msgHighlight = *msgit;
+                                }
+                                ImGui::PopID();
+                                ImGui::TableNextColumn();
+                                ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
+                                ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
+                                ImGui::PopStyleColor();
+                            }
+                            while( ++msgit != msgend );
+                            ImGui::EndTable();
+                        }
+                        ImGui::TreePop();
+                        ImGui::Spacing();
+                    }
                 }
             }
-            if( !m_timeDist.data.empty() )
-            {
-                std::vector<unordered_flat_map<int16_t, ZoneTimeData>::const_iterator> vec;
-                vec.reserve( m_timeDist.data.size() );
-                for( auto it = m_timeDist.data.cbegin(); it != m_timeDist.data.cend(); ++it ) vec.emplace_back( it );
-                if( ImGui::BeginTable( "##timedist", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) )
-                {
-                    ImGui::TableSetupColumn( "Zone", ImGuiTableColumnFlags_PreferSortDescending );
-                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                    ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                    ImGui::TableHeadersRow();
-                    const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
-                    switch( sortspec.ColumnIndex )
-                    {
-                    case 0:
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count < rhs->second.count; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
-                        }
-                        break;
-                    case 1:
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time < rhs->second.time; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
-                        }
-                        break;
-                    case 2:
-                        if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
-                        {
-                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count < float( rhs->second.time ) / rhs->second.count; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count > float( rhs->second.time ) / rhs->second.count; } );
-                        }
-                        break;
-                    default:
-                        assert( false );
-                        break;
-                    }
-                    for( auto& v : vec )
-                    {
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        const auto& sl = m_worker.GetSourceLocation( v->first );
-                        SmallColorBox( GetSrcLocColor( sl, 0 ) );
-                        ImGui::SameLine();
-                        const auto name = m_worker.GetZoneName( sl );
-                        if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
-                        {
-                            m_findZone.ShowZone( v->first, name, ev.Start(), m_worker.GetZoneEnd( ev ) );
-                        }
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count ) );
-                        ImGui::TableNextColumn();
-                        ImGui::TextUnformatted( TimeToString( v->second.time ) );
-                        ImGui::SameLine();
-                        char buf[64];
-                        PrintStringPercent( buf, v->second.time * m_timeDist.fztime );
-                        TextDisabledUnformatted( buf );
-                        ImGui::TableNextColumn();
-                        ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
-                    }
-                    ImGui::EndTable();
-                }
-            }
-            ImGui::TreePop();
         }
-    }
 
-    ImGui::EndChild();
+        ImGui::Separator();
+
+        std::vector<const ZoneEvent*> zoneTrace;
+        while( parent )
+        {
+             zoneTrace.emplace_back( parent );
+             parent = GetZoneParent( *parent );
+        }
+        int idx = 0;
+        DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
+            ImGui::TextDisabled( "%i.", fidx++ );
+            ImGui::SameLine();
+            const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
+            SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+            ImGui::SameLine();
+            const auto txt = m_worker.GetZoneName( *v, srcloc );
+            ImGui::PushID( idx++ );
+            auto sel = ImGui::Selectable( txt, false );
+            auto hover = ImGui::IsItemHovered();
+            const auto fileName = m_worker.GetString( srcloc.file );
+            if( m_zoneinfoBuzzAnim.Match( v ) )
+            {
+                const auto time = m_zoneinfoBuzzAnim.Time();
+                const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+            }
+            else
+            {
+                ImGui::SameLine();
+            }
+            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->Start() ), LocationToString( fileName, srcloc.line ) );
+            ImGui::PopID();
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                {
+                    ViewSource( fileName, srcloc.line );
+                }
+                else
+                {
+                    m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                }
+            }
+            if( sel )
+            {
+                ShowZoneInfo( *v );
+            }
+            if( hover )
+            {
+                m_zoneHighlight = v;
+                if( IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( *v );
+                }
+                ZoneTooltip( *v );
+            }
+        } );
+
+        if( ev.HasChildren() )
+        {
+            const auto& children = m_worker.GetZoneChildren( ev.Child() );
+            bool expand = ImGui::TreeNode( "Child zones" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( children.size() ) );
+            if( expand )
+            {
+                if( children.is_magic() )
+                {
+                    DrawZoneInfoChildren<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ztime );
+                }
+                else
+                {
+                    DrawZoneInfoChildren<VectorAdapterPointer<ZoneEvent>>( children, ztime );
+                }
+                ImGui::TreePop();
+            }
+
+            expand = ImGui::TreeNode( "Time distribution" );
+            if( expand )
+            {
+                ImGui::SameLine();
+                if( SmallCheckbox( "Self time", &m_timeDist.exclusiveTime ) ) m_timeDist.dataValidFor = nullptr;
+                if( ctx )
+                {
+                    ImGui::SameLine();
+                    if( SmallCheckbox( "Running time", &m_timeDist.runningTime ) ) m_timeDist.dataValidFor = nullptr;
+                }
+                if( m_timeDist.dataValidFor != &ev )
+                {
+                    m_timeDist.data.clear();
+                    if( ev.IsEndValid() ) m_timeDist.dataValidFor = &ev;
+
+                    if( m_timeDist.runningTime )
+                    {
+                        assert( ctx );
+                        int64_t time;
+                        uint64_t cnt;
+                        if( !GetZoneRunningTime( ctx, ev, time, cnt ) )
+                        {
+                            TextDisabledUnformatted( "Incomplete context switch data." );
+                            m_timeDist.dataValidFor = nullptr;
+                        }
+                        else
+                        {
+                            auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ time, 1 } ).first;
+                            CalcZoneTimeData( ctx, m_timeDist.data, it->second.time, ev );
+                        }
+                        m_timeDist.fztime = 100.f / time;
+                    }
+                    else
+                    {
+                        auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ ztime, 1 } ).first;
+                        CalcZoneTimeData( m_timeDist.data, it->second.time, ev );
+                        m_timeDist.fztime = 100.f / ztime;
+                    }
+                }
+                if( !m_timeDist.data.empty() )
+                {
+                    std::vector<unordered_flat_map<int16_t, ZoneTimeData>::const_iterator> vec;
+                    vec.reserve( m_timeDist.data.size() );
+                    for( auto it = m_timeDist.data.cbegin(); it != m_timeDist.data.cend(); ++it ) vec.emplace_back( it );
+                    if( ImGui::BeginTable( "##timedist", 3, ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV ) )
+                    {
+                        ImGui::TableSetupColumn( "Zone", ImGuiTableColumnFlags_PreferSortDescending );
+                        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                        ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                        ImGui::TableHeadersRow();
+                        const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
+                        switch( sortspec.ColumnIndex )
+                        {
+                        case 0:
+                            if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                            {
+                                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count < rhs->second.count; } );
+                            }
+                            else
+                            {
+                                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
+                            }
+                            break;
+                        case 1:
+                            if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                            {
+                                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time < rhs->second.time; } );
+                            }
+                            else
+                            {
+                                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+                            }
+                            break;
+                        case 2:
+                            if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                            {
+                                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count < float( rhs->second.time ) / rhs->second.count; } );
+                            }
+                            else
+                            {
+                                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count > float( rhs->second.time ) / rhs->second.count; } );
+                            }
+                            break;
+                        default:
+                            assert( false );
+                            break;
+                        }
+                        for( auto& v : vec )
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            const auto& sl = m_worker.GetSourceLocation( v->first );
+                            SmallColorBox( GetSrcLocColor( sl, 0 ) );
+                            ImGui::SameLine();
+                            const auto name = m_worker.GetZoneName( sl );
+                            if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
+                            {
+                                m_findZone.ShowZone( v->first, name, ev.Start(), m_worker.GetZoneEnd( ev ) );
+                            }
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count ) );
+                            ImGui::TableNextColumn();
+                            ImGui::TextUnformatted( TimeToString( v->second.time ) );
+                            ImGui::SameLine();
+                            char buf[64];
+                            PrintStringPercent( buf, v->second.time * m_timeDist.fztime );
+                            TextDisabledUnformatted( buf );
+                            ImGui::TableNextColumn();
+                            ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
+                        }
+                        ImGui::EndTable();
+                    }
+                }
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::EndChild();
+    }
     ImGui::End();
 
     if( !show )
@@ -8336,211 +8338,213 @@ void View::DrawGpuInfoWindow()
     ImGui::SetNextWindowSize( ImVec2( 500 * scale, 600 * scale), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
-
-    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        ZoomToZone( ev );
-    }
-    auto parent = GetZoneParent( ev );
-    if( parent )
-    {
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+        if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
         {
-            ShowZoneInfo( *parent, m_gpuInfoWindowThread );
+            ZoomToZone( ev );
         }
-    }
-    if( ev.callstack.Val() != 0 )
-    {
-        ImGui::SameLine();
-        bool hilite = m_callstackInfoWindow == ev.callstack.Val();
-        if( hilite )
-        {
-            SetButtonHighlightColor();
-        }
-        if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
-        {
-            m_callstackInfoWindow = ev.callstack.Val();
-        }
-        if( hilite )
-        {
-            ImGui::PopStyleColor( 3 );
-        }
-    }
-    const auto fileName = m_worker.GetString( srcloc.file );
-    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
-    {
-        ImGui::SameLine();
-        bool hilite = m_sourceViewFile == fileName;
-        if( hilite )
-        {
-            SetButtonHighlightColor();
-        }
-        if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
-        {
-            ViewSource( fileName, srcloc.line );
-        }
-        if( hilite )
-        {
-            ImGui::PopStyleColor( 3 );
-        }
-    }
-    if( !m_gpuInfoStack.empty() )
-    {
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
-        {
-            m_gpuInfoWindow = m_gpuInfoStack.back_and_pop();
-        }
-    }
-
-    ImGui::Separator();
-
-    const auto tid = GetZoneThread( ev );
-    if( m_bigFont ) ImGui::PushFont( m_bigFont );
-    TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
-    if( m_bigFont ) ImGui::PopFont();
-    ImGui::SameLine();
-    if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
-    TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-    ImGui::SameLine();
-    if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
-    SmallColorBox( GetZoneColor( ev ) );
-    ImGui::SameLine();
-    TextDisabledUnformatted( "Location:" );
-    ImGui::SameLine();
-    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-    ImGui::SameLine();
-    if( ClipboardButton( 3 ) )
-    {
-        ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-    }
-    SmallColorBox( GetThreadColor( tid, 0 ) );
-    ImGui::SameLine();
-    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-    if( m_worker.IsThreadFiber( tid ) )
-    {
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-    }
-    ImGui::Separator();
-    ImGui::BeginChild( "##gpuinfo" );
-
-    const auto end = m_worker.GetZoneEnd( ev );
-    const auto ztime = end - ev.GpuStart();
-    const auto selftime = GetZoneSelfTime( ev );
-    TextFocused( "Time from start of program:", TimeToStringExact( ev.GpuStart() ) );
-    TextFocused( "GPU execution time:", TimeToString( ztime ) );
-    TextFocused( "GPU self time:", TimeToString( selftime ) );
-    if( ztime != 0 )
-    {
-        char buf[64];
-        PrintStringPercent( buf, 100.f * selftime / ztime );
-        ImGui::SameLine();
-        TextDisabledUnformatted( buf );
-    }
-    TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
-    auto ctx = GetZoneCtx( ev );
-    if( !ctx )
-    {
-        TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
-    }
-    else
-    {
-        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
-        assert( td != ctx->threadData.end() );
-        int64_t begin;
-        if( td->second.timeline.is_magic() )
-        {
-            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
-        }
-        else
-        {
-            begin = td->second.timeline.front()->GpuStart();
-        }
-        const auto drift = GpuDrift( ctx );
-        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
-    }
-
-    ImGui::Separator();
-
-    std::vector<const GpuEvent*> zoneTrace;
-    while( parent )
-    {
-        zoneTrace.emplace_back( parent );
-        parent = GetZoneParent( *parent );
-    }
-    int idx = 0;
-    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v, int& fidx ) {
-        ImGui::TextDisabled( "%i.", fidx++ );
-        ImGui::SameLine();
-        const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
-        const auto txt = m_worker.GetZoneName( *v, srcloc );
-        ImGui::PushID( idx++ );
-        auto sel = ImGui::Selectable( txt, false );
-        auto hover = ImGui::IsItemHovered();
-        const auto fileName = m_worker.GetString( srcloc.file );
-        if( m_zoneinfoBuzzAnim.Match( v ) )
-        {
-            const auto time = m_zoneinfoBuzzAnim.Time();
-            const auto indentVal = sin( time * 60.f ) * 10.f * time;
-            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-        }
-        else
+        auto parent = GetZoneParent( ev );
+        if( parent )
         {
             ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+            {
+                ShowZoneInfo( *parent, m_gpuInfoWindowThread );
+            }
         }
-        ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), LocationToString( fileName, srcloc.line ) );
-        ImGui::PopID();
-        if( ImGui::IsItemClicked( 1 ) )
+        if( ev.callstack.Val() != 0 )
         {
-            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+            ImGui::SameLine();
+            bool hilite = m_callstackInfoWindow == ev.callstack.Val();
+            if( hilite )
+            {
+                SetButtonHighlightColor();
+            }
+            if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
+            {
+                m_callstackInfoWindow = ev.callstack.Val();
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
+            }
+        }
+        const auto fileName = m_worker.GetString( srcloc.file );
+        if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+        {
+            ImGui::SameLine();
+            bool hilite = m_sourceViewFile == fileName;
+            if( hilite )
+            {
+                SetButtonHighlightColor();
+            }
+            if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
             {
                 ViewSource( fileName, srcloc.line );
             }
-            else
+            if( hilite )
             {
-                m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                ImGui::PopStyleColor( 3 );
             }
         }
-        if( sel )
+        if( !m_gpuInfoStack.empty() )
         {
-            ShowZoneInfo( *v, m_gpuInfoWindowThread );
-        }
-        if( hover )
-        {
-            m_gpuHighlight = v;
-            if( IsMouseClicked( 2 ) )
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
             {
-                ZoomToZone( *v );
+                m_gpuInfoWindow = m_gpuInfoStack.back_and_pop();
             }
-            ZoneTooltip( *v );
         }
-    } );
 
-    if( ev.Child() >= 0 )
-    {
-        const auto& children = m_worker.GetGpuChildren( ev.Child() );
-        bool expand = ImGui::TreeNode( "Child zones" );
+        ImGui::Separator();
+
+        const auto tid = GetZoneThread( ev );
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+        if( m_bigFont ) ImGui::PopFont();
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( children.size() ) );
-        if( expand )
+        if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
+        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+        ImGui::SameLine();
+        if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
+        SmallColorBox( GetZoneColor( ev ) );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Location:" );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+        ImGui::SameLine();
+        if( ClipboardButton( 3 ) )
         {
-            if( children.is_magic() )
+            ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+        }
+        SmallColorBox( GetThreadColor( tid, 0 ) );
+        ImGui::SameLine();
+        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+        if( m_worker.IsThreadFiber( tid ) )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+        }
+        ImGui::Separator();
+        ImGui::BeginChild( "##gpuinfo" );
+
+        const auto end = m_worker.GetZoneEnd( ev );
+        const auto ztime = end - ev.GpuStart();
+        const auto selftime = GetZoneSelfTime( ev );
+        TextFocused( "Time from start of program:", TimeToStringExact( ev.GpuStart() ) );
+        TextFocused( "GPU execution time:", TimeToString( ztime ) );
+        TextFocused( "GPU self time:", TimeToString( selftime ) );
+        if( ztime != 0 )
+        {
+            char buf[64];
+            PrintStringPercent( buf, 100.f * selftime / ztime );
+            ImGui::SameLine();
+            TextDisabledUnformatted( buf );
+        }
+        TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
+        auto ctx = GetZoneCtx( ev );
+        if( !ctx )
+        {
+            TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
+        }
+        else
+        {
+            const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
+            assert( td != ctx->threadData.end() );
+            int64_t begin;
+            if( td->second.timeline.is_magic() )
             {
-                DrawGpuInfoChildren<VectorAdapterDirect<GpuEvent>>( *(Vector<GpuEvent>*)( &children ), ztime );
+                begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
             }
             else
             {
-                DrawGpuInfoChildren<VectorAdapterPointer<GpuEvent>>( children, ztime );
+                begin = td->second.timeline.front()->GpuStart();
             }
-            ImGui::TreePop();
+            const auto drift = GpuDrift( ctx );
+            TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
         }
-    }
 
-    ImGui::EndChild();
+        ImGui::Separator();
+
+        std::vector<const GpuEvent*> zoneTrace;
+        while( parent )
+        {
+            zoneTrace.emplace_back( parent );
+            parent = GetZoneParent( *parent );
+        }
+        int idx = 0;
+        DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v, int& fidx ) {
+            ImGui::TextDisabled( "%i.", fidx++ );
+            ImGui::SameLine();
+            const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
+            const auto txt = m_worker.GetZoneName( *v, srcloc );
+            ImGui::PushID( idx++ );
+            auto sel = ImGui::Selectable( txt, false );
+            auto hover = ImGui::IsItemHovered();
+            const auto fileName = m_worker.GetString( srcloc.file );
+            if( m_zoneinfoBuzzAnim.Match( v ) )
+            {
+                const auto time = m_zoneinfoBuzzAnim.Time();
+                const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+            }
+            else
+            {
+                ImGui::SameLine();
+            }
+            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), LocationToString( fileName, srcloc.line ) );
+            ImGui::PopID();
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                {
+                    ViewSource( fileName, srcloc.line );
+                }
+                else
+                {
+                    m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                }
+            }
+            if( sel )
+            {
+                ShowZoneInfo( *v, m_gpuInfoWindowThread );
+            }
+            if( hover )
+            {
+                m_gpuHighlight = v;
+                if( IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( *v );
+                }
+                ZoneTooltip( *v );
+            }
+        } );
+
+        if( ev.Child() >= 0 )
+        {
+            const auto& children = m_worker.GetGpuChildren( ev.Child() );
+            bool expand = ImGui::TreeNode( "Child zones" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( children.size() ) );
+            if( expand )
+            {
+                if( children.is_magic() )
+                {
+                    DrawGpuInfoChildren<VectorAdapterDirect<GpuEvent>>( *(Vector<GpuEvent>*)( &children ), ztime );
+                }
+                else
+                {
+                    DrawGpuInfoChildren<VectorAdapterPointer<GpuEvent>>( children, ztime );
+                }
+                ImGui::TreePop();
+            }
+        }
+
+        ImGui::EndChild();
+    }
     ImGui::End();
 
     if( !show )
@@ -8765,6 +8769,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
 void View::DrawOptions()
 {
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
     const auto scale = GetScale();
     bool val = m_vd.drawEmptyLabels;
@@ -9472,6 +9477,7 @@ void View::DrawMessages()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Messages", &m_showMessages );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
     if( msgs.empty() )
     {
@@ -9827,6 +9833,7 @@ void View::DrawFindZone()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 520 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Find zone", &m_findZone.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable zone search." );
@@ -11746,6 +11753,7 @@ void View::DrawCompare()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 590 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Compare traces", &m_compare.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable trace comparison." );
@@ -12722,6 +12730,7 @@ void View::DrawStatistics()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 600 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
@@ -13880,7 +13889,10 @@ void View::DrawCallstackWindow()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
-    DrawCallstackTable( m_callstackInfoWindow, true );
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
+    {
+        DrawCallstackTable( m_callstackInfoWindow, true );
+    }
     ImGui::End();
     if( !show ) m_callstackInfoWindow = 0;
 }
@@ -14216,153 +14228,150 @@ void View::DrawMemoryAllocWindow()
 {
     bool show = true;
     ImGui::Begin( "Memory allocation", &show, ImGuiWindowFlags_AlwaysAutoResize );
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
+    {
+        const auto& mem = m_worker.GetMemoryNamed( m_memoryAllocInfoPool );
+        const auto& ev = mem.data[m_memoryAllocInfoWindow];
+        const auto tidAlloc = m_worker.DecompressThread( ev.ThreadAlloc() );
+        const auto tidFree = m_worker.DecompressThread( ev.ThreadFree() );
+        int idx = 0;
 
-    const auto& mem = m_worker.GetMemoryNamed( m_memoryAllocInfoPool );
-    const auto& ev = mem.data[m_memoryAllocInfoWindow];
-    const auto tidAlloc = m_worker.DecompressThread( ev.ThreadAlloc() );
-    const auto tidFree = m_worker.DecompressThread( ev.ThreadFree() );
-    int idx = 0;
+        if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to allocation" ) )
+        {
+            ZoomToRange( ev.TimeAlloc(), ev.TimeFree() >= 0 ? ev.TimeFree() : m_worker.GetLastTime() );
+        }
 
-    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to allocation" ) )
-    {
-        ZoomToRange( ev.TimeAlloc(), ev.TimeFree() >= 0 ? ev.TimeFree() : m_worker.GetLastTime() );
-    }
-
-    if( m_worker.GetMemNameMap().size() > 1 )
-    {
-        TextFocused( ICON_FA_ARCHIVE " Pool:", m_memoryAllocInfoPool == 0 ? "Default allocator" : m_worker.GetString( m_memoryAllocInfoPool ) );
-    }
-    char buf[64];
-    sprintf( buf, "0x%" PRIx64, ev.Ptr() );
-    TextFocused( "Address:", buf );
-    TextFocused( "Size:", MemSizeToString( ev.Size() ) );
-    if( ev.Size() >= 10000ll )
-    {
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s bytes)", RealToString( ev.Size() ) );
-    }
-    ImGui::Separator();
-    TextFocused( "Appeared at", TimeToStringExact( ev.TimeAlloc() ) );
-    if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeAlloc() );
-    ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-    SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
-    ImGui::SameLine();
-    TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tidAlloc ) );
-    if( m_worker.IsThreadFiber( tidAlloc ) )
-    {
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-    }
-    if( ev.CsAlloc() != 0 )
-    {
-        const auto cs = ev.CsAlloc();
-        SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
-        ImGui::SameLine();
-        DrawCallstackCalls( cs, 2 );
-    }
-    if( ev.TimeFree() < 0 )
-    {
-        TextDisabledUnformatted( "Allocation still active" );
-    }
-    else
-    {
-        TextFocused( "Freed at", TimeToStringExact( ev.TimeFree() ) );
-        if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeFree() );
+        if( m_worker.GetMemNameMap().size() > 1 )
+        {
+            TextFocused( ICON_FA_ARCHIVE " Pool:", m_memoryAllocInfoPool == 0 ? "Default allocator" : m_worker.GetString( m_memoryAllocInfoPool ) );
+        }
+        char buf[64];
+        sprintf( buf, "0x%" PRIx64, ev.Ptr() );
+        TextFocused( "Address:", buf );
+        TextFocused( "Size:", MemSizeToString( ev.Size() ) );
+        if( ev.Size() >= 10000ll )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s bytes)", RealToString( ev.Size() ) );
+        }
+        ImGui::Separator();
+        TextFocused( "Appeared at", TimeToStringExact( ev.TimeAlloc() ) );
+        if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeAlloc() );
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-        SmallColorBox( GetThreadColor( tidFree, 0 ) );
+        SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
         ImGui::SameLine();
-        TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
+        TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( tidFree ) );
-        if( m_worker.IsThreadFiber( tidFree ) )
+        ImGui::TextDisabled( "(%s)", RealToString( tidAlloc ) );
+        if( m_worker.IsThreadFiber( tidAlloc ) )
         {
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
         }
-        if( ev.csFree.Val() != 0 )
+        if( ev.CsAlloc() != 0 )
         {
-            const auto cs = ev.csFree.Val();
+            const auto cs = ev.CsAlloc();
             SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
             ImGui::SameLine();
             DrawCallstackCalls( cs, 2 );
         }
-        TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
-    }
-
-    bool sep = false;
-    auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.TimeAlloc() );
-    if( zoneAlloc )
-    {
-        ImGui::Separator();
-        sep = true;
-        const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc->SrcLoc() );
-        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-        ImGui::PushID( idx++ );
-        TextFocused( "Zone alloc:", txt );
-        auto hover = ImGui::IsItemHovered();
-        ImGui::PopID();
-        if( ImGui::IsItemClicked() )
+        if( ev.TimeFree() < 0 )
         {
-            ShowZoneInfo( *zoneAlloc );
+            TextDisabledUnformatted( "Allocation still active" );
         }
-        if( hover )
+        else
         {
-            m_zoneHighlight = zoneAlloc;
-            if( IsMouseClicked( 2 ) )
+            TextFocused( "Freed at", TimeToStringExact( ev.TimeFree() ) );
+            if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeFree() );
+            ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+            SmallColorBox( GetThreadColor( tidFree, 0 ) );
+            ImGui::SameLine();
+            TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( tidFree ) );
+            if( m_worker.IsThreadFiber( tidFree ) )
             {
-                ZoomToZone( *zoneAlloc );
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
             }
-            ZoneTooltip( *zoneAlloc );
+            if( ev.csFree.Val() != 0 )
+            {
+                const auto cs = ev.csFree.Val();
+                SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+                ImGui::SameLine();
+                DrawCallstackCalls( cs, 2 );
+            }
+            TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
         }
-    }
 
-    if( ev.TimeFree() >= 0 )
-    {
-        auto zoneFree = FindZoneAtTime( tidFree, ev.TimeFree() );
-        if( zoneFree )
+        bool sep = false;
+        auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.TimeAlloc() );
+        if( zoneAlloc )
         {
-            if( !sep ) ImGui::Separator();
-            const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
+            ImGui::Separator();
+            sep = true;
+            const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc->SrcLoc() );
             const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-            TextFocused( "Zone free:", txt );
+            ImGui::PushID( idx++ );
+            TextFocused( "Zone alloc:", txt );
             auto hover = ImGui::IsItemHovered();
+            ImGui::PopID();
             if( ImGui::IsItemClicked() )
             {
-                ShowZoneInfo( *zoneFree );
+                ShowZoneInfo( *zoneAlloc );
             }
             if( hover )
             {
-                m_zoneHighlight = zoneFree;
+                m_zoneHighlight = zoneAlloc;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZone( *zoneFree );
+                    ZoomToZone( *zoneAlloc );
                 }
-                ZoneTooltip( *zoneFree );
+                ZoneTooltip( *zoneAlloc );
             }
-            if( zoneAlloc != 0 && zoneAlloc == zoneFree )
+        }
+
+        if( ev.TimeFree() >= 0 )
+        {
+            auto zoneFree = FindZoneAtTime( tidFree, ev.TimeFree() );
+            if( zoneFree )
             {
-                ImGui::SameLine();
-                TextDisabledUnformatted( "(same zone)" );
+                if( !sep ) ImGui::Separator();
+                const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
+                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                TextFocused( "Zone free:", txt );
+                auto hover = ImGui::IsItemHovered();
+                if( ImGui::IsItemClicked() )
+                {
+                    ShowZoneInfo( *zoneFree );
+                }
+                if( hover )
+                {
+                    m_zoneHighlight = zoneFree;
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( *zoneFree );
+                    }
+                    ZoneTooltip( *zoneFree );
+                }
+                if( zoneAlloc != 0 && zoneAlloc == zoneFree )
+                {
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "(same zone)" );
+                }
             }
         }
     }
-
     ImGui::End();
     if( !show ) m_memoryAllocInfoWindow = -1;
 }
 
 void View::DrawInfo()
 {
-    char dtmp[64];
-    time_t date = m_worker.GetCaptureTime();
-    auto lt = localtime( &date );
-    strftime( dtmp, 64, "%F %T", lt );
-
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     if( m_bigFont ) ImGui::PushFont( m_bigFont );
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     if( m_bigFont ) ImGui::PopFont();
@@ -14375,7 +14384,13 @@ void View::DrawInfo()
         strftime( etmp, 64, "%F %T", elt );
         TextFocused( "Build time:", etmp );
     }
-    TextFocused( "Capture time:", dtmp );
+    {
+        char dtmp[64];
+        time_t date = m_worker.GetCaptureTime();
+        auto lt = localtime( &date );
+        strftime( dtmp, 64, "%F %T", lt );
+        TextFocused( "Capture time:", dtmp );
+    }
     if( !m_filename.empty() )
     {
         TextFocused( "File:", m_filename.c_str() );
@@ -15277,173 +15292,179 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 1800 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
-    m_sourceView->UpdateFont( m_fixedFont, m_smallFont );
-    m_sourceView->Render( m_worker, *this );
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
+    {
+        m_sourceView->UpdateFont( m_fixedFont, m_smallFont );
+        m_sourceView->Render( m_worker, *this );
+    }
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;
 }
 
 void View::DrawLockInfoWindow()
 {
-    auto it = m_worker.GetLockMap().find( m_lockInfoWindow );
-    assert( it != m_worker.GetLockMap().end() );
-    const auto& lock = *it->second;
-    const auto& srcloc = m_worker.GetSourceLocation( lock.srcloc );
-    auto fileName = m_worker.GetString( srcloc.file );
-
-    int64_t timeAnnounce = lock.timeAnnounce;
-    int64_t timeTerminate = lock.timeTerminate;
-    if( !lock.timeline.empty() )
+    bool visible = true;
+    ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        if( timeAnnounce <= 0 )
-        {
-            timeAnnounce = lock.timeline.front().ptr->Time();
-        }
-        if( timeTerminate <= 0 )
-        {
-            timeTerminate = lock.timeline.back().ptr->Time();
-        }
-    }
+        auto it = m_worker.GetLockMap().find( m_lockInfoWindow );
+        assert( it != m_worker.GetLockMap().end() );
+        const auto& lock = *it->second;
+        const auto& srcloc = m_worker.GetSourceLocation( lock.srcloc );
+        auto fileName = m_worker.GetString( srcloc.file );
 
-    bool waitState = false;
-    bool holdState = false;
-    int64_t waitStartTime = 0;
-    int64_t holdStartTime = 0;
-    int64_t waitTotalTime = 0;
-    int64_t holdTotalTime = 0;
-    uint32_t maxWaitingThreads = 0;
-    for( auto& v : lock.timeline )
-    {
-        if( holdState )
+        int64_t timeAnnounce = lock.timeAnnounce;
+        int64_t timeTerminate = lock.timeTerminate;
+        if( !lock.timeline.empty() )
         {
-            if( v.lockCount == 0 )
+            if( timeAnnounce <= 0 )
             {
-                holdTotalTime += v.ptr->Time() - holdStartTime;
-                holdState = false;
+                timeAnnounce = lock.timeline.front().ptr->Time();
+            }
+            if( timeTerminate <= 0 )
+            {
+                timeTerminate = lock.timeline.back().ptr->Time();
             }
         }
-        else
+
+        bool waitState = false;
+        bool holdState = false;
+        int64_t waitStartTime = 0;
+        int64_t holdStartTime = 0;
+        int64_t waitTotalTime = 0;
+        int64_t holdTotalTime = 0;
+        uint32_t maxWaitingThreads = 0;
+        for( auto& v : lock.timeline )
         {
-            if( v.lockCount != 0 )
+            if( holdState )
             {
-                holdStartTime = v.ptr->Time();
-                holdState = true;
-            }
-        }
-        if( waitState )
-        {
-            if( v.waitList == 0 )
-            {
-                waitTotalTime += v.ptr->Time() - waitStartTime;
-                waitState = false;
+                if( v.lockCount == 0 )
+                {
+                    holdTotalTime += v.ptr->Time() - holdStartTime;
+                    holdState = false;
+                }
             }
             else
             {
-                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v.waitList ) );
+                if( v.lockCount != 0 )
+                {
+                    holdStartTime = v.ptr->Time();
+                    holdState = true;
+                }
             }
-        }
-        else
-        {
-            if( v.waitList != 0 )
+            if( waitState )
             {
-                waitStartTime = v.ptr->Time();
-                waitState = true;
-                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v.waitList ) );
+                if( v.waitList == 0 )
+                {
+                    waitTotalTime += v.ptr->Time() - waitStartTime;
+                    waitState = false;
+                }
+                else
+                {
+                    maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v.waitList ) );
+                }
+            }
+            else
+            {
+                if( v.waitList != 0 )
+                {
+                    waitStartTime = v.ptr->Time();
+                    waitState = true;
+                    maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v.waitList ) );
+                }
             }
         }
-    }
 
-    bool visible = true;
-    ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
-    if( m_bigFont ) ImGui::PushFont( m_bigFont );
-    if( lock.customName.Active() )
-    {
-        ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );
-    }
-    else
-    {
-        ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
-    }
-    if( m_bigFont ) ImGui::PopFont();
-    if( lock.customName.Active() )
-    {
-        TextFocused( "Name:", m_worker.GetString( srcloc.function ) );
-    }
-    TextDisabledUnformatted( "Location:" );
-    if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
-    {
-        const auto time = m_lockInfoAnim.Time();
-        const auto indentVal = sin( time * 60.f ) * 10.f * time;
-        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-    }
-    else
-    {
-        ImGui::SameLine();
-    }
-    ImGui::TextUnformatted( LocationToString( fileName, srcloc.line ) );
-    if( ImGui::IsItemClicked( 1 ) )
-    {
-        if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        if( lock.customName.Active() )
         {
-            ViewSource( fileName, srcloc.line );
+            ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );
         }
         else
         {
-            m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
+            ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
         }
-    }
-    ImGui::Separator();
-
-    switch( lock.type )
-    {
-    case LockType::Lockable:
-        TextFocused( "Type:", "lockable" );
-        break;
-    case LockType::SharedLockable:
-        TextFocused( "Type:", "shared lockable" );
-        break;
-    default:
-        assert( false );
-        break;
-    }
-    TextFocused( "Lock events:", RealToString( lock.timeline.size() ) );
-    ImGui::Separator();
-
-    const auto announce = timeAnnounce;
-    const auto terminate = timeTerminate;
-    const auto lifetime = timeTerminate - timeAnnounce;
-    const auto traceLen = m_worker.GetLastTime();
-
-    TextFocused( "Announce time:", TimeToString( announce ) );
-    TextFocused( "Terminate time:", TimeToString( terminate ) );
-    TextFocused( "Lifetime:", TimeToString( lifetime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%% of trace time)", lifetime / double( traceLen ) * 100 );
-    ImGui::Separator();
-
-    TextFocused( "Lock hold time:", TimeToString( holdTotalTime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%% of lock lifetime)", holdTotalTime / float( lifetime ) * 100.f );
-    TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%% of lock lifetime)", waitTotalTime / float( lifetime ) * 100.f );
-    TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads ) );
-    ImGui::Separator();
-
-    const auto threadList = ImGui::TreeNode( "Thread list" );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", lock.threadList.size() );
-    if( threadList )
-    {
-        for( const auto& t : lock.threadList )
+        if( m_bigFont ) ImGui::PopFont();
+        if( lock.customName.Active() )
         {
-            SmallColorBox( GetThreadColor( t, 0 ) );
-            ImGui::SameLine();
-            ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( t ) );
+            TextFocused( "Name:", m_worker.GetString( srcloc.function ) );
         }
-        ImGui::TreePop();
+        TextDisabledUnformatted( "Location:" );
+        if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
+        {
+            const auto time = m_lockInfoAnim.Time();
+            const auto indentVal = sin( time * 60.f ) * 10.f * time;
+            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+        }
+        else
+        {
+            ImGui::SameLine();
+        }
+        ImGui::TextUnformatted( LocationToString( fileName, srcloc.line ) );
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+            {
+                ViewSource( fileName, srcloc.line );
+            }
+            else
+            {
+                m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
+            }
+        }
+        ImGui::Separator();
+
+        switch( lock.type )
+        {
+        case LockType::Lockable:
+            TextFocused( "Type:", "lockable" );
+            break;
+        case LockType::SharedLockable:
+            TextFocused( "Type:", "shared lockable" );
+            break;
+        default:
+            assert( false );
+            break;
+        }
+        TextFocused( "Lock events:", RealToString( lock.timeline.size() ) );
+        ImGui::Separator();
+
+        const auto announce = timeAnnounce;
+        const auto terminate = timeTerminate;
+        const auto lifetime = timeTerminate - timeAnnounce;
+        const auto traceLen = m_worker.GetLastTime();
+
+        TextFocused( "Announce time:", TimeToString( announce ) );
+        TextFocused( "Terminate time:", TimeToString( terminate ) );
+        TextFocused( "Lifetime:", TimeToString( lifetime ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%% of trace time)", lifetime / double( traceLen ) * 100 );
+        ImGui::Separator();
+
+        TextFocused( "Lock hold time:", TimeToString( holdTotalTime ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%% of lock lifetime)", holdTotalTime / float( lifetime ) * 100.f );
+        TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%% of lock lifetime)", waitTotalTime / float( lifetime ) * 100.f );
+        TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads ) );
+        ImGui::Separator();
+
+        const auto threadList = ImGui::TreeNode( "Thread list" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%zu)", lock.threadList.size() );
+        if( threadList )
+        {
+            for( const auto& t : lock.threadList )
+            {
+                SmallColorBox( GetThreadColor( t, 0 ) );
+                ImGui::SameLine();
+                ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( t ) );
+            }
+            ImGui::TreePop();
+        }
     }
     ImGui::End();
     if( !visible ) m_lockInfoWindow = InvalidId;
@@ -15478,6 +15499,10 @@ enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *P
 
 void View::DrawPlayback()
 {
+    ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
+    if( !m_showPlayback ) m_playback.pause = true;
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
     const auto scale = GetScale();
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
@@ -15521,11 +15546,6 @@ void View::DrawPlayback()
         }
     }
 
-    ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
-    if( !m_showPlayback )
-    {
-        m_playback.pause = true;
-    }
     if( m_playback.zoom )
     {
         if( fi->flip )
@@ -15660,6 +15680,11 @@ void View::DrawPlayback()
 
 void View::DrawCpuDataWindow()
 {
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 700 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "CPU data", &m_showCpuDataWindow );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
     struct PidData
     {
         std::vector<uint64_t> tids;
@@ -15682,9 +15707,6 @@ void View::DrawCpuDataWindow()
         it->second.data.migrations += v.second.migrations;
     }
 
-    const auto scale = GetScale();
-    ImGui::SetNextWindowSize( ImVec2( 700 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size() ) );
     ImGui::SameLine();
     TextFocused( "Tracked processes:", RealToString( pids.size() ) );
@@ -15960,44 +15982,47 @@ void View::DrawSelectedAnnotation()
     assert( m_selectedAnnotation );
     bool show = true;
     ImGui::Begin( "Annotation", &show, ImGuiWindowFlags_AlwaysAutoResize );
-    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to annotation" ) )
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        ZoomToRange( m_selectedAnnotation->range.min, m_selectedAnnotation->range.max );
-    }
-    ImGui::SameLine();
-    if( ImGui::Button( ICON_FA_TRASH_ALT " Remove" ) )
-    {
-        for( auto it = m_annotations.begin(); it != m_annotations.end(); ++it )
+        if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to annotation" ) )
         {
-            if( it->get() == m_selectedAnnotation )
+            ZoomToRange( m_selectedAnnotation->range.min, m_selectedAnnotation->range.max );
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_TRASH_ALT " Remove" ) )
+        {
+            for( auto it = m_annotations.begin(); it != m_annotations.end(); ++it )
             {
-                m_annotations.erase( it );
-                break;
+                if( it->get() == m_selectedAnnotation )
+                {
+                    m_annotations.erase( it );
+                    break;
+                }
+            }
+            ImGui::End();
+            m_selectedAnnotation = nullptr;
+            return;
+        }
+        ImGui::Separator();
+        {
+            const auto desc = m_selectedAnnotation->text.c_str();
+            const auto descsz = std::min<size_t>( 1023, m_selectedAnnotation->text.size() );
+            char buf[1024];
+            buf[descsz] = '\0';
+            memcpy( buf, desc, descsz );
+            if( ImGui::InputTextWithHint( "", "Describe annotation", buf, 256 ) )
+            {
+                m_selectedAnnotation->text.assign( buf );
             }
         }
-        ImGui::End();
-        m_selectedAnnotation = nullptr;
-        return;
+        ImVec4 col = ImGui::ColorConvertU32ToFloat4( m_selectedAnnotation->color );
+        ImGui::ColorEdit3( "Color", &col.x );
+        m_selectedAnnotation->color = ImGui::ColorConvertFloat4ToU32( col );
+        ImGui::Separator();
+        TextFocused( "Annotation begin:", TimeToStringExact( m_selectedAnnotation->range.min ) );
+        TextFocused( "Annotation end:", TimeToStringExact( m_selectedAnnotation->range.max ) );
+        TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->range.max - m_selectedAnnotation->range.min ) );
     }
-    ImGui::Separator();
-    {
-        const auto desc = m_selectedAnnotation->text.c_str();
-        const auto descsz = std::min<size_t>( 1023, m_selectedAnnotation->text.size() );
-        char buf[1024];
-        buf[descsz] = '\0';
-        memcpy( buf, desc, descsz );
-        if( ImGui::InputTextWithHint( "", "Describe annotation", buf, 256 ) )
-        {
-            m_selectedAnnotation->text.assign( buf );
-        }
-    }
-    ImVec4 col = ImGui::ColorConvertU32ToFloat4( m_selectedAnnotation->color );
-    ImGui::ColorEdit3( "Color", &col.x );
-    m_selectedAnnotation->color = ImGui::ColorConvertFloat4ToU32( col );
-    ImGui::Separator();
-    TextFocused( "Annotation begin:", TimeToStringExact( m_selectedAnnotation->range.min ) );
-    TextFocused( "Annotation end:", TimeToStringExact( m_selectedAnnotation->range.max ) );
-    TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->range.max - m_selectedAnnotation->range.min ) );
     ImGui::End();
     if( !show ) m_selectedAnnotation = nullptr;
 }
@@ -16007,6 +16032,7 @@ void View::DrawAnnotationList()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 600 * scale, 300 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Annotation list", &m_showAnnotationList );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     if( m_annotations.empty() )
     {
         ImGui::TextWrapped( "No annotations." );
@@ -16072,233 +16098,220 @@ void View::DrawAnnotationList()
 
 void View::DrawSampleParents()
 {
-    const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
-    const auto& stats = *m_worker.GetSymbolStats( m_sampleParents.symAddr );
-    assert( !stats.parents.empty() );
-
     bool show = true;
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Sample entry call stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
-    ImGui::PushFont( m_bigFont );
-    TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
-    if( symbol->isInline )
+    if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        ImGui::SameLine();
-        TextDisabledUnformatted( "(inline)" );
-    }
-    ImGui::PopFont();
-    TextDisabledUnformatted( "Location:" );
-    ImGui::SameLine();
-    const auto callFile = m_worker.GetString( symbol->callFile );
-    ImGui::TextUnformatted( LocationToString( callFile, symbol->callLine ) );
-    if( ImGui::IsItemClicked( 1 ) )
-    {
-        ViewDispatch( callFile, symbol->callLine, m_sampleParents.symAddr );
-    }
-    TextDisabledUnformatted( "Entry point:" );
-    ImGui::SameLine();
-    const auto file = m_worker.GetString( symbol->file );
-    ImGui::TextUnformatted( LocationToString( file, symbol->line ) );
-    if( ImGui::IsItemClicked( 1 ) )
-    {
-        ViewDispatch( file, symbol->line, m_sampleParents.symAddr );
-    }
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    TextDisabledUnformatted( m_worker.GetString( symbol->imageName ) );
-    ImGui::Separator();
-    TextDisabledUnformatted( "Entry call stack:" );
-    ImGui::SameLine();
-    if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
-    {
-        m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
-    }
-    ImGui::SameLine();
-    ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.parents.size() ) );
-    if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "EntryCallStackPopup" );
-    ImGui::SameLine();
-    if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
-    {
-        m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.parents.size() - 1 );
-    }
-    if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
-    {
-        int sel = m_sampleParents.sel + 1;
-        ImGui::SetNextItemWidth( 120 * scale );
-        const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-        if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.parents.size() ) ) - 1;
-        ImGui::EndPopup();
-    }
-    Vector<decltype(stats.parents.begin())> data;
-    data.reserve( stats.parents.size() );
-    for( auto it = stats.parents.begin(); it != stats.parents.end(); ++it ) data.push_back( it );
-    pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
-    ImGui::SameLine();
-    ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
-    ImGui::SameLine();
-    char buf[64];
-    PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / stats.excl );
-    TextDisabledUnformatted( buf );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
-    ImGui::PopStyleVar();
+        const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
+        const auto& stats = *m_worker.GetSymbolStats( m_sampleParents.symAddr );
+        assert( !stats.parents.empty() );
 
-    auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
-    ImGui::Separator();
-    if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
-    {
-        ImGui::TableSetupScrollFreeze( 0, 1 );
-        ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-        ImGui::TableSetupColumn( "Function" );
-        ImGui::TableSetupColumn( "Location" );
-        ImGui::TableSetupColumn( "Image" );
-        ImGui::TableHeadersRow();
-
-        int fidx = 0;
-        int bidx = 0;
-        for( auto& entry : cs )
+        ImGui::PushFont( m_bigFont );
+        TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
+        if( symbol->isInline )
         {
-            auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
-            assert( frameData );
-            const auto fsz = frameData->size;
-            for( uint8_t f=0; f<fsz; f++ )
+            ImGui::SameLine();
+            TextDisabledUnformatted( "(inline)" );
+        }
+        ImGui::PopFont();
+        TextDisabledUnformatted( "Location:" );
+        ImGui::SameLine();
+        const auto callFile = m_worker.GetString( symbol->callFile );
+        ImGui::TextUnformatted( LocationToString( callFile, symbol->callLine ) );
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            ViewDispatch( callFile, symbol->callLine, m_sampleParents.symAddr );
+        }
+        TextDisabledUnformatted( "Entry point:" );
+        ImGui::SameLine();
+        const auto file = m_worker.GetString( symbol->file );
+        ImGui::TextUnformatted( LocationToString( file, symbol->line ) );
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            ViewDispatch( file, symbol->line, m_sampleParents.symAddr );
+        }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextDisabledUnformatted( m_worker.GetString( symbol->imageName ) );
+        ImGui::Separator();
+        TextDisabledUnformatted( "Entry call stack:" );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+        {
+            m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
+        }
+        ImGui::SameLine();
+        ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.parents.size() ) );
+        if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "EntryCallStackPopup" );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+        {
+            m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.parents.size() - 1 );
+        }
+        if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
+        {
+            int sel = m_sampleParents.sel + 1;
+            ImGui::SetNextItemWidth( 120 * scale );
+            const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+            if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.parents.size() ) ) - 1;
+            ImGui::EndPopup();
+        }
+        Vector<decltype(stats.parents.begin())> data;
+        data.reserve( stats.parents.size() );
+        for( auto it = stats.parents.begin(); it != stats.parents.end(); ++it ) data.push_back( it );
+        pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
+        ImGui::SameLine();
+        char buf[64];
+        PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / stats.excl );
+        TextDisabledUnformatted( buf );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+        ImGui::PopStyleVar();
+
+        auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
+        ImGui::Separator();
+        if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
+        {
+            ImGui::TableSetupScrollFreeze( 0, 1 );
+            ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+            ImGui::TableSetupColumn( "Function" );
+            ImGui::TableSetupColumn( "Location" );
+            ImGui::TableSetupColumn( "Image" );
+            ImGui::TableHeadersRow();
+
+            int fidx = 0;
+            int bidx = 0;
+            for( auto& entry : cs )
             {
-                const auto& frame = frameData->data[f];
-                auto txt = m_worker.GetString( frame.name );
-                bidx++;
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                if( f == fsz-1 )
+                auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
+                assert( frameData );
+                const auto fsz = frameData->size;
+                for( uint8_t f=0; f<fsz; f++ )
                 {
-                    ImGui::Text( "%i", fidx++ );
-                }
-                else
-                {
-                    if( m_smallFont ) ImGui::PushFont( m_smallFont );
-                    TextDisabledUnformatted( "inline" );
-                    if( m_smallFont ) ImGui::PopFont();
-                }
-                ImGui::TableNextColumn();
-                {
-                    ImGui::PushTextWrapPos( 0.0f );
-                    if( txt[0] == '[' )
+                    const auto& frame = frameData->data[f];
+                    auto txt = m_worker.GetString( frame.name );
+                    bidx++;
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if( f == fsz-1 )
                     {
-                        TextDisabledUnformatted( txt );
-                    }
-                    else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
-                    {
-                        TextColoredUnformatted( 0xFF8888FF, txt );
+                        ImGui::Text( "%i", fidx++ );
                     }
                     else
                     {
-                        ImGui::TextUnformatted( txt );
+                        if( m_smallFont ) ImGui::PushFont( m_smallFont );
+                        TextDisabledUnformatted( "inline" );
+                        if( m_smallFont ) ImGui::PopFont();
                     }
-                    ImGui::PopTextWrapPos();
-                }
-                if( ImGui::IsItemClicked() )
-                {
-                    ImGui::SetClipboardText( txt );
-                }
-                ImGui::TableNextColumn();
-                ImGui::PushTextWrapPos( 0.0f );
-                float indentVal = 0.f;
-                if( m_sampleParentBuzzAnim.Match( bidx ) )
-                {
-                    const auto time = m_sampleParentBuzzAnim.Time();
-                    indentVal = sin( time * 60.f ) * 10.f * time;
-                    ImGui::Indent( indentVal );
-                }
-                txt = m_worker.GetString( frame.file );
-                switch( m_showCallstackFrameAddress )
-                {
-                case 0:
-                    TextDisabledUnformatted( LocationToString( txt, frame.line ) );
+                    ImGui::TableNextColumn();
+                    {
+                        ImGui::PushTextWrapPos( 0.0f );
+                        if( txt[0] == '[' )
+                        {
+                            TextDisabledUnformatted( txt );
+                        }
+                        else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
+                        {
+                            TextColoredUnformatted( 0xFF8888FF, txt );
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted( txt );
+                        }
+                        ImGui::PopTextWrapPos();
+                    }
                     if( ImGui::IsItemClicked() )
                     {
                         ImGui::SetClipboardText( txt );
                     }
-                    break;
-                case 1:
-                    if( entry.custom == 0 )
+                    ImGui::TableNextColumn();
+                    ImGui::PushTextWrapPos( 0.0f );
+                    float indentVal = 0.f;
+                    if( m_sampleParentBuzzAnim.Match( bidx ) )
                     {
-                        const auto addr = m_worker.GetCanonicalPointer( entry );
-                        ImGui::TextDisabled( "0x%" PRIx64, addr );
+                        const auto time = m_sampleParentBuzzAnim.Time();
+                        indentVal = sin( time * 60.f ) * 10.f * time;
+                        ImGui::Indent( indentVal );
+                    }
+                    txt = m_worker.GetString( frame.file );
+                    switch( m_showCallstackFrameAddress )
+                    {
+                    case 0:
+                        TextDisabledUnformatted( LocationToString( txt, frame.line ) );
+                        if( ImGui::IsItemClicked() )
+                        {
+                            ImGui::SetClipboardText( txt );
+                        }
+                        break;
+                    case 1:
+                        if( entry.custom == 0 )
+                        {
+                            const auto addr = m_worker.GetCanonicalPointer( entry );
+                            ImGui::TextDisabled( "0x%" PRIx64, addr );
+                            if( ImGui::IsItemClicked() )
+                            {
+                                char tmp[32];
+                                sprintf( tmp, "0x%" PRIx64, addr );
+                                ImGui::SetClipboardText( tmp );
+                            }
+                        }
+                        else
+                        {
+                            TextDisabledUnformatted( "unavailable" );
+                        }
+                        break;
+                    case 2:
+                        ImGui::TextDisabled( "0x%" PRIx64, frame.symAddr );
                         if( ImGui::IsItemClicked() )
                         {
                             char tmp[32];
-                            sprintf( tmp, "0x%" PRIx64, addr );
+                            sprintf( tmp, "0x%" PRIx64, frame.symAddr );
                             ImGui::SetClipboardText( tmp );
                         }
-                    }
-                    else
-                    {
-                        TextDisabledUnformatted( "unavailable" );
-                    }
-                    break;
-                case 2:
-                    ImGui::TextDisabled( "0x%" PRIx64, frame.symAddr );
-                    if( ImGui::IsItemClicked() )
-                    {
-                        char tmp[32];
-                        sprintf( tmp, "0x%" PRIx64, frame.symAddr );
-                        ImGui::SetClipboardText( tmp );
-                    }
-                    break;
-                case 3:
-                {
-                    const auto sym = m_worker.GetSymbolData( frame.symAddr );
-                    if( sym )
-                    {
-                        const auto symtxt = m_worker.GetString( sym->file );
-                        TextDisabledUnformatted( LocationToString( symtxt, sym->line ) );
-                        if( ImGui::IsItemClicked() )
-                        {
-                            ImGui::SetClipboardText( symtxt );
-                        }
-                    }
-                    else
-                    {
-                        TextDisabledUnformatted( "[unknown]" );
-                    }
-                    break;
-                }
-                default:
-                    assert( false );
-                    break;
-                }
-                if( ImGui::IsItemHovered() )
-                {
-                    if( m_showCallstackFrameAddress == 3 )
+                        break;
+                    case 3:
                     {
                         const auto sym = m_worker.GetSymbolData( frame.symAddr );
                         if( sym )
                         {
                             const auto symtxt = m_worker.GetString( sym->file );
-                            DrawSourceTooltip( symtxt, sym->line );
+                            TextDisabledUnformatted( LocationToString( symtxt, sym->line ) );
+                            if( ImGui::IsItemClicked() )
+                            {
+                                ImGui::SetClipboardText( symtxt );
+                            }
                         }
+                        else
+                        {
+                            TextDisabledUnformatted( "[unknown]" );
+                        }
+                        break;
                     }
-                    else
-                    {
-                        DrawSourceTooltip( txt, frame.line );
+                    default:
+                        assert( false );
+                        break;
                     }
-                    if( ImGui::IsItemClicked( 1 ) )
+                    if( ImGui::IsItemHovered() )
                     {
                         if( m_showCallstackFrameAddress == 3 )
                         {
@@ -16306,38 +16319,54 @@ void View::DrawSampleParents()
                             if( sym )
                             {
                                 const auto symtxt = m_worker.GetString( sym->file );
-                                if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
+                                DrawSourceTooltip( symtxt, sym->line );
+                            }
+                        }
+                        else
+                        {
+                            DrawSourceTooltip( txt, frame.line );
+                        }
+                        if( ImGui::IsItemClicked( 1 ) )
+                        {
+                            if( m_showCallstackFrameAddress == 3 )
+                            {
+                                const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                                if( sym )
+                                {
+                                    const auto symtxt = m_worker.GetString( sym->file );
+                                    if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
+                                    {
+                                        m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                                    }
+                                }
+                                else
                                 {
                                     m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
                                 }
                             }
                             else
                             {
-                                m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
-                            }
-                        }
-                        else
-                        {
-                            if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
-                            {
-                                m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                                if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
+                                {
+                                    m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                                }
                             }
                         }
                     }
-                }
-                if( indentVal != 0.f )
-                {
-                    ImGui::Unindent( indentVal );
-                }
-                ImGui::PopTextWrapPos();
-                ImGui::TableNextColumn();
-                if( frameData->imageName.Active() )
-                {
-                    TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                    if( indentVal != 0.f )
+                    {
+                        ImGui::Unindent( indentVal );
+                    }
+                    ImGui::PopTextWrapPos();
+                    ImGui::TableNextColumn();
+                    if( frameData->imageName.Active() )
+                    {
+                        TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                    }
                 }
             }
+            ImGui::EndTable();
         }
-        ImGui::EndTable();
     }
     ImGui::End();
 
@@ -16350,6 +16379,7 @@ void View::DrawSampleParents()
 void View::DrawRanges()
 {
     ImGui::Begin( "Time range limits", &m_showRanges, ImGuiWindowFlags_AlwaysAutoResize );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     DrawRangeEntry( m_findZone.range, ICON_FA_SEARCH " Find zone", 0x4488DD88, "RangeFindZoneCopyFrom", 0 );
     ImGui::Separator();
     DrawRangeEntry( m_statRange, ICON_FA_SORT_AMOUNT_UP " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
@@ -16427,6 +16457,7 @@ void View::DrawWaitStacks()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Wait stacks", &m_showWaitStacks );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable wait stacks." );
 #else
@@ -17321,6 +17352,7 @@ void View::DrawMemory()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Memory", &m_memInfo.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
     auto& memNameMap = m_worker.GetMemNameMap();
     if( memNameMap.size() > 1 )
@@ -17862,6 +17894,11 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
 
 void View::DrawAllocList()
 {
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
     std::vector<const MemEvent*> data;
     auto basePtr = m_worker.GetMemoryNamed( m_memInfo.pool ).data.data();
     data.reserve( m_memInfo.allocList.size() );
@@ -17870,9 +17907,6 @@ void View::DrawAllocList()
         data.emplace_back( basePtr + idx );
     }
 
-    const auto scale = GetScale();
-    ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
     ListMemData( data, []( auto v ) {
         ImGui::Text( "0x%" PRIx64, v->Ptr() );

@@ -2916,18 +2916,6 @@ void View::DrawZones()
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
     const auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
-    {
-        const auto tbegin = 0;
-        const auto tend = m_worker.GetLastTime();
-        if( tbegin > m_vd.zvStart )
-        {
-            draw->AddRectFilled( linepos, linepos + ImVec2( ( tbegin - m_vd.zvStart ) * pxns, lineh ), 0x44000000 );
-        }
-        if( tend < m_vd.zvEnd )
-        {
-            draw->AddRectFilled( linepos + ImVec2( ( tend - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( w, lineh ), 0x44000000 );
-        }
-    }
 
     const auto winpos = ImGui::GetWindowPos();
     const auto winsize = ImGui::GetWindowSize();
@@ -2943,6 +2931,19 @@ void View::DrawZones()
             HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
         }
         HandleZoneViewMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
+    }
+
+    {
+        const auto tbegin = 0;
+        const auto tend = m_worker.GetLastTime();
+        if( tbegin > m_vd.zvStart )
+        {
+            draw->AddRectFilled( linepos, linepos + ImVec2( ( tbegin - m_vd.zvStart ) * pxns, lineh ), 0x44000000 );
+        }
+        if( tend < m_vd.zvEnd )
+        {
+            draw->AddRectFilled( linepos + ImVec2( ( tend - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( w, lineh ), 0x44000000 );
+        }
     }
 
     DrawZoneFramesHeader();

@@ -152,8 +152,8 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
 TRACY_API void ___tracy_emit_zone_color( TracyCZoneCtx ctx, uint32_t color );
 TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value );
 
-TRACY_API void ___tracy_emit_gpu_zone_begin_alloc( const struct ___tracy_gpu_zone_begin_data, int active );
-TRACY_API void ___tracy_emit_gpu_zone_end( const struct ___tracy_gpu_zone_end_data data, int active );
+TRACY_API void ___tracy_emit_gpu_zone_begin_alloc( const struct ___tracy_gpu_zone_begin_data );
+TRACY_API void ___tracy_emit_gpu_zone_end( const struct ___tracy_gpu_zone_end_data data );
 TRACY_API void ___tracy_emit_gpu_time( const struct ___tracy_gpu_time_data );
 TRACY_API void ___tracy_emit_gpu_new_context( const struct ___tracy_gpu_new_context_data );
 TRACY_API void ___tracy_emit_gpu_context_name( const struct ___tracy_gpu_context_name_data );

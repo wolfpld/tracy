@@ -145,13 +145,15 @@ class Profiler
         CallstackFrame,
         SymbolQuery,
         CodeLocation,
-        ExternalName
+        ExternalName,
+        KernelCode
     };
 
     struct SymbolQueueItem
     {
         SymbolQueueItemType type;
         uint64_t ptr;
+        uint32_t extra;
     };
 
 public:

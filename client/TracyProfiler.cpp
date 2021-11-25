@@ -2129,6 +2129,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         }
         break;
     }
+    case QueueType::SymbolCodeMetadata:
+        ptr = MemRead<uint64_t>( &item.symbolCodeMetadata.ptr );
+        tracy_free( (void*)ptr );
+        break;
 #endif
 #ifndef TRACY_ON_DEMAND
     case QueueType::LockName:
@@ -2427,6 +2431,16 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         SendSingleString( fileString );
                         if( needFree ) tracy_free_fast( (void*)fileString );
                         break;
+                    }
+                    case QueueType::SymbolCodeMetadata:
+                    {
+                        auto symbol = MemRead<uint64_t>( &item->symbolCodeMetadata.symbol );
+                        auto ptr = (const char*)MemRead<uint64_t>( &item->symbolCodeMetadata.ptr );
+                        auto size = MemRead<uint32_t>( &item->symbolCodeMetadata.size );
+                        SendLongString( symbol, ptr, size, QueueType::SymbolCode );
+                        tracy_free_fast( (void*)ptr );
+                        ++item;
+                        continue;
                     }
 #endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
@@ -3111,7 +3125,11 @@ void Profiler::QueueExternalName( uint64_t ptr )
 void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 {
     assert( symbol >> 63 != 0 );
+#ifdef TRACY_HAS_CALLSTACK
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::KernelCode, symbol, size } );
+#else
     AckSymbolCodeNotAvailable();
+#endif
 }
 
 #ifdef TRACY_HAS_CALLSTACK
@@ -3180,6 +3198,44 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
         break;
     }
 #endif
+    case SymbolQueueItemType::KernelCode:
+    {
+#ifdef _WIN32
+        auto mod = GetModuleName( si.ptr );
+        if( strcmp( mod, "<kernel>" ) != 0 )
+        {
+            auto fn = DecodeCallstackPtrFast( si.ptr );
+            if( *fn )
+            {
+                char tmp[8192];
+                auto modlen = strlen( mod );
+                memcpy( tmp, mod+1, modlen-2 );
+                tmp[modlen-2] = '\0';
+                auto hnd = LoadLibraryExA( tmp, nullptr, DONT_RESOLVE_DLL_REFERENCES );
+                if( hnd )
+                {
+                    auto ptr = GetProcAddress( hnd, fn );
+                    if( ptr )
+                    {
+                        auto buf = (char*)tracy_malloc( si.extra );
+                        memcpy( buf, ptr, si.extra );
+                        FreeLibrary( hnd );
+                        TracyLfqPrepare( QueueType::SymbolCodeMetadata );
+                        MemWrite( &item->symbolCodeMetadata.symbol, si.ptr );
+                        MemWrite( &item->symbolCodeMetadata.ptr, (uint64_t)buf );
+                        MemWrite( &item->symbolCodeMetadata.size, (uint32_t)si.extra );
+                        TracyLfqCommit;
+                        break;
+                    }
+                    FreeLibrary( hnd );
+                }
+            }
+        }
+#endif
+        TracyLfqPrepare( QueueType::AckSymbolCodeNotAvailable );
+        TracyLfqCommit;
+        break;
+    }
     default:
         assert( false );
         break;

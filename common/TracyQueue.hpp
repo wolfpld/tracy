@@ -59,6 +59,7 @@ enum class QueueType : uint8_t
     SymbolInformation,
     CodeInformation,
     ExternalNameMetadata,
+    SymbolCodeMetadata,
     FiberEnter,
     FiberLeave,
     Terminate,
@@ -621,6 +622,13 @@ struct QueueExternalNameMetadata
     uint64_t threadName;
 };
 
+struct QueueSymbolCodeMetadata
+{
+    uint64_t symbol;
+    uint64_t ptr;
+    uint32_t size;
+};
+
 struct QueueHeader
 {
     union
@@ -708,6 +716,7 @@ struct QueueItem
         QueueParamSetup paramSetup;
         QueueCpuTopology cpuTopology;
         QueueExternalNameMetadata externalNameMetadata;
+        QueueSymbolCodeMetadata symbolCodeMetadata;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
     };
@@ -769,6 +778,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
     sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ),                                  // ExternalNameMetadata - not for wire transfer
+    sizeof( QueueHeader ),                                  // SymbolCodeMetadata - not for wire transfer
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first

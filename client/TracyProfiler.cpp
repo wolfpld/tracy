@@ -3201,17 +3201,13 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
     case SymbolQueueItemType::KernelCode:
     {
 #ifdef _WIN32
-        auto mod = GetModuleName( si.ptr );
-        if( strcmp( mod, "<kernel>" ) != 0 )
+        auto mod = GetKernelModulePath( si.ptr );
+        if( mod )
         {
             auto fn = DecodeCallstackPtrFast( si.ptr );
             if( *fn )
             {
-                char tmp[8192];
-                auto modlen = strlen( mod );
-                memcpy( tmp, mod+1, modlen-2 );
-                tmp[modlen-2] = '\0';
-                auto hnd = LoadLibraryExA( tmp, nullptr, DONT_RESOLVE_DLL_REFERENCES );
+                auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
                 if( hnd )
                 {
                     auto ptr = GetProcAddress( hnd, fn );

@@ -244,7 +244,16 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
-const char* GetModuleName( uint64_t addr )
+const char* GetKernelModulePath( uint64_t addr )
+{
+    assert( addr >> 63 != 0 );
+    if( !s_krnlCache ) return nullptr;
+    auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
+    if( it == s_krnlCache + s_krnlCacheCnt ) return nullptr;
+    return it->path;
+}
+
+static const char* GetModuleName( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {

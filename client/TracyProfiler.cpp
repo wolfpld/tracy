@@ -2429,7 +2429,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         auto threadName = (const char*)MemRead<uint64_t>( &item->externalNameMetadata.threadName );
                         SendString( thread, threadName, QueueType::ExternalThreadName );
                         SendString( thread, name, QueueType::ExternalName );
-                        tracy_free( (void*)threadName );
+                        tracy_free_fast( (void*)threadName );
                         tracy_free_fast( (void*)name );
                         ++item;
                         continue;

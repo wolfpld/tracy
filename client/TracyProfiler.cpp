@@ -684,6 +684,14 @@ void Profiler::AckSourceCodeNotAvailable()
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::AckSourceCodeNotAvailable] );
 }
 
+void Profiler::AckSymbolCodeNotAvailable()
+{
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::AckSymbolCodeNotAvailable );
+    NeedDataSize( QueueDataSize[(int)QueueType::AckSymbolCodeNotAvailable] );
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::AckSymbolCodeNotAvailable] );
+}
+
 static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len, int port )
 {
     static BroadcastMessage msg;
@@ -3103,7 +3111,7 @@ void Profiler::QueueExternalName( uint64_t ptr )
 void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 {
     assert( symbol >> 63 != 0 );
-    AckServerQuery();
+    AckSymbolCodeNotAvailable();
 }
 
 #ifdef TRACY_HAS_CALLSTACK
@@ -3677,7 +3685,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
         // but not readable.
         if( !EnsureReadable( symbol ) )
         {
-            AckServerQuery();
+            AckSymbolCodeNotAvailable();
             return;
         }
 #endif

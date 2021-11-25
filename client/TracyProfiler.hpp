@@ -763,6 +763,7 @@ private:
 
     void AckServerQuery();
     void AckSourceCodeNotAvailable();
+    void AckSymbolCodeNotAvailable();
 
     void CalibrateTimer();
     void CalibrateDelay();

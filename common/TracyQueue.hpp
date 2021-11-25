@@ -96,6 +96,7 @@ enum class QueueType : uint8_t
     ParamSetup,
     AckServerQueryNoop,
     AckSourceCodeNotAvailable,
+    AckSymbolCodeNotAvailable,
     CpuTopology,
     SingleStringData,
     SecondStringData,
@@ -816,6 +817,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement
     sizeof( QueueHeader ),                                  // source code not available
+    sizeof( QueueHeader ),                                  // symbol code not available
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
     sizeof( QueueHeader ),                                  // second string data

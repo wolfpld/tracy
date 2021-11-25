@@ -3374,6 +3374,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             case QueueType::CodeInformation:
             case QueueType::AckServerQueryNoop:
             case QueueType::AckSourceCodeNotAvailable:
+            case QueueType::AckSymbolCodeNotAvailable:
                 m_serverQuerySpaceLeft++;
                 break;
             default:
@@ -4833,6 +4834,10 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::AckSourceCodeNotAvailable:
         assert( !m_sourceCodeQuery.empty() );
         m_sourceCodeQuery.erase( m_sourceCodeQuery.begin() );
+        m_serverQuerySpaceLeft++;
+        break;
+    case QueueType::AckSymbolCodeNotAvailable:
+        m_pendingSymbolCode--;
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::CpuTopology:

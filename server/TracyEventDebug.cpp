@@ -282,6 +282,9 @@ void EventDebug( const QueueItem& ev )
     case QueueType::AckSourceCodeNotAvailable:
         fprintf( f, "ev %i (AckSourceCodeNotAvailable)\n", ev.hdr.idx );
         break;
+    case QueueType::AckSymbolCodeNotAvailable:
+        fprintf( f, "ev %i (AckSymbolCodeNotAvailable)\n", ev.hdr.idx );
+        break;
     case QueueType::CpuTopology:
         fprintf( f, "ev %i (CpuTopology)\n", ev.hdr.idx );
         fprintf( f, "\tpackage = %" PRIu32 "\n", ev.cpuTopology.package );

@@ -753,6 +753,7 @@ private:
     void QueueSymbolQuery( uint64_t symbol );
     void QueueCodeLocation( uint64_t ptr );
     void QueueExternalName( uint64_t ptr );
+    void QueueKernelCode( uint64_t symbol, uint32_t size );
 
     bool HandleServerQuery();
     void HandleDisconnect();

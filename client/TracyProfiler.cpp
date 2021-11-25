@@ -3100,6 +3100,12 @@ void Profiler::QueueExternalName( uint64_t ptr )
 #endif
 }
 
+void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
+{
+    assert( symbol >> 63 != 0 );
+    AckServerQuery();
+}
+
 #ifdef TRACY_HAS_CALLSTACK
 void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 {
@@ -3660,16 +3666,23 @@ void Profiler::HandleParameter( uint64_t payload )
 
 void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 {
-#ifdef __ANDROID__
-    // On Android it's common for code to be in mappings that are only executable
-    // but not readable.
-    if( !EnsureReadable( symbol ) )
+    if( symbol >> 63 != 0 )
     {
-        AckServerQuery();
-        return;
+        QueueKernelCode( symbol, size );
     }
+    else
+    {
+#ifdef __ANDROID__
+        // On Android it's common for code to be in mappings that are only executable
+        // but not readable.
+        if( !EnsureReadable( symbol ) )
+        {
+            AckServerQuery();
+            return;
+        }
 #endif
-    SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
+        SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
+    }
 }
 
 void Profiler::HandleSourceCodeQuery()

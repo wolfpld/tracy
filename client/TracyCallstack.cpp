@@ -235,7 +235,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
-static const char* GetModuleName( uint64_t addr )
+const char* GetModuleName( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {

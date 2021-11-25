@@ -93,6 +93,7 @@ struct KernelDriver
 {
     uint64_t addr;
     const char* mod;
+    const char* path;
 };
 
 KernelDriver* s_krnlCache = nullptr;
@@ -136,7 +137,7 @@ void InitCallstack()
                 buf[0] = '<';
                 memcpy( buf+1, fn, len );
                 memcpy( buf+len+1, ">", 2 );
-                s_krnlCache[cnt++] = KernelDriver { (uint64_t)dev[i], buf };
+                s_krnlCache[cnt] = KernelDriver { (uint64_t)dev[i], buf };
 
                 const auto len = GetDeviceDriverFileNameA( dev[i], fn, sizeof( fn ) );
                 if( len != 0 )
@@ -152,7 +153,15 @@ void InitCallstack()
                     }
 
                     SymLoadModuleEx( GetCurrentProcess(), nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0 );
+
+                    const auto psz = strlen( path );
+                    auto pptr = (char*)tracy_malloc_fast( psz+1 );
+                    memcpy( pptr, path, psz );
+                    pptr[psz] = '\0';
+                    s_krnlCache[cnt].path = pptr;
                 }
+
+                cnt++;
             }
         }
         s_krnlCacheCnt = cnt;

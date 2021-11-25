@@ -272,6 +272,7 @@ Worker::Worker( const char* addr, uint16_t port )
     , m_pendingCallstackFrames( 0 )
     , m_pendingCallstackSubframes( 0 )
     , m_pendingCodeInformation( 0 )
+    , m_pendingSymbolCode( 0 )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
@@ -3159,7 +3160,7 @@ void Worker::Exec()
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 m_data.plots.IsPending() || m_pendingCallstackId != 0 || m_pendingExternalNames != 0 ||
                 m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr || !m_pendingSymbols.empty() ||
-                !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() ||
+                m_pendingSymbolCode != 0 || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() ||
                 m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr ||
                 !m_sourceCodeQuery.empty() || m_pendingFibers != 0 )
             {
@@ -4046,9 +4047,8 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 
 void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
 {
-    auto it = m_pendingSymbolCode.find( ptr );
-    assert( it != m_pendingSymbolCode.end() );
-    m_pendingSymbolCode.erase( it );
+    assert( m_pendingSymbolCode > 0 );
+    m_pendingSymbolCode--;
 
     auto code = (char*)m_slab.AllocBig( sz );
     memcpy( code, data, sz );
@@ -6608,8 +6608,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
 
     if( m_codeTransfer && it->second.size > 0 && it->second.size <= 128*1024 )
     {
-        assert( m_pendingSymbolCode.find( ev.symAddr ) == m_pendingSymbolCode.end() );
-        m_pendingSymbolCode.emplace( ev.symAddr );
+        m_pendingSymbolCode++;
         Query( ServerQuerySymbolCode, ev.symAddr, it->second.size );
     }
 

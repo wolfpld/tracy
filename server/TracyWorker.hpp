@@ -927,7 +927,6 @@ private:
     unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
     FrameImagePending m_pendingFrameImageData = {};
     unordered_flat_map<uint64_t, SymbolPending> m_pendingSymbols;
-    unordered_flat_set<uint64_t> m_pendingSymbolCode;
     unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_pendingFileStrings;
     unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_checkedFileStrings;
     StringLocation m_pendingSingleString = {};
@@ -941,6 +940,7 @@ private:
     uint32_t m_pendingCallstackFrames;
     uint8_t m_pendingCallstackSubframes;
     uint32_t m_pendingCodeInformation;
+    uint32_t m_pendingSymbolCode;
 
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;

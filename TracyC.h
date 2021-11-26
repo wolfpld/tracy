@@ -74,8 +74,8 @@ typedef const void* TracyCZoneCtx;
 #define TracyCMessageLCS(x,y,z)
 
 #ifdef TRACY_FIBERS
-#  define TracyFiberEnter(fiber)
-#  define TracyFiberLeave
+#  define TracyCFiberEnter(fiber)
+#  define TracyCFiberLeave
 #endif
 
 #else
@@ -301,8 +301,8 @@ TRACY_API void ___tracy_fiber_enter( const char* fiber );
 TRACY_API void ___tracy_fiber_leave( void );
 
 #ifdef TRACY_FIBERS
-#  define TracyFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
-#  define TracyFiberLeave ___tracy_fiber_leave();
+#  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
+#  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
 
 #endif

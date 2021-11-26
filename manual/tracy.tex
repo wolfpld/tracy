@@ -1830,6 +1830,36 @@ To send additional markup in form of plot data points or messages use the follow
 
 Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
 
+\subsubsection{GPU zones}
+
+Hooking up support for GPU zones requires a bit more work than usual. The C API provides a low-level interface which you can use to submit the data, but there are no facilities to help you with timestamp processing.
+
+Moreover, there are two sets of functions described below. The standard set sends data asynchronously, while the \texttt{\_serial} one ensures proper ordering of all events, regardless of the originating thread. Generally speaking, you should be using the asynchronous functions only in case of APIs which are strictly single-threaded, like OpenGL.
+
+A GPU context can be created with the \texttt{\_\_\_tracy\_emit\_gpu\_new\_context} function (or the serialized variant). You'll need to specify:
+
+\begin{itemize}
+\item \texttt{context} -- a unique context id.
+\item \texttt{gpuTime} -- an initial GPU timestamp.
+\item \texttt{period} -- the timestamp period of the GPU.
+\item \texttt{flags} -- the flags to use.
+\item \texttt{type} -- the GPU context type.
+\end{itemize}
+
+GPU contexts can be named using the \texttt{\_\_\_tracy\_emit\_gpu\_context\_name} function.
+
+GPU zones can be created with the \texttt{\_\_\_tracy\_emit\_gpu\_zone\_begin\_alloc} function. The \texttt{srcloc} parameter is the address of the source location data allocated via \texttt{\_\_\_tracy\_alloc\_srcloc} or \texttt{\_\_\_tracy\_alloc\_srcloc\_name}. The \texttt{queryId} parameter is the id of the corresponding timestamp query. It should be unique on a per-frame basis.
+
+GPU zones are ended via \texttt{\_\_\_tracy\_emit\_gpu\_zone\_end}.
+
+When the timestamps are fetched from the GPU, they must then be emitted via the \texttt{\_\_\_tracy\_emit\_gpu\_time} function. After all timestamps for a frame are emitted, \texttt{queryIds} may be re-used.
+
+To see how this API should be used you should look at the reference implementation contained in API-specific C++ headers provided by Tracy. For example, to see how to write your instrumentation of OpenGL, you should closely follow contents of the \texttt{TracyOpenGL.hpp} implementation.
+
+\subsubsection{Fibers}
+
+Fibers are available in the C API through the \texttt{TracyCFiberEnter} and \texttt{TracyCFiberLeave} macros. To use them, you should observe the requirements listed in section~\ref{fibers}.
+
 \subsubsection{Call stacks}
 
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using macros with \texttt{S} postfix, such as: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, and so on.

@@ -67,7 +67,8 @@ v0.x.x (xxxx-xx-xx)
   - Fibers require additional processing, which has to be enabled by adding
     the TRACY_FIBERS define on the client side.
   - Client code requires additional instrumentation using the new macros
-    TracyFiberEnter and TracyFiberLeave.
+    TracyFiberEnter and TracyFiberLeave (or the corresponding C API
+    variants).
   - Fibers are represented in traces as separate threads, and are
     distinguished by green color. Faux context switch regions are used to
     indicate when a fiber is being run by the worker thread.
@@ -87,6 +88,7 @@ v0.x.x (xxxx-xx-xx)
 - Various DPI scaling improvements.
 - User interface can be now scaled in run time.
 - Symbol code retrieval now also supports kernel on Windows.
+- Added low-level C API interface for GPU zones.
 
 
 v0.7.8 (2021-05-19)

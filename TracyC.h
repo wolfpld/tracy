@@ -73,6 +73,11 @@ typedef const void* TracyCZoneCtx;
 #define TracyCMessageCS(x,y,z,w)
 #define TracyCMessageLCS(x,y,z)
 
+#ifdef TRACY_FIBERS
+#  define TracyCFiberEnter(fiber)
+#  define TracyCFiberLeave
+#endif
+
 #else
 
 #ifndef TracyConcat
@@ -290,6 +295,14 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #  define TracyCMessageLS( txt, depth ) TracyCMessageL( txt )
 #  define TracyCMessageCS( txt, size, color, depth ) TracyCMessageC( txt, size, color )
 #  define TracyCMessageLCS( txt, color, depth ) TracyCMessageLC( txt, color )
+#endif
+
+TRACY_API void ___tracy_fiber_enter( const char* fiber );
+TRACY_API void ___tracy_fiber_leave( void );
+
+#ifdef TRACY_FIBERS
+#  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
+#  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
 
 #endif

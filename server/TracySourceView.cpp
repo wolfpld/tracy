@@ -1335,7 +1335,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 }
             }
             ImGui::SameLine();
-            SmallToggleButton( ICON_FA_EYE, m_childCallList );
+            if( ImGui::SmallButton( m_childCallList ? " " ICON_FA_CARET_UP " " : " " ICON_FA_CARET_DOWN " " ) ) m_childCallList = !m_childCallList;
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();

@@ -7386,54 +7386,96 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         }
     }
 
-    const auto sz = framesCount - ( fxsz == 1 );
-    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
-    auto mem = (char*)m_slab.AllocRaw( memsize );
-
-    auto data = (CallstackFrameId*)mem;
-    auto dst = data;
-    if( fxsz == 1 )
+    uint32_t parentIdx;
     {
-        for( int i=0; i<sz; i++ )
+        const auto sz = framesCount - ( fxsz == 1 );
+        const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+        auto mem = (char*)m_slab.AllocRaw( memsize );
+
+        auto data = (CallstackFrameId*)mem;
+        auto dst = data;
+        if( fxsz == 1 )
         {
-            *dst++ = cs[i+1];
+            for( int i=0; i<sz; i++ )
+            {
+                *dst++ = cs[i+1];
+            }
         }
-    }
-    else
-    {
-        *dst++ = parentFrameId;
-        for( int i=1; i<sz; i++ )
+        else
         {
-            *dst++ = cs[i];
+            *dst++ = parentFrameId;
+            for( int i=1; i<sz; i++ )
+            {
+                *dst++ = cs[i];
+            }
         }
-    }
 
-    auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
-    new(arr) VarArray<CallstackFrameId>( sz, data );
+        auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+        new(arr) VarArray<CallstackFrameId>( sz, data );
 
-    uint32_t idx;
-    auto it = m_data.parentCallstackMap.find( arr );
-    if( it == m_data.parentCallstackMap.end() )
-    {
-        idx = m_data.parentCallstackPayload.size();
-        m_data.parentCallstackMap.emplace( arr, idx );
-        m_data.parentCallstackPayload.push_back( arr );
-    }
-    else
-    {
-        idx = it->second;
-        m_slab.Unalloc( memsize );
+        auto it = m_data.parentCallstackMap.find( arr );
+        if( it == m_data.parentCallstackMap.end() )
+        {
+            parentIdx = m_data.parentCallstackPayload.size();
+            m_data.parentCallstackMap.emplace( arr, parentIdx );
+            m_data.parentCallstackPayload.push_back( arr );
+        }
+        else
+        {
+            parentIdx = it->second;
+            m_slab.Unalloc( memsize );
+        }
     }
 
     sym0 = m_data.symbolStats.find( frame0.symAddr );
-    auto sit = sym0->second.parents.find( idx );
+    auto sit = sym0->second.parents.find( parentIdx );
     if( sit == sym0->second.parents.end() )
     {
-        sym0->second.parents.emplace( idx, count );
+        sym0->second.parents.emplace( parentIdx, count );
     }
     else
     {
         sit->second += count;
+    }
+
+    uint32_t baseParentIdx;
+    {
+        const auto sz = framesCount - 1;
+        const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+        auto mem = (char*)m_slab.AllocRaw( memsize );
+
+        auto data = (CallstackFrameId*)mem;
+        auto dst = data;
+        for( int i=0; i<sz; i++ )
+        {
+            *dst++ = cs[i+1];
+        }
+
+        auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+        new(arr) VarArray<CallstackFrameId>( sz, data );
+
+        auto it = m_data.parentCallstackMap.find( arr );
+        if( it == m_data.parentCallstackMap.end() )
+        {
+            baseParentIdx = m_data.parentCallstackPayload.size();
+            m_data.parentCallstackMap.emplace( arr, baseParentIdx );
+            m_data.parentCallstackPayload.push_back( arr );
+        }
+        else
+        {
+            baseParentIdx = it->second;
+            m_slab.Unalloc( memsize );
+        }
+    }
+
+    auto bit = sym0->second.baseParents.find( baseParentIdx );
+    if( bit == sym0->second.baseParents.end() )
+    {
+        sym0->second.baseParents.emplace( baseParentIdx, count );
+    }
+    else
+    {
+        bit->second += count;
     }
 }
 #endif

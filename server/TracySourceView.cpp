@@ -1238,7 +1238,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                     iptr++;
                 }
             }
-            GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view );
+            GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view );
         }
     }
     else

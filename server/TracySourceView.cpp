@@ -3222,7 +3222,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 }
                 else if( !stats.parents.empty() && ImGui::IsMouseClicked( 2 ) )
                 {
-                    view.ShowSampleParents( symAddrParents );
+                    view.ShowSampleParents( symAddrParents, false );
                 }
             }
 

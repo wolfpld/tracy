@@ -13613,9 +13613,9 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                     {
                         ImGui::PushID( idx++ );
                         if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
-                        const auto clicked = ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                        const auto clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
                         if( isKernel ) ImGui::PopStyleColor();
-                        if( clicked ) ShowSampleParents( v.symAddr );
+                        if( clicked ) ShowSampleParents( v.symAddr, true );
                         ImGui::PopID();
                     }
                     if( parentName )
@@ -13718,7 +13718,7 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                         assert( v.count > 0 );
                         assert( symlen != 0 );
                         auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
-                        assert( inSym != 0 );
+                        assert( inSym != nullptr );
                         const auto symEnd = v.symAddr + symlen;
                         Vector<SymList> inSymList;
                         while( *inSym < symEnd )
@@ -13795,9 +13795,9 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                                 else
                                 {
                                     ImGui::PushID( idx++ );
-                                    if( ImGui::Selectable( sn, m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                                    if( ImGui::Selectable( sn, !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                                     {
-                                        ShowSampleParents( iv.symAddr );
+                                        ShowSampleParents( iv.symAddr, false );
                                     }
                                     ImGui::PopID();
                                 }
@@ -13998,7 +13998,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 ImGui::SameLine();
                 if( ImGui::Button( ICON_FA_DOOR_OPEN " Global entry statistics" ) )
                 {
-                    ShowSampleParents( frame->data[0].symAddr );
+                    ShowSampleParents( frame->data[0].symAddr, true );
                 }
             }
         }
@@ -16105,9 +16105,43 @@ void View::DrawSampleParents()
     ImGui::Begin( "Sample entry call stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
+        const SymbolStats* stats;
+        SymbolStats tmpss;
+
         const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
-        const auto& stats = *m_worker.GetSymbolStats( m_sampleParents.symAddr );
-        assert( !stats.parents.empty() );
+        if( symbol->isInline || !m_sampleParents.withInlines )
+        {
+            stats = m_worker.GetSymbolStats( m_sampleParents.symAddr );
+        }
+        else
+        {
+            tmpss = *m_worker.GetSymbolStats( m_sampleParents.symAddr );
+            const auto symlen = symbol->size.Val();
+            auto inSym = m_worker.GetInlineSymbolList( m_sampleParents.symAddr, symlen );
+            assert( inSym != nullptr );
+            const auto symEnd = m_sampleParents.symAddr + symlen;
+            while( *inSym < symEnd )
+            {
+                auto istat = m_worker.GetSymbolStats( *inSym++ );
+                if( !istat ) continue;
+                tmpss.incl += istat->incl;
+                tmpss.excl += istat->excl;
+                for( auto& v : istat->parents )
+                {
+                    auto it = tmpss.parents.find( v.first );
+                    if( it == tmpss.parents.end() )
+                    {
+                        tmpss.parents.emplace( v.first, v.second );
+                    }
+                    else
+                    {
+                        it->second += v.second;
+                    }
+                }
+            }
+            stats = &tmpss;
+        }
+        assert( !stats->parents.empty() );
 
         ImGui::PushFont( m_bigFont );
         TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
@@ -16115,6 +16149,11 @@ void View::DrawSampleParents()
         {
             ImGui::SameLine();
             TextDisabledUnformatted( "(inline)" );
+        }
+        else if( !m_sampleParents.withInlines )
+        {
+            ImGui::SameLine();
+            TextDisabledUnformatted( "(without inlines)" );
         }
         ImGui::PopFont();
         TextDisabledUnformatted( "Location:" );
@@ -16145,30 +16184,30 @@ void View::DrawSampleParents()
             m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
         }
         ImGui::SameLine();
-        ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.parents.size() ) );
+        ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats->parents.size() ) );
         if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "EntryCallStackPopup" );
         ImGui::SameLine();
         if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
         {
-            m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.parents.size() - 1 );
+            m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats->parents.size() - 1 );
         }
         if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
         {
             int sel = m_sampleParents.sel + 1;
             ImGui::SetNextItemWidth( 120 * scale );
             const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-            if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.parents.size() ) ) - 1;
+            if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats->parents.size() ) ) - 1;
             ImGui::EndPopup();
         }
-        Vector<decltype(stats.parents.begin())> data;
-        data.reserve( stats.parents.size() );
-        for( auto it = stats.parents.begin(); it != stats.parents.end(); ++it ) data.push_back( it );
+        Vector<decltype(stats->parents.begin())> data;
+        data.reserve( stats->parents.size() );
+        for( auto it = stats->parents.begin(); it != stats->parents.end(); ++it ) data.push_back( it );
         pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
         ImGui::SameLine();
         ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
         ImGui::SameLine();
         char buf[64];
-        PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / stats.excl );
+        PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / stats->excl );
         TextDisabledUnformatted( buf );
         ImGui::SameLine();
         ImGui::Spacing();

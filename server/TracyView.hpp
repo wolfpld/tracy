@@ -110,7 +110,7 @@ public:
 
     const char* SourceSubstitution( const char* srcFile ) const;
 
-    void ShowSampleParents( uint64_t symAddr ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; }
+    void ShowSampleParents( uint64_t symAddr, bool withInlines ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; m_sampleParents.withInlines = withInlines; }
     const ViewData& GetViewData() const { return m_vd; }
 
 
@@ -774,6 +774,7 @@ private:
     struct {
         uint64_t symAddr = 0;
         int sel;
+        bool withInlines = false;
     } m_sampleParents;
 
     std::vector<std::pair<int, int>> m_cpuUsageBuf;

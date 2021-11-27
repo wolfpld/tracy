@@ -13615,7 +13615,7 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                         if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                         const auto clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
                         if( isKernel ) ImGui::PopStyleColor();
-                        if( clicked ) ShowSampleParents( v.symAddr, true );
+                        if( clicked ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
                         ImGui::PopID();
                     }
                     if( parentName )

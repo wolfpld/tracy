@@ -83,6 +83,12 @@ static constexpr const char* s_CostName[] = {
 
 static constexpr SourceView::CostType s_costSeparateAfter = SourceView::CostType::SlowCache;
 
+struct ChildStat
+{
+    uint64_t addr;
+    uint32_t count;
+};
+
 
 static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
 {
@@ -180,6 +186,7 @@ SourceView::SourceView( GetWindowCallback gwcb )
     , m_calcInlineStats( true )
     , m_atnt( false )
     , m_childCalls( false )
+    , m_childCallList( false )
     , m_hwSamples( true )
     , m_hwSamplesRelative( true )
     , m_cost( CostType::SampleCount )
@@ -1300,6 +1307,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
                 ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
                 m_childCalls = false;
+                m_childCallList = false;
             }
             else if( ImGui::IsKeyDown( 'Z' ) )
             {
@@ -1326,6 +1334,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                     ImGui::EndTooltip();
                 }
             }
+            ImGui::SameLine();
+            SmallToggleButton( ICON_FA_EYE, m_childCallList );
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
@@ -1374,6 +1384,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         else
         {
             TextFocused( "Events:", RealToString( as.ipTotalAsm.local ) );
+            m_childCallList = false;
         }
         ImGui::SameLine();
         ImGui::Spacing();
@@ -1421,6 +1432,59 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
 
     ImGui::PopStyleVar();
     ImGui::Separator();
+
+    if( m_childCallList )
+    {
+        unordered_flat_map<uint64_t, uint32_t> map;
+        if( m_calcInlineStats )
+        {
+            GatherChildStats( m_symAddr, map, worker, limitView, view );
+        }
+        else
+        {
+            GatherChildStats( m_baseAddr, map, worker, limitView, view );
+        }
+        if( !map.empty() )
+        {
+            TextDisabledUnformatted( "Child call distribution" );
+            if( ImGui::BeginChild( "ccd", ImVec2( 0, ImGui::GetFontSize() * std::min<size_t>( 4, map.size() ) + ImGui::GetStyle().WindowPadding.y ) ) )
+            {
+                std::vector<ChildStat> vec;
+                vec.reserve( map.size() );
+                for( auto& v : map ) vec.emplace_back( ChildStat { v.first, v.second } );
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs.count > rhs.count; } );
+                int idx = 1;
+                for( auto& v : vec )
+                {
+                    ImGui::TextDisabled( "%i.", idx++ );
+                    ImGui::SameLine();
+                    auto sd = worker.GetSymbolData( v.addr );
+                    const auto symName = worker.GetString( sd->name );
+                    if( v.addr >> 63 == 0 )
+                    {
+                        ImGui::TextUnformatted( symName );
+                    }
+                    else
+                    {
+                        TextColoredUnformatted( 0xFF8888FF, symName );
+                    }
+                    ImGui::SameLine();
+                    char tmp[16];
+                    auto end = PrintFloat( tmp, tmp+16, 100.f * v.count / as.ipTotalAsm.ext, 2 );
+                    *end = '\0';
+                    ImGui::TextDisabled( "%s (%s%%)", TimeToString( v.count * worker.GetSamplingPeriod() ), tmp );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text( "%s samples", RealToString( v.count ) );
+                        ImGui::EndTooltip();
+                    }
+                }
+            }
+            ImGui::EndChild();
+            ImGui::Separator();
+        }
+    }
 
     uint64_t jumpOut = 0;
     switch( m_displayMode )

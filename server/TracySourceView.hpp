@@ -223,6 +223,7 @@ private:
     uint64_t m_jumpPopupAddr;
     bool m_hwSamples, m_hwSamplesRelative;
     bool m_childCalls;
+    bool m_childCallList;
     CostType m_cost;
 
     SourceContents m_source;

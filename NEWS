@@ -89,6 +89,7 @@ v0.x.x (xxxx-xx-xx)
 - User interface can be now scaled in run time.
 - Symbol code retrieval now also supports kernel on Windows.
 - Added low-level C API interface for GPU zones.
+- Symbol child calls can be now listed.
 
 
 v0.7.8 (2021-05-19)

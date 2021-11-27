@@ -177,6 +177,8 @@ private:
     void GatherIpHwStats( AddrStatData& as, Worker& worker, const View& view, CostType cost );
     void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
     void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view );
+    void GatherChildStats( uint64_t baseAddr, unordered_flat_map<uint64_t, uint32_t>& vec, Worker& worker, bool limitView, const View& view );
+
     uint32_t CountAsmIpStats( uint64_t baseAddr, const Worker& worker, bool limitView, const View& view );
     void CountHwStats( AddrStatData& as, Worker& worker, const View& view );
 

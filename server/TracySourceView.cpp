@@ -4589,6 +4589,59 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, c
     }
 }
 
+void SourceView::GatherChildStats( uint64_t baseAddr, unordered_flat_map<uint64_t, uint32_t>& map, Worker& worker, bool limitView, const View& view )
+{
+    if( !worker.AreSymbolSamplesReady() ) return;
+    auto sym = worker.GetSymbolData( baseAddr );
+    if( !sym ) return;
+    if( limitView )
+    {
+        for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
+        {
+            auto cp = worker.GetChildSamples( ip );
+            if( !cp ) continue;
+            auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            if( it == cp->end() ) continue;
+            auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            while( it != end )
+            {
+                auto child = worker.GetSymbolForAddress( it->addr );
+                auto mit = map.find( child );
+                if( mit == map.end() )
+                {
+                    map.emplace( child, 1 );
+                }
+                else
+                {
+                    mit->second++;
+                }
+                ++it;
+            }
+        }
+    }
+    else
+    {
+        for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
+        {
+            auto cp = worker.GetChildSamples( ip );
+            if( !cp ) continue;
+            for( auto& s : *cp )
+            {
+                auto child = worker.GetSymbolForAddress( s.addr );
+                auto mit = map.find( child );
+                if( mit == map.end() )
+                {
+                    map.emplace( child, 1 );
+                }
+                else
+                {
+                    mit->second++;
+                }
+            }
+        }
+    }
+}
+
 uint32_t SourceView::CountAsmIpStats( uint64_t baseAddr, const Worker& worker, bool limitView, const View& view )
 {
     if( limitView )

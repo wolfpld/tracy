@@ -4261,6 +4261,39 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
     m_pendingCallstackId = idx;
 }
 
+uint32_t Worker::MergeCallstacks( uint32_t first, uint32_t second )
+{
+    const auto& cs1 = GetCallstack( first );
+    const auto& cs2 = GetCallstack( second );
+
+    const auto sz1 = cs1.size();
+    const auto sz2 = cs2.size();
+    const auto tsz = sz1 + sz2;
+
+    size_t memsize = sizeof( VarArray<CallstackFrameId> ) + tsz * sizeof( CallstackFrameId );
+    auto mem = (char*)m_slab.AllocRaw( memsize );
+    memcpy( mem, cs1.data(), sizeof( CallstackFrameId ) * sz1 );
+    memcpy( mem + sizeof( CallstackFrameId ) * sz1, cs2.data(), sizeof( CallstackFrameId ) * sz2 );
+
+    VarArray<CallstackFrameId>* arr = (VarArray<CallstackFrameId>*)( mem + tsz * sizeof( CallstackFrameId ) );
+    new(arr) VarArray<CallstackFrameId>( tsz, (CallstackFrameId*)mem );
+
+    uint32_t idx;
+    auto it = m_data.callstackMap.find( arr );
+    if( it == m_data.callstackMap.end() )
+    {
+        idx = m_data.callstackPayload.size();
+        m_data.callstackMap.emplace( arr, idx );
+        m_data.callstackPayload.push_back( arr );
+    }
+    else
+    {
+        idx = it->second;
+        m_slab.Unalloc( memsize );
+    }
+    return idx;
+}
+
 void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
 {
     if( plot->data.empty() )
@@ -6412,36 +6445,8 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
         {
             if( pendingTime == t )
             {
-                const auto& cs1 = GetCallstack( td.pendingSample.callstack.Val() );
-                const auto& cs2 = GetCallstack( callstack );
-
-                const auto sz1 = cs1.size();
-                const auto sz2 = cs2.size();
-                const auto tsz = sz1 + sz2;
-
-                size_t memsize = sizeof( VarArray<CallstackFrameId> ) + tsz * sizeof( CallstackFrameId );
-                auto mem = (char*)m_slab.AllocRaw( memsize );
-                memcpy( mem, cs1.data(), sizeof( CallstackFrameId ) * sz1 );
-                memcpy( mem + sizeof( CallstackFrameId ) * sz1, cs2.data(), sizeof( CallstackFrameId ) * sz2 );
-
-                VarArray<CallstackFrameId>* arr = (VarArray<CallstackFrameId>*)( mem + tsz * sizeof( CallstackFrameId ) );
-                new(arr) VarArray<CallstackFrameId>( tsz, (CallstackFrameId*)mem );
-
-                uint32_t idx;
-                auto it = m_data.callstackMap.find( arr );
-                if( it == m_data.callstackMap.end() )
-                {
-                    idx = m_data.callstackPayload.size();
-                    m_data.callstackMap.emplace( arr, idx );
-                    m_data.callstackPayload.push_back( arr );
-                }
-                else
-                {
-                    idx = it->second;
-                    m_slab.Unalloc( memsize );
-                }
-
-                sd.callstack.SetVal( idx );
+                const auto mcs = MergeCallstacks( td.pendingSample.callstack.Val(), callstack );
+                sd.callstack.SetVal( mcs );
                 ProcessCallstackSampleImpl( sd, td );
                 td.pendingSample.time.Clear();
             }

@@ -6270,22 +6270,38 @@ void Worker::ProcessCallstack()
 void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
 {
     const auto t = sd.time.Val();
-    const auto callstack = sd.callstack.Val();
-    m_data.samplesCnt++;
-
-    const auto& cs = GetCallstack( callstack );
-    const auto& ip = cs[0];
-    if( GetCanonicalPointer( ip ) >> 63 != 0 ) td.kernelSampleCnt++;
-
     if( td.samples.empty() )
     {
         td.samples.push_back( sd );
     }
+    else if( td.samples.back().time.Val() >= t )
+    {
+        m_inconsistentSamples = true;
+        auto it = std::lower_bound( td.samples.begin(), td.samples.end(), t, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        assert( it != td.samples.end() );
+        if( it->time.Val() != t )
+        {
+            td.samples.push_back_non_empty( sd );
+        }
+        else
+        {
+            const auto mcs = MergeCallstacks( it->callstack.Val(), sd.callstack.Val() );
+            it->callstack.SetVal( mcs );
+
+            // This is a fixup of an already processed sample. Fixing stats is non-trivial, so just exit here.
+            return;
+        }
+    }
     else
     {
-        if( !m_inconsistentSamples && td.samples.back().time.Val() >= t ) m_inconsistentSamples = true;
         td.samples.push_back_non_empty( sd );
     }
+
+    const auto callstack = sd.callstack.Val();
+    const auto& cs = GetCallstack( callstack );
+    const auto& ip = cs[0];
+    if( GetCanonicalPointer( ip ) >> 63 != 0 ) td.kernelSampleCnt++;
+    m_data.samplesCnt++;
 
 #ifndef TRACY_NO_STATISTICS
     bool postpone = false;

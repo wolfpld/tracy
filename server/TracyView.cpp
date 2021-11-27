@@ -13598,7 +13598,27 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                         auto it = inlineMap.find( v.symAddr );
                         excl = it != inlineMap.end() ? it->second.excl : 0;
                     }
-                    if( v.symAddr == 0 || excl == 0 )
+                    bool hasNoSamples = v.symAddr == 0 || excl == 0;
+                    if( !m_statSeparateInlines && hasNoSamples && v.symAddr != 0 && v.count > 0 )
+                    {
+                        auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
+                        assert( inSym != nullptr );
+                        const auto symEnd = v.symAddr + symlen;
+                        while( *inSym < symEnd )
+                        {
+                            auto sit = inlineMap.find( *inSym );
+                            if( sit != inlineMap.end() )
+                            {
+                                if( sit->second.excl != 0 )
+                                {
+                                    hasNoSamples = false;
+                                    break;
+                                }
+                            }
+                            inSym++;
+                        }
+                    }
+                    if( hasNoSamples )
                     {
                         if( isKernel )
                         {

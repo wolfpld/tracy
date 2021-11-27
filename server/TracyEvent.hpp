@@ -619,6 +619,15 @@ struct GhostZone
 
 enum { GhostZoneSize = sizeof( GhostZone ) };
 
+
+struct ChildSample
+{
+    Int48 time;
+    uint64_t addr;
+};
+
+enum { ChildSampleSize = sizeof( ChildSample ) };
+
 #pragma pack()
 
 

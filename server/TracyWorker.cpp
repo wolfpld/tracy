@@ -2067,18 +2067,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                     it->second.push_back_non_empty( SampleDataRange { time, tid, ip } );
                                 }
                             }
+                            auto childAddr = GetCanonicalPointer( callstack[0] );
                             for( uint16_t i=1; i<callstack.size(); i++ )
                             {
                                 auto addr = GetCanonicalPointer( callstack[i] );
                                 auto it = m_data.childSamples.find( addr );
                                 if( it == m_data.childSamples.end() )
                                 {
-                                    m_data.childSamples.emplace( addr, Vector<Int48>( time ) );
+                                    m_data.childSamples.emplace( addr, Vector<ChildSample>( ChildSample { time, childAddr } ) );
                                 }
                                 else
                                 {
-                                    it->second.push_back_non_empty( time );
+                                    it->second.push_back_non_empty( ChildSample { time, childAddr } );
                                 }
+                                childAddr = addr;
                             }
                         }
                     }
@@ -2088,7 +2090,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     }
                     for( auto& v : m_data.childSamples )
                     {
-                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs.Val(); } );
+                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
                     }
                     std::lock_guard<std::mutex> lock( m_data.lock );
                     m_data.symbolSamplesReady = true;
@@ -2501,7 +2503,7 @@ const Vector<SampleDataRange>* Worker::GetSamplesForSymbol( uint64_t symAddr ) c
     return &it->second;
 }
 
-const Vector<Int48>* Worker::GetChildSamples( uint64_t addr ) const
+const Vector<ChildSample>* Worker::GetChildSamples( uint64_t addr ) const
 {
     assert( m_data.symbolSamplesReady );
     auto it = m_data.childSamples.find( addr );
@@ -6353,18 +6355,20 @@ void Worker::ProcessCallstackSampleImplStats( const SampleData& sd, ThreadData& 
         }
     }
 
+    auto childAddr = GetCanonicalPointer( cs[0] );
     for( uint16_t i=1; i<cs.size(); i++ )
     {
         auto addr = GetCanonicalPointer( cs[i] );
         auto it = m_data.childSamples.find( addr );
         if( it == m_data.childSamples.end() )
         {
-            m_data.childSamples.emplace( addr, Vector<Int48>( sd.time ) );
+            m_data.childSamples.emplace( addr, Vector<ChildSample>( ChildSample { sd.time, childAddr } ) );
         }
         else
         {
-            it->second.push_back_non_empty( sd.time );
+            it->second.push_back_non_empty( ChildSample { sd.time, childAddr } );
         }
+        childAddr = addr;
     }
 
     const auto framesKnown = UpdateSampleStatistics( callstack, 1, true );

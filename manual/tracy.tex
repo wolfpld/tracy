@@ -2830,12 +2830,14 @@ To define a time range, drag the \LMB{}~left mouse button over the timeline view
 \begin{itemize}
 \item \emph{\faSearch{}~Limit find zone time range} -- this will limit find zone results. See chapter~\ref{findzone} for more details.
 \item \emph{\faSortAmountUp{}~Limit statistics time range} -- selecting this option will limit statistics results. See chapter~\ref{statistics} for more details.
+\item \emph{\faHourglassHalf{}~Limit wait stacks time range} -- limits wait stacks results. Refer to chapter~\ref{waitstackswindow}.
+\item \emph{\faMemory{}~Limit memory time range} -- limits memory results. Read more about this in chapter~\ref{memorywindow}.
 \item \emph{\faStickyNote{}~Add annotation} -- use to annotate regions of interest, as described in chapter~\ref{annotatingtrace}.
 \end{itemize}
 
 Alternatively, you may specify the time range by clicking the \RMB{}~right mouse button on a zone or a frame. The resulting time extent will match the selected item.
 
-In order to reduce clutter, time ranges limiting the find zone\footnote{Marked with green striped pattern.} or statistics\footnote{Marked with red striped pattern.} results are only displayed if the find zone or statistics windows are open, or if the time range limits control window is open (section~\ref{timerangelimits}). Time range limits window can be accessed through the \emph{\faTools{} Tools} button on the control menu.
+In order to reduce clutter, time range regions are only displayed if the windows they affect are open, or if the time range limits control window is open (section~\ref{timerangelimits}). Time range limits window can be accessed through the \emph{\faTools{} Tools} button on the control menu.
 
 Each time range can be freely adjusted on the timeline by clicking the \LMB{}~left mouse button on the range's edge and dragging the mouse.
 
@@ -3231,7 +3233,7 @@ This pane is identical in functionality to the \emph{Bottom-up call stack tree},
 
 \subsubsection{Looking back at the memory history}
 
-By default the memory window displays the memory data at the current point of program execution. It is however possible to view the historical data by enabling the \emph{\faHistory{}~Restrict time} option. This will draw a vertical violet line on the timeline view, which will act as a terminator for memory events. The memory window will use only the events lying on the left side of the terminator line (in the past), ignoring everything that's on the right side.
+By default the memory window displays the memory data at the current point of program execution. It is however possible to view the historical data by enabling the \emph{\faRuler{}~Limits} option. Only the memory events included in the time range will be taken into consideration in the displayed results. See section~\ref{timerangelimits} for more information.
 
 \subsection{Allocations list window}
 \label{alloclist}
@@ -3590,7 +3592,7 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 \subsection{Time range limits}
 \label{timerangelimits}
 
-This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}) and wait stacks (section~\ref{waitstackswindow}) results. Each limit can be enabled or disabled and adjusted through the following options:
+This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}), statistics (section~\ref{statistics}), memory (section~\ref{memorywindow}) and wait stacks (section~\ref{waitstackswindow}) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 \begin{itemize}
 \item \emph{Limit to view} -- Set the time range limit to current view.
@@ -3599,6 +3601,7 @@ This window displays information about time range limits (section~\ref{timerange
 \item \emph{\faSortAmountUp{}~Copy from statistics} -- Copies the statistics time range limit.
 \item \emph{\faSearch{}~Copy from find zone} -- Copies the find zone time range limit.
 \item \emph{\faHourglassHalf{}~Copy from wait stacks} -- Copies the wait stacks time range limit.
+\item \emph{\faMemory{}~Copy from memory} -- Copies the memory time range limit.
 \end{itemize}
 
 Note that ranges displayed in the window have color hints that match color of the striped regions on the timeline.

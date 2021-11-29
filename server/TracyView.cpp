@@ -1164,6 +1164,13 @@ bool View::DrawImpl()
             m_waitStackRange.min = s;
             m_waitStackRange.max = e;
         }
+        if( ImGui::Selectable( ICON_FA_MEMORY " Limit memory range" ) )
+        {
+            m_memInfo.range.active = true;
+            m_memInfo.range.min = s;
+            m_memInfo.range.max = e;
+        }
+        ImGui::Separator();
         if( ImGui::Selectable( ICON_FA_STICKY_NOTE " Add annotation" ) )
         {
             auto ann = std::make_unique<Annotation>();
@@ -2898,6 +2905,7 @@ void View::DrawZones()
     m_findZone.range.StartFrame();
     m_statRange.StartFrame();
     m_waitStackRange.StartFrame();
+    m_memInfo.range.StartFrame();
     m_yDelta = 0;
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
@@ -2925,6 +2933,7 @@ void View::DrawZones()
         HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_statRange, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_waitStackRange, timespan, ImGui::GetCursorScreenPos(), w );
+        HandleRange( m_memInfo.range, timespan, ImGui::GetCursorScreenPos(), w );
         for( auto& v : m_annotations )
         {
             v->range.StartFrame();
@@ -3768,9 +3777,18 @@ void View::DrawZones()
     {
         const auto px0 = ( m_waitStackRange.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_waitStackRange.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * scale, 0x22EEB588, true, false );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * scale, 0x22EEB588, true, true );
         DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMin ? 0x99EEB588 : 0x33EEB588, m_waitStackRange.hiMin ? 2 : 1 );
         DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_waitStackRange.hiMax ? 0x99EEB588 : 0x33EEB588, m_waitStackRange.hiMax ? 2 : 1 );
+    }
+
+    if( m_memInfo.range.active && ( m_memInfo.show || m_showRanges ) )
+    {
+        const auto px0 = ( m_memInfo.range.min - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_memInfo.range.max - m_vd.zvStart ) * pxns );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * scale, 0x2288EEE3, true, false );
+        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_memInfo.range.hiMin ? 0x9988EEE3 : 0x3388EEE3, m_memInfo.range.hiMin ? 2 : 1 );
+        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_memInfo.range.hiMax ? 0x9988EEE3 : 0x3388EEE3, m_memInfo.range.hiMax ? 2 : 1 );
     }
 
     if( m_setRangePopup.active || m_setRangePopupOpen )
@@ -16441,6 +16459,8 @@ void View::DrawRanges()
     DrawRangeEntry( m_statRange, ICON_FA_SORT_AMOUNT_UP " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
     ImGui::Separator();
     DrawRangeEntry( m_waitStackRange, ICON_FA_HOURGLASS_HALF " Wait stacks", 0x44EEB588, "RangeWaitStackCopyFrom", 2 );
+    ImGui::Separator();
+    DrawRangeEntry( m_memInfo.range, ICON_FA_MEMORY " Memory", 0x4488EEE3, "RangeMemoryCopyFrom", 3 );
     ImGui::End();
 }
 
@@ -16504,6 +16524,11 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
         {
             ImGui::SameLine();
             if( SmallButtonDisablable( ICON_FA_HOURGLASS_HALF " Copy from wait stacks", m_waitStackRange.min == 0 && m_waitStackRange.max == 0 ) ) range = m_waitStackRange;
+        }
+        if( id != 3 )
+        {
+            ImGui::SameLine();
+            if( SmallButtonDisablable( ICON_FA_MEMORY " Copy from memory", m_memInfo.range.min == 0 && m_memInfo.range.max == 0 ) ) range = m_memInfo.range;
         }
     }
 }

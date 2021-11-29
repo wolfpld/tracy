@@ -726,6 +726,7 @@ private:
         bool restrictTime = false;
         bool showAllocList = false;
         std::vector<size_t> allocList;
+        Range range;
     } m_memInfo;
 
     struct {

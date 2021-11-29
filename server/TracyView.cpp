@@ -17049,42 +17049,80 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
         if( it != mem.data.end() )
         {
             auto end = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.max, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
-            while( it != end )
+            if( onlyActive )
             {
-                auto& ev = *it++;
-
-                if( ev.CsAlloc() == 0 ) continue;
-                if( onlyActive && ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max ) continue;
-
-                auto pit = pathSum.find( ev.CsAlloc() );
-                if( pit == pathSum.end() )
+                while( it != end )
                 {
-                    pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                    auto& ev = *it++;
+                    if( ev.CsAlloc() == 0 ) continue;
+                    if( ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max ) continue;
+                    auto pit = pathSum.find( ev.CsAlloc() );
+                    if( pit == pathSum.end() )
+                    {
+                        pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                    }
+                    else
+                    {
+                        pit->second.cnt++;
+                        pit->second.mem += ev.Size();
+                    }
                 }
-                else
+            }
+            else
+            {
+                while( it != end )
                 {
-                    pit->second.cnt++;
-                    pit->second.mem += ev.Size();
+                    auto& ev = *it++;
+                    if( ev.CsAlloc() == 0 ) continue;
+                    auto pit = pathSum.find( ev.CsAlloc() );
+                    if( pit == pathSum.end() )
+                    {
+                        pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                    }
+                    else
+                    {
+                        pit->second.cnt++;
+                        pit->second.mem += ev.Size();
+                    }
                 }
             }
         }
     }
     else
     {
-        for( auto& ev : mem.data )
+        if( onlyActive )
         {
-            if( ev.CsAlloc() == 0 ) continue;
-            if( onlyActive && ev.TimeFree() >= 0 ) continue;
-
-            auto it = pathSum.find( ev.CsAlloc() );
-            if( it == pathSum.end() )
+            for( auto& ev : mem.data )
             {
-                pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                if( ev.CsAlloc() == 0 ) continue;
+                if( ev.TimeFree() >= 0 ) continue;
+                auto it = pathSum.find( ev.CsAlloc() );
+                if( it == pathSum.end() )
+                {
+                    pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                }
+                else
+                {
+                    it->second.cnt++;
+                    it->second.mem += ev.Size();
+                }
             }
-            else
+        }
+        else
+        {
+            for( auto& ev : mem.data )
             {
-                it->second.cnt++;
-                it->second.mem += ev.Size();
+                if( ev.CsAlloc() == 0 ) continue;
+                auto it = pathSum.find( ev.CsAlloc() );
+                if( it == pathSum.end() )
+                {
+                    pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                }
+                else
+                {
+                    it->second.cnt++;
+                    it->second.mem += ev.Size();
+                }
             }
         }
     }

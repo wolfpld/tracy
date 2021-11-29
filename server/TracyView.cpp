@@ -3823,12 +3823,6 @@ void View::DrawZones()
         draw->AddRectFilled( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x1688DD88 );
         draw->AddRect( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x2C88DD88 );
     }
-
-    if( m_memInfo.show && m_memInfo.restrictTime )
-    {
-        const auto zvMid = ( m_vd.zvEnd - m_vd.zvStart ) / 2;
-        DrawLine( draw, ImVec2( dpos.x + zvMid * pxns, linepos.y + 0.5f ), ImVec2( dpos.x + zvMid * pxns, linepos.y + lineh + 0.5f ), 0x88FF44FF );
-    }
 }
 
 static const char* DecodeContextSwitchReasonCode( uint8_t reason )
@@ -17049,23 +17043,29 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
-    if( m_memInfo.restrictTime )
+    if( m_memInfo.range.active )
     {
-        for( auto& ev : mem.data )
+        auto it = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.min, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+        if( it != mem.data.end() )
         {
-            if( ev.CsAlloc() == 0 ) continue;
-            if( ev.TimeAlloc() >= zvMid ) continue;
-            if( onlyActive && ev.TimeFree() >= 0 && ev.TimeFree() < zvMid ) continue;
+            auto end = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.max, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+            while( it != end )
+            {
+                auto& ev = *it++;
 
-            auto it = pathSum.find( ev.CsAlloc() );
-            if( it == pathSum.end() )
-            {
-                pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
-            }
-            else
-            {
-                it->second.cnt++;
-                it->second.mem += ev.Size();
+                if( ev.CsAlloc() == 0 ) continue;
+                if( onlyActive && ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max ) continue;
+
+                auto pit = pathSum.find( ev.CsAlloc() );
+                if( pit == pathSum.end() )
+                {
+                    pathSum.emplace( ev.CsAlloc(), MemPathData { 1, ev.Size() } );
+                }
+                else
+                {
+                    pit->second.cnt++;
+                    pit->second.mem += ev.Size();
+                }
             }
         }
     }
@@ -17377,26 +17377,29 @@ std::vector<MemoryPage> View::GetMemoryPages() const
     const auto& mem = m_worker.GetMemoryNamed( m_memInfo.pool );
     const auto memlow = mem.low;
 
-    if( m_memInfo.restrictTime )
+    if( m_memInfo.range.active )
     {
-        const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
-        auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.TimeAlloc(); } );
-        for( auto it = mem.data.begin(); it != end; ++it )
+        auto it = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.min, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+        if( it != mem.data.end() )
         {
-            auto& alloc = *it;
+            auto end = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.max, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+            while( it != end )
+            {
+                auto& alloc = *it++;
 
-            const auto a0 = alloc.Ptr() - memlow;
-            const auto a1 = a0 + alloc.Size();
-            int8_t val = alloc.TimeFree() < 0 ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeAlloc() ) >> 24 ) ) ) :
-                ( alloc.TimeFree() > zvMid ?
-                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeAlloc() ) >> 24 ) ) ) :
-                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeFree() ) >> 24 ) ) ) );
+                const auto a0 = alloc.Ptr() - memlow;
+                const auto a1 = a0 + alloc.Size();
+                int8_t val = alloc.TimeFree() < 0 ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( m_memInfo.range.max - alloc.TimeAlloc() ) >> 24 ) ) ) :
+                    ( alloc.TimeFree() > m_memInfo.range.max ?
+                        int8_t( std::max( int64_t( 1 ), 127 - ( ( m_memInfo.range.max - alloc.TimeAlloc() ) >> 24 ) ) ) :
+                        int8_t( -std::max( int64_t( 1 ), 127 - ( ( m_memInfo.range.max - alloc.TimeFree() ) >> 24 ) ) ) );
 
-            const auto c0 = a0 >> ChunkBits;
-            const auto c1 = a1 >> ChunkBits;
+                const auto c0 = a0 >> ChunkBits;
+                const auto c1 = a1 >> ChunkBits;
 
-            FillPages( memmap, c0, c1, val );
+                FillPages( memmap, c0, c1, val );
+            }
         }
     }
     else
@@ -17463,12 +17466,6 @@ void View::DrawMemory()
         return;
     }
 
-    ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
-    ImGui::SameLine();
-    DrawHelpMarker( "Don't show allocations beyond the middle of timeline display (it is indicated by purple line)." );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
     TextDisabledUnformatted( "Total allocations:" );
     ImGui::SameLine();
     ImGui::Text( "%-15s", RealToString( mem.data.size() ) );
@@ -17490,6 +17487,30 @@ void View::DrawMemory()
         "Active allocations are displayed using green color.\n"
         "A single thread is displayed if alloc and free was performed on the same thread. Otherwise two threads are displayed in order: alloc, free.\n"
         "If alloc and free is performed in the same zone, the free zone is displayed in yellow color." );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+    if( ImGui::Checkbox( "Limit range", &m_memInfo.range.active ) )
+    {
+        if( m_memInfo.range.active && m_memInfo.range.min == 0 && m_memInfo.range.max == 0 )
+        {
+            m_memInfo.range.min = m_vd.zvStart;
+            m_memInfo.range.max = m_vd.zvEnd;
+        }
+    }
+    if( m_memInfo.range.active )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+    }
+    ImGui::PopStyleVar();
 
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
 
@@ -17515,13 +17536,19 @@ void View::DrawMemory()
         {
             std::vector<const MemEvent*> match;
             match.reserve( mem.active.size() );     // heuristic
-            if( m_memInfo.restrictTime )
+            if( m_memInfo.range.active )
             {
-                for( auto& v : mem.data )
+                auto it = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+                if( it != mem.data.end() )
                 {
-                    if( v.Ptr() <= m_memInfo.ptrFind && v.Ptr() + v.Size() > m_memInfo.ptrFind && v.TimeAlloc() < zvMid )
+                    auto end = std::lower_bound( it, mem.data.end(), m_memInfo.range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+                    while( it != end )
                     {
-                        match.emplace_back( &v );
+                        if( it->Ptr() <= m_memInfo.ptrFind && it->Ptr() + it->Size() > m_memInfo.ptrFind )
+                        {
+                            match.emplace_back( it );
+                        }
+                        ++it;
                     }
                 }
             }
@@ -17563,24 +17590,28 @@ void View::DrawMemory()
         uint64_t total = 0;
         std::vector<const MemEvent*> items;
         items.reserve( mem.active.size() );
-        if( m_memInfo.restrictTime )
+        if( m_memInfo.range.active )
         {
-            for( auto& v : mem.data )
+            auto it = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+            if( it != mem.data.end() )
             {
-                if( v.TimeAlloc() < zvMid && ( v.TimeFree() > zvMid || v.TimeFree() < 0 ) )
+                auto end = std::lower_bound( it, mem.data.end(), m_memInfo.range.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+                while( it != end )
                 {
-                    items.emplace_back( &v );
-                    total += v.Size();
+                    const auto tf = it->TimeFree();
+                    if( tf < 0 || tf >= m_memInfo.range.max )
+                    {
+                        items.emplace_back( it );
+                        total += it->Size();
+                    }
+                    ++it;
                 }
             }
         }
         else
         {
             auto ptr = mem.data.data();
-            for( auto& v : mem.active )
-            {
-                items.emplace_back( ptr + v.second );
-            }
+            for( auto& v : mem.active ) items.emplace_back( ptr + v.second );
             pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->TimeAlloc() < rhs->TimeAlloc(); } );
             total = mem.usage;
         }

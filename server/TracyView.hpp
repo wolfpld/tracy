@@ -723,7 +723,6 @@ private:
         char pattern[1024] = {};
         uint64_t ptrFind = 0;
         uint64_t pool = 0;
-        bool restrictTime = false;
         bool showAllocList = false;
         std::vector<size_t> allocList;
         Range range;

@@ -1158,7 +1158,7 @@ bool View::DrawImpl()
             m_statRange.min = s;
             m_statRange.max = e;
         }
-        if( ImGui::Selectable( ICON_FA_HOURGLASS_HALF " Limit wait stack range" ) )
+        if( ImGui::Selectable( ICON_FA_HOURGLASS_HALF " Limit wait stacks range" ) )
         {
             m_waitStackRange.active = true;
             m_waitStackRange.min = s;

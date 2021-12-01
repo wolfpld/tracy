@@ -936,6 +936,7 @@ static void SetupSampling( int64_t& samplingPeriod )
                 for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
                 tracy_free_fast( s_ring );
                 const char* err = "Tracy Profiler: sampling is disabled due to non-native scheduler clock. Are you running under a VM?";
+                TracyDebug( err );
                 Profiler::MessageAppInfo( err, strlen( err ) );
                 return;
             }

@@ -5,10 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifndef XXH_STATIC_LINKING_ONLY
-#  define XXH_STATIC_LINKING_ONLY
-#endif
-#include "tracy_xxh3.h"
+#define XXH_INLINE_ALL
+#include "tracy_xxhash.h"
 
 namespace tracy
 {

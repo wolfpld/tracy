@@ -881,7 +881,7 @@ static void DrawContents()
                 ImGui::PushID( idx++ );
                 const bool selected = ImGui::Selectable( name->second.c_str(), &sel, flags );
                 ImGui::PopID();
-                if( ImGui::IsItemHovered() )
+                if( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
                 {
                     char portstr[32];
                     sprintf( portstr, "%" PRIu16, v.second.port );

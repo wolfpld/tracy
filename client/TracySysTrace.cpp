@@ -928,20 +928,6 @@ static void SetupSampling( int64_t& samplingPeriod )
         InitRpmalloc();
         sched_param sp = { 5 };
         pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-        for( int i=0; i<s_numBuffers; i++ )
-        {
-            if( s_ring[i].GetId() == EventCallstack && !s_ring[i].CheckTscCaps() )
-            {
-                for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
-                tracy_free_fast( s_ring );
-                const char* err = "Tracy Profiler: sampling is disabled due to non-native scheduler clock. Are you running under a VM?";
-                TracyDebug( err );
-                Profiler::MessageAppInfo( err, strlen( err ) );
-                return;
-            }
-        }
-#endif
         for( int i=0; i<s_numBuffers; i++ ) s_ring[i].Enable();
         for(;;)
         {
@@ -990,48 +976,45 @@ static void SetupSampling( int64_t& samplingPeriod )
                             {
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
                                 t0 = ring.ConvertTimeToTsc( t0 );
-                                if( t0 != 0 )
 #endif
-                                {
-                                    auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
-                                    ring.Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+                                auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
+                                ring.Read( trace+1, offset, sizeof( uint64_t ) * cnt );
 
 #if defined __x86_64__ || defined _M_X64
-                                    // remove non-canonical pointers
-                                    do
-                                    {
-                                        const auto test = (int64_t)trace[cnt];
-                                        const auto m1 = test >> 63;
-                                        const auto m2 = test >> 47;
-                                        if( m1 == m2 ) break;
-                                    }
-                                    while( --cnt > 0 );
-                                    for( uint64_t j=1; j<cnt; j++ )
-                                    {
-                                        const auto test = (int64_t)trace[j];
-                                        const auto m1 = test >> 63;
-                                        const auto m2 = test >> 47;
-                                        if( m1 != m2 ) trace[j] = 0;
-                                    }
+                                // remove non-canonical pointers
+                                do
+                                {
+                                    const auto test = (int64_t)trace[cnt];
+                                    const auto m1 = test >> 63;
+                                    const auto m2 = test >> 47;
+                                    if( m1 == m2 ) break;
+                                }
+                                while( --cnt > 0 );
+                                for( uint64_t j=1; j<cnt; j++ )
+                                {
+                                    const auto test = (int64_t)trace[j];
+                                    const auto m1 = test >> 63;
+                                    const auto m2 = test >> 47;
+                                    if( m1 != m2 ) trace[j] = 0;
+                                }
 #endif
 
-                                    for( uint64_t j=1; j<=cnt; j++ )
+                                for( uint64_t j=1; j<=cnt; j++ )
+                                {
+                                    if( trace[j] >= (uint64_t)-4095 )       // PERF_CONTEXT_MAX
                                     {
-                                        if( trace[j] >= (uint64_t)-4095 )       // PERF_CONTEXT_MAX
-                                        {
-                                            memmove( trace+j, trace+j+1, sizeof( uint64_t ) * ( cnt - j ) );
-                                            cnt--;
-                                        }
+                                        memmove( trace+j, trace+j+1, sizeof( uint64_t ) * ( cnt - j ) );
+                                        cnt--;
                                     }
-
-                                    memcpy( trace, &cnt, sizeof( uint64_t ) );
-
-                                    TracyLfqPrepare( QueueType::CallstackSample );
-                                    MemWrite( &item->callstackSampleFat.time, t0 );
-                                    MemWrite( &item->callstackSampleFat.thread, tid );
-                                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
-                                    TracyLfqCommit;
                                 }
+
+                                memcpy( trace, &cnt, sizeof( uint64_t ) );
+
+                                TracyLfqPrepare( QueueType::CallstackSample );
+                                MemWrite( &item->callstackSampleFat.time, t0 );
+                                MemWrite( &item->callstackSampleFat.thread, tid );
+                                MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                                TracyLfqCommit;
                             }
                         }
                         else
@@ -1047,40 +1030,37 @@ static void SetupSampling( int64_t& samplingPeriod )
 
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
                             t0 = ring.ConvertTimeToTsc( t0 );
-                            if( t0 != 0 )
 #endif
+                            QueueType type;
+                            switch( id )
                             {
-                                QueueType type;
-                                switch( id )
-                                {
-                                case EventCpuCycles:
-                                    type = QueueType::HwSampleCpuCycle;
-                                    break;
-                                case EventInstructionsRetired:
-                                    type = QueueType::HwSampleInstructionRetired;
-                                    break;
-                                case EventCacheReference:
-                                    type = QueueType::HwSampleCacheReference;
-                                    break;
-                                case EventCacheMiss:
-                                    type = QueueType::HwSampleCacheMiss;
-                                    break;
-                                case EventBranchRetired:
-                                    type = QueueType::HwSampleBranchRetired;
-                                    break;
-                                case EventBranchMiss:
-                                    type = QueueType::HwSampleBranchMiss;
-                                    break;
-                                default:
-                                    assert( false );
-                                    break;
-                                }
-
-                                TracyLfqPrepare( type );
-                                MemWrite( &item->hwSample.ip, ip );
-                                MemWrite( &item->hwSample.time, t0 );
-                                TracyLfqCommit;
+                            case EventCpuCycles:
+                                type = QueueType::HwSampleCpuCycle;
+                                break;
+                            case EventInstructionsRetired:
+                                type = QueueType::HwSampleInstructionRetired;
+                                break;
+                            case EventCacheReference:
+                                type = QueueType::HwSampleCacheReference;
+                                break;
+                            case EventCacheMiss:
+                                type = QueueType::HwSampleCacheMiss;
+                                break;
+                            case EventBranchRetired:
+                                type = QueueType::HwSampleBranchRetired;
+                                break;
+                            case EventBranchMiss:
+                                type = QueueType::HwSampleBranchMiss;
+                                break;
+                            default:
+                                assert( false );
+                                break;
                             }
+
+                            TracyLfqPrepare( type );
+                            MemWrite( &item->hwSample.ip, ip );
+                            MemWrite( &item->hwSample.time, t0 );
+                            TracyLfqCommit;
                         }
                     }
                     pos += hdr.size;

@@ -558,7 +558,7 @@ The best way to run Tracy is on bare metal. Avoid profiling applications in virt
 \item Reduced precision of time stamps.
 \item Inability to obtain precise time stamps, resulting in error messages such as \emph{CPU doesn't support RDTSC instruction}, or \emph{CPU doesn't support invariant TSC}. On Windows this can be worked around by rebuilding the profiled application with the \texttt{TRACY\_TIMER\_QPC} define, which severely lowers resolution of time readings.
 \item Frequency of call stack sampling may be reduced.
-\item Call stack sampling might not be possible at all.
+\item Call stack sampling might lack time stamps. While such reduced data set can be used to perform statistical analysis, you won't be able to limit the time range, or see the sampling zones on the timeline.
 \end{itemize}
 
 \subsubsection{Changing network port}
@@ -819,12 +819,13 @@ Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes
 Wait stacks & \faCheck & \faTimes & \faTimes & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-Hardware sampling & \faTimes & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
+Hardware sampling & 1) & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
 \vspace{1em}
-\faPoo{} -- Not possible to support due to platform limitations.
+\faPoo{} -- Not possible to support due to platform limitations. \\
+1) Possible through WSL2.
 \caption{Feature support matrix}
 \label{featuretable}
 \end{table}
@@ -2038,7 +2039,7 @@ Do note that the statistics presented by Tracy are a combination of two randomly
 
 \subparagraph{Availability}
 
-Currently the hardware performance counter readings are only available on Linux. Access to them is performed using the kernel-provided infrastructure, so what you get may depend on how your kernel was configured. This also means that the exact set of supported hardware is not known, as it depends on what has been implemented in the Linux itself. At this point the x86 hardware is fully supported (including features such as PEBS or IBS), and there's PMU support on a selection of ARM designs.
+Currently the hardware performance counter readings are only available on Linux, which also includes the WSL2 layer on Windows\footnote{You may need Windows 11 and the WSL preview from Microsoft Store for this to work.}. Access to them is performed using the kernel-provided infrastructure, so what you get may depend on how your kernel was configured. This also means that the exact set of supported hardware is not known, as it depends on what has been implemented in the Linux itself. At this point the x86 hardware is fully supported (including features such as PEBS or IBS), and there's PMU support on a selection of ARM designs.
 
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}

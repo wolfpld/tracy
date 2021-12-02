@@ -2033,9 +2033,23 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( auto& t : m_data.threads )
                     {
                         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                        for( auto& sd : t->samples )
+                        if( !t->samples.empty() )
                         {
-                            gcnt += AddGhostZone( GetCallstack( sd.callstack.Val() ), &t->ghostZones, sd.time.Val() );
+                            if( t->samples[0].time.Val() != 0 )
+                            {
+                                for( auto& sd : t->samples )
+                                {
+                                    gcnt += AddGhostZone( GetCallstack( sd.callstack.Val() ), &t->ghostZones, sd.time.Val() );
+                                }
+                            }
+                            else
+                            {
+                                for( auto& sd : t->samples )
+                                {
+                                    const auto st = sd.time.Val();
+                                    if( st != 0 ) gcnt += AddGhostZone( GetCallstack( sd.callstack.Val() ), &t->ghostZones, st );
+                                }
+                            }
                         }
                     }
                     std::lock_guard<std::mutex> lock( m_data.lock );
@@ -6274,7 +6288,7 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     {
         td.samples.push_back( sd );
     }
-    else if( td.samples.back().time.Val() >= t )
+    else if( t != 0 && td.samples.back().time.Val() >= t )
     {
         m_inconsistentSamples = true;
         auto it = std::lower_bound( td.samples.begin(), td.samples.end(), t, []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
@@ -6304,31 +6318,38 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     m_data.samplesCnt++;
 
 #ifndef TRACY_NO_STATISTICS
-    bool postpone = false;
-    auto ctx = GetContextSwitchData( td.id );
-    if( !ctx )
+    if( t == 0 )
     {
-        postpone = true;
+        ProcessCallstackSampleImplStats( sd, td );
     }
     else
     {
-        auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), sd.time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-        if( it == ctx->v.end() )
+        bool postpone = false;
+        auto ctx = GetContextSwitchData( td.id );
+        if( !ctx )
         {
             postpone = true;
         }
-        else if( sd.time.Val() == it->Start() )
-        {
-            td.ctxSwitchSamples.push_back( sd );
-        }
         else
         {
-            ProcessCallstackSampleImplStats( sd, td );
+            auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), sd.time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+            if( it == ctx->v.end() )
+            {
+                postpone = true;
+            }
+            else if( sd.time.Val() == it->Start() )
+            {
+                td.ctxSwitchSamples.push_back( sd );
+            }
+            else
+            {
+                ProcessCallstackSampleImplStats( sd, td );
+            }
         }
-    }
-    if( postpone )
-    {
-        td.postponedSamples.push_back( sd );
+        if( postpone )
+        {
+            td.postponedSamples.push_back( sd );
+        }
     }
 #endif
 }
@@ -6421,15 +6442,19 @@ void Worker::ProcessCallstackSampleImplStats( const SampleData& sd, ThreadData& 
     }
 
     const auto framesKnown = UpdateSampleStatistics( callstack, 1, true );
-    assert( td.samples.size() > td.ghostIdx );
-    if( framesKnown && td.ghostIdx + 1 == td.samples.size() )
+
+    if( t != 0 )
     {
-        td.ghostIdx++;
-        m_data.ghostCnt += AddGhostZone( cs, &td.ghostZones, t );
-    }
-    else
-    {
-        m_data.ghostZonesPostponed = true;
+        assert( td.samples.size() > td.ghostIdx );
+        if( framesKnown && td.ghostIdx + 1 == td.samples.size() )
+        {
+            td.ghostIdx++;
+            m_data.ghostCnt += AddGhostZone( cs, &td.ghostZones, t );
+        }
+        else
+        {
+            m_data.ghostZonesPostponed = true;
+        }
     }
 }
 #endif
@@ -6442,7 +6467,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
 
     const auto refTime = m_refTimeCtx + ev.time;
     m_refTimeCtx = refTime;
-    const auto t = TscTime( refTime - m_data.baseTime );
+    const auto t = refTime == 0 ? 0 : TscTime( refTime - m_data.baseTime );
 
     auto& td = *NoticeThread( ev.thread );
 
@@ -6450,7 +6475,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     sd.time.SetVal( t );
     sd.callstack.SetVal( callstack );
 
-    if( m_combineSamples )
+    if( m_combineSamples && t != 0 )
     {
         const auto pendingTime = td.pendingSample.time.Val();
         if( pendingTime == 0 )
@@ -6878,7 +6903,7 @@ void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 
 void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.cycles.push_back( time );
@@ -6886,7 +6911,7 @@ void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.retired.push_back( time );
@@ -6894,7 +6919,7 @@ void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleCacheReference( const QueueHwSample& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.cacheRef.push_back( time );
@@ -6902,7 +6927,7 @@ void Worker::ProcessHwSampleCacheReference( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleCacheMiss( const QueueHwSample& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.cacheMiss.push_back( time );
@@ -6910,7 +6935,7 @@ void Worker::ProcessHwSampleCacheMiss( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.branchRetired.push_back( time );
@@ -6918,7 +6943,7 @@ void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleBranchMiss( const QueueHwSample& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.branchMiss.push_back( time );

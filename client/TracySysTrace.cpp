@@ -733,7 +733,7 @@ static void ProbePreciseIp( perf_event_attr& pe, pid_t pid )
 static bool IsGenuineIntel()
 {
 #if defined __i386 || defined __x86_64__
-    uint32_t regs[4];
+    uint32_t regs[4] = {};
     __get_cpuid( 0, regs, regs+1, regs+2, regs+3 );
     char manufacturer[12];
     memcpy( manufacturer, regs+1, 4 );

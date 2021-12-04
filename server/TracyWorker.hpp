@@ -918,6 +918,7 @@ private:
     bool m_ignoreMemFreeFaults;
     bool m_codeTransfer;
     bool m_combineSamples;
+    bool m_identifySamples;
     bool m_inconsistentSamples;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];

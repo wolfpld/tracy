@@ -3067,6 +3067,7 @@ void Worker::Exec()
         m_data.cpuArch = (CpuArchitecture)welcome.cpuArch;
         m_codeTransfer = welcome.flags & WelcomeFlag::CodeTransfer;
         m_combineSamples = welcome.flags & WelcomeFlag::CombineSamples;
+        m_identifySamples = welcome.flags & WelcomeFlag::IdentifySamples;
         m_data.cpuId = welcome.cpuId;
         memcpy( m_data.cpuManufacturer, welcome.cpuManufacturer, 12 );
         m_data.cpuManufacturer[12] = '\0';
@@ -4399,7 +4400,7 @@ void Worker::DoPostponedWork()
         m_data.newFramesWereReceived = false;
     }
 
-    if( m_data.newContextSwitchesReceived )
+    if( m_identifySamples && m_data.newContextSwitchesReceived )
     {
         for( auto& td : m_data.threads )
         {
@@ -6318,7 +6319,7 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     m_data.samplesCnt++;
 
 #ifndef TRACY_NO_STATISTICS
-    if( t == 0 )
+    if( t == 0 || !m_identifySamples )
     {
         ProcessCallstackSampleImplStats( sd, td );
     }

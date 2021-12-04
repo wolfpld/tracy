@@ -1,3 +1,5 @@
+#include <errno.h>
+
 namespace tracy
 {
 
@@ -14,8 +16,9 @@ public:
         assert( __builtin_popcount( Size ) == 1 );
         m_mapSize = Size + pageSize;
         auto mapAddr = mmap( nullptr, m_mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
-        if( !mapAddr )
+        if( mapAddr == MAP_FAILED )
         {
+            TracyDebug( "mmap failed: errno %i (%s)\n", errno, strerror( errno ) );
             m_fd = 0;
             m_metadata = nullptr;
             close( fd );

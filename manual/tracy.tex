@@ -1862,6 +1862,10 @@ To see how this API should be used you should look at the reference implementati
 
 Fibers are available in the C API through the \texttt{TracyCFiberEnter} and \texttt{TracyCFiberLeave} macros. To use them, you should observe the requirements listed in section~\ref{fibers}.
 
+\subsubsection{Connection Status}
+
+To query the connection status (section~\ref{connectionstatus}) using the C API you should use the \texttt{TracyCIsConnected} macro.
+
 \subsubsection{Call stacks}
 
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using macros with \texttt{S} postfix, such as: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, and so on.
@@ -2086,6 +2090,7 @@ Usage of trace parameters makes profiling runs dependent on user interaction wit
 \end{bclogo}
 
 \subsection{Connection status}
+\label{connectionstatus}
 
 To determine if a connection is currently established between the client and the server, you may use the \texttt{TracyIsConnected} macro, which returns a boolean value.
 

@@ -4158,6 +4158,11 @@ TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_
     tracy::Profiler::QueueSerialFinish();
 }
 
+TRACY_API int ___tracy_connected( void )
+{
+    return tracy::GetProfiler().IsConnected();
+}
+
 #ifdef TRACY_FIBERS
 TRACY_API void ___tracy_fiber_enter( const char* fiber ){ tracy::Profiler::EnterFiber( fiber ); }
 TRACY_API void ___tracy_fiber_leave( void ){ tracy::Profiler::LeaveFiber(); }

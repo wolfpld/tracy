@@ -1540,6 +1540,7 @@ void Profiler::Worker()
 #endif
 #ifdef _WIN32
     flags |= WelcomeFlag::CombineSamples;
+    flags |= WelcomeFlag::IdentifySamples;
 #endif
 
 #if defined __i386 || defined _M_IX86

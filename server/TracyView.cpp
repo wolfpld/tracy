@@ -3909,15 +3909,16 @@ static const char* DecodeContextSwitchStateCode( uint8_t state )
     case 5: return "Waiting";
     case 6: return "Transition";
     case 7: return "DeferredReady";
-    case 101: return "D";
-    case 102: return "I";
-    case 103: return "R";
-    case 104: return "S";
-    case 105: return "T";
-    case 106: return "t";
+    case 101: return "D (disk sleep)";
+    case 102: return "I (idle)";
+    case 103: return "R (running)";
+    case 104: return "S (sleeping)";
+    case 105: return "T (stopped)";
+    case 106: return "t (tracing stop)";
     case 107: return "W";
-    case 108: return "X";
-    case 109: return "Z";
+    case 108: return "X (dead)";
+    case 109: return "Z (zombie)";
+    case 110: return "P (parked)";
     default: return "unknown";
     }
 }
@@ -3941,8 +3942,9 @@ static const char* DecodeContextSwitchState( uint8_t state )
     case 105: return "(Stopped by job control signal)";
     case 106: return "(Stopped by debugger during the tracing)";
     case 107: return "(Paging)";
-    case 108: return "(Dead)";
+    case 108: return "(Dead task is scheduling one last time)";
     case 109: return "(Zombie process)";
+    case 110: return "(Parked)";
     default: return "";
     }
 }

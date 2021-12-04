@@ -1540,7 +1540,9 @@ void Profiler::Worker()
 #endif
 #ifdef _WIN32
     flags |= WelcomeFlag::CombineSamples;
+#  ifndef TRACY_NO_CONTEXT_SWITCH
     flags |= WelcomeFlag::IdentifySamples;
+#  endif
 #endif
 
 #if defined __i386 || defined _M_IX86

@@ -7,8 +7,9 @@ template<size_t Size>
 class RingBuffer
 {
 public:
-    RingBuffer( int fd, int id )
+    RingBuffer( int fd, int id, int cpu = -1 )
         : m_id( id )
+        , m_cpu( cpu )
         , m_fd( fd )
     {
         const auto pageSize = uint32_t( getpagesize() );
@@ -56,6 +57,7 @@ public:
 
     bool IsValid() const { return m_metadata != nullptr; }
     int GetId() const { return m_id; }
+    int GetCpu() const { return m_cpu; }
 
     void Enable()
     {
@@ -116,6 +118,7 @@ private:
     uint64_t m_tail;
     char* m_buffer;
     int m_id;
+    int m_cpu;
     perf_event_mmap_page* m_metadata;
 
     size_t m_mapSize;

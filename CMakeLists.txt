@@ -4,7 +4,14 @@ project(Tracy LANGUAGES CXX)
 
 find_package(Threads REQUIRED)
 
-add_library(TracyClient TracyClient.cpp)
+option(TRACY_DLL "Should we build tracy for multiple dll support" OFF)
+
+if(TRACY_DLL)
+	add_library(TracyClient SHARED TracyClient.cpp)
+	target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS INTERFACE TRACY_IMPORTS)
+else()
+	add_library(TracyClient TracyClient.cpp)
+endif()	
 target_compile_features(TracyClient PUBLIC cxx_std_11)
 target_include_directories(TracyClient PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(

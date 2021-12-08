@@ -296,6 +296,8 @@ static const char* GetModuleName( uint64_t addr )
                     const auto res = GetModuleFileNameA( mod[i], name, 1021 );
                     if( res > 0 )
                     {
+                        // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
+                        SymLoadModuleEx(proc, NULL, name, NULL, (DWORD64)info.lpBaseOfDll, info.SizeOfImage, NULL, 0);
                         auto ptr = name + res;
                         while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
                         if( ptr > name ) ptr++;

@@ -7738,7 +7738,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
 
 void Worker::Disconnect()
 {
-    Query( ServerQueryDisconnect, 0 );
+    //Query( ServerQueryDisconnect, 0 );
+    Shutdown();
     m_disconnect = true;
 }
 

@@ -253,7 +253,7 @@ const char* GetKernelModulePath( uint64_t addr )
     return it->path;
 }
 
-static const char* GetModuleName( uint64_t addr )
+static const char* GetModuleNameAndPrepareSymbols( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {
@@ -435,6 +435,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
+
+    const auto moduleName = GetModuleNameAndPrepareSymbols(ptr);
+
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
     DWORD ctx = 0;
@@ -463,7 +466,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = MaxNameSize;
 
-    const auto moduleName = GetModuleName( ptr );
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
 
     IMAGEHLP_LINE64 line;

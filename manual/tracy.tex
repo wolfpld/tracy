@@ -1379,6 +1379,7 @@ To mark that a separate memory pool is to be tracked you should use the named ve
 Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 11, Direct3D 12, and OpenCL execution time on GPU.
 
 Note that the CPU and GPU timers may be unsynchronized unless you create a calibrated context, but the availability of calibrated contexts is limited. You can try to correct the desynchronization of uncalibrated contexts in the profiler's options (section~\ref{options}).
+In on-demand mode, by defining the macro \texttt{TRACY\_ON\_DEMAND\_GPU\_SYNC}, you can ask tracy to do re-synchronize the clock on the first \texttt{tracyCollect} call. However it will not do any measurements until \texttt{tracyCollect} is called. While this does not fix drift issues, it ensures that the GPU timings offset is not too big when starting a new capture. This is only available for the OpenGL backend.
 
 \begin{bclogo}[
 noborder=true,

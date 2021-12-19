@@ -35,6 +35,7 @@ endmacro()
 
 set_option(TRACY_ENABLE "Enable profiling" ON)
 set_option(TRACY_ON_DEMAND "On-demand profiling" OFF)
+set_option(TRACY_ON_DEMAND_GPU_SYNC "Synchronize with GPU on first TracyGpuCollect, drop any previous measurements (OpenGL only)" OFF)
 set_option(TRACY_CALLSTACK "Collect call stacks" OFF)
 set_option(TRACY_ONLY_LOCALHOST "Only listen on the localhost interface" OFF)
 set_option(TRACY_NO_BROADCAST "Disable client discovery by broadcast to local network" OFF)

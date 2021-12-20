@@ -92,7 +92,7 @@ class GpuCtx
 public:
     GpuCtx()
         : m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
-#ifdef TRACY_ON_DEMAND_GPU_SYNC
+#if defined( TRACY_ON_DEMAND ) && defined( TRACY_ON_DEMAND_GPU_SYNC )
         , m_isContextReady( false )
 #endif
         , m_head( 0 )
@@ -100,7 +100,7 @@ public:
     {
         assert( m_context != 255 );
         glGenQueries(QueryCount, m_query);
-#ifdef TRACY_ON_DEMAND_GPU_SYNC
+#if defined( TRACY_ON_DEMAND ) && defined( TRACY_ON_DEMAND_GPU_SYNC )
         if(GetProfiler().IsConnected())
 #endif
             SyncClockAndSendContextInfo();
@@ -125,7 +125,7 @@ public:
     {
         ZoneScopedC( Color::Red4 );
 
-#ifndef TRACY_ON_DEMAND_GPU_SYNC
+#if !( defined( TRACY_ON_DEMAND ) && defined( TRACY_ON_DEMAND_GPU_SYNC ) )
         if (m_tail == m_head) return;
 #endif
 
@@ -190,10 +190,12 @@ private:
         MemWrite( &item->gpuNewContext.flags, uint8_t(0) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::OpenGl );
 
-#if defined( TRACY_ON_DEMAND_GPU_SYNC )
+#ifdef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND_GPU_SYNC
         m_isContextReady = true;
-#elif defined( TRACY_ON_DEMAND )
+#else
         GetProfiler().DeferItem( *item );
+#endif
 #endif
 
         TracyLfqCommit;
@@ -217,7 +219,7 @@ private:
         return m_context;
     }
 
-#ifdef TRACY_ON_DEMAND_GPU_SYNC
+#if defined( TRACY_ON_DEMAND ) && defined( TRACY_ON_DEMAND_GPU_SYNC )
     tracy_force_inline bool IsContextReady() const
     {
         return m_isContextReady;
@@ -226,7 +228,7 @@ private:
 
     unsigned int m_query[QueryCount];
     uint8_t m_context;
-#ifdef TRACY_ON_DEMAND_GPU_SYNC
+#if defined( TRACY_ON_DEMAND ) && defined( TRACY_ON_DEMAND_GPU_SYNC )
     bool m_isContextReady;
 #endif
     unsigned int m_head;
@@ -242,7 +244,7 @@ class GpuCtxScope
         if ( !GetProfiler().IsConnected() ) return nullptr;
 #endif
         GpuCtx* ctx = GetGpuCtx().ptr;
-#ifdef TRACY_ON_DEMAND_GPU_SYNC
+#if defined( TRACY_ON_DEMAND ) && defined( TRACY_ON_DEMAND_GPU_SYNC )
         if ( ctx && !ctx->IsContextReady() ) return nullptr;
 #endif
         return ctx;

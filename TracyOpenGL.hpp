@@ -190,10 +190,10 @@ private:
         MemWrite( &item->gpuNewContext.flags, uint8_t(0) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::OpenGl );
 
-#if defined( TRACY_ON_DEMAND )
-        GetProfiler().DeferItem( *item );
-#elif defined( TRACY_ON_DEMAND_GPU_SYNC )
+#if defined( TRACY_ON_DEMAND_GPU_SYNC )
         m_isContextReady = true;
+#elif defined( TRACY_ON_DEMAND )
+        GetProfiler().DeferItem( *item );
 #endif
 
         TracyLfqCommit;

@@ -4051,7 +4051,15 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                     if( !sampleData.empty() )
                     {
                         auto sdit = std::lower_bound( sampleData.begin(), sampleData.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-                        if( sdit != sampleData.end() && sdit->time.Val() == ev.Start() )
+                        bool found = sdit != sampleData.end() && sdit->time.Val() == ev.Start();
+                        if( !found && it != vec.begin() )
+                        {
+                            auto eit = it;
+                            --eit;
+                            sdit = std::lower_bound( sampleData.begin(), sampleData.end(), eit->End(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                            found = sdit != sampleData.end() && sdit->time.Val() == eit->End();
+                        }
+                        if( found )
                         {
                             ImGui::Separator();
                             TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );

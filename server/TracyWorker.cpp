@@ -6282,7 +6282,7 @@ void Worker::ProcessCallstack()
     m_pendingCallstackId = 0;
 }
 
-void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
+void Worker::ProcessCallstackSampleInsertSample( const SampleData& sd, ThreadData& td )
 {
     const auto t = sd.time.Val();
     if( td.samples.empty() )
@@ -6317,8 +6317,14 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     const auto& ip = cs[0];
     if( GetCanonicalPointer( ip ) >> 63 != 0 ) td.kernelSampleCnt++;
     m_data.samplesCnt++;
+}
+
+void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
+{
+    ProcessCallstackSampleInsertSample( sd, td );
 
 #ifndef TRACY_NO_STATISTICS
+    const auto t = sd.time.Val();
     if( t == 0 || !m_identifySamples )
     {
         ProcessCallstackSampleImplStats( sd, td );

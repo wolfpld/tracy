@@ -725,6 +725,7 @@ private:
     tracy_force_inline MemEvent* ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev );
     tracy_force_inline MemEvent* ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td );
+    tracy_force_inline void ProcessCallstackSampleInsertSample( const SampleData& sd, ThreadData& td );
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline void ProcessCallstackSampleImplStats( const SampleData& sd, ThreadData& td );
 #endif

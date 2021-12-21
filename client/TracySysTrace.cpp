@@ -649,7 +649,7 @@ static int s_numCpus = 0;
 static int s_numBuffers = 0;
 static int s_ctxBufferIdx = 0;
 
-static constexpr size_t RingBufSize = 64*1024;
+static constexpr size_t RingBufSize = 256*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
 
 static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )

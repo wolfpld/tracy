@@ -652,6 +652,31 @@ static int s_ctxBufferIdx = 0;
 static constexpr size_t RingBufSize = 256*1024;
 static RingBuffer<RingBufSize>* s_ring = nullptr;
 
+static const int ThreadHashSize = 4 * 1024;
+static uint32_t s_threadHash[ThreadHashSize] = {};
+
+static bool CurrentProcOwnsThread( uint32_t tid )
+{
+    const auto hash = tid & ( ThreadHashSize-1 );
+    const auto hv = s_threadHash[hash];
+    if( hv == tid ) return true;
+    if( hv == -tid ) return false;
+
+    char path[256];
+    sprintf( path, "/proc/self/task/%d", tid );
+    struct stat st;
+    if( stat( path, &st ) == 0 )
+    {
+        s_threadHash[hash] = tid;
+        return true;
+    }
+    else
+    {
+        s_threadHash[hash] = -tid;
+        return false;
+    }
+}
+
 static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )
 {
     return syscall( __NR_perf_event_open, hw_event, pid, cpu, group_fd, flags );

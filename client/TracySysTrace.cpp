@@ -649,8 +649,7 @@ static int s_numCpus = 0;
 static int s_numBuffers = 0;
 static int s_ctxBufferIdx = 0;
 
-static constexpr size_t RingBufSize = 256*1024;
-static RingBuffer<RingBufSize>* s_ring = nullptr;
+static RingBuffer* s_ring = nullptr;
 
 static const int ThreadHashSize = 4 * 1024;
 static uint32_t s_threadHash[ThreadHashSize] = {};
@@ -890,7 +889,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         2       // context switches + wakeups
     );
     s_numCpus = (int)std::thread::hardware_concurrency();
-    s_ring = (RingBuffer<RingBufSize>*)tracy_malloc( sizeof( RingBuffer<RingBufSize> ) * maxNumBuffers );
+    s_ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * maxNumBuffers );
     s_numBuffers = 0;
 
     // software sampling
@@ -923,13 +922,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
             fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd == -1 )
             {
-                for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer<RingBufSize>();
+                for( int j=0; j<s_numBuffers; j++ ) s_ring[j].~RingBuffer();
                 tracy_free( s_ring );
                 return false;
             }
             TracyDebug( "  No access to kernel samples\n" );
         }
-        new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCallstack );
+        new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );
         s_numBuffers++;
         TracyDebug( "  Core %i ok\n", i );
     }
@@ -960,7 +959,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCpuCycles );
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCpuCycles );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -972,7 +971,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventInstructionsRetired );
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventInstructionsRetired );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -994,7 +993,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheReference );
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCacheReference );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -1006,7 +1005,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventCacheMiss );
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCacheMiss );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -1023,7 +1022,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchRetired );
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventBranchRetired );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -1035,7 +1034,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventBranchMiss );
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventBranchMiss );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -1069,7 +1068,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd != -1 )
             {
-                new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventContextSwitch, i );
+                new( s_ring+s_numBuffers ) RingBuffer( 256*1024, fd, EventContextSwitch, i );
                 s_numBuffers++;
                 TracyDebug( "  Core %i ok\n", i );
             }
@@ -1086,7 +1085,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
                 if( fd != -1 )
                 {
-                    new( s_ring+s_numBuffers ) RingBuffer<RingBufSize>( fd, EventWakeup, i );
+                    new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventWakeup, i );
                     s_numBuffers++;
                     TracyDebug( "  Core %i ok\n", i );
                 }
@@ -1105,7 +1104,7 @@ void SysTraceStop()
     traceActive.store( false, std::memory_order_relaxed );
 }
 
-static uint64_t* GetCallstackBlock( uint64_t cnt, RingBuffer<RingBufSize>& ring, uint64_t offset )
+static uint64_t* GetCallstackBlock( uint64_t cnt, RingBuffer& ring, uint64_t offset )
 {
     auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
     ring.Read( trace+1, offset, sizeof( uint64_t ) * cnt );
@@ -1459,7 +1458,7 @@ void SysTraceWorker( void* ptr )
         }
     }
 
-    for( int i=0; i<s_numBuffers; i++ ) s_ring[i].~RingBuffer<RingBufSize>();
+    for( int i=0; i<s_numBuffers; i++ ) s_ring[i].~RingBuffer();
     tracy_free_fast( s_ring );
 }
 

@@ -73,7 +73,7 @@ v0.x.x (xxxx-xx-xx)
     distinguished by green color. Faux context switch regions are used to
     indicate when a fiber is being run by the worker thread.
 - Continuous frame marks no longer need to be issued from a single thread.
-- Context switch call stacks are now captured on Windows.
+- Context switch call stacks are now captured on Windows and Linux.
   - Hovering the context switch wait region will now display wait stack,
     which may provide additional insight into why the switch happened.
   - Wait stacks inspection can be performed in a new view.

@@ -1101,6 +1101,43 @@ void SysTraceStop()
     traceActive.store( false, std::memory_order_relaxed );
 }
 
+static uint64_t* GetCallstackBlock( uint64_t cnt, RingBuffer<RingBufSize>& ring, uint64_t offset )
+{
+    auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
+    ring.Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+
+#if defined __x86_64__ || defined _M_X64
+    // remove non-canonical pointers
+    do
+    {
+        const auto test = (int64_t)trace[cnt];
+        const auto m1 = test >> 63;
+        const auto m2 = test >> 47;
+        if( m1 == m2 ) break;
+    }
+    while( --cnt > 0 );
+    for( uint64_t j=1; j<cnt; j++ )
+    {
+        const auto test = (int64_t)trace[j];
+        const auto m1 = test >> 63;
+        const auto m2 = test >> 47;
+        if( m1 != m2 ) trace[j] = 0;
+    }
+#endif
+
+    for( uint64_t j=1; j<=cnt; j++ )
+    {
+        if( trace[j] >= (uint64_t)-4095 )       // PERF_CONTEXT_MAX
+        {
+            memmove( trace+j, trace+j+1, sizeof( uint64_t ) * ( cnt - j ) );
+            cnt--;
+        }
+    }
+
+    memcpy( trace, &cnt, sizeof( uint64_t ) );
+    return trace;
+}
+
 void SysTraceWorker( void* ptr )
 {
     ThreadExitHandler threadExitHandler;
@@ -1158,38 +1195,7 @@ void SysTraceWorker( void* ptr )
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
                             t0 = ring.ConvertTimeToTsc( t0 );
 #endif
-                            auto trace = (uint64_t*)tracy_malloc_fast( ( 1 + cnt ) * sizeof( uint64_t ) );
-                            ring.Read( trace+1, offset, sizeof( uint64_t ) * cnt );
-
-#if defined __x86_64__ || defined _M_X64
-                            // remove non-canonical pointers
-                            do
-                            {
-                                const auto test = (int64_t)trace[cnt];
-                                const auto m1 = test >> 63;
-                                const auto m2 = test >> 47;
-                                if( m1 == m2 ) break;
-                            }
-                            while( --cnt > 0 );
-                            for( uint64_t j=1; j<cnt; j++ )
-                            {
-                                const auto test = (int64_t)trace[j];
-                                const auto m1 = test >> 63;
-                                const auto m2 = test >> 47;
-                                if( m1 != m2 ) trace[j] = 0;
-                            }
-#endif
-
-                            for( uint64_t j=1; j<=cnt; j++ )
-                            {
-                                if( trace[j] >= (uint64_t)-4095 )       // PERF_CONTEXT_MAX
-                                {
-                                    memmove( trace+j, trace+j+1, sizeof( uint64_t ) * ( cnt - j ) );
-                                    cnt--;
-                                }
-                            }
-
-                            memcpy( trace, &cnt, sizeof( uint64_t ) );
+                            auto trace = GetCallstackBlock( cnt, ring, offset );
 
                             TracyLfqPrepare( QueueType::CallstackSample );
                             MemWrite( &item->callstackSampleFat.time, t0 );

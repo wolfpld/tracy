@@ -20,6 +20,7 @@ OBJDIR := $(OBJDIRBASE)/o/o/o
 OBJ := $(addprefix $(OBJDIR)/,$(SRC:%.cpp=%.o))
 OBJ2 := $(addprefix $(OBJDIR)/,$(SRC2:%.c=%.o))
 OBJ3 := $(addprefix $(OBJDIR)/,$(SRC3:%.m=%.o))
+OBJ4 := $(addprefix $(OBJDIR)/,$(SRC4:%.S=%.o))
 
 all: $(IMAGE)
 
@@ -53,16 +54,26 @@ $(OBJDIR)/%.d : %.m
 	sed 's,.*\.o[ :]*,$(OBJDIR)/$(<:.m=.o) $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
+$(OBJDIR)/%.o: %.S
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DEFINES) $< -o $@
+
+$(OBJDIR)/%.d : %.S
+	@echo Resolving dependencies of $<
+	@mkdir -p $(@D)
+	@$(CC) -MM $(INCLUDES) $(CFLAGS) $(DEFINES) $< > $@.$$$$; \
+	sed 's,.*\.o[ :]*,$(OBJDIR)/$(<:.m=.o) $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
 ifeq (yes,$(SHARED_LIBRARY))
-$(IMAGE): $(OBJ) $(OBJ2)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(LIBS) -shared -o $@
+$(IMAGE): $(OBJ) $(OBJ2) $(OBJ4)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(OBJ4) $(LIBS) -shared -o $@
 else
-$(IMAGE): $(OBJ) $(OBJ2) $(OBJ3)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(OBJ3) $(LIBS) -o $@
+$(IMAGE): $(OBJ) $(OBJ2) $(OBJ3) $(OBJ4)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(OBJ3) $(OBJ4) $(LIBS) -o $@
 endif
 
 ifneq "$(MAKECMDGOALS)" "clean"
--include $(addprefix $(OBJDIR)/,$(SRC:.cpp=.d)) $(addprefix $(OBJDIR)/,$(SRC2:.c=.d)) $(addprefix $(OBJDIR)/,$(SRC3:.m=.d))
+-include $(addprefix $(OBJDIR)/,$(SRC:.cpp=.d)) $(addprefix $(OBJDIR)/,$(SRC2:.c=.d)) $(addprefix $(OBJDIR)/,$(SRC3:.m=.d)) $(addprefix $(OBJDIR)/,$(SRC4:.S=.d))
 endif
 
 clean:

@@ -6,7 +6,7 @@ namespace tracy
 class RingBuffer
 {
 public:
-    RingBuffer( int size, int fd, int id, int cpu = -1 )
+    RingBuffer( unsigned int size, int fd, int id, int cpu = -1 )
         : m_size( size )
         , m_id( id )
         , m_cpu( cpu )
@@ -117,7 +117,7 @@ private:
         std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, m_tail, std::memory_order_release );
     }
 
-    int m_size;
+    unsigned int m_size;
     uint64_t m_tail;
     char* m_buffer;
     int m_id;

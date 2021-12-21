@@ -994,6 +994,30 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             f.Skip( msz * sizeof( uint64_t ) );
         }
+        if( fileVer >= FileVersion( 0, 7, 14 ) )
+        {
+            uint64_t ssz;
+            f.Read( ssz );
+            if( ssz != 0 )
+            {
+                if( eventMask & EventType::Samples )
+                {
+                    int64_t refTime = 0;
+                    td->ctxSwitchSamples.reserve_exact( ssz, m_slab );
+                    auto ptr = td->ctxSwitchSamples.data();
+                    for( uint64_t j=0; j<ssz; j++ )
+                    {
+                        ptr->time.SetVal( ReadTimeOffset( f, refTime ) );
+                        f.Read( &ptr->callstack, sizeof( ptr->callstack ) );
+                        ptr++;
+                    }
+                }
+                else
+                {
+                    f.Skip( ssz * ( 8 + 3 ) );
+                }
+            }
+        }
         if( fileVer >= FileVersion( 0, 6, 4 ) )
         {
             uint64_t ssz;
@@ -1964,23 +1988,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         for( auto& t : m_data.threads )
                         {
                             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                            auto ctx = GetContextSwitchData( t->id );
-                            Vector<ContextSwitchData>::const_iterator cit = nullptr;
-                            if( ctx ) cit = ctx->v.begin();
+                            auto cit = t->ctxSwitchSamples.begin();
                             for( auto& sd : t->samples )
                             {
                                 bool isCtxSwitch = false;
-                                if( ctx )
+                                if( cit != t->ctxSwitchSamples.end() )
                                 {
-                                    cit = std::lower_bound( cit, ctx->v.end(), sd.time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-                                    if( cit != ctx->v.end() )
-                                    {
-                                        if( sd.time.Val() == cit->Start() )
-                                        {
-                                            isCtxSwitch = true;
-                                            t->ctxSwitchSamples.push_back( sd );
-                                        }
-                                    }
+                                    const auto sdt = sd.time.Val();
+                                    cit = std::lower_bound( cit, t->ctxSwitchSamples.end(), sdt, []( const auto& l, const auto& r ) { return (uint64_t)l.time.Val() < (uint64_t)r; } );
+                                    isCtxSwitch = cit != t->ctxSwitchSamples.end() && cit->time.Val() == sdt;
                                 }
                                 if( !isCtxSwitch )
                                 {
@@ -8026,6 +8042,14 @@ void Worker::Write( FileWrite& f, bool fiDict )
         {
             auto ptr = uint64_t( (MessageData*)v );
             f.Write( &ptr, sizeof( ptr ) );
+        }
+        sz = thread->ctxSwitchSamples.size();
+        f.Write( &sz, sizeof( sz ) );
+        refTime = 0;
+        for( auto& v : thread->ctxSwitchSamples )
+        {
+            WriteTimeOffset( f, refTime, v.time.Val() );
+            f.Write( &v.callstack, sizeof( v.callstack ) );
         }
         if( m_inconsistentSamples )
         {

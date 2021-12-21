@@ -1401,7 +1401,7 @@ void SysTraceWorker( void* ptr )
                             {
                                 auto trace = GetCallstackBlock( cnt, ring, traceOffset );
 
-                                TracyLfqPrepare( QueueType::CallstackSample );
+                                TracyLfqPrepare( QueueType::CallstackSampleContextSwitch );
                                 MemWrite( &item->callstackSampleFat.time, t0 );
                                 MemWrite( &item->callstackSampleFat.thread, prev_pid );
                                 MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );

@@ -1051,7 +1051,10 @@ bool SysTraceStart( int64_t& samplingPeriod )
         pe.type = PERF_TYPE_TRACEPOINT;
         pe.size = sizeof( perf_event_attr );
         pe.sample_period = 1;
-        pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW;
+        pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW | PERF_SAMPLE_CALLCHAIN;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION( 4, 8, 0 )
+        pe.sample_max_stack = 127;
+#endif
         pe.disabled = 1;
         pe.inherit = 1;
         pe.config = switchId;
@@ -1075,6 +1078,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         if( wakeupId != -1 )
         {
             pe.config = wakeupId;
+            pe.config &= ~PERF_SAMPLE_CALLCHAIN;
 
             TracyDebug( "Setup wakeup capture\n" );
             for( int i=0; i<s_numCpus; i++ )
@@ -1340,6 +1344,8 @@ void SysTraceWorker( void* ptr )
                         {
                             // Layout:
                             //   u64 time
+                            //   u64 cnt
+                            //   u64 ip[cnt]
                             //   u32 size
                             //   u8  data[size]
                             // Data (not ABI stable, but has not changed since it was added, in 2009):
@@ -1352,7 +1358,13 @@ void SysTraceWorker( void* ptr )
                             //   u32 next_pid
                             //   u32 next_prio
 
-                            offset += sizeof( perf_event_header ) + sizeof( uint64_t ) + sizeof( uint32_t ) + 8 + 16;
+                            offset += sizeof( perf_event_header ) + sizeof( uint64_t );
+
+                            uint64_t cnt;
+                            ring.Read( &cnt, offset, sizeof( uint64_t ) );
+                            offset += sizeof( uint64_t );
+                            const auto traceOffset = offset;
+                            offset += sizeof( uint64_t ) * cnt + sizeof( uint32_t ) + 8 + 16;
 
                             uint32_t prev_pid, next_pid;
                             uint64_t prev_state;
@@ -1384,6 +1396,17 @@ void SysTraceWorker( void* ptr )
                             MemWrite( &item->contextSwitch.reason, reason );
                             MemWrite( &item->contextSwitch.state, state );
                             TracyLfqCommit;
+
+                            if( cnt > 0 && prev_pid != 0 && CurrentProcOwnsThread( prev_pid ) )
+                            {
+                                auto trace = GetCallstackBlock( cnt, ring, traceOffset );
+
+                                TracyLfqPrepare( QueueType::CallstackSample );
+                                MemWrite( &item->callstackSampleFat.time, t0 );
+                                MemWrite( &item->callstackSampleFat.thread, prev_pid );
+                                MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                                TracyLfqCommit;
+                            }
                         }
                         else
                         {

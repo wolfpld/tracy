@@ -161,11 +161,13 @@
     <ClInclude Include="..\..\..\zstd\common\huf.h" />
     <ClInclude Include="..\..\..\zstd\common\mem.h" />
     <ClInclude Include="..\..\..\zstd\common\pool.h" />
+    <ClInclude Include="..\..\..\zstd\common\portability_macros.h" />
     <ClInclude Include="..\..\..\zstd\common\threading.h" />
     <ClInclude Include="..\..\..\zstd\common\xxhash.h" />
     <ClInclude Include="..\..\..\zstd\common\zstd_deps.h" />
     <ClInclude Include="..\..\..\zstd\common\zstd_internal.h" />
     <ClInclude Include="..\..\..\zstd\common\zstd_trace.h" />
+    <ClInclude Include="..\..\..\zstd\compress\clevels.h" />
     <ClInclude Include="..\..\..\zstd\compress\hist.h" />
     <ClInclude Include="..\..\..\zstd\compress\zstdmt_compress.h" />
     <ClInclude Include="..\..\..\zstd\compress\zstd_compress_internal.h" />
@@ -187,6 +189,9 @@
     <ClInclude Include="..\..\..\zstd\zdict.h" />
     <ClInclude Include="..\..\..\zstd\zstd.h" />
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\zstd\decompress\huf_decompress_amd64.S" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

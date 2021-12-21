@@ -329,5 +329,16 @@
     <ClInclude Include="..\..\..\common\TracyStackFrames.hpp">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\zstd\common\portability_macros.h">
+      <Filter>zstd\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\compress\clevels.h">
+      <Filter>zstd\compress</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\zstd\decompress\huf_decompress_amd64.S">
+      <Filter>zstd\decompress</Filter>
+    </None>
   </ItemGroup>
 </Project>

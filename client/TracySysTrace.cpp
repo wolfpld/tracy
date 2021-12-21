@@ -1485,21 +1485,25 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
     f = fopen( fn, "rb" );
     if( f )
     {
+        char* tmp = (char*)tracy_malloc_fast( 8*1024 );
+        const auto fsz = (ptrdiff_t)fread( tmp, 1, 8*1024, f );
+        fclose( f );
+
         int pid = -1;
-        size_t lsz = 1024;
-        auto line = (char*)tracy_malloc_fast( lsz );
+        auto line = tmp;
         for(;;)
         {
-            auto rd = getline( &line, &lsz, f );
-            if( rd <= 0 ) break;
             if( memcmp( "Tgid:\t", line, 6 ) == 0 )
             {
                 pid = atoi( line + 6 );
                 break;
             }
+            while( line - tmp < fsz && *line != '\n' ) line++;
+            if( *line != '\n' ) break;
+            line++;
         }
-        tracy_free_fast( line );
-        fclose( f );
+        tracy_free_fast( tmp );
+
         if( pid >= 0 )
         {
             {

@@ -4819,6 +4819,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::CallstackSample:
         ProcessCallstackSample( ev.callstackSample );
         break;
+    case QueueType::CallstackSampleContextSwitch:
+        ProcessCallstackSampleContextSwitch( ev.callstackSample );
+        break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
         m_serverQuerySpaceLeft++;
@@ -6509,6 +6512,27 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     {
         ProcessCallstackSampleImpl( sd, td );
     }
+}
+
+void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev )
+{
+    assert( m_pendingCallstackId != 0 );
+    const auto callstack = m_pendingCallstackId;
+    m_pendingCallstackId = 0;
+
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto t = refTime == 0 ? 0 : TscTime( refTime - m_data.baseTime );
+
+    auto& td = *NoticeThread( ev.thread );
+
+    SampleData sd;
+    sd.time.SetVal( t );
+    sd.callstack.SetVal( callstack );
+
+    ProcessCallstackSampleInsertSample( sd, td );
+
+    td.ctxSwitchSamples.push_back( sd );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

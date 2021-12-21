@@ -766,70 +766,6 @@ static const char* ReadFile( const char* path )
     return tmp;
 }
 
-#ifdef __ANDROID__
-static const char* ReadFileElevated( const char* path )
-{
-    // Explanation for "su root sh -c": there are 2 flavors of "su" in circulation
-    // on Android. The default Android su has the following syntax to run a command
-    // as root:
-    //   su root 'command'
-    // and 'command' is exec'd not passed to a shell, so if shell interpretation is
-    // wanted, one needs to do:
-    //   su root sh -c 'command'
-    // Besides that default Android 'su' command, some Android devices use a different
-    // su with a command-line interface closer to the familiar util-linux su found
-    // on Linux distributions. Fortunately, both the util-linux su and the one
-    // in https://github.com/topjohnwu/Magisk seem to be happy with the above
-    // `su root sh -c 'command'` command line syntax.
-
-    int pipefd[2];
-    if( pipe( pipefd ) == 0 )
-    {
-        const auto pid = fork();
-        if( pid == 0 )
-        {
-            // child
-            close( pipefd[0] );
-            dup2( open( "/dev/null", O_WRONLY ), STDERR_FILENO );
-            if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
-            {
-                close( pipefd[1] );
-                char tmp[1024];
-                sprintf( tmp, "cat %s", path );
-                execlp( "su", "su", "root", "sh", "-c", tmp, (char*)nullptr );
-                exit( 1 );
-            }
-            exit( 0 );
-        }
-        else if( pid > 0 )
-        {
-            // parent
-            close( pipefd[1] );
-            static char tmp[64];
-            const auto sz = read( pipefd[0], tmp, 63 );
-            close( pipefd[0] );
-            waitpid( pid, nullptr, 0 );
-            if( sz <= 0 ) return nullptr;
-            tmp[sz] = '\0';
-            return tmp;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-#else
-static const char* ReadFileElevated( const char* path )
-{
-    return ReadFile( path );
-}
-#endif
-
 bool SysTraceStart( int64_t& samplingPeriod )
 {
 #ifndef CLOCK_MONOTONIC_RAW
@@ -843,9 +779,9 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "perf_event_paranoid: %i\n", paranoidLevel );
 
     int switchId = -1, wakeupId = -1;
-    const auto switchIdStr = ReadFileElevated( "/sys/kernel/debug/tracing/events/sched/sched_switch/id" );
+    const auto switchIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_switch/id" );
     if( switchIdStr ) switchId = atoi( switchIdStr );
-    const auto wakeupIdStr = ReadFileElevated( "/sys/kernel/debug/tracing/events/sched/sched_wakeup/id" );
+    const auto wakeupIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_wakeup/id" );
     if( wakeupIdStr ) wakeupId = atoi( wakeupIdStr );
 
     TracyDebug( "sched_switch id: %i\nsched_wakeup id: %i\n", switchId, wakeupId );

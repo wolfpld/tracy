@@ -337,7 +337,7 @@ void View::DrawHelpMarker( const char* desc ) const
     TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
-        const auto ty = ImGui::GetFontSize();
+        const auto ty = ImGui::GetTextLineHeight();
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos( 450.0f * ty / 15.f );
         ImGui::TextUnformatted( desc );
@@ -1325,7 +1325,7 @@ bool View::DrawImpl()
 void View::DrawNotificationArea()
 {
     auto& io = ImGui::GetIO();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     if( m_worker.IsConnected() )
     {
         size_t sqs;
@@ -1553,7 +1553,7 @@ void View::DrawNotificationArea()
 bool View::DrawConnection()
 {
     const auto scale = GetScale();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto cs = ty * 0.9f;
     const auto isConnected = m_worker.IsConnected();
 
@@ -2475,7 +2475,7 @@ void View::DrawZoneFramesHeader()
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
     auto draw = ImGui::GetWindowDrawList();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ty025 = round( ty * 0.25f );
     const auto ty0375 = round( ty * 0.375f );
     const auto ty05 = round( ty * 0.5f );
@@ -2619,7 +2619,7 @@ void View::DrawZoneFrames( const FrameData& frames )
     const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
     const auto wh = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ty025 = ty * 0.25f;
     const auto ty05 = round( ty * 0.5f );
 
@@ -2988,7 +2988,7 @@ void View::DrawZones()
 
     const auto nspx = 1.0 / pxns;
 
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     int offset = 0;
     const auto to = 9.f;
@@ -3014,7 +3014,7 @@ void View::DrawZones()
             ImGui::PushClipRect( wpos, wpos + ImVec2( w, oldOffset + vis.height ), true );
 
             ImGui::PushFont( m_smallFont );
-            const auto sty = ImGui::GetFontSize();
+            const auto sty = ImGui::GetTextLineHeight();
             const auto sstep = sty + 1;
             ImGui::PopFont();
 
@@ -3963,7 +3963,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
     if( citend != vec.end() ) ++citend;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = round( ImGui::GetFontSize() * 0.75f );
+    const auto ty = round( ImGui::GetTextLineHeight() * 0.75f );
     const auto ty05 = round( ty * 0.5f );
     auto draw = ImGui::GetWindowDrawList();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
@@ -4191,9 +4191,9 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
     const auto itend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
     if( it == itend ) return;
 
-    const auto ty0375 = offset + round( ImGui::GetFontSize() * 0.375f );
-    const auto ty02 = round( ImGui::GetFontSize() * 0.2f );
-    const auto ty01 = round( ImGui::GetFontSize() * 0.1f );
+    const auto ty0375 = offset + round( ImGui::GetTextLineHeight() * 0.375f );
+    const auto ty02 = round( ImGui::GetTextLineHeight() * 0.2f );
+    const auto ty01 = round( ImGui::GetTextLineHeight() * 0.1f );
     const auto y0 = ty0375 - ty02 - 3;
     const auto y1 = ty0375 + ty02 - 1;
     auto draw = ImGui::GetWindowDrawList();
@@ -4269,7 +4269,7 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
 #ifndef TRACY_NO_STATISTICS
 int View::DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
 
@@ -4294,7 +4294,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
@@ -4607,7 +4607,7 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
 
 int View::DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
 
@@ -4651,7 +4651,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < m_vd.zvStart ) return depth;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
@@ -4927,7 +4927,7 @@ int View::SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
 
 int View::DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
 {
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
 
@@ -4976,7 +4976,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
@@ -5510,7 +5510,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     auto draw = ImGui::GetWindowDrawList();
     const auto dsz = delay * pxns;
@@ -6097,7 +6097,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     if( cpuCnt == 0 ) return offset;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     const auto nspxdbl = 1.0 / pxns;
     const auto nspx = int64_t( nspxdbl );
@@ -6244,7 +6244,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         }
 
         ImGui::PushFont( m_smallFont );
-        const auto sty = round( ImGui::GetFontSize() );
+        const auto sty = round( ImGui::GetTextLineHeight() );
         const auto sstep = sty + 1;
 
         const auto origOffset = offset;
@@ -6561,7 +6561,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
     float tmpvec[MaxPoints*2];
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     auto draw = ImGui::GetWindowDrawList();
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
@@ -9993,7 +9993,7 @@ void View::DrawFindZone()
         zones.ensure_sorted();
         if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
         {
-            const auto ty = ImGui::GetFontSize();
+            const auto ty = ImGui::GetTextLineHeight();
 
             int64_t tmin = m_findZone.tmin;
             int64_t tmax = m_findZone.tmax;
@@ -12112,7 +12112,7 @@ void View::DrawCompare()
     ImGui::Separator();
     if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
     {
-        const auto ty = ImGui::GetFontSize();
+        const auto ty = ImGui::GetTextLineHeight();
 
         int64_t tmin, tmax;
         size_t size0, size1;
@@ -14763,7 +14763,7 @@ void View::DrawInfo()
 
             if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
             {
-                const auto ty = ImGui::GetFontSize();
+                const auto ty = ImGui::GetTextLineHeight();
 
                 auto& frames = m_frameSortData.data;
                 auto tmin = frames.front();

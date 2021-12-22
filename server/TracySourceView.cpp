@@ -971,7 +971,7 @@ void SourceView::RenderSimpleSourceView()
     const auto wpos = ImGui::GetWindowPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto wh = ImGui::GetWindowHeight();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ts = ImGui::CalcTextSize( " " ).x;
     const auto lineCount = lines.size();
     const auto tmp = RealToString( lineCount );
@@ -1282,7 +1282,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 const auto w = ImGui::CalcTextSize( v ).x;
                 if( w > mw ) mw = w;
             }
-            ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
+            ImGui::SetNextItemWidth( mw + ImGui::GetTextLineHeight() );
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
             if( ImGui::BeginCombo( "##cost", s_CostName[(int)m_cost], ImGuiComboFlags_HeightLarge ) )
             {
@@ -1447,7 +1447,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         if( !map.empty() )
         {
             TextDisabledUnformatted( "Child call distribution" );
-            if( ImGui::BeginChild( "ccd", ImVec2( 0, ImGui::GetFontSize() * std::min<size_t>( 4, map.size() ) + ImGui::GetStyle().WindowPadding.y ) ) )
+            if( ImGui::BeginChild( "ccd", ImVec2( 0, ImGui::GetTextLineHeight() * std::min<size_t>( 4, map.size() ) + ImGui::GetStyle().WindowPadding.y ) ) )
             {
                 std::vector<ChildStat> vec;
                 vec.reserve( map.size() );
@@ -1851,7 +1851,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
     const auto wpos = ImGui::GetWindowPos() - ImVec2( ImGui::GetCurrentWindowRead()->Scroll.x, 0 );
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto wh = ImGui::GetWindowHeight();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto ts = ImGui::CalcTextSize( " " ).x;
     const auto lineCount = lines.size();
     const auto tmp = RealToString( lineCount );
@@ -2197,7 +2197,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             ImGui::SameLine( 0, 0 );
             ImGui::TextUnformatted( " \xce\xbc""arch:" );
             ImGui::SameLine();
-            ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
+            ImGui::SetNextItemWidth( mw + ImGui::GetTextLineHeight() );
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
             if( ImGui::BeginCombo( "##uarch", s_uArchUx[m_selMicroArch].uArch, ImGuiComboFlags_HeightLarge ) )
             {
@@ -2716,7 +2716,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
 
 static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
 {
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto stw = ImGui::CalcTextSize( " " ).x;
@@ -2743,7 +2743,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
 {
     const auto scale = GetScale();
     const auto ts = ImGui::CalcTextSize( " " );
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_srcWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -3037,7 +3037,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto scale = GetScale();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     auto draw = ImGui::GetWindowDrawList();
     const auto w = std::max( m_asmWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -3580,7 +3580,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     if( m_showLatency && asmVar && asmVar->minlat >= 0 )
     {
         const auto pos = ImVec2( (int)ImGui::GetCursorScreenPos().x, (int)ImGui::GetCursorScreenPos().y );
-        const auto ty = ImGui::GetFontSize();
+        const auto ty = ImGui::GetTextLineHeight();
 
         if( asmVar->minlat == 0 )
         {

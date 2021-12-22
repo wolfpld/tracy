@@ -763,7 +763,7 @@ static void DrawContents()
                 view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
             }
         }
-        ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
+        ImGui::SameLine( 0, ImGui::GetTextLineHeight() * 2 );
 
 #ifndef TRACY_NO_FILESELECTOR
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
@@ -842,7 +842,7 @@ static void DrawContents()
             }
             if( showFilter )
             {
-                const auto w = ImGui::GetFontSize() * 12;
+                const auto w = ImGui::GetTextLineHeight() * 12;
                 ImGui::Separator();
                 addrFilter.Draw( "Address filter", w );
                 portFilter.Draw( "Port filter", w );

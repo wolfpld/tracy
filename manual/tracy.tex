@@ -1622,9 +1622,9 @@ You may also be interested in symbols from external libraries, especially if you
 
 Libraries built with vcpkg typically provide PDB symbol files, even for release builds. Using vcpkg to obtain libraries has the extra benefit that everything is built using local source files, which allows Tracy to provide a source view not only of your application but also the libraries you use.
 
-\paragraph{Refreshing symbols list on Windows}
+\paragraph{Using the dbghelp library on Windows}
 
-If your application loads shared libraries during runtime, you will need to notify the debug symbol library (dbghelp) to refresh its internal symbols database. This database is filled during application initialization and is not automatically updated when you load a library. The symbol list can be manually updated by using functions such as \texttt{SymRefreshModuleList()} or \texttt{SymLoadModule()}. Note that \texttt{LdrRegisterDllNotification()} may be used to register callback to be executed when a DLL is loaded.
+While Tracy will try to expand the known symbols list when it encounters a new module for the first time, you may want to be able to do such a thing manually. Or maybe you are using the \texttt{dbghelp.dll} library in some other way in your project, for example, to present a call stack to the user at some point during execution.
 
 Since dbghelp functions are not thread-safe, you must take extra steps to make sure your calls to the \texttt{Sym*} family of functions are not colliding with calls made by Tracy. To do so, perform the following steps:
 

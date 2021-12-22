@@ -1543,7 +1543,7 @@ void View::DrawNotificationArea()
 
     if( m_smallFont ) ImGui::PushFont( m_smallFont );
     const auto wpos = ImGui::GetWindowPos();
-    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto w = ImGui::GetContentRegionAvail().x;
     const auto fps = RealToString( int( io.Framerate + 0.5f ) );
     const auto fpssz = ImGui::CalcTextSize( fps ).x;
     ImGui::GetWindowDrawList()->AddText( wpos + ImVec2( w-fpssz, 0 ), 0x88FFFFFF, fps );
@@ -2473,7 +2473,7 @@ void View::DrawZoneFramesHeader()
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
+    const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetFontSize();
     const auto ty025 = round( ty * 0.25f );
@@ -2616,7 +2616,7 @@ void View::DrawZoneFrames( const FrameData& frames )
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
+    const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
     const auto wh = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetFontSize();
@@ -2921,7 +2921,7 @@ void View::DrawZones()
     const auto lineh = ImGui::GetContentRegionAvail().y;
 
     auto draw = ImGui::GetWindowDrawList();
-    const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
+    const auto w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ScrollbarSize;
     const auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
 
@@ -2968,7 +2968,7 @@ void View::DrawZones()
     const auto yMin = ImGui::GetCursorScreenPos().y;
     const auto yMax = linepos.y + lineh;
 
-    ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     if( m_yDelta != 0 )
     {
@@ -3962,7 +3962,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
     if( it == citend ) return;
     if( citend != vec.end() ) ++citend;
 
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = round( ImGui::GetFontSize() * 0.75f );
     const auto ty05 = round( ty * 0.5f );
     auto draw = ImGui::GetWindowDrawList();
@@ -4293,7 +4293,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.start.Val() < r; } );
     if( it == zitend ) return depth;
 
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
@@ -4650,7 +4650,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     Adapter a;
     if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < m_vd.zvStart ) return depth;
 
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
@@ -4975,7 +4975,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
     const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)AdjustGpuTime( a(l).GpuStart(), begin, drift ) < (uint64_t)r; } );
     if( it == zitend ) return depth;
 
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
@@ -5509,7 +5509,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     auto draw = ImGui::GetWindowDrawList();
@@ -6096,7 +6096,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     const auto cpuCnt = m_worker.GetCpuDataCpuCount();
     if( cpuCnt == 0 ) return offset;
 
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     const auto nspxdbl = 1.0 / pxns;
@@ -6560,7 +6560,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
     enum { MaxPoints = 128 };
     float tmpvec[MaxPoints*2];
 
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
     const auto to = 9.f;

@@ -2269,7 +2269,6 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         clipper.Begin( (int)m_asm.size(), th );
         while( clipper.Step() )
         {
-            assert( clipper.StepNo == 3 );
             const auto wpos = ImGui::GetCursorScreenPos();
             const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
             static std::vector<uint64_t> insList;

@@ -253,7 +253,7 @@ const char* GetKernelModulePath( uint64_t addr )
     return it->path;
 }
 
-static const char* GetModuleName( uint64_t addr )
+static const char* GetModuleNameAndPrepareSymbols( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {
@@ -296,6 +296,8 @@ static const char* GetModuleName( uint64_t addr )
                     const auto res = GetModuleFileNameA( mod[i], name, 1021 );
                     if( res > 0 )
                     {
+                        // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
+                        SymLoadModuleEx(proc, NULL, name, NULL, (DWORD64)info.lpBaseOfDll, info.SizeOfImage, NULL, 0);
                         auto ptr = name + res;
                         while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
                         if( ptr > name ) ptr++;
@@ -433,6 +435,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
+
+    const auto moduleName = GetModuleNameAndPrepareSymbols(ptr);
+
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
     DWORD ctx = 0;
@@ -461,7 +466,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = MaxNameSize;
 
-    const auto moduleName = GetModuleName( ptr );
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
 
     IMAGEHLP_LINE64 line;

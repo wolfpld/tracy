@@ -1,3 +1,22 @@
+//-----------------------------------------------------------------------------
+// About imgui_impl_opengl3_loader.h:
+//
+// We embed our own OpenGL loader to not require user to provide their own or to have to use ours,
+// which proved to be endless problems for users.
+// Our loader is custom-generated, based on gl3w but automatically filtered to only include
+// enums/functions that we use in our imgui_impl_opengl3.cpp source file in order to be small.
+//
+// YOU SHOULD NOT NEED TO INCLUDE/USE THIS DIRECTLY. THIS IS USED BY imgui_impl_opengl3.cpp ONLY.
+// THE REST OF YOUR APP SHOULD USE A DIFFERENT GL LOADER: ANY GL LOADER OF YOUR CHOICE.
+//
+// Regenerate with:
+//   python gl3w_gen.py --output ../imgui/backends/imgui_impl_opengl3_loader.h --ref ../imgui/backends/imgui_impl_opengl3.cpp ./extra_symbols.txt
+//
+// More info:
+//   https://github.com/dearimgui/gl3w_stripped
+//   https://github.com/ocornut/imgui/issues/4445
+//-----------------------------------------------------------------------------
+
 /*
  * This file was generated with gl3w_gen.py, part of imgl3w
  * (hosted at https://github.com/dearimgui/gl3w_stripped)
@@ -26,14 +45,11 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// We embed our own OpenGL loader to not require user to provide their own or to have to use ours, which proved to be endless problems for users.
-// Our loader is custom-generated, based on gl3w but automatically filtered to only include enums/functions that we use in this source file.
-// Regenerate with: python gl3w_gen.py --imgui-dir /path/to/imgui/
-// see https://github.com/dearimgui/gl3w_stripped for more info.
 #ifndef __gl3w_h_
 #define __gl3w_h_
 
 // Adapted from KHR/khrplatform.h to avoid including entire file.
+#ifndef __khrplatform_h_
 typedef          float         khronos_float_t;
 typedef signed   char          khronos_int8_t;
 typedef unsigned char          khronos_uint8_t;
@@ -58,6 +74,7 @@ typedef          uint64_t      khronos_uint64_t;
 typedef signed   long long     khronos_int64_t;
 typedef unsigned long long     khronos_uint64_t;
 #endif
+#endif  // __khrplatform_h_
 
 #ifndef __gl_glcorearb_h_
 #define __gl_glcorearb_h_ 1
@@ -164,6 +181,7 @@ typedef void (APIENTRYP PFNGLDISABLEPROC) (GLenum cap);
 typedef void (APIENTRYP PFNGLENABLEPROC) (GLenum cap);
 typedef void (APIENTRYP PFNGLPIXELSTOREIPROC) (GLenum pname, GLint param);
 typedef void (APIENTRYP PFNGLREADPIXELSPROC) (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels);
+typedef GLenum (APIENTRYP PFNGLGETERRORPROC) (void);
 typedef void (APIENTRYP PFNGLGETINTEGERVPROC) (GLenum pname, GLint *data);
 typedef const GLubyte *(APIENTRYP PFNGLGETSTRINGPROC) (GLenum name);
 typedef GLboolean (APIENTRYP PFNGLISENABLEDPROC) (GLenum cap);
@@ -179,6 +197,7 @@ GLAPI void APIENTRY glDisable (GLenum cap);
 GLAPI void APIENTRY glEnable (GLenum cap);
 GLAPI void APIENTRY glPixelStorei (GLenum pname, GLint param);
 GLAPI void APIENTRY glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *pixels);
+GLAPI GLenum APIENTRY glGetError (void);
 GLAPI void APIENTRY glGetIntegerv (GLenum pname, GLint *data);
 GLAPI const GLubyte *APIENTRY glGetString (GLenum name);
 GLAPI GLboolean APIENTRY glIsEnabled (GLenum cap);
@@ -237,11 +256,13 @@ typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
 typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
 typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
 typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const void *data, GLenum usage);
+typedef void (APIENTRYP PFNGLBUFFERSUBDATAPROC) (GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 #ifdef GL_GLEXT_PROTOTYPES
 GLAPI void APIENTRY glBindBuffer (GLenum target, GLuint buffer);
 GLAPI void APIENTRY glDeleteBuffers (GLsizei n, const GLuint *buffers);
 GLAPI void APIENTRY glGenBuffers (GLsizei n, GLuint *buffers);
 GLAPI void APIENTRY glBufferData (GLenum target, GLsizeiptr size, const void *data, GLenum usage);
+GLAPI void APIENTRY glBufferSubData (GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
 #endif
 #endif /* GL_VERSION_1_5 */
 #ifndef GL_VERSION_2_0
@@ -435,6 +456,7 @@ union GL3WProcs {
         PFNGLBLENDEQUATIONSEPARATEPROC   BlendEquationSeparate;
         PFNGLBLENDFUNCSEPARATEPROC       BlendFuncSeparate;
         PFNGLBUFFERDATAPROC              BufferData;
+        PFNGLBUFFERSUBDATAPROC           BufferSubData;
         PFNGLCLEARPROC                   Clear;
         PFNGLCLEARCOLORPROC              ClearColor;
         PFNGLCOMPILESHADERPROC           CompileShader;
@@ -456,6 +478,7 @@ union GL3WProcs {
         PFNGLGENTEXTURESPROC             GenTextures;
         PFNGLGENVERTEXARRAYSPROC         GenVertexArrays;
         PFNGLGETATTRIBLOCATIONPROC       GetAttribLocation;
+        PFNGLGETERRORPROC                GetError;
         PFNGLGETINTEGERVPROC             GetIntegerv;
         PFNGLGETPROGRAMINFOLOGPROC       GetProgramInfoLog;
         PFNGLGETPROGRAMIVPROC            GetProgramiv;
@@ -481,62 +504,64 @@ union GL3WProcs {
     } gl;
 };
 
-GL3W_API extern union GL3WProcs gl3wProcs;
+GL3W_API extern union GL3WProcs imgl3wProcs;
 
 /* OpenGL functions */
-#define glActiveTexture                  gl3wProcs.gl.ActiveTexture
-#define glAttachShader                   gl3wProcs.gl.AttachShader
-#define glBindBuffer                     gl3wProcs.gl.BindBuffer
-#define glBindSampler                    gl3wProcs.gl.BindSampler
-#define glBindTexture                    gl3wProcs.gl.BindTexture
-#define glBindVertexArray                gl3wProcs.gl.BindVertexArray
-#define glBlendEquation                  gl3wProcs.gl.BlendEquation
-#define glBlendEquationSeparate          gl3wProcs.gl.BlendEquationSeparate
-#define glBlendFuncSeparate              gl3wProcs.gl.BlendFuncSeparate
-#define glBufferData                     gl3wProcs.gl.BufferData
-#define glClear                          gl3wProcs.gl.Clear
-#define glClearColor                     gl3wProcs.gl.ClearColor
-#define glCompileShader                  gl3wProcs.gl.CompileShader
-#define glCompressedTexImage2D           gl3wProcs.gl.CompressedTexImage2D
-#define glCreateProgram                  gl3wProcs.gl.CreateProgram
-#define glCreateShader                   gl3wProcs.gl.CreateShader
-#define glDeleteBuffers                  gl3wProcs.gl.DeleteBuffers
-#define glDeleteProgram                  gl3wProcs.gl.DeleteProgram
-#define glDeleteShader                   gl3wProcs.gl.DeleteShader
-#define glDeleteTextures                 gl3wProcs.gl.DeleteTextures
-#define glDeleteVertexArrays             gl3wProcs.gl.DeleteVertexArrays
-#define glDetachShader                   gl3wProcs.gl.DetachShader
-#define glDisable                        gl3wProcs.gl.Disable
-#define glDrawElements                   gl3wProcs.gl.DrawElements
-#define glDrawElementsBaseVertex         gl3wProcs.gl.DrawElementsBaseVertex
-#define glEnable                         gl3wProcs.gl.Enable
-#define glEnableVertexAttribArray        gl3wProcs.gl.EnableVertexAttribArray
-#define glGenBuffers                     gl3wProcs.gl.GenBuffers
-#define glGenTextures                    gl3wProcs.gl.GenTextures
-#define glGenVertexArrays                gl3wProcs.gl.GenVertexArrays
-#define glGetAttribLocation              gl3wProcs.gl.GetAttribLocation
-#define glGetIntegerv                    gl3wProcs.gl.GetIntegerv
-#define glGetProgramInfoLog              gl3wProcs.gl.GetProgramInfoLog
-#define glGetProgramiv                   gl3wProcs.gl.GetProgramiv
-#define glGetShaderInfoLog               gl3wProcs.gl.GetShaderInfoLog
-#define glGetShaderiv                    gl3wProcs.gl.GetShaderiv
-#define glGetString                      gl3wProcs.gl.GetString
-#define glGetStringi                     gl3wProcs.gl.GetStringi
-#define glGetUniformLocation             gl3wProcs.gl.GetUniformLocation
-#define glIsEnabled                      gl3wProcs.gl.IsEnabled
-#define glLinkProgram                    gl3wProcs.gl.LinkProgram
-#define glPixelStorei                    gl3wProcs.gl.PixelStorei
-#define glPolygonMode                    gl3wProcs.gl.PolygonMode
-#define glReadPixels                     gl3wProcs.gl.ReadPixels
-#define glScissor                        gl3wProcs.gl.Scissor
-#define glShaderSource                   gl3wProcs.gl.ShaderSource
-#define glTexImage2D                     gl3wProcs.gl.TexImage2D
-#define glTexParameteri                  gl3wProcs.gl.TexParameteri
-#define glUniform1i                      gl3wProcs.gl.Uniform1i
-#define glUniformMatrix4fv               gl3wProcs.gl.UniformMatrix4fv
-#define glUseProgram                     gl3wProcs.gl.UseProgram
-#define glVertexAttribPointer            gl3wProcs.gl.VertexAttribPointer
-#define glViewport                       gl3wProcs.gl.Viewport
+#define glActiveTexture                  imgl3wProcs.gl.ActiveTexture
+#define glAttachShader                   imgl3wProcs.gl.AttachShader
+#define glBindBuffer                     imgl3wProcs.gl.BindBuffer
+#define glBindSampler                    imgl3wProcs.gl.BindSampler
+#define glBindTexture                    imgl3wProcs.gl.BindTexture
+#define glBindVertexArray                imgl3wProcs.gl.BindVertexArray
+#define glBlendEquation                  imgl3wProcs.gl.BlendEquation
+#define glBlendEquationSeparate          imgl3wProcs.gl.BlendEquationSeparate
+#define glBlendFuncSeparate              imgl3wProcs.gl.BlendFuncSeparate
+#define glBufferData                     imgl3wProcs.gl.BufferData
+#define glBufferSubData                  imgl3wProcs.gl.BufferSubData
+#define glClear                          imgl3wProcs.gl.Clear
+#define glClearColor                     imgl3wProcs.gl.ClearColor
+#define glCompileShader                  imgl3wProcs.gl.CompileShader
+#define glCompressedTexImage2D           imgl3wProcs.gl.CompressedTexImage2D
+#define glCreateProgram                  imgl3wProcs.gl.CreateProgram
+#define glCreateShader                   imgl3wProcs.gl.CreateShader
+#define glDeleteBuffers                  imgl3wProcs.gl.DeleteBuffers
+#define glDeleteProgram                  imgl3wProcs.gl.DeleteProgram
+#define glDeleteShader                   imgl3wProcs.gl.DeleteShader
+#define glDeleteTextures                 imgl3wProcs.gl.DeleteTextures
+#define glDeleteVertexArrays             imgl3wProcs.gl.DeleteVertexArrays
+#define glDetachShader                   imgl3wProcs.gl.DetachShader
+#define glDisable                        imgl3wProcs.gl.Disable
+#define glDrawElements                   imgl3wProcs.gl.DrawElements
+#define glDrawElementsBaseVertex         imgl3wProcs.gl.DrawElementsBaseVertex
+#define glEnable                         imgl3wProcs.gl.Enable
+#define glEnableVertexAttribArray        imgl3wProcs.gl.EnableVertexAttribArray
+#define glGenBuffers                     imgl3wProcs.gl.GenBuffers
+#define glGenTextures                    imgl3wProcs.gl.GenTextures
+#define glGenVertexArrays                imgl3wProcs.gl.GenVertexArrays
+#define glGetAttribLocation              imgl3wProcs.gl.GetAttribLocation
+#define glGetError                       imgl3wProcs.gl.GetError
+#define glGetIntegerv                    imgl3wProcs.gl.GetIntegerv
+#define glGetProgramInfoLog              imgl3wProcs.gl.GetProgramInfoLog
+#define glGetProgramiv                   imgl3wProcs.gl.GetProgramiv
+#define glGetShaderInfoLog               imgl3wProcs.gl.GetShaderInfoLog
+#define glGetShaderiv                    imgl3wProcs.gl.GetShaderiv
+#define glGetString                      imgl3wProcs.gl.GetString
+#define glGetStringi                     imgl3wProcs.gl.GetStringi
+#define glGetUniformLocation             imgl3wProcs.gl.GetUniformLocation
+#define glIsEnabled                      imgl3wProcs.gl.IsEnabled
+#define glLinkProgram                    imgl3wProcs.gl.LinkProgram
+#define glPixelStorei                    imgl3wProcs.gl.PixelStorei
+#define glPolygonMode                    imgl3wProcs.gl.PolygonMode
+#define glReadPixels                     imgl3wProcs.gl.ReadPixels
+#define glScissor                        imgl3wProcs.gl.Scissor
+#define glShaderSource                   imgl3wProcs.gl.ShaderSource
+#define glTexImage2D                     imgl3wProcs.gl.TexImage2D
+#define glTexParameteri                  imgl3wProcs.gl.TexParameteri
+#define glUniform1i                      imgl3wProcs.gl.Uniform1i
+#define glUniformMatrix4fv               imgl3wProcs.gl.UniformMatrix4fv
+#define glUseProgram                     imgl3wProcs.gl.UseProgram
+#define glVertexAttribPointer            imgl3wProcs.gl.VertexAttribPointer
+#define glViewport                       imgl3wProcs.gl.Viewport
 
 #ifdef __cplusplus
 }
@@ -680,6 +705,7 @@ static const char *proc_names[] = {
     "glBlendEquationSeparate",
     "glBlendFuncSeparate",
     "glBufferData",
+    "glBufferSubData",
     "glClear",
     "glClearColor",
     "glCompileShader",
@@ -701,6 +727,7 @@ static const char *proc_names[] = {
     "glGenTextures",
     "glGenVertexArrays",
     "glGetAttribLocation",
+    "glGetError",
     "glGetIntegerv",
     "glGetProgramInfoLog",
     "glGetProgramiv",
@@ -725,13 +752,13 @@ static const char *proc_names[] = {
     "glViewport",
 };
 
-GL3W_API union GL3WProcs gl3wProcs;
+GL3W_API union GL3WProcs imgl3wProcs;
 
 static void load_procs(GL3WGetProcAddressProc proc)
 {
     size_t i;
     for (i = 0; i < ARRAY_SIZE(proc_names); i++)
-        gl3wProcs.ptr[i] = proc(proc_names[i]);
+        imgl3wProcs.ptr[i] = proc(proc_names[i]);
 }
 
 #ifdef __cplusplus

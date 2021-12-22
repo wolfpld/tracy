@@ -545,6 +545,18 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
 
+extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len );
+
+#ifndef TRACY_DEMANGLE
+extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len )
+{
+    if( !mangled || mangled[0] != '_' ) return 0;
+    int status;
+    abi::__cxa_demangle( mangled, out, &len, &status );
+    return status == 0;
+}
+#endif
+
 enum { MaxCbTrace = 16 };
 
 struct backtrace_state* cb_bts;
@@ -783,17 +795,7 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             symname = dlinfo.dli_sname;
             symoff = (char*)pc - (char*)dlinfo.dli_saddr;
-
-            if( symname && symname[0] == '_' )
-            {
-                size_t len = DemangleBufLen;
-                int status;
-                abi::__cxa_demangle( symname, demangled, &len, &status );
-                if( status == 0 )
-                {
-                    symname = demangled;
-                }
-            }
+            if( ___tracy_demangle( symname, demangled, DemangleBufLen ) ) symname = demangled;
         }
 
         if( !symname ) symname = "[unknown]";
@@ -824,18 +826,9 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             function = "[unknown]";
         }
-        else
+        else if( ___tracy_demangle( function, demangled, DemangleBufLen ) )
         {
-            if( function[0] == '_' )
-            {
-                size_t len = DemangleBufLen;
-                int status;
-                abi::__cxa_demangle( function, demangled, &len, &status );
-                if( status == 0 )
-                {
-                    function = demangled;
-                }
-            }
+            function = demangled;
         }
 
         cb_data[cb_num].name = CopyStringFast( function );
@@ -967,7 +960,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     static CallstackEntry cb;
     cb.line = 0;
 
-    char* demangled = nullptr;
+    enum { DemangleBufLen = 64*1024 };
+    char demangled[DemangleBufLen];
+
     const char* symname = nullptr;
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;
@@ -981,17 +976,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         symname = dlinfo.dli_sname;
         symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
         symaddr = dlinfo.dli_saddr;
-
-        if( symname && symname[0] == '_' )
-        {
-            size_t len = 0;
-            int status;
-            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
-            if( status == 0 )
-            {
-                symname = demangled;
-            }
-        }
+        if( ___tracy_demangle( symname, demangled, DemangleBufLen ) ) symname = demangled;
     }
 
     if( !symname ) symname = "[unknown]";
@@ -1016,8 +1001,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     cb.file = CopyString( "[unknown]" );
     cb.symLen = 0;
     cb.symAddr = (uint64_t)symaddr;
-
-    if( demangled ) free( demangled );
 
     return { &cb, 1, symloc };
 }

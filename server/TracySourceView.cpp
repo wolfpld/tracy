@@ -4099,19 +4099,17 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             else
             {
                 char buf[16];
-                if( rate >= 0.1f )
+                const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
+                memcpy( end, "%", 2 );
+                if( end - buf == 4 )
                 {
-                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
+                    TextColoredUnformatted( col, buf );
                 }
                 else
                 {
-                    *buf = ' ';
-                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
+                    ImGui::SameLine( 0, ts.x );
+                    TextColoredUnformatted( col, buf );
                 }
-                memcpy( buf+4, "%", 2 );
-                TextColoredUnformatted( col, buf );
             }
             if( ImGui::IsItemHovered() )
             {

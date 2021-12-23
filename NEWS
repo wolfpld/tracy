@@ -91,6 +91,7 @@ v0.x.x (xxxx-xx-xx)
 - Added low-level C API interface for GPU zones.
 - Symbol child calls can be now listed.
 - Replaced "restrict time" in memory window with a proper time range limit.
+- Added Alder Lake microarchitectural data.
 
 
 v0.7.8 (2021-05-19)

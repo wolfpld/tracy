@@ -1583,6 +1583,21 @@ void ImDrawList::AddBezierQuadratic(const ImVec2& p1, const ImVec2& p2, const Im
 
 void ImDrawList::AddText(const ImFont* font, float font_size, const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end, float wrap_width, const ImVec4* cpu_fine_clip_rect)
 {
+    // Pull default font/size from the shared ImDrawListSharedData instance
+    if (font == NULL)
+        font = _Data->Font;
+    if (font_size == 0.0f)
+        font_size = _Data->FontSize;
+
+    const float scale = font_size / font->FontSize;
+    const float line_height = (font->FontSize + font->ExtraLineHeight) * scale;
+    const float baseline_offset = font->BaselineOffset * scale;
+
+    AddText(font, font_size, line_height, baseline_offset, pos, col, text_begin, text_end, wrap_width, cpu_fine_clip_rect);
+}
+
+void ImDrawList::AddText(const ImFont* font, float font_size, float font_line_height, float font_baseline_offset, const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end, float wrap_width, const ImVec4* cpu_fine_clip_rect)
+{
     if ((col & IM_COL32_A_MASK) == 0)
         return;
 
@@ -1607,7 +1622,7 @@ void ImDrawList::AddText(const ImFont* font, float font_size, const ImVec2& pos,
         clip_rect.z = ImMin(clip_rect.z, cpu_fine_clip_rect->z);
         clip_rect.w = ImMin(clip_rect.w, cpu_fine_clip_rect->w);
     }
-    font->RenderText(this, font_size, pos, col, clip_rect, text_begin, text_end, wrap_width, cpu_fine_clip_rect != NULL);
+    font->RenderText(this, font_size, font_line_height, font_baseline_offset, pos, col, clip_rect, text_begin, text_end, wrap_width, cpu_fine_clip_rect != NULL);
 }
 
 void ImDrawList::AddText(const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end)
@@ -3113,6 +3128,8 @@ void ImFontGlyphRangesBuilder::BuildRanges(ImVector<ImWchar>* out_ranges)
 ImFont::ImFont()
 {
     FontSize = 0.0f;
+    ExtraLineHeight = 0.0f;
+    BaselineOffset = 0.0f;
     FallbackAdvanceX = 0.0f;
     FallbackChar = (ImWchar)-1;
     EllipsisChar = (ImWchar)-1;
@@ -3436,12 +3453,11 @@ const char* ImFont::CalcWordWrapPositionA(float scale, const char* text, const c
     return s;
 }
 
-ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, const char* text_begin, const char* text_end, const char** remaining) const
+ImVec2 ImFont::CalcTextSizeA(float size, float line_height, float max_width, float wrap_width, const char* text_begin, const char* text_end, const char** remaining) const
 {
     if (!text_end)
         text_end = text_begin + strlen(text_begin); // FIXME-OPT: Need to avoid this.
 
-    const float line_height = size;
     const float scale = size / FontSize;
 
     ImVec2 text_size = ImVec2(0, 0);
@@ -3531,7 +3547,7 @@ ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, cons
 }
 
 // Note: as with every ImDrawList drawing function, this expects that the font atlas texture is bound.
-void ImFont::RenderChar(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col, ImWchar c) const
+void ImFont::RenderChar(ImDrawList* draw_list, float size, float line_height, ImVec2 pos, ImU32 col, ImWchar c) const
 {
     const ImFontGlyph* glyph = FindGlyph(c);
     if (!glyph || !glyph->Visible)
@@ -3540,7 +3556,7 @@ void ImFont::RenderChar(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
         col |= ~IM_COL32_A_MASK;
     float scale = (size >= 0.0f) ? (size / FontSize) : 1.0f;
     pos.x = IM_FLOOR(pos.x);
-    pos.y = IM_FLOOR(pos.y);
+    pos.y = IM_FLOOR(pos.y + (line_height - size) * 0.5f);
     draw_list->PrimReserve(6, 4);
     draw_list->PrimRectUV(ImVec2(pos.x + glyph->X0 * scale, pos.y + glyph->Y0 * scale), ImVec2(pos.x + glyph->X1 * scale, pos.y + glyph->Y1 * scale), ImVec2(glyph->U0, glyph->V0), ImVec2(glyph->U1, glyph->V1), col);
 }
@@ -3548,19 +3564,27 @@ void ImFont::RenderChar(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
 // Note: as with every ImDrawList drawing function, this expects that the font atlas texture is bound.
 void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col, const ImVec4& clip_rect, const char* text_begin, const char* text_end, float wrap_width, bool cpu_fine_clip) const
 {
+    const float scale = size / FontSize;
+    const float line_height = (FontSize + ExtraLineHeight) * scale;
+    const float baseline_offset = BaselineOffset * scale;
+
+    RenderText(draw_list, size, line_height, baseline_offset, pos, col, clip_rect, text_begin, text_end, wrap_width, cpu_fine_clip);
+}
+
+void ImFont::RenderText(ImDrawList* draw_list, float size, float line_height, float baseline_offset, ImVec2 pos, ImU32 col, const ImVec4& clip_rect, const char* text_begin, const char* text_end, float wrap_width, bool cpu_fine_clip) const
+{
     if (!text_end)
         text_end = text_begin + strlen(text_begin); // ImGui:: functions generally already provides a valid text_end, so this is merely to handle direct calls.
 
     // Align to be pixel perfect
     pos.x = IM_FLOOR(pos.x);
-    pos.y = IM_FLOOR(pos.y);
+    pos.y = IM_FLOOR(pos.y + (line_height - size) * 0.5f + baseline_offset);
     float x = pos.x;
     float y = pos.y;
     if (y > clip_rect.w)
         return;
 
     const float scale = size / FontSize;
-    const float line_height = FontSize * scale;
     const bool word_wrap_enabled = (wrap_width > 0.0f);
     const char* word_wrap_eol = NULL;
 
@@ -3757,7 +3781,7 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
 // Render an arrow aimed to be aligned with text (p_min is a position in the same space text would be positioned). To e.g. denote expanded/collapsed state
 void ImGui::RenderArrow(ImDrawList* draw_list, ImVec2 pos, ImU32 col, ImGuiDir dir, float scale)
 {
-    const float h = draw_list->_Data->FontSize * 1.00f;
+    const float h = draw_list->_Data->FontLineHeight * 1.00f;
     float r = h * 0.40f * scale;
     ImVec2 center = pos + ImVec2(h * 0.50f, h * 0.50f * scale);
 

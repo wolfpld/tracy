@@ -68,7 +68,7 @@ public:
             if( num > 4 ) num = 4;
             VkTimeDomainEXT data[4];
             _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physdev, &num, data );
-            VkTimeDomainEXT supportedDomain = VK_TIME_DOMAIN_MAX_ENUM_EXT;
+            VkTimeDomainEXT supportedDomain = (VkTimeDomainEXT)-1;
 #if defined _WIN32
             supportedDomain = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT;
 #elif defined __linux__ && defined CLOCK_MONOTONIC_RAW

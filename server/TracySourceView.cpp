@@ -1483,6 +1483,73 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                         ImGui::Text( "%s samples", RealToString( v.count ) );
                         ImGui::EndTooltip();
                     }
+                    if( sd && sd->line != 0 )
+                    {
+                        const auto fileName = worker.GetString( sd->file );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "%s:%i", fileName, sd->line );
+                        if( ImGui::IsItemHovered() && SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                        {
+                            m_sourceTooltip.Parse( fileName, worker, view );
+                            if( !m_sourceTooltip.empty() )
+                            {
+                                ImGui::BeginTooltip();
+                                SetFont();
+                                auto& lines = m_sourceTooltip.get();
+                                const int start = std::max( 0, (int)sd->line - 4 );
+                                const int end = std::min<int>( m_sourceTooltip.get().size(), sd->line + 7 );
+                                bool first = true;
+                                int bottomEmpty = 0;
+                                for( int i=start; i<end; i++ )
+                                {
+                                    auto& line = lines[i];
+                                    if( line.begin == line.end )
+                                    {
+                                        if( !first ) bottomEmpty++;
+                                    }
+                                    else
+                                    {
+                                        first = false;
+                                        while( bottomEmpty > 0 )
+                                        {
+                                            ImGui::TextUnformatted( "" );
+                                            bottomEmpty--;
+                                        }
+
+                                        auto ptr = line.begin;
+                                        auto it = line.tokens.begin();
+                                        while( ptr < line.end )
+                                        {
+                                            if( it == line.tokens.end() )
+                                            {
+                                                ImGui::TextUnformatted( ptr, line.end );
+                                                ImGui::SameLine( 0, 0 );
+                                                break;
+                                            }
+                                            if( ptr < it->begin )
+                                            {
+                                                ImGui::TextUnformatted( ptr, it->begin );
+                                                ImGui::SameLine( 0, 0 );
+                                            }
+                                            TextColoredUnformatted( i == sd->line - 1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
+                                            ImGui::SameLine( 0, 0 );
+                                            ptr = it->end;
+                                            ++it;
+                                        }
+                                        ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
+                                    }
+                                }
+                                UnsetFont();
+                                ImGui::EndTooltip();
+                            }
+                            if( ImGui::IsMouseClicked( 1 ) )
+                            {
+                                OpenSymbol( fileName, sd->line, v.addr, v.addr, worker, view );
+                            }
+                        }
+                    }
                 }
             }
             ImGui::EndChild();

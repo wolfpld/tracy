@@ -1463,7 +1463,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                     ImGui::TextDisabled( "%i.", idx++ );
                     ImGui::SameLine();
                     auto sd = worker.GetSymbolData( v.addr );
-                    const auto symName = worker.GetString( sd->name );
+                    const auto symName = sd ? worker.GetString( sd->name ) : "[unknown]";
                     if( v.addr >> 63 == 0 )
                     {
                         ImGui::TextUnformatted( symName );

@@ -1167,30 +1167,33 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 }
                 auto isym = worker.GetSymbolData( v.first );
                 assert( isym );
+                const char* file;
+                uint32_t line;
+                if( isym->isInline )
+                {
+                    file = worker.GetString( isym->callFile );
+                    line = isym->callLine;
+                }
+                else
+                {
+                    file = worker.GetString( isym->file );
+                    line = isym->line;
+                }
                 ImGui::PushID( v.first );
                 const auto symName = v.first == m_baseAddr ? "[ - self - ]" : worker.GetString( isym->name );
                 if( ImGui::Selectable( symName, v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     m_symAddr = v.first;
-                    const auto sym = worker.GetSymbolData( v.first );
-                    const char* file;
-                    uint32_t line;
-                    if( sym->isInline )
-                    {
-                        file = worker.GetString( sym->callFile );
-                        line = sym->callLine;
-                    }
-                    else
-                    {
-                        file = worker.GetString( sym->file );
-                        line = sym->line;
-                    }
                     ParseSource( file, worker, view );
                     m_targetLine = line;
                     SelectLine( line, &worker, true );
                     SelectViewMode();
                 }
                 ImGui::PopID();
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s:%i", file, line );
                 ImGui::NextColumn();
                 ImGui::TextDisabled( "0x%" PRIx64, v.first );
                 ImGui::NextColumn();

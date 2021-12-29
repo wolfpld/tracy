@@ -256,6 +256,7 @@ private:
 
     float m_srcWidth;
     float m_asmWidth;
+    float m_jumpOffset;
 
     GetWindowCallback m_gwcb;
     Tokenizer m_tokenizer;

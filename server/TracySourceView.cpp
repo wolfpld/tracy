@@ -3029,7 +3029,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         }
         else
         {
-            ImGui::ItemSize( ImVec2( 19 * ts.x, ts.y ) );
+            ImGui::ItemSize( ImVec2( 17 * ts.x, ts.y ) );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -3340,7 +3340,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
         else
         {
-            ImGui::ItemSize( ImVec2( 19 * ts.x, ts.y ) );
+            ImGui::ItemSize( ImVec2( 17 * ts.x, ts.y ) );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -4076,7 +4076,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( ipc * 0.25f );
         if( ipc >= 10 )
         {
-            TextColoredUnformatted( col, "  10+  " );
+            TextColoredUnformatted( col, "  10+ " );
         }
         else
         {
@@ -4084,7 +4084,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             *buf = ' ';
             const auto end = PrintFloat( buf+1, buf+16, ipc, 2 );
             assert( end == buf + 5 );
-            memcpy( end, "  ", 3 );
+            memcpy( end, " ", 2 );
             TextColoredUnformatted( col, buf );
         }
         if( ImGui::IsItemHovered() )
@@ -4104,7 +4104,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
     }
     else
     {
-        ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+        ImGui::ItemSize( ImVec2( 6 * ts.x, ts.y ) );
     }
     ImGui::SameLine( 0, 0 );
     if( m_hwSamplesRelative )
@@ -4115,7 +4115,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             uint32_t col = GetGoodnessColor( 1.f - rate * 3.f );
             if( rate >= 1.f )
             {
-                TextColoredUnformatted( col, " 100%  " );
+                TextColoredUnformatted( col, " 100% " );
             }
             else
             {
@@ -4131,7 +4131,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
                     const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
                     assert( end == buf+4 );
                 }
-                memcpy( buf+4, "%  ", 4 );
+                memcpy( buf+4, "% ", 3 );
                 TextColoredUnformatted( col, buf );
             }
             if( ImGui::IsItemHovered() )
@@ -4150,7 +4150,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         }
         else
         {
-            ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+            ImGui::ItemSize( ImVec2( 6 * ts.x, ts.y ) );
         }
         ImGui::SameLine( 0, 0 );
         if( cacheRel && cacheRelMax )
@@ -4204,11 +4204,11 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
             if( branchMiss == 0 )
             {
-                TextColoredUnformatted( col, "   0%  " );
+                TextColoredUnformatted( col, "   0% " );
             }
             else if( rate >= 1.f )
             {
-                TextColoredUnformatted( col, " 100%  " );
+                TextColoredUnformatted( col, " 100% " );
             }
             else
             {
@@ -4224,7 +4224,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
                     const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
                     assert( end == buf+4 );
                 }
-                memcpy( buf+4, "%  ", 4 );
+                memcpy( buf+4, "% ", 3 );
                 TextColoredUnformatted( col, buf );
             }
             if( ImGui::IsItemHovered() )
@@ -4244,7 +4244,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         }
         else
         {
-            ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
+            ImGui::ItemSize( ImVec2( 6 * ts.x, ts.y ) );
         }
         ImGui::SameLine( 0, 0 );
         if( cacheRef )

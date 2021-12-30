@@ -2377,7 +2377,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                 const auto mjl = m_maxJumpLevel;
                 const auto JumpArrow = JumpArrowBase * ts.y / 15;
-                const auto JumpSeparation = JumpSeparationBase * ts.y / 15;
+                const auto JumpSeparation = round( JumpSeparationBase * ts.y / 15 );
 
                 int i = -1;
                 for( auto& v : m_jumpTable )
@@ -3565,7 +3565,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         m_jumpOffset = xoff;
 
         const auto JumpArrow = JumpArrowBase * ty / 15;
-        const auto JumpSeparation = JumpSeparationBase * ts.y / 15;
+        const auto JumpSeparation = round( JumpSeparationBase * ts.y / 15 );
         ImGui::SameLine( 0, ty + JumpArrow + m_maxJumpLevel * JumpSeparation );
         auto jit = m_jumpOut.find( line.addr );
         if( jit != m_jumpOut.end() )

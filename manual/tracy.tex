@@ -1930,14 +1930,6 @@ As this system-level tracing functionality is part of the automated collection p
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
-logo=\bcattention
-]{Caveats}
-Data retrieval on Android requires spawning an elevated process to read the information provided by the kernel. While the standard \texttt{cat} utility can be used for this task, the resulting CPU usage is not acceptable due to how the kernel handles blocking reads. As a workaround, Tracy will inject a specialized kernel data reader program at \texttt{/data/tracy\_systrace}, which has more acceptable resource requirements.
-\end{bclogo}
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
 logo=\bclampe
 ]{What should be granted privileges?}
 Sometimes it may be confusing which program should be given admin access. After all, some other profilers have to run elevated to access all their capabilities.
@@ -1958,7 +1950,7 @@ As a corollary, it is often not enough to know how long it took to execute a zon
 
 To solve this problem, Tracy collects context switch\footnote{A context switch happens when any given CPU core stops executing one thread and starts running another one.} information. This data can then be used to see when a zone was in the executing state and where it was waiting to be resumed.
 
-You may disable context switch data capture by adding the \texttt{TRACY\_NO\_CONTEXT\_SWITCH} define to the client. It needs privilege elevation, which is described in section~\ref{privilegeelevation}.
+You may disable context switch data capture by adding the \texttt{TRACY\_NO\_CONTEXT\_SWITCH} define to the client. Since with this feature you are observing other programs, you can only use it after privilege elevation, which is described in section~\ref{privilegeelevation}.
 
 \subsubsection{CPU topology}
 \label{cputopology}
@@ -1988,7 +1980,7 @@ In this manual, the word \emph{core} is typically used as a short term for \emph
 
 Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries or the kernel. This can leave blank spaces on the trace, leaving you no clue what the application was doing. However, Tracy can periodically inspect the state of running threads, providing you with a snapshot of the call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight into where to go next.
 
-This feature requires privilege elevation, as described in chapter~\ref{privilegeelevation}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
+This feature requires privilege elevation on Windows, but not on Linux. However, running as root on Linux will also provide you the kernel stack traces. Additionally, you should review chapter~\ref{collectingcallstacks} to see if you have proper setup for the required program debugging data.
 
 By default, sampling is performed at 8 kHz frequency on Windows (the maximum possible value). On Linux and Android, it is performed at 10 kHz\footnote{The maximum sampling frequency is limited by the \texttt{kernel.perf\_event\_max\_sample\_rate} sysctl parameter.}. You can change this value by providing the sampling frequency (in Hz) through the \texttt{TRACY\_SAMPLING\_HZ} macro.
 
@@ -2011,13 +2003,21 @@ Should you want to disable this mechanism, you can set the \texttt{kernel.perf\_
 \paragraph{Wait stacks}
 \label{waitstacks}
 
-On Windows, sampling functionality also captures call stacks for context switch events. Such call stacks will show you what the application was doing when the thread was suspended and subsequently resumed, hence the name. We can categorize wait stacks into the following categories:
+The sampling functionality also captures call stacks for context switch events. Such call stacks will show you what the application was doing when the thread was suspended and subsequently resumed, hence the name. We can categorize wait stacks into the following categories:
 
 \begin{enumerate}
 \item Random preemptive multitasking events, which are expected and do not have any significance.
 \item Expected waits, which may be caused by issuing sleep commands, waiting for a lock to become available, performing I/O, and so on. Quantitative analysis of such events may (but probably won't) direct you to some problems in your code.
 \item Unexpected waits, which should be immediately taken care of. After all, what's the point of profiling and optimizing your program if it is constantly waiting for something? An example of such an unexpected wait may be some anti-virus service interfering with each of your file read operations. In this case, you could have assumed that the system would buffer a large chunk of the data after the first read to make it immediately available to the application in the following calls.
 \end{enumerate}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Platform differences}
+Wait stacks capture happen at a different time on the supported operating systems due to differences in the implementation details. For example, on Windows, the stack capture will occur when the program execution is resumed. However, on Linux, the capture will happen when the scheduler decides to preempt execution.
+\end{bclogo}
 
 \subsubsection{Hardware sampling}
 \label{hardwaresampling}
@@ -2042,7 +2042,7 @@ Do note that the statistics presented by Tracy are a combination of two randomly
 
 \subparagraph{Availability}
 
-Currently, the hardware performance counter readings are only available on Linux, which also includes the WSL2 layer on Windows\footnote{You may need Windows 11 and the WSL preview from Microsoft Store for this to work.}. Access to them is performed using the kernel-provided infrastructure, so what you get may depend on how your kernel was configured. This also means that the exact set of supported hardware is not known, as it depends on what has been implemented in Linux itself. At this point, the x86 hardware is fully supported (including features such as PEBS or IBS), and there's PMU support on a selection of ARM designs.
+Currently, the hardware performance counter readings are only available on Linux, which also includes the WSL2 layer on Windows\footnote{You may need Windows 11 and the WSL preview from Microsoft Store for this to work.}. Access to them is performed using the kernel-provided infrastructure, so what you get may depend on how your kernel was configured. This also means that the exact set of supported hardware is not known, as it depends on what has been implemented in Linux itself. At this point, the x86 hardware is fully supported (including features such as PEBS or IBS), and there's PMU support on a selection of ARM designs. The performance counter data can be captured with no need for privilege elevation.
 
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}

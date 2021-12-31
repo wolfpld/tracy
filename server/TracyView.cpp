@@ -16235,6 +16235,7 @@ void View::DrawSampleParents()
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
         ImGui::PopStyleVar();
         ImGui::Separator();
+        ImGui::BeginChild( "##sampleParents" );
         switch( m_sampleParents.mode )
         {
         case 0:
@@ -16502,6 +16503,7 @@ void View::DrawSampleParents()
             assert( false );
             break;
         }
+        ImGui::EndChild();
     }
     ImGui::End();
 

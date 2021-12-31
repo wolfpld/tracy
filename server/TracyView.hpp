@@ -237,6 +237,10 @@ private:
     unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeTopDown( const unordered_flat_map<uint32_t, uint64_t>& stacks, bool group ) const;
     void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
 
+    unordered_flat_map<uint64_t, CallstackFrameTree> GetParentsCallstackFrameTreeBottomUp( const unordered_flat_map<uint32_t, uint32_t>& stacks, bool group ) const;
+    unordered_flat_map<uint64_t, CallstackFrameTree> GetParentsCallstackFrameTreeTopDown( const unordered_flat_map<uint32_t, uint32_t>& stacks, bool group ) const;
+    void DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
+
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
     void DrawGpuInfoWindow();
@@ -775,6 +779,9 @@ private:
         uint64_t symAddr = 0;
         int sel;
         bool withInlines = false;
+        int mode = 0;
+        bool groupBottomUp = true;
+        bool groupTopDown = true;
     } m_sampleParents;
 
     std::vector<std::pair<int, int>> m_cpuUsageBuf;

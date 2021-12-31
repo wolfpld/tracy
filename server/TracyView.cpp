@@ -16215,196 +16215,197 @@ void View::DrawSampleParents()
         ImGui::SameLine();
         TextDisabledUnformatted( m_worker.GetString( symbol->imageName ) );
         ImGui::Separator();
-        TextDisabledUnformatted( "Entry call stack:" );
-        ImGui::SameLine();
-        if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
-        {
-            m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
-        }
-        ImGui::SameLine();
-        ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.size() ) );
-        if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "EntryCallStackPopup" );
-        ImGui::SameLine();
-        if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
-        {
-            m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.size() - 1 );
-        }
-        if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
-        {
-            int sel = m_sampleParents.sel + 1;
-            ImGui::SetNextItemWidth( 120 * scale );
-            const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-            if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.size() ) ) - 1;
-            ImGui::EndPopup();
-        }
-        Vector<decltype(stats.begin())> data;
-        data.reserve( stats.size() );
-        for( auto it = stats.begin(); it != stats.end(); ++it ) data.push_back( it );
-        pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
-        ImGui::SameLine();
-        ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
-        ImGui::SameLine();
-        char buf[64];
-        PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / excl );
-        TextDisabledUnformatted( buf );
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+        if( ImGui::RadioButton( ICON_FA_TABLE " List", m_sampleParents.mode == 0 ) ) m_sampleParents.mode = 0;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+        if( ImGui::RadioButton( ICON_FA_TREE " Bottom-up tree", m_sampleParents.mode == 1 ) ) m_sampleParents.mode = 1;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+        if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_sampleParents.mode == 2 ) ) m_sampleParents.mode = 2;
         ImGui::PopStyleVar();
-
-        auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
         ImGui::Separator();
-        if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
+        switch( m_sampleParents.mode )
         {
-            ImGui::TableSetupScrollFreeze( 0, 1 );
-            ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-            ImGui::TableSetupColumn( "Function" );
-            ImGui::TableSetupColumn( "Location" );
-            ImGui::TableSetupColumn( "Image" );
-            ImGui::TableHeadersRow();
-
-            int fidx = 0;
-            int bidx = 0;
-            for( auto& entry : cs )
+        case 0:
+        {
+            TextDisabledUnformatted( "Entry call stack:" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
             {
-                auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
-                assert( frameData );
-                const auto fsz = frameData->size;
-                for( uint8_t f=0; f<fsz; f++ )
+                m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
+            }
+            ImGui::SameLine();
+            ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.size() ) );
+            if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "EntryCallStackPopup" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+            {
+                m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.size() - 1 );
+            }
+            if( ImGui::BeginPopup( "EntryCallStackPopup" ) )
+            {
+                int sel = m_sampleParents.sel + 1;
+                ImGui::SetNextItemWidth( 120 * scale );
+                const bool clicked = ImGui::InputInt( "##entryCallStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+                if( clicked ) m_sampleParents.sel = std::min( std::max( sel, 1 ), int( stats.size() ) ) - 1;
+                ImGui::EndPopup();
+            }
+            Vector<decltype(stats.begin())> data;
+            data.reserve( stats.size() );
+            for( auto it = stats.begin(); it != stats.end(); ++it ) data.push_back( it );
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
+            ImGui::SameLine();
+            ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
+            ImGui::SameLine();
+            char buf[64];
+            PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / excl );
+            TextDisabledUnformatted( buf );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
+            ImGui::SameLine();
+            ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
+            ImGui::SameLine();
+            ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
+            ImGui::SameLine();
+            ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
+            ImGui::SameLine();
+            ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+            ImGui::PopStyleVar();
+
+            auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
+            ImGui::Separator();
+            if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
+            {
+                ImGui::TableSetupScrollFreeze( 0, 1 );
+                ImGui::TableSetupColumn( "Frame", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "Function" );
+                ImGui::TableSetupColumn( "Location" );
+                ImGui::TableSetupColumn( "Image" );
+                ImGui::TableHeadersRow();
+
+                int fidx = 0;
+                int bidx = 0;
+                for( auto& entry : cs )
                 {
-                    const auto& frame = frameData->data[f];
-                    auto txt = m_worker.GetString( frame.name );
-                    bidx++;
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    if( f == fsz-1 )
+                    auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
+                    assert( frameData );
+                    const auto fsz = frameData->size;
+                    for( uint8_t f=0; f<fsz; f++ )
                     {
-                        ImGui::Text( "%i", fidx++ );
-                    }
-                    else
-                    {
-                        if( m_smallFont ) ImGui::PushFont( m_smallFont );
-                        TextDisabledUnformatted( "inline" );
-                        if( m_smallFont ) ImGui::PopFont();
-                    }
-                    ImGui::TableNextColumn();
-                    {
-                        ImGui::PushTextWrapPos( 0.0f );
-                        if( txt[0] == '[' )
+                        const auto& frame = frameData->data[f];
+                        auto txt = m_worker.GetString( frame.name );
+                        bidx++;
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        if( f == fsz-1 )
                         {
-                            TextDisabledUnformatted( txt );
-                        }
-                        else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
-                        {
-                            TextColoredUnformatted( 0xFF8888FF, txt );
+                            ImGui::Text( "%i", fidx++ );
                         }
                         else
                         {
-                            ImGui::TextUnformatted( txt );
+                            if( m_smallFont ) ImGui::PushFont( m_smallFont );
+                            TextDisabledUnformatted( "inline" );
+                            if( m_smallFont ) ImGui::PopFont();
                         }
-                        ImGui::PopTextWrapPos();
-                    }
-                    if( ImGui::IsItemClicked() )
-                    {
-                        ImGui::SetClipboardText( txt );
-                    }
-                    ImGui::TableNextColumn();
-                    ImGui::PushTextWrapPos( 0.0f );
-                    float indentVal = 0.f;
-                    if( m_sampleParentBuzzAnim.Match( bidx ) )
-                    {
-                        const auto time = m_sampleParentBuzzAnim.Time();
-                        indentVal = sin( time * 60.f ) * 10.f * time;
-                        ImGui::Indent( indentVal );
-                    }
-                    txt = m_worker.GetString( frame.file );
-                    switch( m_showCallstackFrameAddress )
-                    {
-                    case 0:
-                        TextDisabledUnformatted( LocationToString( txt, frame.line ) );
+                        ImGui::TableNextColumn();
+                        {
+                            ImGui::PushTextWrapPos( 0.0f );
+                            if( txt[0] == '[' )
+                            {
+                                TextDisabledUnformatted( txt );
+                            }
+                            else if( m_worker.GetCanonicalPointer( entry ) >> 63 != 0 )
+                            {
+                                TextColoredUnformatted( 0xFF8888FF, txt );
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( txt );
+                            }
+                            ImGui::PopTextWrapPos();
+                        }
                         if( ImGui::IsItemClicked() )
                         {
                             ImGui::SetClipboardText( txt );
                         }
-                        break;
-                    case 1:
-                        if( entry.custom == 0 )
+                        ImGui::TableNextColumn();
+                        ImGui::PushTextWrapPos( 0.0f );
+                        float indentVal = 0.f;
+                        if( m_sampleParentBuzzAnim.Match( bidx ) )
                         {
-                            const auto addr = m_worker.GetCanonicalPointer( entry );
-                            ImGui::TextDisabled( "0x%" PRIx64, addr );
+                            const auto time = m_sampleParentBuzzAnim.Time();
+                            indentVal = sin( time * 60.f ) * 10.f * time;
+                            ImGui::Indent( indentVal );
+                        }
+                        txt = m_worker.GetString( frame.file );
+                        switch( m_showCallstackFrameAddress )
+                        {
+                        case 0:
+                            TextDisabledUnformatted( LocationToString( txt, frame.line ) );
+                            if( ImGui::IsItemClicked() )
+                            {
+                                ImGui::SetClipboardText( txt );
+                            }
+                            break;
+                        case 1:
+                            if( entry.custom == 0 )
+                            {
+                                const auto addr = m_worker.GetCanonicalPointer( entry );
+                                ImGui::TextDisabled( "0x%" PRIx64, addr );
+                                if( ImGui::IsItemClicked() )
+                                {
+                                    char tmp[32];
+                                    sprintf( tmp, "0x%" PRIx64, addr );
+                                    ImGui::SetClipboardText( tmp );
+                                }
+                            }
+                            else
+                            {
+                                TextDisabledUnformatted( "unavailable" );
+                            }
+                            break;
+                        case 2:
+                            ImGui::TextDisabled( "0x%" PRIx64, frame.symAddr );
                             if( ImGui::IsItemClicked() )
                             {
                                 char tmp[32];
-                                sprintf( tmp, "0x%" PRIx64, addr );
+                                sprintf( tmp, "0x%" PRIx64, frame.symAddr );
                                 ImGui::SetClipboardText( tmp );
                             }
-                        }
-                        else
-                        {
-                            TextDisabledUnformatted( "unavailable" );
-                        }
-                        break;
-                    case 2:
-                        ImGui::TextDisabled( "0x%" PRIx64, frame.symAddr );
-                        if( ImGui::IsItemClicked() )
-                        {
-                            char tmp[32];
-                            sprintf( tmp, "0x%" PRIx64, frame.symAddr );
-                            ImGui::SetClipboardText( tmp );
-                        }
-                        break;
-                    case 3:
-                    {
-                        const auto sym = m_worker.GetSymbolData( frame.symAddr );
-                        if( sym )
-                        {
-                            const auto symtxt = m_worker.GetString( sym->file );
-                            TextDisabledUnformatted( LocationToString( symtxt, sym->line ) );
-                            if( ImGui::IsItemClicked() )
-                            {
-                                ImGui::SetClipboardText( symtxt );
-                            }
-                        }
-                        else
-                        {
-                            TextDisabledUnformatted( "[unknown]" );
-                        }
-                        break;
-                    }
-                    default:
-                        assert( false );
-                        break;
-                    }
-                    if( ImGui::IsItemHovered() )
-                    {
-                        if( m_showCallstackFrameAddress == 3 )
+                            break;
+                        case 3:
                         {
                             const auto sym = m_worker.GetSymbolData( frame.symAddr );
                             if( sym )
                             {
                                 const auto symtxt = m_worker.GetString( sym->file );
-                                DrawSourceTooltip( symtxt, sym->line );
+                                TextDisabledUnformatted( LocationToString( symtxt, sym->line ) );
+                                if( ImGui::IsItemClicked() )
+                                {
+                                    ImGui::SetClipboardText( symtxt );
+                                }
                             }
+                            else
+                            {
+                                TextDisabledUnformatted( "[unknown]" );
+                            }
+                            break;
                         }
-                        else
-                        {
-                            DrawSourceTooltip( txt, frame.line );
+                        default:
+                            assert( false );
+                            break;
                         }
-                        if( ImGui::IsItemClicked( 1 ) )
+                        if( ImGui::IsItemHovered() )
                         {
                             if( m_showCallstackFrameAddress == 3 )
                             {
@@ -16412,38 +16413,90 @@ void View::DrawSampleParents()
                                 if( sym )
                                 {
                                     const auto symtxt = m_worker.GetString( sym->file );
-                                    if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
+                                    DrawSourceTooltip( symtxt, sym->line );
+                                }
+                            }
+                            else
+                            {
+                                DrawSourceTooltip( txt, frame.line );
+                            }
+                            if( ImGui::IsItemClicked( 1 ) )
+                            {
+                                if( m_showCallstackFrameAddress == 3 )
+                                {
+                                    const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                                    if( sym )
+                                    {
+                                        const auto symtxt = m_worker.GetString( sym->file );
+                                        if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
+                                        {
+                                            m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                                        }
+                                    }
+                                    else
                                     {
                                         m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
                                     }
                                 }
                                 else
                                 {
-                                    m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
-                                }
-                            }
-                            else
-                            {
-                                if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
-                                {
-                                    m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                                    if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
+                                    {
+                                        m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                                    }
                                 }
                             }
                         }
-                    }
-                    if( indentVal != 0.f )
-                    {
-                        ImGui::Unindent( indentVal );
-                    }
-                    ImGui::PopTextWrapPos();
-                    ImGui::TableNextColumn();
-                    if( frameData->imageName.Active() )
-                    {
-                        TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                        if( indentVal != 0.f )
+                        {
+                            ImGui::Unindent( indentVal );
+                        }
+                        ImGui::PopTextWrapPos();
+                        ImGui::TableNextColumn();
+                        if( frameData->imageName.Active() )
+                        {
+                            TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                        }
                     }
                 }
+                ImGui::EndTable();
             }
-            ImGui::EndTable();
+            break;
+        }
+        case 1:
+        {
+            SmallCheckbox( "Group by function name", &m_sampleParents.groupBottomUp );
+            auto tree = GetParentsCallstackFrameTreeBottomUp( stats, m_sampleParents.groupBottomUp );
+            if( !tree.empty() )
+            {
+                int idx = 0;
+                DrawParentsFrameTreeLevel( tree, idx );
+            }
+            else
+            {
+                TextDisabledUnformatted( "No call stacks to show" );
+            }
+
+            break;
+        }
+        case 2:
+        {
+            SmallCheckbox( "Group by function name", &m_sampleParents.groupTopDown );
+            auto tree = GetParentsCallstackFrameTreeTopDown( stats, m_sampleParents.groupTopDown );
+            if( !tree.empty() )
+            {
+                int idx = 0;
+                DrawParentsFrameTreeLevel( tree, idx );
+            }
+            else
+            {
+                TextDisabledUnformatted( "No call stacks to show" );
+            }
+            break;
+        }
+        default:
+            assert( false );
+            break;
         }
     }
     ImGui::End();
@@ -17047,6 +17100,25 @@ static tracy_force_inline T* GetFrameTreeItemGroup( unordered_flat_map<uint64_t,
     return &it->second;
 }
 
+template<class T>
+static tracy_force_inline T* GetParentFrameTreeItemGroup( unordered_flat_map<uint64_t, T>& tree, CallstackFrameId idx, const Worker& worker )
+{
+    auto frameDataPtr = idx.custom ? worker.GetParentCallstackFrame( idx ) : worker.GetCallstackFrame( idx );
+    if( !frameDataPtr ) return nullptr;
+
+    auto& frameData = *frameDataPtr;
+    auto& frame = frameData.data[frameData.size-1];
+    auto fidx = frame.name.Idx();
+
+    auto it = tree.find( fidx );
+    if( it == tree.end() )
+    {
+        it = tree.emplace( fidx, T( idx ) ).first;
+    }
+    return &it->second;
+}
+
+
 unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const MemData& mem, bool onlyActive ) const
 {
     unordered_flat_map<uint32_t, MemPathData> pathSum;
@@ -17228,6 +17300,46 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
     return root;
 }
 
+unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameTreeBottomUp( const unordered_flat_map<uint32_t, uint32_t>& stacks, bool group ) const
+{
+    unordered_flat_map<uint64_t, CallstackFrameTree> root;
+    if( group )
+    {
+        for( auto& path : stacks )
+        {
+            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto base = cs.back();
+            auto treePtr = GetParentFrameTreeItemGroup( root, base, m_worker );
+            if( treePtr )
+            {
+                treePtr->count += path.second;
+                for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+                {
+                    treePtr = GetParentFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
+                    if( !treePtr ) break;
+                    treePtr->count += path.second;
+                }
+            }
+        }
+    }
+    else
+    {
+        for( auto& path : stacks )
+        {
+            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto base = cs.back();
+            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            treePtr->count += path.second;
+            for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+            {
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr->count += path.second;
+            }
+        }
+    }
+    return root;
+}
+
 
 unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
 {
@@ -17305,6 +17417,46 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
         for( auto& path : stacks )
         {
             auto& cs = m_worker.GetCallstack( path.first );
+            auto base = cs.front();
+            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            treePtr->count += path.second;
+            for( uint16_t i = 1; i < cs.size(); i++ )
+            {
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr->count += path.second;
+            }
+        }
+    }
+    return root;
+}
+
+unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameTreeTopDown( const unordered_flat_map<uint32_t, uint32_t>& stacks, bool group ) const
+{
+    unordered_flat_map<uint64_t, CallstackFrameTree> root;
+    if( group )
+    {
+        for( auto& path : stacks )
+        {
+            auto& cs = m_worker.GetParentCallstack( path.first );
+            auto base = cs.front();
+            auto treePtr = GetParentFrameTreeItemGroup( root, base, m_worker );
+            if( treePtr )
+            {
+                treePtr->count += path.second;
+                for( uint16_t i = 1; i < cs.size(); i++ )
+                {
+                    treePtr = GetParentFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
+                    if( !treePtr ) break;
+                    treePtr->count += path.second;
+                }
+            }
+        }
+    }
+    else
+    {
+        for( auto& path : stacks )
+        {
+            auto& cs = m_worker.GetParentCallstack( path.first );
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
             treePtr->count += path.second;
@@ -18046,6 +18198,117 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             if( expand )
             {
                 DrawFrameTreeLevel( v.children, idx );
+                ImGui::TreePop();
+            }
+        }
+    }
+}
+
+void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx )
+{
+    auto& io = ImGui::GetIO();
+
+    std::vector<unordered_flat_map<uint64_t, CallstackFrameTree>::const_iterator> sorted;
+    sorted.reserve( tree.size() );
+    for( auto it = tree.begin(); it != tree.end(); ++it )
+    {
+        sorted.emplace_back( it );
+    }
+    pdqsort_branchless( sorted.begin(), sorted.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
+
+    int lidx = 0;
+    for( auto& _v : sorted )
+    {
+        auto& v = _v->second;
+        const auto isKernel = ( m_worker.GetCanonicalPointer( v.frame ) >> 63 ) != 0;
+        idx++;
+        auto frameDataPtr = v.frame.custom ? m_worker.GetParentCallstackFrame( v.frame ) : m_worker.GetCallstackFrame( v.frame );
+        if( frameDataPtr )
+        {
+            auto& frameData = *frameDataPtr;
+            auto frame = frameData.data[frameData.size-1];
+            bool expand = false;
+
+            const auto frameName = m_worker.GetString( frame.name );
+            if( v.children.empty() )
+            {
+                ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
+                if( frameName[0] == '[' )
+                {
+                    TextDisabledUnformatted( frameName );
+                }
+                else if( isKernel )
+                {
+                    TextColoredUnformatted( 0xFF8888FF, frameName );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( frameName );
+                }
+                ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
+            }
+            else
+            {
+                ImGui::PushID( lidx++ );
+                if( frameName[0] == '[' ) ImGui::PushStyleColor( ImGuiCol_Text, 0x88FFFFFF );
+                else if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
+                if( tree.size() == 1 )
+                {
+                    expand = ImGui::TreeNodeEx( frameName, ImGuiTreeNodeFlags_DefaultOpen );
+                }
+                else
+                {
+                    expand = ImGui::TreeNode( frameName );
+                }
+                if( isKernel || frameName[0] == '[' ) ImGui::PopStyleColor();
+                ImGui::PopID();
+            }
+
+            if( m_callstackTreeBuzzAnim.Match( idx ) )
+            {
+                const auto time = m_callstackTreeBuzzAnim.Time();
+                const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+            }
+            else
+            {
+                ImGui::SameLine();
+            }
+            const char* fileName = nullptr;
+            if( frame.line == 0 )
+            {
+                TextDisabledUnformatted( m_worker.GetString( frameDataPtr->imageName ) );
+            }
+            else
+            {
+                fileName = m_worker.GetString( frame.file );
+                ImGui::TextDisabled( "%s:%i", fileName, frame.line );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                DrawSourceTooltip( fileName, frame.line );
+                if( ImGui::IsItemClicked( 1 ) )
+                {
+                    if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
+                    {
+                        m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+                    }
+                }
+            }
+
+            ImGui::SameLine();
+            if( v.children.empty() )
+            {
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", RealToString( v.count ) );
+            }
+            else
+            {
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "(%s)", RealToString( v.count ) );
+            }
+
+            if( expand )
+            {
+                DrawParentsFrameTreeLevel( v.children, idx );
                 ImGui::TreePop();
             }
         }

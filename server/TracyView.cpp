@@ -16225,6 +16225,14 @@ void View::DrawSampleParents()
         ImGui::Spacing();
         ImGui::SameLine();
         if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_sampleParents.mode == 2 ) ) m_sampleParents.mode = 2;
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
         ImGui::PopStyleVar();
         ImGui::Separator();
         switch( m_sampleParents.mode )
@@ -16267,10 +16275,6 @@ void View::DrawSampleParents()
             ImGui::Spacing();
             ImGui::SameLine();
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-            ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
             ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
             ImGui::SameLine();
             ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
@@ -18299,11 +18303,11 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
             ImGui::SameLine();
             if( v.children.empty() )
             {
-                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", RealToString( v.count ) );
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * v.count ) : RealToString( v.count ) );
             }
             else
             {
-                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "(%s)", RealToString( v.count ) );
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "(%s)", m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * v.count ) : RealToString( v.count ) );
             }
 
             if( expand )

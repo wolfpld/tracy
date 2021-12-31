@@ -80,6 +80,8 @@ v0.x.x (xxxx-xx-xx)
     - Stacks can be limited to certain threads and to a selected time range.
     - Stacks are presented either as a sorted list, or as a bottom-up and
       top-down trees.
+- Entry call stacks can be now also viewed as a bottom-up and top-down
+  trees.
 - Updated project build files to MSVC 2022.
 - Call stack tooltips now also show the executable image name.
 - Playback frames can be now changed by interacting with the frame image

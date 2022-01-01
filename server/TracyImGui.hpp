@@ -254,6 +254,14 @@ static const ImVec4 SyntaxColorsDimmed[] = {
     draw->AddPolyline( data, 3, col, 0, thickness );
 }
 
+[[maybe_unused]] static tracy_force_inline void TooltipIfHovered( const char* text )
+{
+    if( !ImGui::IsItemHovered() ) return;
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted( text );
+    ImGui::EndTooltip();
+}
+
 }
 
 #endif

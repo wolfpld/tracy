@@ -1026,12 +1026,7 @@ bool View::DrawImpl()
 
         auto cx = ImGui::GetCursorPosX();
         ImGui::Text( ICON_FA_EYE " %s", TimeToString( m_vd.zvEnd - m_vd.zvStart ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "View span" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "View span" );
         ImGui::SameLine();
         auto dx = ImGui::GetCursorPosX() - cx;
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
@@ -1054,12 +1049,7 @@ bool View::DrawImpl()
 
         cx = ImGui::GetCursorPosX();
         ImGui::Text( ICON_FA_MEMORY " %s", MemSizeToString( memUsage ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "Profiler memory usage" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Profiler memory usage" );
         if( m_totalMemory != 0 )
         {
             ImGui::SameLine();
@@ -1382,12 +1372,7 @@ void View::DrawNotificationArea()
     {
         ImGui::SameLine();
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE_DROPPER );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Sampling data and ghost zones may be displayed wrongly due to data inconsistency. Save and reload the trace to fix this." );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Sampling data and ghost zones may be displayed wrongly due to data inconsistency. Save and reload the trace to fix this." );
     }
     if( m_vd.drawEmptyLabels )
     {
@@ -2487,12 +2472,7 @@ void View::DrawZoneFramesHeader()
     const auto step = pow( 10, scale );
 
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5f ) );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( TimeToStringExact( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx ) );
-        ImGui::EndTooltip();
-    }
+    TooltipIfHovered( TimeToStringExact( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx ) );
 
     const auto dx = step * pxns;
     double x = 0;
@@ -7700,12 +7680,7 @@ void View::DrawZoneInfoWindow()
                                             ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
                                             desc = DecodeContextSwitchReason( reason );
                                         }
-                                        if( *desc && ImGui::IsItemHovered() )
-                                        {
-                                            ImGui::BeginTooltip();
-                                            ImGui::TextUnformatted( desc );
-                                            ImGui::EndTooltip();
-                                        }
+                                        if( *desc ) TooltipIfHovered( desc );
                                     }
                                     ImGui::PopID();
                                 }
@@ -9032,12 +9007,7 @@ void View::DrawOptions()
         const auto expand = ImGui::TreeNode( "Locks" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", lockCnt );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Locks with no recorded events are counted, but not listed." );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Locks with no recorded events are counted, but not listed." );
         if( expand )
         {
             ImGui::SameLine();
@@ -10554,12 +10524,7 @@ void View::DrawFindZone()
                             ImGui::Spacing();
                             ImGui::SameLine();
                             TextFocused( "\xcf\x83:", TimeToString( sd ) );
-                            if( ImGui::IsItemHovered() )
-                            {
-                                ImGui::BeginTooltip();
-                                ImGui::Text( "Standard deviation" );
-                                ImGui::EndTooltip();
-                            }
+                            TooltipIfHovered( "Standard deviation" );
                         }
 
                         TextDisabledUnformatted( "Selection range:" );
@@ -12433,12 +12398,7 @@ void View::DrawCompare()
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (this):", TimeToString( sd ) );
-                        if( ImGui::IsItemHovered() )
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::Text( "Standard deviation" );
-                            ImGui::EndTooltip();
-                        }
+                        TooltipIfHovered( "Standard deviation" );
                     }
 
 
@@ -12464,12 +12424,7 @@ void View::DrawCompare()
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
-                        if( ImGui::IsItemHovered() )
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::Text( "Standard deviation" );
-                            ImGui::EndTooltip();
-                        }
+                        TooltipIfHovered( "Standard deviation" );
                     }
 
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );
@@ -13080,12 +13035,7 @@ void View::DrawStatistics()
         ImGui::Checkbox( "Limit range", &val );
         ImGui::PopItemFlag();
         ImGui::PopStyleVar();
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Waiting for background tasks to finish" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Waiting for background tasks to finish" );
     }
     else
     {
@@ -14447,12 +14397,7 @@ void View::DrawInfo()
                 {
                     ImGui::SetClipboardText( save );
                 }
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Copy user settings location to clipboard." );
-                    ImGui::EndTooltip();
-                }
+                TooltipIfHovered( "Copy user settings location to clipboard." );
             }
         }
     }
@@ -14486,29 +14431,14 @@ void View::DrawInfo()
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Extra data:", RealToString( m_worker.GetZoneExtraCount() ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Count of zones containing any of the following: call stack trace, custom name, user text" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Count of zones containing any of the following: call stack trace, custom name, user text" );
         TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount() ) );
         TextFocused( "Lock events:", RealToString( m_worker.GetLockCount() ) );
         TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount() ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "User plots" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "User plots" );
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetTracyPlotCount() ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Automated Tracy plots" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Automated Tracy plots" );
         auto& memNameMap = m_worker.GetMemNameMap();
         TextFocused( "Memory pools:", RealToString( memNameMap.size() ) );
         uint64_t memTotalCnt = 0;
@@ -14518,36 +14448,21 @@ void View::DrawInfo()
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
         TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
         TextFocused( "Symbol code fragments:", RealToString( m_worker.GetSymbolCodeCount() ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( MemSizeToString( m_worker.GetSymbolCodeSize() ) );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( MemSizeToString( m_worker.GetSymbolCodeSize() ) );
         TextFocused( "Code locations:", RealToString( m_worker.GetCodeLocationsSize() ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
         if( m_worker.AreCallstackSamplesReady() )
         {
             ImGui::SameLine();
             TextFocused( "+", RealToString( m_worker.GetCallstackParentPayloadCount() ) );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Parent call stacks for stack samples" );
-                ImGui::EndTooltip();
-            }
+            TooltipIfHovered( "Parent call stacks for stack samples" );
         }
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
         if( m_worker.AreCallstackSamplesReady() )
         {
             ImGui::SameLine();
             TextFocused( "+", RealToString( m_worker.GetCallstackParentFrameCount() ) );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Parent call stack frames for stack samples" );
-                ImGui::EndTooltip();
-            }
+            TooltipIfHovered( "Parent call stack frames for stack samples" );
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );
@@ -14582,20 +14497,10 @@ void View::DrawInfo()
             ImGui::EndTooltip();
         }
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount() ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Detailed context switch data regarding application threads" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Detailed context switch data regarding application threads" );
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount() ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Coarse CPU core context switch data" );
-            ImGui::EndTooltip();
-        }
+        TooltipIfHovered( "Coarse CPU core context switch data" );
         if( m_worker.GetSourceFileCacheCount() == 0 )
         {
             TextFocused( "Source file cache:", "0" );
@@ -14607,12 +14512,7 @@ void View::DrawInfo()
             ImGui::PopStyleColor();
             ImGui::SameLine();
             ImGui::TextUnformatted( RealToString( m_worker.GetSourceFileCacheCount() ) );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( MemSizeToString( m_worker.GetSourceFileCacheSize() ) );
-                ImGui::EndTooltip();
-            }
+            TooltipIfHovered( MemSizeToString( m_worker.GetSourceFileCacheSize() ) );
             if( expand )
             {
                 auto& cache = m_worker.GetSourceFileCache();
@@ -15693,12 +15593,7 @@ void View::DrawPlayback()
     ImGui::SameLine();
     ImGui::Checkbox( "Zoom 2\xc3\x97", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart ) );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( TimeToStringExact( tstart ) );
-        ImGui::EndTooltip();
-    }
+    TooltipIfHovered( TimeToStringExact( tstart ) );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
@@ -16106,12 +16001,7 @@ void View::DrawAnnotationList()
         {
             remove = idx;
         }
-        if( !ctrl && ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Press ctrl key to enable removal" );
-            ImGui::EndTooltip();
-        }
+        if( !ctrl ) TooltipIfHovered( "Press ctrl key to enable removal" );
         ImGui::SameLine();
         ImGui::ColorButton( "c", ImGui::ColorConvertU32ToFloat4( ann->color ), ImGuiColorEditFlags_NoTooltip );
         ImGui::SameLine();

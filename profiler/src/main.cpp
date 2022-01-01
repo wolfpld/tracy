@@ -824,12 +824,7 @@ static void DrawContents()
             {
                 ImGui::SameLine();
                 tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Filters are active" );
-                    ImGui::EndTooltip();
-                }
+                tracy::TooltipIfHovered( "Filters are active" );
                 if( showFilter )
                 {
                     ImGui::SameLine();

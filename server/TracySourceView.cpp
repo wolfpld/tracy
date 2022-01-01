@@ -1052,12 +1052,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Context is limited to an inline function" );
-                ImGui::EndTooltip();
-            }
+            TooltipIfHovered( "Context is limited to an inline function" );
         }
         if( SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats ) )
         {
@@ -1325,21 +1320,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             {
                 ImGui::PopStyleVar();
                 ImGui::PopItemFlag();
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Please wait, processing data..." );
-                    ImGui::EndTooltip();
-                }
+                TooltipIfHovered( "Please wait, processing data..." );
             }
             else
             {
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Press Z key to temporarily reverse selection." );
-                    ImGui::EndTooltip();
-                }
+                TooltipIfHovered( "Press Z key to temporarily reverse selection." );
             }
             ImGui::SameLine();
             if( ImGui::SmallButton( m_childCallList ? " " ICON_FA_CARET_UP " " : " " ICON_FA_CARET_DOWN " " ) ) m_childCallList = !m_childCallList;
@@ -1358,12 +1343,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             {
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( as.ipTotalAsm.ext * worker.GetSamplingPeriod() ) );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Child call samples" );
-                    ImGui::EndTooltip();
-                }
+                TooltipIfHovered( "Child call samples" );
             }
             ImGui::SameLine();
             ImGui::Spacing();
@@ -1380,12 +1360,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             {
                 ImGui::SameLine();
                 ImGui::Text( "(%c%s)", m_childCalls ? '-' : '+', RealToString( as.ipTotalAsm.ext ) );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Child call samples" );
-                    ImGui::EndTooltip();
-                }
+                TooltipIfHovered( "Child call samples" );
             }
         }
         else
@@ -1405,12 +1380,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::Checkbox( "Limit range", &val );
             ImGui::PopItemFlag();
             ImGui::PopStyleVar();
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Please wait, processing data..." );
-                ImGui::EndTooltip();
-            }
+            TooltipIfHovered( "Please wait, processing data..." );
         }
         else
         {
@@ -1716,12 +1686,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         if( m_source.is_cached() )
         {
             TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Source file cached during profiling run" );
-                ImGui::EndTooltip();
-            }
+            TooltipIfHovered( "Source file cached during profiling run" );
         }
         else
         {
@@ -2243,12 +2208,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             if( m_selMicroArch == m_profileMicroArch )
             {
                 TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_MICROCHIP );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Selected microarchitecture is the same as the profiled application was running on" );
-                    ImGui::EndTooltip();
-                }
+                TooltipIfHovered( "Selected microarchitecture is the same as the profiled application was running on" );
             }
             else
             {

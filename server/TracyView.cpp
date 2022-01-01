@@ -18084,10 +18084,26 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
             if( v.children.empty() )
             {
                 ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count ) );
+                TooltipIfHovered( "Cost in this node" );
             }
             else
             {
+                uint32_t childCost = 0;
+                uint64_t childAlloc = 0;
+                for( auto& c : v.children )
+                {
+                    childCost += c.second.count;
+                    childAlloc += c.second.alloc;
+                }
+                const auto rc = v.count - childCost;
+                if( rc != 0 )
+                {
+                    ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc - childAlloc ), RealToString( rc ) );
+                    TooltipIfHovered( "Cost only in this node" );
+                    ImGui::SameLine();
+                }
                 ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count ) );
+                TooltipIfHovered( "Cost in this node and children" );
             }
 
             if( expand )
@@ -18195,10 +18211,21 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             if( v.children.empty() )
             {
                 ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", RealToString( v.count ) );
+                TooltipIfHovered( "Cost in this node" );
             }
             else
             {
+                uint32_t childCost = 0;
+                for( auto& c : v.children ) childCost += c.second.count;
+                const auto r = v.count - childCost;
+                if( r != 0 )
+                {
+                    ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", RealToString( r ) );
+                    TooltipIfHovered( "Cost only in this node" );
+                    ImGui::SameLine();
+                }
                 ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "(%s)", RealToString( v.count ) );
+                TooltipIfHovered( "Cost in this node and children" );
             }
 
             if( expand )
@@ -18306,10 +18333,21 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
             if( v.children.empty() )
             {
                 ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * v.count ) : RealToString( v.count ) );
+                TooltipIfHovered( "Cost in this node" );
             }
             else
             {
+                uint32_t childCost = 0;
+                for( auto& c : v.children ) childCost += c.second.count;
+                const auto r = v.count - childCost;
+                if( r != 0 )
+                {
+                    ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "(%s)", m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * r ) : RealToString( r ) );
+                    TooltipIfHovered( "Cost only in this node" );
+                    ImGui::SameLine();
+                }
                 ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "(%s)", m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * v.count ) : RealToString( v.count ) );
+                TooltipIfHovered( "Cost in this node and children" );
             }
 
             if( expand )

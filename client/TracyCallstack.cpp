@@ -65,13 +65,12 @@ CallstackEntry cb_data[MaxCbTrace];
 
 extern "C"
 {
-    typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
     typedef DWORD (__stdcall *t_SymAddrIncludeInlineTrace)( HANDLE hProcess, DWORD64 Address );
     typedef BOOL (__stdcall *t_SymQueryInlineTrace)( HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress, DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex );
     typedef BOOL (__stdcall *t_SymFromInlineContext)( HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement, PSYMBOL_INFO Symbol );
     typedef BOOL (__stdcall *t_SymGetLineFromInlineContext)( HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext, DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64 );
 
-    t_RtlWalkFrameChain RtlWalkFrameChain = 0;
+    TRACY_API ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain = 0;
     t_SymAddrIncludeInlineTrace _SymAddrIncludeInlineTrace = 0;
     t_SymQueryInlineTrace _SymQueryInlineTrace = 0;
     t_SymFromInlineContext _SymFromInlineContext = 0;
@@ -102,7 +101,7 @@ size_t s_krnlCacheCnt;
 
 void InitCallstack()
 {
-    RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
+    ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
     _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymAddrIncludeInlineTrace" );
     _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymQueryInlineTrace" );
     _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymFromInlineContext" );
@@ -206,14 +205,6 @@ void InitCallstack()
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
 #endif
-}
-
-TRACY_API uintptr_t* CallTrace( int depth )
-{
-    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
-    const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
-    *trace = num;
-    return trace;
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )

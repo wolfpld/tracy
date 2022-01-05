@@ -3215,7 +3215,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
                 auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
                 if( hnd )
                 {
-                    auto ptr = GetProcAddress( hnd, fn );
+                    auto ptr = (const void*)GetProcAddress( hnd, fn );
                     if( ptr )
                     {
                         auto buf = (char*)tracy_malloc( si.extra );

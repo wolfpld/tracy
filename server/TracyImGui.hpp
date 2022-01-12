@@ -95,7 +95,7 @@ static const ImVec4 SyntaxColorsDimmed[] = {
     ImGui::TextUnformatted( "" );
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetWindowPos();
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = ImGui::GetTextLineHeight();
     const auto h = ImGui::GetCursorPosY() - ty * 0.5f;
     const auto w = ImGui::GetWindowWidth();
     draw->AddCircleFilled( wpos + ImVec2( w * 0.5f - ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
@@ -252,6 +252,14 @@ static const ImVec4 SyntaxColorsDimmed[] = {
 {
     const ImVec2 data[3] = { v1, v2, v3 };
     draw->AddPolyline( data, 3, col, 0, thickness );
+}
+
+[[maybe_unused]] static tracy_force_inline void TooltipIfHovered( const char* text )
+{
+    if( !ImGui::IsItemHovered() ) return;
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted( text );
+    ImGui::EndTooltip();
 }
 
 }

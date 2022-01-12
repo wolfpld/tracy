@@ -2090,6 +2090,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::CallstackSample:
+    case QueueType::CallstackSampleContextSwitch:
         ptr = MemRead<uint64_t>( &item.callstackSampleFat.ptr );
         tracy_free( (void*)ptr );
         break;
@@ -2283,6 +2284,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::CallstackSample:
+                    case QueueType::CallstackSampleContextSwitch:
                     {
                         ptr = MemRead<uint64_t>( &item->callstackSampleFat.ptr );
                         SendCallstackPayload64( ptr );
@@ -3213,7 +3215,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
                 auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
                 if( hnd )
                 {
-                    auto ptr = GetProcAddress( hnd, fn );
+                    auto ptr = (const void*)GetProcAddress( hnd, fn );
                     if( ptr )
                     {
                         auto buf = (char*)tracy_malloc( si.extra );

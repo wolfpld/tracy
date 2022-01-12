@@ -6,7 +6,7 @@ find_package(Threads REQUIRED)
 
 add_library(TracyClient TracyClient.cpp)
 target_compile_features(TracyClient PUBLIC cxx_std_11)
-target_include_directories(TracyClient PUBLIC 
+target_include_directories(TracyClient SYSTEM PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> 
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(
@@ -42,7 +42,7 @@ set_option(TRACY_NO_CODE_TRANSFER "Disable collection of source code" OFF)
 set_option(TRACY_NO_CONTEXT_SWITCH "Disable capture of context switches" OFF)
 set_option(TRACY_NO_EXIT "Client executable does not exit until all profile data is sent to server" OFF)
 set_option(TRACY_NO_FRAME_IMAGE "Disable capture of frame images" OFF)
-set_option(TRACE_NO_SAMPLING "Disable call stack sampling" OFF)
+set_option(TRACY_NO_SAMPLING "Disable call stack sampling" OFF)
 set_option(TRACY_NO_VERIFY "Disable zone validation for C API" OFF)
 set_option(TRACY_NO_VSYNC_CAPTURE "Disable capture of hardware Vsync events" OFF)
 

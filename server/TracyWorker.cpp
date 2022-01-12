@@ -994,6 +994,30 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             f.Skip( msz * sizeof( uint64_t ) );
         }
+        if( fileVer >= FileVersion( 0, 7, 14 ) )
+        {
+            uint64_t ssz;
+            f.Read( ssz );
+            if( ssz != 0 )
+            {
+                if( eventMask & EventType::Samples )
+                {
+                    int64_t refTime = 0;
+                    td->ctxSwitchSamples.reserve_exact( ssz, m_slab );
+                    auto ptr = td->ctxSwitchSamples.data();
+                    for( uint64_t j=0; j<ssz; j++ )
+                    {
+                        ptr->time.SetVal( ReadTimeOffset( f, refTime ) );
+                        f.Read( &ptr->callstack, sizeof( ptr->callstack ) );
+                        ptr++;
+                    }
+                }
+                else
+                {
+                    f.Skip( ssz * ( 8 + 3 ) );
+                }
+            }
+        }
         if( fileVer >= FileVersion( 0, 6, 4 ) )
         {
             uint64_t ssz;
@@ -1964,23 +1988,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         for( auto& t : m_data.threads )
                         {
                             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                            auto ctx = GetContextSwitchData( t->id );
-                            Vector<ContextSwitchData>::const_iterator cit = nullptr;
-                            if( ctx ) cit = ctx->v.begin();
+                            auto cit = t->ctxSwitchSamples.begin();
                             for( auto& sd : t->samples )
                             {
                                 bool isCtxSwitch = false;
-                                if( ctx )
+                                if( cit != t->ctxSwitchSamples.end() )
                                 {
-                                    cit = std::lower_bound( cit, ctx->v.end(), sd.time.Val(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-                                    if( cit != ctx->v.end() )
-                                    {
-                                        if( sd.time.Val() == cit->Start() )
-                                        {
-                                            isCtxSwitch = true;
-                                            t->ctxSwitchSamples.push_back( sd );
-                                        }
-                                    }
+                                    const auto sdt = sd.time.Val();
+                                    cit = std::lower_bound( cit, t->ctxSwitchSamples.end(), sdt, []( const auto& l, const auto& r ) { return (uint64_t)l.time.Val() < (uint64_t)r; } );
+                                    isCtxSwitch = cit != t->ctxSwitchSamples.end() && cit->time.Val() == sdt;
                                 }
                                 if( !isCtxSwitch )
                                 {
@@ -4819,6 +4835,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::CallstackSample:
         ProcessCallstackSample( ev.callstackSample );
         break;
+    case QueueType::CallstackSampleContextSwitch:
+        ProcessCallstackSampleContextSwitch( ev.callstackSample );
+        break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
         m_serverQuerySpaceLeft++;
@@ -6282,7 +6301,7 @@ void Worker::ProcessCallstack()
     m_pendingCallstackId = 0;
 }
 
-void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
+void Worker::ProcessCallstackSampleInsertSample( const SampleData& sd, ThreadData& td )
 {
     const auto t = sd.time.Val();
     if( td.samples.empty() )
@@ -6317,8 +6336,14 @@ void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
     const auto& ip = cs[0];
     if( GetCanonicalPointer( ip ) >> 63 != 0 ) td.kernelSampleCnt++;
     m_data.samplesCnt++;
+}
+
+void Worker::ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td )
+{
+    ProcessCallstackSampleInsertSample( sd, td );
 
 #ifndef TRACY_NO_STATISTICS
+    const auto t = sd.time.Val();
     if( t == 0 || !m_identifySamples )
     {
         ProcessCallstackSampleImplStats( sd, td );
@@ -6503,6 +6528,27 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     {
         ProcessCallstackSampleImpl( sd, td );
     }
+}
+
+void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev )
+{
+    assert( m_pendingCallstackId != 0 );
+    const auto callstack = m_pendingCallstackId;
+    m_pendingCallstackId = 0;
+
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto t = refTime == 0 ? 0 : TscTime( refTime - m_data.baseTime );
+
+    auto& td = *NoticeThread( ev.thread );
+
+    SampleData sd;
+    sd.time.SetVal( t );
+    sd.callstack.SetVal( callstack );
+
+    ProcessCallstackSampleInsertSample( sd, td );
+
+    td.ctxSwitchSamples.push_back( sd );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
@@ -7738,7 +7784,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
 
 void Worker::Disconnect()
 {
-    Query( ServerQueryDisconnect, 0 );
+    //Query( ServerQueryDisconnect, 0 );
+    Shutdown();
     m_disconnect = true;
 }
 
@@ -7995,6 +8042,14 @@ void Worker::Write( FileWrite& f, bool fiDict )
         {
             auto ptr = uint64_t( (MessageData*)v );
             f.Write( &ptr, sizeof( ptr ) );
+        }
+        sz = thread->ctxSwitchSamples.size();
+        f.Write( &sz, sizeof( sz ) );
+        refTime = 0;
+        for( auto& v : thread->ctxSwitchSamples )
+        {
+            WriteTimeOffset( f, refTime, v.time.Val() );
+            f.Write( &v.callstack, sizeof( v.callstack ) );
         }
         if( m_inconsistentSamples )
         {

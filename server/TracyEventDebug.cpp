@@ -52,6 +52,9 @@ void EventDebug( const QueueItem& ev )
     case QueueType::CallstackSample:
         fprintf( f, "ev %i (CallstackSample)\n", ev.hdr.idx );
         break;
+    case QueueType::CallstackSampleContextSwitch:
+        fprintf( f, "ev %i (CallstackSampleContextSwitch)\n", ev.hdr.idx );
+        break;
     case QueueType::FrameImage:
         fprintf( f, "ev %i (FrameImage)\n", ev.hdr.idx );
         break;

@@ -55,12 +55,19 @@ const char* GetKernelModulePath( uint64_t addr );
 
 #if TRACY_HAS_CALLSTACK == 1
 
-TRACY_API uintptr_t* CallTrace( int depth );
+extern "C"
+{
+    typedef unsigned long (__stdcall *___tracy_t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
+    TRACY_API extern ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain;
+}
 
 static tracy_force_inline void* Callstack( int depth )
 {
     assert( depth >= 1 && depth < 63 );
-    return CallTrace( depth );
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
+    const auto num = ___tracy_RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
+    *trace = num;
+    return trace;
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5

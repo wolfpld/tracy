@@ -73,13 +73,15 @@ v0.x.x (xxxx-xx-xx)
     distinguished by green color. Faux context switch regions are used to
     indicate when a fiber is being run by the worker thread.
 - Continuous frame marks no longer need to be issued from a single thread.
-- Context switch call stacks are now captured on Windows.
+- Context switch call stacks are now captured on Windows and Linux.
   - Hovering the context switch wait region will now display wait stack,
     which may provide additional insight into why the switch happened.
   - Wait stacks inspection can be performed in a new view.
     - Stacks can be limited to certain threads and to a selected time range.
     - Stacks are presented either as a sorted list, or as a bottom-up and
       top-down trees.
+- Entry call stacks can be now also viewed as a bottom-up and top-down
+  trees.
 - Updated project build files to MSVC 2022.
 - Call stack tooltips now also show the executable image name.
 - Playback frames can be now changed by interacting with the frame image
@@ -91,6 +93,7 @@ v0.x.x (xxxx-xx-xx)
 - Added low-level C API interface for GPU zones.
 - Symbol child calls can be now listed.
 - Replaced "restrict time" in memory window with a proper time range limit.
+- Added Alder Lake microarchitectural data.
 
 
 v0.7.8 (2021-05-19)

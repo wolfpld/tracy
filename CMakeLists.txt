@@ -64,6 +64,42 @@ set(includes
     ${CMAKE_CURRENT_LIST_DIR}/TracyOpenGL.hpp
     ${CMAKE_CURRENT_LIST_DIR}/TracyVulkan.hpp)
 
+set(client_includes
+    ${CMAKE_CURRENT_LIST_DIR}/client/tracy_concurrentqueue.h
+    ${CMAKE_CURRENT_LIST_DIR}/client/tracy_rpmalloc.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/tracy_SPSCQueue.h
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyArmCpuTable.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyCallstack.h
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyCallstack.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyDebug.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyDxt1.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyFastVector.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyLock.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyProfiler.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyRingBuffer.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyScoped.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyStringHelpers.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracySysTime.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracySysTrace.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/client/TracyThread.hpp)
+
+set(common_includes
+    ${CMAKE_CURRENT_LIST_DIR}/common/tracy_lz4.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/tracy_lz4hc.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyAlign.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyAlign.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyAlloc.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyApi.h
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyColor.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyForceInline.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyMutex.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyProtocol.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyQueue.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracySocket.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyStackFrames.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracySystem.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyYield.hpp)
+
 install(TARGETS TracyClient
         EXPORT TracyConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -71,6 +107,10 @@ install(TARGETS TracyClient
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(FILES ${includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${client_includes}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/client)
+install(FILES ${common_includes}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/common)
 install(EXPORT TracyConfig
         FILE TracyConfig.cmake
         DESTINATION share/Tracy)

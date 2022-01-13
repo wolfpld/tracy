@@ -123,7 +123,7 @@ int main()
             ZoneScopedN("Write Buffer A");
             TracyCLZoneS(tracyCLCtx, "Write BufferA", 5);
 
-            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferA, CL_TRUE, 0, N * sizeof(float), hostA.data(), 0, nullptr, &writeBufferAEvent));
+            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferA, CL_FALSE, 0, N * sizeof(float), hostA.data(), 0, nullptr, &writeBufferAEvent));
 
             TracyCLZoneSetEvent(writeBufferAEvent);
         }
@@ -131,13 +131,13 @@ int main()
             ZoneScopedN("Write Buffer B");
             TracyCLZone(tracyCLCtx, "Write BufferB");
 
-            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferB, CL_TRUE, 0, N * sizeof(float), hostB.data(), 0, nullptr, &writeBufferBEvent));
+            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferB, CL_FALSE, 0, N * sizeof(float), hostB.data(), 0, nullptr, &writeBufferBEvent));
 
             TracyCLZoneSetEvent(writeBufferBEvent);
         }
     }
 
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 100; ++i)
     {
         int n_value = static_cast<int>(N);
         ZoneScopedN("VectorAdd Kernel Launch");
@@ -150,15 +150,8 @@ int main()
 
         cl_event vectorAddKernelEvent;
         CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));
-
-        CL_ASSERT(clWaitForEvents(1, &vectorAddKernelEvent));
-
         TracyCLZoneSetEvent(vectorAddKernelEvent);
-
-        cl_ulong kernelStartTime, kernelEndTime;
-        CL_ASSERT(clGetEventProfilingInfo(vectorAddKernelEvent, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &kernelStartTime, nullptr));
-        CL_ASSERT(clGetEventProfilingInfo(vectorAddKernelEvent, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernelEndTime, nullptr));
-        std::cout << "VectorAdd Kernel Elapsed: " << ((kernelEndTime - kernelStartTime) / 1000) << " us" << std::endl;
+        std::cout << "VectorAdd Kernel Enqueued" << std::endl;
     }
 
     {

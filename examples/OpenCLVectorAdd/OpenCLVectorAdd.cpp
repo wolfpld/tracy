@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -137,7 +138,10 @@ int main()
         }
     }
 
-    for (int i = 0; i < 100; ++i)
+    const int numLaunchs = 100;
+    std::vector<cl_event> kernelLaunchEvts;
+    kernelLaunchEvts.reserve(numLaunchs);
+    for (int i = 0; i < numLaunchs; ++i)
     {
         int n_value = static_cast<int>(N);
         ZoneScopedN("VectorAdd Kernel Launch");
@@ -151,6 +155,8 @@ int main()
         cl_event vectorAddKernelEvent;
         CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));
         TracyCLZoneSetEvent(vectorAddKernelEvent);
+        CL_ASSERT(clRetainEvent(vectorAddKernelEvent));
+        kernelLaunchEvts.push_back(vectorAddKernelEvent);
         std::cout << "VectorAdd Kernel Enqueued" << std::endl;
     }
 
@@ -164,6 +170,24 @@ int main()
     }
 
     CL_ASSERT(clFinish(commandQueue));
+    std::vector<float> durations(kernelLaunchEvts.size());
+    for (int i=0; i<kernelLaunchEvts.size(); i++) {
+        cl_event evt = kernelLaunchEvts[i];
+        cl_ulong start;
+        cl_ulong end;
+        CL_ASSERT(clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, nullptr));
+        CL_ASSERT(clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, nullptr));
+        CL_ASSERT(clReleaseEvent(evt));
+        durations[i] = (end - start) * 0.001;
+        std::cout << "VectorAdd Kernel " << i << " tooks " <<  static_cast<int>(durations[i]) << "us" << std::endl;
+    };
+    float avg = std::accumulate(durations.cbegin(), durations.cend(), 0.0f) / durations.size();
+    float stddev2 = std::accumulate(durations.cbegin(), durations.cend(), 0.0f, [avg](const float& acc, const float& v) {
+        auto d = v - avg;
+        return acc + d*d;
+    }) / (durations.size() - 1.0f);
+    std::cout << "VectorAdd runtime avg: " << avg << "us, std: " << sqrt(stddev2) << "us over " << numLaunchs << " runs." << std::endl;
+
 
     TracyCLCollect(tracyCLCtx);
 

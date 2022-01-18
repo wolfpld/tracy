@@ -48,13 +48,13 @@ using TracyCLCtx = void*;
     TracyMessageL( "TRACY_CL_ASSERT failed on " __FILE__ ":" TRACY_CL_TO_STRING(__LINE__) );  \
     assert(false && "TRACY_CL_ASSERT failed");                                                \
 }
-#define TRACY_CL_CHECK_ERROR(err) if(err != CL_SUCCESS) {                                 \
-    std::ostringstream oss;                                                               \
-    oss << ("TRACY_CL_CHECK_ERROR failed on " __FILE__ ":" TRACY_CL_TO_STRING(__LINE__))  \
-        << ": error code " << err;                                                        \
-    auto msg = oss.str();                                                                 \
-    TracyMessage(msg.data(), msg.size());                                                 \
-    assert(false && "TRACY_CL_CHECK_ERROR failed");                                       \
+#define TRACY_CL_CHECK_ERROR(err) if(err != CL_SUCCESS) {                    \
+    std::ostringstream oss;                                                  \
+    oss << "TRACY_CL_CHECK_ERROR failed on " << __FILE__ << ":" << __LINE__  \
+        << ": error code " << err;                                           \
+    auto msg = oss.str();                                                    \
+    TracyMessage(msg.data(), msg.size());                                    \
+    assert(false && "TRACY_CL_CHECK_ERROR failed");                          \
 }
 
 namespace tracy {

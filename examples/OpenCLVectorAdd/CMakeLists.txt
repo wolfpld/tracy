@@ -11,4 +11,4 @@ add_library(TracyClient STATIC ../../TracyClient.cpp
 target_include_directories(TracyClient PUBLIC ../../)
 target_compile_definitions(TracyClient PUBLIC TRACY_ENABLE=1)
 
-target_link_libraries(OpenCLVectorAdd PUBLIC OpenCL::OpenCL TracyClient)
+target_link_libraries(OpenCLVectorAdd PUBLIC OpenCL::OpenCL TracyClient dl pthread)

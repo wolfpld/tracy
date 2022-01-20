@@ -139,7 +139,7 @@ int main()
 
     for (int i = 0; i < 10; ++i)
     {
-	int n_value = static_cast<int>(N);
+        int n_value = static_cast<int>(N);
         ZoneScopedN("VectorAdd Kernel Launch");
         TracyCLZoneC(tracyCLCtx, "VectorAdd Kernel", tracy::Color::Blue4);
 

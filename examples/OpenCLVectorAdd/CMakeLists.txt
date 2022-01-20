@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 
 project(OpenCLVectorAdd)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 find_package(OpenCL REQUIRED)
 
@@ -11,4 +14,4 @@ add_library(TracyClient STATIC ../../TracyClient.cpp
 target_include_directories(TracyClient PUBLIC ../../)
 target_compile_definitions(TracyClient PUBLIC TRACY_ENABLE=1)
 
-target_link_libraries(OpenCLVectorAdd PUBLIC OpenCL::OpenCL TracyClient)
+target_link_libraries(OpenCLVectorAdd PUBLIC OpenCL::OpenCL TracyClient ${CMAKE_DL_LIBS} Threads::Threads)

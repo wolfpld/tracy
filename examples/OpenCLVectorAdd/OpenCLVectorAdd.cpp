@@ -139,13 +139,14 @@ int main()
 
     for (int i = 0; i < 10; ++i)
     {
+        int n_value = static_cast<int>(N);
         ZoneScopedN("VectorAdd Kernel Launch");
         TracyCLZoneC(tracyCLCtx, "VectorAdd Kernel", tracy::Color::Blue4);
 
         CL_ASSERT(clSetKernelArg(vectorAddKernel, 0, sizeof(cl_mem), &bufferC));
         CL_ASSERT(clSetKernelArg(vectorAddKernel, 1, sizeof(cl_mem), &bufferA));
         CL_ASSERT(clSetKernelArg(vectorAddKernel, 2, sizeof(cl_mem), &bufferB));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 3, sizeof(int), &static_cast<int>(N)));
+        CL_ASSERT(clSetKernelArg(vectorAddKernel, 3, sizeof(int), &n_value));
 
         cl_event vectorAddKernelEvent;
         CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));

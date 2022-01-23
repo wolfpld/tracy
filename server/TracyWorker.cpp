@@ -6095,6 +6095,24 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     else
     {
         zone->SetGpuEnd( gpuTime );
+#ifndef TRACY_NO_STATISTICS
+        const auto gpuStart = zone->GpuStart();
+        const auto timeSpan = gpuTime - gpuStart;
+        if( timeSpan > 0 )
+        {
+            GpuZoneThreadData ztd;
+            ztd.SetZone( zone );
+            ztd.SetThread( zone->Thread() );
+            auto slz = GetGpuSourceLocationZones( zone->SrcLoc() );
+            slz->zones.push_back( ztd );
+            if( slz->min > timeSpan ) slz->min = timeSpan;
+            if( slz->max < timeSpan ) slz->max = timeSpan;
+            slz->total += timeSpan;
+            slz->sumSq += double( timeSpan ) * timeSpan;
+        }
+#else
+        CountZoneStatistics( zone );
+#endif
     }
     if( m_data.lastTime < gpuTime ) m_data.lastTime = gpuTime;
 }

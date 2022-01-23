@@ -12692,9 +12692,9 @@ void View::AccumulationModeComboBox()
 {
     ImGui::TextUnformatted( "Timing" );
     ImGui::SameLine();
-    const char* accumulationModeTable = m_statMode == 0 ? "Self only\0With children\0Non-reentrant\0" : "Self only\0With children\0";
+    const char* accumulationModeTable = m_statMode == 1 ? "Self only\0With children\0" : "Self only\0With children\0Non-reentrant\0";
     ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Non-reentrant" ).x + ImGui::GetTextLineHeight() * 2 );
-    if ( m_statMode != 0 && m_statAccumulationMode == AccumulationMode::NonReentrantChildren )
+    if( m_statMode == 1 && m_statAccumulationMode == AccumulationMode::NonReentrantChildren )
     {
         m_statAccumulationMode = AccumulationMode::SelfOnly;
     }

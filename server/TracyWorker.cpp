@@ -289,6 +289,7 @@ Worker::Worker( const char* addr, uint16_t port )
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
+    m_data.gpuSourceLocationZonesReady = true;
     m_data.callstackSamplesReady = true;
     m_data.ghostZonesReady = true;
     m_data.ctxUsageReady = true;
@@ -3723,6 +3724,15 @@ Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc
     m_data.srclocZonesLast.second = &it->second;
     return &it->second;
 }
+
+Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
+{
+    auto it = m_data.gpuSourceLocationZones.find( srcloc );
+    assert( it != m_data.gpuSourceLocationZones.end() );
+    m_data.gpuZonesLast.first = srcloc;
+    m_data.gpuZonesLast.second = &it->second;
+    return &it->second;
+}
 #else
 uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
 {
@@ -3730,6 +3740,15 @@ uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
     assert( it != m_data.sourceLocationZonesCnt.end() );
     m_data.srclocCntLast.first = srcloc;
     m_data.srclocCntLast.second = &it->second;
+    return &it->second;
+}
+
+uint64_t* Worker::GetGpuSourceLocationZonesCntReal( uint16_t srcloc )
+{
+    auto it = m_data.gpuSourceLocationZonesCnt.find( srcloc );
+    assert( it != m_data.gpuSourceLocationZonesCnt.end() );
+    m_data.gpuCntLast.first = srcloc;
+    m_data.gpuCntLast.second = &it->second;
     return &it->second;
 }
 #endif

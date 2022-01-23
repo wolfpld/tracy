@@ -297,8 +297,11 @@ private:
 #ifndef TRACY_NO_STATISTICS
         unordered_flat_map<int16_t, SourceLocationZones> sourceLocationZones;
         bool sourceLocationZonesReady = false;
+        unordered_flat_map<int16_t, GpuSourceLocationZones> gpuSourceLocationZones;
+        bool gpuSourceLocationZonesReady = false;
 #else
         unordered_flat_map<int16_t, uint64_t> sourceLocationZonesCnt;
+        unordered_flat_map<int16_t, uint64_t> gpuSourceLocationZonesCnt;
 #endif
 
         unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
@@ -365,8 +368,10 @@ private:
         std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
 #ifndef TRACY_NO_STATISTICS
         std::pair<uint16_t, SourceLocationZones*> srclocZonesLast = std::make_pair( 0, nullptr );
+        std::pair<uint16_t, GpuSourceLocationZones*> gpuZonesLast = std::make_pair( 0, nullptr );
 #else
         std::pair<uint16_t, uint64_t*> srclocCntLast = std::make_pair( 0, nullptr );
+        std::pair<uint16_t, uint64_t*> gpuCntLast = std::make_pair( 0, nullptr );
 #endif
 
 #ifndef TRACY_NO_STATISTICS
@@ -805,6 +810,13 @@ private:
         return GetSourceLocationZonesReal( srcloc );
     }
     SourceLocationZones* GetSourceLocationZonesReal( uint16_t srcloc );
+
+    GpuSourceLocationZones* GetGpuSourceLocationZones( uint16_t srcloc )
+    {
+        if( m_data.gpuZonesLast.first == srcloc ) return m_data.gpuZonesLast.second;
+        return GetGpuSourceLocationZonesReal( srcloc );
+    }
+    GpuSourceLocationZones* GetGpuSourceLocationZonesReal( uint16_t srcloc );
 #else
     uint64_t* GetSourceLocationZonesCnt( uint16_t srcloc )
     {
@@ -812,6 +824,13 @@ private:
         return GetSourceLocationZonesCntReal( srcloc );
     }
     uint64_t* GetSourceLocationZonesCntReal( uint16_t srcloc );
+
+    uint64_t* GetGpuSourceLocationZonesCnt( uint16_t srcloc )
+    {
+        if( m_data.gpuCntLast.first == srcloc ) return m_data.gpuCntLast.second;
+        return GetGpuSourceLocationZonesCntReal( srcloc );
+    }
+    uint64_t* GetGpuSourceLocationZonesCntReal( uint16_t srcloc );
 #endif
 
     tracy_force_inline void NewZone( ZoneEvent* zone );

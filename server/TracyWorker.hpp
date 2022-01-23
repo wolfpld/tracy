@@ -128,6 +128,17 @@ public:
     };
     enum { ZoneThreadDataSize = sizeof( ZoneThreadData ) };
 
+    struct GpuZoneThreadData
+    {
+        tracy_force_inline GpuEvent* Zone() const { return (GpuEvent*)( _zone_thread >> 16 ); }
+        tracy_force_inline void SetZone( GpuEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
+        tracy_force_inline uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
+        tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
+
+        uint64_t _zone_thread;
+    };
+    enum { GpuZoneThreadDataSize = sizeof( GpuZoneThreadData ) };
+
     struct CpuThreadTopology
     {
         uint32_t package;
@@ -188,6 +199,17 @@ private:
         int64_t nonReentrantMin = std::numeric_limits<int64_t>::max();
         int64_t nonReentrantMax = std::numeric_limits<int64_t>::min();
         int64_t nonReentrantTotal = 0;
+    };
+
+    struct GpuSourceLocationZones
+    {
+        struct GpuZtdSort { bool operator()( const GpuZoneThreadData& lhs, const GpuZoneThreadData& rhs ) { return lhs.Zone()->GpuStart() < rhs.Zone()->GpuStart(); } };
+
+        SortedVector<GpuZoneThreadData, GpuZtdSort> zones;
+        int64_t min = std::numeric_limits<int64_t>::max();
+        int64_t max = std::numeric_limits<int64_t>::min();
+        int64_t total = 0;
+        double sumSq = 0;
     };
 
     struct CallstackFrameIdHash

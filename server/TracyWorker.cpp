@@ -7680,6 +7680,12 @@ void Worker::CountZoneStatistics( ZoneEvent* zone )
     auto cnt = GetSourceLocationZonesCnt( zone->SrcLoc() );
     (*cnt)++;
 }
+
+void Worker::CountZoneStatistics( GpuEvent* zone )
+{
+    auto cnt = GetGpuSourceLocationZonesCnt( zone->SrcLoc() );
+    (*cnt)++;
+}
 #endif
 
 int64_t Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint32_t size, int64_t refTime, int32_t& childIdx )

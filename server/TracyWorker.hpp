@@ -906,6 +906,7 @@ private:
     tracy_force_inline void ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint16_t thread );
 #else
     tracy_force_inline void CountZoneStatistics( ZoneEvent* zone );
+    tracy_force_inline void CountZoneStatistics( GpuEvent* zone );
 #endif
 
     tracy_force_inline ZoneExtra& GetZoneExtraMutable( const ZoneEvent& ev ) { return m_data.zoneExtra[ev.extra]; }

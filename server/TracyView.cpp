@@ -12723,9 +12723,9 @@ void View::DrawStatistics()
 
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
     ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
-    ImGui::SameLine();
     if( m_worker.AreCallstackSamplesReady() )
     {
+        ImGui::SameLine();
         if( m_worker.GetCallstackSampleCount() > 0 )
         {
             ImGui::Spacing();

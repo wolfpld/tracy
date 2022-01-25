@@ -138,26 +138,38 @@ int main()
         }
     }
 
-    const int numLaunchs = 100;
+    cl_int clN = static_cast<cl_int>(N);
+    const int numFrames = 10;
+    const int launchsPerFrame = 10;
+    constexpr int numLaunchs = numFrames * launchsPerFrame;
     std::vector<cl_event> kernelLaunchEvts;
     kernelLaunchEvts.reserve(numLaunchs);
-    for (int i = 0; i < numLaunchs; ++i)
+    for (int i = 0; i < numFrames; ++i)
     {
-        int n_value = static_cast<int>(N);
-        ZoneScopedN("VectorAdd Kernel Launch");
-        TracyCLZoneC(tracyCLCtx, "VectorAdd Kernel", tracy::Color::Blue4);
+        FrameMark;
+        for (int j = 0; j < launchsPerFrame; ++j) {
+            ZoneScopedN("VectorAdd Kernel Launch");
+            TracyCLZoneC(tracyCLCtx, "VectorAdd Kernel", tracy::Color::Blue4);
 
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 0, sizeof(cl_mem), &bufferC));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 1, sizeof(cl_mem), &bufferA));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 2, sizeof(cl_mem), &bufferB));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 3, sizeof(int), &n_value));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 0, sizeof(cl_mem), &bufferC));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 1, sizeof(cl_mem), &bufferA));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 2, sizeof(cl_mem), &bufferB));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 3, sizeof(cl_int), &clN));
 
-        cl_event vectorAddKernelEvent;
-        CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));
-        TracyCLZoneSetEvent(vectorAddKernelEvent);
-        CL_ASSERT(clRetainEvent(vectorAddKernelEvent));
-        kernelLaunchEvts.push_back(vectorAddKernelEvent);
-        std::cout << "VectorAdd Kernel Enqueued" << std::endl;
+            cl_event vectorAddKernelEvent;
+            CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));
+            TracyCLZoneSetEvent(vectorAddKernelEvent);
+            CL_ASSERT(clRetainEvent(vectorAddKernelEvent));
+            kernelLaunchEvts.push_back(vectorAddKernelEvent);
+            std::cout << "VectorAdd Kernel Enqueued" << std::endl;
+        }
+        {
+            // Wait frame events to be finished
+            ZoneScopedN("clFinish");
+            CL_ASSERT(clFinish(commandQueue));
+        }
+        // You should collect on each 'frame' ends, so that streaming can be achieved.
+        TracyCLCollect(tracyCLCtx);
     }
 
     {
@@ -188,8 +200,8 @@ int main()
     }) / (durations.size() - 1.0f);
     std::cout << "VectorAdd runtime avg: " << avg << "us, std: " << sqrt(stddev2) << "us over " << numLaunchs << " runs." << std::endl;
 
-
-    TracyCLCollect(tracyCLCtx);
+    // Use blocking collect will ensure all queued events is finished
+    TracyCLBlockingCollect(tracyCLCtx);
 
     {
         ZoneScopedN("Checking results");

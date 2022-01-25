@@ -105,8 +105,8 @@ int main()
         hostB.resize(N);
         hostC.resize(N);
 
-        std::iota(std::begin(hostA), std::end(hostA), 0);
-        std::iota(std::begin(hostB), std::end(hostB), 0);
+        std::iota(std::begin(hostA), std::end(hostA), 0.0f);
+        std::iota(std::begin(hostB), std::end(hostB), 0.0f);
     }
 
     {
@@ -178,7 +178,7 @@ int main()
         CL_ASSERT(clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, nullptr));
         CL_ASSERT(clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, nullptr));
         CL_ASSERT(clReleaseEvent(evt));
-        durations[i] = (end - start) * 0.001;
+        durations[i] = (end - start) * 0.001f;
         std::cout << "VectorAdd Kernel " << i << " tooks " <<  static_cast<int>(durations[i]) << "us" << std::endl;
     };
     float avg = std::accumulate(durations.cbegin(), durations.cend(), 0.0f) / durations.size();

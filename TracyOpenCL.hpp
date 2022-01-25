@@ -154,18 +154,20 @@ namespace tracy {
                 EventInfo eventInfo = GetQuery(m_tail);
                 cl_int eventStatus;
                 cl_int err = clGetEventInfo(eventInfo.event, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &eventStatus, nullptr);
-                if (err != CL_SUCCESS) {
+                if (err != CL_SUCCESS)
+                {
                     std::ostringstream oss;
                     oss << "clGetEventInfo falied with error code " << err << ", on event " << eventInfo.event << ", skipping...";
                     auto msg = oss.str();
                     TracyMessage(msg.data(), msg.size());
                     if (eventInfo.event == nullptr) {
-                        TracyMessageL("A TracyCLZone must be paird with a TracyCLZoneSetEvent, check you code!");
+                        TracyMessageL("A TracyCLZone must be paird with a TracyCLZoneSetEvent, check your code!");
                     }
                     assert(false && "clGetEventInfo failed, maybe a TracyCLZone is not paired with TracyCLZoneSetEvent");
                     continue;
                 }
-                if (eventStatus != CL_COMPLETE) {
+                if (eventStatus != CL_COMPLETE)
+                {
                     if (!blocking)
                         return;
                     TRACY_CL_CHECK_ERROR(clWaitForEvents(1, &eventInfo.event));
@@ -176,7 +178,15 @@ namespace tracy {
                     : CL_PROFILING_COMMAND_END;
 
                 cl_ulong eventTimeStamp = 0;
-                TRACY_CL_CHECK_ERROR(clGetEventProfilingInfo(eventInfo.event, eventInfoQuery, sizeof(cl_ulong), &eventTimeStamp, nullptr));
+                err = clGetEventProfilingInfo(eventInfo.event, eventInfoQuery, sizeof(cl_ulong), &eventTimeStamp, nullptr);
+                if (err == CL_PROFILING_INFO_NOT_AVAILABLE)
+                {
+                    TracyMessageL("command queue is not created with CL_QUEUE_PROFILING_ENABLE flag, check your code!");
+                    assert(false && "command queue is not created with CL_QUEUE_PROFILING_ENABLE flag");
+                }
+                else
+                    TRACY_CL_CHECK_ERROR(err);
+
                 TRACY_CL_ASSERT(eventTimeStamp != 0);
 
                 auto item = Profiler::QueueSerial();

@@ -30,6 +30,11 @@ SOFTWARE.
 
 #include "../common/TracyAlloc.hpp"
 
+#if defined (_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4324)
+#endif
+
 namespace tracy {
 
 template <typename T> class SPSCQueue {
@@ -134,3 +139,7 @@ private:
   char padding_[kCacheLineSize - sizeof(writeIdxCache_)];
 };
 } // namespace rigtorp
+
+#if defined (_MSC_VER)
+#pragma warning(pop)
+#endif

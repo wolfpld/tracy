@@ -340,7 +340,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 
 CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 {
-    CallstackSymbolData sym;
+    CallstackSymbolData sym = {};
     const auto proc = GetCurrentProcess();
     bool done = false;
 

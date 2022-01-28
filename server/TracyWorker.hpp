@@ -883,6 +883,7 @@ private:
     void CacheSource( const StringRef& str );
 
     tracy_force_inline Vector<short_ptr<ZoneEvent>>& GetZoneChildrenMutable( int32_t idx ) { return m_data.zoneChildren[idx]; }
+    tracy_force_inline Vector<short_ptr<GpuEvent>>& GetGpuChildrenMutable( int32_t idx ) { return m_data.gpuChildren[idx]; }
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline Vector<GhostZone>& GetGhostChildrenMutable( int32_t idx ) { return m_data.ghostChildren[idx]; }
 #endif

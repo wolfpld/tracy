@@ -12739,6 +12739,13 @@ void View::DrawStatistics()
             ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
         }
     }
+    if( m_worker.GetGpuZoneCount() > 0 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::RadioButton( ICON_FA_EYE " GPU", &m_statMode, 2 );
+    }
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

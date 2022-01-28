@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -104,8 +105,8 @@ int main()
         hostB.resize(N);
         hostC.resize(N);
 
-        std::iota(std::begin(hostA), std::end(hostA), 0);
-        std::iota(std::begin(hostB), std::end(hostB), 0);
+        std::iota(std::begin(hostA), std::end(hostA), 0.0f);
+        std::iota(std::begin(hostB), std::end(hostB), 0.0f);
     }
 
     {
@@ -123,7 +124,7 @@ int main()
             ZoneScopedN("Write Buffer A");
             TracyCLZoneS(tracyCLCtx, "Write BufferA", 5);
 
-            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferA, CL_TRUE, 0, N * sizeof(float), hostA.data(), 0, nullptr, &writeBufferAEvent));
+            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferA, CL_FALSE, 0, N * sizeof(float), hostA.data(), 0, nullptr, &writeBufferAEvent));
 
             TracyCLZoneSetEvent(writeBufferAEvent);
         }
@@ -131,34 +132,44 @@ int main()
             ZoneScopedN("Write Buffer B");
             TracyCLZone(tracyCLCtx, "Write BufferB");
 
-            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferB, CL_TRUE, 0, N * sizeof(float), hostB.data(), 0, nullptr, &writeBufferBEvent));
+            CL_ASSERT(clEnqueueWriteBuffer(commandQueue, bufferB, CL_FALSE, 0, N * sizeof(float), hostB.data(), 0, nullptr, &writeBufferBEvent));
 
             TracyCLZoneSetEvent(writeBufferBEvent);
         }
     }
 
-    for (int i = 0; i < 10; ++i)
+    cl_int clN = static_cast<cl_int>(N);
+    const int numFrames = 10;
+    const int launchsPerFrame = 10;
+    constexpr int numLaunchs = numFrames * launchsPerFrame;
+    std::vector<cl_event> kernelLaunchEvts;
+    kernelLaunchEvts.reserve(numLaunchs);
+    for (int i = 0; i < numFrames; ++i)
     {
-        int n_value = static_cast<int>(N);
-        ZoneScopedN("VectorAdd Kernel Launch");
-        TracyCLZoneC(tracyCLCtx, "VectorAdd Kernel", tracy::Color::Blue4);
+        FrameMark;
+        for (int j = 0; j < launchsPerFrame; ++j) {
+            ZoneScopedN("VectorAdd Kernel Launch");
+            TracyCLZoneC(tracyCLCtx, "VectorAdd Kernel", tracy::Color::Blue4);
 
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 0, sizeof(cl_mem), &bufferC));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 1, sizeof(cl_mem), &bufferA));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 2, sizeof(cl_mem), &bufferB));
-        CL_ASSERT(clSetKernelArg(vectorAddKernel, 3, sizeof(int), &n_value));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 0, sizeof(cl_mem), &bufferC));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 1, sizeof(cl_mem), &bufferA));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 2, sizeof(cl_mem), &bufferB));
+            CL_ASSERT(clSetKernelArg(vectorAddKernel, 3, sizeof(cl_int), &clN));
 
-        cl_event vectorAddKernelEvent;
-        CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));
-
-        CL_ASSERT(clWaitForEvents(1, &vectorAddKernelEvent));
-
-        TracyCLZoneSetEvent(vectorAddKernelEvent);
-
-        cl_ulong kernelStartTime, kernelEndTime;
-        CL_ASSERT(clGetEventProfilingInfo(vectorAddKernelEvent, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &kernelStartTime, nullptr));
-        CL_ASSERT(clGetEventProfilingInfo(vectorAddKernelEvent, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernelEndTime, nullptr));
-        std::cout << "VectorAdd Kernel Elapsed: " << ((kernelEndTime - kernelStartTime) / 1000) << " us" << std::endl;
+            cl_event vectorAddKernelEvent;
+            CL_ASSERT(clEnqueueNDRangeKernel(commandQueue, vectorAddKernel, 1, nullptr, &N, nullptr, 0, nullptr, &vectorAddKernelEvent));
+            TracyCLZoneSetEvent(vectorAddKernelEvent);
+            CL_ASSERT(clRetainEvent(vectorAddKernelEvent));
+            kernelLaunchEvts.push_back(vectorAddKernelEvent);
+            std::cout << "VectorAdd Kernel Enqueued" << std::endl;
+        }
+        {
+            // Wait frame events to be finished
+            ZoneScopedN("clFinish");
+            CL_ASSERT(clFinish(commandQueue));
+        }
+        // You should collect on each 'frame' ends, so that streaming can be achieved.
+        TracyCLCollect(tracyCLCtx);
     }
 
     {
@@ -171,7 +182,25 @@ int main()
     }
 
     CL_ASSERT(clFinish(commandQueue));
+    std::vector<float> durations(kernelLaunchEvts.size());
+    for (int i=0; i<kernelLaunchEvts.size(); i++) {
+        cl_event evt = kernelLaunchEvts[i];
+        cl_ulong start;
+        cl_ulong end;
+        CL_ASSERT(clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, nullptr));
+        CL_ASSERT(clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, nullptr));
+        CL_ASSERT(clReleaseEvent(evt));
+        durations[i] = (end - start) * 0.001f;
+        std::cout << "VectorAdd Kernel " << i << " tooks " <<  static_cast<int>(durations[i]) << "us" << std::endl;
+    };
+    float avg = std::accumulate(durations.cbegin(), durations.cend(), 0.0f) / durations.size();
+    float stddev2 = std::accumulate(durations.cbegin(), durations.cend(), 0.0f, [avg](const float& acc, const float& v) {
+        auto d = v - avg;
+        return acc + d*d;
+    }) / (durations.size() - 1.0f);
+    std::cout << "VectorAdd runtime avg: " << avg << "us, std: " << sqrt(stddev2) << "us over " << numLaunchs << " runs." << std::endl;
 
+    // User should ensure all events are finished, in this case, collect after the clFinish will do the trick.
     TracyCLCollect(tracyCLCtx);
 
     {

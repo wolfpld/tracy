@@ -21,7 +21,6 @@
 #define TracyCLZoneSetEvent(e)
 
 #define TracyCLCollect(c)
-#define TracyCLBlockingCollect(c)
 
 namespace tracy
 {
@@ -136,7 +135,7 @@ namespace tracy {
             Profiler::QueueSerialFinish();
         }
 
-        void Collect(bool blocking)
+        void Collect()
         {
             ZoneScopedC(Color::Red4);
 
@@ -166,12 +165,7 @@ namespace tracy {
                     assert(false && "clGetEventInfo failed, maybe a TracyCLZone is not paired with TracyCLZoneSetEvent");
                     continue;
                 }
-                if (eventStatus != CL_COMPLETE)
-                {
-                    if (!blocking)
-                        return;
-                    TRACY_CL_CHECK_ERROR(clWaitForEvents(1, &eventInfo.event));
-                }
+                if (eventStatus != CL_COMPLETE) return;
 
                 cl_int eventInfoQuery = (eventInfo.phase == EventPhase::Begin)
                     ? CL_PROFILING_COMMAND_START
@@ -359,8 +353,7 @@ using TracyCLCtx = tracy::OpenCLCtx*;
 #define TracyCLNamedZoneSetEvent(varname, event) varname.SetEvent(event)
 #define TracyCLZoneSetEvent(event) __tracy_gpu_zone.SetEvent(event)
 
-#define TracyCLCollect(ctx) ctx->Collect(/*blocking=*/false)
-#define TracyCLBlockingCollect(ctx) ctx->Collect(/*blocking=*/true)
+#define TracyCLCollect(ctx) ctx->Collect()
 
 #endif
 

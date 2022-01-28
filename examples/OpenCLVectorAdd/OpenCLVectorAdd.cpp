@@ -200,8 +200,8 @@ int main()
     }) / (durations.size() - 1.0f);
     std::cout << "VectorAdd runtime avg: " << avg << "us, std: " << sqrt(stddev2) << "us over " << numLaunchs << " runs." << std::endl;
 
-    // Use blocking collect will ensure all queued events is finished
-    TracyCLBlockingCollect(tracyCLCtx);
+    // User should ensure all events are finished, in this case, collect after the clFinish will do the trick.
+    TracyCLCollect(tracyCLCtx);
 
     {
         ZoneScopedN("Checking results");

@@ -1978,6 +1978,38 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 m_data.sourceLocationZonesReady = true;
             } ) );
 
+            std::function<void(Vector<short_ptr<GpuEvent>>&, uint16_t)> ProcessTimelineGpu;
+            ProcessTimelineGpu = [this, &ProcessTimelineGpu] ( Vector<short_ptr<GpuEvent>>& _vec, uint16_t thread )
+            {
+                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                assert( _vec.is_magic() );
+                auto& vec = *(Vector<GpuEvent>*)( &_vec );
+                for( auto& zone : vec )
+                {
+                    if( zone.GpuEnd() >= 0 ) ReconstructZoneStatistics( zone, thread );
+                    if( zone.Child() >= 0 )
+                    {
+                        ProcessTimelineGpu( GetGpuChildrenMutable( zone.Child() ), thread );
+                    }
+                }
+            };
+
+            jobs.emplace_back( std::thread( [this, ProcessTimelineGpu] {
+                for( auto& t : m_data.gpuData )
+                {
+                    for( auto& td : t->threadData )
+                    {
+                        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                        if( !td.second.timeline.empty() )
+                        {
+                            ProcessTimelineGpu( td.second.timeline, td.first );
+                        }
+                    }
+                }
+                std::lock_guard<std::mutex> lock( m_data.lock );
+                m_data.gpuSourceLocationZonesReady = true;
+            } ) );
+
             if( eventMask & EventType::Samples )
             {
                 jobs.emplace_back( std::thread( [this] {
@@ -7690,6 +7722,29 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
         if( slz.selfMin > timeSpan ) slz.selfMin = timeSpan;
         if( slz.selfMax < timeSpan ) slz.selfMax = timeSpan;
         slz.selfTotal += timeSpan;
+    }
+}
+
+void Worker::ReconstructZoneStatistics( GpuEvent& zone, uint16_t thread )
+{
+    assert( zone.GpuEnd() >= 0 );
+    auto timeSpan = zone.GpuEnd() - zone.GpuStart();
+    if( timeSpan > 0 )
+    {
+        auto it = m_data.gpuSourceLocationZones.find( zone.SrcLoc() );
+        if( it == m_data.gpuSourceLocationZones.end() )
+        {
+            it = m_data.gpuSourceLocationZones.emplace( zone.SrcLoc(), GpuSourceLocationZones {} ).first;
+        }
+        GpuZoneThreadData ztd;
+        ztd.SetZone( &zone );
+        ztd.SetThread( thread );
+        auto& slz = it->second;
+        slz.zones.push_back( ztd );
+        if( slz.min > timeSpan ) slz.min = timeSpan;
+        if( slz.max < timeSpan ) slz.max = timeSpan;
+        slz.total += timeSpan;
+        slz.sumSq += double( timeSpan ) * timeSpan;
     }
 }
 #else

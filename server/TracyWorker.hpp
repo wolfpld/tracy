@@ -905,6 +905,7 @@ private:
 
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline void ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint16_t thread );
+    tracy_force_inline void ReconstructZoneStatistics( GpuEvent& zone, uint16_t thread );
 #else
     tracy_force_inline void CountZoneStatistics( ZoneEvent* zone );
     tracy_force_inline void CountZoneStatistics( GpuEvent* zone );

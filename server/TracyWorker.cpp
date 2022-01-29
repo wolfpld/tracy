@@ -3786,7 +3786,10 @@ Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc
 Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
 {
     auto it = m_data.gpuSourceLocationZones.find( srcloc );
-    assert( it != m_data.gpuSourceLocationZones.end() );
+    if( it == m_data.gpuSourceLocationZones.end() )
+    {
+        it = m_data.gpuSourceLocationZones.emplace( srcloc, GpuSourceLocationZones() ).first;
+    }
     m_data.gpuZonesLast.first = srcloc;
     m_data.gpuZonesLast.second = &it->second;
     return &it->second;

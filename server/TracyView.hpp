@@ -534,6 +534,7 @@ private:
     bool m_setRangePopupOpen = false;
 
     unordered_flat_map<int16_t, StatisticsCache> m_statCache;
+    unordered_flat_map<int16_t, StatisticsCache> m_gpuStatCache;
 
     void(*m_cbMainThread)(std::function<void()>, bool);
 

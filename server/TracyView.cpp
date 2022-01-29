@@ -12927,7 +12927,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         AccumulationModeComboBox();
     }
-    else
+    else if( m_statMode == 1 )
     {
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
         ImGui::SameLine();
@@ -12968,6 +12968,142 @@ void View::DrawStatistics()
         const char* locationTable = "Entry\0Sample\0Smart\0";
         ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
         ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
+    }
+    else
+    {
+        assert( m_statMode == 2 );
+        if( !m_worker.AreGpuSourceLocationZonesReady() )
+        {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::PopStyleVar();
+            ImGui::TextWrapped( "Please wait, computing data..." );
+            DrawWaitingDots( s_time );
+            ImGui::End();
+            return;
+        }
+
+        const auto filterActive = m_statisticsFilter.IsActive();
+        auto& slz = m_worker.GetGpuSourceLocationZones();
+        srcloc.reserve( slz.size() );
+        uint32_t slzcnt = 0;
+        if( m_statRange.active )
+        {
+            const auto min = m_statRange.min;
+            const auto max = m_statRange.max;
+            const auto st = max - min;
+            for( auto it = slz.begin(); it != slz.end(); ++it )
+            {
+                if( it->second.total != 0 && it->second.min <= st )
+                {
+                    if( !filterActive )
+                    {
+                        auto cit = m_gpuStatCache.find( it->first );
+                        if( cit != m_gpuStatCache.end() && cit->second.range == m_statRange && cit->second.accumulationMode == m_statAccumulationMode && cit->second.sourceCount == it->second.zones.size() )
+                        {
+                            if( cit->second.count != 0 )
+                            {
+                                slzcnt++;
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
+                            }
+                        }
+                        else
+                        {
+                            size_t cnt = 0;
+                            int64_t total = 0;
+                            for( auto& v : it->second.zones )
+                            {
+                                auto& z = *v.Zone();
+                                const auto start = z.GpuStart();
+                                const auto end = z.GpuEnd();
+                                if( start >= min && end <= max )
+                                {
+                                    const auto zt = end - start;
+                                    total += zt;
+                                    cnt++;
+                                }
+                            }
+                            if( cnt != 0 )
+                            {
+                                slzcnt++;
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
+                            }
+                            m_gpuStatCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
+                        }
+                    }
+                    else
+                    {
+                        slzcnt++;
+                        auto& sl = m_worker.GetSourceLocation( it->first );
+                        auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
+                        if( m_statisticsFilter.PassFilter( name ) )
+                        {
+                            auto cit = m_gpuStatCache.find( it->first );
+                            if( cit != m_gpuStatCache.end() && cit->second.range == m_statRange && cit->second.accumulationMode == m_statAccumulationMode && cit->second.sourceCount == it->second.zones.size() )
+                            {
+                                if( cit->second.count != 0 )
+                                {
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
+                                }
+                            }
+                            else
+                            {
+                                size_t cnt = 0;
+                                int64_t total = 0;
+                                for( auto& v : it->second.zones )
+                                {
+                                    auto& z = *v.Zone();
+                                    const auto start = z.GpuStart();
+                                    const auto end = z.GpuEnd();
+                                    if( start >= min && end <= max )
+                                    {
+                                        const auto zt = end - start;
+                                        total += zt;
+                                        cnt++;
+                                    }
+                                }
+                                if( cnt != 0 )
+                                {
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
+                                }
+                                m_gpuStatCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for( auto it = slz.begin(); it != slz.end(); ++it )
+            {
+                if( it->second.total != 0 )
+                {
+                    slzcnt++;
+                    size_t count = it->second.zones.size();
+                    int64_t total = it->second.total;
+                    if( !filterActive )
+                    {
+                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
+                    }
+                    else
+                    {
+                        auto& sl = m_worker.GetSourceLocation( it->first );
+                        auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
+                        if( m_statisticsFilter.PassFilter( name ) )
+                        {
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
+                        }
+                    }
+                }
+            }
+        }
+
+        TextFocused( "Total zone count:", RealToString( slzcnt ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
     }
 
     ImGui::Separator();
@@ -13077,7 +13213,7 @@ void View::DrawStatistics()
         timeRange = m_worker.GetLastTime();
     }
 
-    if( m_statMode == 0 )
+    if( m_statMode == 0 || m_statMode == 2 )
     {
         if( srcloc.empty() )
         {
@@ -13154,9 +13290,16 @@ void View::DrawStatistics()
                     auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                     SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                     ImGui::SameLine();
-                    if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v.srcloc, ImGuiSelectableFlags_SpanAllColumns ) )
+                    if( m_statMode == 0 )
                     {
-                        m_findZone.ShowZone( v.srcloc, name );
+                        if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v.srcloc, ImGuiSelectableFlags_SpanAllColumns ) )
+                        {
+                            m_findZone.ShowZone( v.srcloc, name );
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( name );
                     }
                     ImGui::TableNextColumn();
                     float indentVal = 0.f;
@@ -13208,6 +13351,7 @@ void View::DrawStatistics()
     }
     else
     {
+        assert( m_statMode == 1 );
         const auto& symMap = m_worker.GetSymbolMap();
         const auto& symStat = m_worker.GetSymbolStats();
 

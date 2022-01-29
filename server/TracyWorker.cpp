@@ -781,6 +781,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         assert( status.second );
         status.first->second.zones.reserve( cnt );
     }
+
+    if( fileVer >= FileVersion( 0, 7, 15 ) )
+    {
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int16_t id;
+            uint64_t cnt;
+            f.Read2( id, cnt );
+            auto status = m_data.gpuSourceLocationZones.emplace( id, GpuSourceLocationZones() );
+            assert( status.second );
+            status.first->second.zones.reserve( cnt );
+        }
+    }
 #else
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -789,6 +803,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         f.Read( id );
         f.Skip( sizeof( uint64_t ) );
         m_data.sourceLocationZonesCnt.emplace( id, 0 );
+    }
+
+    if( fileVer >= FileVersion( 0, 7, 15 ) )
+    {
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int16_t id;
+            f.Read( id );
+            f.Skip( sizeof( uint64_t ) );
+            m_data.gpuSourceLocationZonesCnt.emplace( id, 0 );
+        }
     }
 #endif
 
@@ -8058,10 +8084,30 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &id, sizeof( id ) );
         f.Write( &cnt, sizeof( cnt ) );
     }
+
+    sz = m_data.gpuSourceLocationZones.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.gpuSourceLocationZones )
+    {
+        int16_t id = v.first;
+        uint64_t cnt = v.second.zones.size();
+        f.Write( &id, sizeof( id ) );
+        f.Write( &cnt, sizeof( cnt ) );
+    }
 #else
     sz = m_data.sourceLocationZonesCnt.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.sourceLocationZonesCnt )
+    {
+        int16_t id = v.first;
+        uint64_t cnt = v.second;
+        f.Write( &id, sizeof( id ) );
+        f.Write( &cnt, sizeof( cnt ) );
+    }
+
+    sz = m_data.gpuSourceLocationZonesCnt.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.gpuSourceLocationZonesCnt )
     {
         int16_t id = v.first;
         uint64_t cnt = v.second;

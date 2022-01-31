@@ -1082,6 +1082,27 @@ void SysTraceWorker( void* ptr )
     for( int i=0; i<s_numBuffers; i++ ) s_ring[i].Enable();
     for(;;)
     {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() )
+        {
+            if( !traceActive.load( std::memory_order_relaxed ) ) break;
+            for( int i=0; i<s_numBuffers; i++ )
+            {
+                auto& ring = s_ring[i];
+                const auto head = ring.LoadHead();
+                const auto tail = ring.GetTail();
+                if( head != tail )
+                {
+                    const auto end = head - tail;
+                    ring.Advance( end );
+                }
+            }
+            if( !traceActive.load( std::memory_order_relaxed ) ) break;
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            continue;
+        }
+#endif
+
         bool hadData = false;
         for( int i=0; i<s_ctxBufferIdx; i++ )
         {

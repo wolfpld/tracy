@@ -6,7 +6,11 @@
 #endif
 
 #if defined _WIN32
-#  define TRACY_HAS_CALLSTACK 1
+#  if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && \
+      !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#  else
+#    define TRACY_HAS_CALLSTACK 1
+#  endif
 #elif defined __ANDROID__
 #  if !defined __arm__ || __ANDROID_API__ >= 21
 #    define TRACY_HAS_CALLSTACK 2

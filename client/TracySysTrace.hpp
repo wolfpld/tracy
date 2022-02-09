@@ -2,7 +2,11 @@
 #define __TRACYSYSTRACE_HPP__
 
 #if !defined TRACY_NO_SYSTEM_TRACING && ( defined _WIN32 || defined __linux__ )
-#  define TRACY_HAS_SYSTEM_TRACING
+#  if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && \
+      !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#  else
+#    define TRACY_HAS_SYSTEM_TRACING
+#  endif
 #endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING

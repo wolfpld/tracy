@@ -10,6 +10,11 @@
 #  endif
 #  include <windows.h>
 #  include <malloc.h>
+
+#  if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && \
+      !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#    define TRACY_ON_UWP
+#  endif
 #else
 #  include <pthread.h>
 #  include <string.h>
@@ -127,7 +132,11 @@ void ThreadNameMsvcMagic( const THREADNAME_INFO& info )
 TRACY_API void SetThreadName( const char* name )
 {
 #if defined _WIN32
+#  if defined TRACY_ON_UWP
+    static auto _SetThreadDescription = &::SetThreadDescription;
+#  else
     static auto _SetThreadDescription = (t_SetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "SetThreadDescription" );
+#  endif
     if( _SetThreadDescription )
     {
         wchar_t buf[256];
@@ -191,7 +200,11 @@ TRACY_API const char* GetThreadName( uint32_t id )
     }
 #else
 #  if defined _WIN32
+#    if defined TRACY_ON_UWP
+    static auto _GetThreadDescription = &::GetThreadDescription;
+#    else
     static auto _GetThreadDescription = (t_GetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetThreadDescription" );
+#    endif
     if( _GetThreadDescription )
     {
         auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );

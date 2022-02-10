@@ -6,9 +6,8 @@
 #endif
 
 #if defined _WIN32
-#  if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && \
-      !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#  else
+#  include "../common/TracyUwp.hpp"
+#  ifndef TRACY_UWP
 #    define TRACY_HAS_CALLSTACK 1
 #  endif
 #elif defined __ANDROID__

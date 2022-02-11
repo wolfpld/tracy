@@ -450,22 +450,22 @@ static const char* GetHostInfo()
 #  endif
     if( !GetVersion )
     {
-#    ifdef __MINGW32__
+#  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows (MingW)\n" );
-#    else
+#  else
         ptr += sprintf( ptr, "OS: Windows\n" );
-#    endif
+#  endif
     }
     else
     {
         RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
         GetVersion( &ver );
 
-#    ifdef __MINGW32__
+#  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
-#    else
+#  else
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
-#    endif
+#  endif
     }
 #elif defined __linux__
     struct utsname utsName;

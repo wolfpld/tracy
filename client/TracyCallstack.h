@@ -6,7 +6,10 @@
 #endif
 
 #if defined _WIN32
-#  define TRACY_HAS_CALLSTACK 1
+#  include "../common/TracyUwp.hpp"
+#  ifndef TRACY_UWP
+#    define TRACY_HAS_CALLSTACK 1
+#  endif
 #elif defined __ANDROID__
 #  if !defined __arm__ || __ANDROID_API__ >= 21
 #    define TRACY_HAS_CALLSTACK 2

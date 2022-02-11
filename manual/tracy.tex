@@ -522,6 +522,16 @@ In the case of some programming environments, you may need to take extra steps t
 
 If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, as it makes the compiler non-conformant to some aspects of the C++ standard. In order to do so, open the project properties and go to \menu[,]{C/C++,General,Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
 
+\paragraph{Universal Windows Platform}
+
+Due to a restricted access to Win32 APIs and other sandboxing issues (like network isolation), several limitations apply to using Tracy in a UWP application compared to Windows Desktop:
+
+\begin{itemize}
+\item Call stack sampling is not available.
+\item System profiling is not available.
+\item To be able to connect from another machine on the local network, the app needs the \emph{privateNetworkClientServer} capability. To connect from localhost, an active inbound loopback exemption is also necessary \footnote{\url{https://docs.microsoft.com/en-us/windows/uwp/communication/interprocess-communication\#loopback}}.
+\end{itemize}
+
 \paragraph{Apple woes}
 
 Because Apple \emph{has} to be \emph{think different}, there are some problems with using Tracy on OSX and iOS. First, the performance hit due to profiling is higher than on other platforms. Second, some critical features are missing and won't be possible to achieve:

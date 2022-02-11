@@ -9,6 +9,7 @@
 #  include <tlhelp32.h>
 #  include <inttypes.h>
 #  include <intrin.h>
+#  include "../common/TracyUwp.hpp"
 #else
 #  include <sys/time.h>
 #  include <sys/param.h>
@@ -314,7 +315,9 @@ static void InitFailure( const char* msg )
     }
     else
     {
+#  ifndef TRACY_UWP
         MessageBoxA( nullptr, msg, "Tracy Profiler initialization failure", MB_ICONSTOP );
+#  endif
     }
 #else
     fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
@@ -440,8 +443,12 @@ static const char* GetHostInfo()
     static char buf[1024];
     auto ptr = buf;
 #if defined _WIN32
-    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlGetVersion" );
-    if( !RtlGetVersion )
+#  ifdef TRACY_UWP
+    auto GetVersion = &::GetVersionEx;
+#  else
+    auto GetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlGetVersion" );
+#  endif
+    if( !GetVersion )
     {
 #  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows (MingW)\n" );
@@ -452,7 +459,7 @@ static const char* GetHostInfo()
     else
     {
         RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
-        RtlGetVersion( &ver );
+        GetVersion( &ver );
 
 #  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
@@ -508,9 +515,13 @@ static const char* GetHostInfo()
     char hostname[512];
     gethostname( hostname, 512 );
 
+#  ifdef TRACY_UWP
+    const char* user = "";
+#  else
     DWORD userSz = UNLEN+1;
     char user[UNLEN+1];
     GetUserNameA( user, &userSz );
+#  endif
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #else
@@ -707,7 +718,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     return msg;
 }
 
-#if defined _WIN32
+#if defined _WIN32 && !defined TRACY_UWP
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
@@ -1382,7 +1393,7 @@ void Profiler::SpawnWorkerThreads()
     new(s_symbolThread) Thread( LaunchSymbolWorker, this );
 #endif
 
-#if defined _WIN32
+#if defined _WIN32 && !defined TRACY_UWP
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
@@ -1416,7 +1427,7 @@ Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
 
-#if defined _WIN32
+#if defined _WIN32 && !defined TRACY_UWP
     if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
 #endif
 
@@ -3534,7 +3545,11 @@ void Profiler::ReportTopology()
     };
 
 #if defined _WIN32
+#  ifdef TRACY_UWP
+    t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = &::GetLogicalProcessorInformationEx;
+#  else
     t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetLogicalProcessorInformationEx" );
+#  endif
     if( !_GetLogicalProcessorInformationEx ) return;
 
     DWORD psz = 0;

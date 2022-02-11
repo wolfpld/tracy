@@ -112,5 +112,6 @@ install(FILES ${client_includes}
 install(FILES ${common_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/common)
 install(EXPORT TracyConfig
+		NAMESPACE Tracy::
         FILE TracyConfig.cmake
         DESTINATION share/Tracy)

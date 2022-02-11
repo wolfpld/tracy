@@ -98,6 +98,7 @@ set(common_includes
     ${CMAKE_CURRENT_LIST_DIR}/common/TracySocket.hpp
     ${CMAKE_CURRENT_LIST_DIR}/common/TracyStackFrames.hpp
     ${CMAKE_CURRENT_LIST_DIR}/common/TracySystem.hpp
+    ${CMAKE_CURRENT_LIST_DIR}/common/TracyUwp.hpp
     ${CMAKE_CURRENT_LIST_DIR}/common/TracyYield.hpp)
 
 install(TARGETS TracyClient

@@ -1073,8 +1073,6 @@ std::atomic<bool> s_symbolThreadGone { false };
 static Thread* s_sysTraceThread = nullptr;
 #endif
 
-TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
-
 TRACY_API int64_t GetFrequencyQpc()
 {
 #if defined _WIN32
@@ -1300,6 +1298,9 @@ std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
 #  endif
 #endif
+
+TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
+TRACY_API bool ProfilerAllocatorAvailable() { return !RpThreadShutdown; }
 
 Profiler::Profiler()
     : m_timeBegin( 0 )

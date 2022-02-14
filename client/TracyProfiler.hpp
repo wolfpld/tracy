@@ -473,6 +473,11 @@ public:
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth, bool secure )
     {
         if( secure && !ProfilerAvailable() ) return;
+        if( !ProfilerAllocatorAvailable() )
+        {
+            MemFree( ptr, secure );
+            return;
+        }
 #ifdef TRACY_HAS_CALLSTACK
         auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND

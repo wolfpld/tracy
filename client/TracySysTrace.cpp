@@ -1304,7 +1304,7 @@ void SysTraceWorker( void* ptr )
                             //   u8  prev_comm[16]
                             //   u32 prev_pid
                             //   u32 prev_prio
-                            //   u64 prev_state
+                            //   lng prev_state
                             //   u8  next_comm[16]
                             //   u32 next_pid
                             //   u32 next_prio
@@ -1318,12 +1318,12 @@ void SysTraceWorker( void* ptr )
                             offset += sizeof( uint64_t ) * cnt + sizeof( uint32_t ) + 8 + 16;
 
                             uint32_t prev_pid, next_pid;
-                            uint64_t prev_state;
+                            long prev_state;
 
                             ring.Read( &prev_pid, offset, sizeof( uint32_t ) );
                             offset += sizeof( uint32_t ) + sizeof( uint32_t );
-                            ring.Read( &prev_state, offset, sizeof( uint64_t ) );
-                            offset += sizeof( uint64_t ) + 16;
+                            ring.Read( &prev_state, offset, sizeof( long ) );
+                            offset += sizeof( long ) + 16;
                             ring.Read( &next_pid, offset, sizeof( uint32_t ) );
 
                             uint8_t reason = 100;

@@ -1638,11 +1638,14 @@ _memory_adjust_size_class(size_t iclass) {
 	}
 }
 
+extern thread_local bool RpThreadShutdown;
+
 static void
 _memory_heap_finalize(void* heapptr) {
 	heap_t* heap = (heap_t*)heapptr;
 	if (!heap)
 		return;
+	RpThreadShutdown = true;
 	//Release thread cache spans back to global cache
 #if ENABLE_THREAD_CACHE
 	_memory_heap_cache_adopt_deferred(heap);

@@ -1120,6 +1120,7 @@ struct ProfilerThreadData
 std::atomic<int> RpInitDone { 0 };
 std::atomic<int> RpInitLock { 0 };
 thread_local bool RpThreadInitDone = false;
+thread_local bool RpThreadShutdown = false;
 
 #  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
@@ -1267,6 +1268,7 @@ static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
 std::atomic<int> init_order(102) RpInitDone( 0 );
 std::atomic<int> init_order(102) RpInitLock( 0 );
 thread_local bool RpThreadInitDone = false;
+thread_local bool RpThreadShutdown = false;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );

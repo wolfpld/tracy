@@ -68,15 +68,15 @@ TRACY_API bool ProfilerAvailable();
 TRACY_API int64_t GetFrequencyQpc();
 
 #if defined TRACY_TIMER_FALLBACK && defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-TRACY_API bool hardwareSupportsInvariantTSC();  // check, if we need fallback scenario
+TRACY_API bool HardwareSupportsInvariantTSC();  // check, if we need fallback scenario
 #else
 #  if defined TRACY_HW_TIMER
-tracy_force_inline bool hardwareSupportsInvariantTSC()
+tracy_force_inline bool HardwareSupportsInvariantTSC()
 {
     return true;  // this is checked at startup
 }
 #  else
-tracy_force_inline bool hardwareSupportsInvariantTSC()
+tracy_force_inline bool HardwareSupportsInvariantTSC()
 {
     return false;
 }
@@ -183,28 +183,22 @@ public:
     {
 #ifdef TRACY_HW_TIMER
 #  if defined TARGET_OS_IOS && TARGET_OS_IOS == 1
-        if (hardwareSupportsInvariantTSC())
-        {
-            return mach_absolute_time();
-        }
+        if( HardwareSupportsInvariantTSC() ) return mach_absolute_time();
 #  elif defined _WIN32
 #    ifdef TRACY_TIMER_QPC
         return GetTimeQpc();
 #    else
-        if (hardwareSupportsInvariantTSC())
-        {
-            return int64_t( __rdtsc() );
-        }
+        if( HardwareSupportsInvariantTSC() ) return int64_t( __rdtsc() );
 #    endif
 #  elif defined __i386 || defined _M_IX86
-        if (hardwareSupportsInvariantTSC())
+        if( HardwareSupportsInvariantTSC() )
         {
             uint32_t eax, edx;
             asm volatile ( "rdtsc" : "=a" (eax), "=d" (edx) );
             return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
         }
 #  elif defined __x86_64__ || defined _M_X64
-        if (hardwareSupportsInvariantTSC())
+        if( HardwareSupportsInvariantTSC() )
         {
             uint64_t rax, rdx;
             asm volatile ( "rdtsc" : "=a" (rax), "=d" (rdx) );

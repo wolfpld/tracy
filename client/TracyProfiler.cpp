@@ -322,13 +322,10 @@ static void InitFailure( const char* msg )
     exit( 1 );
 }
 
-static bool checkHardwareSupportsInvariantTSC()
+static bool CheckHardwareSupportsInvariantTSC()
 {
     const char* noCheck = GetEnvVar( "TRACY_NO_INVARIANT_CHECK" );
-    if( noCheck && noCheck[0] == '1' ) 
-    {
-        return true;
-    }
+    if( noCheck && noCheck[0] == '1' ) return true;
 
     uint32_t regs[4];
     CpuId( regs, 1 );
@@ -340,18 +337,15 @@ static bool checkHardwareSupportsInvariantTSC()
         return false;
     }
     CpuId( regs, 0x80000007 );
-    if( regs[3] & ( 1 << 8 ) )
-    {
-        return true;
-    }
+    if( regs[3] & ( 1 << 8 ) ) return true;
 
     return false;
 }
 
 #if defined TRACY_TIMER_FALLBACK && defined TRACY_HW_TIMER
-bool hardwareSupportsInvariantTSC()
+bool HardwareSupportsInvariantTSC()
 {
-    static bool cachedResult = checkHardwareSupportsInvariantTSC();
+    static bool cachedResult = CheckHardwareSupportsInvariantTSC();
     return cachedResult;
 }
 #endif
@@ -359,7 +353,7 @@ bool hardwareSupportsInvariantTSC()
 static int64_t SetupHwTimer()
 {
 #if !defined TRACY_TIMER_QPC && !defined TRACY_TIMER_FALLBACK
-    if(!checkHardwareSupportsInvariantTSC())
+    if( !CheckHardwareSupportsInvariantTSC() )
     {
 #if defined _WIN32
         InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*.\nAlternatively you may rebuild the application with the TRACY_TIMER_QPC or TRACY_TIMER_FALLBACK define to use lower resolution timer." );
@@ -3482,11 +3476,11 @@ void Profiler::CalibrateTimer()
 #ifdef TRACY_HW_TIMER
 
 #  if !defined TRACY_TIMER_QPC && defined TRACY_TIMER_FALLBACK
-    const bool needCalibration = hardwareSupportsInvariantTSC();
+    const bool needCalibration = HardwareSupportsInvariantTSC();
 #  else
     const bool needCalibration = true;
 #  endif
-    if (needCalibration)
+    if( needCalibration )
     {
         std::atomic_signal_fence( std::memory_order_acq_rel );
         const auto t0 = std::chrono::high_resolution_clock::now();

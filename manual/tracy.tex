@@ -529,7 +529,7 @@ Due to a restricted access to Win32 APIs and other sandboxing issues (like netwo
 \begin{itemize}
 \item Call stack sampling is not available.
 \item System profiling is not available.
-\item To be able to connect from another machine on the local network, the app needs the \emph{privateNetworkClientServer} capability. To connect from localhost, an active inbound loopback exemption is also necessary \footnote{\url{https://docs.microsoft.com/en-us/windows/uwp/communication/interprocess-communication\#loopback}}.
+\item To be able to connect from another machine on the local network, the app needs the \emph{privateNetworkClientServer} capability. To connect from localhost, an active inbound loopback exemption is also necessary\footnote{\url{https://docs.microsoft.com/en-us/windows/uwp/communication/interprocess-communication\#loopback}}.
 \end{itemize}
 
 \paragraph{Apple woes}
@@ -831,13 +831,13 @@ Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes
 Wait stacks & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-Hardware sampling & 1) & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
+Hardware sampling & \faCheck{}\textsuperscript{\emph{a}} & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
 \vspace{1em}
 \faPoo{} -- Not possible to support due to platform limitations. \\
-1) Possible through WSL2.
+\textsuperscript{\emph{a}}Possible through WSL2.
 \caption{Feature support matrix}
 \label{featuretable}
 \end{table}
@@ -1605,6 +1605,14 @@ couleur=black!5,
 logo=\bcbombe
 ]{Important!}
 Collecting call stack data will also trigger retrieval of profiled program's executable code by the profiler. See section~\ref{executableretrieval} for details.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{How to disable}
+Tracy will prepare for call stack collection regardless of whether you use the functionality or not. In some cases, this may be unwanted or otherwise troublesome for the user. To disable support for collecting call stacks, define the \texttt{TRACY\_NO\_CALLSTACK} macro.
 \end{bclogo}
 
 \subsubsection{Debugging symbols}
@@ -2944,7 +2952,9 @@ You can filter the message list in the following ways:
 
 Looking at the timeline view gives you a very localized outlook on things. However, sometimes you want to look at the general overview of the program's behavior. For example, you want to know which function takes the most of the application's execution time. The statistics window provides you with exactly that information.
 
-If the trace capture was performed with call stack sampling enabled (as described in chapter~\ref{sampling}), you will be presented with an option to switch between \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling} modes. If the profiler collected no sampling data, but it retrieved symbols, the second mode will be displayed as \emph{\faPuzzlePiece{}~Symbols}, enabling you to list available symbols. Otherwise, only the instrumentation view will be present.
+If the trace capture was performed with call stack sampling enabled (as described in chapter~\ref{sampling}), you will be presented with an option to switch between \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling} modes. If the profiler collected no sampling data, but it retrieved symbols, the second mode will be displayed as \emph{\faPuzzlePiece{}~Symbols}, enabling you to list available symbols.
+
+If GPU zones were captured, you would also have the \emph{\faEye{}~GPU} option to view the GPU zones statistics.
 
 \subsubsection{Instrumentation mode}
 
@@ -2975,9 +2985,13 @@ The profiler may not find some function locations due to insufficient debugging 
 
 The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the total number of collected samples.
 
-The last column, \emph{Code size}, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved\footnote{Symbols larger than 64~KB are not captured.} symbol size will be prepended with the \texttt{\faDatabase}~icon, and clicking the \RMB{}~right mouse button on the location column entry will open symbol view window (section~\ref{symbolview}).
+The last column, \emph{Code size}, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved\footnote{Symbols larger than 128~KB are not captured.} symbol size will be prepended with the \texttt{\faDatabase}~icon, and clicking the \RMB{}~right mouse button on the location column entry will open symbol view window (section~\ref{symbolview}).
 
 Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the \emph{\faHatWizard{}~Include kernel} switch. The exclusive/inclusive time counting mode can be switched using the \emph{~Timing} menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
+
+\subsubsection{GPU zones mode}
+
+This is an analog of the instrumentation mode, but for the GPU zones. Note that the available options may be limited here.
 
 \subsection{Find zone window}
 \label{findzone}

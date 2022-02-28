@@ -391,7 +391,7 @@ static const char* GetProcessName()
     auto buf = getprogname();
     if( buf ) processName = buf;
 #  endif
-#elif defined _GNU_SOURCE
+#elif defined __linux__ && defined _GNU_SOURCE
     if( program_invocation_short_name ) processName = program_invocation_short_name;
 #elif defined __APPLE__ || defined BSD
     auto buf = getprogname();
@@ -408,7 +408,7 @@ static const char* GetProcessExecutablePath()
     return buf;
 #elif defined __ANDROID__
     return nullptr;
-#elif defined _GNU_SOURCE
+#elif defined __linux__ && defined _GNU_SOURCE
     return program_invocation_name;
 #elif defined __APPLE__
     static char buf[1024];

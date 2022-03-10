@@ -3117,7 +3117,7 @@ void Profiler::SendCallstackAlloc( uint64_t _ptr )
 void Profiler::QueueCallstackFrame( uint64_t ptr )
 {
 #ifdef TRACY_HAS_CALLSTACK
-    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CallstackFrame, ptr } );
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CallstackFrame, ptr, 0 } );
 #else
     AckServerQuery();
 #endif
@@ -3138,7 +3138,7 @@ void Profiler::QueueSymbolQuery( uint64_t symbol )
     }
     else
     {
-        m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SymbolQuery, symbol } );
+        m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SymbolQuery, symbol, 0 } );
     }
 #else
     AckServerQuery();
@@ -3148,7 +3148,7 @@ void Profiler::QueueSymbolQuery( uint64_t symbol )
 void Profiler::QueueCodeLocation( uint64_t ptr )
 {
 #ifdef TRACY_HAS_CALLSTACK
-    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CodeLocation, ptr } );
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CodeLocation, ptr, 0 } );
 #else
     AckServerQuery();
 #endif
@@ -3157,7 +3157,7 @@ void Profiler::QueueCodeLocation( uint64_t ptr )
 void Profiler::QueueExternalName( uint64_t ptr )
 {
 #ifdef TRACY_HAS_SYSTEM_TRACING
-    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::ExternalName, ptr } );
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::ExternalName, ptr, 0 } );
 #endif
 }
 

@@ -5438,7 +5438,7 @@ void Worker::ProcessZoneText()
     auto td = RetrieveThread( m_threadCtx );
     if( !td )
     {
-        ZoneTextFailure( td->id, m_pendingSingleString.ptr );
+        ZoneTextFailure( m_threadCtx, m_pendingSingleString.ptr );
         return;
     }
     if( td->fiber ) td = td->fiber;
@@ -5485,7 +5485,7 @@ void Worker::ProcessZoneName()
     auto td = RetrieveThread( m_threadCtx );
     if( !td )
     {
-        ZoneNameFailure( td->id );
+        ZoneNameFailure( m_threadCtx );
         return;
     }
     if( td->fiber ) td = td->fiber;
@@ -5507,7 +5507,7 @@ void Worker::ProcessZoneColor( const QueueZoneColor& ev )
     auto td = RetrieveThread( m_threadCtx );
     if( !td )
     {
-        ZoneColorFailure( td->id );
+        ZoneColorFailure( m_threadCtx );
         return;
     }
     if( td->fiber ) td = td->fiber;
@@ -5533,7 +5533,7 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
     auto td = RetrieveThread( m_threadCtx );
     if( !td )
     {
-        ZoneValueFailure( td->id, ev.value );
+        ZoneValueFailure( m_threadCtx, ev.value );
         return;
     }
     if( td->fiber ) td = td->fiber;

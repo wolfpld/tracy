@@ -52,6 +52,20 @@ extern "C"
 };
 #endif
 
+#if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 5 || TRACY_HAS_CALLSTACK == 6
+extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len );
+
+#ifndef TRACY_DEMANGLE
+extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len )
+{
+    if( !mangled || mangled[0] != '_' ) return 0;
+    int status;
+    abi::__cxa_demangle( mangled, out, &len, &status );
+    return status == 0;
+}
+#endif
+#endif
+
 namespace tracy
 {
 
@@ -535,18 +549,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
-
-extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len );
-
-#ifndef TRACY_DEMANGLE
-extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len )
-{
-    if( !mangled || mangled[0] != '_' ) return 0;
-    int status;
-    abi::__cxa_demangle( mangled, out, &len, &status );
-    return status == 0;
-}
-#endif
 
 enum { MaxCbTrace = 16 };
 

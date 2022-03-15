@@ -16180,6 +16180,12 @@ void View::DrawAnnotationList()
         ImGui::SameLine();
         ImGui::ColorButton( "c", ImGui::ColorConvertU32ToFloat4( ann->color ), ImGuiColorEditFlags_NoTooltip );
         ImGui::SameLine();
+        if( m_selectedAnnotation == ann.get() )
+        {
+            bool t = true;
+            ImGui::Selectable( "##annSelectable", &t );
+            ImGui::SameLine( 0, 0 );
+        }
         if( ann->text.empty() )
         {
             TextDisabledUnformatted( "Empty annotation" );

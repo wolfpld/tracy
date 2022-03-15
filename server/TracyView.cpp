@@ -944,11 +944,7 @@ bool View::DrawImpl()
         {
             m_showCpuDataWindow = true;
         }
-        const auto anncnt = m_annotations.size();
-        if( ButtonDisablable( ICON_FA_STICKY_NOTE " Annotations", anncnt == 0 ) )
-        {
-            m_showAnnotationList = true;
-        }
+        ToggleButton( ICON_FA_STICKY_NOTE " Annotations", m_showAnnotationList );
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
         const auto cscnt = m_worker.GetContextSwitchSampleCount();
         if( ButtonDisablable( ICON_FA_HOURGLASS_HALF " Wait stacks", cscnt == 0 ) )

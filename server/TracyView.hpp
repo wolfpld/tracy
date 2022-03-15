@@ -253,6 +253,8 @@ private:
     void HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w );
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
+    void AddAnnotation( int64_t start, int64_t end );
+
     uint32_t GetThreadColor( uint64_t thread, int depth );
     uint32_t GetSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );

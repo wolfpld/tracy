@@ -346,6 +346,18 @@ void View::DrawHelpMarker( const char* desc ) const
     }
 }
 
+void View::AddAnnotation( int64_t start, int64_t end )
+{
+    auto ann = std::make_unique<Annotation>();
+    ann->range.active = true;
+    ann->range.min = start;
+    ann->range.max = end;
+    ann->color = 0x888888;
+    m_selectedAnnotation = ann.get();
+    m_annotations.emplace_back( std::move( ann ) );
+    pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->range.min < rhs->range.min; } );
+}
+
 static const char* CompressionName[] = {
     "LZ4",
     "LZ4 HC",
@@ -1163,14 +1175,7 @@ bool View::DrawImpl()
         ImGui::Separator();
         if( ImGui::Selectable( ICON_FA_STICKY_NOTE " Add annotation" ) )
         {
-            auto ann = std::make_unique<Annotation>();
-            ann->range.active = true;
-            ann->range.min = s;
-            ann->range.max = e;
-            ann->color = 0x888888;
-            m_selectedAnnotation = ann.get();
-            m_annotations.emplace_back( std::move( ann ) );
-            pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->range.min < rhs->range.min; } );
+            AddAnnotation( s, e );
         }
         ImGui::EndPopup();
     }

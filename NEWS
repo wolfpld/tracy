@@ -98,6 +98,8 @@ v0.x.x (xxxx-xx-xx)
 - Universal Windows Platform support.
 - All call stack related functionality can be now disabled with the
   TRACY_NO_CALLSTACK macro.
+- Added ability to add full-view annotations from the annotations list
+  window.
 
 
 v0.7.8 (2021-05-19)

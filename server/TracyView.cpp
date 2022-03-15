@@ -16135,9 +16135,20 @@ void View::DrawAnnotationList()
     ImGui::SetNextWindowSize( ImVec2( 600 * scale, 300 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Annotation list", &m_showAnnotationList );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
+    if( ImGui::Button( ICON_FA_PLUS " Add annotation" ) )
+    {
+        AddAnnotation( m_vd.zvStart, m_vd.zvEnd );
+    }
+
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+
     if( m_annotations.empty() )
     {
         ImGui::TextWrapped( "No annotations." );
+        ImGui::Separator();
         ImGui::End();
         return;
     }

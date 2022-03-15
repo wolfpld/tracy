@@ -16111,7 +16111,7 @@ void View::DrawSelectedAnnotation()
             char buf[1024];
             buf[descsz] = '\0';
             memcpy( buf, desc, descsz );
-            if( ImGui::InputTextWithHint( "", "Describe annotation", buf, 256 ) )
+            if( ImGui::InputTextWithHint( "##anndesc", "Describe annotation", buf, 256 ) )
             {
                 m_selectedAnnotation->text.assign( buf );
             }

@@ -19275,7 +19275,7 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
     {
         for( const auto& ctx : m_worker.GetGpuData() )
         {
-            assert( ctx->threadData.size() == 1 );
+            if ( ctx->threadData.size() != 1 ) continue;
             const Vector<short_ptr<GpuEvent>>* timeline = &ctx->threadData.begin()->second.timeline;
             if( timeline->empty() ) continue;
             for(;;)

@@ -79,7 +79,7 @@ public:
     writeIdx_.store(nextWriteIdx, std::memory_order_release);
   }
 
-  T *front() noexcept {
+  [[nodiscard]] T *front() noexcept {
     auto const readIdx = readIdx_.load(std::memory_order_relaxed);
     if (readIdx == writeIdxCache_) {
       writeIdxCache_ = writeIdx_.load(std::memory_order_acquire);
@@ -103,7 +103,7 @@ public:
     readIdx_.store(nextReadIdx, std::memory_order_release);
   }
 
-  size_t size() const noexcept {
+  [[nodiscard]] size_t size() const noexcept {
     std::ptrdiff_t diff = writeIdx_.load(std::memory_order_acquire) -
                           readIdx_.load(std::memory_order_acquire);
     if (diff < 0) {
@@ -112,12 +112,12 @@ public:
     return static_cast<size_t>(diff);
   }
 
-  bool empty() const noexcept {
+  [[nodiscard]] bool empty() const noexcept {
       return writeIdx_.load(std::memory_order_acquire) ==
           readIdx_.load(std::memory_order_acquire);
   }
 
-  size_t capacity() const noexcept { return capacity_ - 1; }
+  [[nodiscard]] size_t capacity() const noexcept { return capacity_ - 1; }
 
 private:
   static constexpr size_t kCacheLineSize = 64;

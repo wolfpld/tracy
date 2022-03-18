@@ -112,7 +112,10 @@ public:
     return static_cast<size_t>(diff);
   }
 
-  bool empty() const noexcept { return size() == 0; }
+  bool empty() const noexcept {
+      return writeIdx_.load(std::memory_order_acquire) ==
+          readIdx_.load(std::memory_order_acquire);
+  }
 
   size_t capacity() const noexcept { return capacity_ - 1; }
 

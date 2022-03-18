@@ -9848,6 +9848,10 @@ void View::DrawFindZone()
         ImGui::SetKeyboardFocusHere();
         m_shortcut = ShortcutAction::None;
     }
+    else if( ImGui::IsWindowAppearing() )
+    {
+        ImGui::SetKeyboardFocusHere();
+    }
     findClicked |= ImGui::InputTextWithHint( "###findzone", "Enter zone name to search for", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 

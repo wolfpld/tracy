@@ -14268,7 +14268,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         TextDisabledUnformatted( LocationToString( txt, frame.line ) );
                         if( ImGui::IsItemClicked() )
                         {
-                            ImGui::SetClipboardText( txt );
+                            ImGui::SetClipboardText( LocationToString( txt, frame.line ) );
                         }
                         break;
                     case 1:

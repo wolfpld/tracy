@@ -725,7 +725,7 @@ Due to the memory requirements for data storage, the Tracy server is only suppos
 
 To build the application contained in the \texttt{profiler} directory, you will need to install external libraries, which are not bundled with Tracy.
 
-\subparagraph{Capstone library} At the time of writing, the capstone library is in a bit of disarray. The officially released version 4.0.2 can't disassemble some AVX instructions, which are successfully parsed by the \texttt{next} branch. However, the \texttt{next} branch somehow lost information about input/output registers for some functions. You may want to explore the various available versions to find one that suits your needs the best.
+\subparagraph{Capstone library} At the time of writing, the capstone library is in a bit of disarray. The officially released version 4.0.2 can't disassemble some AVX instructions, which are successfully parsed by the \texttt{next} branch. However, the \texttt{next} branch somehow lost information about input/output registers for some functions. You may want to explore the various available versions to find one that suits your needs the best. Note that only the \texttt{next} branch is actively maintained. Be aware that your package manager might distribute the deprecated \texttt{master} branch.
 
 \paragraph{Windows}
 
@@ -748,7 +748,7 @@ vcpkg install --triplet x64-windows-static freetype glfw3 capstone[arm,arm64,x86
 
 \paragraph{Unix}
 
-On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}, \texttt{capstone}, \texttt{GTK3}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). The GTK library could be installed as \texttt{libgtk-3-dev} on some systems. How fun!
+On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}, \texttt{capstone}, \texttt{GTK3}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). The GTK library could be installed as \texttt{libgtk-3-dev} on some systems. Be aware that your package manager might distribute the deprecated \texttt{master}-branch version of \texttt{capstone}, and a build from source from the \texttt{next}-branch might be necesarry for you. Have fun!
 
 In addition to the beforementioned libraries, you might also have to install the \texttt{tbb} library\footnote{Technically this is not a dependency of Tracy but rather of \texttt{libstdc++} but it may still not be installed by default.}.
 
@@ -3432,7 +3432,7 @@ Additionally, you may use the \emph{Mode} selector to decide what content should
 \item \emph{Combined} -- both source code and disassembly will be listed next to each other.
 \end{itemize}
 
-Some modes may be unavailable in some circumstances (missing or outdated source files, lack of machine code).
+Some modes may be unavailable in some circumstances (missing or outdated source files, lack of machine code). In case the \emph{Assembly} mode is unavailable, this might be due to the \texttt{capstone} disassembly engine failing to disassemble the machine instructions. See section~\ref{buildingserver} for more information.
 
 \paragraph{Source mode}
 
@@ -3742,7 +3742,7 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
 \item getopt\_port -- \url{https://github.com/kimgr/getopt\_port}
 \item libbacktrace \faStar{} -- \url{https://github.com/ianlancetaylor/libbacktrace}
 \item Zstandard -- \url{https://github.com/facebook/zstd}
-\item capstone -- \url{https://github.com/aquynh/capstone}
+\item capstone -- \url{https://github.com/capstone-engine/capstone}
 \end{itemize}
 
 \item 2-clause BSD license

@@ -1341,7 +1341,9 @@ _memory_allocate_oversized(heap_t* heap, size_t size) {
 //! Allocate a block of the given size
 static void*
 _memory_allocate(heap_t* heap, size_t size) {
-	if (EXPECTED(size <= SMALL_SIZE_LIMIT))
+	if (size == 0)
+	    return nullptr;
+	else if (EXPECTED(size <= SMALL_SIZE_LIMIT))
 		return _memory_allocate_small(heap, size);
 	else if (size <= _memory_medium_size_limit)
 		return _memory_allocate_medium(heap, size);

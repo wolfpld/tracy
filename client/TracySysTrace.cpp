@@ -817,6 +817,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
     samplingPeriod = GetSamplingPeriod();
     uint32_t currentPid = (uint32_t)getpid();
 
+    s_numCpus = (int)std::thread::hardware_concurrency();
+
     const auto maxNumBuffers = s_numCpus * (
         1 +     // software sampling
         2 +     // CPU cycles + instructions retired
@@ -824,7 +826,6 @@ bool SysTraceStart( int64_t& samplingPeriod )
         2 +     // branch retired + miss
         2       // context switches + wakeups
     );
-    s_numCpus = (int)std::thread::hardware_concurrency();
     s_ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * maxNumBuffers );
     s_numBuffers = 0;
 

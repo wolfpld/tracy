@@ -648,29 +648,33 @@ static void DrawContents()
                 tracy::OpenWebpage( "https://github.com/wolfpld/tracy" );
             }
             ImGui::Separator();
-            if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.8" ) )
             {
-                tracy::OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=30wpRpHTTag" );
             }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.3" ) )
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.7" ) )
             {
-                tracy::OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
-            }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.4" ) )
-            {
-                tracy::OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
-            }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.5" ) )
-            {
-                tracy::OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
             }
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.6" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
             }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.7" ) )
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.5" ) )
             {
-                tracy::OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.4" ) )
+            {
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.3" ) )
+            {
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )
+            {
+                tracy::OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
             }
             ImGui::EndPopup();
         }

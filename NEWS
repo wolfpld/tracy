@@ -3,7 +3,7 @@ be able to talk with each other. Network protocol breakages won't be listed
 here.
 
 
-v0.x.x (xxxx-xx-xx)
+v0.8.0 (2022-03-28)
 -------------------
 
 - Support for Cygwin has been dropped. It was not working for a very long

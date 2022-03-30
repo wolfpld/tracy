@@ -2377,6 +2377,12 @@ In some cases you may want to share just a portion of the trace file, omitting s
 
 Flags can be concatenated. For example specifying \texttt{-s CSi} will remove symbol code, source file cache, and frame images in the destination trace file.
 
+\subsection{Source file cache scan}
+
+Sometimes access to source files may not be possible during the capture. This may be due to capturing the trace on a machine without the source files on disk, use of paths relative to the build directory, clash of file location schemas (e.g., on Windows, you can have native paths, like \texttt{C:\textbackslash{}directory\textbackslash{}file} and WSL paths, like \texttt{/mnt/c/directory/file}, pointing to the same file), and so on.
+
+You may force a recheck of the source file availability during the update process with the \texttt{-c} command line parameter. All the source files missing from the cache will be then scanned again and added to the cache if they do pass the validity checks (see section~\ref{sourceview}).
+
 \subsection{Instrumentation failures}
 \label{instrumentationfailures}
 

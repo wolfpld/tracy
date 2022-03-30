@@ -1019,7 +1019,7 @@ private:
 
     PlotData* m_sysTimePlot = nullptr;
 
-    Vector<ServerQueryPacket> m_serverQueryQueue;
+    Vector<ServerQueryPacket> m_serverQueryQueue, m_serverQueryQueuePrio;
     size_t m_serverQuerySpaceLeft, m_serverQuerySpaceBase;
 
     unordered_flat_map<uint64_t, int32_t> m_frameImageStaging;

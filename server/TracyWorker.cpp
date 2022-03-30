@@ -3235,7 +3235,7 @@ void Worker::Exec()
                 m_netWriteCv.notify_one();
             }
 
-            if( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+            if( m_serverQuerySpaceLeft > 0 && !m_serverQueryQueue.empty() )
             {
                 const auto toSend = std::min( m_serverQuerySpaceLeft, m_serverQueryQueue.size() );
                 m_sock.Send( m_serverQueryQueue.data(), toSend * ServerQueryPacketSize );
@@ -3363,7 +3363,7 @@ void Worker::HandleFailure( const char* ptr, const char* end )
             m_netWriteCv.notify_one();
         }
 
-        if( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+        if( m_serverQuerySpaceLeft > 0 && !m_serverQueryQueue.empty() )
         {
             const auto toSend = std::min( m_serverQuerySpaceLeft, m_serverQueryQueue.size() );
             m_sock.Send( m_serverQueryQueue.data(), toSend * ServerQueryPacketSize );
@@ -3492,7 +3492,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
 void Worker::Query( ServerQuery type, uint64_t data, uint32_t extra )
 {
     ServerQueryPacket query { type, data, extra };
-    if( m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+    if( m_serverQuerySpaceLeft > 0 && m_serverQueryQueue.empty() )
     {
         m_serverQuerySpaceLeft--;
         m_sock.Send( &query, ServerQueryPacketSize );

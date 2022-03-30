@@ -8765,4 +8765,36 @@ uint64_t Worker::GetHwSampleCount() const
     return cnt;
 }
 
+void Worker::CacheSourceFiles()
+{
+    const auto execTime = GetExecutableTime();
+
+    for( auto& sl : m_data.sourceLocationPayload )
+    {
+        const char* file = GetString( sl->file );
+        if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
+        {
+            if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) ) CacheSourceFromFile( file );
+        }
+    }
+
+    for( auto& sl : m_data.sourceLocation )
+    {
+        const char* file = GetString( sl.second.file );
+        if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
+        {
+            if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) ) CacheSourceFromFile( file );
+        }
+    }
+
+    for( auto& sym : m_data.symbolMap )
+    {
+        const char* file = GetString( sym.second.file );
+        if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
+        {
+            if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) ) CacheSourceFromFile( file );
+        }
+    }
+}
+
 }

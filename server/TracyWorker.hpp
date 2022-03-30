@@ -658,6 +658,8 @@ public:
     void DoPostponedWork();
     void DoPostponedWorkAll();
 
+    void CacheSourceFiles();
+
 private:
     void Network();
     void Exec();

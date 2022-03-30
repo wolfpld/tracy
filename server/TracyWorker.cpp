@@ -8705,20 +8705,25 @@ void Worker::CacheSource( const StringRef& str )
     const auto execTime = GetExecutableTime();
     if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) )
     {
-        FILE* f = fopen( file, "rb" );
-        fseek( f, 0, SEEK_END );
-        const auto sz = ftell( f );
-        fseek( f, 0, SEEK_SET );
-        auto src = (char*)m_slab.AllocBig( sz );
-        fread( src, 1, sz, f );
-        fclose( f );
-        m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
+        CacheSourceFromFile( file );
     }
     else if( execTime != 0 )
     {
         m_sourceCodeQuery.emplace_back( file );
         QuerySourceFile( file );
     }
+}
+
+void Worker::CacheSourceFromFile( const char* fn )
+{
+    FILE* f = fopen( fn, "rb" );
+    fseek( f, 0, SEEK_END );
+    const auto sz = ftell( f );
+    fseek( f, 0, SEEK_SET );
+    auto src = (char*)m_slab.AllocBig( sz );
+    fread( src, 1, sz, f );
+    fclose( f );
+    m_data.sourceFileCache.emplace( fn, MemoryBlock{ src, uint32_t( sz ) } );
 }
 
 uint64_t Worker::GetSourceFileCacheSize() const

@@ -2,6 +2,12 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.x.x (xxxx-xx-xx)
+-------------------
+
+- Update utility can now scan for source files missing in the trace cache,
+  if the '-c' parameter is given. Found files will be added to the cache.
+
 
 v0.8.0 (2022-03-28)
 -------------------

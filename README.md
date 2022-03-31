@@ -19,4 +19,5 @@ Tracy supports profiling CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, OpenCL, Direc
 [New features in Tracy Profiler v0.4](https://www.youtube.com/watch?v=eAkgkaO8B9o)  
 [New features in Tracy Profiler v0.5](https://www.youtube.com/watch?v=P6E7qLMmzTQ)  
 [New features in Tracy Profiler v0.6](https://www.youtube.com/watch?v=uJkrFgriuOo)  
-[New features in Tracy Profiler v0.7](https://www.youtube.com/watch?v=_hU7vw00MZ4)
+[New features in Tracy Profiler v0.7](https://www.youtube.com/watch?v=_hU7vw00MZ4)  
+[New features in Tracy Profiler v0.8](https://www.youtube.com/watch?v=30wpRpHTTag)

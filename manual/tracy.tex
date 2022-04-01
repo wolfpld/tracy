@@ -554,7 +554,7 @@ To workaround this limitation, you will need to have a rooted device. Execute th
 \begin{lstlisting}[language=sh]
 setenforce 0
 mount -o remount,hidepid=0 /proc
-echo 0 > /proc/sys/kernel/perf_event_paranoid
+echo -1 > /proc/sys/kernel/perf_event_paranoid
 echo 0 > /proc/sys/kernel/kptr_restrict
 \end{lstlisting}
 

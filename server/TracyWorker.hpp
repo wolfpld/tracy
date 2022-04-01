@@ -490,6 +490,7 @@ public:
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }
     uint64_t GetHwSampleCountAddress() const { return m_data.hwSamples.size(); }
     uint64_t GetHwSampleCount() const;
+    bool HasHwBranchRetirement() const { return m_data.hasBranchRetirement; }
 #ifndef TRACY_NO_STATISTICS
     uint64_t GetChildSamplesCountSyms() const { return m_data.childSamples.size(); }
     uint64_t GetChildSamplesCountFull() const;

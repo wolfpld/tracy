@@ -4416,6 +4416,7 @@ void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& 
 
 void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& view )
 {
+    const auto hasBranchRetirement = worker.HasHwBranchRetirement();
     auto filename = m_source.filename();
     for( auto& v : m_asm )
     {
@@ -4426,12 +4427,26 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
         uint64_t branch, cache;
         if( view.m_statRange.active )
         {
-            branch = sqrt( CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ) );
+            if( hasBranchRetirement )
+            {
+                branch = sqrt( CountHwSamples( hw->branchMiss, view.m_statRange ) * CountHwSamples( hw->branchRetired, view.m_statRange ) );
+            }
+            else
+            {
+                branch = CountHwSamples( hw->branchMiss, view.m_statRange );
+            }
             cache = sqrt( CountHwSamples( hw->cacheMiss, view.m_statRange ) * CountHwSamples( hw->cacheRef, view.m_statRange ) );
         }
         else
         {
-            branch = sqrt( hw->branchMiss.size() *  hw->branchRetired.size() );
+            if( hasBranchRetirement )
+            {
+                branch = sqrt( hw->branchMiss.size() *  hw->branchRetired.size() );
+            }
+            else
+            {
+                branch = hw->branchMiss.size();
+            }
             cache = sqrt( hw->cacheMiss.size() * hw->cacheRef.size() );
         }
         assert( as.hwCountAsm.find( addr ) == as.hwCountAsm.end() );

@@ -5,7 +5,7 @@ project(Tracy LANGUAGES CXX)
 find_package(Threads REQUIRED)
 
 add_library(TracyClient TracyClient.cpp)
-target_compile_features(TracyClient PUBLIC cxx_std_11)
+target_compile_features(TracyClient PUBLIC cxx_std_17)
 target_include_directories(TracyClient SYSTEM PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> 
     $<INSTALL_INTERFACE:include>)

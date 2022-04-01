@@ -238,7 +238,7 @@ static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEven
 }
 
 template<size_t U>
-static void ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& vec, Slab<U>& slab )
+static uint64_t ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& vec, Slab<U>& slab )
 {
     uint64_t sz;
     f.Read( sz );
@@ -251,6 +251,7 @@ static void ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& vec, S
             vec[i] = ReadTimeOffset( f, refTime );
         }
     }
+    return sz;
 }
 
 // Should be just a simple comparison. Do this when protocol version changes.
@@ -1915,7 +1916,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             ReadHwSampleVec( f, data.retired, m_slab );
             ReadHwSampleVec( f, data.cacheRef, m_slab );
             ReadHwSampleVec( f, data.cacheMiss, m_slab );
-            ReadHwSampleVec( f, data.branchRetired, m_slab );
+            if( ReadHwSampleVec( f, data.branchRetired, m_slab ) != 0 ) m_data.hasBranchRetirement = true;
             ReadHwSampleVec( f, data.branchMiss, m_slab );
         }
     }
@@ -7129,6 +7130,7 @@ void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.branchRetired.push_back( time );
+    m_data.hasBranchRetirement = true;
 }
 
 void Worker::ProcessHwSampleBranchMiss( const QueueHwSample& ev )

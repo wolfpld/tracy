@@ -1291,7 +1291,15 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 int idx = 0;
                 for( auto& v : s_CostName )
                 {
-                    if( ImGui::Selectable( v, idx == (int)m_cost ) ) m_cost = (CostType)idx;
+                    if( ImGui::Selectable( v, idx == (int)m_cost ) )
+                    {
+                        m_cost = (CostType)idx;
+
+                        if( m_cost == CostType::SlowBranches && !worker.HasHwBranchRetirement() )
+                        {
+                            m_cost = CostType::BranchMiss;
+                        }
+                    }
                     if( (CostType)idx == s_costSeparateAfter ) ImGui::Separator();
                     idx++;
                 }

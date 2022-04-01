@@ -7,6 +7,9 @@ v0.x.x (xxxx-xx-xx)
 
 - Update utility can now scan for source files missing in the trace cache,
   if the '-c' parameter is given. Found files will be added to the cache.
+- Added high-priority queue for fast queries to bypass slow symbol queries.
+- Fixed Android documentation to show how to enable context switch tracing.
+- Workaround MSVC 2015 stupidity which prevented compilation as C++11.
 
 
 v0.8.0 (2022-03-28)

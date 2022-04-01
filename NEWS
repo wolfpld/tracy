@@ -10,6 +10,8 @@ v0.x.x (xxxx-xx-xx)
 - Added high-priority queue for fast queries to bypass slow symbol queries.
 - Fixed Android documentation to show how to enable context switch tracing.
 - Workaround MSVC 2015 stupidity which prevented compilation as C++11.
+- Added support for showing branch cost data for CPUs that don't report
+  branch retirement events (but do report branch misses).
 
 
 v0.8.0 (2022-03-28)

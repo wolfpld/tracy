@@ -52,6 +52,7 @@ set_option(TRACY_NO_FRAME_IMAGE  "Disable the frame image support and its thread
 set_option(TRACY_DELAYED_INIT "Enable delayed initialization of the library (init on first call)" OFF)
 set_option(TRACY_MANUAL_LIFETIME "Enable the manual lifetime management of the profile" OFF)
 set_option(TRACY_FIBERS "Enable fibers support" OFF)
+set_option(TRACY_NO_CONSTEXPR_MARKUP "Do not use constexpr tokens in client markup macros" OFF)
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)

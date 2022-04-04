@@ -1,0 +1,61 @@
+name: CMake
+
+on: push
+
+jobs:
+  build-and-install:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macOS-latest
+          - ubuntu-20.04
+          - windows-2022
+        include:
+          - os: windows-2022
+            platform: windows
+            triplet: x64-windows-static
+          - os: ubuntu-20.04
+            platform: linux
+            triplet: x64-linux
+          - os: macOS-latest
+            platform: macos
+            triplet: x64-osx
+
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - uses: actions/checkout@v3
+      name: Get vcpkg
+      with:
+        repository: 'microsoft/vcpkg'
+        ref: '2022.03.10'
+        path: '${{ github.workspace }}/_vcpkg'
+
+    # Install CMake 3.20 
+    - uses: lukka/get-cmake@latest
+      name: Get CMake
+
+    - name: Install Linux dependencies for (glfw3, nfd, std parallel primitives)
+      run: |
+        sudo apt-get update
+        sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev libgtk-3-dev libtbb-dev
+      if: ${{ matrix.platform == 'linux' }}
+
+    - uses: ilammy/msvc-dev-cmd@v1  
+      name: Setup Windows dev environment
+      with:
+        arch: 'x64'
+      if: ${{ matrix.platform == 'windows' }}
+
+    - name: 'Configure, Build and Install'
+      run: |
+        cmake --preset=${{ matrix.platform }}-x64 -DVCPKG_TARGET_TRIPLET:STRING=${{ matrix.triplet }} -DTRACY_BUILD_CAPTURE:BOOL=ON -DTRACY_BUILD_PROFILER:BOOL=ON
+        cmake --build --preset build-${{ matrix.platform }}
+        cmake --build --preset install-${{ matrix.platform }}
+      env:
+          VCPKG_ROOT: '${{ github.workspace }}/_vcpkg'
+          VCPKG_FEATURE_FLAGS: 'manifests,versions,binarycaching,registries'

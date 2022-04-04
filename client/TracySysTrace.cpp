@@ -861,8 +861,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             TracyDebug( "  No access to kernel samples\n" );
         }
         new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );
-        s_numBuffers++;
-        TracyDebug( "  Core %i ok\n", i );
+        if( s_ring[s_numBuffers].IsValid() )
+        {
+            s_numBuffers++;
+            TracyDebug( "  Core %i ok\n", i );
+        }
     }
 
     // CPU cycles + instructions retired
@@ -892,8 +895,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCpuCycles );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
 
@@ -904,8 +910,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventInstructionsRetired );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
     }
@@ -926,8 +935,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCacheReference );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
 
@@ -938,8 +950,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCacheMiss );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
     }
@@ -955,8 +970,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventBranchRetired );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
 
@@ -967,8 +985,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventBranchMiss );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
     }
@@ -1001,8 +1022,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             if( fd != -1 )
             {
                 new( s_ring+s_numBuffers ) RingBuffer( 256*1024, fd, EventContextSwitch, i );
-                s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
             }
         }
 
@@ -1018,8 +1042,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( fd != -1 )
                 {
                     new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventWakeup, i );
-                    s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    if( s_ring[s_numBuffers].IsValid() )
+                    {
+                        s_numBuffers++;
+                        TracyDebug( "  Core %i ok\n", i );
+                    }
                 }
             }
         }

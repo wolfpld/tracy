@@ -33,6 +33,7 @@ vcpkg/*
 .dirstamp
 .vscode/
 
+/build
 /_*/**
 /**/__pycache__/**
 extra/vswhere.exe

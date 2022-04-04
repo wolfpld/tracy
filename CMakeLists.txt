@@ -52,6 +52,26 @@ set_option(TRACY_NO_FRAME_IMAGE  "Disable the frame image support and its thread
 set_option(TRACY_DELAYED_INIT "Enable delayed initialization of the library (init on first call)" OFF)
 set_option(TRACY_MANUAL_LIFETIME "Enable the manual lifetime management of the profile" OFF)
 set_option(TRACY_FIBERS "Enable fibers support" OFF)
+set_option(TRACY_BUILD_CAPTURE "Build capture tool" OFF)
+set_option(TRACY_BUILD_PROFILER "Build profiler tool" OFF)
+set_option(TRACY_USE_WAYLAND "Use Wayland backend for GLFW windows" OFF)
+
+if(TRACY_BUILD_CAPTURE OR TRACY_BUILD_PROFILER)
+    find_package(capstone CONFIG REQUIRED)
+    find_package(freetype CONFIG REQUIRED)
+    find_package(zstd CONFIG REQUIRED)
+    if(TRACY_BUILD_PROFILER)
+        find_package(glfw3 CONFIG REQUIRED)
+    endif()
+    if(UNIX AND NOT APPLE)
+        include(FindPkgConfig)
+        pkg_check_modules(GTK3 REQUIRED IMPORTED_TARGET gtk+-3.0)
+        pkg_check_modules(TBB REQUIRED IMPORTED_TARGET tbb)
+        if(TRACY_USE_WAYLAND)
+            pkg_check_modules(WAYLAND REQUIRED IMPORTED_TARGET wayland-client)
+        endif()
+    endif()
+endif()
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)
@@ -108,7 +128,33 @@ set(common_includes
     ${CMAKE_CURRENT_LIST_DIR}/common/TracyUwp.hpp
     ${CMAKE_CURRENT_LIST_DIR}/common/TracyYield.hpp)
 
-install(TARGETS TracyClient
+if(TRACY_BUILD_CAPTURE OR TRACY_BUILD_PROFILER)
+    add_subdirectory(common)
+    if(WIN32)
+        add_subdirectory(getopt)
+    endif()
+    add_subdirectory(imgui)
+    add_subdirectory(server)
+    if(TRACY_BUILD_CAPTURE)
+        add_subdirectory(capture)
+    endif()
+    if(TRACY_BUILD_PROFILER)
+        add_subdirectory(nfd)
+        add_subdirectory(profiler)
+    endif()
+endif()
+
+set(installed_targets
+    TracyClient
+)
+if(TRACY_BUILD_CAPTURE)
+    list(APPEND installed_targets TracyCapture)
+endif()
+if(TRACY_BUILD_PROFILER)
+    list(APPEND installed_targets TracyProfiler)
+endif()
+
+install(TARGETS ${installed_targets}
         EXPORT TracyConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}

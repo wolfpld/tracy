@@ -1,0 +1,105 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "locations-base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}"
+    },
+    {
+      "name": "vcpkg-base",
+      "hidden": true,
+      "toolchainFile": "$penv{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "warnings-base",
+      "hidden": true,
+      "warnings": {
+        "dev": true,
+        "deprecated": true,
+        "systemVars": true
+      },
+      "errors": {
+        "dev": true,
+        "deprecated": true
+      }
+    },
+    {
+      "name": "ninja",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "cacheVariables": {
+        "CMAKE_DEFAULT_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64",
+      "hidden": true,
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "linux-x64",
+      "inherits": [ "ninja", "x64", "locations-base", "vcpkg-base", "warnings-base" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"},
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "macos-x64",
+      "inherits": [ "ninja", "x64", "locations-base", "vcpkg-base", "warnings-base" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin"}
+    },
+    {
+      "name": "windows-x64",
+      "inherits": [ "ninja", "x64", "locations-base", "vcpkg-base", "warnings-base" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"}
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-linux",
+      "configurePreset": "linux-x64",
+      "nativeToolOptions": [ "-v" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"}
+    },
+    {
+      "name": "build-macos",
+      "configurePreset": "macos-x64",
+      "nativeToolOptions": [ "-v" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin"}
+    },
+    {
+      "name": "build-windows",
+      "configurePreset": "windows-x64",
+      "nativeToolOptions": [ "-v" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"}
+    },
+    {
+      "name": "install-linux",
+      "configurePreset": "linux-x64",
+      "inherits": "build-linux",
+      "targets": [ "install" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"}
+    },
+    {
+      "name": "install-macos",
+      "configurePreset": "macos-x64",
+      "inherits": "build-macos",
+      "targets": [ "install" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin"}
+    },
+    {
+      "name": "install-windows",
+      "configurePreset": "windows-x64",
+      "inherits": "build-windows",
+      "targets": [ "install" ],
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"}
+    }
+  ]
+}

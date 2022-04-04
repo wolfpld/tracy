@@ -1,0 +1,109 @@
+project(TracyServer LANGUAGES CXX)
+
+add_library(TracyServer STATIC)
+add_library(Tracy::TracyServer ALIAS TracyServer)
+
+target_sources(TracyServer
+    PRIVATE
+        IconsFontAwesome5.h                
+        tracy_pdqsort.h                    
+        tracy_robin_hood.h                 
+        tracy_xxhash.h                     
+        TracyBadVersion.cpp                
+        TracyBadVersion.hpp                
+        TracyBuzzAnim.hpp                  
+        TracyCharUtil.hpp                  
+        TracyColor.cpp                     
+        TracyColor.hpp                     
+        TracyDecayValue.hpp                
+        TracyEvent.hpp                     
+        TracyEventDebug.cpp                
+        TracyEventDebug.hpp                
+        TracyFileHeader.hpp                
+        TracyFileRead.hpp                  
+        TracyFilesystem.cpp                
+        TracyFilesystem.hpp                
+        TracyFileWrite.hpp                 
+        TracyImGui.hpp                     
+        TracyMemory.cpp                    
+        TracyMemory.hpp                    
+        TracyMicroArchitecture.cpp         
+        TracyMicroArchitecture.hpp         
+        TracyMmap.cpp                      
+        TracyMmap.hpp                      
+        TracyMouse.cpp                     
+        TracyMouse.hpp                     
+        TracyPopcnt.hpp                    
+        TracyPrint.cpp                     
+        TracyPrint.hpp                     
+        TracyShortPtr.hpp                  
+        TracySlab.hpp                      
+        TracySort.hpp                      
+        TracySortedVector.hpp              
+        TracySourceContents.cpp            
+        TracySourceContents.hpp            
+        TracySourceTokenizer.cpp           
+        TracySourceTokenizer.hpp           
+        TracySourceView.cpp                
+        TracySourceView.hpp                
+        TracyStorage.cpp                   
+        TracyStorage.hpp                   
+        TracyStringDiscovery.hpp           
+        TracyTaskDispatch.cpp              
+        TracyTaskDispatch.hpp              
+        TracyTexture.cpp                   
+        TracyTexture.hpp                   
+        TracyTextureCompression.cpp        
+        TracyTextureCompression.hpp        
+        TracyThreadCompress.cpp            
+        TracyThreadCompress.hpp            
+        TracyUserData.cpp                  
+        TracyUserData.hpp                  
+        TracyVarArray.hpp                  
+        TracyVector.hpp                    
+        TracyVersion.hpp                   
+        TracyView.cpp                      
+        TracyView.hpp                      
+        TracyViewData.hpp                  
+        TracyWeb.cpp                       
+        TracyWeb.hpp                       
+        TracyWorker.cpp                    
+        TracyWorker.hpp                    
+)
+target_include_directories(TracyServer
+    PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+)
+target_compile_definitions(TracyServer
+    PRIVATE
+        $<$<PLATFORM_ID:Windows>:
+            _CRT_SECURE_NO_DEPRECATE
+            _CRT_NONSTDC_NO_DEPRECATE
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+            _USE_MATH_DEFINES
+        >
+        $<$<CXX_COMPILER_ID:MSVC>:
+            /permissive-
+            /W3
+        >
+)
+target_compile_features(TracyServer
+    PUBLIC
+        cxx_std_17
+)
+target_link_libraries(TracyServer
+    PUBLIC
+        TracyCommon
+        TracyImGui
+        $<IF:$<TARGET_EXISTS:zstd::libzstd_static>,zstd::libzstd_static,zstd::libzstd_shared>
+    PRIVATE
+        capstone::capstone
+)
+set_target_properties(TracyServer
+    PROPERTIES
+        CXX_STANDARD          17
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS        OFF
+)
+

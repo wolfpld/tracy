@@ -1,0 +1,107 @@
+project(TracyZSTD LANGUAGES C ASM)
+
+add_library(TracyZSTD)
+add_library(Tracy::TracyZSTD ALIAS TracyZSTD)
+
+target_sources(TracyZSTD
+    PRIVATE
+        zdict.h         
+        zstd.h          
+        zstd_errors.h   
+        common/bitstream.h                
+        common/compiler.h                 
+        common/cpu.h                      
+        common/debug.c                    
+        common/debug.h                    
+        common/entropy_common.c           
+        common/error_private.c            
+        common/error_private.h            
+        common/fse.h                      
+        common/fse_decompress.c           
+        common/huf.h                      
+        common/mem.h                      
+        common/pool.c                     
+        common/pool.h                     
+        common/portability_macros.h       
+        common/threading.c                
+        common/threading.h                
+        common/xxhash.c                   
+        common/xxhash.h                   
+        common/zstd_common.c              
+        common/zstd_deps.h                
+        common/zstd_internal.h            
+        common/zstd_trace.h    
+        compress/clevels.h                             
+        compress/fse_compress.c                        
+        compress/hist.c                                
+        compress/hist.h                                
+        compress/huf_compress.c                        
+        compress/zstd_compress.c                       
+        compress/zstd_compress_internal.h              
+        compress/zstd_compress_literals.c              
+        compress/zstd_compress_literals.h              
+        compress/zstd_compress_sequences.c             
+        compress/zstd_compress_sequences.h             
+        compress/zstd_compress_superblock.c            
+        compress/zstd_compress_superblock.h            
+        compress/zstd_cwksp.h                          
+        compress/zstd_double_fast.c                    
+        compress/zstd_double_fast.h                    
+        compress/zstd_fast.c                           
+        compress/zstd_fast.h                           
+        compress/zstd_lazy.c                           
+        compress/zstd_lazy.h                           
+        compress/zstd_ldm.c                            
+        compress/zstd_ldm.h                            
+        compress/zstd_ldm_geartab.h                    
+        compress/zstd_opt.c                            
+        compress/zstd_opt.h                            
+        compress/zstdmt_compress.c                     
+        compress/zstdmt_compress.h           
+        decompress/huf_decompress.c                  
+        decompress/huf_decompress_amd64.S            
+        decompress/zstd_ddict.c                      
+        decompress/zstd_ddict.h                      
+        decompress/zstd_decompress.c                 
+        decompress/zstd_decompress_block.c           
+        decompress/zstd_decompress_block.h           
+        decompress/zstd_decompress_internal.h   
+        dictBuilder/cover.c             
+        dictBuilder/cover.h             
+        dictBuilder/divsufsort.c        
+        dictBuilder/divsufsort.h        
+        dictBuilder/fastcover.c         
+        dictBuilder/zdict.c                                       
+)
+target_include_directories(TracyZSTD
+    PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}
+)
+target_compile_definitions(TracyZSTD
+    PRIVATE
+        $<$<PLATFORM_ID:Windows>:
+            _CRT_SECURE_NO_DEPRECATE
+            _CRT_NONSTDC_NO_DEPRECATE
+            WIN32_LEAN_AND_MEAN
+            NOMINMAX
+            _USE_MATH_DEFINES
+        >
+        $<$<CXX_COMPILER_ID:MSVC>:
+            /permissive-
+            /W3
+        >
+)
+target_compile_features(TracyZSTD
+    PUBLIC
+        cxx_std_17
+)
+set_target_properties(TracyZSTD
+    PROPERTIES
+        CXX_STANDARD          17
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS        OFF
+)
+set_source_files_properties(decompress/huf_decompress_amd64.S
+    PROPERTIES
+        LANGUAGE ASM
+)

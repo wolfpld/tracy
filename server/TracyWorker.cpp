@@ -19,7 +19,7 @@
 #include <inttypes.h>
 #include <sys/stat.h>
 
-#include <capstone.h>
+#include <capstone/capstone.h>
 
 #define ZDICT_STATIC_LINKING_ONLY
 #include "../zstd/zdict.h"

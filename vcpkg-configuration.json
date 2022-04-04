@@ -1,0 +1,12 @@
+{
+    "registries": [
+        {
+            "kind": "git",
+            "repository": "https://github.com/theblackunknown/vcpkg-registry.git",
+            "baseline": "e1d1a7e49dc9f84f411f8cc4d4b914908a04fb1a",
+            "packages": [
+                "capstone"
+            ]
+        }
+    ]
+}

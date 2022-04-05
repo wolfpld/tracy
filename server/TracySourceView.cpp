@@ -165,6 +165,54 @@ static void PrintHwSampleTooltip( size_t cycles, size_t retired, size_t cacheRef
     }
 }
 
+static void PrintSourceFragment( const SourceContents& src, uint32_t srcline, int pre = 4, int post = 3 )
+{
+    auto& lines = src.get();
+    const int start = std::max( 0, (int)srcline - pre );
+    const int end = std::min<int>( src.get().size(), srcline + post );
+    bool first = true;
+    int bottomEmpty = 0;
+    for( int i=start; i<end; i++ )
+    {
+        auto& line = lines[i];
+        if( line.begin == line.end )
+        {
+            if( !first ) bottomEmpty++;
+        }
+        else
+        {
+            first = false;
+            while( bottomEmpty > 0 )
+            {
+                ImGui::TextUnformatted( "" );
+                bottomEmpty--;
+            }
+
+            auto ptr = line.begin;
+            auto it = line.tokens.begin();
+            while( ptr < line.end )
+            {
+                if( it == line.tokens.end() )
+                {
+                    ImGui::TextUnformatted( ptr, line.end );
+                    ImGui::SameLine( 0, 0 );
+                    break;
+                }
+                if( ptr < it->begin )
+                {
+                    ImGui::TextUnformatted( ptr, it->begin );
+                    ImGui::SameLine( 0, 0 );
+                }
+                TextColoredUnformatted( i == srcline-1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
+                ImGui::SameLine( 0, 0 );
+                ptr = it->end;
+                ++it;
+            }
+            ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
+        }
+    }
+}
+
 
 enum { JumpSeparationBase = 6 };
 enum { JumpArrowBase = 9 };
@@ -1478,50 +1526,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                             {
                                 ImGui::BeginTooltip();
                                 SetFont();
-                                auto& lines = m_sourceTooltip.get();
-                                const int start = std::max( 0, (int)sd->line - 4 );
-                                const int end = std::min<int>( m_sourceTooltip.get().size(), sd->line + 7 );
-                                bool first = true;
-                                int bottomEmpty = 0;
-                                for( int i=start; i<end; i++ )
-                                {
-                                    auto& line = lines[i];
-                                    if( line.begin == line.end )
-                                    {
-                                        if( !first ) bottomEmpty++;
-                                    }
-                                    else
-                                    {
-                                        first = false;
-                                        while( bottomEmpty > 0 )
-                                        {
-                                            ImGui::TextUnformatted( "" );
-                                            bottomEmpty--;
-                                        }
-
-                                        auto ptr = line.begin;
-                                        auto it = line.tokens.begin();
-                                        while( ptr < line.end )
-                                        {
-                                            if( it == line.tokens.end() )
-                                            {
-                                                ImGui::TextUnformatted( ptr, line.end );
-                                                ImGui::SameLine( 0, 0 );
-                                                break;
-                                            }
-                                            if( ptr < it->begin )
-                                            {
-                                                ImGui::TextUnformatted( ptr, it->begin );
-                                                ImGui::SameLine( 0, 0 );
-                                            }
-                                            TextColoredUnformatted( i == sd->line - 1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
-                                            ImGui::SameLine( 0, 0 );
-                                            ptr = it->end;
-                                            ++it;
-                                        }
-                                        ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
-                                    }
-                                }
+                                PrintSourceFragment( m_sourceTooltip, sd->line, 4, 7 );
                                 UnsetFont();
                                 ImGui::EndTooltip();
                             }
@@ -3428,50 +3433,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     {
                         ImGui::Separator();
                         SetFont();
-                        auto& lines = m_sourceTooltip.get();
-                        const int start = std::max( 0, (int)srcline - 4 );
-                        const int end = std::min<int>( m_sourceTooltip.get().size(), srcline + 3 );
-                        bool first = true;
-                        int bottomEmpty = 0;
-                        for( int i=start; i<end; i++ )
-                        {
-                            auto& line = lines[i];
-                            if( line.begin == line.end )
-                            {
-                                if( !first ) bottomEmpty++;
-                            }
-                            else
-                            {
-                                first = false;
-                                while( bottomEmpty > 0 )
-                                {
-                                    ImGui::TextUnformatted( "" );
-                                    bottomEmpty--;
-                                }
-
-                                auto ptr = line.begin;
-                                auto it = line.tokens.begin();
-                                while( ptr < line.end )
-                                {
-                                    if( it == line.tokens.end() )
-                                    {
-                                        ImGui::TextUnformatted( ptr, line.end );
-                                        ImGui::SameLine( 0, 0 );
-                                        break;
-                                    }
-                                    if( ptr < it->begin )
-                                    {
-                                        ImGui::TextUnformatted( ptr, it->begin );
-                                        ImGui::SameLine( 0, 0 );
-                                    }
-                                    TextColoredUnformatted( i == srcline-1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
-                                    ImGui::SameLine( 0, 0 );
-                                    ptr = it->end;
-                                    ++it;
-                                }
-                                ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
-                            }
-                        }
+                        PrintSourceFragment( m_sourceTooltip, srcline );
                         UnsetFont();
                     }
                 }

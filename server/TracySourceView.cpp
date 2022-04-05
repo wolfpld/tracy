@@ -2414,7 +2414,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                             else
                             {
                                 const auto fn = worker.GetString( sidx );
-                                const auto fc = GetHsvColor( srcidx.Idx(), 0 );
+                                const auto fc = GetHsvColor( sidx.Idx(), 0 );
                                 SmallColorBox( fc );
                                 ImGui::SameLine();
                                 ImGui::Text( "%i. %s:%i", j+1, fn, srcline );

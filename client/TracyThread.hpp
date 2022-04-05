@@ -14,6 +14,10 @@
 namespace tracy
 {
 
+#ifdef TRACY_MANUAL_LIFETIME
+extern thread_local bool RpThreadInitDone;
+#endif
+
 class ThreadExitHandler
 {
 public:
@@ -21,6 +25,7 @@ public:
     {
 #ifdef TRACY_MANUAL_LIFETIME
         rpmalloc_thread_finalize();
+        RpThreadInitDone = false;
 #endif
     }
 };

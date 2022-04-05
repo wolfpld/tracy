@@ -514,6 +514,16 @@ If you are experiencing crashes or freezes when manually loading/unloading a sep
 
 \texttt{TRACY\_DELAYED\_INIT} enables a path where profiler data is gathered into one structure and initialized on the first request rather than statically at the DLL load at the expense of atomic load on each request to the profiler data. \texttt{TRACY\_MANUAL\_LIFETIME} flag augments this behavior to provide manual \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions that allow you to create and destroy the profiler data manually. This manual management removes the need to do an atomic load on each call and lets you define an appropriate place to free the resources.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Keep everything consistent}
+When working with multiple libraries, it is easy to make a mistake and use different sets of feature macros between any two compilation jobs. If you do so, Tracy will not be able to work correctly, and there will be no error or warning messages about the problem. Henceforth, you must make sure each shared object you want to link with, or load uses the same set of macro definitions.
+
+Please note that using a prebuilt shared Tracy library, as provided by some package manager or system distribution, also qualifies as using multiple libraries.
+\end{bclogo}
+
 \subsubsection{Problematic platforms}
 
 In the case of some programming environments, you may need to take extra steps to ensure Tracy can work correctly.

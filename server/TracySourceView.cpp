@@ -3733,6 +3733,21 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                     ImGui::SameLine();
                     ImGui::Text( "%s+%" PRIu32, jumpName, jumpOffset );
+                    if( jumpBase == m_baseAddr )
+                    {
+                        uint32_t srcline;
+                        const auto srcidx = worker.GetLocationForAddress( line.jumpAddr, srcline );
+                        if( srcline != 0 )
+                        {
+                            const auto fileName = worker.GetString( srcidx );
+                            const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+                            TextDisabledUnformatted( "Target location:" );
+                            ImGui::SameLine();
+                            SmallColorBox( fileColor );
+                            ImGui::SameLine();
+                            ImGui::Text( "%s:%i", fileName, srcline );
+                        }
+                    }
                 }
                 ImGui::Separator();
             }
@@ -3857,6 +3872,21 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             }
             ImGui::SameLine();
             ImGui::Text( "%s+%" PRIu32, jumpName, jumpOffset );
+            if( jumpBase == m_baseAddr )
+            {
+                uint32_t srcline;
+                const auto srcidx = worker.GetLocationForAddress( line.jumpAddr, srcline );
+                if( srcline != 0 )
+                {
+                    const auto fileName = worker.GetString( srcidx );
+                    const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+                    TextDisabledUnformatted( "Target location:" );
+                    ImGui::SameLine();
+                    SmallColorBox( fileColor );
+                    ImGui::SameLine();
+                    ImGui::Text( "%s:%i", fileName, srcline );
+                }
+            }
             ImGui::EndTooltip();
             SetFont();
         }

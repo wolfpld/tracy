@@ -2558,6 +2558,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                 TextDisabledUnformatted( "Source not available" );
                             }
                             ImGui::EndMenu();
+                            if( ImGui::IsItemClicked() )
+                            {
+                                m_targetAddr = src;
+                                m_selectedAddresses.clear();
+                                m_selectedAddresses.emplace( src );
+                            }
                         }
                         ImGui::PopID();
                     }
@@ -2593,6 +2599,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                             TextDisabledUnformatted( "Source not available" );
                         }
                         ImGui::EndMenu();
+                        if( ImGui::IsItemClicked() )
+                        {
+                            m_targetAddr = m_jumpPopupAddr;
+                            m_selectedAddresses.clear();
+                            m_selectedAddresses.emplace( m_jumpPopupAddr );
+                        }
                     }
                 }
                 ImGui::EndMenu();

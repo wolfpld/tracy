@@ -2553,6 +2553,10 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                     UnsetFont();
                                 }
                             }
+                            else
+                            {
+                                TextDisabledUnformatted( "Source not available" );
+                            }
                             ImGui::EndMenu();
                         }
                         ImGui::PopID();
@@ -2583,6 +2587,10 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                 PrintSourceFragment( m_sourceTooltip, srcline );
                                 UnsetFont();
                             }
+                        }
+                        else
+                        {
+                            TextDisabledUnformatted( "Source not available" );
                         }
                         ImGui::EndMenu();
                     }

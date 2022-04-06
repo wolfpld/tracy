@@ -12,6 +12,9 @@ v0.x.x (xxxx-xx-xx)
 - Workaround MSVC 2015 stupidity which prevented compilation as C++11.
 - Added support for showing branch cost data for CPUs that don't report
   branch retirement events (but do report branch misses).
+- The right-click context menu available for jump arrows in the symbol view
+  window will now additionally display jump context, i.e. jump sources and
+  jump target source code fragments.
 
 
 v0.8.0 (2022-03-28)

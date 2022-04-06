@@ -2518,7 +2518,77 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 Save( worker, minIdx, maxIdx );
                 ImGui::CloseCurrentPopup();
             }
+            ImGui::Separator();
 #endif
+            if( ImGui::BeginMenu( "Sources" ) )
+            {
+                for( auto& src : it->second.source )
+                {
+                    uint32_t srcline;
+                    const auto srcidx = worker.GetLocationForAddress( src, srcline );
+                    if( srcline == 0 )
+                    {
+                        SmallColorBox( 0 );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "0x%" PRIx64, src );
+                    }
+                    else
+                    {
+                        const auto fileName = worker.GetString( srcidx );
+                        const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+                        SmallColorBox( fileColor );
+                        ImGui::SameLine();
+                        char buf[1024];
+                        snprintf( buf, 1024, "%s:%i", fileName, srcline );
+                        ImGui::PushID( src );
+                        if( ImGui::BeginMenu( buf ) )
+                        {
+                            if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                            {
+                                m_sourceTooltip.Parse( fileName, worker, view );
+                                if( !m_sourceTooltip.empty() )
+                                {
+                                    SetFont();
+                                    PrintSourceFragment( m_sourceTooltip, srcline );
+                                    UnsetFont();
+                                }
+                            }
+                            ImGui::EndMenu();
+                        }
+                        ImGui::PopID();
+                    }
+                }
+                ImGui::EndMenu();
+            }
+            if( ImGui::BeginMenu( "Target" ) )
+            {
+                uint32_t srcline;
+                const auto srcidx = worker.GetLocationForAddress( m_jumpPopupAddr, srcline );
+                if( srcline != 0 )
+                {
+                    const auto fileName = worker.GetString( srcidx );
+                    const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+                    SmallColorBox( fileColor );
+                    ImGui::SameLine();
+                    char buf[1024];
+                    snprintf( buf, 1024, "%s:%i", fileName, srcline );
+                    if( ImGui::BeginMenu( buf ) )
+                    {
+                        if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                        {
+                            m_sourceTooltip.Parse( fileName, worker, view );
+                            if( !m_sourceTooltip.empty() )
+                            {
+                                SetFont();
+                                PrintSourceFragment( m_sourceTooltip, srcline );
+                                UnsetFont();
+                            }
+                        }
+                        ImGui::EndMenu();
+                    }
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndPopup();
         }
         SetFont();

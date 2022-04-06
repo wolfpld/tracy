@@ -2450,13 +2450,11 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                             m_selectedAddresses.clear();
                             m_selectedAddresses.emplace( v.first );
                         }
-#ifndef TRACY_NO_FILESELECTOR
                         else if( ImGui::IsMouseClicked( 1 ) )
                         {
                             ImGui::OpenPopup( "jumpPopup" );
                             m_jumpPopupAddr = v.first;
                         }
-#endif
                         selJumpStart = v.second.min;
                         selJumpEnd = v.second.max;
                         selJumpTarget = v.first;
@@ -2487,15 +2485,15 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             }
         }
 
-#ifndef TRACY_NO_FILESELECTOR
         UnsetFont();
         if( ImGui::BeginPopup( "jumpPopup" ) )
         {
-            if( ImGui::Button( ICON_FA_FILE_IMPORT " Save jump range" ) )
-            {
-                auto it = m_jumpTable.find( m_jumpPopupAddr );
-                assert( it != m_jumpTable.end() );
+            auto it = m_jumpTable.find( m_jumpPopupAddr );
+            assert( it != m_jumpTable.end() );
 
+#ifndef TRACY_NO_FILESELECTOR
+            if( ImGui::MenuItem( ICON_FA_FILE_IMPORT " Save jump range" ) )
+            {
                 size_t minIdx = 0, maxIdx = 0;
                 size_t i;
                 for( i=0; i<m_asm.size(); i++ )
@@ -2520,10 +2518,10 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 Save( worker, minIdx, maxIdx );
                 ImGui::CloseCurrentPopup();
             }
+#endif
             ImGui::EndPopup();
         }
         SetFont();
-#endif
     }
 
     const auto win = ImGui::GetCurrentWindowRead();

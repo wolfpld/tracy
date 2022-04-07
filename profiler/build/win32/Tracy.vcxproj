@@ -60,7 +60,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\imgui;..\..\..\vcpkg_installed\x64-windows-static\include;..\..\..\vcpkg_installed\x64-windows-static\include\capstone;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
@@ -72,7 +72,7 @@
     <Link>
       <AdditionalDependencies>brotlicommon-static.lib;brotlidec-static.lib;ws2_32.lib;freetyped.lib;glfw3.lib;libpng16d.lib;zlibd.lib;bz2d.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>..\..\..\vcpkg\vcpkg\installed\x64-windows-static\debug\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\vcpkg_installed\x64-windows-static\debug\lib</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -86,7 +86,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;WIN32_LEAN_AND_MEAN;NOMINMAX;_USE_MATH_DEFINES;IMGUI_ENABLE_FREETYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\imgui;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include;..\..\..\vcpkg\vcpkg\installed\x64-windows-static\include\capstone;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\imgui;..\..\..\vcpkg_installed\x64-windows-static\include;..\..\..\vcpkg_installed\x64-windows-static\include\capstone;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -99,7 +99,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>brotlicommon-static.lib;brotlidec-static.lib;ws2_32.lib;freetype.lib;glfw3.lib;libpng16.lib;zlib.lib;bz2.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>..\..\..\vcpkg\vcpkg\installed\x64-windows-static\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\vcpkg_installed\x64-windows-static\lib</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

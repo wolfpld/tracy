@@ -1,0 +1,13 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+    "name": "tracy",
+    "version-semver": "0.8.0",
+    "description": "C++ frame profiler",
+    "homepage": "https://github.com/wolfpld/tracy",
+    "builtin-baseline": "af2287382b1991dbdcb7e5112d236f3323b9dd7a",
+    "dependencies": [
+        { "name": "capstone", "features":[ "arm", "arm64", "x86" ] },
+        "freetype",
+        "glfw3"
+    ]
+}

@@ -1,5 +1,6 @@
 #ifdef _WIN32
 #  include <windows.h>
+#  include <io.h>
 #else
 #  include <unistd.h>
 #endif
@@ -9,6 +10,7 @@
 #include <inttypes.h>
 #include <mutex>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +43,51 @@ void SigInt( int )
     s_disconnect.store(true, std::memory_order_relaxed);
 }
 
+static bool s_isStdoutATerminal = false;
+
+void InitIsStdoutATerminal() {
+#ifdef _WIN32
+    s_isStdoutATerminal = _isatty( fileno( stdout ) );
+#else
+    s_isStdoutATerminal = isatty( fileno( stdout ) );
+#endif
+}
+
+bool IsStdoutATerminal() { return s_isStdoutATerminal; }
+
+#define ANSI_RESET "\033[0m"
+#define ANSI_BOLD "\033[1m"
+#define ANSI_BLACK "\033[30m"
+#define ANSI_RED "\033[31m"
+#define ANSI_GREEN "\033[32m"
+#define ANSI_YELLOW "\033[33m"
+#define ANSI_MAGENTA "\033[35m"
+#define ANSI_CYAN "\033[36m"
+#define ANSI_ERASE_LINE "\033[2K"
+
+// Like printf, but if stdout is a terminal, prepends the output with
+// the given `ansiEscape` and appends ANSI_RESET.
+void AnsiPrintf( const char* ansiEscape, const char* format, ... ) {
+  if( IsStdoutATerminal() )
+  {
+    // Prepend ansiEscape and append ANSI_RESET.
+    char buf[256];
+    va_list args;
+    va_start( args, format );
+    vsnprintf( buf, sizeof buf, format, args );
+    va_end( args );
+    printf( "%s%s" ANSI_RESET, ansiEscape, buf );
+  }
+  else
+  {
+    // Just a normal printf.
+    va_list args;
+    va_start( args, format );
+    vfprintf( stdout, format, args );
+    va_end( args );
+  }
+}
+
 [[noreturn]] void Usage()
 {
     printf( "Usage: capture -o output.tracy [-a address] [-p port] [-f] [-s seconds]\n" );
@@ -56,6 +103,8 @@ int main( int argc, char** argv )
         SetConsoleMode( GetStdHandle( STD_OUTPUT_HANDLE ), 0x07 );
     }
 #endif
+
+    InitIsStdoutATerminal();
 
     bool overwrite = false;
     const char* address = "127.0.0.1";
@@ -164,21 +213,31 @@ int main( int argc, char** argv )
         const auto netTotal = worker.GetDataTransferred();
         lock.unlock();
 
-        if( mbps < 0.1f )
+        // Output progress info only if destination is a TTY to avoid bloating
+        // log files (so this is not just about usage of ANSI color codes).
+        if( IsStdoutATerminal() )
         {
-            printf( "\33[2K\r\033[36;1m%7.2f Kbps", mbps * 1000.f );
+            const char* unit = "Mbps";
+            float unitsPerMbps = 1.f;
+            if( mbps < 0.1f )
+            {
+                unit = "Kbps";
+                unitsPerMbps = 1000.f;
+            }
+            AnsiPrintf( ANSI_ERASE_LINE ANSI_CYAN ANSI_BOLD, "\r%7.2f %s", mbps * unitsPerMbps, unit );
+            printf( " /");
+            AnsiPrintf( ANSI_CYAN ANSI_BOLD, "%5.1f%%", compRatio * 100.f );
+            printf( " =");
+            AnsiPrintf( ANSI_YELLOW ANSI_BOLD, "%7.2f Mbps", mbps / compRatio );
+            printf( " | ");
+            AnsiPrintf( ANSI_YELLOW, "Tx: ");
+            AnsiPrintf( ANSI_GREEN, "%s",  tracy::MemSizeToString( netTotal ) );
+            printf( " | ");
+            AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage ) );
+            printf( " | ");
+            AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() ) );
+            fflush( stdout );
         }
-        else
-        {
-            printf( "\33[2K\r\033[36;1m%7.2f Mbps", mbps );
-        }
-        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mTx: \033[32m%s \033[0m| \033[31;1m%s\033[0m | \033[33m%s\033[0m",
-            compRatio * 100.f,
-            mbps / compRatio,
-            tracy::MemSizeToString( netTotal ),
-            tracy::MemSizeToString( tracy::memUsage ),
-            tracy::TimeToString( worker.GetLastTime() ) );
-        fflush( stdout );
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
         if( seconds != -1 )
@@ -197,7 +256,7 @@ int main( int argc, char** argv )
     const auto& failure = worker.GetFailureType();
     if( failure != tracy::Worker::Failure::None )
     {
-        printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
+        AnsiPrintf( ANSI_RED ANSI_BOLD, "\nInstrumentation failure: %s", tracy::Worker::GetFailureString( failure ) );
         auto& fd = worker.GetFailureData();
         if( !fd.message.empty() )
         {
@@ -205,7 +264,7 @@ int main( int argc, char** argv )
         }
         if( fd.callstack != 0 )
         {
-            printf( "\n\033[1mFailure callstack:\033[0m\n" );
+            AnsiPrintf( ANSI_BOLD, "\n%sFailure callstack:%s\n" );
             auto& cs = worker.GetCallstack( fd.callstack );
             int fidx = 0;
             int bidx = 0;
@@ -248,25 +307,25 @@ int main( int argc, char** argv )
                         }
                         else
                         {
-                            printf( "\033[30;1minl. " );
+                            AnsiPrintf( ANSI_BLACK ANSI_BOLD, "inl. " );
                         }
-                        printf( "\033[0;36m%s  ", txt );
+                        AnsiPrintf( ANSI_CYAN, "%s  ", txt );
                         txt = worker.GetString( frame.file );
                         if( frame.line == 0 )
                         {
-                            printf( "\033[33m(%s)", txt );
+                            AnsiPrintf( ANSI_YELLOW, "(%s)", txt );
                         }
                         else
                         {
-                            printf( "\033[33m(%s:%" PRIu32 ")", txt, frame.line );
+                            AnsiPrintf( ANSI_YELLOW, "(%s:%" PRIu32 ")", txt, frame.line );
                         }
                         if( frameData->imageName.Active() )
                         {
-                            printf( "\033[35m %s\033[0m\n", worker.GetString( frameData->imageName ) );
+                            AnsiPrintf( ANSI_MAGENTA, " %s\n", worker.GetString( frameData->imageName ) );
                         }
                         else
                         {
-                            printf( "\033[0m\n" );
+                            printf( "\n" );
                         }
                     }
                 }
@@ -282,14 +341,14 @@ int main( int argc, char** argv )
     if( f )
     {
         worker.Write( *f, false );
-        printf( " \033[32;1mdone!\033[0m\n" );
+        AnsiPrintf( ANSI_GREEN ANSI_BOLD, " done!\n" );
         f->Finish();
         const auto stats = f->GetCompressionStatistics();
         printf( "Trace size %s (%.2f%% ratio)\n", tracy::MemSizeToString( stats.second ), 100.f * stats.second / stats.first );
     }
     else
     {
-        printf( " \033[31;1failed!\033[0m\n" );
+        AnsiPrintf( ANSI_RED ANSI_BOLD, " failed!\n");
     }
 
     return 0;

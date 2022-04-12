@@ -68,24 +68,24 @@ bool IsStdoutATerminal() { return s_isStdoutATerminal; }
 // Like printf, but if stdout is a terminal, prepends the output with
 // the given `ansiEscape` and appends ANSI_RESET.
 void AnsiPrintf( const char* ansiEscape, const char* format, ... ) {
-  if( IsStdoutATerminal() )
-  {
-    // Prepend ansiEscape and append ANSI_RESET.
-    char buf[256];
-    va_list args;
-    va_start( args, format );
-    vsnprintf( buf, sizeof buf, format, args );
-    va_end( args );
-    printf( "%s%s" ANSI_RESET, ansiEscape, buf );
-  }
-  else
-  {
-    // Just a normal printf.
-    va_list args;
-    va_start( args, format );
-    vfprintf( stdout, format, args );
-    va_end( args );
-  }
+    if( IsStdoutATerminal() )
+    {
+        // Prepend ansiEscape and append ANSI_RESET.
+        char buf[256];
+        va_list args;
+        va_start( args, format );
+        vsnprintf( buf, sizeof buf, format, args );
+        va_end( args );
+        printf( "%s%s" ANSI_RESET, ansiEscape, buf );
+    }
+    else
+    {
+        // Just a normal printf.
+        va_list args;
+        va_start( args, format );
+        vfprintf( stdout, format, args );
+        va_end( args );
+    }
 }
 
 [[noreturn]] void Usage()

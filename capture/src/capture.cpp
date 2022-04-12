@@ -4,6 +4,7 @@
 #  include <unistd.h>
 #endif
 
+#include <atomic>
 #include <chrono>
 #include <inttypes.h>
 #include <mutex>
@@ -25,11 +26,19 @@
 #endif
 
 
-volatile bool disconnect = false;
+// This atomic is written by a signal handler (SigInt). Traditionally that would
+// have had to be `volatile sig_atomic_t`, and annoyingly, `bool` was
+// technically not allowed there, even though in practice it would work.
+// The good thing with C++11 atomics is that we can use atomic<bool> instead
+// here and be on the actually supported path.
+std::atomic<bool> disconnect;
 
 void SigInt( int )
 {
-    disconnect = true;
+    // Relaxed order is closest to a traditional `volatile` write.
+    // We don't need stronger ordering since this signal handler doesn't do
+    // anything else that would need to be ordered relatively to this.
+    disconnect.store(true, std::memory_order_relaxed);
 }
 
 [[noreturn]] void Usage()
@@ -137,10 +146,15 @@ int main( int argc, char** argv )
     const auto t0 = std::chrono::high_resolution_clock::now();
     while( worker.IsConnected() )
     {
-        if( disconnect )
+        // Relaxed order is sufficient here because `disconnect` is only ever
+        // set by this thread or by the SigInt handler, and that handler does
+        // nothing else than storing `disconnect`.
+        if( disconnect.load( std::memory_order_relaxed ) )
         {
             worker.Disconnect();
-            disconnect = false;
+            // Relaxed order is sufficient because only this thread ever reads
+            // this value.
+            disconnect.store(false, std::memory_order_relaxed );
             break;
         }
 
@@ -172,7 +186,9 @@ int main( int argc, char** argv )
             const auto dur = std::chrono::high_resolution_clock::now() - t0;
             if( std::chrono::duration_cast<std::chrono::seconds>(dur).count() >= seconds )
             {
-                disconnect = true;
+                // Relaxed order is sufficient because only this thread ever reads
+                // this value.
+                disconnect.store(true, std::memory_order_relaxed );
             }
         }
     }

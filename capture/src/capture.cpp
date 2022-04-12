@@ -31,7 +31,7 @@
 // technically not allowed there, even though in practice it would work.
 // The good thing with C++11 atomics is that we can use atomic<bool> instead
 // here and be on the actually supported path.
-static std::atomic<bool> s_disconnect;
+static std::atomic<bool> s_disconnect { false };
 
 void SigInt( int )
 {

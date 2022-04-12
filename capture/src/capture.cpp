@@ -25,7 +25,7 @@
 #endif
 
 
-bool disconnect = false;
+volatile bool disconnect = false;
 
 void SigInt( int )
 {

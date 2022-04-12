@@ -1832,11 +1832,13 @@ void View::DrawFrames()
 
     if( hover )
     {
-        if( IsMouseDragging( 1 ) )
+        const auto hwheel_delta = io.MouseWheelH * 100.f;
+        if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
         {
             m_viewMode = ViewMode::Paused;
             m_viewModeHeuristicTry = false;
-            const auto delta = GetMouseDragDelta( 1 ).x;
+            auto delta = GetMouseDragDelta( 1 ).x;
+            if( delta == 0 ) delta = hwheel_delta;
             if( abs( delta ) >= fwidth )
             {
                 const auto d = (int)delta / fwidth;

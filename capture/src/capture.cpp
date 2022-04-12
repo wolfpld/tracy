@@ -31,14 +31,14 @@
 // technically not allowed there, even though in practice it would work.
 // The good thing with C++11 atomics is that we can use atomic<bool> instead
 // here and be on the actually supported path.
-std::atomic<bool> disconnect;
+static std::atomic<bool> s_disconnect;
 
 void SigInt( int )
 {
     // Relaxed order is closest to a traditional `volatile` write.
     // We don't need stronger ordering since this signal handler doesn't do
     // anything else that would need to be ordered relatively to this.
-    disconnect.store(true, std::memory_order_relaxed);
+    s_disconnect.store(true, std::memory_order_relaxed);
 }
 
 [[noreturn]] void Usage()
@@ -146,15 +146,15 @@ int main( int argc, char** argv )
     const auto t0 = std::chrono::high_resolution_clock::now();
     while( worker.IsConnected() )
     {
-        // Relaxed order is sufficient here because `disconnect` is only ever
+        // Relaxed order is sufficient here because `s_disconnect` is only ever
         // set by this thread or by the SigInt handler, and that handler does
-        // nothing else than storing `disconnect`.
-        if( disconnect.load( std::memory_order_relaxed ) )
+        // nothing else than storing `s_disconnect`.
+        if( s_disconnect.load( std::memory_order_relaxed ) )
         {
             worker.Disconnect();
             // Relaxed order is sufficient because only this thread ever reads
             // this value.
-            disconnect.store(false, std::memory_order_relaxed );
+            s_disconnect.store(false, std::memory_order_relaxed );
             break;
         }
 
@@ -188,7 +188,7 @@ int main( int argc, char** argv )
             {
                 // Relaxed order is sufficient because only this thread ever reads
                 // this value.
-                disconnect.store(true, std::memory_order_relaxed );
+                s_disconnect.store(true, std::memory_order_relaxed );
             }
         }
     }

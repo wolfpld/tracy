@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include <capstone/capstone.h>
+#include <capstone.h>
 
 #include "imgui.h"
 #include "TracyCharUtil.hpp"

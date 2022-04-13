@@ -15,6 +15,7 @@ v0.x.x (xxxx-xx-xx)
 - The right-click context menu available for jump arrows in the symbol view
   window will now additionally display jump context, i.e. jump sources and
   jump target source code fragments.
+- Added freedesktop.org compliant desktop entry and MIME type definition.
 
 
 v0.8.0 (2022-03-28)

@@ -2,8 +2,12 @@
 Version=1.0
 Type=Application
 Name=Tracy Profiler
-Exec=/usr/bin/tracy
+GenericName=Code profiler
+GenericName[pl]=Profiler kodu
+Comment=Examine code to see where it is slow
+Comment[pl]=Znajdowanie wolno wykonującego się kodu
+Exec=/usr/bin/tracy %f
 Icon=tracy
 Terminal=false
-StartupNotify=true
-StartupWMClass=tracy
+Categories=Development;Profiling;
+MimeType=application/tracy;

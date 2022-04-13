@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/tracy">
+        <comment>Tracy Profiler trace file</comment>
+        <comment xml:lang="pl">Zrzut sesji profilera Tracy</comment>
+        <icon name="application-tracy"/>
+        <magic>
+            <match type="string" value="tlZ\x04" offset="0"/>
+            <match type="string" value="tZst" offset="0"/>
+        </magic>
+        <glob pattern="*.tracy"/>
+    </mime-type>
+</mime-info>

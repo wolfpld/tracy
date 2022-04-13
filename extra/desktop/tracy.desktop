@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Tracy Profiler
+Exec=/usr/bin/tracy
+Icon=tracy
+Terminal=false
+StartupNotify=true
+StartupWMClass=tracy

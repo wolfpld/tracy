@@ -409,6 +409,7 @@ private:
     bool m_showMessageImages = false;
     int m_visibleMessages = 0;
     size_t m_prevMessages = 0;
+    bool m_messagesShowCallstack = false;
     Vector<uint32_t> m_msgList;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;

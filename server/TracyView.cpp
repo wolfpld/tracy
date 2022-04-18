@@ -9567,6 +9567,7 @@ void View::DrawMessages()
     const bool msgsChanged = msgs.size() != m_prevMessages;
     if( filterChanged || threadsChanged )
     {
+        bool showCallstack = false;
         m_msgList.reserve( msgs.size() );
         m_msgList.clear();
         if( m_messageFilter.IsActive() )
@@ -9580,6 +9581,7 @@ void View::DrawMessages()
                     const auto text = m_worker.GetString( msgs[i]->ref );
                     if( m_messageFilter.PassFilter( text ) )
                     {
+                        if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
                         m_msgList.push_back_no_space_check( uint32_t( i ) );
                     }
                 }
@@ -9593,16 +9595,19 @@ void View::DrawMessages()
                 const auto tid = m_worker.DecompressThread( v->thread );
                 if( VisibleMsgThread( tid ) )
                 {
+                    if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
                     m_msgList.push_back_no_space_check( uint32_t( i ) );
                 }
             }
         }
+        m_messagesShowCallstack = showCallstack;
         m_visibleMessages = m_msgList.size();
         if( msgsChanged ) m_prevMessages = msgs.size();
     }
     else if( msgsChanged )
     {
         assert( m_prevMessages < msgs.size() );
+        bool showCallstack = m_messagesShowCallstack;
         m_msgList.reserve( msgs.size() );
         if( m_messageFilter.IsActive() )
         {
@@ -9615,6 +9620,7 @@ void View::DrawMessages()
                     const auto text = m_worker.GetString( msgs[i]->ref );
                     if( m_messageFilter.PassFilter( text ) )
                     {
+                        if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
                         m_msgList.push_back_no_space_check( uint32_t( i ) );
                     }
                 }
@@ -9628,15 +9634,17 @@ void View::DrawMessages()
                 const auto tid = m_worker.DecompressThread( v->thread );
                 if( VisibleMsgThread( tid ) )
                 {
+                    if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
                     m_msgList.push_back_no_space_check( uint32_t( i ) );
                 }
             }
         }
+        m_messagesShowCallstack = showCallstack;
         m_visibleMessages = m_msgList.size();
         m_prevMessages = msgs.size();
     }
 
-    bool hasCallstack = m_worker.GetCallstackFrameCount() != 0;
+    bool hasCallstack = m_messagesShowCallstack;
     ImGui::Separator();
     ImGui::BeginChild( "##messages" );
     const int colNum = hasCallstack ? 4 : 3;

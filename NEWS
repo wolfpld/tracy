@@ -17,6 +17,8 @@ v0.x.x (xxxx-xx-xx)
   window will now additionally display jump context, i.e. jump sources and
   jump target source code fragments.
 - Added freedesktop.org compliant desktop entry and MIME type definition.
+- The call stack column in list of messages will now be only displayed when
+  at least one message on the list has call stack data.
 
 
 v0.8.0 (2022-03-28)

@@ -5,6 +5,7 @@ here.
 v0.x.x (xxxx-xx-xx)
 -------------------
 
+- Support for pre-0.7 traces has been dropped.
 - Update utility can now scan for source files missing in the trace cache,
   if the '-c' parameter is given. Found files will be added to the cache.
 - Added high-priority queue for fast queries to bypass slow symbol queries.

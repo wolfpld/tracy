@@ -9,7 +9,7 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 55 };
+enum : uint32_t { ProtocolVersion = 56 };
 enum : uint16_t { BroadcastVersion = 2 };
 
 using lz4sz_t = uint32_t;
@@ -44,18 +44,19 @@ enum ServerQuery : uint8_t
     ServerQueryThreadString,
     ServerQuerySourceLocation,
     ServerQueryPlotName,
-    ServerQueryCallstackFrame,
     ServerQueryFrameName,
-    ServerQueryDisconnect,
-    ServerQueryExternalName,
     ServerQueryParameter,
+    ServerQueryFiberName,
+    // Items above are high priority. Split order must be preserved. See IsQueryPrio().
+    ServerQueryDisconnect,
+    ServerQueryCallstackFrame,
+    ServerQueryExternalName,
     ServerQuerySymbol,
     ServerQuerySymbolCode,
     ServerQueryCodeLocation,
     ServerQuerySourceCode,
     ServerQueryDataTransfer,
-    ServerQueryDataTransferPart,
-    ServerQueryFiberName
+    ServerQueryDataTransferPart
 };
 
 struct ServerQueryPacket

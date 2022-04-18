@@ -254,17 +254,9 @@ static uint64_t ReadHwSampleVec( FileRead& f, SortedVector<Int48, Int48Sort>& ve
     return sz;
 }
 
-// Should be just a simple comparison. Do this when protocol version changes.
 static bool IsQueryPrio( ServerQuery type )
 {
-    return
-        type == ServerQuery::ServerQueryString ||
-        type == ServerQuery::ServerQueryThreadString ||
-        type == ServerQuery::ServerQuerySourceLocation ||
-        type == ServerQuery::ServerQueryPlotName ||
-        type == ServerQuery::ServerQueryFrameName ||
-        type == ServerQuery::ServerQueryParameter ||
-        type == ServerQuery::ServerQueryFiberName;
+    return type < ServerQuery::ServerQueryDisconnect;
 }
 
 

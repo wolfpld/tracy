@@ -27,9 +27,9 @@ else
 		SRC3 += ../../../nfd/nfd_cocoa.m
 		LIBS +=  -framework CoreFoundation -framework AppKit
 	else
-		SRC += ../../../nfd/nfd_gtk.cpp
-		INCLUDES += $(shell pkg-config --cflags gtk+-3.0)
-		LIBS += $(shell pkg-config --libs gtk+-3.0)
+		SRC += ../../../nfd/nfd_portal.cpp
+		INCLUDES += $(shell pkg-config --cflags dbus-1)
+		LIBS += $(shell pkg-config --libs dbus-1)
 	endif
 endif
 

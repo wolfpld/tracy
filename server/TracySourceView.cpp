@@ -5062,8 +5062,9 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
     assert( start < m_asm.size() );
     assert( start < stop );
 
-    nfdchar_t* fn;
-    auto res = NFD_SaveDialog( "asm", nullptr, &fn, m_gwcb ? m_gwcb() : nullptr );
+    nfdu8filteritem_t filter = { "Assembly file", "asm" };
+    nfdu8char_t* fn;
+    auto res = NFD_SaveDialogU8( &fn, &filter, 1, nullptr, nullptr );
     if( res == NFD_OKAY )
     {
         FILE* f = nullptr;
@@ -5137,6 +5138,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             }
             fclose( f );
         }
+        NFD_FreePathU8( fn );
     }
 }
 #endif

@@ -60,12 +60,6 @@
     <ClCompile Include="..\..\..\server\TracyMemory.cpp">
       <Filter>server</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\nfd\nfd_common.c">
-      <Filter>nfd</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
-      <Filter>nfd</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp">
       <Filter>server</Filter>
     </ClCompile>
@@ -246,6 +240,9 @@
     <ClCompile Include="..\..\..\server\TracyWeb.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
+      <Filter>nfd</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -280,15 +277,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyMemory.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\nfd\common.h">
-      <Filter>nfd</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\nfd\nfd.h">
-      <Filter>nfd</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\nfd\nfd_common.h">
-      <Filter>nfd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp">
       <Filter>server</Filter>
@@ -583,6 +571,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\zstd\compress\clevels.h">
       <Filter>zstd\compress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\nfd\nfd.h">
+      <Filter>nfd</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -114,7 +114,6 @@
     <ClCompile Include="..\..\..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\imgui\misc\freetype\imgui_freetype.cpp" />
-    <ClCompile Include="..\..\..\nfd\nfd_common.c" />
     <ClCompile Include="..\..\..\nfd\nfd_win.cpp" />
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
     <ClCompile Include="..\..\..\server\TracyColor.cpp" />
@@ -196,9 +195,7 @@
     <ClInclude Include="..\..\..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\..\..\imgui\misc\freetype\imgui_freetype.h" />
-    <ClInclude Include="..\..\..\nfd\common.h" />
     <ClInclude Include="..\..\..\nfd\nfd.h" />
-    <ClInclude Include="..\..\..\nfd\nfd_common.h" />
     <ClInclude Include="..\..\..\server\IconsFontAwesome5.h" />
     <ClInclude Include="..\..\..\server\TracyBadVersion.hpp" />
     <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp" />

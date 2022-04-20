@@ -393,6 +393,10 @@ int main( int argc, char** argv )
         view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
     }
 
+#ifndef TRACY_NO_FILESELECTOR
+    NFD_Init();
+#endif
+
     glfwShowWindow( window );
 
     // Main loop
@@ -450,6 +454,11 @@ int main( int argc, char** argv )
     ImGui::DestroyContext();
 
     glfwDestroyWindow(window);
+
+#ifndef TRACY_NO_FILESELECTOR
+    NFD_Quit();
+#endif
+
     glfwTerminate();
 
     {
@@ -773,8 +782,9 @@ static void DrawContents()
 #ifndef TRACY_NO_FILESELECTOR
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
         {
-            nfdchar_t* fn;
-            auto res = NFD_OpenDialog( "tracy", nullptr, &fn, GetMainWindowNative() );
+            nfdu8filteritem_t filter = { "Tracy Profiler trace file", "tracy" };
+            nfdu8char_t* fn;
+            auto res = NFD_OpenDialogU8( &fn, &filter, 1, nullptr );
             if( res == NFD_OKAY )
             {
                 try
@@ -808,6 +818,7 @@ static void DrawContents()
                 {
                     badVer.state = tracy::BadVersionState::ReadError;
                 }
+                NFD_FreePathU8( fn );
             }
         }
 

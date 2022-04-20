@@ -758,7 +758,7 @@ vcpkg install --triplet x64-windows-static freetype glfw3 capstone[arm,arm64,x86
 
 \paragraph{Unix}
 
-On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}, \texttt{capstone}, \texttt{GTK3}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). The GTK library could be installed as \texttt{libgtk-3-dev} on some systems. Be aware that your package manager might distribute the deprecated \texttt{master}-branch version of \texttt{capstone}, and a build from source from the \texttt{next}-branch might be necesarry for you. Have fun!
+On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}, \texttt{capstone}, \texttt{dbus}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). Be aware that your package manager might distribute the deprecated \texttt{master}-branch version of \texttt{capstone}, and a build from source from the \texttt{next}-branch might be necesarry for you. Have fun!
 
 In addition to the beforementioned libraries, you might also have to install the \texttt{tbb} library\footnote{Technically this is not a dependency of Tracy but rather of \texttt{libstdc++} but it may still not be installed by default.}.
 
@@ -3777,7 +3777,7 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
 
 \item zlib license
 \begin{itemize}
-\item Native File Dialog -- \url{https://github.com/mlabbe/nativefiledialog}
+\item Native File Dialog Extended -- \url{https://github.com/btzy/nativefiledialog-extended}
 \item GLFW -- \url{https://github.com/glfw/glfw}
 \item IconFontCppHeaders -- \url{https://github.com/juliettef/IconFontCppHeaders}
 \item pdqsort -- \url{https://github.com/orlp/pdqsort}

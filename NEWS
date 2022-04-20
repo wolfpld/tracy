@@ -19,6 +19,8 @@ v0.x.x (xxxx-xx-xx)
 - Added freedesktop.org compliant desktop entry and MIME type definition.
 - The call stack column in list of messages will now be only displayed when
   at least one message on the list has call stack data.
+- File dialogs on Unix will be now native to the desktop environment you are
+  using. Note that this relies on xdg-desktop-portal and dbus.
 
 
 v0.8.0 (2022-03-28)

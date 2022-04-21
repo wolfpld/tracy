@@ -3477,7 +3477,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     if( m_asmShowSourceLocation && !m_sourceFiles.empty() )
     {
         ImGui::SameLine();
-        const auto startPos = ImGui::GetCursorScreenPos();
+        ImVec2 startPos;
         uint32_t srcline;
         const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
         if( srcline != 0 )
@@ -3486,6 +3486,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
             SmallColorBox( fileColor );
             ImGui::SameLine();
+            startPos = ImGui::GetCursorScreenPos();
             char buf[64];
             const auto fnsz = strlen( fileName );
             if( fnsz < 30 - m_maxLine )
@@ -3563,6 +3564,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         {
             SmallColorBox( 0 );
             ImGui::SameLine();
+            startPos = ImGui::GetCursorScreenPos();
             TextDisabledUnformatted( "[unknown]" );
         }
         ImGui::SameLine( 0, 0);

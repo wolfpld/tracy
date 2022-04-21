@@ -141,17 +141,23 @@ tracy_src = [
 
 tracy_public_include_dirs = include_directories('.')
 
+compiler = meson.get_compiler('cpp')
+override_options = []
+if compiler.get_id() != 'msvc'
+  override_options += 'cpp_std=c++11'
+endif
+
 if tracy_shared_libs
   tracy = shared_library('tracy', tracy_src, tracy_header_files,
     dependencies        : [ threads_dep ],
     include_directories : tracy_public_include_dirs,
-    override_options    : [ 'cpp_std=c++11' ],
+    override_options    : override_options,
     install             : true)
 else
   tracy = static_library('tracy', tracy_src, tracy_header_files,
     dependencies        : [ threads_dep ],
     include_directories : tracy_public_include_dirs,
-    override_options    : [ 'cpp_std=c++11' ],
+    override_options    : override_options,
     install             : true)
 endif
 

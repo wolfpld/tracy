@@ -3069,6 +3069,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     const bool showHwSamples = worker && m_hwSamples && worker->GetHwSampleCountAddress() != 0;
     if( showHwSamples )
     {
+        const auto startPos = ImGui::GetCursorScreenPos();
         if( hasHwData )
         {
             if( m_hwSamplesRelative )
@@ -3088,10 +3089,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
             }
         }
-        else
-        {
-            ImGui::ItemSize( ImVec2( 17 * ts.x, ts.y ) );
-        }
+        ImGui::SameLine( 0, 0 );
+        const auto endPos = ImGui::GetCursorScreenPos();
+        const auto itemsWidth = ( endPos - startPos ).x;
+        const auto fixedWidth = 17 * ts.x;
+        ImGui::ItemSize( ImVec2( fixedWidth - itemsWidth, 0 ) );
         ImGui::SameLine( 0, ty );
     }
 
@@ -3380,6 +3382,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     const bool showHwSamples = m_hwSamples && worker.GetHwSampleCountAddress() != 0;
     if( showHwSamples )
     {
+        const auto startPos = ImGui::GetCursorScreenPos();
         if( hw )
         {
             if( m_hwSamplesRelative )
@@ -3399,10 +3402,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
             }
         }
-        else
-        {
-            ImGui::ItemSize( ImVec2( 17 * ts.x, ts.y ) );
-        }
+        ImGui::SameLine( 0, 0 );
+        const auto endPos = ImGui::GetCursorScreenPos();
+        const auto itemsWidth = ( endPos - startPos ).x;
+        const auto fixedWidth = 17 * ts.x;
+        ImGui::ItemSize( ImVec2( fixedWidth - itemsWidth, 0 ) );
         ImGui::SameLine( 0, ty );
     }
 
@@ -3473,6 +3477,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     if( m_asmShowSourceLocation && !m_sourceFiles.empty() )
     {
         ImGui::SameLine();
+        ImVec2 startPos;
         uint32_t srcline;
         const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
         if( srcline != 0 )
@@ -3481,6 +3486,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
             SmallColorBox( fileColor );
             ImGui::SameLine();
+            startPos = ImGui::GetCursorScreenPos();
             char buf[64];
             const auto fnsz = strlen( fileName );
             if( fnsz < 30 - m_maxLine )
@@ -3553,17 +3559,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     m_hoveredSource = srcidx.Idx();
                 }
             }
-            ImGui::SameLine( 0, 0 );
-            ImGui::ItemSize( ImVec2( stw * ( 32 - bufsz ), ty ), 0 );
         }
         else
         {
             SmallColorBox( 0 );
             ImGui::SameLine();
+            startPos = ImGui::GetCursorScreenPos();
             TextDisabledUnformatted( "[unknown]" );
-            ImGui::SameLine( 0, 0 );
-            ImGui::ItemSize( ImVec2( stw * 23, ty ), 0 );
         }
+        ImGui::SameLine( 0, 0 );
+        const auto endPos = ImGui::GetCursorScreenPos();
+        const auto itemsWidth = ( endPos - startPos ).x;
+        const auto fixedWidth = 32 * ts.x;
+        ImGui::ItemSize( ImVec2( fixedWidth - itemsWidth, 0 ) );
+
     }
     if( m_asmBytes )
     {

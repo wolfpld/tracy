@@ -2,7 +2,7 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-v0.x.x (xxxx-xx-xx)
+v0.8.1 (2022-04-21)
 -------------------
 
 - Support for pre-0.7 traces has been dropped.

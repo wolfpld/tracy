@@ -15722,6 +15722,7 @@ void View::DrawPlayback()
         if( tmp < 1 ) tmp = 1;
         else if( (uint32_t)tmp > ficnt ) tmp = ficnt;
         SetPlaybackFrame( uint32_t( tmp - 1 ) );
+        m_playback.pause = true;
     }
     ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 4, "%.2f" );
 

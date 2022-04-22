@@ -15695,23 +15695,26 @@ void View::DrawPlayback()
             ImGui::Image( m_playback.texture, ImVec2( fi->w * scale, fi->h * scale ) );
         }
     }
+    const auto wheel = ImGui::GetIO().MouseWheel;
+    bool changed = false;
     int tmp = m_playback.frame + 1;
-    bool changed = ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" );
-    ImGui::SetItemUsingMouseWheel();
-    if( ImGui::IsItemHovered() )
+    if( wheel && ImGui::IsItemHovered() )
     {
-        const auto wheel = ImGui::GetIO().MouseWheel;
-        if( wheel )
+        tmp -= (int)wheel;
+        changed = true;
+    }
+    changed |= ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" );
+    ImGui::SetItemUsingMouseWheel();
+    if( wheel && ImGui::IsItemHovered() )
+    {
+        if( ImGui::IsItemActive() )
         {
-            if( ImGui::IsItemActive() )
-            {
-                ImGui::ClearActiveID();
-            }
-            else
-            {
-                tmp -= (int)wheel;
-                changed = true;
-            }
+            ImGui::ClearActiveID();
+        }
+        else
+        {
+            tmp -= (int)wheel;
+            changed = true;
         }
     }
     if( changed )

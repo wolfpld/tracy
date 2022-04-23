@@ -9,4 +9,8 @@ release:
 clean:
 	@+make -f build.mk clean
 
-.PHONY: all clean debug release
+db: clean
+	@bear -- $(MAKE) -f debug.mk all
+	@mv -f compile_commands.json ../../
+
+.PHONY: all clean debug release db

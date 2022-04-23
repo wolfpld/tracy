@@ -38,3 +38,4 @@ vcpkg/*
 extra/vswhere.exe
 extra/tracy-build
 /.cache
+compile_commands.json

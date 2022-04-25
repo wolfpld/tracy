@@ -2397,9 +2397,10 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                 if( symData )
                                 {
                                     ImGui::SameLine();
-                                    if( m_smallFont ) { ImGui::PushFont( m_smallFont ); ImGui::AlignTextToFramePadding(); }
+                                    ImGui::PushFont( m_smallFont );
+                                    ImGui::AlignTextToFramePadding();
                                     TextDisabledUnformatted( worker.GetString( symData->name ) );
-                                    if( m_smallFont ) ImGui::PopFont();
+                                    ImGui::PopFont();
                                 }
                             }
                         }
@@ -2431,9 +2432,10 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                     if( symData )
                                     {
                                         ImGui::SameLine();
-                                        if( m_smallFont ) { ImGui::PushFont( m_smallFont ); ImGui::AlignTextToFramePadding(); }
+                                        ImGui::PushFont( m_smallFont );
+                                        ImGui::AlignTextToFramePadding();
                                         TextDisabledUnformatted( worker.GetString( symData->name ) );
-                                        if( m_smallFont ) ImGui::PopFont();
+                                        ImGui::PopFont();
                                     }
                                 }
                             }
@@ -5154,12 +5156,12 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
 
 void SourceView::SetFont()
 {
-    if( m_font ) ImGui::PushFont( m_font );
+    ImGui::PushFont( m_font );
 }
 
 void SourceView::UnsetFont()
 {
-    if( m_font ) ImGui::PopFont();
+    ImGui::PopFont();
 }
 
 }

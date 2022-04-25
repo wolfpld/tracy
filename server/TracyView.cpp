@@ -402,9 +402,9 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
+        ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
-        if( s_instance->m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
         ImGui::Separator();
         if( ImGui::Button( "My bad" ) )
@@ -426,9 +426,9 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client not ready", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
+        ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_LIGHTBULB );
-        if( s_instance->m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
@@ -450,9 +450,9 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client disconnected", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
+        ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_HANDSHAKE );
-        if( s_instance->m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
         ImGui::Separator();
         if( ImGui::Button( "Will do" ) )
@@ -475,9 +475,9 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         const auto& data = s_instance->m_worker.GetFailureData();
-        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
+        ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_SKULL );
-        if( s_instance->m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
         ImGui::TextUnformatted( "Reason:" );
         ImGui::SameLine();
@@ -711,9 +711,9 @@ bool View::Draw()
     if( saveFailed ) ImGui::OpenPopup( "Save failed" );
     if( ImGui::BeginPopupModal( "Save failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        if( s_instance->m_bigFont ) ImGui::PushFont( s_instance->m_bigFont );
+        ImGui::PushFont( s_instance->m_bigFont );
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
-        if( s_instance->m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "Could not save trace at the specified location. Try again somewhere else." );
         ImGui::Separator();
         if( ImGui::Button( "Oh well" ) ) ImGui::CloseCurrentPopup();
@@ -740,9 +740,9 @@ bool View::DrawImpl()
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, &keepOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse );
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( m_bigFont );
         TextCentered( ICON_FA_WIFI );
-        if( m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "Waiting for connection..." );
         DrawWaitingDots( s_time );
         ImGui::End();
@@ -1297,9 +1297,9 @@ bool View::DrawImpl()
     }
     if( ImGui::BeginPopupModal( "Connection lost!", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( m_bigFont );
         TextCentered( ICON_FA_PLUG );
-        if( m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted(
             "Connection to the profiled application was lost\n"
             "before all required profiling data could be retrieved.\n"
@@ -1527,13 +1527,13 @@ void View::DrawNotificationArea()
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
 
-    if( m_smallFont ) ImGui::PushFont( m_smallFont );
+    ImGui::PushFont( m_smallFont );
     const auto wpos = ImGui::GetWindowPos();
     const auto w = ImGui::GetContentRegionAvail().x;
     const auto fps = RealToString( int( io.Framerate + 0.5f ) );
     const auto fpssz = ImGui::CalcTextSize( fps ).x;
     ImGui::GetWindowDrawList()->AddText( wpos + ImVec2( w-fpssz, 0 ), 0x88FFFFFF, fps );
-    if( m_smallFont ) ImGui::PopFont();
+    ImGui::PopFont();
 }
 
 bool View::DrawConnection()
@@ -1668,9 +1668,9 @@ bool View::DrawConnection()
 
     if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( m_bigFont );
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
-        if( m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );
         ImGui::TextUnformatted( "Are you sure you want to proceed?" );
         ImGui::Separator();
@@ -7367,9 +7367,9 @@ void View::DrawZoneInfoWindow()
         const auto tid = threadData->id;
         if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).name.Active() )
         {
-            if( m_bigFont ) ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( m_bigFont );
             TextFocused( "Zone name:", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
-            if( m_bigFont ) ImGui::PopFont();
+            ImGui::PopFont();
             if( srcloc.name.active )
             {
                 ImGui::SameLine();
@@ -7395,9 +7395,9 @@ void View::DrawZoneInfoWindow()
         }
         else if( srcloc.name.active )
         {
-            if( m_bigFont ) ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( m_bigFont );
             TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
-            if( m_bigFont ) ImGui::PopFont();
+            ImGui::PopFont();
             ImGui::SameLine();
             if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
             TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
@@ -7406,9 +7406,9 @@ void View::DrawZoneInfoWindow()
         }
         else
         {
-            if( m_bigFont ) ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( m_bigFont );
             TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-            if( m_bigFont ) ImGui::PopFont();
+            ImGui::PopFont();
             ImGui::SameLine();
             if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
         }
@@ -8411,9 +8411,9 @@ void View::DrawGpuInfoWindow()
         ImGui::Separator();
 
         const auto tid = GetZoneThread( ev );
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( m_bigFont );
         TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
-        if( m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         ImGui::SameLine();
         if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
         TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
@@ -14249,9 +14249,9 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                     else
                     {
-                        if( m_smallFont ) ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( m_smallFont );
                         TextDisabledUnformatted( "inline" );
-                        if( m_smallFont ) ImGui::PopFont();
+                        ImGui::PopFont();
                     }
                     ImGui::TableNextColumn();
                     {
@@ -14555,9 +14555,9 @@ void View::DrawInfo()
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-    if( m_bigFont ) ImGui::PushFont( m_bigFont );
+    ImGui::PushFont( m_bigFont );
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
-    if( m_bigFont ) ImGui::PopFont();
+    ImGui::PopFont();
     const auto exectime = m_worker.GetExecutableTime();
     if( exectime != 0 )
     {
@@ -15508,7 +15508,7 @@ void View::DrawLockInfoWindow()
             }
         }
 
-        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( m_bigFont );
         if( lock.customName.Active() )
         {
             ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );
@@ -15517,7 +15517,7 @@ void View::DrawLockInfoWindow()
         {
             ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
         }
-        if( m_bigFont ) ImGui::PopFont();
+        ImGui::PopFont();
         if( lock.customName.Active() )
         {
             TextFocused( "Name:", m_worker.GetString( srcloc.function ) );
@@ -16419,9 +16419,9 @@ void View::DrawSampleParents()
                         }
                         else
                         {
-                            if( m_smallFont ) ImGui::PushFont( m_smallFont );
+                            ImGui::PushFont( m_smallFont );
                             TextDisabledUnformatted( "inline" );
-                            if( m_smallFont ) ImGui::PopFont();
+                            ImGui::PopFont();
                         }
                         ImGui::TableNextColumn();
                         {
@@ -19019,10 +19019,10 @@ void View::CallstackTooltipContents( uint32_t idx )
                 if( frameData->imageName.Active() )
                 {
                     ImGui::SameLine();
-                    if( m_smallFont ) ImGui::PushFont( m_smallFont );
+                    ImGui::PushFont( m_smallFont );
                     ImGui::AlignTextToFramePadding();
                     TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
-                    if( m_smallFont ) ImGui::PopFont();
+                    ImGui::PopFont();
                 }
             }
         }
@@ -19743,7 +19743,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     m_srcHintCache.Parse( filename, m_worker, *this );
     if( m_srcHintCache.empty() ) return;
     if( separateTooltip ) ImGui::BeginTooltip();
-    if( m_fixedFont ) ImGui::PushFont( m_fixedFont );
+    ImGui::PushFont( m_fixedFont );
     auto& lines = m_srcHintCache.get();
     const int start = std::max( 0, (int)srcline - ( before+1 ) );
     const int end = std::min<int>( m_srcHintCache.get().size(), srcline + after );
@@ -19788,7 +19788,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
             ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
         }
     }
-    if( m_fixedFont ) ImGui::PopFont();
+    ImGui::PopFont();
     if( separateTooltip ) ImGui::EndTooltip();
 }
 

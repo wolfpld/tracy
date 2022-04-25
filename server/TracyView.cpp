@@ -4007,11 +4007,17 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                         {
                             TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
                             ImGui::SameLine();
+                            ImGui::PushFont( m_smallFont );
+                            ImGui::AlignTextToFramePadding();
                             TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
+                            ImGui::PopFont();
                         }
                         TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
                         ImGui::SameLine();
+                        ImGui::PushFont( m_smallFont );
+                        ImGui::AlignTextToFramePadding();
                         TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
+                        ImGui::PopFont();
                     }
                     tooltip = true;
 

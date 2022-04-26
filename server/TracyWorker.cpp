@@ -316,9 +316,9 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_executableTime( 0 )
     , m_pid( 0 )
     , m_samplingPeriod( 0 )
-    , m_inconsistentSamples( false )
     , m_stream( nullptr )
     , m_buffer( nullptr )
+    , m_inconsistentSamples( false )
     , m_traceVersion( CurrentVersion )
 {
     m_data.sourceLocationExpand.push_back( 0 );

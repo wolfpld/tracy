@@ -772,7 +772,7 @@ bool View::DrawImpl()
     assert( m_shortcut == ShortcutAction::None );
     if( io.KeyCtrl )
     {
-        if( ImGui::IsKeyPressed( 'F' ) )
+        if( ImGui::IsKeyPressed( ImGuiKey_F ) )
         {
             m_findZone.show = true;
             m_shortcut = ShortcutAction::OpenFind;

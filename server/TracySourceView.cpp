@@ -1369,7 +1369,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 m_childCalls = false;
                 m_childCallList = false;
             }
-            else if( ImGui::IsKeyDown( 'Z' ) )
+            else if( ImGui::IsKeyDown( ImGuiKey_Z ) )
             {
                 m_childCalls = !m_childCalls;
             }
@@ -1566,7 +1566,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         break;
     }
 
-    if( samplesReady && ImGui::IsKeyDown( 'Z' ) ) m_childCalls = !m_childCalls;
+    if( samplesReady && ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
 
     if( jumpOut != 0 )
     {

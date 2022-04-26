@@ -6,7 +6,7 @@
         {
             "label": "Build Profiler GUI",
             "type": "shell",
-            "command": "make debug -C profiler/build/unix -j `nproc`",  
+            "command": "CC=clang CXX=clang++ make debug -C profiler/build/unix -j `nproc`",  
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -18,7 +18,7 @@
         {
             "label": "Build capture tool",
             "type": "shell",
-            "command": "make debug -C capture/build/unix -j `nproc`",  
+            "command": "CC=clang CXX=clang++ make debug -C capture/build/unix -j `nproc`",  
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -30,7 +30,7 @@
         {
             "label": "Build csvexport tool",
             "type": "shell",
-            "command": "make debug -C csvexport/build/unix -j `nproc`",  
+            "command": "CC=clang CXX=clang++ make debug -C csvexport/build/unix -j `nproc`",  
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -42,7 +42,7 @@
         {
             "label": "Build import-chrome tool",
             "type": "shell",
-            "command": "make debug -C import-chrome/build/unix -j `nproc`",  
+            "command": "CC=clang CXX=clang++ make debug -C import-chrome/build/unix -j `nproc`",  
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -51,7 +51,7 @@
         {
             "label": "Build update tool",
             "type": "shell",
-            "command": "make debug -C update/build/unix -j `nproc`",  
+            "command": "CC=clang CXX=clang++ make debug -C update/build/unix -j `nproc`",  
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -63,7 +63,7 @@
         {
             "label": "Build client library",
             "type": "shell",
-            "command": "make debug -C library/unix -j `nproc`",  
+            "command": "CC=clang CXX=clang++ make debug -C library/unix -j `nproc`",  
             "group": {
                 "kind": "build",
                 "isDefault": true

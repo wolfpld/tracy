@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <imgui.h>
+
 #include "tracy_robin_hood.h"
 #include "TracyCharUtil.hpp"
 #include "TracyDecayValue.hpp"

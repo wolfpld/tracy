@@ -4,6 +4,7 @@
 #include "../common/TracyForceInline.hpp"
 #include "tracy_robin_hood.h"
 #include "TracyCharUtil.hpp"
+#include "TracyEvent.hpp"
 #include "TracyVector.hpp"
 
 namespace tracy

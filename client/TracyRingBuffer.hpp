@@ -1,4 +1,14 @@
+#include <atomic>
+#include <assert.h>
 #include <errno.h>
+#include <linux/perf_event.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+#include "TracyDebug.hpp"
 
 namespace tracy
 {

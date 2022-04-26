@@ -2,9 +2,11 @@
 #define __TRACYSLAB_HPP__
 
 #include <assert.h>
+#include <stdint.h>
 #include <vector>
 
 #include "TracyMemory.hpp"
+#include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {

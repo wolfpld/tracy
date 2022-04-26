@@ -24,6 +24,9 @@
 #  include <stdio.h>
 #endif
 
+#include <stdint.h>
+#include <string.h>
+
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy

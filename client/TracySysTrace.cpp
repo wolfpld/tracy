@@ -618,6 +618,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
 
 #  elif defined __linux__
 
+#    include <cpuid.h>
 #    include <sys/types.h>
 #    include <sys/stat.h>
 #    include <sys/wait.h>

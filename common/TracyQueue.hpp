@@ -1,6 +1,7 @@
 #ifndef __TRACYQUEUE_HPP__
 #define __TRACYQUEUE_HPP__
 
+#include <stddef.h>
 #include <stdint.h>
 
 namespace tracy

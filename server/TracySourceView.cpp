@@ -1059,6 +1059,8 @@ void SourceView::RenderSimpleSourceView()
             }
         }
     }
+
+    ImGui::PopStyleVar();
     UnsetFont();
     ImGui::EndChild();
 }
@@ -2865,7 +2867,7 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
     memset( buf, ' ', 7-sz );
     memcpy( buf + 7 - sz, tmp, sz+1 );
 
-    draw->AddRectFilled( wpos, wpos + ImVec2( val * tw / 100, ty+1 ), 0xFF444444 );
+    draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( val * tw / 100, ty ), 0xFF444444 );
     DrawTextContrast( draw, wpos + ImVec2( htw, 0 ), col, buf );
 
     ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );
@@ -2883,11 +2885,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     if( m_source.idx() == m_hoveredSource && lineNum == m_hoveredLine )
     {
-        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0x22FFFFFF );
     }
     else if( lineNum == m_selectedLine )
     {
-        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF333322 );
     }
 
     bool hasHwData = false;
@@ -3060,10 +3062,10 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             }
             if( glow )
             {
-                DrawLine( draw, dpos + ImVec2( scale, 1 ), dpos + ImVec2( scale, ty-2 ), glow, scale );
-                DrawLine( draw, dpos + ImVec2( -scale, 1 ), dpos + ImVec2( -scale, ty-2 ), glow, scale );
+                DrawLine( draw, dpos + ImVec2( scale, 2 ), dpos + ImVec2( scale, ty-1 ), glow, scale );
+                DrawLine( draw, dpos + ImVec2( -scale, 2 ), dpos + ImVec2( -scale, ty-1 ), glow, scale );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, scale );
+            DrawLine( draw, dpos + ImVec2( 0, 2 ), dpos + ImVec2( 0, ty-1 ), col, scale );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -3152,9 +3154,9 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     }
     ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
 
-    if( match > 0 && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
+    if( match > 0 && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty ) ) )
     {
-        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0x11FFFFFF );
         if( !mouseHandled && ( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) ) )
         {
             m_displayMode = DisplayMixed;
@@ -3166,7 +3168,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         }
     }
 
-    DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
+    DrawLine( draw, dpos + ImVec2( 0, ty ), dpos + ImVec2( w, ty ), 0x08FFFFFF );
 }
 
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
@@ -3179,15 +3181,15 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     if( m_selectedAddressesHover.find( line.addr ) != m_selectedAddressesHover.end() )
     {
-        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0x22FFFFFF );
     }
     else if( m_selectedAddresses.find( line.addr ) != m_selectedAddresses.end() )
     {
-        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF333322 );
     }
     if( line.addr == m_highlightAddr )
     {
-        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF222233 );
+        draw->AddRectFilled( wpos + ImVec2( 0, 1 ), wpos + ImVec2( w, ty ), 0xFF222233 );
     }
 
     const auto asmIdx = &line - m_asm.data();
@@ -3373,10 +3375,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             }
             if( glow )
             {
-                DrawLine( draw, dpos + ImVec2( scale, 1 ), dpos + ImVec2( scale, ty-2 ), glow, scale );
-                DrawLine( draw, dpos + ImVec2( -scale, 1 ), dpos + ImVec2( -scale, ty-2 ), glow, scale );
+                DrawLine( draw, dpos + ImVec2( scale, 2 ), dpos + ImVec2( scale, ty-1 ), glow, scale );
+                DrawLine( draw, dpos + ImVec2( -scale, 2 ), dpos + ImVec2( -scale, ty-1 ), glow, scale );
             }
-            DrawLine( draw, dpos + ImVec2( 0, 1 ), dpos + ImVec2( 0, ty-2 ), col, scale );
+            DrawLine( draw, dpos + ImVec2( 0, 2 ), dpos + ImVec2( 0, ty-1 ), col, scale );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -3486,7 +3488,9 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         {
             const auto fileName = worker.GetString( srcidx );
             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
-            SmallColorBox( fileColor );
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ImGui::ColorButton( "c1", ImVec4( (fileColor & 0xFF) / 255.f, ((fileColor>>8) & 0xFF ) / 255.f, ((fileColor>>16) & 0xFF ) / 255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2( ty - 3 * scale, ty - 3 * scale) );
+            ImGui::PopStyleVar();
             ImGui::SameLine();
             startPos = ImGui::GetCursorScreenPos();
             char buf[64];
@@ -4123,7 +4127,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
     }
 
-    DrawLine( draw, dpos + ImVec2( 0, ty+2 ), dpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
+    DrawLine( draw, dpos + ImVec2( 0, ty ), dpos + ImVec2( w, ty ), 0x08FFFFFF );
 }
 
 void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, size_t branchRel, size_t branchRelMax, size_t cacheRel, size_t cacheRelMax, const ImVec2& ts )
@@ -5157,10 +5161,12 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
 void SourceView::SetFont()
 {
     ImGui::PushFont( m_font );
+    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
 }
 
 void SourceView::UnsetFont()
 {
+    ImGui::PopStyleVar();
     ImGui::PopFont();
 }
 

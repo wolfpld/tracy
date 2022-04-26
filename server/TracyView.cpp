@@ -19742,6 +19742,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     if( !SourceFileValid( filename, m_worker.GetCaptureTime(), *this, m_worker ) ) return;
     m_srcHintCache.Parse( filename, m_worker, *this );
     if( m_srcHintCache.empty() ) return;
+    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
     if( separateTooltip ) ImGui::BeginTooltip();
     ImGui::PushFont( m_fixedFont );
     auto& lines = m_srcHintCache.get();
@@ -19790,6 +19791,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     }
     ImGui::PopFont();
     if( separateTooltip ) ImGui::EndTooltip();
+    ImGui::PopStyleVar();
 }
 
 bool View::Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict )

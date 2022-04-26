@@ -17231,7 +17231,6 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
     unordered_flat_map<uint32_t, MemPathData> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
-    const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
     if( m_memInfo.range.active )
     {
         auto it = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.min, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
@@ -17819,8 +17818,6 @@ void View::DrawMemory()
     }
     ImGui::PopStyleVar();
 
-    const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
-
     ImGui::Separator();
     ImGui::BeginChild( "##memory" );
     if( ImGui::TreeNode( ICON_FA_AT " Allocations" ) )
@@ -18218,8 +18215,6 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
 
 void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx )
 {
-    auto& io = ImGui::GetIO();
-
     std::vector<unordered_flat_map<uint64_t, CallstackFrameTree>::const_iterator> sorted;
     sorted.reserve( tree.size() );
     for( auto it = tree.begin(); it != tree.end(); ++it )
@@ -18340,8 +18335,6 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
 
 void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx )
 {
-    auto& io = ImGui::GetIO();
-
     std::vector<unordered_flat_map<uint64_t, CallstackFrameTree>::const_iterator> sorted;
     sorted.reserve( tree.size() );
     for( auto it = tree.begin(); it != tree.end(); ++it )

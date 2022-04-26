@@ -3503,7 +3503,6 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 sprintf( buf, "...%s:%i", fileName+fnsz-(30-3-1-m_maxLine), srcline );
             }
-            const auto bufsz = strlen( buf );
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemHovered() )
             {
@@ -4590,7 +4589,6 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
 
 void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view )
 {
-    const auto samplesReady = worker.AreSymbolSamplesReady();
     auto filename = m_source.filename();
     if( limitView )
     {

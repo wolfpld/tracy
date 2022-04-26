@@ -360,6 +360,17 @@ int main( int argc, char** argv )
 
     if( argc == 2 )
     {
+        if( strcmp( argv[1], "--help" ) == 0 )
+        {
+            printf( "%s\n\n", title );
+            printf( "Usage:\n\n" );
+            printf( "    Open trace file stored on disk:\n" );
+            printf( "      %s file.tracy\n\n", argv[0] );
+            printf( "    Connect to a running client:\n" );
+            printf( "      %s -a address [-p port]\n", argv[0] );
+            updateThread.join();
+            exit( 0 );
+        }
         auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
         if( f )
         {

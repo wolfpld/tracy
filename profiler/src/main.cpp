@@ -381,6 +381,7 @@ int main( int argc, char** argv )
             else
             {
                 fprintf( stderr, "Bad parameter: %s", argv[1] );
+                updateThread.join();
                 exit( 1 );
             }
             argc -= 2;

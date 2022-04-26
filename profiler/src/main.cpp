@@ -204,6 +204,48 @@ int main( int argc, char** argv )
 {
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
 
+    std::unique_ptr<tracy::FileRead> initFileOpen;
+    if( argc == 2 )
+    {
+        if( strcmp( argv[1], "--help" ) == 0 )
+        {
+            printf( "%s\n\n", title );
+            printf( "Usage:\n\n" );
+            printf( "    Open trace file stored on disk:\n" );
+            printf( "      %s file.tracy\n\n", argv[0] );
+            printf( "    Connect to a running client:\n" );
+            printf( "      %s -a address [-p port]\n", argv[0] );
+            exit( 0 );
+        }
+        initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
+        if( !initFileOpen )
+        {
+            fprintf( stderr, "Cannot open trace file: %s\n", argv[1] );
+            exit( 1 );
+        }
+    }
+    else
+    {
+        while( argc >= 3 )
+        {
+            if( strcmp( argv[1], "-a" ) == 0 )
+            {
+                connectTo = argv[2];
+            }
+            else if( strcmp( argv[1], "-p" ) == 0 )
+            {
+                port = (uint16_t)atoi( argv[2] );
+            }
+            else
+            {
+                fprintf( stderr, "Bad parameter: %s", argv[1] );
+                exit( 1 );
+            }
+            argc -= 2;
+            argv += 2;
+        }
+    }
+
     std::string winPosFile = tracy::GetSavePath( "window.position" );
     int x = 200, y = 200, w = 1650, h = 960, maximize = 0;
     {
@@ -358,48 +400,12 @@ int main( int argc, char** argv )
 
     SetupDPIScale( dpiScale, fixedWidth, bigFont, smallFont );
 
-    if( argc == 2 )
+    if( initFileOpen )
     {
-        if( strcmp( argv[1], "--help" ) == 0 )
-        {
-            printf( "%s\n\n", title );
-            printf( "Usage:\n\n" );
-            printf( "    Open trace file stored on disk:\n" );
-            printf( "      %s file.tracy\n\n", argv[0] );
-            printf( "    Connect to a running client:\n" );
-            printf( "      %s -a address [-p port]\n", argv[0] );
-            updateThread.join();
-            exit( 0 );
-        }
-        auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
-        if( f )
-        {
-            view = std::make_unique<tracy::View>( RunOnMainThread, *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
-        }
+        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
+        initFileOpen.reset();
     }
-    else
-    {
-        while( argc >= 3 )
-        {
-            if( strcmp( argv[1], "-a" ) == 0 )
-            {
-                connectTo = argv[2];
-            }
-            else if( strcmp( argv[1], "-p" ) == 0 )
-            {
-                port = (uint16_t)atoi( argv[2] );
-            }
-            else
-            {
-                fprintf( stderr, "Bad parameter: %s", argv[1] );
-                updateThread.join();
-                exit( 1 );
-            }
-            argc -= 2;
-            argv += 2;
-        }
-    }
-    if( connectTo )
+    else if( connectTo )
     {
         view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback, GetMainWindowNative, SetupScaleCallback );
     }

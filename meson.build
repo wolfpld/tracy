@@ -81,6 +81,10 @@ if tracy_shared_libs
   add_project_arguments('-DTRACY_EXPORTS', language : 'cpp')
 endif
 
+if get_option('tracy_no_crash_handler')
+  add_project_arguments('-DTRACY_NO_CRASH_HANDLER', language : 'cpp')
+endif
+
 threads_dep = dependency('threads')
 
 includes = [

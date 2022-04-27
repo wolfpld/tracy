@@ -6,6 +6,10 @@ else
 LDFLAGS := -s
 endif
 
+ifeq (1,$(shell ld.lld --version > /dev/null && echo 1 || echo 0))
+LDFLAGS += -fuse-ld=lld
+endif
+
 ifneq (,$(filter $(ARCH),aarch64 arm64))
 CFLAGS += -mcpu=native
 else

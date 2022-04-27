@@ -32,6 +32,9 @@
 #  include <cxxabi.h>
 #  include <stdlib.h>
 #  include "TracyFastVector.hpp"
+#  ifdef TRACY_DEBUGINFOD
+#    include <elfutils/debuginfod.h>
+#  endif
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>
@@ -561,6 +564,10 @@ int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
 
+#ifdef TRACY_DEBUGINFOD
+debuginfod_client* s_debuginfod;
+#endif
+
 #ifdef __linux
 struct KernelSymbol
 {
@@ -663,10 +670,16 @@ void InitCallstack()
 #ifdef __linux
     InitKernelSymbols();
 #endif
+#ifdef TRACY_DEBUGINFOD
+    s_debuginfod = debuginfod_begin();
+#endif
 }
 
 void EndCallstack()
 {
+#ifdef TRACY_DEBUGINFOD
+    debuginfod_end( s_debuginfod );
+#endif
 }
 
 static int FastCallstackDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )

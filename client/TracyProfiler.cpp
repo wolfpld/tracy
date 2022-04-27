@@ -1492,6 +1492,10 @@ Profiler::~Profiler()
     s_thread->~Thread();
     tracy_free( s_thread );
 
+#ifdef TRACY_HAS_CALLSTACK
+    EndCallstack();
+#endif
+
     tracy_free( m_lz4Buf );
     tracy_free( m_buffer );
     LZ4_freeStream( (LZ4_stream_t*)m_stream );

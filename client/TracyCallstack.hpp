@@ -51,6 +51,7 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
 void InitCallstack();
+void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
 
 #if TRACY_HAS_CALLSTACK == 1

@@ -221,6 +221,10 @@ void InitCallstack()
 #endif
 }
 
+void EndCallstack()
+{
+}
+
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     static char ret[MaxNameSize];
@@ -661,6 +665,10 @@ void InitCallstack()
 #endif
 }
 
+void EndCallstack()
+{
+}
+
 static int FastCallstackDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
     if( function )
@@ -910,6 +918,10 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #elif TRACY_HAS_CALLSTACK == 5
 
 void InitCallstack()
+{
+}
+
+void EndCallstack()
 {
 }
 

@@ -738,7 +738,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     return msg;
 }
 
-#if defined _WIN32 && !defined TRACY_UWP
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
@@ -847,7 +847,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 }
 #endif
 
-#ifdef __linux__
+#ifdef __linux__ && !defined TRACY_NO_CRASH_HANDLER
 #  ifndef TRACY_CRASH_SIGNAL
 #    define TRACY_CRASH_SIGNAL SIGPWR
 #  endif
@@ -1416,12 +1416,12 @@ void Profiler::SpawnWorkerThreads()
     new(s_symbolThread) Thread( LaunchSymbolWorker, this );
 #endif
 
-#if defined _WIN32 && !defined TRACY_UWP
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
-#ifdef __linux__
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     struct sigaction threadFreezer = {};
     threadFreezer.sa_handler = ThreadFreezer;
     sigaction( TRACY_CRASH_SIGNAL, &threadFreezer, &m_prevSignal.pwr );
@@ -1437,7 +1437,9 @@ void Profiler::SpawnWorkerThreads()
     sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
 #endif
 
+#ifndef TRACY_NO_CRASH_HANDLER
     m_crashHandlerInstalled = true;
+#endif
 
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();

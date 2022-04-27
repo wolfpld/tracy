@@ -738,7 +738,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     return msg;
 }
 
-#if defined _WIN32 && !defined TRACY_UWP
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
@@ -847,7 +847,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 }
 #endif
 
-#ifdef __linux__
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
 #  ifndef TRACY_CRASH_SIGNAL
 #    define TRACY_CRASH_SIGNAL SIGPWR
 #  endif
@@ -1076,7 +1076,6 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     abort();
 }
 #endif
-
 
 enum { QueuePrealloc = 256 * 1024 };
 
@@ -1355,7 +1354,9 @@ Profiler::Profiler()
 #endif
     , m_paramCallback( nullptr )
     , m_queryData( nullptr )
+#ifndef TRACY_NO_CRASH_HANDLER
     , m_crashHandlerInstalled( false )
+#endif
 {
     assert( !s_instance );
     s_instance = this;
@@ -1416,12 +1417,12 @@ void Profiler::SpawnWorkerThreads()
     new(s_symbolThread) Thread( LaunchSymbolWorker, this );
 #endif
 
-#if defined _WIN32 && !defined TRACY_UWP
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
-#ifdef __linux__
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     struct sigaction threadFreezer = {};
     threadFreezer.sa_handler = ThreadFreezer;
     sigaction( TRACY_CRASH_SIGNAL, &threadFreezer, &m_prevSignal.pwr );
@@ -1437,7 +1438,9 @@ void Profiler::SpawnWorkerThreads()
     sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
 #endif
 
+#ifndef TRACY_NO_CRASH_HANDLER
     m_crashHandlerInstalled = true;
+#endif
 
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();
@@ -1450,11 +1453,11 @@ Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
 
-#if defined _WIN32 && !defined TRACY_UWP
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
 #endif
 
-#ifdef __linux__
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled )
     {
         sigaction( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr, nullptr );
@@ -1465,6 +1468,8 @@ Profiler::~Profiler()
         sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
         sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
     }
+#endif
+
 #endif
 
 #ifdef TRACY_HAS_SYSTEM_TRACING

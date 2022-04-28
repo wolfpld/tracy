@@ -18,3 +18,4 @@ option('tracy_delayed_init', type : 'boolean', value : false, description : 'Ena
 option('tracy_manual_lifetime', type : 'boolean', value : false, description : 'Enable the manual lifetime management of the profile')
 option('tracy_fibers', type : 'boolean', value : false, description : 'Enable fibers support')
 option('tracy_shared_libs', type : 'boolean', value : false, description : 'Builds Tracy as a shared object')
+option('tracy_no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')

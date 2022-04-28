@@ -803,7 +803,7 @@ Tracy will try to capture thread names through operating system data if context 
 
 On selected platforms (see section~\ref{featurematrix}) Tracy will intercept application crashes\footnote{For example, invalid memory accesses ('segmentation faults', 'null pointer exceptions'), divisions by zero, etc.}. This serves two purposes. First, the client application will be able to send the remaining profiling data to the server. Second, the server will receive a crash report with the crash reason, call stack at the time of the crash, etc.
 
-This is an automatic process, and it doesn't require user interaction.
+This is an automatic process, and it doesn't require user interaction. If you are experiencing issues with crash handling you may want to try defining the \texttt{TRACY\_NO\_CRASH\_HANDLER} macro to disable the built in crash handling.
 
 \begin{bclogo}[
 noborder=true,

@@ -1060,7 +1060,6 @@ void SourceView::RenderSimpleSourceView()
         }
     }
 
-    ImGui::PopStyleVar();
     UnsetFont();
     ImGui::EndChild();
 }

@@ -859,7 +859,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             pe.exclude_kernel = 1;
             ProbePreciseIp( pe, currentPid );
             fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
-            if( fd == -1 ) break;
+            if( fd == -1 )
+            {
+                TracyDebug( "  Failed to setup!\n");
+                break;
+            }
             TracyDebug( "  No access to kernel samples\n" );
         }
         new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );

@@ -13764,20 +13764,22 @@ void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, Accum
                     if( !m_statSeparateInlines && hasNoSamples && v.symAddr != 0 && v.count > 0 )
                     {
                         auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
-                        assert( inSym != nullptr );
-                        const auto symEnd = v.symAddr + symlen;
-                        while( *inSym < symEnd )
+                        if( inSym )
                         {
-                            auto sit = inlineMap.find( *inSym );
-                            if( sit != inlineMap.end() )
+                            const auto symEnd = v.symAddr + symlen;
+                            while( *inSym < symEnd )
                             {
-                                if( sit->second.excl != 0 )
+                                auto sit = inlineMap.find( *inSym );
+                                if( sit != inlineMap.end() )
                                 {
-                                    hasNoSamples = false;
-                                    break;
+                                    if( sit->second.excl != 0 )
+                                    {
+                                        hasNoSamples = false;
+                                        break;
+                                    }
                                 }
+                                inSym++;
                             }
-                            inSym++;
                         }
                     }
                     if( hasNoSamples )

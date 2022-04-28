@@ -1,6 +1,6 @@
 ARCH := $(shell uname -m)
 
-ifeq (0,$(shell $(CC) --version | grep clang && echo 1 || echo 0))
+ifeq (0,$(shell $(CC) --version | grep clang > /dev/null && echo 1 || echo 0))
 CFLAGS += -s
 else
   ifeq (1,$(shell ld.mold --version > /dev/null && echo 1 || echo 0))

@@ -42,5 +42,17 @@
             "externalConsole": false,
             "preLaunchTask": "Build update tool"
         },
+        {
+            "name": "Launch test application",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/tracy_test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/test",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": "Build test application"
+        },
     ]
 }

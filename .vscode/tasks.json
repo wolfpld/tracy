@@ -71,6 +71,18 @@
             "presentation": {
                 "close": true
             }
+        },
+        {
+            "label": "Build test application",
+            "type": "shell",
+            "command": "CC=clang CXX=clang++ make OPTFLAGS=-DTRACY_VERBOSE\\ -fno-omit-frame-pointer\\ -march=native\\ -g -C test -j `nproc`",  
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "close": true
+            }
         }
     ]
 }

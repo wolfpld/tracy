@@ -566,6 +566,16 @@ int cb_fixup;
 
 #ifdef TRACY_DEBUGINFOD
 debuginfod_client* s_debuginfod;
+
+struct DebugInfo
+{
+    uint8_t* buildid;
+    size_t buildid_size;
+    int fd;
+};
+
+FastVector<DebugInfo> s_di_known( 16 );
+FastVector<DebugInfo> s_di_pending( 16 );
 #endif
 
 #ifdef __linux
@@ -675,9 +685,24 @@ void InitCallstack()
 #endif
 }
 
+#ifdef TRACY_DEBUGINFOD
+void ClearDebugInfoVector( FastVector<DebugInfo>& vec )
+{
+    for( auto& v : vec )
+    {
+        tracy_free( v.buildid );
+        if( v.fd >= 0 ) close( v.fd );
+    }
+    vec.clear();
+}
+#endif
+
 void EndCallstack()
 {
 #ifdef TRACY_DEBUGINFOD
+    ClearDebugInfoVector( s_di_known );
+    ClearDebugInfoVector( s_di_pending );
+
     debuginfod_end( s_debuginfod );
 #endif
 }

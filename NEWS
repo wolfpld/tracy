@@ -2,6 +2,16 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.x.x (xxxx-xx-xx)
+-------------------
+
+- Added support for debuginfod debug information services. Note that
+  since this depends on proper system configuration, vendors providing
+  the debug information, and network retrieval, it is disabled by
+  default. To enable, compile the profiled application with the
+  TRACY_DEBUGINFOD define and link with libdebuginfod.
+
+
 v0.8.1 (2022-04-21)
 -------------------
 

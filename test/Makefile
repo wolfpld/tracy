@@ -1,10 +1,11 @@
 OPTFLAGS := -g3 -fmerge-constants
 TRACYFLAGS :=
-CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS) -rdynamic
+CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS)
 CXXFLAGS := $(CFLAGS) -std=gnu++11
 DEFINES +=
 INCLUDES :=
 LIBS := -lpthread -ldl
+LDFLAGS := -rdynamic
 IMAGE := tracy_test
 
 SRC := \
@@ -30,7 +31,7 @@ all: $(IMAGE)
 	rm -f $@.$$$$
 
 $(IMAGE): $(OBJ)
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(LIBS) -o $@
+	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(LIBS) $(LDFLAGS) -o $@
 
 ifneq "$(MAKECMDGOALS)" "clean"
 -include $(SRC:.cpp=.d)

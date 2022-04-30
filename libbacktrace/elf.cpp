@@ -46,6 +46,9 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #include "backtrace.hpp"
 #include "internal.hpp"
 
+#include "../client/TracyFastVector.hpp"
+#include "../common/TracyAlloc.hpp"
+
 #ifndef S_ISLNK
  #ifndef S_IFLNK
   #define S_IFLNK 0120000
@@ -4823,12 +4826,33 @@ struct phdr_data
 /* Callback passed to dl_iterate_phdr.  Load debug info from shared
    libraries.  */
 
+struct PhdrIterate
+{
+  char* dlpi_name;
+  ElfW(Addr) dlpi_addr;
+};
+FastVector<PhdrIterate> s_phdrData(16);
+
+static int
+phdr_callback_mock (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
+  void *pdata)
+{
+  auto ptr = s_phdrData.push_next();
+  if (info->dlpi_name)
+  {
+    ptr->dlpi_name = (char*)tracy_malloc (strlen (info->dlpi_name) + 1);
+    strcpy (ptr->dlpi_name, info->dlpi_name);
+  }
+  else ptr->dlpi_name = nullptr;
+  ptr->dlpi_addr = info->dlpi_addr;
+  return 0;
+}
+
 static int
 #ifdef __i386__
 __attribute__ ((__force_align_arg_pointer__))
 #endif
-phdr_callback (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
-	       void *pdata)
+phdr_callback (struct PhdrIterate *info, void *pdata)
 {
   struct phdr_data *pd = (struct phdr_data *) pdata;
   const char *filename;
@@ -4907,7 +4931,10 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   pd.exe_filename = filename;
   pd.exe_descriptor = ret < 0 ? descriptor : -1;
 
-  dl_iterate_phdr (phdr_callback, (void *) &pd);
+  for (auto& v : s_phdrData) tracy_free (v.dlpi_name);
+  s_phdrData.clear();
+  dl_iterate_phdr (phdr_callback_mock, nullptr);
+  for (auto& v : s_phdrData) phdr_callback (&v, (void *) &pd);
 
   if (!state->threaded)
     {

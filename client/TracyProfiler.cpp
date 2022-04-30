@@ -847,7 +847,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 }
 #endif
 
-#ifdef __linux__ && !defined TRACY_NO_CRASH_HANDLER
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
 #  ifndef TRACY_CRASH_SIGNAL
 #    define TRACY_CRASH_SIGNAL SIGPWR
 #  endif

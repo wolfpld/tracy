@@ -575,7 +575,6 @@ struct DebugInfo
 };
 
 FastVector<DebugInfo> s_di_known( 16 );
-FastVector<DebugInfo> s_di_pending( 16 );
 #endif
 
 #ifdef __linux
@@ -713,29 +712,14 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size )
     auto buildid = (uint8_t*)buildid_data;
     auto it = FindDebugInfo( s_di_known, buildid, buildid_size );
     if( it ) return it->fd >= 0 ? dup( it->fd ) : -1;
-    it = FindDebugInfo( s_di_pending, buildid, buildid_size );
-    if( !it )
-    {
-        it = s_di_pending.push_next();
-        it->buildid_size = buildid_size;
-        it->buildid = (uint8_t*)tracy_malloc( buildid_size );
-        memcpy( it->buildid, buildid, buildid_size );
-    }
-    return -1;
-}
 
-void DownloadDebugInfo()
-{
-    assert( !s_di_pending.empty() );
-    for( auto& v : s_di_pending )
-    {
-        int fd = debuginfod_find_debuginfo( s_debuginfod, (const unsigned char*)v.buildid, v.buildid_size, nullptr );
-        auto it = s_di_known.push_next();
-        it->buildid = v.buildid;
-        it->buildid_size = v.buildid_size;
-        it->fd = fd >= 0 ? fd : -1;
-    }
-    s_di_pending.clear();
+    int fd = debuginfod_find_debuginfo( s_debuginfod, buildid, buildid_size, nullptr );
+    it = s_di_known.push_next();
+    it->buildid_size = buildid_size;
+    it->buildid = (uint8_t*)tracy_malloc( buildid_size );
+    memcpy( it->buildid, buildid, buildid_size );
+    it->fd = fd >= 0 ? fd : -1;
+    return it->fd;
 }
 #endif
 
@@ -743,8 +727,6 @@ void EndCallstack()
 {
 #ifdef TRACY_DEBUGINFOD
     ClearDebugInfoVector( s_di_known );
-    ClearDebugInfoVector( s_di_pending );
-
     debuginfod_end( s_debuginfod );
 #endif
 }

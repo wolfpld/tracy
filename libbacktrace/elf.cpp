@@ -70,6 +70,10 @@ POSSIBILITY OF SUCH DAMAGE.  */
 namespace tracy
 {
 
+#ifdef TRACY_DEBUGINFOD
+int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size );
+#endif
+
 #if !defined(HAVE_DECL_STRNLEN) || !HAVE_DECL_STRNLEN
 
 /* If strnlen is not declared, provide our own version.  */
@@ -913,7 +917,14 @@ elf_open_debugfile_by_buildid (struct backtrace_state *state,
      That seems kind of pointless to me--why would it have the right
      name but not the right build ID?--so skipping the check.  */
 
+#ifdef TRACY_DEBUGINFOD
+  if (ret == -1)
+    return GetDebugInfoDescriptor( buildid_data, buildid_size );
+  else
+    return ret;
+#else
   return ret;
+#endif
 }
 
 /* Try to open a file whose name is PREFIX (length PREFIX_LEN)

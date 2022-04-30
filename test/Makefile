@@ -1,10 +1,10 @@
 OPTFLAGS := -g3 -fmerge-constants
-TRACYFLAGS :=
+TRACYFLAGS := -DTRACY_DEBUGINFOD
 CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS)
 CXXFLAGS := $(CFLAGS) -std=gnu++11
 DEFINES +=
 INCLUDES :=
-LIBS := -lpthread -ldl
+LIBS := -lpthread -ldl -ldebuginfod
 LDFLAGS := -rdynamic
 IMAGE := tracy_test
 

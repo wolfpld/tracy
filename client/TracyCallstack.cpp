@@ -695,6 +695,48 @@ void ClearDebugInfoVector( FastVector<DebugInfo>& vec )
     }
     vec.clear();
 }
+
+DebugInfo* FindDebugInfo( FastVector<DebugInfo>& vec, const uint8_t* buildid_data, size_t buildid_size )
+{
+    for( auto& v : vec )
+    {
+        if( v.buildid_size == buildid_size && memcmp( v.buildid, buildid_data, buildid_size ) == 0 )
+        {
+            return &v;
+        }
+    }
+    return nullptr;
+}
+
+int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size )
+{
+    auto buildid = (uint8_t*)buildid_data;
+    auto it = FindDebugInfo( s_di_known, buildid, buildid_size );
+    if( it ) return it->fd >= 0 ? dup( it->fd ) : -1;
+    it = FindDebugInfo( s_di_pending, buildid, buildid_size );
+    if( !it )
+    {
+        it = s_di_pending.push_next();
+        it->buildid_size = buildid_size;
+        it->buildid = (uint8_t*)tracy_malloc( buildid_size );
+        memcpy( it->buildid, buildid, buildid_size );
+    }
+    return -1;
+}
+
+void DownloadDebugInfo()
+{
+    assert( !s_di_pending.empty() );
+    for( auto& v : s_di_pending )
+    {
+        int fd = debuginfod_find_debuginfo( s_debuginfod, (const unsigned char*)v.buildid, v.buildid_size, nullptr );
+        auto it = s_di_known.push_next();
+        it->buildid = v.buildid;
+        it->buildid_size = v.buildid_size;
+        it->fd = fd >= 0 ? fd : -1;
+    }
+    s_di_pending.clear();
+}
 #endif
 
 void EndCallstack()

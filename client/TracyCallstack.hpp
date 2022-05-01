@@ -13,6 +13,10 @@
 
 #ifdef TRACY_HAS_CALLSTACK
 
+#ifdef TRACY_DEBUGINFOD
+#  include <elfutils/debuginfod.h>
+#endif
+
 #include <assert.h>
 #include <stdint.h>
 

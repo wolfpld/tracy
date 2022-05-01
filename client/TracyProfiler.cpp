@@ -45,10 +45,6 @@
 #  include <vector>
 #endif
 
-#ifdef TRACY_DEBUGINFOD
-#  include <elfutils/debuginfod.h>
-#endif
-
 #include <algorithm>
 #include <assert.h>
 #include <atomic>

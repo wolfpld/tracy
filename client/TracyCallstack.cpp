@@ -32,9 +32,6 @@
 #  include <cxxabi.h>
 #  include <stdlib.h>
 #  include "TracyFastVector.hpp"
-#  ifdef TRACY_DEBUGINFOD
-#    include <elfutils/debuginfod.h>
-#  endif
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>

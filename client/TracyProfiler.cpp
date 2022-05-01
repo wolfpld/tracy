@@ -3813,29 +3813,25 @@ void Profiler::HandleSourceCodeQuery()
     assert( m_queryData );
 
     InitRpmalloc();
+    bool ok = false;
     struct stat st;
-    if( stat( m_queryData, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime && st.st_size < ( TargetFrameSize - 16 ) )
+    if( stat( m_queryData, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime )
     {
-        FILE* f = fopen( m_queryData, "rb" );
-        tracy_free_fast( m_queryData );
-        if( f )
+        if( st.st_size < ( TargetFrameSize - 16 ) )
         {
-            auto ptr = (char*)tracy_malloc_fast( st.st_size );
-            auto rd = fread( ptr, 1, st.st_size, f );
-            fclose( f );
-            if( rd == (size_t)st.st_size )
+            FILE* f = fopen( m_queryData, "rb" );
+            if( f )
             {
-                SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+                auto ptr = (char*)tracy_malloc_fast( st.st_size );
+                auto rd = fread( ptr, 1, st.st_size, f );
+                fclose( f );
+                if( rd == (size_t)st.st_size )
+                {
+                    SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+                    ok = true;
+                }
+                tracy_free_fast( ptr );
             }
-            else
-            {
-                AckSourceCodeNotAvailable();
-            }
-            tracy_free_fast( ptr );
-        }
-        else
-        {
-            AckSourceCodeNotAvailable();
         }
     }
 #ifdef TRACY_DEBUGINFOD
@@ -3850,44 +3846,30 @@ void Profiler::HandleSourceCodeQuery()
             {
                 struct stat st;
                 fstat( d, &st );
-                lseek( d, 0, SEEK_SET );
-                auto ptr = (char*)tracy_malloc_fast( st.st_size );
-                auto rd = read( d, ptr, st.st_size );
+                if( st.st_size < ( TargetFrameSize - 16 ) )
+                {
+                    lseek( d, 0, SEEK_SET );
+                    auto ptr = (char*)tracy_malloc_fast( st.st_size );
+                    auto rd = read( d, ptr, st.st_size );
+                    if( rd == (size_t)st.st_size )
+                    {
+                        SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+                        ok = true;
+                    }
+                    tracy_free_fast( ptr );
+                }
                 close( d );
-                if( rd == (size_t)st.st_size )
-                {
-                    SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
-                }
-                else
-                {
-                    AckSourceCodeNotAvailable();
-                }
-                tracy_free_fast( ptr );
-            }
-            else
-            {
-                AckSourceCodeNotAvailable();
             }
         }
-        else
-        {
-            AckSourceCodeNotAvailable();
-        }
-        tracy_free_fast( m_queryData );
     }
 #endif
-    else
-    {
-        tracy_free_fast( m_queryData );
-        AckSourceCodeNotAvailable();
-    }
-    m_queryData = nullptr;
 
-    if( m_queryImage )
-    {
-        tracy_free_fast( m_queryImage );
-        m_queryImage = nullptr;
-    }
+    if( !ok ) AckSourceCodeNotAvailable();
+
+    tracy_free_fast( m_queryData );
+    tracy_free_fast( m_queryImage );
+    m_queryData = nullptr;
+    m_queryImage = nullptr;
 }
 
 #if defined _WIN32 && defined TRACY_TIMER_QPC

@@ -655,7 +655,9 @@ bool View::Draw()
     {
         assert( !s_instance->m_filenameStaging.empty() );
         auto fn = s_instance->m_filenameStaging.c_str();
+        ImGui::PushFont( s_instance->m_bigFont );
         TextFocused( "Path:", fn );
+        ImGui::PopFont();
         ImGui::Separator();
 
         static FileWrite::Compression comp = FileWrite::Compression::Fast;

@@ -1,3 +1,5 @@
+#define TRACY_DEBUGINFOD
+
 #include <new>
 #include <stdio.h>
 #include <string.h>
@@ -571,6 +573,7 @@ struct DebugInfo
 {
     uint8_t* buildid;
     size_t buildid_size;
+    char* filename;
     int fd;
 };
 
@@ -690,6 +693,7 @@ void ClearDebugInfoVector( FastVector<DebugInfo>& vec )
     for( auto& v : vec )
     {
         tracy_free( v.buildid );
+        tracy_free( v.filename );
         if( v.fd >= 0 ) close( v.fd );
     }
     vec.clear();
@@ -707,7 +711,7 @@ DebugInfo* FindDebugInfo( FastVector<DebugInfo>& vec, const uint8_t* buildid_dat
     return nullptr;
 }
 
-int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size )
+int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const char* filename )
 {
     auto buildid = (uint8_t*)buildid_data;
     auto it = FindDebugInfo( s_di_known, buildid, buildid_size );
@@ -718,6 +722,9 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size )
     it->buildid_size = buildid_size;
     it->buildid = (uint8_t*)tracy_malloc( buildid_size );
     memcpy( it->buildid, buildid, buildid_size );
+    const auto fnsz = strlen( filename ) + 1;
+    it->filename = (char*)tracy_malloc( fnsz );
+    memcpy( it->filename, filename, fnsz );
     it->fd = fd >= 0 ? fd : -1;
     return it->fd;
 }

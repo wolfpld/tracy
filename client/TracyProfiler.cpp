@@ -1354,6 +1354,7 @@ Profiler::Profiler()
     , m_deferredQueue( 64*1024 )
 #endif
     , m_paramCallback( nullptr )
+    , m_queryImage( nullptr )
     , m_queryData( nullptr )
     , m_crashHandlerInstalled( false )
 {
@@ -3384,7 +3385,11 @@ bool Profiler::HandleServerQuery()
         HandleSourceCodeQuery();
         break;
     case ServerQueryDataTransfer:
-        assert( !m_queryData );
+        if( m_queryData )
+        {
+            assert( !m_queryImage );
+            m_queryImage = m_queryData;
+        }
         m_queryDataPtr = m_queryData = (char*)tracy_malloc( ptr + 11 );
         AckServerQuery();
         break;
@@ -3840,6 +3845,12 @@ void Profiler::HandleSourceCodeQuery()
         AckSourceCodeNotAvailable();
     }
     m_queryData = nullptr;
+
+    if( m_queryImage )
+    {
+        tracy_free_fast( m_queryImage );
+        m_queryImage = nullptr;
+    }
 }
 
 #if defined _WIN32 && defined TRACY_TIMER_QPC

@@ -3373,6 +3373,7 @@ void Worker::QueryTerminate()
 
 void Worker::QuerySourceFile( const char* fn, const char* image )
 {
+    if( image ) QueryDataTransfer( image, strlen( image ) + 1 );
     QueryDataTransfer( fn, strlen( fn ) + 1 );
     Query( ServerQuerySourceCode, 0 );
 }

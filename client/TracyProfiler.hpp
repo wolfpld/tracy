@@ -923,6 +923,7 @@ private:
 
     ParameterCallback m_paramCallback;
 
+    char* m_queryImage;
     char* m_queryData;
     char* m_queryDataPtr;
 

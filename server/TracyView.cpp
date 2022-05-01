@@ -285,12 +285,9 @@ bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
         else
         {
             const auto parentAddr = m_worker.GetSymbolForAddress( symAddr );
-            if( parentAddr != 0 )
+            if( parentAddr != 0 && m_worker.HasSymbolCode( parentAddr ) )
             {
-                if( m_worker.HasSymbolCode( parentAddr ) )
-                {
-                    baseAddr = parentAddr;
-                }
+                baseAddr = parentAddr;
             }
         }
         if( baseAddr != 0 || line != 0 )

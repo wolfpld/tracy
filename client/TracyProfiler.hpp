@@ -30,6 +30,10 @@
 #  define TRACY_HW_TIMER
 #endif
 
+#ifdef __linux__
+#  include <signal.h>
+#endif
+
 #if defined TRACY_TIMER_FALLBACK || !defined TRACY_HW_TIMER
 #  include <chrono>
 #endif

@@ -4841,8 +4841,9 @@ phdr_callback_mock (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
   auto ptr = s_phdrData.push_next();
   if (info->dlpi_name)
   {
-    ptr->dlpi_name = (char*)tracy_malloc (strlen (info->dlpi_name) + 1);
-    strcpy (ptr->dlpi_name, info->dlpi_name);
+    size_t sz = strlen (info->dlpi_name) + 1;
+    ptr->dlpi_name = (char*)tracy_malloc (sz);
+    memcpy (ptr->dlpi_name, info->dlpi_name, sz);
   }
   else ptr->dlpi_name = nullptr;
   ptr->dlpi_addr = info->dlpi_addr;

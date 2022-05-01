@@ -1,5 +1,3 @@
-#define TRACY_DEBUGINFOD
-
 #include <new>
 #include <stdio.h>
 #include <string.h>

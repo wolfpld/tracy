@@ -728,6 +728,20 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const
     it->fd = fd >= 0 ? fd : -1;
     return it->fd;
 }
+
+const uint8_t* GetBuildIdForImage( const char* image, size_t& size )
+{
+    assert( image );
+    for( auto& v : s_di_known )
+    {
+        if( strcmp( image, v.filename ) == 0 )
+        {
+            size = v.buildid_size;
+            return v.buildid;
+        }
+    }
+    return nullptr;
+}
 #endif
 
 void EndCallstack()

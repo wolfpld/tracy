@@ -54,6 +54,10 @@ void InitCallstack();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
 
+#ifdef TRACY_DEBUGINFOD
+const uint8_t* GetBuildIdForImage( const char* image, size_t& size );
+#endif
+
 #if TRACY_HAS_CALLSTACK == 1
 
 extern "C"

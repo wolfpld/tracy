@@ -3835,7 +3835,7 @@ void Profiler::HandleSourceCodeQuery()
         }
     }
 #ifdef TRACY_DEBUGINFOD
-    else if( m_queryImage )
+    else if( m_queryImage && m_queryData[0] == '/' )
     {
         size_t size;
         auto buildid = GetBuildIdForImage( m_queryImage, size );

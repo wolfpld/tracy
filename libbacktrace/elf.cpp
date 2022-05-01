@@ -4931,10 +4931,14 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   pd.exe_filename = filename;
   pd.exe_descriptor = ret < 0 ? descriptor : -1;
 
-  for (auto& v : s_phdrData) tracy_free (v.dlpi_name);
-  s_phdrData.clear();
+  assert (s_phdrData.empty());
   dl_iterate_phdr (phdr_callback_mock, nullptr);
-  for (auto& v : s_phdrData) phdr_callback (&v, (void *) &pd);
+  for (auto& v : s_phdrData)
+  {
+    phdr_callback (&v, (void *) &pd);
+    tracy_free (v.dlpi_name);
+  }
+  s_phdrData.clear();
 
   if (!state->threaded)
     {

@@ -6736,15 +6736,27 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
         auto cit = m_checkedFileStrings.find( ref );
         if( cit == m_checkedFileStrings.end() )
         {
-            auto& symmap = GetSymbolMap();
-            auto it = symmap.find( ev.symAddr );
-            if( it == symmap.end() )
+            uint64_t baseAddr = 0;
+            if( HasSymbolCode( ev.symAddr ) )
+            {
+                baseAddr = ev.symAddr;
+            }
+            else
+            {
+                const auto parentAddr = GetSymbolForAddress( ev.symAddr );
+                if( parentAddr != 0 && HasSymbolCode( parentAddr ) )
+                {
+                    baseAddr = parentAddr;
+                }
+            }
+            const SymbolData* sym = baseAddr == 0 ? nullptr : GetSymbolData( baseAddr );
+            if( !sym )
             {
                 CacheSource( ref );
             }
             else
             {
-                CacheSource( ref, it->second.imageName );
+                CacheSource( ref, sym->imageName );
             }
         }
     }

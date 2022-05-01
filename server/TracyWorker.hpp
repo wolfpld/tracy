@@ -594,6 +594,8 @@ public:
 
     std::vector<int16_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
+    const unordered_flat_map<uint64_t, SymbolData>& GetSymbolMap() const { return m_data.symbolMap; }
+
 #ifndef TRACY_NO_STATISTICS
     SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc );
     const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
@@ -603,7 +605,6 @@ public:
     bool AreGpuSourceLocationZonesReady() const { return m_data.gpuSourceLocationZonesReady; }
     bool IsCpuUsageReady() const { return m_data.ctxUsageReady; }
 
-    const unordered_flat_map<uint64_t, SymbolData>& GetSymbolMap() const { return m_data.symbolMap; }
     const unordered_flat_map<uint64_t, SymbolStats>& GetSymbolStats() const { return m_data.symbolStats; }
     const SymbolStats* GetSymbolStats( uint64_t symAddr ) const;
     const unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>* GetSymbolInstructionPointers( uint64_t symAddr ) const;

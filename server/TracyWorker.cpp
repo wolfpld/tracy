@@ -3371,7 +3371,7 @@ void Worker::QueryTerminate()
     m_sock.Send( &query, ServerQueryPacketSize );
 }
 
-void Worker::QuerySourceFile( const char* fn )
+void Worker::QuerySourceFile( const char* fn, const char* image )
 {
     QueryDataTransfer( fn, strlen( fn ) + 1 );
     Query( ServerQuerySourceCode, 0 );
@@ -6597,7 +6597,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
 
         StringRef ref( StringRef::Idx, fitidx );
         auto cit = m_checkedFileStrings.find( ref );
-        if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
+        if( cit == m_checkedFileStrings.end() ) CacheSource( ref, m_callstackFrameStaging->imageName );
 
         const auto frameId = PackPointer( m_callstackFrameStagingPtr );
 #ifndef TRACY_NO_STATISTICS
@@ -6700,7 +6700,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
 
     StringRef ref( StringRef::Idx, idx );
     auto cit = m_checkedFileStrings.find( ref );
-    if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
+    if( cit == m_checkedFileStrings.end() ) CacheSource( ref, it->second.imageName );
 
     m_pendingSymbols.erase( it );
 }
@@ -6733,7 +6733,19 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
 
         StringRef ref( StringRef::Idx, idx );
         auto cit = m_checkedFileStrings.find( ref );
-        if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
+        if( cit == m_checkedFileStrings.end() )
+        {
+            auto& symmap = GetSymbolMap();
+            auto it = symmap.find( ev.symAddr );
+            if( it == symmap.end() )
+            {
+                CacheSource( ref );
+            }
+            else
+            {
+                CacheSource( ref, it->second.imageName );
+            }
+        }
     }
     if( ev.symAddr != 0 )
     {
@@ -8514,7 +8526,7 @@ ZoneExtra& Worker::RequestZoneExtra( ZoneEvent& ev )
     }
 }
 
-void Worker::CacheSource( const StringRef& str )
+void Worker::CacheSource( const StringRef& str, const StringIdx& image )
 {
     assert( str.active );
     assert( m_checkedFileStrings.find( str ) == m_checkedFileStrings.end() );
@@ -8530,7 +8542,7 @@ void Worker::CacheSource( const StringRef& str )
     else if( execTime != 0 )
     {
         m_sourceCodeQuery.emplace_back( file );
-        QuerySourceFile( file );
+        QuerySourceFile( file, image.Active() ? GetString( image ) : nullptr );
     }
 }
 

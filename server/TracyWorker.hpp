@@ -667,7 +667,7 @@ private:
     void Exec();
     void Query( ServerQuery type, uint64_t data, uint32_t extra = 0 );
     void QueryTerminate();
-    void QuerySourceFile( const char* fn );
+    void QuerySourceFile( const char* fn, const char* image );
     void QueryDataTransfer( const void* ptr, size_t size );
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, const char*& ptr );
@@ -886,7 +886,7 @@ private:
     StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
-    void CacheSource( const StringRef& str );
+    void CacheSource( const StringRef& str, const StringIdx& image = StringIdx() );
     void CacheSourceFromFile( const char* fn );
 
     tracy_force_inline Vector<short_ptr<ZoneEvent>>& GetZoneChildrenMutable( int32_t idx ) { return m_data.zoneChildren[idx]; }

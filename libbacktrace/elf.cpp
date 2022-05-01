@@ -874,6 +874,7 @@ elf_readlink (struct backtrace_state *state, const char *filename,
 static int
 elf_open_debugfile_by_buildid (struct backtrace_state *state,
 			       const char *buildid_data, size_t buildid_size,
+             const char *filename,
 			       backtrace_error_callback error_callback,
 			       void *data)
 {
@@ -4443,7 +4444,7 @@ elf_add (struct backtrace_state *state, const char *filename, int descriptor,
       int d;
 
       d = elf_open_debugfile_by_buildid (state, buildid_data, buildid_size,
-					 error_callback, data);
+					 filename, error_callback, data);
       if (d >= 0)
 	{
 	  int ret;

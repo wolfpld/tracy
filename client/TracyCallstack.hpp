@@ -56,6 +56,7 @@ const char* GetKernelModulePath( uint64_t addr );
 
 #ifdef TRACY_DEBUGINFOD
 const uint8_t* GetBuildIdForImage( const char* image, size_t& size );
+debuginfod_client* GetDebuginfodClient();
 #endif
 
 #if TRACY_HAS_CALLSTACK == 1

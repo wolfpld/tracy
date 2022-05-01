@@ -742,6 +742,11 @@ const uint8_t* GetBuildIdForImage( const char* image, size_t& size )
     }
     return nullptr;
 }
+
+debuginfod_client* GetDebuginfodClient()
+{
+    return s_debuginfod;
+}
 #endif
 
 void EndCallstack()

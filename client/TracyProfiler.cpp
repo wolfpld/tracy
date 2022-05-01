@@ -45,6 +45,10 @@
 #  include <vector>
 #endif
 
+#ifdef TRACY_DEBUGINFOD
+#  include <elfutils/debuginfod.h>
+#endif
+
 #include <algorithm>
 #include <assert.h>
 #include <atomic>
@@ -3838,6 +3842,44 @@ void Profiler::HandleSourceCodeQuery()
             AckSourceCodeNotAvailable();
         }
     }
+#ifdef TRACY_DEBUGINFOD
+    else if( m_queryImage )
+    {
+        size_t size;
+        auto buildid = GetBuildIdForImage( m_queryImage, size );
+        if( buildid )
+        {
+            auto d = debuginfod_find_source( GetDebuginfodClient(), buildid, size, m_queryData, nullptr );
+            if( d >= 0 )
+            {
+                struct stat st;
+                fstat( d, &st );
+                lseek( d, 0, SEEK_SET );
+                auto ptr = (char*)tracy_malloc_fast( st.st_size );
+                auto rd = read( d, ptr, st.st_size );
+                close( d );
+                if( rd == (size_t)st.st_size )
+                {
+                    SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+                }
+                else
+                {
+                    AckSourceCodeNotAvailable();
+                }
+                tracy_free_fast( ptr );
+            }
+            else
+            {
+                AckSourceCodeNotAvailable();
+            }
+        }
+        else
+        {
+            AckSourceCodeNotAvailable();
+        }
+        tracy_free_fast( m_queryData );
+    }
+#endif
     else
     {
         tracy_free_fast( m_queryData );

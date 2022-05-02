@@ -224,7 +224,9 @@ public:
 #  endif
 #endif
 
-        return 0;  // unreacheble branch
+#if !defined TRACY_TIMER_FALLBACK
+        return 0;  // unreachable branch
+#endif
     }
 
     tracy_force_inline uint32_t GetNextZoneId()

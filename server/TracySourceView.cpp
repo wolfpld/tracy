@@ -55,6 +55,11 @@ static constexpr MicroArchUx s_uArchUx[] = {
     { "Nehalem", "Core i5-750", "NHM" },
     { "Wolfdale", "Core 2 Duo E8400", "WOL" },
     { "Conroe", "Core 2 Duo E6750", "CON" },
+    { "Bonnell", "Atom D525", "BNL" },
+    { "Airmont", "Celeron N3000", "AMT" },
+    { "Goldmont", "Celeron J3455", "GLM" },
+    { "Goldmont Plus", "Celeron J4125", "GLP" },
+    { "Tremont", "Pentium Silver N6005", "TRM" },
 };
 
 static constexpr const char* s_regNameX86[] = {

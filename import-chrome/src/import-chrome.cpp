@@ -218,7 +218,7 @@ int main( int argc, char** argv )
             }
         }
 
-        if( type == "B" )
+        if( type == "b" || type == "B" )
         {
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
                 getPseudoTid(v),
@@ -230,7 +230,7 @@ int main( int argc, char** argv )
                 locLine
             } );
         }
-        else if( type == "E" )
+        else if( type == "e" || type == "E" )
         {
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
                 getPseudoTid(v),

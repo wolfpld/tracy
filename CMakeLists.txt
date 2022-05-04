@@ -16,6 +16,11 @@ target_link_libraries(
         ${CMAKE_DL_LIBS}
 )
 
+# Public dependency on some libraries required when using Mingw
+if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    target_link_libraries(TracyClient PUBLIC ws2_32 dbghelp)
+endif()
+
 if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     find_library(EXECINFO_LIBRARY NAMES execinfo REQUIRED)
     target_link_libraries(TracyClient PUBLIC ${EXECINFO_LIBRARY})
@@ -123,6 +128,6 @@ install(FILES ${client_includes}
 install(FILES ${common_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/common)
 install(EXPORT TracyConfig
-		NAMESPACE Tracy::
+        NAMESPACE Tracy::
         FILE TracyConfig.cmake
         DESTINATION share/Tracy)

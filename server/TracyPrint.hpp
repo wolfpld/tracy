@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <cmath>
 
 #include "../common/TracyForceInline.hpp"
 
@@ -77,6 +78,42 @@ static tracy_force_inline void RealToStringInteger( char* buf, char* end )
     }
 }
 
+template<typename T>
+int DigitsLeftOfDecimalPoint( T val ) {
+  int digits = 1;
+  T absVal = std::abs( val );
+  T maxAbsValForCurrentDigits = 10;
+  while( absVal >= maxAbsValForCurrentDigits ) {
+    ++digits;
+    maxAbsValForCurrentDigits *= static_cast<T>( 10 );
+  }
+  return digits;
+}
+
+template<typename T>
+int CharsLeftOfDecimalPoint( T val ) {
+  int extraChars = std::signbit( val ) ? 1 : 0;
+  return extraChars + DigitsLeftOfDecimalPoint( val );
+}
+
+template<typename T>
+int DigitsRightOfDecimalPoint( T val, int maxChars ) {
+  int charsLeftOfPoint = CharsLeftOfDecimalPoint( val );
+  if( charsLeftOfPoint > maxChars ) {
+    fprintf( stderr, "Maximum of %d chars is insufficient to print value %g\n",
+             maxChars, val );
+    abort();
+  }
+  if ( charsLeftOfPoint == maxChars ) {
+    // maxChars is just large enough for the integer part, no room left for
+    // a decimal point.
+    return 0;
+  } else {
+    assert( charsLeftOfPoint < maxChars );
+    return maxChars - 1 - charsLeftOfPoint;
+  }
+}
+
 }
 
 template<typename T>
@@ -97,6 +134,28 @@ static inline char* PrintFloat( char* begin, char* end, T value )
 #else
     return begin + sprintf( begin, "%f", value );
 #endif
+}
+
+// Similar to PrintFloat, but prints exactly `fixedWidth` characters,
+// right-justified.
+template<typename T>
+char* PrintFloatFixedWidth( char* begin, char* end, T value, int fixedWidth ) {
+  int digitsRight = detail::DigitsRightOfDecimalPoint( value, fixedWidth );
+  char buf[32];
+  char* bufEnd = buf + sizeof buf;
+  char* printEnd = PrintFloat( buf, bufEnd, value, digitsRight );
+  int width = printEnd - buf;
+  assert( width <= fixedWidth );
+  char* dstPtr = begin;
+  for( int i = width; i < fixedWidth; ++i ) {
+    assert( end > begin );
+    *dstPtr++ = ' ';
+  }
+  assert( end > dstPtr + width );
+  memcpy( dstPtr, buf, width );
+  dstPtr += width;
+  assert(dstPtr == begin + fixedWidth);
+  return dstPtr;
 }
 
 #ifndef NO_CHARCONV

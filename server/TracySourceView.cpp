@@ -2873,6 +2873,14 @@ static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
+static void PrintPercentageUnformattedFixedWidth( float val, uint32_t col )
+{
+    char buf[16];
+    char *afterFloat = PrintFloatFixedWidth( buf, buf + sizeof buf, val, 4 );
+    memcpy( afterFloat, "% ", 3 );
+    TextColoredUnformatted( col, buf );
+}
+
 void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStatData& as, Worker* worker, const View* view )
 {
     const auto scale = GetScale();
@@ -4174,27 +4182,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         {
             const float rate = float( branchRel ) / branchRelMax;
             uint32_t col = GetGoodnessColor( 1.f - rate * 3.f );
-            if( rate >= 1.f )
-            {
-                TextColoredUnformatted( col, " 100% " );
-            }
-            else
-            {
-                char buf[16];
-                if( rate >= 0.1f )
-                {
-                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
-                }
-                else
-                {
-                    *buf = ' ';
-                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
-                }
-                memcpy( buf+4, "% ", 3 );
-                TextColoredUnformatted( col, buf );
-            }
+            PrintPercentageUnformattedFixedWidth( rate * 100.f, col );
             if( ImGui::IsItemHovered() )
             {
                 UnsetFont();
@@ -4218,25 +4206,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         {
             const float rate = float( cacheRel ) / cacheRelMax;
             uint32_t col = GetGoodnessColor( 1.f - rate * 3.f );
-            if( rate >= 1.f )
-            {
-                TextColoredUnformatted( col, " 100%" );
-            }
-            else
-            {
-                char buf[16];
-                const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                memcpy( end, "%", 2 );
-                if( end - buf == 4 )
-                {
-                    TextColoredUnformatted( col, buf );
-                }
-                else
-                {
-                    ImGui::SameLine( 0, ts.x );
-                    TextColoredUnformatted( col, buf );
-                }
-            }
+            PrintPercentageUnformattedFixedWidth( rate * 100.f, col );
             if( ImGui::IsItemHovered() )
             {
                 UnsetFont();
@@ -4263,31 +4233,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             const bool unreliable = branchRetired < 10;
             const float rate = float( branchMiss ) / branchRetired;
             uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
-            if( branchMiss == 0 )
-            {
-                TextColoredUnformatted( col, "   0% " );
-            }
-            else if( rate >= 1.f )
-            {
-                TextColoredUnformatted( col, " 100% " );
-            }
-            else
-            {
-                char buf[16];
-                if( rate >= 0.1f )
-                {
-                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
-                }
-                else
-                {
-                    *buf = ' ';
-                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
-                }
-                memcpy( buf+4, "% ", 3 );
-                TextColoredUnformatted( col, buf );
-            }
+            PrintPercentageUnformattedFixedWidth( rate * 100.f, col );
             if( ImGui::IsItemHovered() )
             {
                 UnsetFont();
@@ -4313,31 +4259,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
             const bool unreliable = cacheRef < 10;
             const float rate = float( cacheMiss ) / cacheRef;
             uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( 1.f - rate * 3.f );
-            if( cacheMiss == 0 )
-            {
-                TextColoredUnformatted( col, "   0%" );
-            }
-            else if( rate >= 1.f )
-            {
-                TextColoredUnformatted( col, " 100%" );
-            }
-            else
-            {
-                char buf[16];
-                if( rate >= 0.1f )
-                {
-                    const auto end = PrintFloat( buf, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
-                }
-                else
-                {
-                    *buf = ' ';
-                    const auto end = PrintFloat( buf+1, buf+16, rate * 100, 1 );
-                    assert( end == buf+4 );
-                }
-                memcpy( buf+4, "%", 2 );
-                TextColoredUnformatted( col, buf );
-            }
+            PrintPercentageUnformattedFixedWidth( rate * 100.f, col );
             if( ImGui::IsItemHovered() )
             {
                 UnsetFont();

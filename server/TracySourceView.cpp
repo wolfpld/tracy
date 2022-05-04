@@ -3113,8 +3113,8 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
             {
                 RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
             }
+            ImGui::SameLine( 0, 0 );
         }
-        ImGui::SameLine( 0, 0 );
         const auto endPos = ImGui::GetCursorScreenPos();
         const auto itemsWidth = ( endPos - startPos ).x;
         const auto fixedWidth = 17 * ts.x;
@@ -3426,8 +3426,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 RenderHwLinePart( cycles, retired, branchRetired, branchMiss, cacheRef, cacheMiss, 0, 0, 0, 0, ts );
             }
+            ImGui::SameLine( 0, 0 );
         }
-        ImGui::SameLine( 0, 0 );
         const auto endPos = ImGui::GetCursorScreenPos();
         const auto itemsWidth = ( endPos - startPos ).x;
         const auto fixedWidth = 17 * ts.x;

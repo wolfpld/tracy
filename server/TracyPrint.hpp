@@ -151,7 +151,7 @@ char* PrintFloatFixedWidth( char* begin, char* end, T value, int fixedWidth ) {
     assert( end > dstPtr );
     *dstPtr++ = ' ';
   }
-  assert( end > dstPtr + width );
+  assert( end >= dstPtr + width );
   memcpy( dstPtr, buf, width );
   dstPtr += width;
   assert(dstPtr == begin + fixedWidth);

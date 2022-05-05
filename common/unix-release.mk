@@ -3,7 +3,7 @@ ARCH := $(shell uname -m)
 ifeq (0,$(shell $(CC) --version | grep clang > /dev/null && echo 1 || echo 0))
 CFLAGS += -s
 else
-  ifeq (1,$(shell ld.mold --version > /dev/null && echo 1 || echo 0))
+  ifeq (1,$(shell ld.mold --version > /dev/null 2> /dev/null && echo 1 || echo 0))
 LDFLAGS := -s -fuse-ld=mold
   else
 LDFLAGS := -s

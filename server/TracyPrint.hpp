@@ -148,7 +148,7 @@ char* PrintFloatFixedWidth( char* begin, char* end, T value, int fixedWidth ) {
   assert( width <= fixedWidth );
   char* dstPtr = begin;
   for( int i = width; i < fixedWidth; ++i ) {
-    assert( end > begin );
+    assert( end > dstPtr );
     *dstPtr++ = ' ';
   }
   assert( end > dstPtr + width );

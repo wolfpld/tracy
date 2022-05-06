@@ -1312,7 +1312,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         else
         {
-            GatherIpStats( m_baseAddr, as, worker, limitView, view );
+            if (worker.GetSymbolInstructionPointers( m_baseAddr )) {
+                GatherIpStats( m_baseAddr, as, worker, limitView, view );
+            } else {
+                GatherIpStats( m_symAddr, as, worker, limitView, view );
+            }
             auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
             if( iptr )
             {

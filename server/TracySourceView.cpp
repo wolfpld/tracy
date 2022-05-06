@@ -590,25 +590,26 @@ void SourceView::OpenSource( const char* fileName, int line, const View& view, c
 
 void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view )
 {
+    baseAddr = baseAddr ? baseAddr : symAddr;
+    while (!worker.HasSymbolCode( baseAddr )) {
+        baseAddr -= 4;
+    }
+
     m_targetLine = line;
     m_targetAddr = symAddr;
-    m_baseAddr = baseAddr ? baseAddr : symAddr;
+    m_baseAddr = baseAddr;
     m_symAddr = symAddr;
     m_sourceFiles.clear();
     m_selectedAddresses.clear();
     m_selectedAddresses.emplace( symAddr );
 
-    while (!worker.HasSymbolCode( m_baseAddr )) {
-        m_baseAddr -= 4;
-    }
-
     ParseSource( fileName, worker, view );
-    Disassemble( m_baseAddr, worker );
+    Disassemble( baseAddr, worker );
     SelectLine( line, &worker, true, symAddr );
 
     SelectViewMode();
 
-    if( !worker.GetInlineSymbolList( m_baseAddr, m_codeLen ) ) m_calcInlineStats = false;
+    if( !worker.GetInlineSymbolList( baseAddr, m_codeLen ) ) m_calcInlineStats = false;
 }
 
 void SourceView::SelectViewMode()

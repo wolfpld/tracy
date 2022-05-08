@@ -4,7 +4,6 @@
     "version-semver": "0.8.0",
     "description": "C++ frame profiler",
     "homepage": "https://github.com/wolfpld/tracy",
-    "builtin-baseline": "65c66cd748d48cfa8f02df8c434adbd862ef1dd2",
     "dependencies": [
         { "name": "capstone", "features":[ "arm", "arm64", "x86" ] },
         "freetype",

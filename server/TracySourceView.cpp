@@ -4068,7 +4068,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     if( lit != m_locMap.end() )
     {
         ImGui::SameLine();
-        ImGui::TextDisabled( "; .L%" PRIu32, lit->second );
+        ImGui::TextDisabled( "  ; .L%" PRIu32, lit->second );
     }
 
     if( line.regData[0] != 0 )
@@ -4083,7 +4083,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         {
             ImGui::SameLine( 0, 0 );
         }
-        TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "{" );
+        TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "  {" );
         ImGui::SameLine( 0, 0 );
         int idx = 0;
         for(;;)
@@ -4123,7 +4123,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         ImGui::SameLine();
         if( jumpBase == m_baseAddr )
         {
-            ImGui::TextDisabled( "-> [%s+%" PRIu32"]", jumpName, jumpOffset );
+            ImGui::TextDisabled( "  -> [%s+%" PRIu32"]", jumpName, jumpOffset );
             if( ImGui::IsItemHovered() )
             {
                 m_highlightAddr = line.jumpAddr;
@@ -4137,7 +4137,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
         else
         {
-            ImGui::TextDisabled( "[%s+%" PRIu32"]", jumpName, jumpOffset );
+            ImGui::TextDisabled( "  [%s+%" PRIu32"]", jumpName, jumpOffset );
             if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
         }
     }

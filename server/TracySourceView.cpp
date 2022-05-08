@@ -2349,6 +2349,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 {
                     RenderAsmLine( m_asm[i], zero.ipMaxAsm, zero, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( m_asm[i].addr );
+                    const auto win = ImGui::GetCurrentWindowRead();
+                    const auto lineWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
+                    if( lineWidth > m_asmWidth ) m_asmWidth = lineWidth;
                 }
             }
             else
@@ -2360,6 +2363,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     const auto ipcnt = it == as.ipCountAsm.end() ? zero.ipMaxAsm : it->second;
                     RenderAsmLine( line, ipcnt, as, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( line.addr );
+                    const auto win = ImGui::GetCurrentWindowRead();
+                    const auto lineWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
+                    if( lineWidth > m_asmWidth ) m_asmWidth = lineWidth;
                 }
             }
             if( m_showJumps && !m_jumpTable.empty() && clipper.DisplayStart != clipper.DisplayEnd )

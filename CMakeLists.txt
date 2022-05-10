@@ -53,7 +53,7 @@ set_option(TRACY_NO_SYSTEM_TRACING  "Disable systrace sampling" OFF)
 set_option(TRACY_DELAYED_INIT "Enable delayed initialization of the library (init on first call)" OFF)
 set_option(TRACY_MANUAL_LIFETIME "Enable the manual lifetime management of the profile" OFF)
 set_option(TRACY_FIBERS "Enable fibers support" OFF)
-set_option(TRACY_NO_CRASH_HANDLER, "Disable crash handling" OFF)
+set_option(TRACY_NO_CRASH_HANDLER "Disable crash handling" OFF)
 set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 
 if(BUILD_SHARED_LIBS)

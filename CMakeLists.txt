@@ -44,7 +44,6 @@ set_option(TRACY_ONLY_IPV4 "Tracy will only accept connections on IPv4 addresses
 set_option(TRACY_NO_CODE_TRANSFER "Disable collection of source code" OFF)
 set_option(TRACY_NO_CONTEXT_SWITCH "Disable capture of context switches" OFF)
 set_option(TRACY_NO_EXIT "Client executable does not exit until all profile data is sent to server" OFF)
-set_option(TRACY_NO_FRAME_IMAGE "Disable capture of frame images" OFF)
 set_option(TRACY_NO_SAMPLING "Disable call stack sampling" OFF)
 set_option(TRACY_NO_VERIFY "Disable zone validation for C API" OFF)
 set_option(TRACY_NO_VSYNC_CAPTURE "Disable capture of hardware Vsync events" OFF)

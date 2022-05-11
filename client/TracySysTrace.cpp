@@ -265,7 +265,7 @@ void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 
 static void SetupVsync()
 {
-#if _WIN32_WINNT >= _WIN32_WINNT_WINBLUE && !__MINGW32__
+#if _WIN32_WINNT >= _WIN32_WINNT_WINBLUE && !defined(__MINGW32__)
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + MAX_PATH;
     s_propVsync = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_propVsync, 0, sizeof( EVENT_TRACE_PROPERTIES ) );

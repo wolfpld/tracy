@@ -11822,8 +11822,8 @@ void View::DrawCompare()
                 {
                     m_compare.badVer.state = BadVersionState::ReadError;
                 }
+                NFD_FreePathU8( fn );
             }
-            NFD_FreePathU8( fn );
         }
         tracy::BadVersion( m_compare.badVer, m_bigFont );
         ImGui::End();

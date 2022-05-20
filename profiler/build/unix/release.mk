@@ -1,4 +1,7 @@
-CFLAGS := -O3 -flto
+CFLAGS := -O3
+ifndef TRACY_NO_LTO
+CFLAGS += -flto
+endif
 DEFINES := -DNDEBUG
 BUILD := release
 

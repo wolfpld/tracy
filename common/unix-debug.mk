@@ -6,6 +6,8 @@ LDFLAGS := -fuse-ld=mold
   endif
 endif
 
+ifndef TRACY_NO_ISA_EXTENSIONS
 ifeq ($(ARCH),x86_64)
 CFLAGS += -msse4.1
+endif
 endif

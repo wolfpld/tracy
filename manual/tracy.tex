@@ -747,11 +747,13 @@ There are two ways you can run \texttt{vcpkg} to install the dependencies for Tr
 vcpkg\install_vcpkg_dependencies.bat
 \end{lstlisting}
 This writes files only to the \texttt{vcpkg\textbackslash{}vcpkg} directory and makes no other changes on your machine.
-\item System-wide installation -- install \texttt{vcpkg} by following the instructions on its website, and then execute the following commands:
+\item System-wide installation with Manifest mode -- install \texttt{vcpkg} by following the instructions on its website, make sure that the environment variable \texttt{VCPKG_ROOT} is set to the path where you have clone the repository, and then execute the following command:
 \begin{lstlisting}[language=sh]
 vcpkg integrate install
-vcpkg install --triplet x64-windows-static freetype glfw3 capstone[arm,arm64,x86]
 \end{lstlisting}
+After this step, you can use any Visual Studio project files to build as usual.
+Dependencies will be installed automatically based on vcpkg manifest listing (the \texttt{vcpkg.json} file at repository root).
+For more information about vcpkg manifest mode in Visual Studio, you can read more details at the following address: \url{https://vcpkg.io/en/docs/users/manifests.html#msbuild-integration}.
 \end{itemize}
 
 \paragraph{Unix}

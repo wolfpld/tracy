@@ -16,8 +16,6 @@ jobs:
     - uses: microsoft/setup-msbuild@v1.0.2
     - name: Integrate vcpkg
       run: vcpkg integrate install
-    - name: Build vcpkg libraries
-      run: vcpkg install freetype glfw3 capstone[arm,arm64,x86] --triplet x64-windows-static
     - name: Profiler GUI Debug
       run: msbuild .\profiler\build\win32\Tracy.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: Profiler GUI Release

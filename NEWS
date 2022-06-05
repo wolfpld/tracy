@@ -10,6 +10,16 @@ v0.x.x (xxxx-xx-xx)
   the debug information, and network retrieval, it is disabled by
   default. To enable, compile the profiled application with the
   TRACY_DEBUGINFOD define and link with libdebuginfod.
+- When Tracy server-side utilities are build with MSVC, the required
+  libraries will be now automatically retrieved and built with vcpkg.
+- Added microarchitecture data for: Bonnell, Airmont, Goldmont, Goldmont
+  Plus, Tremont.
+- Recognize additional CPUIDs of Zen 3, Alder Lake, Ice Lake
+  microarchitectures.
+- Assembly line width will be now extended, if needed. Previously the line
+  width was calculated for the initial layout and changing amount of
+  displayed data (especially listing the read/written registers) didn't
+  affect this, which may have made some lines partially unreadable.
 
 
 v0.8.1 (2022-04-21)

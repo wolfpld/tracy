@@ -218,7 +218,7 @@ namespace details
 	static inline bool circular_less_than(T a, T b)
 	{
 		static_assert(std::is_integral<T>::value && !std::numeric_limits<T>::is_signed, "circular_less_than is intended to be used only with unsigned integer types");
-		return static_cast<T>(a - b) > static_cast<T>(static_cast<T>(1) << static_cast<T>(sizeof(T) * CHAR_BIT - 1));
+		return static_cast<T>(a - b) > (static_cast<T>(static_cast<T>(1) << static_cast<T>(sizeof(T) * CHAR_BIT - 1)));
 	}
 #ifdef _MSC_VER
 #pragma warning(pop)

@@ -3286,7 +3286,7 @@ Each tree node consists of the function name, the source file location, and the 
 
 The \emph{Group by function name} option controls how tree nodes are grouped. If it is disabled, the grouping is performed at a machine instruction-level granularity. This may result in a very verbose output, but the displayed source locations are precise. To make the tree more readable, you may opt to perform grouping at the function name level, which will result in less valid source file locations, as multiple entries are collapsed into one.
 
-Enabling the \emph{Only active allocations} option will limit the call stack tree only to display active allocations.
+Enabling the \emph{Only active allocations} option will limit the call stack tree only to display active allocations. Enabling \emph{Only inactive allocations} option will have similar effect for inactive allocations. Both are mutually exclusive, enabling one disables the other. Displaing inactive allocations, when combined with \emph{Limit range}, will show short lived allocatios highlighting potentially unwanted behavior in the code.
 
 Clicking the \RMB{}~right mouse button on the function name will open the allocations list window (see section \ref{alloclist}), which lists all the allocations included at the current call stack tree level. Likewise, clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 

@@ -147,6 +147,13 @@ private:
         LastRange
     };
 
+    enum class MemRange
+    {
+        Full,
+        Active,
+        Inactive
+    };
+
     struct ZoneColorData
     {
         uint32_t color;
@@ -227,7 +234,7 @@ private:
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1, uint64_t pool = 0 );
 
-    unordered_flat_map<uint32_t, MemPathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
+    unordered_flat_map<uint32_t, MemPathData> GetCallstackPaths( const MemData& mem, MemRange memRange ) const;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFrameTree>& tree, int& idx );
@@ -494,8 +501,8 @@ private:
 
     bool m_groupCallstackTreeByNameBottomUp = true;
     bool m_groupCallstackTreeByNameTopDown = true;
-    bool m_activeOnlyBottomUp = false;
-    bool m_activeOnlyTopDown = false;
+    MemRange m_memRangeBottomUp = MemRange::Full;
+    MemRange m_memRangeTopDown = MemRange::Full;
 
     enum class SaveThreadState
     {

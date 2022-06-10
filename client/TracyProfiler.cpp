@@ -335,8 +335,9 @@ static bool CheckHardwareSupportsInvariantTSC()
     {
 #if !defined TRACY_TIMER_QPC && !defined TRACY_TIMER_FALLBACK
         InitFailure( "CPU doesn't support RDTSC instruction." );
-#endif
+#else
         return false;
+#endif
     }
     CpuId( regs, 0x80000007 );
     if( regs[3] & ( 1 << 8 ) ) return true;

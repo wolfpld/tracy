@@ -20,6 +20,9 @@ v0.x.x (xxxx-xx-xx)
   width was calculated for the initial layout and changing amount of
   displayed data (especially listing the read/written registers) didn't
   affect this, which may have made some lines partially unreadable.
+- Added ability to filter call stacks in memory tab by inactive allocations.
+  Filtering by inactive allocations helps to pinpoint wasteful allocations
+  in the program.
 
 
 v0.8.1 (2022-04-21)

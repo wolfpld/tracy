@@ -7471,7 +7471,7 @@ void View::DrawZoneInfoWindow()
             {
                 const auto end = m_worker.GetZoneEnd( ev );
                 auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
-                bool incomplete = eit == ctx->v.end();
+                bool incomplete = eit == ctx->v.end() && !m_worker.IsThreadFiber( tid );
                 uint64_t cnt = std::distance( it, eit );
                 if( cnt == 1 )
                 {

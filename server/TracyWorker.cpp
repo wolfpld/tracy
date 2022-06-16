@@ -350,13 +350,13 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     {
         if( !v.isEnd )
         {
-            SourceLocation srcloc {
+            SourceLocation srcloc {{
                 StringRef(),
                 StringRef( StringRef::Idx, StoreString( v.name.c_str(), v.name.size() ).idx ),
                 StringRef( StringRef::Idx, StoreString( v.locFile.c_str(), v.locFile.size() ).idx ),
                 v.locLine,
                 0
-            };
+            }};
             int key;
             auto it = m_data.sourceLocationPayloadMap.find( &srcloc );
             if( it == m_data.sourceLocationPayloadMap.end() )
@@ -1649,7 +1649,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         uint8_t isInline;
         Int24 size;
         f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
-        m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
+        m_data.symbolMap.emplace( symAddr, SymbolData { { name, file, line }, imageName, callFile, callLine, isInline, size } );
         if( isInline )
         {
             m_data.symbolLocInline[symInlineIdx++] = symAddr;
@@ -3880,7 +3880,7 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
     }
     CheckString( srcloc.function );
     const uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
-    it->second = SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color };
+    it->second = SourceLocation {{ srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color }};
 }
 
 void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
@@ -3910,7 +3910,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz
             ( ( color & 0x0000FF00 )       ) |
             ( ( color & 0x000000FF ) << 16 );
 
-    SourceLocation srcloc { nsz == 0 ? StringRef() : StringRef( StringRef::Idx, StoreString( end, nsz ).idx ), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
+    SourceLocation srcloc {{ nsz == 0 ? StringRef() : StringRef( StringRef::Idx, StoreString( end, nsz ).idx ), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color }};
     auto it = m_data.sourceLocationPayloadMap.find( &srcloc );
     if( it == m_data.sourceLocationPayloadMap.end() )
     {

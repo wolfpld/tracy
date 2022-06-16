@@ -1150,18 +1150,18 @@ void SysTraceWorker( void* ptr )
 
             const auto id = ring.GetId();
             assert( id != EventContextSwitch );
-
             const auto end = head - tail;
             uint64_t pos = 0;
-            while( pos < end )
+            if( id == EventCallstack )
             {
-                perf_event_header hdr;
-                ring.Read( &hdr, pos, sizeof( perf_event_header ) );
-                if( hdr.type == PERF_RECORD_SAMPLE )
+                while( pos < end )
                 {
-                    auto offset = pos + sizeof( perf_event_header );
-                    if( id == EventCallstack )
+                    perf_event_header hdr;
+                    ring.Read( &hdr, pos, sizeof( perf_event_header ) );
+                    if( hdr.type == PERF_RECORD_SAMPLE )
                     {
+                        auto offset = pos + sizeof( perf_event_header );
+
                         // Layout:
                         //   u32 pid, tid
                         //   u64 time
@@ -1194,8 +1194,19 @@ void SysTraceWorker( void* ptr )
                             TracyLfqCommit;
                         }
                     }
-                    else
+                    pos += hdr.size;
+                }
+            }
+            else
+            {
+                while( pos < end )
+                {
+                    perf_event_header hdr;
+                    ring.Read( &hdr, pos, sizeof( perf_event_header ) );
+                    if( hdr.type == PERF_RECORD_SAMPLE )
                     {
+                        auto offset = pos + sizeof( perf_event_header );
+
                         // Layout:
                         //   u64 ip
                         //   u64 time
@@ -1239,8 +1250,8 @@ void SysTraceWorker( void* ptr )
                         MemWrite( &item->hwSample.time, t0 );
                         TracyLfqCommit;
                     }
+                    pos += hdr.size;
                 }
-                pos += hdr.size;
             }
             assert( pos == end );
             ring.Advance( end );

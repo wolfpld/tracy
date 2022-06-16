@@ -13,12 +13,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, macOS-latest]
+        os: [ubuntu-22.04, macOS-latest]
 
     steps:
     - uses: actions/checkout@v2
     - name: Install linux libraries
-      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      if: ${{ matrix.os == 'ubuntu-22.04' }}
       run: sudo apt-get update && sudo apt-get -y install libglfw3-dev libdbus-1-dev libcapstone-dev libtbb-dev
     - name: Install macos libraries
       if: ${{ matrix.os == 'macOS-latest' }}

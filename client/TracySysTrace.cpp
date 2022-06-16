@@ -1324,7 +1324,6 @@ void SysTraceWorker( void* ptr )
                             }
                         }
                     }
-                    assert( sel >= 0 || activeNum == 0 );
                     if( sel >= 0 )
                     {
                         auto& ring = s_ring[s_ctxBufferIdx + sel];

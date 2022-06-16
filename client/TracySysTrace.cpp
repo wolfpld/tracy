@@ -1111,7 +1111,7 @@ void SysTraceWorker( void* ptr )
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Sampling" );
     InitRpmalloc();
-    sched_param sp = { 5 };
+    sched_param sp = { 99 };
     if( pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp ) != 0 ) TracyDebug( "Failed to increase SysTraceWorker thread priority!\n" );
     for( int i=0; i<s_numBuffers; i++ ) s_ring[i].Enable();
     for(;;)

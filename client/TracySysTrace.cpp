@@ -1148,6 +1148,9 @@ void SysTraceWorker( void* ptr )
             assert( head > tail );
             hadData = true;
 
+            const auto id = ring.GetId();
+            assert( id != EventContextSwitch );
+
             const auto end = head - tail;
             uint64_t pos = 0;
             while( pos < end )
@@ -1157,8 +1160,6 @@ void SysTraceWorker( void* ptr )
                 if( hdr.type == PERF_RECORD_SAMPLE )
                 {
                     auto offset = pos + sizeof( perf_event_header );
-                    const auto id = ring.GetId();
-                    assert( id != EventContextSwitch );
                     if( id == EventCallstack )
                     {
                         // Layout:

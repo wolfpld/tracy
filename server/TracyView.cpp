@@ -6716,6 +6716,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     max++;
                 }
 
+                const auto rMin = min;
+                const auto rMax = max;
+
                 auto pvit = m_plotView.find( v );
                 if( pvit == m_plotView.end() )
                 {
@@ -6838,13 +6841,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 if( yPos + ty >= yMin && yPos <= yMax )
                 {
                     char tmp[64];
-                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->format ), RealToString( num ) );
+                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( rMax - rMin, v->format ), RealToString( num ) );
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
                 }
-                auto tmp = FormatPlotValue( max, v->format );
+                auto tmp = FormatPlotValue( rMax, v->format );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
                 offset += PlotHeight - ty;
-                tmp = FormatPlotValue( min, v->format );
+                tmp = FormatPlotValue( rMin, v->format );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
 
                 DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );

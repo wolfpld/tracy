@@ -23,6 +23,10 @@ v0.x.x (xxxx-xx-xx)
 - Added ability to filter call stacks in memory tab by inactive allocations.
   Filtering by inactive allocations helps to pinpoint wasteful allocations
   in the program.
+- Plot graph will no longer display min/max values interpolated for
+  animation, but rather true values.
+- The CPU topology tree structure was replaced by a CPU schematic showing
+  the same thing in a more concise way.
 
 
 v0.8.1 (2022-04-21)

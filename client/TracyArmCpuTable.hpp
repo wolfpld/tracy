@@ -38,7 +38,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
     static char buf[16];
     switch( impl )
     {
-    case 0x41:
+    case 0x41:  // ARM
         switch( part )
         {
         case 0x810: return "810";
@@ -104,7 +104,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd4b: return " Cortex-A78C";
         default: break;
         }
-    case 0x42:
+    case 0x42:  // Broadcom
         switch( part )
         {
         case 0xf: return " Brahma B15";
@@ -112,7 +112,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x516: return " ThunderX2";
         default: break;
         }
-    case 0x43:
+    case 0x43:  // Cavium
         switch( part )
         {
         case 0xa0: return " ThunderX";
@@ -129,27 +129,27 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xb8: return " ThunderX3 T110";
         default: break;
         }
-    case 0x44:
+    case 0x44:  // DEC
         switch( part )
         {
         case 0xa10: return " SA110";
         case 0xa11: return " SA1100";
         default: break;
         }
-    case 0x46:
+    case 0x46:  // Fujitsu
         switch( part )
         {
         case 0x1: return " A64FX";
         default: break;
         }
-    case 0x48:
+    case 0x48:  // HiSilicon
         switch( part )
         {
         case 0xd01: return " TSV100";
         case 0xd40: return " Kirin 980";
         default: break;
         }
-    case 0x4e:
+    case 0x4e:  // Nvidia
         switch( part )
         {
         case 0x0: return " Denver";
@@ -157,13 +157,13 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x4: return " Carmel";
         default: break;
         }
-    case 0x50:
+    case 0x50:  // Applied Micro
         switch( part )
         {
         case 0x0: return " X-Gene";
         default: break;
         }
-    case 0x51:
+    case 0x51:  // Qualcomm
         switch( part )
         {
         case 0xf: return " Scorpion";
@@ -183,14 +183,14 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xc01: return " Saphira";
         default: break;
         }
-    case 0x53:
+    case 0x53:  // Samsung
         switch( part )
         {
         case 0x1: return " Exynos M1/M2";
         case 0x2: return " Exynos M3";
         default: break;
         }
-    case 0x56:
+    case 0x56:  // Marvell
         switch( part )
         {
         case 0x131: return " Feroceon 88FR131";
@@ -198,7 +198,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x584: return " PJ4B-MP / PJ4C";
         default: break;
         }
-    case 0x61:
+    case 0x61:  // Apple
         switch( part )
         {
         case 0x1: return " Cyclone";
@@ -210,14 +210,14 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x7: return " Hurricane/Myst";
         default: break;
         }
-    case 0x66:
+    case 0x66:  // Faraday
         switch( part )
         {
         case 0x526: return " FA526";
         case 0x626: return " FA626";
         default: break;
         }
-    case 0x68:
+    case 0x68:  // HXT
         switch( part )
         {
         case 0x0: return " Phecda";

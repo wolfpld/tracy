@@ -15235,38 +15235,110 @@ void View::DrawInfo()
     {
         if( ImGui::TreeNode( "CPU topology" ) )
         {
+            char buf[128];
+
+            const auto ty = ImGui::GetFontSize();
+            ImGui::PushFont( m_smallFont );
+            const auto sty = ImGui::GetFontSize();
+            ImGui::PopFont();
+            const float margin = round( ty * 0.5 );
+            const float small = round( sty * 0.5 );
+
+            std::vector<int> maxthreads( topology.size() );
+
+            float ptsz = 0;
+            float ctsz = 0;
+            float ttsz = 0;
+            for( auto& package : topology )
+            {
+                sprintf( buf, ICON_FA_BOX " Package %" PRIu32, package.first );
+                ImGui::PushFont( m_smallFont );
+                const auto psz = ImGui::CalcTextSize( buf ).x;
+                if( psz > ptsz ) ptsz = psz;
+                ImGui::PopFont();
+
+                size_t mt = 0;
+                for( auto& core : package.second )
+                {
+                    sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core.first );
+                    const auto csz = ImGui::CalcTextSize( buf ).x;
+                    if( csz > ctsz ) ctsz = csz;
+
+                    const auto tnum = core.second.size();
+                    if( tnum > mt ) mt = tnum;
+
+                    for( auto& thread : core.second )
+                    {
+                        sprintf( buf, ICON_FA_RANDOM "%" PRIu32, thread );
+                        const auto tsz = ImGui::CalcTextSize( buf ).x;
+                        if( tsz > ttsz ) ttsz = tsz;
+                    }
+                }
+                maxthreads[package.first] = (int)mt;
+            }
+
+            const auto remainingWidth = ImGui::GetContentRegionAvail().x;
+            auto dpos = ImGui::GetCursorScreenPos() + ImVec2( margin, 0 );
+            const auto draw = ImGui::GetWindowDrawList();
+
+            float width = 0;
+            float origy = dpos.y;
+
             std::vector<decltype(topology.begin())> tsort;
             tsort.reserve( topology.size() );
             for( auto it = topology.begin(); it != topology.end(); ++it ) tsort.emplace_back( it );
             std::sort( tsort.begin(), tsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
-            char buf[128];
             for( auto& package : tsort )
             {
-                sprintf( buf, ICON_FA_BOX " Package %i", package->first );
-                if( ImGui::TreeNodeEx( buf, ImGuiTreeNodeFlags_DefaultOpen ) )
+                if( package->first != 0 ) dpos.y += ty;
+                sprintf( buf, ICON_FA_BOX " Package %" PRIu32, package->first );
+                draw->AddText( dpos, 0xFFFFFFFF, buf );
+                dpos.y += ty;
+
+                const auto inCoreWidth = ( ttsz + margin ) * maxthreads[package->first];
+                const auto coreWidth = inCoreWidth + 2 * margin;
+                const auto inCoreHeight = margin + 2 * small + ty;
+                const auto coreHeight = inCoreHeight + ty;
+                const auto cpl = std::max( 1, (int)floor( ( remainingWidth - 2 * margin ) / coreWidth ) );
+                const auto cl = ( package->second.size() + cpl - 1 ) / cpl;
+                const auto pw = cpl * coreWidth + 2 * margin;
+                const auto ph = margin + cl * coreHeight;
+                if( pw > width ) width = pw;
+
+                draw->AddRect( dpos, dpos + ImVec2( margin + coreWidth * std::min<size_t>( cpl, package->second.size() ), ph ), 0xFFFFFFFF );
+
+                std::vector<decltype(package->second.begin())> csort;
+                csort.reserve( package->second.size() );
+                for( auto it = package->second.begin(); it != package->second.end(); ++it ) csort.emplace_back( it );
+                std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+                auto cpos = dpos + ImVec2( margin, margin );
+                int ll = cpl;
+                for( auto& core : csort )
                 {
-                    std::vector<decltype(package->second.begin())> csort;
-                    csort.reserve( package->second.size() );
-                    for( auto it = package->second.begin(); it != package->second.end(); ++it ) csort.emplace_back( it );
-                    std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
-                    for( auto& core : csort )
+                    sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core->first );
+                    draw->AddText( cpos, 0xFFFFFFFF, buf );
+                    draw->AddRect( cpos + ImVec2( 0, ty ), cpos + ImVec2( inCoreWidth + small, inCoreHeight + small ), 0xFFFFFFFF );
+
+                    for( int i=0; i<core->second.size(); i++ )
                     {
-                        sprintf( buf, ICON_FA_MICROCHIP " Core %i", core->first );
-                        if( ImGui::TreeNodeEx( buf, ImGuiTreeNodeFlags_DefaultOpen ) )
-                        {
-                            ImGui::Indent();
-                            for( auto& thread : core->second )
-                            {
-                                sprintf( buf, ICON_FA_RANDOM " Thread %i", thread );
-                                ImGui::TextUnformatted( buf );
-                            }
-                            ImGui::Unindent();
-                            ImGui::TreePop();
-                        }
+                        sprintf( buf, ICON_FA_RANDOM "%" PRIu32, core->second[i] );
+                        draw->AddText( cpos + ImVec2( margin + i * ( margin + ttsz ), ty + small ), 0xFFFFFFFF, buf );
                     }
-                    ImGui::TreePop();
+
+                    if( --ll == 0 )
+                    {
+                        ll = cpl;
+                        cpos.x -= (cpl-1) * coreWidth;
+                        cpos.y += coreHeight;
+                    }
+                    else
+                    {
+                        cpos.x += coreWidth;
+                    }
                 }
+                dpos.y += ph;
             }
+            ImGui::ItemSize( ImVec2( width, dpos.y - origy ) );
             ImGui::TreePop();
         }
     }

@@ -92,6 +92,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd13: return " Cortex-R52";
         case 0xd20: return " Cortex-M23";
         case 0xd21: return " Cortex-M33";
+        case 0xd22: return " Cortex-M55";
         case 0xd40: return " Neoverse V1";
         case 0xd41: return " Cortex-A78";
         case 0xd42: return " Cortex-A78AE";
@@ -102,6 +103,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd49: return " Neoverse N2";
         case 0xd4a: return " Neoverse E1";
         case 0xd4b: return " Cortex-A78C";
+        case 0xd4c: return " Cortex-X1C";
         default: break;
         }
     case 0x42:  // Broadcom
@@ -126,6 +128,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xb3: return " OcteonTX2 F95";
         case 0xb4: return " OcteonTX2 F95N";
         case 0xb5: return " OcteonTX2 F95MM";
+        case 0xb6: return " OcteonTX2 F95O";
         case 0xb8: return " ThunderX3 T110";
         default: break;
         }
@@ -179,6 +182,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x802: return " Kryo 385 Gold";
         case 0x803: return " Kryo 385 Silver";
         case 0x804: return " Kryo 485 Gold";
+        case 0x805: return " Kryo 4xx/5xx Silver";
         case 0xc00: return " Falkor";
         case 0xc01: return " Saphira";
         default: break;
@@ -188,6 +192,14 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         {
         case 0x1: return " Exynos M1/M2";
         case 0x2: return " Exynos M3";
+        case 0x3: return " Exynos M4";
+        case 0x4: return " Exynos M5";
+        default: break;
+        }
+    case 0x54:  // Texas Instruments
+        switch( part )
+        {
+        case 0x925: return " TI925";
         default: break;
         }
     case 0x56:  // Marvell
@@ -208,6 +220,12 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x5: return " Twister/Elba/Malta";
         case 0x6: return " Hurricane";
         case 0x7: return " Hurricane/Myst";
+        case 0x22: return " M1 Icestorm";
+        case 0x23: return " M1 Firestorm";
+        case 0x24: return " M1 Icestorm Pro";
+        case 0x25: return " M1 Firestorm Pro";
+        case 0x28: return " M1 Icestorm Max";
+        case 0x29: return " M1 Firestorm Max";
         default: break;
         }
     case 0x66:  // Faraday
@@ -221,6 +239,12 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         switch( part )
         {
         case 0x0: return " Phecda";
+        default: break;
+        }
+    case 0xc0:  // Ampere Computing
+        switch( part )
+        {
+        case 0xac3: return " Ampere1";
         default: break;
         }
     default: break;

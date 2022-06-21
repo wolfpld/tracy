@@ -4895,13 +4895,18 @@ void Worker::ProcessThreadContext( const QueueThreadContext& ev )
     }
 }
 
+static tracy_force_inline int64_t RefTime( int64_t& reference, int64_t delta )
+{
+    const auto refTime = reference + delta;
+    reference = refTime;
+    return refTime;
+}
+
 void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 {
     CheckSourceLocation( ev.srcloc );
 
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto start = TscTime( refTime );
+    const auto start = TscTime( RefTime( m_refTimeThread, ev.time ) );
     zone->SetStartSrcLoc( start, ShrinkSourceLocation( ev.srcloc ) );
     zone->SetEnd( -1 );
     zone->SetChild( -1 );
@@ -4915,9 +4920,7 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 {
     assert( m_pendingSourceLocationPayload != 0 );
 
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto start = TscTime( refTime );
+    const auto start = TscTime( RefTime( m_refTimeThread, ev.time ) );
     zone->SetStartSrcLoc( start, m_pendingSourceLocationPayload );
     zone->SetEnd( -1 );
     zone->SetChild( -1 );
@@ -5005,9 +5008,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto zone = stack.back_and_pop();
     assert( zone->End() == -1 );
     const auto isReentry = td->DecStackCount( zone->SrcLoc() );
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto timeEnd = TscTime( refTime );
+    const auto timeEnd = TscTime( RefTime( m_refTimeThread, ev.time ) );
     zone->SetEnd( timeEnd );
     assert( timeEnd >= zone->Start() );
 
@@ -5475,9 +5476,7 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Wait;
@@ -5492,9 +5491,7 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Obtain;
@@ -5509,9 +5506,7 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Release;
@@ -5527,9 +5522,7 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::WaitShared;
@@ -5545,9 +5538,7 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ObtainShared;
@@ -5563,9 +5554,7 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ReleaseShared;
@@ -5634,9 +5623,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         Query( ServerQueryPlotName, name );
     } );
 
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeThread, ev.time ) );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     switch( ev.type )
     {
@@ -5834,13 +5821,11 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     int64_t cpuTime;
     if( serial )
     {
-        cpuTime = m_refTimeSerial + ev.cpuTime;
-        m_refTimeSerial = cpuTime;
+        cpuTime = RefTime( m_refTimeSerial, ev.cpuTime );
     }
     else
     {
-        cpuTime = m_refTimeThread + ev.cpuTime;
-        m_refTimeThread = cpuTime;
+        cpuTime = RefTime( m_refTimeThread, ev.cpuTime );
     }
     const auto time = TscTime( cpuTime );
     zone->SetCpuStart( time );
@@ -5961,13 +5946,11 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
     int64_t cpuTime;
     if( serial )
     {
-        cpuTime = m_refTimeSerial + ev.cpuTime;
-        m_refTimeSerial = cpuTime;
+        cpuTime = RefTime( m_refTimeSerial, ev.cpuTime );
     }
     else
     {
-        cpuTime = m_refTimeThread + ev.cpuTime;
-        m_refTimeThread = cpuTime;
+        cpuTime = RefTime( m_refTimeThread, ev.cpuTime );
     }
     const auto time = TscTime( cpuTime );
     zone->SetCpuEnd( time );
@@ -5979,9 +5962,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
-    int64_t tgpu = m_refTimeGpu + ev.gpuTime;
-    m_refTimeGpu = tgpu;
-
+    int64_t tgpu = RefTime( m_refTimeGpu, ev.gpuTime );
     if( tgpu < ctx->lastGpuTime - ( 1u << 31 ) )
     {
         if( ctx->overflow == 0 )
@@ -6093,9 +6074,7 @@ MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const
         return nullptr;
     }
 
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeSerial, ev.time ) );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
@@ -6132,8 +6111,7 @@ MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const
 
 MemEvent* Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev )
 {
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
+    const auto refTime = RefTime( m_refTimeSerial, ev.time );
 
     auto it = memdata.active.find( ev.ptr );
     if( it == memdata.active.end() )
@@ -6465,8 +6443,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     const auto callstack = m_pendingCallstackId;
     m_pendingCallstackId = 0;
 
-    const auto refTime = m_refTimeCtx + ev.time;
-    m_refTimeCtx = refTime;
+    const auto refTime = RefTime( m_refTimeCtx, ev.time );
     const auto t = refTime == 0 ? 0 : TscTime( refTime );
 
     auto& td = *NoticeThread( ev.thread );
@@ -6510,8 +6487,7 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
     const auto callstack = m_pendingCallstackId;
     m_pendingCallstackId = 0;
 
-    const auto refTime = m_refTimeCtx + ev.time;
-    m_refTimeCtx = refTime;
+    const auto refTime = RefTime( m_refTimeCtx, ev.time );
     const auto t = refTime == 0 ? 0 : TscTime( refTime );
 
     auto& td = *NoticeThread( ev.thread );
@@ -6822,9 +6798,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
     m_data.newContextSwitchesReceived = true;
 #endif
 
-    const auto refTime = m_refTimeCtx + ev.time;
-    m_refTimeCtx = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeCtx, ev.time ) );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
     if( ev.cpu >= m_data.cpuDataCount ) m_data.cpuDataCount = ev.cpu + 1;
@@ -6918,9 +6892,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 
 void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
 {
-    const auto refTime = m_refTimeCtx + ev.time;
-    m_refTimeCtx = refTime;
-    const auto time = TscTime( refTime );
+    const auto time = TscTime( RefTime( m_refTimeCtx, ev.time ) );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
     auto it = m_data.ctxSwitch.find( ev.thread );
@@ -7021,9 +6993,7 @@ void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )
 
 void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
 {
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto t = TscTime( refTime );
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
     if( m_data.lastTime < t ) m_data.lastTime = t;
 
     uint64_t tid;
@@ -7069,9 +7039,7 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
 
 void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
 {
-    const auto refTime = m_refTimeThread + ev.time;
-    m_refTimeThread = refTime;
-    const auto t = TscTime( refTime );
+    const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
     if( m_data.lastTime < t ) m_data.lastTime = t;
 
     auto td = RetrieveThread( ev.thread );

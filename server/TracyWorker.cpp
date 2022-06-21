@@ -2969,12 +2969,12 @@ void Worker::Exec()
         }
         m_timerMul = welcome.timerMul;
         m_data.baseTime = welcome.initBegin;
-        const auto initEnd = TscTime( welcome.initEnd - m_data.baseTime );
+        const auto initEnd = TscTime( welcome.initEnd );
         m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
         m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1, -1 } );
         m_data.lastTime = initEnd;
-        m_delay = TscTime( welcome.delay );
-        m_resolution = TscTime( welcome.resolution );
+        m_delay = TscPeriod( welcome.delay );
+        m_resolution = TscPeriod( welcome.resolution );
         m_pid = welcome.pid;
         m_samplingPeriod = welcome.samplingPeriod;
         m_onDemand = welcome.flags & WelcomeFlag::OnDemand;
@@ -3009,7 +3009,7 @@ void Worker::Exec()
                 goto close;
             }
             m_data.frameOffset = onDemand.frames;
-            m_data.framesBase->frames.push_back( FrameEvent{ TscTime( onDemand.currentTime - m_data.baseTime ), -1, -1 } );
+            m_data.framesBase->frames.push_back( FrameEvent{ TscTime( onDemand.currentTime ), -1, -1 } );
         }
     }
 
@@ -4901,7 +4901,7 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    const auto start = TscTime( refTime - m_data.baseTime );
+    const auto start = TscTime( refTime );
     zone->SetStartSrcLoc( start, ShrinkSourceLocation( ev.srcloc ) );
     zone->SetEnd( -1 );
     zone->SetChild( -1 );
@@ -4917,7 +4917,7 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    const auto start = TscTime( refTime - m_data.baseTime );
+    const auto start = TscTime( refTime );
     zone->SetStartSrcLoc( start, m_pendingSourceLocationPayload );
     zone->SetEnd( -1 );
     zone->SetChild( -1 );
@@ -5007,7 +5007,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     const auto isReentry = td->DecStackCount( zone->SrcLoc() );
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    const auto timeEnd = TscTime( refTime - m_data.baseTime );
+    const auto timeEnd = TscTime( refTime );
     zone->SetEnd( timeEnd );
     assert( timeEnd >= zone->Start() );
 
@@ -5192,7 +5192,7 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
     }
 
     assert( fd->continuous == 1 );
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || fd->frames.back().start <= time );
     fd->frames.push_back( FrameEvent{ time, -1, frameImage } );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5221,7 +5221,7 @@ void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
     } );
 
     assert( fd->continuous == 0 );
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || ( fd->frames.back().end <= time && fd->frames.back().end != -1 ) );
     fd->frames.push_back( FrameEvent{ time, -1, -1 } );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5239,7 +5239,7 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     } );
 
     assert( fd->continuous == 0 );
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     if( fd->frames.empty() )
     {
         FrameEndFailure();
@@ -5453,7 +5453,7 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     auto lm = m_slab.AllocInit<LockMap>();
     lm->srcloc = ShrinkSourceLocation( ev.lckloc );
     lm->type = ev.type;
-    lm->timeAnnounce = TscTime( ev.time - m_data.baseTime );
+    lm->timeAnnounce = TscTime( ev.time );
     lm->timeTerminate = 0;
     lm->valid = true;
     lm->isContended = false;
@@ -5465,7 +5465,7 @@ void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
 {
     auto it = m_data.lockMap.find( ev.id );
     assert( it != m_data.lockMap.end() );
-    it->second->timeTerminate = TscTime( ev.time - m_data.baseTime );
+    it->second->timeTerminate = TscTime( ev.time );
 }
 
 void Worker::ProcessLockWait( const QueueLockWait& ev )
@@ -5477,7 +5477,7 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Wait;
@@ -5494,7 +5494,7 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Obtain;
@@ -5511,7 +5511,7 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Release;
@@ -5529,7 +5529,7 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::WaitShared;
@@ -5547,7 +5547,7 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ObtainShared;
@@ -5565,7 +5565,7 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ReleaseShared;
@@ -5636,7 +5636,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
 
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     switch( ev.type )
     {
@@ -5673,7 +5673,7 @@ void Worker::ProcessMessage( const QueueMessage& ev )
 {
     auto td = GetCurrentThreadData();
     auto msg = m_slab.Alloc<MessageData>();
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
     msg->thread = CompressThread( td->id );
@@ -5688,7 +5688,7 @@ void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
     auto td = GetCurrentThreadData();
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( td->id );
@@ -5702,7 +5702,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
 {
     auto td = GetCurrentThreadData();
     auto msg = m_slab.Alloc<MessageData>();
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
     msg->thread = CompressThread( td->id );
@@ -5717,7 +5717,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
     auto td = GetCurrentThreadData();
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( td->id );
@@ -5770,7 +5770,7 @@ void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColorLiteral
 void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
 {
     m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, GetSingleStringIdx() ) );
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 }
 
@@ -5789,7 +5789,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
         gpuTime = int64_t( double( ev.period ) * ev.gpuTime );      // precision loss
     }
 
-    const auto cpuTime = TscTime( ev.cpuTime - m_data.baseTime );
+    const auto cpuTime = TscTime( ev.cpuTime );
     auto gpu = m_slab.AllocInit<GpuCtxData>();
     memset( (char*)gpu->query, 0, sizeof( gpu->query ) );
     gpu->timeDiff = cpuTime - gpuTime;
@@ -5842,7 +5842,7 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
         cpuTime = m_refTimeThread + ev.cpuTime;
         m_refTimeThread = cpuTime;
     }
-    const auto time = TscTime( cpuTime - m_data.baseTime );
+    const auto time = TscTime( cpuTime );
     zone->SetCpuStart( time );
     zone->SetCpuEnd( -1 );
     zone->SetGpuStart( -1 );
@@ -5969,7 +5969,7 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
         cpuTime = m_refTimeThread + ev.cpuTime;
         m_refTimeThread = cpuTime;
     }
-    const auto time = TscTime( cpuTime - m_data.baseTime );
+    const auto time = TscTime( cpuTime );
     zone->SetCpuEnd( time );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 }
@@ -6074,7 +6074,7 @@ void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )
     const auto gpuDelta = gpuTime - ctx->calibratedGpuTime;
     ctx->calibrationMod = double( cpuDelta ) / gpuDelta;
     ctx->calibratedGpuTime = gpuTime;
-    ctx->calibratedCpuTime = TscTime( ev.cpuTime - m_data.baseTime );
+    ctx->calibratedCpuTime = TscTime( ev.cpuTime );
 }
 
 void Worker::ProcessGpuContextName( const QueueGpuContextName& ev )
@@ -6095,7 +6095,7 @@ MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const
 
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
@@ -6148,7 +6148,7 @@ MemEvent* Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const 
         return nullptr;
     }
 
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
@@ -6467,7 +6467,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
 
     const auto refTime = m_refTimeCtx + ev.time;
     m_refTimeCtx = refTime;
-    const auto t = refTime == 0 ? 0 : TscTime( refTime - m_data.baseTime );
+    const auto t = refTime == 0 ? 0 : TscTime( refTime );
 
     auto& td = *NoticeThread( ev.thread );
 
@@ -6512,7 +6512,7 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
 
     const auto refTime = m_refTimeCtx + ev.time;
     m_refTimeCtx = refTime;
-    const auto t = refTime == 0 ? 0 : TscTime( refTime - m_data.baseTime );
+    const auto t = refTime == 0 ? 0 : TscTime( refTime );
 
     auto& td = *NoticeThread( ev.thread );
 
@@ -6773,7 +6773,7 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 
     auto td = GetCurrentThreadData();
     m_data.crashEvent.thread = td->id;
-    m_data.crashEvent.time = TscTime( ev.time - m_data.baseTime );
+    m_data.crashEvent.time = TscTime( ev.time );
     m_data.crashEvent.message = ev.text;
 
     auto it = m_nextCallstack.find( td->id );
@@ -6790,7 +6790,7 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 
 void Worker::ProcessSysTime( const QueueSysTime& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     const auto val = ev.sysTime;
     if( !m_sysTimePlot )
@@ -6824,7 +6824,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 
     const auto refTime = m_refTimeCtx + ev.time;
     m_refTimeCtx = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
     if( ev.cpu >= m_data.cpuDataCount ) m_data.cpuDataCount = ev.cpu + 1;
@@ -6920,7 +6920,7 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
 {
     const auto refTime = m_refTimeCtx + ev.time;
     m_refTimeCtx = refTime;
-    const auto time = TscTime( refTime - m_data.baseTime );
+    const auto time = TscTime( refTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
     auto it = m_data.ctxSwitch.find( ev.thread );
@@ -6948,7 +6948,7 @@ void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 
 void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
 {
-    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.cycles.push_back( time );
@@ -6956,7 +6956,7 @@ void Worker::ProcessHwSampleCpuCycle( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
 {
-    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.retired.push_back( time );
@@ -6964,7 +6964,7 @@ void Worker::ProcessHwSampleInstructionRetired( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleCacheReference( const QueueHwSample& ev )
 {
-    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.cacheRef.push_back( time );
@@ -6972,7 +6972,7 @@ void Worker::ProcessHwSampleCacheReference( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleCacheMiss( const QueueHwSample& ev )
 {
-    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.cacheMiss.push_back( time );
@@ -6980,7 +6980,7 @@ void Worker::ProcessHwSampleCacheMiss( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
 {
-    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.branchRetired.push_back( time );
@@ -6989,7 +6989,7 @@ void Worker::ProcessHwSampleBranchRetired( const QueueHwSample& ev )
 
 void Worker::ProcessHwSampleBranchMiss( const QueueHwSample& ev )
 {
-    const auto time = ev.time == 0 ? 0 : TscTime( ev.time - m_data.baseTime );
+    const auto time = ev.time == 0 ? 0 : TscTime( ev.time );
     auto it = m_data.hwSamples.find( ev.ip );
     if( it == m_data.hwSamples.end() ) it = m_data.hwSamples.emplace( ev.ip, HwSampleData {} ).first;
     it->second.branchMiss.push_back( time );
@@ -7023,7 +7023,7 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
 {
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    const auto t = TscTime( refTime - m_data.baseTime );
+    const auto t = TscTime( refTime );
     if( m_data.lastTime < t ) m_data.lastTime = t;
 
     uint64_t tid;
@@ -7071,7 +7071,7 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
 {
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    const auto t = TscTime( refTime - m_data.baseTime );
+    const auto t = TscTime( refTime );
     if( m_data.lastTime < t ) m_data.lastTime = t;
 
     auto td = RetrieveThread( ev.thread );

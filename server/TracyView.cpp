@@ -25,14 +25,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#ifdef __AVX2__
-#  ifdef _MSC_VER
-#    include <intrin.h>
-#  else
-#    include <x86intrin.h>
-#  endif
-#endif
-
 #include "tracy_pdqsort.h"
 #include "TracyColor.hpp"
 #include "TracyFileRead.hpp"

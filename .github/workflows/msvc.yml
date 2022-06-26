@@ -88,18 +88,3 @@ jobs:
       run: msbuild .\import-chrome\build\win32\import-chrome.vcxproj /property:Configuration=Release /property:Platform=x64
     - name: Library
       run: msbuild .\library\win32\TracyProfiler.vcxproj /property:Configuration=Release /property:Platform=x64
-    - name: Package binaries
-      run: |
-        mkdir bin
-        mkdir bin\dev
-        copy profiler\build\win32\x64\Release\Tracy.exe bin
-        copy update\build\win32\x64\Release\update.exe bin
-        copy capture\build\win32\x64\Release\capture.exe bin
-        copy import-chrome\build\win32\x64\Release\import-chrome.exe bin
-        copy csvexport\build\win32\x64\Release\csvexport.exe bin
-        copy library\win32\x64\Release\TracyProfiler.dll bin\dev
-        copy library\win32\x64\Release\TracyProfiler.lib bin\dev
-        7z a Tracy.7z bin
-    - uses: actions/upload-artifact@v2
-      with:
-        path: Tracy.7z

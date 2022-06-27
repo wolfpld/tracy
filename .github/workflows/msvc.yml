@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-with-vcpkg-integration:
 
     runs-on: windows-2022
 
@@ -53,3 +53,20 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         path: Tracy.7z
+
+  build-without-vcpkg-integration:
+
+    runs-on: windows-2022
+
+    env:
+      VCPKG_ROOT: ''
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: microsoft/setup-msbuild@v1.0.2
+    - name: Install vcpkg dependencies
+      run: vcpkg/install_vcpkg_dependencies.bat
+    - name: Profiler GUI Release
+      run: msbuild .\profiler\build\win32\Tracy.vcxproj /property:Configuration=Release /property:Platform=x64
+    - name: Capture utility Release
+      run: msbuild .\capture\build\win32\capture.vcxproj /property:Configuration=Release /property:Platform=x64

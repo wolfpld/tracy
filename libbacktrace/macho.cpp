@@ -1292,7 +1292,7 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   else
     {
       if (found_sym)
-	backtrace_atomic_store_pointer (&state->syminfo_fn, macho_syminfo);
+	backtrace_atomic_store_pointer (&state->syminfo_fn, &macho_syminfo);
       else
 	(void) __sync_bool_compare_and_swap (&state->syminfo_fn, NULL,
 					     macho_nosyms);
@@ -1338,7 +1338,7 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
   else
     {
       if (found_sym)
-	backtrace_atomic_store_pointer (&state->syminfo_fn, macho_syminfo);
+	backtrace_atomic_store_pointer (&state->syminfo_fn, &macho_syminfo);
       else
 	(void) __sync_bool_compare_and_swap (&state->syminfo_fn, NULL,
 					     macho_nosyms);

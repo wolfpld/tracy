@@ -221,8 +221,8 @@ static const ImVec4 SyntaxColorsDimmed[] = {
         const auto window_height = double( ImGui::GetWindowHeight() );
         const auto flipped_v0y = window_height - v0.y; //we transform into a y-is-up coordinate space to achieve upper-left to lower-right stripes. If we didn't, we would calculate values for lower-left to upper-right
 
-        const auto manhatten_distance = x0 + flipped_v0y;
-        const auto in_multiples_of_2_times_sw = int( manhatten_distance / ( sw*2 ) );
+        const auto manhattan_distance = x0 + flipped_v0y;
+        const auto in_multiples_of_2_times_sw = int( manhattan_distance / ( sw*2 ) );
 
         const auto floored_manhatten_distance = double( in_multiples_of_2_times_sw*sw*2 ); //floor in terms of 2 * stripe width
 

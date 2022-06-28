@@ -194,7 +194,7 @@ static const ImVec4 SyntaxColorsDimmed[] = {
     return res;
 }
 
-[[maybe_unused]] static void DrawStripedRect( ImDrawList* draw, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted )
+[[maybe_unused]] static void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted )
 {
     assert( x1 >= x0 );
     assert( y1 >= y0 );
@@ -208,6 +208,9 @@ static const ImVec4 SyntaxColorsDimmed[] = {
         x0 = std::max<double>( 0, x0 );
         x1 = std::min<double>( ww, x1 );
     }
+
+    x0 += wpos.x;
+    x1 += wpos.x;
 
     ImGui::PushClipRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ), true );
 

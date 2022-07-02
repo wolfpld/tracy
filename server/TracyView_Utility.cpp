@@ -1,4 +1,5 @@
 #include "TracyColor.hpp"
+#include "TracyPrint.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -723,6 +724,85 @@ int64_t View::AdjustGpuTime( int64_t time, int64_t begin, int drift )
     if( time < 0 ) return time;
     const auto t = time - begin;
     return time + t / 1000000000 * drift;
+}
+
+uint64_t View::GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) const
+{
+    if( fd.name == 0 )
+    {
+        if( offset == 0 )
+        {
+            return i;
+        }
+        else
+        {
+            return i + offset - 1;
+        }
+    }
+    else
+    {
+        return i + 1;
+    }
+}
+
+const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const
+{
+    const auto fnum = GetFrameNumber( fd, i, offset );
+    static char buf[1024];
+    if( fd.name == 0 )
+    {
+        if( i == 0 )
+        {
+            sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
+        }
+        else if( offset == 0 )
+        {
+            sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
+        }
+        else if( i == 1 )
+        {
+            sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
+        }
+        else
+        {
+            sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
+        }
+    }
+    else
+    {
+        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( fnum ), TimeToString( ftime ) );
+    }
+    return buf;
+}
+
+const char* View::ShortenNamespace( const char* name ) const
+{
+    if( m_namespace == Namespace::Full ) return name;
+    if( m_namespace == Namespace::Short )
+    {
+        auto ptr = name;
+        while( *ptr != '\0' ) ptr++;
+        while( ptr > name && *ptr != ':' ) ptr--;
+        if( *ptr == ':' ) ptr++;
+        return ptr;
+    }
+
+    static char buf[1024];
+    auto dst = buf;
+    auto ptr = name;
+    for(;;)
+    {
+        auto start = ptr;
+        while( *ptr != '\0' && *ptr != ':' ) ptr++;
+        if( *ptr == '\0' )
+        {
+            memcpy( dst, start, ptr - start + 1 );
+            return buf;
+        }
+        *dst++ = *start;
+        *dst++ = ':';
+        while( *ptr == ':' ) ptr++;
+    }
 }
 
 }

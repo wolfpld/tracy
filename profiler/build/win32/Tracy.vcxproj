@@ -146,6 +146,7 @@
     <ClCompile Include="..\..\..\server\TracyView_Navigation.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Options.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Playback.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_Plots.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Statistics.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_TraceInfo.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Utility.cpp" />

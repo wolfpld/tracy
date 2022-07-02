@@ -1,5 +1,7 @@
+#include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTexture.hpp"
 #include "TracyView.hpp"
 
 namespace tracy

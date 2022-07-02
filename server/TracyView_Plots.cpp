@@ -1,5 +1,6 @@
 #include <inttypes.h>
 
+#include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"

@@ -1,5 +1,6 @@
 #include <algorithm>
 
+#include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracySourceView.hpp"

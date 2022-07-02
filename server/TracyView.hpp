@@ -3,28 +3,24 @@
 
 #include <atomic>
 #include <functional>
-#include <map>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include "imgui.h"
+
 #include "TracyBadVersion.hpp"
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
 #include "TracyFileWrite.hpp"
-#include "TracyImGui.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracySourceContents.hpp"
-#include "TracyTexture.hpp"
 #include "TracyUserData.hpp"
 #include "TracyVector.hpp"
 #include "TracyViewData.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_robin_hood.h"
-
-struct ImVec2;
-struct ImFont;
 
 namespace tracy
 {

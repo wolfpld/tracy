@@ -2,37 +2,23 @@
 #  pragma warning( disable: 4267 )  // conversion from don't care to whatever, possible loss of data
 #endif
 
-#ifdef _WIN32
-#  include <malloc.h>
-#else
-#  include <alloca.h>
-#endif
-
 #ifdef __MINGW32__
 #  define __STDC_FORMAT_MACROS
 #endif
 #include <algorithm>
 #include <assert.h>
-#include <chrono>
 #include <inttypes.h>
-#include <limits>
 #include <math.h>
 #include <mutex>
-#include <numeric>
-#include <sstream>
-#include <stddef.h>
-#include <stdlib.h>
-#include <time.h>
 
-#include "tracy_pdqsort.h"
-#include "TracyColor.hpp"
+#include "imgui.h"
+
 #include "TracyFileRead.hpp"
 #include "TracyFilesystem.hpp"
-#include "TracyMouse.hpp"
-#include "TracyPopcnt.hpp"
+#include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
-#include "TracySort.hpp"
 #include "TracySourceView.hpp"
+#include "TracyTexture.hpp"
 #include "TracyView.hpp"
 #include "../common/TracyStackFrames.hpp"
 

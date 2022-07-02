@@ -2,7 +2,9 @@
 #  include "../nfd/nfd.h"
 #endif
 
+#include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTexture.hpp"
 #include "TracyView.hpp"
 
 namespace tracy

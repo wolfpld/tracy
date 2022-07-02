@@ -2,6 +2,7 @@
 #  include "../nfd/nfd.h"
 #endif
 
+#include "TracyImGui.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"

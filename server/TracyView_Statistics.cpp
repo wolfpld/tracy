@@ -1,4 +1,5 @@
 #include "TracyFilesystem.hpp"
+#include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 

@@ -1,6 +1,12 @@
 #include <assert.h>
 #include <algorithm>
 
+#ifdef _WIN32
+#  include <malloc.h>
+#else
+#  include <alloca.h>
+#endif
+
 #include "TracyPrint.hpp"
 #include "TracyImGui.hpp"
 

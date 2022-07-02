@@ -1,4 +1,7 @@
+#include <math.h>
+
 #include "TracyColor.hpp"
+#include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"

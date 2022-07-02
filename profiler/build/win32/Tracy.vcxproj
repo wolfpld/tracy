@@ -137,6 +137,7 @@
     <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp" />
     <ClCompile Include="..\..\..\server\TracyUserData.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_Callstack.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Compare.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_ContextSwitch.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_CpuData.cpp" />

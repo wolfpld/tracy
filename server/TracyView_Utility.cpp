@@ -718,4 +718,11 @@ const char* View::SourceSubstitution( const char* srcFile ) const
     return res.c_str();
 }
 
+int64_t View::AdjustGpuTime( int64_t time, int64_t begin, int drift )
+{
+    if( time < 0 ) return time;
+    const auto t = time - begin;
+    return time + t / 1000000000 * drift;
+}
+
 }

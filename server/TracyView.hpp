@@ -380,6 +380,7 @@ private:
 
     void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset );
     void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty );
+    static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift );
 
     Worker m_worker;
     std::string m_filename, m_filenameStaging;

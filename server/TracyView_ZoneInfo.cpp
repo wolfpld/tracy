@@ -1809,4 +1809,144 @@ void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
     }
 }
 
+void View::ZoneTooltip( const ZoneEvent& ev )
+{
+    const auto tid = GetZoneThread( ev );
+    auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
+    const auto end = m_worker.GetZoneEnd( ev );
+    const auto ztime = end - ev.Start();
+    const auto selftime = GetZoneSelfTime( ev );
+
+    ImGui::BeginTooltip();
+    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).name.Active() )
+    {
+        ImGui::TextUnformatted( m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
+    }
+    if( srcloc.name.active )
+    {
+        ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
+    }
+    ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
+    ImGui::Separator();
+    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+    SmallColorBox( GetThreadColor( tid, 0 ) );
+    ImGui::SameLine();
+    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
+    ImGui::Separator();
+    TextFocused( "Execution time:", TimeToString( ztime ) );
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreSourceLocationZonesReady() )
+    {
+        auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
+        if( zoneData.total > 0 )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+        }
+    }
+#endif
+    TextFocused( "Self time:", TimeToString( selftime ) );
+    if( ztime != 0 )
+    {
+        char buf[64];
+        PrintStringPercent( buf, 100.f * selftime / ztime );
+        ImGui::SameLine();
+        TextDisabledUnformatted( buf );
+    }
+    const auto ctx = m_worker.GetContextSwitchData( tid );
+    if( ctx )
+    {
+        int64_t time;
+        uint64_t cnt;
+        if( GetZoneRunningTime( ctx, ev, time, cnt ) )
+        {
+            TextFocused( "Running state time:", TimeToString( time ) );
+            if( ztime != 0 )
+            {
+                char buf[64];
+                PrintStringPercent( buf, 100.f * time / ztime );
+                ImGui::SameLine();
+                TextDisabledUnformatted( buf );
+            }
+            TextFocused( "Running state regions:", RealToString( cnt ) );
+        }
+    }
+    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
+    {
+        ImGui::NewLine();
+        TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+    }
+    ImGui::EndTooltip();
+}
+
+void View::ZoneTooltip( const GpuEvent& ev )
+{
+    const auto tid = GetZoneThread( ev );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
+    const auto end = m_worker.GetZoneEnd( ev );
+    const auto ztime = end - ev.GpuStart();
+    const auto selftime = GetZoneSelfTime( ev );
+
+    ImGui::BeginTooltip();
+    ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
+    ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
+    ImGui::Separator();
+    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+    SmallColorBox( GetThreadColor( tid, 0 ) );
+    ImGui::SameLine();
+    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+    if( m_worker.IsThreadFiber( tid ) )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+    }
+    ImGui::Separator();
+    TextFocused( "GPU execution time:", TimeToString( ztime ) );
+    TextFocused( "GPU self time:", TimeToString( selftime ) );
+    if( ztime != 0 )
+    {
+        char buf[64];
+        PrintStringPercent( buf, 100.f * selftime / ztime );
+        ImGui::SameLine();
+        TextDisabledUnformatted( buf );
+    }
+    TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
+    auto ctx = GetZoneCtx( ev );
+    if( !ctx )
+    {
+        TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
+    }
+    else
+    {
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
+        assert( td != ctx->threadData.end() );
+        int64_t begin;
+        if( td->second.timeline.is_magic() )
+        {
+            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+        }
+        else
+        {
+            begin = td->second.timeline.front()->GpuStart();
+        }
+        const auto drift = GpuDrift( ctx );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
+    }
+
+    ImGui::EndTooltip();
+}
+
 }

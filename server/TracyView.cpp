@@ -250,20 +250,6 @@ bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
     }
 }
 
-void View::DrawHelpMarker( const char* desc ) const
-{
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        const auto ty = ImGui::GetTextLineHeight();
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos( 450.0f * ty / 15.f );
-        ImGui::TextUnformatted( desc );
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-}
-
 static const char* CompressionName[] = {
     "LZ4",
     "LZ4 HC",

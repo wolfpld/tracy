@@ -267,6 +267,20 @@ static const ImVec4 SyntaxColorsDimmed[] = {
     ImGui::EndTooltip();
 }
 
+[[maybe_unused]] void tracy_force_inline DrawHelpMarker( const char* desc )
+{
+    TextDisabledUnformatted( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos( 450.0f * ty / 15.f );
+        ImGui::TextUnformatted( desc );
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
+
 }
 
 #endif

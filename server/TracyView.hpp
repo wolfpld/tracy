@@ -183,8 +183,6 @@ private:
 
     const char* ShortenNamespace( const char* name ) const;
 
-    void DrawHelpMarker( const char* desc ) const;
-
     bool DrawImpl();
     void DrawNotificationArea();
     bool DrawConnection();

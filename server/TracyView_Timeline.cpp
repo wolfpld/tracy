@@ -12,6 +12,149 @@ enum { MinVisSize = 3 };
 
 extern double s_time;
 
+void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
+{
+    assert( timespan > 0 );
+    auto& io = ImGui::GetIO();
+
+    const auto nspx = double( timespan ) / w;
+
+    if( IsMouseClicked( 0 ) )
+    {
+        m_highlight.active = true;
+        m_highlight.start = m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( IsMouseDragging( 0 ) )
+    {
+        m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( m_highlight.active )
+    {
+        if( ImGui::GetIO().KeyCtrl && m_highlight.start != m_highlight.end )
+        {
+            m_setRangePopup = RangeSlim { m_highlight.start, m_highlight.end, true };
+        }
+        m_highlight.active = false;
+    }
+
+    if( IsMouseClicked( 2 ) )
+    {
+        m_highlightZoom.active = true;
+        m_highlightZoom.start = m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( IsMouseDragging( 2 ) )
+    {
+        m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( m_highlightZoom.active )
+    {
+        if( m_highlightZoom.start != m_highlightZoom.end )
+        {
+            const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
+            const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
+
+            // ZoomToRange disables m_highlightZoom.active
+            if( io.KeyCtrl )
+            {
+                const auto tsOld = m_vd.zvEnd - m_vd.zvStart;
+                const auto tsNew = e - s;
+                const auto mul = double( tsOld ) / tsNew;
+                const auto left = s - m_vd.zvStart;
+                const auto right = m_vd.zvEnd - e;
+
+                auto start = m_vd.zvStart - left * mul;
+                auto end = m_vd.zvEnd + right * mul;
+                if( end - start > 1000ll * 1000 * 1000 * 60 * 60 * 24 * 10 )
+                {
+                    start = -1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                    end = 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                }
+
+                ZoomToRange( start, end );
+            }
+            else
+            {
+                ZoomToRange( s, e );
+            }
+        }
+        else
+        {
+            m_highlightZoom.active = false;
+        }
+    }
+
+    const auto hwheel_delta = io.MouseWheelH * 100.f;
+    if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
+    {
+        m_viewMode = ViewMode::Paused;
+        m_viewModeHeuristicTry = false;
+        m_zoomAnim.active = false;
+        if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
+        const auto delta = GetMouseDragDelta( 1 );
+        m_yDelta = delta.y;
+        const auto dpx = int64_t( (delta.x * nspx) + (hwheel_delta * nspx));
+        if( dpx != 0 )
+        {
+            m_vd.zvStart -= dpx;
+            m_vd.zvEnd -= dpx;
+            io.MouseClickedPos[1].x = io.MousePos.x;
+
+            if( m_vd.zvStart < -1000ll * 1000 * 1000 * 60 * 60 * 24 * 5 )
+            {
+                const auto range = m_vd.zvEnd - m_vd.zvStart;
+                m_vd.zvStart = -1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                m_vd.zvEnd = m_vd.zvStart + range;
+            }
+            else if( m_vd.zvEnd > 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5 )
+            {
+                const auto range = m_vd.zvEnd - m_vd.zvStart;
+                m_vd.zvEnd = 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                m_vd.zvStart = m_vd.zvEnd - range;
+            }
+        }
+    }
+
+    const auto wheel = io.MouseWheel;
+    if( wheel != 0 )
+    {
+        if( m_viewMode == ViewMode::LastFrames ) m_viewMode = ViewMode::LastRange;
+        const double mouse = io.MousePos.x - wpos.x;
+        const auto p = mouse / w;
+
+        int64_t t0, t1;
+        if( m_zoomAnim.active )
+        {
+            t0 = m_zoomAnim.start1;
+            t1 = m_zoomAnim.end1;
+        }
+        else
+        {
+            t0 = m_vd.zvStart;
+            t1 = m_vd.zvEnd;
+        }
+        const auto zoomSpan = t1 - t0;
+        const auto p1 = zoomSpan * p;
+        const auto p2 = zoomSpan - p1;
+
+        double mod = 0.25;
+        if( io.KeyCtrl ) mod = 0.05;
+        else if( io.KeyShift ) mod = 0.5;
+
+        if( wheel > 0 )
+        {
+            t0 += int64_t( p1 * mod );
+            t1 -= int64_t( p2 * mod );
+        }
+        else if( zoomSpan < 1000ll * 1000 * 1000 * 60 * 60 )
+        {
+            t0 -= std::max( int64_t( 1 ), int64_t( p1 * mod ) );
+            t1 += std::max( int64_t( 1 ), int64_t( p2 * mod ) );
+        }
+        ZoomToRange( t0, t1, !m_worker.IsConnected() || m_viewMode == ViewMode::Paused );
+    }
+}
+
+
 void View::DrawTimeline()
 {
     m_msgHighlight.Decay( nullptr );
@@ -59,7 +202,7 @@ void View::DrawTimeline()
             v->range.StartFrame();
             HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
         }
-        HandleZoneViewMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
+        HandleTimelineMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
     }
 
     {

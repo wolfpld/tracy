@@ -157,9 +157,11 @@
     <ClCompile Include="..\..\..\server\TracyView_Plots.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Samples.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Statistics.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_Timeline.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_TraceInfo.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Utility.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_ZoneInfo.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_ZoneTimeline.cpp" />
     <ClCompile Include="..\..\..\server\TracyWeb.cpp" />
     <ClCompile Include="..\..\..\server\TracyWorker.cpp" />
     <ClCompile Include="..\..\..\zstd\common\debug.c" />

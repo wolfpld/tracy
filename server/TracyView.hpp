@@ -29,6 +29,15 @@ struct ImFont;
 namespace tracy
 {
 
+constexpr const char* GpuContextNames[] = {
+    "Invalid",
+    "OpenGL",
+    "Vulkan",
+    "OpenCL",
+    "Direct3D 12",
+    "Direct3D 11"
+};
+
 struct MemoryPage;
 class FileRead;
 class SourceView;

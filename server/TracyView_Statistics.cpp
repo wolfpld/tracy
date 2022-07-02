@@ -864,7 +864,7 @@ void View::DrawStatistics()
             }
         }
 
-        DrawSamplesStatistics(data, timeRange, m_statAccumulationMode);
+        DrawSamplesStatistics( data, timeRange, m_statAccumulationMode );
     }
 #endif
     ImGui::End();

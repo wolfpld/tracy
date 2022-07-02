@@ -6800,7 +6800,7 @@ void View::DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tma
     draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), ty15 ), 0x66FFFFFF, range );
 }
 
-void View::DrawSamplesStatistics(Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode)
+void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, AccumulationMode accumulationMode )
 {
     static unordered_flat_map<uint64_t, SymList> inlineMap;
     assert( inlineMap.empty() );

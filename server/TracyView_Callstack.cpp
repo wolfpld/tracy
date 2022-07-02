@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <sstream>
 
 #include "../common/TracyStackFrames.hpp"
 #include "TracyImGui.hpp"

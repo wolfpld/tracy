@@ -1,3 +1,5 @@
+#include <numeric>
+
 #include "imgui.h"
 
 #include "../common/TracyStackFrames.hpp"

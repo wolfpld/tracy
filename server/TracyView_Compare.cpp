@@ -1,3 +1,5 @@
+#include <numeric>
+
 #ifndef TRACY_NO_FILESELECTOR
 #  include "../nfd/nfd.h"
 #endif

@@ -145,6 +145,7 @@
     <ClCompile Include="..\..\..\server\TracyView_CpuData.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FindZone.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FrameOverview.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_FrameTimeline.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FrameTree.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Locks.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Memory.cpp" />

@@ -155,6 +155,7 @@
     <ClCompile Include="..\..\..\server\TracyView_Options.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Playback.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Plots.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_Ranges.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Samples.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Statistics.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Timeline.cpp" />

@@ -22,7 +22,7 @@ static tracy_force_inline uint32_t GetColorMuted( uint32_t color, bool active )
     }
 }
 
-void View::DrawZoneFramesHeader()
+void View::DrawTimelineFramesHeader()
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
@@ -88,7 +88,7 @@ void View::DrawZoneFramesHeader()
     }
 }
 
-void View::DrawZoneFrames( const FrameData& frames )
+void View::DrawTimelineFrames( const FrameData& frames )
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );

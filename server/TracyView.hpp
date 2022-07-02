@@ -187,9 +187,9 @@ private:
     void DrawNotificationArea();
     bool DrawConnection();
     void DrawFrames();
-    void DrawZoneFramesHeader();
-    void DrawZoneFrames( const FrameData& frames );
-    void DrawZones();
+    void DrawTimelineFramesHeader();
+    void DrawTimelineFrames( const FrameData& frames );
+    void DrawTimeline();
     void DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleData>& sampleData, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber );
     void DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
 #ifndef TRACY_NO_STATISTICS

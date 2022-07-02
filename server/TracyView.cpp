@@ -980,7 +980,7 @@ bool View::DrawImpl()
 #endif
     }
 
-    DrawZones();
+    DrawTimeline();
 
     ImGui::End();
     ImGui::End();

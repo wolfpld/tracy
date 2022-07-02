@@ -12,7 +12,7 @@ enum { MinVisSize = 3 };
 
 extern double s_time;
 
-void View::DrawZones()
+void View::DrawTimeline()
 {
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
@@ -75,13 +75,13 @@ void View::DrawZones()
         }
     }
 
-    DrawZoneFramesHeader();
+    DrawTimelineFramesHeader();
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
     {
         if( Vis( fd ).visible )
         {
-            DrawZoneFrames( *fd );
+            DrawTimelineFrames( *fd );
         }
     }
 

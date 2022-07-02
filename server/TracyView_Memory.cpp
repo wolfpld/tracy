@@ -897,4 +897,26 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
     }
 }
 
+void View::DrawAllocList()
+{
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1100 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
+    std::vector<const MemEvent*> data;
+    auto basePtr = m_worker.GetMemoryNamed( m_memInfo.pool ).data.data();
+    data.reserve( m_memInfo.allocList.size() );
+    for( auto& idx : m_memInfo.allocList )
+    {
+        data.emplace_back( basePtr + idx );
+    }
+
+    TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
+    ListMemData( data, []( auto v ) {
+        ImGui::Text( "0x%" PRIx64, v->Ptr() );
+        }, "##allocations", -1, m_memInfo.pool );
+    ImGui::End();
+}
+
 }

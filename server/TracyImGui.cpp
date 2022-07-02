@@ -1,3 +1,6 @@
+#include <assert.h>
+#include <algorithm>
+
 #include "TracyPrint.hpp"
 #include "TracyImGui.hpp"
 

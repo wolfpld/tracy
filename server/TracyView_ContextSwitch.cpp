@@ -1,7 +1,13 @@
+#include <algorithm>
+
+#include "TracyMouse.hpp"
+#include "TracyPrint.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
 {
+
+enum { MinCtxSize = 4 };
 
 const char* View::DecodeContextSwitchReasonCode( uint8_t reason )
 {
@@ -124,6 +130,247 @@ const char* View::DecodeContextSwitchState( uint8_t state )
     case 109: return "(Zombie process)";
     case 110: return "(Parked)";
     default: return "";
+    }
+}
+
+void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleData>& sampleData, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber )
+{
+    const auto lineSize = 2 * GetScale();
+
+    auto& vec = ctx->v;
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+    if( it == vec.end() ) return;
+    if( it != vec.begin() ) --it;
+
+    auto citend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+    if( it == citend ) return;
+    if( citend != vec.end() ) ++citend;
+
+    const auto w = ImGui::GetContentRegionAvail().x - 1;
+    const auto ty = round( ImGui::GetTextLineHeight() * 0.75f );
+    const auto ty05 = round( ty * 0.5f );
+    auto draw = ImGui::GetWindowDrawList();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+
+    auto pit = citend;
+    double minpx = -10.0;
+
+    while( it < citend )
+    {
+        auto& ev = *it;
+        if( pit != citend )
+        {
+            const bool migration = pit->Cpu() != ev.Cpu();
+            const auto px0 = std::max( { ( pit->End() - m_vd.zvStart ) * pxns, -10.0, minpx } );
+            const auto pxw = ( ev.WakeupVal() - m_vd.zvStart ) * pxns;
+            const auto px1 = std::min( ( ev.Start() - m_vd.zvStart ) * pxns, w + 10.0 );
+            const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
+            if( m_vd.darkenContextSwitches )
+            {
+                draw->AddRectFilled( dpos + ImVec2( px0, offset + ty05 ), dpos + ImVec2( px1, endOffset ), 0x661C2321 );
+            }
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( std::min( pxw, w+10.0 ), offset + ty05 - 0.5f ), color, lineSize );
+            if( ev.WakeupVal() != ev.Start() )
+            {
+                DrawLine( draw, dpos + ImVec2( std::max( pxw, 10.0 ), offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF2280A0, lineSize );
+            }
+
+            if( hover )
+            {
+                bool tooltip = false;
+                if( ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( pxw, offset + ty ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    if( isFiber )
+                    {
+                        TextFocused( "Fiber is", "yielding" );
+                        TextFocused( "Yield time:", TimeToString( ev.Start() - pit->End() ) );
+                    }
+                    else
+                    {
+                        TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
+                        TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - pit->End() ) );
+                        if( migration )
+                        {
+                            TextFocused( "CPU:", RealToString( pit->Cpu() ) );
+                            ImGui::SameLine();
+                            TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu() ) );
+                        }
+                        else
+                        {
+                            TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                        }
+                        if( pit->Reason() != 100 )
+                        {
+                            TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
+                            ImGui::SameLine();
+                            ImGui::PushFont( m_smallFont );
+                            ImGui::AlignTextToFramePadding();
+                            TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
+                            ImGui::PopFont();
+                        }
+                        TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
+                        ImGui::SameLine();
+                        ImGui::PushFont( m_smallFont );
+                        ImGui::AlignTextToFramePadding();
+                        TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
+                        ImGui::PopFont();
+                    }
+                    tooltip = true;
+
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( pit->End(), ev.WakeupVal() );
+                    }
+                }
+                else if( ev.WakeupVal() != ev.Start() && ImGui::IsMouseHoveringRect( wpos + ImVec2( pxw, offset ), wpos + ImVec2( px1, offset + ty ) ) )
+                {
+                    assert( !isFiber );
+                    ImGui::BeginTooltip();
+                    TextFocused( "Thread is", "waking up" );
+                    TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.WakeupVal() ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( pit->End(), ev.WakeupVal() );
+                    }
+                    tooltip = true;
+                }
+                if( tooltip )
+                {
+                    if( !sampleData.empty() )
+                    {
+                        auto sdit = std::lower_bound( sampleData.begin(), sampleData.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                        bool found = sdit != sampleData.end() && sdit->time.Val() == ev.Start();
+                        if( !found && it != vec.begin() )
+                        {
+                            auto eit = it;
+                            --eit;
+                            sdit = std::lower_bound( sampleData.begin(), sampleData.end(), eit->End(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                            found = sdit != sampleData.end() && sdit->time.Val() == eit->End();
+                        }
+                        if( found )
+                        {
+                            ImGui::Separator();
+                            TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
+                            CallstackTooltipContents( sdit->callstack.Val() );
+                            if( ImGui::IsMouseClicked( 0 ) )
+                            {
+                                m_callstackInfoWindow = sdit->callstack.Val();
+                            }
+                        }
+                    }
+                    ImGui::EndTooltip();
+                }
+            }
+        }
+
+        const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
+        if( zsz < MinCtxSize )
+        {
+            const auto MinCtxNs = MinCtxSize * nspx;
+            int num = 0;
+            const auto px0 = std::max( ( ev.Start() - m_vd.zvStart ) * pxns, -10.0 );
+            auto px1ns = end - m_vd.zvStart;
+            auto rend = end;
+            auto nextTime = end + MinCtxNs;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
+                if( it == citend ) break;
+                const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
+                const auto nsnext = nend - m_vd.zvStart;
+                if( nsnext - px1ns >= MinCtxNs * 2 ) break;
+                px1ns = nsnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
+            if( num == 1 )
+            {
+                DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    if( isFiber )
+                    {
+                        const auto tid = m_worker.DecompressThread( ev.Thread() );
+                        TextFocused( "Fiber is", "running" );
+                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    }
+                    else
+                    {
+                        TextFocused( "Thread is", "running" );
+                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                    }
+                    ImGui::EndTooltip();
+
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( ev.Start(), rend );
+                    }
+                }
+            }
+            else
+            {
+                DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, minpx, ty/4, 0xFF888888, 1.5 );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
+                    TextFocused( "Number of running regions:", RealToString( num ) );
+                    TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
+                    ImGui::EndTooltip();
+
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( ev.Start(), rend );
+                    }
+                }
+            }
+            pit = it-1;
+        }
+        else
+        {
+            const auto px0 = std::max( { ( ev.Start() - m_vd.zvStart ) * pxns, -10.0, minpx } );
+            const auto px1 = std::min( ( end - m_vd.zvStart ) * pxns, w + 10.0 );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
+            {
+                ImGui::BeginTooltip();
+                if( isFiber )
+                {
+                    const auto tid = m_worker.DecompressThread( ev.Thread() );
+                    TextFocused( "Fiber is", "running" );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                }
+                else
+                {
+                    TextFocused( "Thread is", "running" );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                }
+                ImGui::EndTooltip();
+
+                if( IsMouseClicked( 2 ) )
+                {
+                    ZoomToRange( ev.Start(), end );
+                }
+            }
+            pit = it;
+            ++it;
+        }
     }
 }
 

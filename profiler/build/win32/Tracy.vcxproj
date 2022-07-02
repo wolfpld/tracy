@@ -121,6 +121,7 @@
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
     <ClCompile Include="..\..\..\server\TracyColor.cpp" />
     <ClCompile Include="..\..\..\server\TracyFilesystem.cpp" />
+    <ClCompile Include="..\..\..\server\TracyImGui.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyMicroArchitecture.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />

@@ -261,6 +261,9 @@
     <ClCompile Include="..\..\..\server\TracyView_ContextSwitch.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyImGui.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">

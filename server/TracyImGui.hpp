@@ -23,6 +23,8 @@ static inline ImVec2 operator-( const ImVec2& l, const ImVec2& r ) { return ImVe
 namespace tracy
 {
 
+void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f );
+
 static const ImVec4 SyntaxColors[] = {
     { 0.7f,  0.7f,  0.7f,  1 },    // default
     { 0.45f, 0.68f, 0.32f, 1 },    // comment

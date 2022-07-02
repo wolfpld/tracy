@@ -27,7 +27,7 @@ void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end,
 void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted );
 
 
-static const ImVec4 SyntaxColors[] = {
+static constexpr const ImVec4 SyntaxColors[] = {
     { 0.7f,  0.7f,  0.7f,  1 },    // default
     { 0.45f, 0.68f, 0.32f, 1 },    // comment
     { 0.72f, 0.37f, 0.12f, 1 },    // preprocessor
@@ -40,7 +40,7 @@ static const ImVec4 SyntaxColors[] = {
     { 0.21f, 0.69f, 0.89f, 1 },    // special
 };
 
-static const ImVec4 SyntaxColorsDimmed[] = {
+static constexpr const ImVec4 SyntaxColorsDimmed[] = {
     { 0.7f,  0.7f,  0.7f,  0.6f },    // default
     { 0.45f, 0.68f, 0.32f, 0.6f },    // comment
     { 0.72f, 0.37f, 0.12f, 0.6f },    // preprocessor

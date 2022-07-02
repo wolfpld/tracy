@@ -255,6 +255,12 @@
     <ClCompile Include="..\..\..\server\TracyView_Options.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyView_ZoneInfo.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyView_ContextSwitch.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">

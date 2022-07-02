@@ -391,6 +391,11 @@ private:
     void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty );
     static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift );
 
+    static const char* DecodeContextSwitchState( uint8_t state );
+    static const char* DecodeContextSwitchStateCode( uint8_t state );
+    static const char* DecodeContextSwitchReason( uint8_t reason );
+    static const char* DecodeContextSwitchReasonCode( uint8_t reason );
+
     Worker m_worker;
     std::string m_filename, m_filenameStaging;
     bool m_staticView;

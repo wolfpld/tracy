@@ -805,4 +805,42 @@ const char* View::ShortenNamespace( const char* name ) const
     }
 }
 
+const char* View::GetThreadContextData( uint64_t thread, bool& _local, bool& _untracked, const char*& program )
+{
+    static char buf[256];
+    const auto local = m_worker.IsThreadLocal( thread );
+    auto txt = local ? m_worker.GetThreadName( thread ) : m_worker.GetExternalName( thread ).first;
+    auto label = txt;
+    bool untracked = false;
+    if( !local )
+    {
+        if( m_worker.GetPid() == 0 )
+        {
+            untracked = strcmp( txt, m_worker.GetCaptureProgram().c_str() ) == 0;
+        }
+        else
+        {
+            const auto pid = m_worker.GetPidFromTid( thread );
+            untracked = pid == m_worker.GetPid();
+            if( untracked )
+            {
+                label = txt = m_worker.GetExternalName( thread ).second;
+            }
+            else
+            {
+                const auto ttxt = m_worker.GetExternalName( thread ).second;
+                if( strcmp( ttxt, "???" ) != 0 && strcmp( ttxt, txt ) != 0 )
+                {
+                    snprintf( buf, 256, "%s (%s)", txt, ttxt );
+                    label = buf;
+                }
+            }
+        }
+    }
+    _local = local;
+    _untracked = untracked;
+    program = txt;
+    return label;
+}
+
 }

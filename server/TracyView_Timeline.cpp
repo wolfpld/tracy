@@ -12,6 +12,47 @@ enum { MinVisSize = 3 };
 
 extern double s_time;
 
+float View::AdjustThreadPosition( View::VisData& vis, float wy, int& offset )
+{
+    if( vis.offset < offset )
+    {
+        vis.offset = offset;
+    }
+    else if( vis.offset > offset )
+    {
+        const auto diff = vis.offset - offset;
+        const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
+        offset = vis.offset = int( std::max<double>( vis.offset - move, offset ) );
+    }
+
+    return offset + wy;
+}
+
+void View::AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
+{
+    const auto h = offset - oldOffset;
+    if( vis.height > h )
+    {
+        vis.height = h;
+        offset = oldOffset + vis.height;
+    }
+    else if( vis.height < h )
+    {
+        if( m_firstFrame )
+        {
+            vis.height = h;
+            offset = oldOffset + h;
+        }
+        else
+        {
+            const auto diff = h - vis.height;
+            const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
+            vis.height = int( std::min<double>( vis.height + move, h ) );
+            offset = oldOffset + vis.height;
+        }
+    }
+}
+
 void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
 {
     assert( timespan > 0 );

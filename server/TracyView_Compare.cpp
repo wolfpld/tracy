@@ -1,4 +1,6 @@
-#include "../nfd/nfd.h"
+#ifndef TRACY_NO_FILESELECTOR
+#  include "../nfd/nfd.h"
+#endif
 
 #include "TracyFileRead.hpp"
 #include "TracyPrint.hpp"

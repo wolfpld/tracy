@@ -139,12 +139,14 @@
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Callstack.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Compare.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_ConnectionState.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_ContextSwitch.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_CpuData.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FindZone.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FrameOverview.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Memory.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Navigation.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_NotificationArea.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Options.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Playback.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Plots.cpp" />

@@ -147,6 +147,7 @@
     <ClCompile Include="..\..\..\server\TracyView_FrameOverview.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FrameTree.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Memory.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_Messages.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Navigation.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_NotificationArea.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Options.cpp" />

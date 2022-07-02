@@ -24,21 +24,21 @@ jobs:
       if: ${{ matrix.os == 'macOS-latest' }}
       run: brew install capstone tbb pkg-config glfw
     - name: Profiler GUI
-      run: make -j -C profiler/build/unix debug release
+      run: make -j`nproc` -C profiler/build/unix debug release
     - name: Update utility
-      run: make -j -C update/build/unix debug release
+      run: make -j`nproc` -C update/build/unix debug release
     - name: Capture utility
-      run: make -j -C capture/build/unix debug release
+      run: make -j`nproc` -C capture/build/unix debug release
     - name: Csvexport utility
-      run: make -j -C csvexport/build/unix debug release
+      run: make -j`nproc` -C csvexport/build/unix debug release
     - name: Import-chrome utility
-      run: make -j -C import-chrome/build/unix debug release
+      run: make -j`nproc` -C import-chrome/build/unix debug release
     - name: Library
-      run: make -j -C library/unix debug release
+      run: make -j`nproc` -C library/unix debug release
     - name: Test application
       run: |
-        make -j -C test
-        make -j -C test clean
-        make -j -C test TRACYFLAGS=-DTRACY_ON_DEMAND
-        make -j -C test clean
-        make -j -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"
+        make -j`nproc` -C test
+        make -j`nproc` -C test clean
+        make -j`nproc` -C test TRACYFLAGS=-DTRACY_ON_DEMAND
+        make -j`nproc` -C test clean
+        make -j`nproc` -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"

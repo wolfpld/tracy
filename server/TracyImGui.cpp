@@ -1,3 +1,4 @@
+#include "TracyPrint.hpp"
 #include "TracyImGui.hpp"
 
 namespace tracy
@@ -96,6 +97,25 @@ void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0
     }
 
     ImGui::PopClipRect();
+}
+
+void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty )
+{
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+    const auto ty15 = round( ty * 1.5f );
+    const auto mintxt = TimeToString( tmin );
+    const auto maxtxt = TimeToString( tmax );
+    const auto maxsz = ImGui::CalcTextSize( maxtxt ).x;
+    DrawLine( draw, dpos, dpos + ImVec2( 0, ty15 ), 0x66FFFFFF );
+    DrawLine( draw, dpos + ImVec2( w-1, 0 ), dpos + ImVec2( w-1, ty15 ), 0x66FFFFFF );
+    draw->AddText( wpos + ImVec2( 0, ty15 ), 0x66FFFFFF, mintxt );
+    draw->AddText( wpos + ImVec2( w-1-maxsz, ty15 ), 0x66FFFFFF, maxtxt );
+
+    char range[64];
+    sprintf( range, ICON_FA_LONG_ARROW_ALT_LEFT " %s " ICON_FA_LONG_ARROW_ALT_RIGHT, TimeToString( tmax - tmin ) );
+
+    const auto rsz = ImGui::CalcTextSize( range ).x;
+    draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), ty15 ), 0x66FFFFFF, range );
 }
 
 }

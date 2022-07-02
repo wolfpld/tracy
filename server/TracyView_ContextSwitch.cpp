@@ -374,4 +374,237 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
     }
 }
 
+void View::DrawWaitStacks()
+{
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Wait stacks", &m_showWaitStacks );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+#ifdef TRACY_NO_STATISTICS
+    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable wait stacks." );
+#else
+    uint64_t totalCount = 0;
+    unordered_flat_map<uint32_t, uint64_t> stacks;
+    for( auto& t : m_threadOrder )
+    {
+        if( WaitStackThread( t->id ) )
+        {
+            auto it = t->ctxSwitchSamples.begin();
+            auto end = t->ctxSwitchSamples.end();
+            if( m_waitStackRange.active )
+            {
+                it = std::lower_bound( it, end, m_waitStackRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+                end = std::lower_bound( it, end, m_waitStackRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            }
+            totalCount += std::distance( it, end );
+            while( it != end )
+            {
+                auto cs = it->callstack.Val();
+                auto cit = stacks.find( cs );
+                if( cit == stacks.end() )
+                {
+                    stacks.emplace( cs, 1 );
+                }
+                else
+                {
+                    cit->second++;
+                }
+                ++it;
+            }
+        }
+    }
+
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+    if( ImGui::RadioButton( ICON_FA_TABLE " List", m_waitStackMode == 0 ) ) m_waitStackMode = 0;
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::RadioButton( ICON_FA_TREE " Bottom-up tree", m_waitStackMode == 1 ) ) m_waitStackMode = 1;
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::RadioButton( ICON_FA_TREE " Top-down tree", m_waitStackMode == 2 ) ) m_waitStackMode = 2;
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( "Total wait stacks:", RealToString( m_worker.GetContextSwitchSampleCount() ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( "Selected:", RealToString( totalCount ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::Checkbox( "Limit range", &m_waitStackRange.active ) )
+    {
+        if( m_waitStackRange.active && m_waitStackRange.min == 0 && m_waitStackRange.max == 0 )
+        {
+            m_waitStackRange.min = m_vd.zvStart;
+            m_waitStackRange.max = m_vd.zvEnd;
+        }
+    }
+    if( m_waitStackRange.active )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+    }
+    ImGui::PopStyleVar();
+
+    bool threadsChanged = false;
+    auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
+    if( expand )
+    {
+        auto& crash = m_worker.GetCrashEvent();
+
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Select all" ) )
+        {
+            for( const auto& t : m_threadOrder )
+            {
+                WaitStackThread( t->id ) = true;
+            }
+            threadsChanged = true;
+        }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Unselect all" ) )
+        {
+            for( const auto& t : m_threadOrder )
+            {
+                WaitStackThread( t->id ) = false;
+            }
+            threadsChanged = true;
+        }
+
+        int idx = 0;
+        for( const auto& t : m_threadOrder )
+        {
+            if( t->ctxSwitchSamples.empty() ) continue;
+            ImGui::PushID( idx++ );
+            const auto threadColor = GetThreadColor( t->id, 0 );
+            SmallColorBox( threadColor );
+            ImGui::SameLine();
+            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &WaitStackThread( t->id ) ) )
+            {
+                threadsChanged = true;
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( t->ctxSwitchSamples.size() ) );
+            if( crash.thread == t->id )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+            }
+            if( t->isFiber )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+            }
+        }
+        ImGui::TreePop();
+    }
+    if( threadsChanged ) m_waitStack = 0;
+
+    ImGui::Separator();
+    ImGui::BeginChild( "##waitstacks" );
+    if( stacks.empty() )
+    {
+        ImGui::TextUnformatted( "No wait stacks to display." );
+    }
+    else
+    {
+        switch( m_waitStackMode )
+        {
+        case 0:
+        {
+            TextDisabledUnformatted( "Wait stack:" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+            {
+                m_waitStack = std::max( m_waitStack - 1, 0 );
+            }
+            ImGui::SameLine();
+            ImGui::Text( "%s / %s", RealToString( m_waitStack + 1 ), RealToString( stacks.size() ) );
+            if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "WaitStacksPopup" );
+            ImGui::SameLine();
+            if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+            {
+                m_waitStack = std::min<int>( m_waitStack + 1, stacks.size() - 1 );
+            }
+            if( ImGui::BeginPopup( "WaitStacksPopup" ) )
+            {
+                int sel = m_waitStack + 1;
+                ImGui::SetNextItemWidth( 120 * scale );
+                const bool clicked = ImGui::InputInt( "##waitStack", &sel, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+                if( clicked ) m_waitStack = std::min( std::max( sel, 1 ), int( stacks.size() ) ) - 1;
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            Vector<decltype(stacks.begin())> data;
+            data.reserve( stacks.size() );
+            for( auto it = stacks.begin(); it != stacks.end(); ++it ) data.push_back( it );
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
+            TextFocused( "Counts:", RealToString( data[m_waitStack]->second ) );
+            ImGui::SameLine();
+            char buf[64];
+            PrintStringPercent( buf, 100. * data[m_waitStack]->second / totalCount );
+            TextDisabledUnformatted( buf );
+            ImGui::Separator();
+            DrawCallstackTable( data[m_waitStack]->first, false );
+            break;
+        }
+        case 1:
+        {
+            SmallCheckbox( "Group by function name", &m_groupWaitStackBottomUp );
+            auto tree = GetCallstackFrameTreeBottomUp( stacks, m_groupCallstackTreeByNameBottomUp );
+            if( !tree.empty() )
+            {
+                int idx = 0;
+                DrawFrameTreeLevel( tree, idx );
+            }
+            else
+            {
+                TextDisabledUnformatted( "No call stacks to show" );
+            }
+            break;
+        }
+        case 2:
+        {
+            SmallCheckbox( "Group by function name", &m_groupWaitStackTopDown );
+            auto tree = GetCallstackFrameTreeTopDown( stacks, m_groupCallstackTreeByNameTopDown );
+            if( !tree.empty() )
+            {
+                int idx = 0;
+                DrawFrameTreeLevel( tree, idx );
+            }
+            else
+            {
+                TextDisabledUnformatted( "No call stacks to show" );
+            }
+            break;
+        }
+        default:
+            assert( false );
+            break;
+        }
+    }
+#endif
+    ImGui::EndChild();
+    ImGui::End();
+}
+
 }

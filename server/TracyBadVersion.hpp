@@ -1,8 +1,9 @@
 #ifndef __TRACYBADVERSION_HPP__
 #define __TRACYBADVERSION_HPP__
 
-#include <imgui.h>
 #include "../common/TracyForceInline.hpp"
+
+struct ImFont;
 
 namespace tracy
 {

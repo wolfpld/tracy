@@ -1,5 +1,7 @@
 #include <assert.h>
 
+#include "imgui.h"
+
 #include "IconsFontAwesome5.h"
 #include "TracyBadVersion.hpp"
 #include "TracyImGui.hpp"

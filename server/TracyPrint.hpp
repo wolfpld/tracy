@@ -131,6 +131,22 @@ const char* TimeToStringExact( int64_t ns );
 const char* MemSizeToString( int64_t val );
 const char* LocationToString( const char* fn, uint32_t line );
 
+static tracy_force_inline void PrintStringPercent( char* buf, const char* string, double percent )
+{
+    const auto ssz = strlen( string );
+    memcpy( buf, string, ssz );
+    memcpy( buf+ssz, " (", 2 );
+    auto end = PrintFloat( buf+ssz+2, buf+128, percent, 2 );
+    memcpy( end, "%)", 3 );
+}
+
+static tracy_force_inline void PrintStringPercent( char* buf, double percent )
+{
+    memcpy( buf, "(", 2 );
+    auto end = PrintFloat( buf+1, buf+64, percent, 2 );
+    memcpy( end, "%)", 3 );
+}
+
 }
 
 #endif

@@ -243,6 +243,9 @@
     <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
       <Filter>nfd</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyView_FindZone.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">

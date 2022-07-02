@@ -136,6 +136,7 @@
     <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp" />
     <ClCompile Include="..\..\..\server\TracyUserData.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_FindZone.cpp" />
     <ClCompile Include="..\..\..\server\TracyWeb.cpp" />
     <ClCompile Include="..\..\..\server\TracyWorker.cpp" />
     <ClCompile Include="..\..\..\zstd\common\debug.c" />

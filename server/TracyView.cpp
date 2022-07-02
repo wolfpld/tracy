@@ -14272,25 +14272,6 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
     }
 }
 
-void View::SetViewToLastFrames()
-{
-    const int total = m_worker.GetFrameCount( *m_frames );
-
-    m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
-    if( total == 1 )
-    {
-        m_vd.zvEnd = m_worker.GetLastTime();
-    }
-    else
-    {
-        m_vd.zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
-    }
-    if( m_vd.zvEnd == m_vd.zvStart )
-    {
-        m_vd.zvEnd = m_worker.GetLastTime();
-    }
-}
-
 void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before, int after, bool separateTooltip )
 {
     if( !filename ) return;

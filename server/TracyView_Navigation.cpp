@@ -130,4 +130,23 @@ void View::CenterAtTime( int64_t t )
     ZoomToRange( t - hr, t + hr );
 }
 
+void View::SetViewToLastFrames()
+{
+    const int total = m_worker.GetFrameCount( *m_frames );
+
+    m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
+    if( total == 1 )
+    {
+        m_vd.zvEnd = m_worker.GetLastTime();
+    }
+    else
+    {
+        m_vd.zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
+    }
+    if( m_vd.zvEnd == m_vd.zvStart )
+    {
+        m_vd.zvEnd = m_worker.GetLastTime();
+    }
+}
+
 }

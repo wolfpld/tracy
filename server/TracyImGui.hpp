@@ -159,6 +159,22 @@ static constexpr const ImVec4 SyntaxColorsDimmed[] = {
     draw->AddText( pos, color, text );
 }
 
+[[maybe_unused]] static inline void DrawTextSuperContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
+{
+    const auto scale = GetScale();
+    const auto s1 = round( scale );
+    const auto s2 = round( scale * 1.5f );
+    draw->AddText( pos + ImVec2( 0, s2 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( 0, -s2 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( s2, 0 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( -s2, 0 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( s1, s1 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( -s1, s1 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( -s1, -s1 ), 0xAA000000, text );
+    draw->AddText( pos + ImVec2( s1, -s1 ), 0xAA000000, text );
+    draw->AddText( pos, color, text );
+}
+
 [[maybe_unused]] static void SetButtonHighlightColor()
 {
     ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.35f, 0.6f, 0.6f ) );

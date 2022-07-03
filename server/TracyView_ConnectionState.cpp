@@ -10,12 +10,17 @@
 namespace tracy
 {
 
+constexpr size_t SendQueueEnableThreshold = 1000000;
+constexpr size_t SendQueueDisableThreshold = 500000;
+constexpr int64_t SendQueueTimespanMs = 10000;  // 10 s
+
 bool View::DrawConnection()
 {
     const auto scale = GetScale();
     const auto ty = ImGui::GetTextLineHeight();
     const auto cs = ty * 0.9f;
     const auto isConnected = m_worker.IsConnected();
+    size_t sendQueue;
 
     {
         std::shared_lock<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
@@ -42,7 +47,36 @@ bool View::DrawConnection()
         ImGui::SameLine();
         ImGui::Text( "%6.2f Mbps", mbps / m_worker.GetCompRatio() );
         TextFocused( "Data transferred:", MemSizeToString( m_worker.GetDataTransferred() ) );
-        TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize() ) );
+        sendQueue = m_worker.GetSendQueueSize();
+        TextFocused( "Query backlog:", RealToString( sendQueue ) );
+    }
+
+    if( !m_sendQueueWarning.enabled )
+    {
+        if( !m_sendQueueWarning.monitor )
+        {
+            if( sendQueue > SendQueueEnableThreshold )
+            {
+                m_sendQueueWarning.monitor = true;
+                m_sendQueueWarning.time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+            }
+        }
+        else
+        {
+            if( sendQueue < SendQueueDisableThreshold )
+            {
+                m_sendQueueWarning.monitor = false;
+            }
+            else
+            {
+                const auto t = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+                if( t - m_sendQueueWarning.time > SendQueueTimespanMs )
+                {
+                    m_sendQueueWarning.enabled = true;
+                    m_sendQueueWarning.monitor = false;
+                }
+            }
+        }
     }
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();

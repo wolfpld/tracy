@@ -805,6 +805,13 @@ private:
         bool groupTopDown = true;
     } m_sampleParents;
 
+    struct
+    {
+        bool enabled = false;
+        bool monitor = false;
+        int64_t time;
+    } m_sendQueueWarning;
+
     std::vector<std::pair<int, int>> m_cpuUsageBuf;
 };
 

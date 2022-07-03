@@ -6,7 +6,21 @@
  */
 
 #include <AppKit/AppKit.h>
+#include <Availability.h>
 #include "nfd.h"
+
+// At least one of NFD_NEEDS_ALLOWEDCONTENTTYPES and NFD_NEEDS_ALLOWEDFILETYPES will be defined
+#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && defined(__MAC_12_0) && \
+    __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_12_0
+#include <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+#define NFD_NEEDS_ALLOWEDCONTENTTYPES
+#if !defined(__MAC_OS_X_VERSION_MIN_ALLOWED) || !defined(__MAC_12_0) || \
+    __MAC_OS_X_VERSION_MIN_ALLOWED < __MAC_12_0
+#define NFD_NEEDS_ALLOWEDFILETYPES
+#endif
+#else
+#define NFD_NEEDS_ALLOWEDFILETYPES
+#endif
 
 static const char* g_errorstr = NULL;
 
@@ -26,10 +40,53 @@ static void NFDi_Free(void* ptr) {
     free(ptr);
 }
 
+#if defined(NFD_NEEDS_ALLOWEDCONTENTTYPES)
+// Returns an NSArray of UTType representing the content types.
+static NSArray* BuildAllowedContentTypes(const nfdnfilteritem_t* filterList,
+                                         nfdfiltersize_t filterCount) {
+    NSMutableArray* buildFilterList = [[NSMutableArray alloc] init];
+
+    for (nfdfiltersize_t filterIndex = 0; filterIndex != filterCount; ++filterIndex) {
+        // this is the spec to parse (we don't use the friendly name on OS X)
+        const nfdnchar_t* filterSpec = filterList[filterIndex].spec;
+
+        const nfdnchar_t* p_currentFilterBegin = filterSpec;
+        for (const nfdnchar_t* p_filterSpec = filterSpec; *p_filterSpec; ++p_filterSpec) {
+            if (*p_filterSpec == ',') {
+                // add the extension to the array
+                NSString* filterStr = [[NSString alloc]
+                    initWithBytes:(const void*)p_currentFilterBegin
+                           length:(sizeof(nfdnchar_t) * (p_filterSpec - p_currentFilterBegin))
+                         encoding:NSUTF8StringEncoding];
+                UTType* filterType = [UTType typeWithFilenameExtension:filterStr
+                                                      conformingToType:UTTypeData];
+                [filterStr release];
+                if (filterType) [buildFilterList addObject:filterType];
+                p_currentFilterBegin = p_filterSpec + 1;
+            }
+        }
+        // add the extension to the array
+        NSString* filterStr = [[NSString alloc] initWithUTF8String:p_currentFilterBegin];
+        UTType* filterType = [UTType typeWithFilenameExtension:filterStr
+                                              conformingToType:UTTypeData];
+        [filterStr release];
+        if (filterType) [buildFilterList addObject:filterType];
+    }
+
+    NSArray* returnArray = [NSArray arrayWithArray:buildFilterList];
+
+    [buildFilterList release];
+
+    assert([returnArray count] != 0);
+
+    return returnArray;
+}
+#endif
+
+#if defined(NFD_NEEDS_ALLOWEDFILETYPES)
+// Returns an NSArray of NSString representing the file types.
 static NSArray* BuildAllowedFileTypes(const nfdnfilteritem_t* filterList,
                                       nfdfiltersize_t filterCount) {
-    // Commas and semicolons are the same thing on this platform
-
     NSMutableArray* buildFilterList = [[NSMutableArray alloc] init];
 
     for (nfdfiltersize_t filterIndex = 0; filterIndex != filterCount; ++filterIndex) {
@@ -61,6 +118,7 @@ static NSArray* BuildAllowedFileTypes(const nfdnfilteritem_t* filterList,
 
     return returnArray;
 }
+#endif
 
 static void AddFilterListToDialog(NSSavePanel* dialog,
                                   const nfdnfilteritem_t* filterList,
@@ -71,11 +129,28 @@ static void AddFilterListToDialog(NSSavePanel* dialog,
 
     assert(filterList);
 
-    // make NSArray of file types
+// Make NSArray of file types and set it on the dialog
+// We use setAllowedFileTypes or setAllowedContentTypes depending on the OS version
+#if defined(NFD_NEEDS_ALLOWEDCONTENTTYPES) && defined(NFD_NEEDS_ALLOWEDFILETYPES)
+    // If both are needed, it means we have to do a runtime check
+    if (@available(macOS 12.0, *)) {
+        NSArray* allowedContentTypes = BuildAllowedContentTypes(filterList, filterCount);
+        [dialog setAllowedContentTypes:allowedContentTypes];
+    } else {
+        NSArray* allowedFileTypes = BuildAllowedFileTypes(filterList, filterCount);
+        // Unfortunately @available doesn't silence deprecation warnings so we need these pragmas
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        [dialog setAllowedFileTypes:allowedFileTypes];
+#pragma clang diagnostic pop
+    }
+#elif defined(NFD_NEEDS_ALLOWEDCONTENTTYPES)
+    NSArray* allowedContentTypes = BuildAllowedContentTypes(filterList, filterCount);
+    [dialog setAllowedContentTypes:allowedContentTypes];
+#else
     NSArray* allowedFileTypes = BuildAllowedFileTypes(filterList, filterCount);
-
-    // set it on the dialog
     [dialog setAllowedFileTypes:allowedFileTypes];
+#endif
 }
 
 static void SetDefaultPath(NSSavePanel* dialog, const nfdnchar_t* defaultPath) {

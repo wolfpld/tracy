@@ -10,6 +10,25 @@ extern double s_time;
 
 void View::DrawNotificationArea()
 {
+    if( m_sendQueueWarning.enabled )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0, 0.5, 1, 1 ), ICON_FA_SATELLITE_DISH );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "The client is slow to answer queries." );
+            ImGui::TextUnformatted( "" );
+            ImGui::TextWrapped( "Such behavior is typically caused by the symbol resolution performed client-side. If this is a problem, you may try the following options:" );
+            ImGui::BulletText( "Disable inline-symbol resolution with TRACY_NO_CALLSTACK_INLINES" );
+            ImGui::BulletText( "Disable call stack sampling with TRACY_NO_SAMPLING" );
+            ImGui::BulletText( "Change sampling frequency with TRACY_SAMPLING_HZ" );
+            ImGui::BulletText( "Disable symbol resolution altogether with TRACY_NO_CALLSTACK" );
+            ImGui::TextWrapped( "For more information, please refer to the manual." );
+            ImGui::EndTooltip();
+            if( IsMouseClicked( 0 ) ) m_sendQueueWarning.enabled = false;
+        }
+    }
     auto& io = ImGui::GetIO();
     const auto ty = ImGui::GetTextLineHeight();
     if( m_worker.IsConnected() )

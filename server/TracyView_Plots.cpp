@@ -351,15 +351,15 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 {
                     char tmp[64];
                     sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( rMax - rMin, v->format ), RealToString( num ) );
-                    draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
+                    draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0xFF226E6E, tmp );
                 }
                 auto tmp = FormatPlotValue( rMax, v->format );
-                DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset ), 0xFF44DDDD, tmp );
                 offset += PlotHeight - ty;
                 tmp = FormatPlotValue( rMin, v->format );
-                DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset ), 0xFF44DDDD, tmp );
 
-                DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
+                DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0xFF226E6E );
                 offset += ty;
             }
             else

@@ -25,7 +25,7 @@ else
 	UNAME := $(shell uname -s)
 	ifeq ($(UNAME),Darwin)
 		SRC3 += ../../../nfd/nfd_cocoa.m
-		LIBS +=  -framework CoreFoundation -framework AppKit
+		LIBS +=  -framework CoreFoundation -framework AppKit -framework UniformTypeIdentifiers
 	else
 		ifdef TRACY_GTK_FILESELECTOR
 			SRC += ../../../nfd/nfd_gtk.cpp

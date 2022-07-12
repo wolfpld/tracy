@@ -2,6 +2,17 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.x.x (xxxx-xx-xx)
+-------------------
+
+- Tracy macros now require to be terminated with a semicolon.
+- Some text labels in the user interface are now more easy to read.
+- The profiler will now instruct the user in the UI on what can be done, if
+  the send queue is slow to process (typically due to symbol resolution).
+- If a client with an incompatible protocol is discovered, Tracy will now
+  try to show which versions can be used to handle the connection.
+
+
 v0.8.2 (2022-06-28)
 -------------------
 

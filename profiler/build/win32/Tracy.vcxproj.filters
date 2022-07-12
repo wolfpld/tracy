@@ -324,6 +324,9 @@
     <ClCompile Include="..\..\..\server\TracyView_Ranges.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyProtoHistory.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -654,6 +657,9 @@
       <Filter>nfd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\tracy_xxhash.h">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyProtoHistory.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

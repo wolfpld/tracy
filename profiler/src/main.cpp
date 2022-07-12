@@ -39,6 +39,7 @@
 #include "../../server/TracyImGui.hpp"
 #include "../../server/TracyMouse.hpp"
 #include "../../server/TracyPrint.hpp"
+#include "../../server/TracyProtoHistory.hpp"
 #include "../../server/TracyStorage.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyView.hpp"
@@ -918,7 +919,21 @@ static void DrawContents()
                     {
                         tracy::TextColoredUnformatted( 0xFF0000FF, "Incompatible protocol!" );
                         ImGui::SameLine();
+                        auto ph = tracy::ProtocolHistory;
                         ImGui::TextDisabled( "(used: %i, required: %i)", v.second.protocolVersion, tracy::ProtocolVersion );
+                        while( ph->protocol && ph->protocol != v.second.protocolVersion ) ph++;
+                        if( ph->protocol )
+                        {
+                            if( ph->maxVer )
+                            {
+                                ImGui::TextDisabled( "Compatible Tracy versions: %i.%i.%i to %i.%i.%i", ph->minVer >> 16, ( ph->minVer >> 8 ) & 0xFF, ph->minVer & 0xFF, ph->maxVer >> 16, ( ph->maxVer >> 8 ) & 0xFF, ph->maxVer & 0xFF );
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled( "Compatible Tracy version: %i.%i.%i", ph->minVer >> 16, ( ph->minVer >> 8 ) & 0xFF, ph->minVer & 0xFF );
+                            }
+                        }
+                        ImGui::Separator();
                     }
                     tracy::TextFocused( "IP:", v.second.address.c_str() );
                     tracy::TextFocused( "Port:", portstr );

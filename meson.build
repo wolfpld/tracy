@@ -179,9 +179,23 @@ if tracy_shared_libs
   tracy_dep_compile_args += [ '-DTRACY_IMPORTS' ]
 endif
 
+tracy_dep_dependencies = []
+
+if not tracy_shared_libs
+  compiler = meson.get_compiler('cpp')
+
+  ws2_32 = compiler.find_library('ws2_32')
+  dbghelp = compiler.find_library('dbghelp')
+  advapi32 = compiler.find_library('advapi32')
+  user32 = compiler.find_library('user32')
+
+  tracy_dep_dependencies += [ ws2_32, dbghelp, advapi32, user32 ]
+endif
+
 tracy_dep = declare_dependency(
     compile_args        : tracy_dep_compile_args,
     link_with           : tracy,
+    dependencies        : tracy_dep_dependencies,
     include_directories : tracy_public_include_dirs)
 
 tracy_dep_dynamic = declare_dependency(

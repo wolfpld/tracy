@@ -278,9 +278,13 @@ struct QueueLockObtain
 
 struct QueueLockRelease
 {
-    uint32_t thread;
     uint32_t id;
     int64_t time;
+};
+
+struct QueueLockReleaseShared : public QueueLockRelease
+{
+    uint32_t thread;
 };
 
 struct QueueLockMark
@@ -670,6 +674,7 @@ struct QueueItem
         QueueLockWait lockWait;
         QueueLockObtain lockObtain;
         QueueLockRelease lockRelease;
+        QueueLockReleaseShared lockReleaseShared;
         QueueLockMark lockMark;
         QueueLockName lockName;
         QueueLockNameFat lockNameFat;
@@ -753,7 +758,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),        // shared
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),      // shared
-    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),     // shared
+    sizeof( QueueHeader ) + sizeof( QueueLockReleaseShared ),
     sizeof( QueueHeader ) + sizeof( QueueLockName ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // named

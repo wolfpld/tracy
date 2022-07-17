@@ -115,8 +115,9 @@ For Tracy to profile your application, you will need to integrate the profiler i
 
 \begin{itemize}
 \item Add the Tracy repository to your project directory.
-\item Add \texttt{project/tracy/TracyClient.cpp} as a source file.
-\item Add \texttt{project/tracy/Tracy.hpp} as an include file.
+\item Tracy source files in the \texttt{project/tracy/public} directory.
+\item Add \texttt{TracyClient.cpp} as a source file.
+\item Add \texttt{tracy/Tracy.hpp} as an include file.
 \item Include \texttt{Tracy.hpp} in every file you are interested in profiling.
 \item Define \texttt{TRACY\_ENABLE} for the \textbf{WHOLE} project.
 \item Add the macro \texttt{FrameMark} at the end of each frame loop.
@@ -387,7 +388,7 @@ You may also try your luck with Mingw, but don't get your hopes too high. This p
 \subsection{Initial client setup}
 \label{initialsetup}
 
-The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that you use git for version control). This way, it is straightforward to update Tracy to newly released versions. If that's not an option, copy all the Tracy checkout directory files to your project.
+The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that you use git for version control). This way, it is straightforward to update Tracy to newly released versions. If that's not an option, all the files required to integrate your application with Tracy are contained in the \texttt{public} directory.
 
 \begin{bclogo}[
 noborder=true,
@@ -404,7 +405,7 @@ You have two options when deciding on the Tracy Profiler version you want to use
 Do note that all bug fixes and pull requests are made against the \texttt{master} branch.
 \end{bclogo}
 
-With the source code included in your project, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project or makefile. You're done. Tracy is now integrated into the application.
+With the source code included in your project, add the \texttt{public/TracyClient.cpp} source file to the IDE project or makefile. You're done. Tracy is now integrated into the application.
 
 In the default configuration, Tracy is disabled. This way, you don't have to worry that the production builds will collect profiling data. To enable profiling, you will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define.
 
@@ -504,7 +505,7 @@ By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv
 
 Things are a bit different in projects that consist of multiple DLLs/shared objects. Compiling \texttt{TracyClient.cpp} into every DLL is not an option because this would result in several instances of Tracy objects lying around in the process. We instead need to pass their instances to the different DLLs to be reused there.
 
-For that, you need a \emph{profiler DLL} to which your executable and the other DLLs link. If that doesn't exist, you have to create one explicitly for Tracy\footnote{You may also look at the \texttt{library} directory in the profiler source tree.}. This library should contain the \texttt{tracy/TracyClient.cpp} source file. Link the executable and all DLLs you want to profile to this DLL.
+For that, you need a \emph{profiler DLL} to which your executable and the other DLLs link. If that doesn't exist, you have to create one explicitly for Tracy\footnote{You may also look at the \texttt{library} directory in the profiler source tree.}. This library should contain the \texttt{public/TracyClient.cpp} source file. Link the executable and all DLLs you want to profile to this DLL.
 
 If you are targeting Windows with Microsoft Visual Studio or MinGW, add the \texttt{TRACY\_IMPORTS} define to your application.
 
@@ -795,7 +796,7 @@ The graphic server application will adapt to the system DPI scaling. If for some
 \subsection{Naming threads}
 \label{namingthreads}
 
-Remember to set thread names for proper identification of threads. You should do so by using the function \texttt{tracy::SetThreadName(name)} exposed in the \texttt{tracy/common/TracySystem.hpp} header, as the system facilities typically have limited functionality.
+Remember to set thread names for proper identification of threads. You should do so by using the function \texttt{tracy::SetThreadName(name)} exposed in the \texttt{public/common/TracySystem.hpp} header, as the system facilities typically have limited functionality.
 
 Tracy will try to capture thread names through operating system data if context switch capture is active. However, this is only a fallback mechanism, and it shouldn't be relied upon.
 
@@ -856,7 +857,7 @@ VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes 
 \section{Client markup}
 \label{client}
 
-With the steps mentioned above, you will be able to connect to the profiled program, but there probably won't be any data collection performed\footnote{With some small exceptions, see section~\ref{automated}.}. Unless you're able to perform automatic call stack sampling (see chapter~\ref{sampling}), you will have to instrument the application manually. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
+With the steps mentioned above, you will be able to connect to the profiled program, but there probably won't be any data collection performed\footnote{With some small exceptions, see section~\ref{automated}.}. Unless you're able to perform automatic call stack sampling (see chapter~\ref{sampling}), you will have to instrument the application manually. All the user-facing interface is contained in the \texttt{public/tracy/Tracy.hpp} header file\footnote{You should add either \texttt{public} or \texttt{public/tracy} directory from the Tracy root to the include directories list in your project. Then you will be able to \texttt{\#include "tracy/Tracy.hpp"} or \texttt{\#include "Tracy.hpp"}, respectively.}.
 
 Manual instrumentation is best started with adding markup to the application's main loop, along with a few functions that the loop calls. Such an approach will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack. Alternatively, automated sampling might guide you more quickly to places of interest.
 
@@ -1435,7 +1436,7 @@ If you experience crippling problems while profiling the GPU, you might get bett
 
 \subsubsection{OpenGL}
 
-You will need to include the \texttt{tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically, you will only have one context). Tracy expects no more than one context per thread and no context migration. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
+You will need to include the \texttt{public/tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically, you will only have one context). Tracy expects no more than one context per thread and no context migration. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
 
 To mark a GPU zone use the \texttt{TracyGpuZone(name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyGpuZoneC(name, color)} to specify zone color.
 
@@ -1455,7 +1456,7 @@ logo=\bcattention
 
 \subsubsection{Vulkan}
 
-Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts. To set a custom name for the context, use the \texttt{TracyVkContextName(ctx, name, size)} macro.
+Similarly, for Vulkan support you should include the \texttt{public/tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts. To set a custom name for the context, use the \texttt{TracyVkContextName(ctx, name, size)} macro.
 
 The physical device, logical device, queue, and command buffer must relate to each other. The queue must support graphics or compute operations. The command buffer must be in the initial state and be able to be reset. The profiler will rerecord and submit it to the queue multiple times, and it will be in the executable state on exit from the initialization function.
 
@@ -1471,7 +1472,7 @@ To enable calibrated context, replace the macro \texttt{TracyVkContext} with \te
 
 \subsubsection{Direct3D 11}
 
-To enable Direct3D 11 support, include the \texttt{tracy/TracyD3D11.hpp} header file, and create a \texttt{TracyD3D11Ctx} object with the \texttt{TracyD3D11Context(device, devicecontext)} macro. The object should later be cleaned up with the \texttt{TracyD3D11Destroy} macro. Tracy does not support D3D11 command lists. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
+To enable Direct3D 11 support, include the \texttt{public/tracy/TracyD3D11.hpp} header file, and create a \texttt{TracyD3D11Ctx} object with the \texttt{TracyD3D11Context(device, devicecontext)} macro. The object should later be cleaned up with the \texttt{TracyD3D11Destroy} macro. Tracy does not support D3D11 command lists. To set a custom name for the context, use the \texttt{TracyGpuContextName(name, size)} macro.
 
 To mark a GPU zone, use the \texttt{TracyD3D11Zone(name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyD3D11ZoneC(name, color)} to specify zone color.
 
@@ -1479,7 +1480,7 @@ You also need to periodically collect the GPU events using the \texttt{TracyD3D1
 
 \subsubsection{Direct3D 12}
 
-To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type. To set a custom name for the context, use the \texttt{TracyD3D12ContextName(ctx, name, size)} macro.
+To enable Direct3D 12 support, include the \texttt{public/tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type. To set a custom name for the context, use the \texttt{TracyD3D12ContextName(ctx, name, size)} macro.
 
 The queue must have been created through the specified device, however, a command list is not needed for this stage.
 
@@ -1493,7 +1494,7 @@ Direct3D 12 contexts are always calibrated.
 
 \subsubsection{OpenCL}
 
-OpenCL support is achieved by including the \texttt{tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application. To set a custom name for the context, use the \texttt{TracyCLContextName(ctx, name, size)} macro.
+OpenCL support is achieved by including the \texttt{public/tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application. To set a custom name for the context, use the \texttt{TracyCLContextName(ctx, name, size)} macro.
 
 To mark an OpenCL zone one must make sure that a valid OpenCL \texttt{cl\_event} object is available. The event will be the object that Tracy will use to query profiling information from the OpenCL driver. For this to work, you must create all OpenCL queues with the \texttt{CL\_QUEUE\_PROFILING\_ENABLE} property.
 
@@ -1702,7 +1703,7 @@ Inline frames retrieval on Windows can be multiple orders of magnitude slower th
 
 \subsection{Lua support}
 
-To profile Lua code using Tracy, include the \texttt{tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.
+To profile Lua code using Tracy, include the \texttt{public/tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.
 
 In the Lua code, add \texttt{tracy.ZoneBegin()} and \texttt{tracy.ZoneEnd()} calls to mark execution zones. You need to call the \texttt{ZoneEnd} method because there is no automatic destruction of variables in Lua, and we don't know when the garbage collection will be performed. \emph{Double check if you have included all return paths!}
 
@@ -1776,7 +1777,7 @@ Even if Tracy is disabled, you still have to pay the no-op function call cost. T
 \subsection{C API}
 \label{capi}
 
-To profile code written in C programming language, you will need to include the \texttt{tracy/TracyC.h} header file, which exposes the C API.
+To profile code written in C programming language, you will need to include the \texttt{public/tracy/TracyC.h} header file, which exposes the C API.
 
 At the moment, there's no support for C API based markup of locks, GPU zones, or Lua.
 

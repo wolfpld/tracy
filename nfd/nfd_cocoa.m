@@ -9,17 +9,23 @@
 #include <Availability.h>
 #include "nfd.h"
 
-// At least one of NFD_NEEDS_ALLOWEDCONTENTTYPES and NFD_NEEDS_ALLOWEDFILETYPES will be defined
-#if defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && defined(__MAC_12_0) && \
-    __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_12_0
-#include <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
-#define NFD_NEEDS_ALLOWEDCONTENTTYPES
-#if !defined(__MAC_OS_X_VERSION_MIN_ALLOWED) || !defined(__MAC_12_0) || \
-    __MAC_OS_X_VERSION_MIN_ALLOWED < __MAC_12_0
-#define NFD_NEEDS_ALLOWEDFILETYPES
-#endif
+// MacOS is deprecating the allowedFileTypes property in favour of allowedContentTypes, so we have
+// to introduce this breaking change.  Define NFD_MACOS_ALLOWEDCONTENTTYPES to 1 to have it set the
+// allowedContentTypes property of the SavePanel or OpenPanel. Define
+// NFD_MACOS_ALLOWEDCONTENTTYPES to 0 to have it set the allowedFileTypes property of the SavePanel
+// or OpenPanel.  If NFD_MACOS_ALLOWEDCONTENTTYPES is undefined, then it will set it to 1 if
+// __MAC_OS_X_VERSION_MIN_REQUIRED >= 11.0, and 0 otherwise.
+#if !defined(NFD_MACOS_ALLOWEDCONTENTTYPES)
+#if !defined(__MAC_OS_X_VERSION_MIN_REQUIRED) || !defined(__MAC_11_0) || \
+    __MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_11_0
+#define NFD_MACOS_ALLOWEDCONTENTTYPES 0
 #else
-#define NFD_NEEDS_ALLOWEDFILETYPES
+#define NFD_MACOS_ALLOWEDCONTENTTYPES 1
+#endif
+#endif
+
+#if NFD_MACOS_ALLOWEDCONTENTTYPES == 1
+#include <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #endif
 
 static const char* g_errorstr = NULL;
@@ -40,7 +46,7 @@ static void NFDi_Free(void* ptr) {
     free(ptr);
 }
 
-#if defined(NFD_NEEDS_ALLOWEDCONTENTTYPES)
+#if NFD_MACOS_ALLOWEDCONTENTTYPES == 1
 // Returns an NSArray of UTType representing the content types.
 static NSArray* BuildAllowedContentTypes(const nfdnfilteritem_t* filterList,
                                          nfdfiltersize_t filterCount) {
@@ -81,9 +87,7 @@ static NSArray* BuildAllowedContentTypes(const nfdnfilteritem_t* filterList,
 
     return returnArray;
 }
-#endif
-
-#if defined(NFD_NEEDS_ALLOWEDFILETYPES)
+#else
 // Returns an NSArray of NSString representing the file types.
 static NSArray* BuildAllowedFileTypes(const nfdnfilteritem_t* filterList,
                                       nfdfiltersize_t filterCount) {
@@ -130,21 +134,8 @@ static void AddFilterListToDialog(NSSavePanel* dialog,
     assert(filterList);
 
 // Make NSArray of file types and set it on the dialog
-// We use setAllowedFileTypes or setAllowedContentTypes depending on the OS version
-#if defined(NFD_NEEDS_ALLOWEDCONTENTTYPES) && defined(NFD_NEEDS_ALLOWEDFILETYPES)
-    // If both are needed, it means we have to do a runtime check
-    if (@available(macOS 12.0, *)) {
-        NSArray* allowedContentTypes = BuildAllowedContentTypes(filterList, filterCount);
-        [dialog setAllowedContentTypes:allowedContentTypes];
-    } else {
-        NSArray* allowedFileTypes = BuildAllowedFileTypes(filterList, filterCount);
-        // Unfortunately @available doesn't silence deprecation warnings so we need these pragmas
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        [dialog setAllowedFileTypes:allowedFileTypes];
-#pragma clang diagnostic pop
-    }
-#elif defined(NFD_NEEDS_ALLOWEDCONTENTTYPES)
+// We use setAllowedFileTypes or setAllowedContentTypes depending on the deployment target
+#if NFD_MACOS_ALLOWEDCONTENTTYPES == 1
     NSArray* allowedContentTypes = BuildAllowedContentTypes(filterList, filterCount);
     [dialog setAllowedContentTypes:allowedContentTypes];
 #else

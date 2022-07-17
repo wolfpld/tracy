@@ -11,7 +11,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 #include "IconsFontAwesome5.h"
 
 #if !IMGUI_DEFINE_MATH_OPERATORS

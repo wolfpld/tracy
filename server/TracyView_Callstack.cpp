@@ -1,7 +1,7 @@
 #include <inttypes.h>
 #include <sstream>
 
-#include "../common/TracyStackFrames.hpp"
+#include "../public/common/TracyStackFrames.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"

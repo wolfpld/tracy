@@ -14,7 +14,7 @@
     <ClCompile Include="..\Source\Maths.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\TracyClient.cpp" />
+    <ClCompile Include="..\..\..\public\TracyClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">

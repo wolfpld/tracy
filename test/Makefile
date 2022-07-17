@@ -3,14 +3,14 @@ TRACYFLAGS :=
 CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS)
 CXXFLAGS := $(CFLAGS) -std=gnu++11
 DEFINES +=
-INCLUDES :=
+INCLUDES := -I../public/tracy
 LIBS := -lpthread -ldl
 LDFLAGS := -rdynamic
 IMAGE := tracy_test
 
 SRC := \
     test.cpp \
-    ../TracyClient.cpp
+    ../public/TracyClient.cpp
 
 OBJ := $(SRC:%.cpp=%.o)
 

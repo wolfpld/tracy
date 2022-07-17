@@ -30,7 +30,7 @@
 #define STBI_ONLY_PNG
 #include "stb_image.h"
 
-#include "../../common/TracyProtocol.hpp"
+#include "../../public/common/TracyProtocol.hpp"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyBadVersion.hpp"

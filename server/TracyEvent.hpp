@@ -12,8 +12,8 @@
 #include "TracySortedVector.hpp"
 #include "TracyVector.hpp"
 #include "tracy_robin_hood.h"
-#include "../common/TracyForceInline.hpp"
-#include "../common/TracyQueue.hpp"
+#include "../public/common/TracyForceInline.hpp"
+#include "../public/common/TracyQueue.hpp"
 
 namespace tracy
 {

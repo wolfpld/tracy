@@ -15,8 +15,8 @@
 #include "CompiledVertexShader.h"
 #include "CompiledPixelShader.h"
 
-#include "../../../Tracy.hpp"
-#include "../../../TracyD3D11.hpp"
+#include "../../../public/tracy/Tracy.hpp"
+#include "../../../public/tracy/TracyD3D11.hpp"
 
 static HINSTANCE g_HInstance;
 static HWND g_Wnd;

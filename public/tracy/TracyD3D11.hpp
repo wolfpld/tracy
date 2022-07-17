@@ -37,10 +37,10 @@ using TracyD3D11Ctx = void*;
 #include <stdlib.h>
 
 #include "Tracy.hpp"
-#include "client/TracyProfiler.hpp"
-#include "client/TracyCallstack.hpp"
-#include "common/TracyAlign.hpp"
-#include "common/TracyAlloc.hpp"
+#include "../client/TracyProfiler.hpp"
+#include "../client/TracyCallstack.hpp"
+#include "../common/TracyAlign.hpp"
+#include "../common/TracyAlloc.hpp"
 
 namespace tracy
 {

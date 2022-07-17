@@ -30,23 +30,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\common\TracySocket.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\common\TracySystem.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\server\TracyMemory.cpp">
       <Filter>server</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyWorker.cpp">
       <Filter>server</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
-      <Filter>common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyPrint.cpp">
       <Filter>server</Filter>
@@ -156,35 +144,23 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c">
       <Filter>zstd\dictBuilder</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\common\TracyStackFrames.cpp">
+    <ClCompile Include="..\..\..\public\common\tracy_lz4.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\public\common\tracy_lz4hc.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\public\common\TracySocket.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\public\common\TracyStackFrames.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\public\common\TracySystem.cpp">
       <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyAlloc.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyColor.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyForceInline.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyProtocol.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyQueue.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracySocket.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracySystem.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp">
       <Filter>server</Filter>
     </ClInclude>
@@ -208,12 +184,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyWorker.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyAlign.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp">
-      <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyPrint.hpp">
       <Filter>server</Filter>
@@ -341,14 +311,56 @@
     <ClInclude Include="..\..\..\zstd\dictBuilder\divsufsort.h">
       <Filter>zstd\dictBuilder</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\common\TracyStackFrames.hpp">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\zstd\common\portability_macros.h">
       <Filter>zstd\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\zstd\compress\clevels.h">
       <Filter>zstd\compress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\tracy_lz4.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\tracy_lz4hc.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyAlign.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyAlloc.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyApi.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyColor.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyForceInline.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyMutex.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyProtocol.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyQueue.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracySocket.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyStackFrames.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracySystem.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyUwp.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyYield.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

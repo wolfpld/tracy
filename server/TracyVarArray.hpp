@@ -7,7 +7,7 @@
 #define XXH_INLINE_ALL
 #include "tracy_xxhash.h"
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 #include "TracyCharUtil.hpp"
 #include "TracyEvent.hpp"
 #include "TracyMemory.hpp"

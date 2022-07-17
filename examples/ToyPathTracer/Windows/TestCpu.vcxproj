@@ -161,7 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\TracyClient.cpp" />
+    <ClCompile Include="..\..\..\public\TracyClient.cpp" />
     <ClCompile Include="..\Source\enkiTS\TaskScheduler.cpp" />
     <ClCompile Include="..\Source\enkiTS\TaskScheduler_c.cpp" />
     <ClCompile Include="..\Source\Maths.cpp" />

@@ -16,8 +16,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "../../common/TracyProtocol.hpp"
-#include "../../common/TracyStackFrames.hpp"
+#include "../../public/common/TracyProtocol.hpp"
+#include "../../public/common/TracyStackFrames.hpp"
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyPrint.hpp"

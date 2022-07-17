@@ -8,7 +8,7 @@
 #endif
 #include <atomic>
 
-#include "../../../Tracy.hpp"
+#include "../../../public/tracy/Tracy.hpp"
 
 // 46 spheres (2 emissive) when enabled; 9 spheres (1 emissive) when disabled
 #define DO_BIG_SCENE 1

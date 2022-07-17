@@ -2,7 +2,7 @@
 
 #include "imgui.h"
 
-#include "../common/TracyStackFrames.hpp"
+#include "../public/common/TracyStackFrames.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"

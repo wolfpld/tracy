@@ -40,9 +40,9 @@ using TracyCLCtx = void*;
 #include <sstream>
 
 #include "Tracy.hpp"
-#include "client/TracyCallstack.hpp"
-#include "client/TracyProfiler.hpp"
-#include "common/TracyAlloc.hpp"
+#include "../client/TracyCallstack.hpp"
+#include "../client/TracyProfiler.hpp"
+#include "../common/TracyAlloc.hpp"
 
 #define TRACY_CL_TO_STRING_INDIRECT(T) #T
 #define TRACY_CL_TO_STRING(T) TRACY_CL_TO_STRING_INDIRECT(T)

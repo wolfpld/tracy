@@ -7,6 +7,6 @@ PROJECT := libtracy
 IMAGE := $(PROJECT)-$(BUILD).so
 SHARED_LIBRARY := yes
 
-SRC := ../../TracyClient.cpp
+SRC := ../../public/TracyClient.cpp
 
 include ../../common/unix.mk

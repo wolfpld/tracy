@@ -24,10 +24,10 @@
 #define ZDICT_STATIC_LINKING_ONLY
 #include "../zstd/zdict.h"
 
-#include "../common/TracyProtocol.hpp"
-#include "../common/TracySystem.hpp"
-#include "../common/TracyYield.hpp"
-#include "../common/TracyStackFrames.hpp"
+#include "../public/common/TracyProtocol.hpp"
+#include "../public/common/TracySystem.hpp"
+#include "../public/common/TracyYield.hpp"
+#include "../public/common/TracyStackFrames.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"

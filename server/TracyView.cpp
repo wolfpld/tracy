@@ -20,7 +20,7 @@
 #include "TracySourceView.hpp"
 #include "TracyTexture.hpp"
 #include "TracyView.hpp"
-#include "../common/TracyStackFrames.hpp"
+#include "../public/common/TracyStackFrames.hpp"
 
 #include "imgui_internal.h"
 

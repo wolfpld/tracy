@@ -36,8 +36,8 @@ using TracyVkCtx = void*;
 #include <assert.h>
 #include <stdlib.h>
 #include "Tracy.hpp"
-#include "client/TracyProfiler.hpp"
-#include "client/TracyCallstack.hpp"
+#include "../client/TracyProfiler.hpp"
+#include "../client/TracyCallstack.hpp"
 
 namespace tracy
 {

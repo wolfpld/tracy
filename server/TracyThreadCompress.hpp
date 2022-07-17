@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 #include "tracy_robin_hood.h"
 #include "TracyVector.hpp"
 

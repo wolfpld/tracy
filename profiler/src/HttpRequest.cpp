@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/TracySocket.hpp"
+#include "../public/common/TracySocket.hpp"
 #include "../server/TracyVersion.hpp"
 #include "HttpRequest.hpp"
 

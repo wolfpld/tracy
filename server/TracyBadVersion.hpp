@@ -1,7 +1,7 @@
 #ifndef __TRACYBADVERSION_HPP__
 #define __TRACYBADVERSION_HPP__
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 
 struct ImFont;
 

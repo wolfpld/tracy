@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <type_traits>
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
 #include "TracyPopcnt.hpp"
 #include "TracyShortPtr.hpp"

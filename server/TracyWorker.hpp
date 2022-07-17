@@ -13,10 +13,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../common/TracyForceInline.hpp"
-#include "../common/TracyQueue.hpp"
-#include "../common/TracyProtocol.hpp"
-#include "../common/TracySocket.hpp"
+#include "../public/common/TracyForceInline.hpp"
+#include "../public/common/TracyQueue.hpp"
+#include "../public/common/TracyProtocol.hpp"
+#include "../public/common/TracySocket.hpp"
 #include "tracy_robin_hood.h"
 #include "TracyEvent.hpp"
 #include "TracyShortPtr.hpp"

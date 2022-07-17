@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "TracyMemory.hpp"
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 
 namespace tracy
 {

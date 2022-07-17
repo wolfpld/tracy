@@ -36,10 +36,10 @@ public:
 #include <stdlib.h>
 
 #include "Tracy.hpp"
-#include "client/TracyProfiler.hpp"
-#include "client/TracyCallstack.hpp"
-#include "common/TracyAlign.hpp"
-#include "common/TracyAlloc.hpp"
+#include "../client/TracyProfiler.hpp"
+#include "../client/TracyCallstack.hpp"
+#include "../common/TracyAlign.hpp"
+#include "../common/TracyAlloc.hpp"
 
 #if !defined GL_TIMESTAMP && defined GL_TIMESTAMP_EXT
 #  define GL_TIMESTAMP GL_TIMESTAMP_EXT

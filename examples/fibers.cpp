@@ -1,10 +1,10 @@
-// g++ fibers.cpp ../TracyClient.cpp -DTRACY_ENABLE -DTRACY_FIBERS -lpthread -ldl
+// g++ fibers.cpp ../public/TracyClient.cpp -I../public/tracy -DTRACY_ENABLE -DTRACY_FIBERS -lpthread -ldl
 
 #include <thread>
 #include <unistd.h>
 
-#include "../Tracy.hpp"
-#include "../TracyC.h"
+#include "Tracy.hpp"
+#include "TracyC.h"
 
 const char* fiber = "job1";
 TracyCZoneCtx zone;

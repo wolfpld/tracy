@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 
 namespace tracy
 {

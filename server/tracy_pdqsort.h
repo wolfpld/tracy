@@ -23,7 +23,7 @@
 #ifndef TRACY_PDQSORT_H
 #define TRACY_PDQSORT_H
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 
 #include <algorithm>
 #include <cstddef>

@@ -127,11 +127,11 @@ static inline void LuaRemove( char* script )
 #include <assert.h>
 #include <limits>
 
-#include "common/TracyColor.hpp"
-#include "common/TracyAlign.hpp"
-#include "common/TracyForceInline.hpp"
-#include "common/TracySystem.hpp"
-#include "client/TracyProfiler.hpp"
+#include "../common/TracyColor.hpp"
+#include "../common/TracyAlign.hpp"
+#include "../common/TracyForceInline.hpp"
+#include "../common/TracySystem.hpp"
+#include "../client/TracyProfiler.hpp"
 
 namespace tracy
 {

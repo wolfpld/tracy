@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <stdint.h>
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 
 namespace tracy
 {

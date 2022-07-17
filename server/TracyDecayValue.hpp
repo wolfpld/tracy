@@ -1,7 +1,7 @@
 #ifndef __TRACYDECAYVALUE_HPP__
 #define __TRACYDECAYVALUE_HPP__
 
-#include "../common/TracyForceInline.hpp"
+#include "../public/common/TracyForceInline.hpp"
 
 namespace tracy
 {

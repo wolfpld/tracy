@@ -69,7 +69,7 @@
 #include "TracyThread.hpp"
 #include "TracyArmCpuTable.hpp"
 #include "TracySysTrace.hpp"
-#include "../TracyC.h"
+#include "../tracy/TracyC.h"
 
 #ifdef TRACY_PORT
 #  ifndef TRACY_DATA_PORT

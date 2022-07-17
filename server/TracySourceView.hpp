@@ -10,8 +10,8 @@
 #include "TracyDecayValue.hpp"
 #include "TracySourceContents.hpp"
 #include "TracySourceTokenizer.hpp"
-#include "../common/TracyForceInline.hpp"
-#include "../common/TracyProtocol.hpp"
+#include "../public/common/TracyForceInline.hpp"
+#include "../public/common/TracyProtocol.hpp"
 
 struct ImFont;
 struct ImVec2;

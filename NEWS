@@ -5,6 +5,19 @@ here.
 v0.x.x (xxxx-xx-xx)
 -------------------
 
+- Attention! All the header and source files used for integrating Tracy with
+  applications were moved to the public/ directory. This will break your
+  integration!
+  - To fix this, update the source and include directories lists to point to
+    the new location.
+  - Tracy include files directly referenced by the client were moved to
+    tracy/ subdirectory, to facilitate setups which previously had Tracy
+    checkout parent directory in the include paths list (i.e. when you
+    included "tracy/Tracy.hpp").
+  - Previously, if you have included the Tracy checkout directory in your
+    project include directories list (i.e. you could include "Tracy.hpp"),
+    this could result in third-party library conflicts, e.g. with ImGui.
+    Such scenarios are no longer the case.
 - Tracy macros now require to be terminated with a semicolon.
 - Some text labels in the user interface are now more easy to read.
 - The profiler will now instruct the user in the UI on what can be done, if

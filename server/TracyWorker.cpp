@@ -4674,7 +4674,7 @@ bool Worker::Process( const QueueItem& ev )
         ProcessLockSharedObtain( ev.lockObtain );
         break;
     case QueueType::LockSharedRelease:
-        ProcessLockSharedRelease( ev.lockRelease );
+        ProcessLockSharedRelease( ev.lockReleaseShared );
         break;
     case QueueType::LockMark:
         ProcessLockMark( ev.lockMark );
@@ -5458,6 +5458,7 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     lm->timeTerminate = 0;
     lm->valid = true;
     lm->isContended = false;
+    lm->lockingThread = 0;
     m_data.lockMap.emplace( ev.id, lm );
     CheckSourceLocation( ev.lckloc );
 }
@@ -5497,6 +5498,7 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     lev->type = LockEvent::Type::Obtain;
 
     InsertLockEvent( lock, lev, ev.thread, time );
+    lock.lockingThread = ev.thread;
 }
 
 void Worker::ProcessLockRelease( const QueueLockRelease& ev )
@@ -5511,7 +5513,7 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Release;
 
-    InsertLockEvent( lock, lev, ev.thread, time );
+    InsertLockEvent( lock, lev, lock.lockingThread, time );
 }
 
 void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
@@ -5546,7 +5548,7 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
     InsertLockEvent( lock, lev, ev.thread, time );
 }
 
-void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
+void Worker::ProcessLockSharedRelease( const QueueLockReleaseShared& ev )
 {
     auto it = m_data.lockMap.find( ev.id );
     assert( it != m_data.lockMap.end() );

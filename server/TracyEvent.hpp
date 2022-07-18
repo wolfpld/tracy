@@ -706,6 +706,7 @@ struct LockMap
     int64_t timeTerminate;
     bool valid;
     bool isContended;
+    uint64_t lockingThread;
 
     TimeRange range[64];
 };

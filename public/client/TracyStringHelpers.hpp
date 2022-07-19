@@ -20,11 +20,7 @@ static tracy_force_inline char* CopyString( const char* src, size_t sz )
 
 static tracy_force_inline char* CopyString( const char* src )
 {
-    const auto sz = strlen( src );
-    auto dst = (char*)tracy_malloc( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
+    return CopyString( src, strlen( src ) );
 }
 
 static tracy_force_inline char* CopyStringFast( const char* src, size_t sz )
@@ -37,11 +33,7 @@ static tracy_force_inline char* CopyStringFast( const char* src, size_t sz )
 
 static tracy_force_inline char* CopyStringFast( const char* src )
 {
-    const auto sz = strlen( src );
-    auto dst = (char*)tracy_malloc_fast( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
+    return CopyStringFast( src, strlen( src ) );
 }
 
 }

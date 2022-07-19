@@ -11,7 +11,6 @@ namespace tracy
 
 static inline char* CopyString( const char* src, size_t sz )
 {
-    assert( strlen( src ) == sz );
     auto dst = (char*)tracy_malloc( sz + 1 );
     memcpy( dst, src, sz );
     dst[sz] = '\0';
@@ -29,7 +28,6 @@ static inline char* CopyString( const char* src )
 
 static inline char* CopyStringFast( const char* src, size_t sz )
 {
-    assert( strlen( src ) == sz );
     auto dst = (char*)tracy_malloc_fast( sz + 1 );
     memcpy( dst, src, sz );
     dst[sz] = '\0';

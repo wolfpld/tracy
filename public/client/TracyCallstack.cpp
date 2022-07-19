@@ -1,3 +1,4 @@
+#include <limits>
 #include <new>
 #include <stdio.h>
 #include <string.h>
@@ -53,15 +54,26 @@ extern "C"
 #endif
 
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 5 || TRACY_HAS_CALLSTACK == 6
-extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len );
+// If you want to use your own demangling functionality (e.g. for another language),
+// define TRACY_DEMANGLE and provide your own implementation of the __tracy_demangle
+// function. The input parameter is a function name. The demangle function must
+// identify whether this name is mangled, and fail if it is not. Failure is indicated
+// by returning nullptr. If demangling succeeds, a pointer to the C string containing
+// demangled function must be returned. The demangling function is responsible for
+// managing memory for this string. It is expected that it will be internally reused.
+// When a call to ___tracy_demangle is made, previous contents of the string memory
+// do not need to be preserved. Function may return string of any length, but the
+// profiler can choose to truncate it.
+extern "C" const char* ___tracy_demangle( const char* mangled );
 
 #ifndef TRACY_DEMANGLE
-extern "C" int ___tracy_demangle( const char* mangled, char* out, size_t len )
+extern "C" const char* ___tracy_demangle( const char* mangled )
 {
-    if( !mangled || mangled[0] != '_' ) return 0;
+    static size_t tmp_len = 64*1024;
+    static char* tmp_ptr = (char*)malloc( tmp_len );
+    if( !mangled || mangled[0] != '_' ) return nullptr;
     int status;
-    abi::__cxa_demangle( mangled, out, &len, &status );
-    return status == 0;
+    return abi::__cxa_demangle( mangled, tmp_ptr, &tmp_len, &status );
 }
 #endif
 #endif
@@ -862,9 +874,6 @@ CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
 
 static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
-    enum { DemangleBufLen = 64*1024 };
-    char demangled[DemangleBufLen];
-
     cb_data[cb_num].symLen = 0;
     cb_data[cb_num].symAddr = (uint64_t)lowaddr;
 
@@ -879,20 +888,22 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             symname = dlinfo.dli_sname;
             symoff = (char*)pc - (char*)dlinfo.dli_saddr;
-            if( ___tracy_demangle( symname, demangled, DemangleBufLen ) ) symname = demangled;
+            const char* demangled = ___tracy_demangle( symname );
+            if( demangled ) symname = demangled;
         }
 
         if( !symname ) symname = "[unknown]";
 
         if( symoff == 0 )
         {
-            cb_data[cb_num].name = CopyStringFast( symname );
+            const auto len = std::min<size_t>( strlen( symname ), std::numeric_limits<uint16_t>::max() );
+            cb_data[cb_num].name = CopyStringFast( symname, len );
         }
         else
         {
             char buf[32];
             const auto offlen = sprintf( buf, " + %td", symoff );
-            const auto namelen = strlen( symname );
+            const auto namelen = std::min<size_t>( strlen( symname ), std::numeric_limits<uint16_t>::max() - offlen );
             auto name = (char*)tracy_malloc_fast( namelen + offlen + 1 );
             memcpy( name, symname, namelen );
             memcpy( name + namelen, buf, offlen );
@@ -910,12 +921,14 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         {
             function = "[unknown]";
         }
-        else if( ___tracy_demangle( function, demangled, DemangleBufLen ) )
+        else
         {
-            function = demangled;
+            const char* demangled = ___tracy_demangle( function );
+            if( demangled ) function = demangled;
         }
 
-        cb_data[cb_num].name = CopyStringFast( function );
+        const auto len = std::min<size_t>( strlen( function ), std::numeric_limits<uint16_t>::max() );
+        cb_data[cb_num].name = CopyStringFast( function, len );
         cb_data[cb_num].file = CopyStringFast( fn );
         cb_data[cb_num].line = lineno;
     }
@@ -1048,9 +1061,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     static CallstackEntry cb;
     cb.line = 0;
 
-    enum { DemangleBufLen = 64*1024 };
-    char demangled[DemangleBufLen];
-
     const char* symname = nullptr;
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;
@@ -1064,7 +1074,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         symname = dlinfo.dli_sname;
         symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
         symaddr = dlinfo.dli_saddr;
-        if( ___tracy_demangle( symname, demangled, DemangleBufLen ) ) symname = demangled;
+        const char* demangled = ___tracy_demangle( symname );
+        if( demangled ) symname = demangled;
     }
 
     if( !symname ) symname = "[unknown]";
@@ -1072,13 +1083,14 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     if( symoff == 0 )
     {
-        cb.name = CopyString( symname );
+        const auto len = std::min<size_t>( strlen( symname ), std::numeric_limits<uint16_t>::max() );
+        cb.name = CopyString( symname, len );
     }
     else
     {
         char buf[32];
         const auto offlen = sprintf( buf, " + %td", symoff );
-        const auto namelen = strlen( symname );
+        const auto namelen = std::min<size_t>( strlen( symname ), std::numeric_limits<uint16_t>::max() - offlen );
         auto name = (char*)tracy_malloc( namelen + offlen + 1 );
         memcpy( name, symname, namelen );
         memcpy( name + namelen, buf, offlen );

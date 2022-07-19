@@ -1271,7 +1271,7 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
       mff = macho_nodebug;
       if (!macho_add (state, name, d, 0, NULL, base_address, 0,
 		      error_callback, data, &mff, &mfs))
-	return 0;
+	continue;
 
       if (mff != macho_nodebug)
 	macho_fileline_fn = mff;

@@ -19,6 +19,8 @@ v0.x.x (xxxx-xx-xx)
     this could result in third-party library conflicts, e.g. with ImGui.
     Such scenarios are no longer the case.
 - Tracy macros now require to be terminated with a semicolon.
+- The undocumented ___tracy_demangle() function API has been changed. Please
+  refer to the source code for further instructions.
 - Some text labels in the user interface are now more easy to read.
 - The profiler will now instruct the user in the UI on what can be done, if
   the send queue is slow to process (typically due to symbol resolution).

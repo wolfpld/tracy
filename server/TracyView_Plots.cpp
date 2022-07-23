@@ -119,7 +119,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "Plot \"%s\"", txt );
+                SmallColorBox( GetPlotColor( v ) );
+                ImGui::SameLine();
+                TextFocused( "Plot", txt );
                 ImGui::Separator();
 
                 const auto first = v->data.front().time.Val();

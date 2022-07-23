@@ -293,6 +293,11 @@ void View::DrawTimeline()
 
     const auto nspx = 1.0 / pxns;
 
+    ImGui::PushFont( m_smallFont );
+    const auto sty = ImGui::GetTextLineHeight();
+    const auto sstep = sty + 1;
+    ImGui::PopFont();
+
     const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
     int offset = 0;
@@ -317,11 +322,6 @@ void View::DrawTimeline()
             const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
             const auto oldOffset = offset;
             ImGui::PushClipRect( wpos, wpos + ImVec2( w, oldOffset + vis.height ), true );
-
-            ImGui::PushFont( m_smallFont );
-            const auto sty = ImGui::GetTextLineHeight();
-            const auto sstep = sty + 1;
-            ImGui::PopFont();
 
             const auto singleThread = v->threadData.size() == 1;
             int depth = 0;
@@ -663,7 +663,7 @@ void View::DrawTimeline()
             if( m_vd.drawLocks )
             {
                 const auto lockDepth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight, yMin, yMax );
-                offset += ostep * lockDepth;
+                offset += sstep * lockDepth;
                 depth += lockDepth;
             }
         }

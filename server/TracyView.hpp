@@ -311,6 +311,7 @@ private:
 
     std::vector<MemoryPage> GetMemoryPages() const;
     const char* GetPlotName( const PlotData* plot ) const;
+    uint32_t GetPlotColor( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip = true );
     void DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const;

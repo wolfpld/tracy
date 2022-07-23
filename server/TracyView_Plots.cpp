@@ -1,5 +1,6 @@
 #include <inttypes.h>
 
+#include "TracyColor.hpp"
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
@@ -33,12 +34,12 @@ const char* View::GetPlotName( const PlotData* plot ) const
     }
 }
 
-static uint32_t GetPlotColor( const PlotData* plot )
+uint32_t View::GetPlotColor( const PlotData* plot ) const
 {
     switch( plot->type )
     {
     case PlotType::User:
-        return 0xFF44DDDD;
+        return GetHsvColor( charutil::hash( m_worker.GetString( plot->name ) ), -10 );
     case PlotType::Memory:
         return 0xFF2266CC;
     case PlotType::SysTime:

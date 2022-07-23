@@ -33,6 +33,22 @@ const char* View::GetPlotName( const PlotData* plot ) const
     }
 }
 
+static uint32_t GetPlotColor( const PlotData* plot )
+{
+    switch( plot->type )
+    {
+    case PlotType::User:
+        return 0xFF44DDDD;
+    case PlotType::Memory:
+        return 0xFF2266CC;
+    case PlotType::SysTime:
+        return 0xFFBAB220;
+    default:
+        assert( false );
+        return 0;
+    }
+}
+
 static const char* FormatPlotValue( double val, PlotValueFormatting format )
 {
     static char buf[64];
@@ -254,12 +270,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 }
 
                 const auto revrange = 1.0 / ( max - min );
+                const auto color = GetPlotColor( v );
 
                 if( it == vec.begin() )
                 {
                     const auto x = ( it->time.Val() - m_vd.zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, v->format, PlotHeight, v->name );
+                    DrawPlotPoint( wpos, x, y, offset, color, hover, false, it, 0, false, v->type, v->format, PlotHeight, v->name );
                 }
 
                 auto prevx = it;
@@ -273,7 +290,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
                     const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
-                    DrawLine( draw, dpos + ImVec2( x0, offset + y0 ), dpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
+                    DrawLine( draw, dpos + ImVec2( x0, offset + y0 ), dpos + ImVec2( x1, offset + y1 ), color );
 
                     const auto rx = skip == 0 ? 2.0 : ( skip == 1 ? 2.5 : 4.0 );
 
@@ -282,7 +299,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto rsz = std::distance( it, range );
                     if( rsz == 1 )
                     {
-                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type, v->format, PlotHeight, v->name );
+                        DrawPlotPoint( wpos, x1, y1, offset, color, hover, true, it, prevy->val, false, v->type, v->format, PlotHeight, v->name );
                         prevx = it;
                         prevy = it;
                         ++it;
@@ -308,7 +325,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                         if( rsz > MaxPoints )
                         {
-                            DrawLine( draw, dpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), dpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD, 4.f );
+                            DrawLine( draw, dpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), dpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), color, 4.f );
 
                             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x1 - 2, offset ), wpos + ImVec2( x1 + 2, offset + PlotHeight ) ) )
                             {
@@ -324,7 +341,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         }
                         else
                         {
-                            DrawLine( draw, dpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), dpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD );
+                            DrawLine( draw, dpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), dpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), color );
 
                             auto vit = tmpvec;
                             while( vit != dst )
@@ -333,11 +350,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                                 assert( vrange > vit );
                                 if( std::distance( vit, vrange ) == 1 )
                                 {
-                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, false, v->format, PlotHeight );
+                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, color, hover, false, *vit, 0, false, v->format, PlotHeight );
                                 }
                                 else
                                 {
-                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, true, v->format, PlotHeight );
+                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, color, hover, false, *vit, 0, true, v->format, PlotHeight );
                                 }
                                 vit = vrange;
                             }
@@ -354,10 +371,10 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0xFF226E6E, tmp );
                 }
                 auto tmp = FormatPlotValue( rMax, v->format );
-                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset ), 0xFF44DDDD, tmp );
+                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset ), color, tmp );
                 offset += PlotHeight - ty;
                 tmp = FormatPlotValue( rMin, v->format );
-                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset ), 0xFF44DDDD, tmp );
+                DrawTextSuperContrast( draw, wpos + ImVec2( 0, offset ), color, tmp );
 
                 DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0xFF226E6E );
                 offset += ty;

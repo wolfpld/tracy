@@ -174,6 +174,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 auto& vec = v->data;
                 vec.ensure_sorted();
 
+                const auto color = GetPlotColor( v );
+                const auto bg = 0x22000000 | ( DarkenColorMore( color ) & 0xFFFFFF );
+
+                draw->AddRectFilled( ImVec2( 0, yPos ), ImVec2( w, yPos + PlotHeight ), bg );
+
                 if( v->type == PlotType::Memory )
                 {
                     auto& mem = m_worker.GetMemoryNamed( v->name );
@@ -273,7 +278,6 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 }
 
                 const auto revrange = 1.0 / ( max - min );
-                const auto color = GetPlotColor( v );
 
                 if( it == vec.begin() )
                 {

@@ -470,6 +470,7 @@ private:
     bool m_allocTimeRelativeToZone = true;
     bool m_ctxSwitchTimeRelativeToZone = true;
     bool m_messageTimeRelativeToZone = true;
+    bool m_messagesExcludeChildren = true;
     uint64_t m_zoneInfoMemPool = 0;
     int m_waitStack = 0;
     int m_waitStackMode = 0;

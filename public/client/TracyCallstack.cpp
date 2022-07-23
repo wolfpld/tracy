@@ -83,6 +83,7 @@ void ___tracy_free_demangle_buffer()
 extern "C" const char* ___tracy_demangle( const char* mangled )
 {
     if( !mangled || mangled[0] != '_' ) return nullptr;
+    if( strlen( mangled ) > ___tracy_demangle_buffer_len ) return nullptr;
     int status;
     size_t len = ___tracy_demangle_buffer_len;
     return abi::__cxa_demangle( mangled, ___tracy_demangle_buffer, &len, &status );

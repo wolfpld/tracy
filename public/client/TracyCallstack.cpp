@@ -67,13 +67,25 @@ extern "C"
 extern "C" const char* ___tracy_demangle( const char* mangled );
 
 #ifndef TRACY_DEMANGLE
+constexpr size_t ___tracy_demangle_buffer_len = 1024*1024; 
+char* ___tracy_demangle_buffer;
+
+void ___tracy_init_demangle_buffer()
+{
+    ___tracy_demangle_buffer = (char*)tracy::tracy_malloc( ___tracy_demangle_buffer_len );
+}
+
+void ___tracy_free_demangle_buffer()
+{
+    tracy::tracy_free( ___tracy_demangle_buffer );
+}
+
 extern "C" const char* ___tracy_demangle( const char* mangled )
 {
-    static size_t tmp_len = 64*1024;
-    static char* tmp_ptr = (char*)malloc( tmp_len );
     if( !mangled || mangled[0] != '_' ) return nullptr;
     int status;
-    return abi::__cxa_demangle( mangled, tmp_ptr, &tmp_len, &status );
+    size_t len = ___tracy_demangle_buffer_len;
+    return abi::__cxa_demangle( mangled, ___tracy_demangle_buffer, &len, &status );
 }
 #endif
 #endif
@@ -685,6 +697,7 @@ static void InitKernelSymbols()
 void InitCallstack()
 {
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
+    ___tracy_init_demangle_buffer();
 
 #ifdef __linux
     InitKernelSymbols();
@@ -758,6 +771,7 @@ debuginfod_client* GetDebuginfodClient()
 
 void EndCallstack()
 {
+    ___tracy_free_demangle_buffer();
 #ifdef TRACY_DEBUGINFOD
     ClearDebugInfoVector( s_di_known );
     debuginfod_end( s_debuginfod );
@@ -1015,10 +1029,12 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
 void InitCallstack()
 {
+    ___tracy_init_demangle_buffer();
 }
 
 void EndCallstack()
 {
+    ___tracy_free_demangle_buffer()
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )

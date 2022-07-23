@@ -43,14 +43,6 @@ private:
     bool m_active;
 };
 
-static tracy_force_inline uint32_t DarkenColor( uint32_t color )
-{
-    return 0xFF000000 |
-        ( ( ( ( color & 0x00FF0000 ) >> 16 ) * 2 / 3 ) << 16 ) |
-        ( ( ( ( color & 0x0000FF00 ) >> 8  ) * 2 / 3 ) << 8  ) |
-        ( ( ( ( color & 0x000000FF )       ) * 2 / 3 )       );
-}
-
 }
 
 #endif

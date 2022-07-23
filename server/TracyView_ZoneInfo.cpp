@@ -881,11 +881,7 @@ void View::DrawZoneInfoWindow()
                             ImGui::TableHeadersRow();
                             do
                             {
-                                if( m_messagesExcludeChildren )
-                                {
-                                    auto msgzone = FindZoneAtTime( tid, (*msgit)->time );
-                                    if( msgzone != &ev ) continue;
-                                }
+                                if( m_messagesExcludeChildren && GetZoneChild( ev, (*msgit)->time ) ) continue;
                                 ImGui::PushID( *msgit );
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();

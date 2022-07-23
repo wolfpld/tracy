@@ -194,6 +194,27 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
     }
 }
 
+const ZoneEvent* View::GetZoneChild( const ZoneEvent& zone, int64_t time ) const
+{
+    if( !zone.HasChildren() ) return nullptr;
+    auto& children = m_worker.GetZoneChildren( zone.Child() );
+    if( children.is_magic() )
+    {
+        auto& vec = *((Vector<ZoneEvent>*)&children);
+        auto it = std::upper_bound( vec.begin(), vec.end(), time, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
+        if( it != vec.begin() ) --it;
+        if( it->Start() > time || ( it->IsEndValid() && it->End() < time ) ) return nullptr;
+        return it;
+    }
+    else
+    {
+        auto it = std::upper_bound( children.begin(), children.end(), time, [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
+        if( it != children.begin() ) --it;
+        if( (*it)->Start() > time || ( (*it)->IsEndValid() && (*it)->End() < time ) ) return nullptr;
+        return *it;
+    }
+}
+
 const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 {
 #ifndef TRACY_NO_STATISTICS

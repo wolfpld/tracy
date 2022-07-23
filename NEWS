@@ -26,6 +26,8 @@ v0.x.x (xxxx-xx-xx)
   the send queue is slow to process (typically due to symbol resolution).
 - If a client with an incompatible protocol is discovered, Tracy will now
   try to show which versions can be used to handle the connection.
+- Messages list in zone info window can now show messages exclusive to the
+  zone, filtering out the messages emitted from child zones.
 
 
 v0.8.2 (2022-06-28)

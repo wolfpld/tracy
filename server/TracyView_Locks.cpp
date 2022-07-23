@@ -988,15 +988,19 @@ void View::DrawLockInfoWindow()
             ImGui::SameLine();
         }
         ImGui::TextUnformatted( LocationToString( fileName, srcloc.line ) );
-        if( ImGui::IsItemClicked( 1 ) )
+        if( ImGui::IsItemHovered() )
         {
-            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+            DrawSourceTooltip( fileName, srcloc.line );
+            if( ImGui::IsItemClicked( 1 ) )
             {
-                ViewSource( fileName, srcloc.line );
-            }
-            else
-            {
-                m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
+                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                {
+                    ViewSource( fileName, srcloc.line );
+                }
+                else
+                {
+                    m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
+                }
             }
         }
         ImGui::Separator();

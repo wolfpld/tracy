@@ -355,6 +355,41 @@ enum { MaxLockThreads = sizeof( LockEventPtr::waitList ) * 8 };
 static_assert( std::numeric_limits<decltype(LockEventPtr::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
 
 
+enum class LockType : uint8_t;
+
+struct LockMap
+{
+    struct TimeRange
+    {
+        int64_t start = std::numeric_limits<int64_t>::max();
+        int64_t end = std::numeric_limits<int64_t>::min();
+    };
+
+    StringIdx customName;
+    int16_t srcloc;
+    Vector<LockEventPtr> timeline;
+    unordered_flat_map<uint64_t, uint8_t> threadMap;
+    std::vector<uint64_t> threadList;
+    LockType type;
+    int64_t timeAnnounce;
+    int64_t timeTerminate;
+    bool valid;
+    bool isContended;
+    uint64_t lockingThread;
+
+    TimeRange range[64];
+};
+
+struct LockHighlight
+{
+    int64_t id;
+    int64_t begin;
+    int64_t end;
+    uint8_t thread;
+    bool blocked;
+};
+
+
 struct GpuEvent
 {
     tracy_force_inline int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
@@ -686,39 +721,6 @@ struct GpuCtxData
 
 enum { GpuCtxDataSize = sizeof( GpuCtxData ) };
 
-enum class LockType : uint8_t;
-
-struct LockMap
-{
-    struct TimeRange
-    {
-        int64_t start = std::numeric_limits<int64_t>::max();
-        int64_t end = std::numeric_limits<int64_t>::min();
-    };
-
-    StringIdx customName;
-    int16_t srcloc;
-    Vector<LockEventPtr> timeline;
-    unordered_flat_map<uint64_t, uint8_t> threadMap;
-    std::vector<uint64_t> threadList;
-    LockType type;
-    int64_t timeAnnounce;
-    int64_t timeTerminate;
-    bool valid;
-    bool isContended;
-    uint64_t lockingThread;
-
-    TimeRange range[64];
-};
-
-struct LockHighlight
-{
-    int64_t id;
-    int64_t begin;
-    int64_t end;
-    uint8_t thread;
-    bool blocked;
-};
 
 enum class PlotType : uint8_t
 {

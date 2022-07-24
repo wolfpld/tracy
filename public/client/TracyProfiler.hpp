@@ -342,13 +342,14 @@ public:
         TracyLfqCommit;
     }
 
-    static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type, bool step, bool fill )
+    static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type, bool step, bool fill, uint32_t color )
     {
         TracyLfqPrepare( QueueType::PlotConfig );
         MemWrite( &item->plotConfig.name, (uint64_t)name );
         MemWrite( &item->plotConfig.type, (uint8_t)type );
         MemWrite( &item->plotConfig.step, (uint8_t)step );
         MemWrite( &item->plotConfig.fill, (uint8_t)fill );
+        MemWrite( &item->plotConfig.color, color );
 
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );

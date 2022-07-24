@@ -610,6 +610,7 @@ struct QueuePlotConfig
     uint8_t type;
     uint8_t step;
     uint8_t fill;
+    uint32_t color;
 };
 
 struct QueueParamSetup

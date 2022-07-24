@@ -47,7 +47,7 @@
 #define LockableName(x,y,z);
 
 #define TracyPlot(x,y)
-#define TracyPlotConfig(x,y,z,w)
+#define TracyPlotConfig(x,y,z,w,a)
 
 #define TracyMessage(x,y)
 #define TracyMessageL(x)
@@ -159,7 +159,7 @@
 #define LockableName( varname, txt, size ) varname.CustomName( txt, size )
 
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val )
-#define TracyPlotConfig( name, type, step, fill ) tracy::Profiler::ConfigurePlot( name, type, step, fill )
+#define TracyPlotConfig( name, type, step, fill, color ) tracy::Profiler::ConfigurePlot( name, type, step, fill, color )
 
 #define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size )
 

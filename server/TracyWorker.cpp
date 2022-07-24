@@ -1097,7 +1097,29 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         m_data.plots.Data().reserve( sz );
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
-        if( fileVer >= FileVersion( 0, 7, 10 ) )
+        if( fileVer >= FileVersion( 0, 8, 3 ) )
+        {
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                auto pd = m_slab.AllocInit<PlotData>();
+                uint64_t psz;
+                f.Read8( pd->type, pd->format, pd->showSteps, pd->name, pd->min, pd->max, pd->sum, psz );
+                pd->data.reserve_exact( psz, m_slab );
+                auto ptr = pd->data.data();
+                int64_t refTime = 0;
+                for( uint64_t j=0; j<psz; j++ )
+                {
+                    int64_t t;
+                    f.Read2( t, ptr->val );
+                    refTime += t;
+                    ptr->time = refTime;
+                    ptr++;
+                }
+                m_data.plots.Data().push_back_no_space_check( pd );
+            }
+        }
+        else if( fileVer >= FileVersion( 0, 7, 10 ) )
         {
             for( uint64_t i=0; i<sz; i++ )
             {
@@ -1148,7 +1170,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     }
     else
     {
-        if( fileVer >= FileVersion( 0, 7, 10 ) )
+        if( fileVer >= FileVersion( 0, 8, 3 ) )
+        {
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::sum ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) + sizeof( PlotData::showSteps ) );
+                uint64_t psz;
+                f.Read( psz );
+                f.Skip( psz * ( sizeof( uint64_t ) + sizeof( double ) ) );
+            }
+
+        }
+        else if( fileVer >= FileVersion( 0, 7, 10 ) )
         {
             for( uint64_t i=0; i<sz; i++ )
             {
@@ -8076,6 +8109,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         if( plot->type == PlotType::Memory ) continue;
         f.Write( &plot->type, sizeof( plot->type ) );
         f.Write( &plot->format, sizeof( plot->format ) );
+        f.Write( &plot->showSteps, sizeof( plot->showSteps ) );
         f.Write( &plot->name, sizeof( plot->name ) );
         f.Write( &plot->min, sizeof( plot->min ) );
         f.Write( &plot->max, sizeof( plot->max ) );

@@ -455,6 +455,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         plot->type = PlotType::User;
         plot->format = v.format;
         plot->showSteps = false;
+        plot->fill = true;
 
         double sum = 0;
         double min = v.data.begin()->second;
@@ -1104,7 +1105,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 auto pd = m_slab.AllocInit<PlotData>();
                 uint64_t psz;
-                f.Read8( pd->type, pd->format, pd->showSteps, pd->name, pd->min, pd->max, pd->sum, psz );
+                f.Read9( pd->type, pd->format, pd->showSteps, pd->fill, pd->name, pd->min, pd->max, pd->sum, psz );
                 pd->data.reserve_exact( psz, m_slab );
                 auto ptr = pd->data.data();
                 int64_t refTime = 0;
@@ -1128,6 +1129,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 uint64_t psz;
                 f.Read7( pd->type, pd->format, pd->name, pd->min, pd->max, pd->sum, psz );
                 pd->showSteps = false;
+                pd->fill = true;
                 pd->data.reserve_exact( psz, m_slab );
                 auto ptr = pd->data.data();
                 int64_t refTime = 0;
@@ -1152,6 +1154,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Read6( pd->type, pd->format, pd->name, pd->min, pd->max, psz );
                 pd->sum = 0;
                 pd->showSteps = false;
+                pd->fill = true;
                 pd->data.reserve_exact( psz, m_slab );
                 auto ptr = pd->data.data();
                 int64_t refTime = 0;
@@ -1174,7 +1177,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             for( uint64_t i=0; i<sz; i++ )
             {
-                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::sum ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) + sizeof( PlotData::showSteps ) );
+                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::sum ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) + sizeof( PlotData::showSteps ) + sizeof( PlotData::fill ) );
                 uint64_t psz;
                 f.Read( psz );
                 f.Skip( psz * ( sizeof( uint64_t ) + sizeof( double ) ) );
@@ -5668,6 +5671,7 @@ void Worker::ProcessPlotDataImpl( uint64_t name, int64_t evTime, double val )
         plot->type = PlotType::User;
         plot->format = PlotValueFormatting::Number;
         plot->showSteps = false;
+        plot->fill = true;
         return plot;
     }, [this]( uint64_t name ) {
         Query( ServerQueryPlotName, name );
@@ -5691,6 +5695,7 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
 
     plot->format = (PlotValueFormatting)ev.type;
     plot->showSteps = ev.step;
+    plot->fill = ev.fill;
 }
 
 void Worker::ProcessMessage( const QueueMessage& ev )
@@ -6813,6 +6818,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         m_sysTimePlot->type = PlotType::SysTime;
         m_sysTimePlot->format = PlotValueFormatting::Percentage;
         m_sysTimePlot->showSteps = false;
+        m_sysTimePlot->fill = true;
         m_sysTimePlot->min = val;
         m_sysTimePlot->max = val;
         m_sysTimePlot->sum = val;
@@ -7130,6 +7136,7 @@ void Worker::CreateMemAllocPlot( MemData& memdata )
     memdata.plot->type = PlotType::Memory;
     memdata.plot->format = PlotValueFormatting::Memory;
     memdata.plot->showSteps = true;
+    memdata.plot->fill = true;
     memdata.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
     m_data.plots.Data().push_back( memdata.plot );
 }
@@ -7154,6 +7161,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     plot->type = PlotType::Memory;
     plot->format = PlotValueFormatting::Memory;
     plot->showSteps = true;
+    plot->fill = true;
     plot->data.reserve_exact( psz, m_slab );
 
     auto aptr = mem.data.begin();
@@ -8107,6 +8115,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &plot->type, sizeof( plot->type ) );
         f.Write( &plot->format, sizeof( plot->format ) );
         f.Write( &plot->showSteps, sizeof( plot->showSteps ) );
+        f.Write( &plot->fill, sizeof( plot->fill ) );
         f.Write( &plot->name, sizeof( plot->name ) );
         f.Write( &plot->min, sizeof( plot->min ) );
         f.Write( &plot->max, sizeof( plot->max ) );

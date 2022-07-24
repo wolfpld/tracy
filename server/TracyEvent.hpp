@@ -748,6 +748,7 @@ struct PlotData
     PlotType type;
     PlotValueFormatting format;
     uint8_t showSteps;
+    uint8_t fill;
 };
 
 struct MemData

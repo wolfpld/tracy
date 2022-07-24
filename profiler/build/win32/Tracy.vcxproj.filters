@@ -37,6 +37,9 @@
     <Filter Include="src\font">
       <UniqueIdentifier>{0bd58d14-3948-47ea-b720-47560dd57338}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\imgui">
+      <UniqueIdentifier>{484838ce-9f95-4081-a87f-921ed0c9e7fa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\server\TracyView.cpp">
@@ -65,12 +68,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyStorage.cpp">
       <Filter>server</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\imgui_impl_glfw.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp">
-      <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\imgui\imgui.cpp">
       <Filter>imgui</Filter>
@@ -330,6 +327,12 @@
     <ClCompile Include="..\..\..\public\common\TracySystem.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\imgui\imgui_impl_glfw.cpp">
+      <Filter>src\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\imgui\imgui_impl_opengl3.cpp">
+      <Filter>src\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -397,12 +400,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyStorage.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\imgui_impl_glfw.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\imgui_impl_opengl3.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\imgui\imconfig.h">
       <Filter>imgui</Filter>
@@ -602,9 +599,6 @@
     <ClInclude Include="..\..\..\server\TracyWeb.hpp">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\imgui_impl_opengl3_loader.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\zstd\common\portability_macros.h">
       <Filter>zstd\common</Filter>
     </ClInclude>
@@ -673,6 +667,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\font\FontAwesomeSolid.hpp">
       <Filter>src\font</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\imgui\imgui_impl_glfw.h">
+      <Filter>src\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3.h">
+      <Filter>src\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3_loader.h">
+      <Filter>src\imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

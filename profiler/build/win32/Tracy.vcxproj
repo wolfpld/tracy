@@ -196,8 +196,8 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c" />
     <ClCompile Include="..\..\src\HttpRequest.cpp" />
-    <ClCompile Include="..\..\src\imgui_impl_glfw.cpp" />
-    <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\..\src\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\..\src\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\NativeWindow.cpp" />
     <ClCompile Include="..\..\src\ResolvService.cpp" />
@@ -316,9 +316,9 @@
     <ClInclude Include="..\..\src\font\FontAwesomeSolid.hpp" />
     <ClInclude Include="..\..\src\HttpRequest.hpp" />
     <ClInclude Include="..\..\src\icon.hpp" />
-    <ClInclude Include="..\..\src\imgui_impl_glfw.h" />
-    <ClInclude Include="..\..\src\imgui_impl_opengl3.h" />
-    <ClInclude Include="..\..\src\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\..\src\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3_loader.h" />
     <ClInclude Include="..\..\src\NativeWindow.hpp" />
     <ClInclude Include="..\..\src\ResolvService.hpp" />
     <ClInclude Include="..\..\src\stb_image.h" />

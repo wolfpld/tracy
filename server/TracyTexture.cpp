@@ -1,6 +1,6 @@
 #include <inttypes.h>
 
-#include "../profiler/src/imgui_impl_opengl3_loader.h"
+#include "../profiler/src/imgui/imgui_impl_opengl3_loader.h"
 #include "TracyTexture.hpp"
 
 #ifndef COMPRESSED_RGB_S3TC_DXT1_EXT

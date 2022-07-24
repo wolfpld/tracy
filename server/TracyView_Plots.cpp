@@ -176,6 +176,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                 const auto color = GetPlotColor( v );
                 const auto bg = 0x22000000 | ( DarkenColorMore( color ) & 0xFFFFFF );
+                const auto fill = 0x22000000 | ( DarkenColor( color ) & 0xFFFFFF );
 
                 draw->AddRectFilled( ImVec2( 0, yPos ), ImVec2( w, yPos + PlotHeight ), bg );
 
@@ -258,6 +259,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
                     const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
+                    draw->AddQuadFilled( dpos + ImVec2( x0, offset + PlotHeight ), dpos + ImVec2( x0, offset + y0 ), dpos + ImVec2( x1, offset + y1 ), dpos + ImVec2( x1, offset + PlotHeight ), fill );
                     DrawLine( draw, dpos + ImVec2( x0, offset + y0 ), dpos + ImVec2( x1, offset + y1 ), color );
 
                     const auto rx = skip == 0 ? 2.0 : ( skip == 1 ? 2.5 : 4.0 );

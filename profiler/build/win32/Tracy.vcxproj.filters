@@ -34,6 +34,9 @@
     <Filter Include="zstd\dictBuilder">
       <UniqueIdentifier>{200ab875-91e5-4c7a-8b98-ddbae19d2f98}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\font">
+      <UniqueIdentifier>{0bd58d14-3948-47ea-b720-47560dd57338}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\server\TracyView.cpp">
@@ -374,9 +377,6 @@
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Arimo.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\server\TracyVersion.hpp">
       <Filter>server</Filter>
     </ClInclude>
@@ -388,12 +388,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFilesystem.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\FontAwesomeSolid.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Cousine.hpp">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp">
       <Filter>server</Filter>
@@ -611,9 +605,6 @@
     <ClInclude Include="..\..\src\imgui_impl_opengl3_loader.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\FiraCodeRetina.hpp">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\zstd\common\portability_macros.h">
       <Filter>zstd\common</Filter>
     </ClInclude>
@@ -673,6 +664,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\public\common\TracyYield.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\font\DroidSans.hpp">
+      <Filter>src\font</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\font\FiraCodeRetina.hpp">
+      <Filter>src\font</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\font\FontAwesomeSolid.hpp">
+      <Filter>src\font</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

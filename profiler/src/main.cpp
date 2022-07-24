@@ -49,9 +49,9 @@
 #include "../../server/IconsFontAwesome5.h"
 
 #include "misc/freetype/imgui_freetype.h"
-#include "DroidSans.hpp"
-#include "FiraCodeRetina.hpp"
-#include "FontAwesomeSolid.hpp"
+#include "font/DroidSans.hpp"
+#include "font/FiraCodeRetina.hpp"
+#include "font/FontAwesomeSolid.hpp"
 #include "icon.hpp"
 #include "ResolvService.hpp"
 #include "NativeWindow.hpp"

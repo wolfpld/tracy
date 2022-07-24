@@ -2400,12 +2400,14 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         tracy_free_fast( (void*)ptr );
 #endif
                         break;
-                    case QueueType::PlotData:
+                    case QueueType::PlotDataInt:
+                    case QueueType::PlotDataFloat:
+                    case QueueType::PlotDataDouble:
                     {
-                        int64_t t = MemRead<int64_t>( &item->plotData.time );
+                        int64_t t = MemRead<int64_t>( &item->plotDataInt.time );
                         int64_t dt = t - refThread;
                         refThread = t;
-                        MemWrite( &item->plotData.time, dt );
+                        MemWrite( &item->plotDataInt.time, dt );
                         break;
                     }
                     case QueueType::ContextSwitch:

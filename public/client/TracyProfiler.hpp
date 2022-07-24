@@ -311,11 +311,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        TracyLfqPrepare( QueueType::PlotData );
-        MemWrite( &item->plotData.name, (uint64_t)name );
-        MemWrite( &item->plotData.time, GetTime() );
-        MemWrite( &item->plotData.type, PlotDataType::Int );
-        MemWrite( &item->plotData.data.i, val );
+        TracyLfqPrepare( QueueType::PlotDataInt );
+        MemWrite( &item->plotDataInt.name, (uint64_t)name );
+        MemWrite( &item->plotDataInt.time, GetTime() );
+        MemWrite( &item->plotDataInt.val, val );
         TracyLfqCommit;
     }
 
@@ -324,11 +323,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        TracyLfqPrepare( QueueType::PlotData );
-        MemWrite( &item->plotData.name, (uint64_t)name );
-        MemWrite( &item->plotData.time, GetTime() );
-        MemWrite( &item->plotData.type, PlotDataType::Float );
-        MemWrite( &item->plotData.data.f, val );
+        TracyLfqPrepare( QueueType::PlotDataFloat );
+        MemWrite( &item->plotDataFloat.name, (uint64_t)name );
+        MemWrite( &item->plotDataFloat.time, GetTime() );
+        MemWrite( &item->plotDataFloat.val, val );
         TracyLfqCommit;
     }
 
@@ -337,11 +335,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        TracyLfqPrepare( QueueType::PlotData );
-        MemWrite( &item->plotData.name, (uint64_t)name );
-        MemWrite( &item->plotData.time, GetTime() );
-        MemWrite( &item->plotData.type, PlotDataType::Double );
-        MemWrite( &item->plotData.data.d, val );
+        TracyLfqPrepare( QueueType::PlotDataDouble );
+        MemWrite( &item->plotDataDouble.name, (uint64_t)name );
+        MemWrite( &item->plotDataDouble.time, GetTime() );
+        MemWrite( &item->plotDataDouble.val, val );
         TracyLfqCommit;
     }
 

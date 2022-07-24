@@ -698,7 +698,9 @@ private:
     tracy_force_inline void ProcessLockSharedRelease( const QueueLockReleaseShared& ev );
     tracy_force_inline void ProcessLockMark( const QueueLockMark& ev );
     tracy_force_inline void ProcessLockName( const QueueLockName& ev );
-    tracy_force_inline void ProcessPlotData( const QueuePlotData& ev );
+    tracy_force_inline void ProcessPlotDataInt( const QueuePlotDataInt& ev );
+    tracy_force_inline void ProcessPlotDataFloat( const QueuePlotDataFloat& ev );
+    tracy_force_inline void ProcessPlotDataDouble( const QueuePlotDataDouble& ev );
     tracy_force_inline void ProcessPlotConfig( const QueuePlotConfig& ev );
     tracy_force_inline void ProcessMessage( const QueueMessage& ev );
     tracy_force_inline void ProcessMessageLiteral( const QueueMessageLiteral& ev );
@@ -757,6 +759,7 @@ private:
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial );
     tracy_force_inline void ProcessGpuZoneBeginAllocSrcLocImpl( GpuEvent* zone, const QueueGpuZoneBeginLean& ev, bool serial );
     tracy_force_inline void ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBeginLean& ev, bool serial );
+    tracy_force_inline void ProcessPlotDataImpl( uint64_t name, int64_t evTime, double val );
     tracy_force_inline MemEvent* ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev );
     tracy_force_inline MemEvent* ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackSampleImpl( const SampleData& sd, ThreadData& td );

@@ -52,7 +52,9 @@ enum class QueueType : uint8_t
     GpuZoneBeginAllocSrcLocSerial,
     GpuZoneBeginAllocSrcLocCallstackSerial,
     GpuZoneEndSerial,
-    PlotData,
+    PlotDataInt,
+    PlotDataFloat,
+    PlotDataDouble,
     ContextSwitch,
     ThreadWakeup,
     GpuTime,
@@ -305,24 +307,25 @@ struct QueueLockNameFat : public QueueLockName
     uint16_t size;
 };
 
-enum class PlotDataType : uint8_t
-{
-    Float,
-    Double,
-    Int
-};
-
-struct QueuePlotData
+struct QueuePlotDataBase
 {
     uint64_t name;      // ptr
     int64_t time;
-    PlotDataType type;
-    union
-    {
-        double d;
-        float f;
-        int64_t i;
-    } data;
+};
+
+struct QueuePlotDataInt : public QueuePlotDataBase
+{
+    int64_t val;
+};
+
+struct QueuePlotDataFloat : public QueuePlotDataBase 
+{
+    float val;
+};
+
+struct QueuePlotDataDouble : public QueuePlotDataBase
+{
+    double val;
 };
 
 struct QueueMessage
@@ -678,7 +681,9 @@ struct QueueItem
         QueueLockMark lockMark;
         QueueLockName lockName;
         QueueLockNameFat lockNameFat;
-        QueuePlotData plotData;
+        QueuePlotDataInt plotDataInt;
+        QueuePlotDataFloat plotDataFloat;
+        QueuePlotDataDouble plotDataDouble;
         QueueMessage message;
         QueueMessageColor messageColor;
         QueueMessageLiteral messageLiteral;
@@ -778,7 +783,9 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// serial, allocated source location
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// serial, allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),      // serial
-    sizeof( QueueHeader ) + sizeof( QueuePlotData ),
+    sizeof( QueueHeader ) + sizeof( QueuePlotDataInt ),
+    sizeof( QueueHeader ) + sizeof( QueuePlotDataFloat ),
+    sizeof( QueueHeader ) + sizeof( QueuePlotDataDouble ),
     sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),

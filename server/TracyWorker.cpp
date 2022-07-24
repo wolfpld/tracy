@@ -4718,8 +4718,14 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::LockName:
         ProcessLockName( ev.lockName );
         break;
-    case QueueType::PlotData:
-        ProcessPlotData( ev.plotData );
+    case QueueType::PlotDataInt:
+        ProcessPlotDataInt( ev.plotDataInt );
+        break;
+    case QueueType::PlotDataFloat:
+        ProcessPlotDataFloat( ev.plotDataFloat );
+        break;
+    case QueueType::PlotDataDouble:
+        ProcessPlotDataDouble( ev.plotDataDouble );
         break;
     case QueueType::PlotConfig:
         ProcessPlotConfig( ev.plotConfig );
@@ -5637,21 +5643,26 @@ void Worker::ProcessLockName( const QueueLockName& ev )
     lit->second->customName = StringIdx( GetSingleStringIdx() );
 }
 
-void Worker::ProcessPlotData( const QueuePlotData& ev )
+void Worker::ProcessPlotDataInt( const QueuePlotDataInt& ev )
 {
-    switch( ev.type )
-    {
-    case PlotDataType::Double:
-        if( !isfinite( ev.data.d ) ) return;
-        break;
-    case PlotDataType::Float:
-        if( !isfinite( ev.data.f ) ) return;
-        break;
-    default:
-        break;
-    }
+    ProcessPlotDataImpl( ev.name, ev.time, (double)ev.val );
+}
 
-    PlotData* plot = m_data.plots.Retrieve( ev.name, [this] ( uint64_t name ) {
+void Worker::ProcessPlotDataFloat( const QueuePlotDataFloat& ev )
+{
+    if( !isfinite( ev.val ) ) return;
+    ProcessPlotDataImpl( ev.name, ev.time, (double)ev.val );
+}
+
+void Worker::ProcessPlotDataDouble( const QueuePlotDataDouble& ev )
+{
+    if( !isfinite( ev.val ) ) return;
+    ProcessPlotDataImpl( ev.name, ev.time, ev.val );
+}
+
+void Worker::ProcessPlotDataImpl( uint64_t name, int64_t evTime, double val )
+{
+    PlotData* plot = m_data.plots.Retrieve( name, [this] ( uint64_t name ) {
         auto plot = m_slab.AllocInit<PlotData>();
         plot->name = name;
         plot->type = PlotType::User;
@@ -5662,23 +5673,9 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         Query( ServerQueryPlotName, name );
     } );
 
-    const auto time = TscTime( RefTime( m_refTimeThread, ev.time ) );
+    const auto time = TscTime( RefTime( m_refTimeThread, evTime ) );
     if( m_data.lastTime < time ) m_data.lastTime = time;
-    switch( ev.type )
-    {
-    case PlotDataType::Double:
-        InsertPlot( plot, time, ev.data.d );
-        break;
-    case PlotDataType::Float:
-        InsertPlot( plot, time, (double)ev.data.f );
-        break;
-    case PlotDataType::Int:
-        InsertPlot( plot, time, (double)ev.data.i );
-        break;
-    default:
-        assert( false );
-        break;
-    }
+    InsertPlot( plot, time, val );
 }
 
 void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )

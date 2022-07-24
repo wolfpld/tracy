@@ -179,45 +179,6 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                 draw->AddRectFilled( ImVec2( 0, yPos ), ImVec2( w, yPos + PlotHeight ), bg );
 
-                if( v->type == PlotType::Memory )
-                {
-                    auto& mem = m_worker.GetMemoryNamed( v->name );
-
-                    if( m_memoryAllocInfoPool == v->name && m_memoryAllocInfoWindow >= 0 )
-                    {
-                        const auto& ev = mem.data[m_memoryAllocInfoWindow];
-
-                        const auto tStart = ev.TimeAlloc();
-                        const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
-
-                        const auto px0 = ( tStart - m_vd.zvStart ) * pxns;
-                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_vd.zvStart ) * pxns );
-                        draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
-                        draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
-                    }
-                    if( m_memoryAllocHover >= 0 && m_memoryAllocHoverPool == v->name && ( m_memoryAllocInfoPool != v->name || m_memoryAllocHover != m_memoryAllocInfoWindow ) )
-                    {
-                        const auto& ev = mem.data[m_memoryAllocHover];
-
-                        const auto tStart = ev.TimeAlloc();
-                        const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
-
-                        const auto px0 = ( tStart - m_vd.zvStart ) * pxns;
-                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_vd.zvStart ) * pxns );
-                        draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x228888DD );
-                        draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x448888DD );
-
-                        if( m_memoryAllocHoverWait > 0 )
-                        {
-                            m_memoryAllocHoverWait--;
-                        }
-                        else
-                        {
-                            m_memoryAllocHover = -1;
-                        }
-                    }
-                }
-
                 auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
                 auto end = std::lower_bound( it, vec.end(), m_vd.zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
 
@@ -368,6 +329,45 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         }
 
                         prevy = it - 1;
+                    }
+                }
+
+                if( v->type == PlotType::Memory )
+                {
+                    auto& mem = m_worker.GetMemoryNamed( v->name );
+
+                    if( m_memoryAllocInfoPool == v->name && m_memoryAllocInfoWindow >= 0 )
+                    {
+                        const auto& ev = mem.data[m_memoryAllocInfoWindow];
+
+                        const auto tStart = ev.TimeAlloc();
+                        const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
+
+                        const auto px0 = ( tStart - m_vd.zvStart ) * pxns;
+                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_vd.zvStart ) * pxns );
+                        draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
+                        draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
+                    }
+                    if( m_memoryAllocHover >= 0 && m_memoryAllocHoverPool == v->name && ( m_memoryAllocInfoPool != v->name || m_memoryAllocHover != m_memoryAllocInfoWindow ) )
+                    {
+                        const auto& ev = mem.data[m_memoryAllocHover];
+
+                        const auto tStart = ev.TimeAlloc();
+                        const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
+
+                        const auto px0 = ( tStart - m_vd.zvStart ) * pxns;
+                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_vd.zvStart ) * pxns );
+                        draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x228888DD );
+                        draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x448888DD );
+
+                        if( m_memoryAllocHoverWait > 0 )
+                        {
+                            m_memoryAllocHoverWait--;
+                        }
+                        else
+                        {
+                            m_memoryAllocHover = -1;
+                        }
                     }
                 }
 

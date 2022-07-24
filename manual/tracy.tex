@@ -1307,13 +1307,29 @@ If using the \texttt{TracyLockable} or \texttt{TracySharedLockable} wrappers doe
 
 Tracy can capture and draw numeric value changes over time. You may use it to analyze draw call counts, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.
 
-To configure how plot values are presented by the profiler, you may use the \texttt{TracyPlotConfig(name, format)} macro, where \texttt{format} is one of the following options:
+To configure how plot values are presented by the profiler, you may use the \texttt{TracyPlotConfig(name, format, step, fill, color)} macro, where \texttt{format} is one of the following options:
 
 \begin{itemize}
 \item \texttt{tracy::PlotFormatType::Number} -- values will be displayed as plain numbers.
 \item \texttt{tracy::PlotFormatType::Memory} -- treats the values as memory sizes. Will display kilobytes, megabytes, etc.
 \item \texttt{tracy::PlotFormatType::Percentage} -- values will be displayed as percentage (with value $100$ being equal to $100\%$).
 \end{itemize}
+
+The \texttt{step} parameter determines whether the plot will be displayed as a staircase or will smoothly change between plot points (see figure~\ref{plotconfig}). The \texttt{fill} parameter can be used to disable filling the area below the plot with a solid color.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+[dot/.style={rectangle,draw,scale=0.5}];
+\draw(0, -2) -- (1, -2.3) node[dot]{} -- (1.2, -3) node[dot]{} -- (1.8, -1.2) node[dot]{} -- (2.7, -0.5) node[dot]{} -- (3, -2) node[dot]{} -- (5, -2.5);
+\draw(7, -1.5) -- (8, -1.5) -- (8, -2.3) node[dot]{} -- (8.2, -2.3) -- (8.2, -3) node[dot]{} -- (8.8, -3) -- (8.8, -1.2) node[dot]{} -- (9.7, -1.2) -- (9.7, -0.5) node[dot]{} -- (10, -0.5) -- (10, -2) node[dot]{} -- (12, -2);
+\end{tikzpicture}
+\caption{An identical set of values on a smooth plot (left) and a staircase plot (right).}
+\label{plotconfig}
+\end{figure}
+
+Each plot has its own color, which by default is derived from the plot name (each unique plot name produces its own color, which does not change between profiling runs). If you want to provide your own color instead, you may enter the \texttt{color} parameter. Note that you should set the color value to \texttt{0} if you do not want to set your own color.
+
+For reference, the following command sets the default parameters of the plot (that is, it's a no-op): \texttt{TracyPlotConfig(name, tracy::PlotFormatType::Number, false, true, 0)}.
 
 It is beneficial but not required to use a unique pointer for name string literal (see section~\ref{uniquepointers} for more details).
 

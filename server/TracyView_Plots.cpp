@@ -39,6 +39,7 @@ uint32_t View::GetPlotColor( const PlotData* plot ) const
     switch( plot->type )
     {
     case PlotType::User:
+        if( plot->color != 0 ) return plot->color | 0xFF000000;
         return GetHsvColor( charutil::hash( m_worker.GetString( plot->name ) ), -10 );
     case PlotType::Memory:
         return 0xFF2266CC;

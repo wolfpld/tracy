@@ -195,6 +195,7 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\divsufsort.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c" />
+    <ClCompile Include="..\..\src\Fonts.cpp" />
     <ClCompile Include="..\..\src\HttpRequest.cpp" />
     <ClCompile Include="..\..\src\imgui\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui\imgui_impl_opengl3.cpp" />
@@ -311,6 +312,7 @@
     <ClInclude Include="..\..\..\zstd\zdict.h" />
     <ClInclude Include="..\..\..\zstd\zstd.h" />
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
+    <ClInclude Include="..\..\src\Fonts.hpp" />
     <ClInclude Include="..\..\src\font\DroidSans.hpp" />
     <ClInclude Include="..\..\src\font\FiraCodeRetina.hpp" />
     <ClInclude Include="..\..\src\font\FontAwesomeSolid.hpp" />

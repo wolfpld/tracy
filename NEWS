@@ -21,6 +21,14 @@ v0.x.x (xxxx-xx-xx)
 - Tracy macros now require to be terminated with a semicolon.
 - The undocumented ___tracy_demangle() function API has been changed. Please
   refer to the source code for further instructions.
+- Plots visualization has been improved.
+  - Each plot now has its own color, which can also be defined by the user.
+  - The area below the plot is now optionally filled with a color.
+  - Plots can now also be configured to be staircase instead of smooth. This
+    new setting is appropriate for many inputs where only discrete values
+    make sense, e.g. the memory allocation plot.
+  - The API for TracyPlotConfig() macro has been changed. Please refer to
+    the manual to see how you can fix this.
 - Some text labels in the user interface are now more easy to read.
 - The profiler will now instruct the user in the UI on what can be done, if
   the send queue is slow to process (typically due to symbol resolution).

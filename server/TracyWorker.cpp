@@ -5684,13 +5684,13 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
         auto plot = m_slab.AllocInit<PlotData>();
         plot->name = name;
         plot->type = PlotType::User;
-        plot->showSteps = false;
         return plot;
     }, [this]( uint64_t name ) {
         Query( ServerQueryPlotName, name );
     } );
 
     plot->format = (PlotValueFormatting)ev.type;
+    plot->showSteps = ev.step;
 }
 
 void Worker::ProcessMessage( const QueueMessage& ev )

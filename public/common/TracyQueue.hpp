@@ -608,6 +608,8 @@ struct QueuePlotConfig
 {
     uint64_t name;      // ptr
     uint8_t type;
+    uint8_t step;
+    uint8_t fill;
 };
 
 struct QueueParamSetup

@@ -454,6 +454,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         plot->name = nptr;
         plot->type = PlotType::User;
         plot->format = v.format;
+        plot->showSteps = false;
 
         double sum = 0;
         double min = v.data.begin()->second;
@@ -1104,6 +1105,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 auto pd = m_slab.AllocInit<PlotData>();
                 uint64_t psz;
                 f.Read7( pd->type, pd->format, pd->name, pd->min, pd->max, pd->sum, psz );
+                pd->showSteps = false;
                 pd->data.reserve_exact( psz, m_slab );
                 auto ptr = pd->data.data();
                 int64_t refTime = 0;
@@ -1127,6 +1129,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 uint64_t psz;
                 f.Read6( pd->type, pd->format, pd->name, pd->min, pd->max, psz );
                 pd->sum = 0;
+                pd->showSteps = false;
                 pd->data.reserve_exact( psz, m_slab );
                 auto ptr = pd->data.data();
                 int64_t refTime = 0;
@@ -5620,6 +5623,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         plot->name = name;
         plot->type = PlotType::User;
         plot->format = PlotValueFormatting::Number;
+        plot->showSteps = false;
         return plot;
     }, [this]( uint64_t name ) {
         Query( ServerQueryPlotName, name );
@@ -5650,6 +5654,7 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
         auto plot = m_slab.AllocInit<PlotData>();
         plot->name = name;
         plot->type = PlotType::User;
+        plot->showSteps = false;
         return plot;
     }, [this]( uint64_t name ) {
         Query( ServerQueryPlotName, name );
@@ -6777,6 +6782,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         m_sysTimePlot->name = 0;
         m_sysTimePlot->type = PlotType::SysTime;
         m_sysTimePlot->format = PlotValueFormatting::Percentage;
+        m_sysTimePlot->showSteps = false;
         m_sysTimePlot->min = val;
         m_sysTimePlot->max = val;
         m_sysTimePlot->sum = val;
@@ -7093,6 +7099,7 @@ void Worker::CreateMemAllocPlot( MemData& memdata )
     memdata.plot->name = memdata.name;
     memdata.plot->type = PlotType::Memory;
     memdata.plot->format = PlotValueFormatting::Memory;
+    memdata.plot->showSteps = true;
     memdata.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
     m_data.plots.Data().push_back( memdata.plot );
 }
@@ -7116,6 +7123,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     plot->name = mem.name;
     plot->type = PlotType::Memory;
     plot->format = PlotValueFormatting::Memory;
+    plot->showSteps = true;
     plot->data.reserve_exact( psz, m_slab );
 
     auto aptr = mem.data.begin();

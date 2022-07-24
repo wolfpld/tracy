@@ -747,6 +747,7 @@ struct PlotData
     SortedVector<PlotItem, PlotItemSort> data;
     PlotType type;
     PlotValueFormatting format;
+    uint8_t showSteps;
 };
 
 struct MemData

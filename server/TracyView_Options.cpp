@@ -543,6 +543,8 @@ void View::DrawOptions()
 
             for( const auto& p : m_worker.GetPlots() )
             {
+                SmallColorBox( GetPlotColor( p ) );
+                ImGui::SameLine();
                 SmallCheckbox( GetPlotName( p ), &Vis( p ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );

@@ -44,6 +44,7 @@
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracyProtoHistory.hpp"
 #include "../../server/TracyStorage.hpp"
+#include "../../server/TracyTexture.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWeb.hpp"
@@ -120,6 +121,7 @@ static bool showReleaseNotes = false;
 static std::string releaseNotes;
 static uint8_t* iconPx;
 static int iconX, iconY;
+static void* iconTex;
 
 void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
@@ -141,6 +143,12 @@ static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigF
     style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
     style.ScaleAllSizes( scale );
+
+    const auto ty = int( 15 * scale );
+    auto scaleIcon = new uint8_t[4*ty*ty];
+    stbir_resize_uint8( iconPx, iconX, iconY, 0, scaleIcon, ty, ty, 0, 4 );
+    tracy::UpdateTextureRGBA( iconTex, scaleIcon, ty, ty );
+    delete[] scaleIcon;
 }
 
 static void SetupScaleCallback( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
@@ -286,6 +294,7 @@ int main( int argc, char** argv )
     ImGui_ImplGlfw_InitForOpenGL( window, true );
     ImGui_ImplOpenGL3_Init( "#version 150" );
 
+    iconTex = tracy::MakeTexture();
     SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
 
     if( initFileOpen )
@@ -336,6 +345,8 @@ int main( int argc, char** argv )
 
     glfwGetWindowPos( window, &winPos.x, &winPos.y );
     glfwGetWindowSize( window, &winPos.w, &winPos.h );
+
+    tracy::FreeTexture( iconTex, RunOnMainThread );
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

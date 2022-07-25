@@ -53,6 +53,7 @@
 #include "HttpRequest.hpp"
 #include "NativeWindow.hpp"
 #include "ResolvService.hpp"
+#include "RunQueue.hpp"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -118,24 +119,14 @@ static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
 static ImGuiTextFilter addrFilter, portFilter, progFilter;
-static std::thread::id mainThread;
-static std::vector<std::function<void()>> mainThreadTasks;
-static std::mutex mainThreadLock;
+static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
 static bool showReleaseNotes = false;
 static std::string releaseNotes;
 
 void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
-    if( !forceDelay && std::this_thread::get_id() == mainThread )
-    {
-        cb();
-    }
-    else
-    {
-        std::lock_guard<std::mutex> lock( mainThreadLock );
-        mainThreadTasks.emplace_back( cb );
-    }
+    mainThreadTasks.Queue( cb, forceDelay );
 }
 
 static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
@@ -274,8 +265,6 @@ int main( int argc, char** argv )
         }
     }
 
-    mainThread = std::this_thread::get_id();
-
     updateThread = std::thread( [] {
         HttpRequest( "nereid.pl", "/tracy/version", 8099, [] ( int size, char* data ) {
             if( size == 4 )
@@ -390,14 +379,7 @@ int main( int argc, char** argv )
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
         }
-        std::unique_lock<std::mutex> lock( mainThreadLock );
-        if( !mainThreadTasks.empty() )
-        {
-            std::vector<std::function<void()>> tmp;
-            std::swap( tmp, mainThreadTasks );
-            lock.unlock();
-            for( auto& cb : tmp ) cb();
-        }
+        mainThreadTasks.Run();
     }
 
     if( loadThread.joinable() ) loadThread.join();

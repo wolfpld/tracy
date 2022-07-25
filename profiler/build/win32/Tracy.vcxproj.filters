@@ -336,6 +336,9 @@
     <ClCompile Include="..\..\src\Fonts.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\RunQueue.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -681,6 +684,9 @@
       <Filter>src\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Fonts.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\RunQueue.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

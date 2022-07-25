@@ -122,6 +122,7 @@ static std::string releaseNotes;
 static uint8_t* iconPx;
 static int iconX, iconY;
 static void* iconTex;
+static int iconTexSz;
 
 void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
@@ -144,7 +145,8 @@ static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigF
     style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
     style.ScaleAllSizes( scale );
 
-    const auto ty = int( 15 * scale );
+    const auto ty = int( 80 * scale );
+    iconTexSz = ty;
     auto scaleIcon = new uint8_t[4*ty*ty];
     stbir_resize_uint8( iconPx, iconX, iconY, 0, scaleIcon, ty, ty, 0, 4 );
     tracy::UpdateTextureRGBA( iconTex, scaleIcon, ty, ty );
@@ -489,6 +491,8 @@ static void DrawContents()
         bool keepOpenAbout = true;
         if( ImGui::BeginPopupModal( "About Tracy", &keepOpenAbout, ImGuiWindowFlags_AlwaysAutoResize ) )
         {
+            tracy::ImageCentered( iconTex, ImVec2( iconTexSz, iconTexSz ) );
+            ImGui::Spacing();
             ImGui::PushFont( s_bigFont );
             tracy::TextCentered( buf );
             ImGui::PopFont();

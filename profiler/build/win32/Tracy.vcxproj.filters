@@ -339,6 +339,9 @@
     <ClCompile Include="..\..\src\RunQueue.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\WindowPosition.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -687,6 +690,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\RunQueue.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\WindowPosition.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

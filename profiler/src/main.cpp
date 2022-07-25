@@ -54,6 +54,8 @@
 #include "NativeWindow.hpp"
 #include "ResolvService.hpp"
 #include "RunQueue.hpp"
+#include "WindowPosition.hpp"
+
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -197,30 +199,7 @@ int main( int argc, char** argv )
         }
     }
 
-    std::string winPosFile = tracy::GetSavePath( "window.position" );
-    int x = 200, y = 200, w = 1650, h = 960, maximize = 0;
-    {
-        FILE* f = fopen( winPosFile.c_str(), "rb" );
-        if( f )
-        {
-            uint32_t data[5];
-            fread( data, 1, sizeof( data ), f );
-            fclose( f );
-            x = data[0];
-            y = data[1];
-            w = data[2];
-            h = data[3];
-            maximize = data[4];
-        }
-        if( w <= 0 || h <= 0 )
-        {
-            x = 200;
-            y = 200;
-            w = 1650;
-            h = 960;
-            maximize = 0;
-        }
-    }
+    WindowPosition winPos;
 
     std::string connHistFile = tracy::GetSavePath( "connection.history" );
     {
@@ -291,7 +270,7 @@ int main( int argc, char** argv )
 #if __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-    GLFWwindow* window = glfwCreateWindow( w, h, title, NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow( winPos.w, winPos.h, title, NULL, NULL);
     if( !window ) return 1;
 
     {
@@ -301,9 +280,9 @@ int main( int argc, char** argv )
         free( icon.pixels );
     }
 
-    glfwSetWindowPos( window, x, y );
+    glfwSetWindowPos( window, winPos.x, winPos.y );
 #ifdef GLFW_MAXIMIZED
-    if( maximize ) glfwMaximizeWindow( window );
+    if( winPos.maximize ) glfwMaximizeWindow( window );
 #endif
     s_glfwWindow = window;
     glfwMakeContextCurrent(window);
@@ -387,25 +366,16 @@ int main( int argc, char** argv )
     if( updateNotesThread.joinable() ) updateNotesThread.join();
     view.reset();
 
-    {
-        FILE* f = fopen( winPosFile.c_str(), "wb" );
-        if( f )
-        {
 #ifdef GLFW_MAXIMIZED
-            uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
-            if( maximized ) glfwRestoreWindow( window );
+    uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
+    if( maximized ) glfwRestoreWindow( window );
 #else
-            uint32_t maximized = 0;
+    uint32_t maximized = 0;
 #endif
+    winPos.maximize = maximized;
 
-            glfwGetWindowPos( window, &x, &y );
-            glfwGetWindowSize( window, &w, &h );
-
-            uint32_t data[5] = { uint32_t( x ), uint32_t( y ), uint32_t( w ), uint32_t( h ), maximized };
-            fwrite( data, 1, sizeof( data ), f );
-            fclose( f );
-        }
-    }
+    glfwGetWindowPos( window, &winPos.x, &winPos.y );
+    glfwGetWindowSize( window, &winPos.w, &winPos.h );
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

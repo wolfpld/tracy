@@ -203,6 +203,7 @@
     <ClCompile Include="..\..\src\NativeWindow.cpp" />
     <ClCompile Include="..\..\src\ResolvService.cpp" />
     <ClCompile Include="..\..\src\RunQueue.cpp" />
+    <ClCompile Include="..\..\src\WindowPosition.cpp" />
     <ClCompile Include="..\..\src\winmain.cpp">
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotSet</EnableEnhancedInstructionSet>
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
@@ -326,6 +327,7 @@
     <ClInclude Include="..\..\src\ResolvService.hpp" />
     <ClInclude Include="..\..\src\RunQueue.hpp" />
     <ClInclude Include="..\..\src\stb_image.h" />
+    <ClInclude Include="..\..\src\WindowPosition.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

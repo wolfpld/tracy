@@ -49,8 +49,10 @@
 #include "../../server/IconsFontAwesome5.h"
 
 #include "icon.hpp"
-#include "Fonts.hpp"
+
 #include "ConnectionHistory.hpp"
+#include "Filters.hpp"
+#include "Fonts.hpp"
 #include "HttpRequest.hpp"
 #include "NativeWindow.hpp"
 #include "ResolvService.hpp"
@@ -108,7 +110,7 @@ static ConnectionHistory* connHist;
 static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
-static ImGuiTextFilter addrFilter, portFilter, progFilter;
+static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
 static bool showReleaseNotes = false;
@@ -189,30 +191,10 @@ int main( int argc, char** argv )
 
     WindowPosition winPos;
     ConnectionHistory connHistory;
+    Filters filters;
 
     connHist = &connHistory;
-
-    std::string filtersFile = tracy::GetSavePath( "client.filters" );
-    {
-        FILE* f = fopen( filtersFile.c_str(), "rb" );
-        if( f )
-        {
-            uint8_t sz;
-            fread( &sz, 1, sizeof( sz ), f );
-            fread( addrFilter.InputBuf, 1, sz, f );
-            addrFilter.Build();
-
-            fread( &sz, 1, sizeof( sz ), f );
-            fread( portFilter.InputBuf, 1, sz, f );
-            portFilter.Build();
-
-            fread( &sz, 1, sizeof( sz ), f );
-            fread( progFilter.InputBuf, 1, sz, f );
-            progFilter.Build();
-
-            fclose( f );
-        }
-    }
+    filt = &filters;
 
     updateThread = std::thread( [] {
         HttpRequest( "nereid.pl", "/tracy/version", 8099, [] ( int size, char* data ) {
@@ -359,26 +341,6 @@ int main( int argc, char** argv )
 #endif
 
     glfwTerminate();
-
-    {
-        FILE* f = fopen( filtersFile.c_str(), "wb" );
-        if( f )
-        {
-            uint8_t sz = strlen( addrFilter.InputBuf );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            fwrite( addrFilter.InputBuf, 1, sz, f );
-
-            sz = strlen( portFilter.InputBuf );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            fwrite( portFilter.InputBuf, 1, sz, f );
-
-            sz = strlen( progFilter.InputBuf );
-            fwrite( &sz, 1, sizeof( sz ), f );
-            fwrite( progFilter.InputBuf, 1, sz, f );
-
-            fclose( f );
-        }
-    }
 
     return 0;
 }
@@ -707,7 +669,7 @@ static void DrawContents()
             ImGui::TextUnformatted( "Discovered clients:" );
             ImGui::SameLine();
             tracy::SmallToggleButton( ICON_FA_FILTER " Filter", showFilter );
-            if( addrFilter.IsActive() || portFilter.IsActive() || progFilter.IsActive() )
+            if( filt->IsActive() )
             {
                 ImGui::SameLine();
                 tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
@@ -717,9 +679,7 @@ static void DrawContents()
                     ImGui::SameLine();
                     if( ImGui::SmallButton( ICON_FA_BACKSPACE " Clear" ) )
                     {
-                        addrFilter.Clear();
-                        portFilter.Clear();
-                        progFilter.Clear();
+                        filt->Clear();
                     }
                 }
             }
@@ -727,9 +687,7 @@ static void DrawContents()
             {
                 const auto w = ImGui::GetTextLineHeight() * 12;
                 ImGui::Separator();
-                addrFilter.Draw( "Address filter", w );
-                portFilter.Draw( "Port filter", w );
-                progFilter.Draw( "Program filter", w );
+                filt->Draw( w );
             }
             ImGui::Separator();
             static bool widthSet = false;
@@ -751,14 +709,9 @@ static void DrawContents()
                 bool sel = false;
                 const auto& name = resolvMap.find( v.second.address );
                 assert( name != resolvMap.end() );
-                if( addrFilter.IsActive() && !addrFilter.PassFilter( name->second.c_str() ) && !addrFilter.PassFilter( v.second.address.c_str() ) ) continue;
-                if( portFilter.IsActive() )
-                {
-                    char buf[32];
-                    sprintf( buf, "%" PRIu16, v.second.port );
-                    if( !portFilter.PassFilter( buf ) ) continue;
-                }
-                if( progFilter.IsActive() && !progFilter.PassFilter( v.second.procName.c_str() ) ) continue;
+                if( filt->FailAddr( name->second.c_str() ) && filt->FailAddr( v.second.address.c_str() ) ) continue;
+                if( filt->FailPort( v.second.port ) ) continue;
+                if( filt->FailProg( v.second.procName.c_str() ) ) continue;
                 ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                 if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
                 ImGui::PushID( idx++ );

@@ -345,6 +345,9 @@
     <ClCompile Include="..\..\src\ConnectionHistory.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Filters.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -699,6 +702,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ConnectionHistory.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Filters.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

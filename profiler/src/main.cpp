@@ -30,6 +30,9 @@
 #define STBI_ONLY_PNG
 #include "stb_image.h"
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+
 #include "../../public/common/TracyProtocol.hpp"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/tracy_robin_hood.h"

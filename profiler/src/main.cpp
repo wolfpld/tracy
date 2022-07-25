@@ -50,6 +50,7 @@
 
 #include "icon.hpp"
 #include "Fonts.hpp"
+#include "ConnectionHistory.hpp"
 #include "HttpRequest.hpp"
 #include "NativeWindow.hpp"
 #include "ResolvService.hpp"
@@ -79,18 +80,6 @@ static void WindowRefreshCallback( GLFWwindow* window )
     DrawContents();
 }
 
-std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildConnectionHistory( const std::unordered_map<std::string, uint64_t>& connHistMap )
-{
-    std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> ret;
-    ret.reserve( connHistMap.size() );
-    for( auto it = connHistMap.begin(); it != connHistMap.end(); ++it )
-    {
-        ret.emplace_back( it );
-    }
-    tracy::pdqsort_branchless( ret.begin(), ret.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
-    return ret;
-}
-
 struct ClientData
 {
     int64_t time;
@@ -115,8 +104,7 @@ static std::mutex resolvLock;
 static tracy::unordered_flat_map<std::string, std::string> resolvMap;
 static ResolvService resolv( port );
 static char addr[1024] = { "127.0.0.1" };
-static std::unordered_map<std::string, uint64_t> connHistMap;
-static std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> connHistVec;
+static ConnectionHistory* connHist;
 static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
@@ -200,28 +188,10 @@ int main( int argc, char** argv )
     }
 
     WindowPosition winPos;
+    ConnectionHistory connHistory;
 
-    std::string connHistFile = tracy::GetSavePath( "connection.history" );
-    {
-        FILE* f = fopen( connHistFile.c_str(), "rb" );
-        if( f )
-        {
-            uint64_t sz;
-            fread( &sz, 1, sizeof( sz ), f );
-            for( uint64_t i=0; i<sz; i++ )
-            {
-                uint64_t ssz, cnt;
-                fread( &ssz, 1, sizeof( ssz ), f );
-                assert( ssz < 1024 );
-                char tmp[1024];
-                fread( tmp, 1, ssz, f );
-                fread( &cnt, 1, sizeof( cnt ), f );
-                connHistMap.emplace( std::string( tmp, tmp+ssz ), cnt );
-            }
-            fclose( f );
-            connHistVec = RebuildConnectionHistory( connHistMap );
-        }
-    }
+    connHist = &connHistory;
+
     std::string filtersFile = tracy::GetSavePath( "client.filters" );
     {
         FILE* f = fopen( filtersFile.c_str(), "rb" );
@@ -390,22 +360,6 @@ int main( int argc, char** argv )
 
     glfwTerminate();
 
-    {
-        FILE* f = fopen( connHistFile.c_str(), "wb" );
-        if( f )
-        {
-            uint64_t sz = uint64_t( connHistMap.size() );
-            fwrite( &sz, 1, sizeof( uint64_t ), f );
-            for( auto& v : connHistMap )
-            {
-                sz = uint64_t( v.first.size() );
-                fwrite( &sz, 1, sizeof( uint64_t ), f );
-                fwrite( v.first.c_str(), 1, sz, f );
-                fwrite( &v.second, 1, sizeof( v.second ), f );
-            }
-            fclose( f );
-        }
-    }
     {
         FILE* f = fopen( filtersFile.c_str(), "wb" );
         if( f )
@@ -650,16 +604,16 @@ static void DrawContents()
         ImGui::TextUnformatted( "Client address" );
         bool connectClicked = false;
         connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
-        if( !connHistVec.empty() )
+        if( !connHist->empty() )
         {
             ImGui::SameLine();
             if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
             {
                 int idxRemove = -1;
-                const auto sz = std::min<size_t>( 5, connHistVec.size() );
+                const auto sz = std::min<size_t>( 5, connHist->size() );
                 for( size_t i=0; i<sz; i++ )
                 {
-                    const auto& str = connHistVec[i]->first;
+                    const auto& str = connHist->Name( i );
                     if( ImGui::Selectable( str.c_str() ) )
                     {
                         memcpy( addr, str.c_str(), str.size() + 1 );
@@ -671,8 +625,7 @@ static void DrawContents()
                 }
                 if( idxRemove >= 0 )
                 {
-                    connHistMap.erase( connHistVec[idxRemove] );
-                    connHistVec = RebuildConnectionHistory( connHistMap );
+                    connHist->Erase( idxRemove );
                 }
                 ImGui::EndCombo();
             }
@@ -680,19 +633,9 @@ static void DrawContents()
         connectClicked |= ImGui::Button( ICON_FA_WIFI " Connect" );
         if( connectClicked && *addr && !loadThread.joinable() )
         {
-            const auto addrLen = strlen( addr );
-            std::string addrStr( addr, addr+addrLen );
-            auto it = connHistMap.find( addrStr );
-            if( it != connHistMap.end() )
-            {
-                it->second++;
-            }
-            else
-            {
-                connHistMap.emplace( std::move( addrStr ), 1 );
-            }
-            connHistVec = RebuildConnectionHistory( connHistMap );
+            connHist->Count( addr );
 
+            const auto addrLen = strlen( addr );
             auto ptr = addr + addrLen - 1;
             while( ptr > addr && *ptr != ':' ) ptr--;
             if( *ptr == ':' )

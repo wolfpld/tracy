@@ -118,6 +118,8 @@ static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
 static bool showReleaseNotes = false;
 static std::string releaseNotes;
+static uint8_t* iconPx;
+static int iconX, iconY;
 
 void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
@@ -228,11 +230,14 @@ int main( int argc, char** argv )
     GLFWwindow* window = glfwCreateWindow( winPos.w, winPos.h, title, NULL, NULL);
     if( !window ) return 1;
 
+    iconPx = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &iconX, &iconY, nullptr, 4 );
+
     {
         GLFWimage icon;
-        icon.pixels = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &icon.width, &icon.height, nullptr, 4 );
+        icon.width = iconX;
+        icon.height = iconY;
+        icon.pixels = iconPx;
         glfwSetWindowIcon( window, 1, &icon );
-        free( icon.pixels );
     }
 
     glfwSetWindowPos( window, winPos.x, winPos.y );
@@ -344,6 +349,7 @@ int main( int argc, char** argv )
 #endif
 
     glfwTerminate();
+    free( iconPx );
 
     return 0;
 }

@@ -59,6 +59,12 @@ static constexpr const ImVec4 SyntaxColorsDimmed[] = {
     return ImGui::GetTextLineHeight() / 15.f;
 }
 
+[[maybe_unused]] static inline void ImageCentered( ImTextureID user_texture_id, const ImVec2& size )
+{
+    ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - size.x ) * 0.5f );
+    ImGui::Image( user_texture_id, size );
+}
+
 [[maybe_unused]] static inline void TextCentered( const char* text )
 {
     const auto tw = ImGui::CalcTextSize( text ).x;

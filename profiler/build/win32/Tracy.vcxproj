@@ -195,14 +195,15 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\divsufsort.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c" />
+    <ClCompile Include="..\..\src\BackendGlfw.cpp" />
     <ClCompile Include="..\..\src\ConnectionHistory.cpp" />
     <ClCompile Include="..\..\src\Filters.cpp" />
     <ClCompile Include="..\..\src\Fonts.cpp" />
     <ClCompile Include="..\..\src\HttpRequest.cpp" />
+    <ClCompile Include="..\..\src\ImGuiContext.cpp" />
     <ClCompile Include="..\..\src\imgui\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
-    <ClCompile Include="..\..\src\NativeWindow.cpp" />
     <ClCompile Include="..\..\src\ResolvService.cpp" />
     <ClCompile Include="..\..\src\RunQueue.cpp" />
     <ClCompile Include="..\..\src\WindowPosition.cpp" />
@@ -316,6 +317,7 @@
     <ClInclude Include="..\..\..\zstd\zdict.h" />
     <ClInclude Include="..\..\..\zstd\zstd.h" />
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
+    <ClInclude Include="..\..\src\Backend.hpp" />
     <ClInclude Include="..\..\src\ConnectionHistory.hpp" />
     <ClInclude Include="..\..\src\Filters.hpp" />
     <ClInclude Include="..\..\src\Fonts.hpp" />
@@ -324,10 +326,10 @@
     <ClInclude Include="..\..\src\font\FontAwesomeSolid.hpp" />
     <ClInclude Include="..\..\src\HttpRequest.hpp" />
     <ClInclude Include="..\..\src\icon.hpp" />
+    <ClInclude Include="..\..\src\ImGuiContext.hpp" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3.h" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="..\..\src\NativeWindow.hpp" />
     <ClInclude Include="..\..\src\ResolvService.hpp" />
     <ClInclude Include="..\..\src\RunQueue.hpp" />
     <ClInclude Include="..\..\src\stb_image.h" />

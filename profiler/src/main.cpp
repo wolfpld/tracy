@@ -4,16 +4,12 @@
 #include <chrono>
 #include <inttypes.h>
 #include <imgui.h>
-#include "imgui/imgui_impl_glfw.h"
-#include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_opengl3_loader.h"
 #include <mutex>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <unordered_map>
-#include <GLFW/glfw3.h>
 #include <memory>
 #include <sys/stat.h>
 #include <locale.h>
@@ -54,37 +50,15 @@
 
 #include "icon.hpp"
 
+#include "Backend.hpp"
 #include "ConnectionHistory.hpp"
 #include "Filters.hpp"
 #include "Fonts.hpp"
 #include "HttpRequest.hpp"
-#include "NativeWindow.hpp"
+#include "ImGuiContext.hpp"
 #include "ResolvService.hpp"
 #include "RunQueue.hpp"
-#include "WindowPosition.hpp"
 
-
-static void glfw_error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error %d: %s\n", error, description);
-}
-
-GLFWwindow* s_glfwWindow = nullptr;
-static bool s_customTitle = false;
-static void SetWindowTitleCallback( const char* title )
-{
-    assert( s_glfwWindow );
-    char tmp[1024];
-    sprintf( tmp, "%s - Tracy Profiler %i.%i.%i", title, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
-    glfwSetWindowTitle( s_glfwWindow, tmp );
-    s_customTitle = true;
-}
-
-static void DrawContents();
-static void WindowRefreshCallback( GLFWwindow* window )
-{
-    DrawContents();
-}
 
 struct ClientData
 {
@@ -123,6 +97,23 @@ static uint8_t* iconPx;
 static int iconX, iconY;
 static void* iconTex;
 static int iconTexSz;
+static Backend* bptr;
+static bool s_customTitle = false;
+
+static void SetWindowTitleCallback( const char* title )
+{
+    char tmp[1024];
+    sprintf( tmp, "%s - Tracy Profiler %i.%i.%i", title, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+    bptr->SetTitle( tmp );
+    s_customTitle = true;
+}
+
+static void* GetMainWindowNative()
+{
+    return bptr->GetNativeWindow();
+}
+
+static void DrawContents();
 
 void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
 {
@@ -204,7 +195,6 @@ int main( int argc, char** argv )
         }
     }
 
-    WindowPosition winPos;
     ConnectionHistory connHistory;
     Filters filters;
 
@@ -223,78 +213,30 @@ int main( int argc, char** argv )
         } );
     } );
 
-    // Setup window
-    glfwSetErrorCallback(glfw_error_callback);
-    if( !glfwInit() ) return 1;
-#ifdef DISPLAY_SERVER_WAYLAND
-    glfwWindowHint(GLFW_ALPHA_BITS, 0);
-#else
-    glfwWindowHint(GLFW_VISIBLE, 0);
-#endif
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#if __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    GLFWwindow* window = glfwCreateWindow( winPos.w, winPos.h, title, NULL, NULL);
-    if( !window ) return 1;
-
     iconPx = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &iconX, &iconY, nullptr, 4 );
 
-    {
-        GLFWimage icon;
-        icon.width = iconX;
-        icon.height = iconY;
-        icon.pixels = iconPx;
-        glfwSetWindowIcon( window, 1, &icon );
-    }
+    ImGuiTracyContext imguiContext;
+    Backend backend( title, DrawContents, &mainThreadTasks );
+    backend.SetIcon( iconPx, iconX, iconY );
+    bptr = &backend;
 
-    glfwSetWindowPos( window, winPos.x, winPos.y );
-#ifdef GLFW_MAXIMIZED
-    if( winPos.maximize ) glfwMaximizeWindow( window );
-#endif
-    s_glfwWindow = window;
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
-    glfwSetWindowRefreshCallback( window, WindowRefreshCallback );
-
+#if 0
 #ifdef _WIN32
     typedef UINT(*GDFS)(void);
     GDFS getDpiForSystem = nullptr;
     HMODULE dll = GetModuleHandleW(L"user32.dll");
     if( dll != INVALID_HANDLE_VALUE ) getDpiForSystem = (GDFS)GetProcAddress(dll, "GetDpiForSystem");
     if( getDpiForSystem ) dpiScale = getDpiForSystem() / 96.f;
-#elif defined __linux__
-#  if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
-    auto monitor = glfwGetWindowMonitor( window );
-    if( !monitor ) monitor = glfwGetPrimaryMonitor();
-    if( monitor )
-    {
-        float x, y;
-        glfwGetMonitorContentScale( monitor, &x, &y );
-        dpiScale = x;
-    }
-#  endif
+#endif
 #endif
 
+    dpiScale = backend.GetDpiScale();
     const auto envDpiScale = getenv( "TRACY_DPI_SCALE" );
     if( envDpiScale )
     {
         const auto cnv = atof( envDpiScale );
         if( cnv != 0 ) dpiScale = cnv;
     }
-
-    // Setup ImGui binding
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    std::string iniFileName = tracy::GetSavePath( "imgui.ini" );
-    io.IniFilename = iniFileName.c_str();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
-
-    ImGui_ImplGlfw_InitForOpenGL( window, true );
-    ImGui_ImplOpenGL3_Init( "#version 150" );
 
     iconTex = tracy::MakeTexture();
     SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
@@ -313,56 +255,20 @@ int main( int argc, char** argv )
     NFD_Init();
 #endif
 
-    glfwShowWindow( window );
-
-    // Main loop
-    while (!glfwWindowShouldClose(window))
-    {
-        glfwPollEvents();
-        if( glfwGetWindowAttrib( window, GLFW_ICONIFIED ) )
-        {
-            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-            continue;
-        }
-        DrawContents();
-        if( !glfwGetWindowAttrib( window, GLFW_FOCUSED ) )
-        {
-            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-        }
-        mainThreadTasks.Run();
-    }
+    backend.Show();
+    backend.Run();
 
     if( loadThread.joinable() ) loadThread.join();
     if( updateThread.joinable() ) updateThread.join();
     if( updateNotesThread.joinable() ) updateNotesThread.join();
     view.reset();
 
-#ifdef GLFW_MAXIMIZED
-    uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
-    if( maximized ) glfwRestoreWindow( window );
-#else
-    uint32_t maximized = 0;
-#endif
-    winPos.maximize = maximized;
-
-    glfwGetWindowPos( window, &winPos.x, &winPos.y );
-    glfwGetWindowSize( window, &winPos.w, &winPos.h );
-
     tracy::FreeTexture( iconTex, RunOnMainThread );
-
-    // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
-    glfwDestroyWindow(window);
+    free( iconPx );
 
 #ifndef TRACY_NO_FILESELECTOR
     NFD_Quit();
 #endif
-
-    glfwTerminate();
-    free( iconPx );
 
     return 0;
 }
@@ -374,13 +280,8 @@ static void DrawContents()
     static uint16_t reconnectPort;
     static bool showFilter = false;
 
-    const ImVec4 clear_color = ImColor( 114, 144, 154 );
-
     int display_w, display_h;
-    glfwGetFramebufferSize(s_glfwWindow, &display_w, &display_h);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
+    bptr->NewFrame( display_w, display_h );
     ImGui::NewFrame();
     tracy::MouseFrame();
 
@@ -391,7 +292,7 @@ static void DrawContents()
         if( s_customTitle )
         {
             s_customTitle = false;
-            glfwSetWindowTitle( s_glfwWindow, title );
+            bptr->SetTitle( title );
         }
 
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
@@ -964,23 +865,5 @@ static void DrawContents()
         ImGui::EndPopup();
     }
 
-    // Rendering
-    ImGui::Render();
-    glViewport(0, 0, display_w, display_h);
-    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    // Update and Render additional Platform Windows
-    // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-    //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
-    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        GLFWwindow* backup_current_context = glfwGetCurrentContext();
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-        glfwMakeContextCurrent(backup_current_context);
-    }
-
-    glfwSwapBuffers(s_glfwWindow);
+    bptr->EndFrame();
 }

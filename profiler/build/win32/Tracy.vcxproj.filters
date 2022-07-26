@@ -51,9 +51,6 @@
     <ClCompile Include="..\..\src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\NativeWindow.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\server\TracyMemory.cpp">
       <Filter>server</Filter>
     </ClCompile>
@@ -348,6 +345,12 @@
     <ClCompile Include="..\..\src\Filters.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\BackendGlfw.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ImGuiContext.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -487,9 +490,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyMouse.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\NativeWindow.hpp">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\HttpRequest.hpp">
       <Filter>src</Filter>
@@ -705,6 +705,12 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\Filters.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\Backend.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ImGuiContext.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

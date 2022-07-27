@@ -29,10 +29,34 @@
 static GLFWwindow* s_window;
 static std::function<void()> s_redraw;
 static RunQueue* s_mainThreadTasks;
+static WindowPosition* s_winPos;
 
 static void glfw_error_callback( int error, const char* description )
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
+}
+
+static void glfw_window_pos_callback( GLFWwindow* window, int x, int y )
+{
+    if( !glfwGetWindowAttrib( window, GLFW_MAXIMIZED) )
+    {
+        s_winPos->x = x;
+        s_winPos->y = y;
+    }
+}
+
+static void glfw_window_size_callback( GLFWwindow* window, int w, int h )
+{
+    if( !glfwGetWindowAttrib( window, GLFW_MAXIMIZED) )
+    {
+        s_winPos->w = w;
+        s_winPos->h = h;
+    }
+}
+
+static void glfw_window_maximize_callback( GLFWwindow*, int maximized )
+{
+    s_winPos->maximize = maximized;
 }
 
 
@@ -68,21 +92,15 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
 
     s_redraw = redraw;
     s_mainThreadTasks = mainThreadTasks;
+    s_winPos = &m_winPos;
+
+    glfwSetWindowPosCallback( s_window, glfw_window_pos_callback );
+    glfwSetWindowSizeCallback( s_window, glfw_window_size_callback );
+    glfwSetWindowMaximizeCallback( s_window, glfw_window_maximize_callback );
 }
 
 Backend::~Backend()
 {
-#ifdef GLFW_MAXIMIZED
-    uint32_t maximized = glfwGetWindowAttrib( s_window, GLFW_MAXIMIZED );
-    if( maximized ) glfwRestoreWindow( s_window );
-#else
-    uint32_t maximized = 0;
-#endif
-    m_winPos.maximize = maximized;
-
-    glfwGetWindowPos( s_window, &m_winPos.x, &m_winPos.y );
-    glfwGetWindowSize( s_window, &m_winPos.w, &m_winPos.h );
-
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
 

@@ -7162,6 +7162,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     {
         std::lock_guard<std::mutex> lock( m_data.lock );
         plot = m_slab.AllocInit<PlotData>();
+        plot->data.reserve_exact( psz, m_slab );
     }
 
     plot->name = mem.name;
@@ -7170,7 +7171,6 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     plot->showSteps = true;
     plot->fill = true;
     plot->color = 0;
-    plot->data.reserve_exact( psz, m_slab );
 
     auto aptr = mem.data.begin();
     auto aend = mem.data.end();

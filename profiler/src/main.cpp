@@ -220,16 +220,6 @@ int main( int argc, char** argv )
     backend.SetIcon( iconPx, iconX, iconY );
     bptr = &backend;
 
-#if 0
-#ifdef _WIN32
-    typedef UINT(*GDFS)(void);
-    GDFS getDpiForSystem = nullptr;
-    HMODULE dll = GetModuleHandleW(L"user32.dll");
-    if( dll != INVALID_HANDLE_VALUE ) getDpiForSystem = (GDFS)GetProcAddress(dll, "GetDpiForSystem");
-    if( getDpiForSystem ) dpiScale = getDpiForSystem() / 96.f;
-#endif
-#endif
-
     dpiScale = backend.GetDpiScale();
     const auto envDpiScale = getenv( "TRACY_DPI_SCALE" );
     if( envDpiScale )

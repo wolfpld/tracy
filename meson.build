@@ -92,62 +92,62 @@ endif
 threads_dep = dependency('threads')
 
 includes = [
-    'TracyC.h',
-    'Tracy.hpp',
-    'TracyD3D11.hpp',
-    'TracyD3D12.hpp',
-    'TracyLua.hpp',
-    'TracyOpenCL.hpp',
-    'TracyOpenGL.hpp',
-    'TracyVulkan.hpp'
+    'public/tracy/TracyC.h',
+    'public/tracy/Tracy.hpp',
+    'public/tracy/TracyD3D11.hpp',
+    'public/tracy/TracyD3D12.hpp',
+    'public/tracy/TracyLua.hpp',
+    'public/tracy/TracyOpenCL.hpp',
+    'public/tracy/TracyOpenGL.hpp',
+    'public/tracy/TracyVulkan.hpp'
 ]
 
 client_includes = [
-    'client/tracy_concurrentqueue.h',
-    'client/tracy_rpmalloc.hpp',
-    'client/tracy_SPSCQueue.h',
-    'client/TracyArmCpuTable.hpp',
-    'client/TracyCallstack.h',
-    'client/TracyCallstack.hpp',
-    'client/TracyDebug.hpp',
-    'client/TracyDxt1.hpp',
-    'client/TracyFastVector.hpp',
-    'client/TracyLock.hpp',
-    'client/TracyProfiler.hpp',
-    'client/TracyRingBuffer.hpp',
-    'client/TracyScoped.hpp',
-    'client/TracyStringHelpers.hpp',
-    'client/TracySysTime.hpp',
-    'client/TracySysTrace.hpp',
-    'client/TracyThread.hpp'
+    'public/client/tracy_concurrentqueue.h',
+    'public/client/tracy_rpmalloc.hpp',
+    'public/client/tracy_SPSCQueue.h',
+    'public/client/TracyArmCpuTable.hpp',
+    'public/client/TracyCallstack.h',
+    'public/client/TracyCallstack.hpp',
+    'public/client/TracyDebug.hpp',
+    'public/client/TracyDxt1.hpp',
+    'public/client/TracyFastVector.hpp',
+    'public/client/TracyLock.hpp',
+    'public/client/TracyProfiler.hpp',
+    'public/client/TracyRingBuffer.hpp',
+    'public/client/TracyScoped.hpp',
+    'public/client/TracyStringHelpers.hpp',
+    'public/client/TracySysTime.hpp',
+    'public/client/TracySysTrace.hpp',
+    'public/client/TracyThread.hpp'
 ]
 
 common_includes = [
-    'common/tracy_lz4.hpp',
-    'common/tracy_lz4hc.hpp',
-    'common/TracyAlign.hpp',
-    'common/TracyAlign.hpp',
-    'common/TracyAlloc.hpp',
-    'common/TracyApi.h',
-    'common/TracyColor.hpp',
-    'common/TracyForceInline.hpp',
-    'common/TracyMutex.hpp',
-    'common/TracyProtocol.hpp',
-    'common/TracyQueue.hpp',
-    'common/TracySocket.hpp',
-    'common/TracyStackFrames.hpp',
-    'common/TracySystem.hpp',
-    'common/TracyUwp.hpp',
-    'common/TracyYield.hpp'
+    'public/common/tracy_lz4.hpp',
+    'public/common/tracy_lz4hc.hpp',
+    'public/common/TracyAlign.hpp',
+    'public/common/TracyAlign.hpp',
+    'public/common/TracyAlloc.hpp',
+    'public/common/TracyApi.h',
+    'public/common/TracyColor.hpp',
+    'public/common/TracyForceInline.hpp',
+    'public/common/TracyMutex.hpp',
+    'public/common/TracyProtocol.hpp',
+    'public/common/TracyQueue.hpp',
+    'public/common/TracySocket.hpp',
+    'public/common/TracyStackFrames.hpp',
+    'public/common/TracySystem.hpp',
+    'public/common/TracyUwp.hpp',
+    'public/common/TracyYield.hpp'
 ]
 
 tracy_header_files = common_includes + client_includes + includes
 
 tracy_src = [
-    'TracyClient.cpp'
+    'public/TracyClient.cpp'
 ]
 
-tracy_public_include_dirs = include_directories('.')
+tracy_public_include_dirs = include_directories('public')
 
 compiler = meson.get_compiler('cpp')
 override_options = []

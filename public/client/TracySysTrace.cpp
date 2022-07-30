@@ -216,20 +216,6 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     }
 }
 
-static constexpr const char* VsyncName[] = {
-    "[0] Vsync",
-    "[1] Vsync",
-    "[2] Vsync",
-    "[3] Vsync",
-    "[4] Vsync",
-    "[5] Vsync",
-    "[6] Vsync",
-    "[7] Vsync",
-    "Vsync"
-};
-
-static uint32_t VsyncTarget[8] = {};
-
 void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
@@ -242,24 +228,9 @@ void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 
     const auto vs = (const VSyncInfo*)record->UserData;
 
-    int idx = 0;
-    do
-    {
-        if( VsyncTarget[idx] == 0 )
-        {
-            VsyncTarget[idx] = vs->vidPnTargetId;
-            break;
-        }
-        else if( VsyncTarget[idx] == vs->vidPnTargetId )
-        {
-            break;
-        }
-    }
-    while( ++idx < 8 );
-
-    TracyLfqPrepare( QueueType::FrameMarkMsg );
-    MemWrite( &item->frameMark.time, hdr.TimeStamp.QuadPart );
-    MemWrite( &item->frameMark.name, uint64_t( VsyncName[idx] ) );
+    TracyLfqPrepare( QueueType::FrameVsync );
+    MemWrite( &item->frameVsync.time, hdr.TimeStamp.QuadPart );
+    MemWrite( &item->frameVsync.id, vs->vidPnTargetId );
     TracyLfqCommit;
 }
 

@@ -68,6 +68,11 @@ public:
         }
     }
 
+    tracy_force_inline void AddExternal( const T& val )
+    {
+        m_data.push_back( val );
+    }
+
 private:
     Vector<T> m_data;
     unordered_flat_map<uint64_t, T> m_pending;

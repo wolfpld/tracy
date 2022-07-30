@@ -13,6 +13,8 @@
 
 #include "tracy_rpmalloc.hpp"
 
+#define BUILD_DYNAMIC_LINK 1
+
 ////////////
 ///
 /// Build time configurable limits

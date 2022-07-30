@@ -1035,7 +1035,7 @@ void InitCallstack()
 
 void EndCallstack()
 {
-    ___tracy_free_demangle_buffer()
+    ___tracy_free_demangle_buffer();
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )

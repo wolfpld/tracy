@@ -844,7 +844,7 @@ Wait stacks & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 Hardware sampling & \faCheck{}\textsuperscript{\emph{a}} & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
+VSync capture & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
 \vspace{1em}
@@ -2128,7 +2128,7 @@ For proper program code retrieval, you can unload no module used by the applicat
 
 \subsubsection{Vertical synchronization}
 
-On Windows, Tracy will automatically capture hardware Vsync events if running with elevated privileges (see section~\ref{privilegeelevation}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, etc.
+On Windows and Linux, Tracy will automatically capture hardware Vsync events, provided that the application has access to the kernel data (privilege elevation may be needed, see section~\ref{privilegeelevation}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, and so on. Also, in some instances, when there is nothing to update on the screen, the graphic driver may choose to stop issuing screen refresh. As a result, there may be periods where no vertical synchronization events are reported.
 
 Use the \texttt{TRACY\_NO\_VSYNC\_CAPTURE} macro to disable capture of Vsync events.
 

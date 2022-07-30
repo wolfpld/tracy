@@ -30,6 +30,7 @@
 #elif defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wunused-macros"
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
 #ifndef HEAP_ARRAY_SIZE
@@ -118,7 +119,6 @@
 #  ifndef FORCEINLINE
 #    define FORCEINLINE inline __forceinline
 #  endif
-#  define _Static_assert static_assert
 #else
 #  ifndef FORCEINLINE
 #    define FORCEINLINE inline __attribute__((__always_inline__))
@@ -219,65 +219,36 @@ extern int madvise(caddr_t, size_t, int);
 ///
 //////
 
+#include <atomic>
+
+typedef std::atomic<int32_t> atomic32_t;
+typedef std::atomic<int64_t> atomic64_t;
+typedef std::atomic<void*> atomicptr_t;
+
+static FORCEINLINE int32_t atomic_load32(atomic32_t* src) { return std::atomic_load_explicit(src, std::memory_order_relaxed); }
+static FORCEINLINE void    atomic_store32(atomic32_t* dst, int32_t val) { std::atomic_store_explicit(dst, val, std::memory_order_relaxed); }
+static FORCEINLINE int32_t atomic_incr32(atomic32_t* val) { return std::atomic_fetch_add_explicit(val, 1, std::memory_order_relaxed) + 1; }
+static FORCEINLINE int32_t atomic_decr32(atomic32_t* val) { return std::atomic_fetch_add_explicit(val, -1, std::memory_order_relaxed) - 1; }
+static FORCEINLINE int32_t atomic_add32(atomic32_t* val, int32_t add) { return std::atomic_fetch_add_explicit(val, add, std::memory_order_relaxed) + add; }
+static FORCEINLINE int     atomic_cas32_acquire(atomic32_t* dst, int32_t val, int32_t ref) { return std::atomic_compare_exchange_weak_explicit(dst, &ref, val, std::memory_order_acquire, std::memory_order_relaxed); }
+static FORCEINLINE void    atomic_store32_release(atomic32_t* dst, int32_t val) { std::atomic_store_explicit(dst, val, std::memory_order_release); }
+static FORCEINLINE int64_t atomic_load64(atomic64_t* val) { return std::atomic_load_explicit(val, std::memory_order_relaxed); }
+static FORCEINLINE int64_t atomic_add64(atomic64_t* val, int64_t add) { return std::atomic_fetch_add_explicit(val, add, std::memory_order_relaxed) + add; }
+static FORCEINLINE void*   atomic_load_ptr(atomicptr_t* src) { return std::atomic_load_explicit(src, std::memory_order_relaxed); }
+static FORCEINLINE void    atomic_store_ptr(atomicptr_t* dst, void* val) { std::atomic_store_explicit(dst, val, std::memory_order_relaxed); }
+static FORCEINLINE void    atomic_store_ptr_release(atomicptr_t* dst, void* val) { std::atomic_store_explicit(dst, val, std::memory_order_release); }
+static FORCEINLINE void*   atomic_exchange_ptr_acquire(atomicptr_t* dst, void* val) { return std::atomic_exchange_explicit(dst, val, std::memory_order_acquire); }
+static FORCEINLINE int     atomic_cas_ptr(atomicptr_t* dst, void* val, void* ref) { return std::atomic_compare_exchange_weak_explicit(dst, &ref, val, std::memory_order_relaxed, std::memory_order_relaxed); }
+
 #if defined(_MSC_VER) && !defined(__clang__)
-
-namespace tracy
-{
-
-typedef volatile long      atomic32_t;
-typedef volatile long long atomic64_t;
-typedef volatile void*     atomicptr_t;
-
-static FORCEINLINE int32_t atomic_load32(atomic32_t* src) { return *src; }
-static FORCEINLINE void    atomic_store32(atomic32_t* dst, int32_t val) { *dst = val; }
-static FORCEINLINE int32_t atomic_incr32(atomic32_t* val) { return (int32_t)InterlockedIncrement(val); }
-static FORCEINLINE int32_t atomic_decr32(atomic32_t* val) { return (int32_t)InterlockedDecrement(val); }
-static FORCEINLINE int32_t atomic_add32(atomic32_t* val, int32_t add) { return (int32_t)InterlockedExchangeAdd(val, add) + add; }
-static FORCEINLINE int     atomic_cas32_acquire(atomic32_t* dst, int32_t val, int32_t ref) { return (InterlockedCompareExchange(dst, val, ref) == ref) ? 1 : 0; }
-static FORCEINLINE void    atomic_store32_release(atomic32_t* dst, int32_t val) { *dst = val; }
-static FORCEINLINE int64_t atomic_load64(atomic64_t* src) { return *src; }
-static FORCEINLINE int64_t atomic_add64(atomic64_t* val, int64_t add) { return (int64_t)InterlockedExchangeAdd64(val, add) + add; }
-static FORCEINLINE void*   atomic_load_ptr(atomicptr_t* src) { return (void*)*src; }
-static FORCEINLINE void    atomic_store_ptr(atomicptr_t* dst, void* val) { *dst = val; }
-static FORCEINLINE void    atomic_store_ptr_release(atomicptr_t* dst, void* val) { *dst = val; }
-static FORCEINLINE void*   atomic_exchange_ptr_acquire(atomicptr_t* dst, void* val) { return (void*)InterlockedExchangePointer((void* volatile*)dst, val); }
-static FORCEINLINE int     atomic_cas_ptr(atomicptr_t* dst, void* val, void* ref) { return (InterlockedCompareExchangePointer((void* volatile*)dst, val, ref) == ref) ? 1 : 0; }
 
 #define EXPECTED(x) (x)
 #define UNEXPECTED(x) (x)
 
-}
-
 #else
-
-#include <stdatomic.h>
-
-namespace tracy
-{
-
-typedef volatile _Atomic(int32_t) atomic32_t;
-typedef volatile _Atomic(int64_t) atomic64_t;
-typedef volatile _Atomic(void*) atomicptr_t;
-
-static FORCEINLINE int32_t atomic_load32(atomic32_t* src) { return atomic_load_explicit(src, memory_order_relaxed); }
-static FORCEINLINE void    atomic_store32(atomic32_t* dst, int32_t val) { atomic_store_explicit(dst, val, memory_order_relaxed); }
-static FORCEINLINE int32_t atomic_incr32(atomic32_t* val) { return atomic_fetch_add_explicit(val, 1, memory_order_relaxed) + 1; }
-static FORCEINLINE int32_t atomic_decr32(atomic32_t* val) { return atomic_fetch_add_explicit(val, -1, memory_order_relaxed) - 1; }
-static FORCEINLINE int32_t atomic_add32(atomic32_t* val, int32_t add) { return atomic_fetch_add_explicit(val, add, memory_order_relaxed) + add; }
-static FORCEINLINE int     atomic_cas32_acquire(atomic32_t* dst, int32_t val, int32_t ref) { return atomic_compare_exchange_weak_explicit(dst, &ref, val, memory_order_acquire, memory_order_relaxed); }
-static FORCEINLINE void    atomic_store32_release(atomic32_t* dst, int32_t val) { atomic_store_explicit(dst, val, memory_order_release); }
-static FORCEINLINE int64_t atomic_load64(atomic64_t* val) { return atomic_load_explicit(val, memory_order_relaxed); }
-static FORCEINLINE int64_t atomic_add64(atomic64_t* val, int64_t add) { return atomic_fetch_add_explicit(val, add, memory_order_relaxed) + add; }
-static FORCEINLINE void*   atomic_load_ptr(atomicptr_t* src) { return atomic_load_explicit(src, memory_order_relaxed); }
-static FORCEINLINE void    atomic_store_ptr(atomicptr_t* dst, void* val) { atomic_store_explicit(dst, val, memory_order_relaxed); }
-static FORCEINLINE void    atomic_store_ptr_release(atomicptr_t* dst, void* val) { atomic_store_explicit(dst, val, memory_order_release); }
-static FORCEINLINE void*   atomic_exchange_ptr_acquire(atomicptr_t* dst, void* val) { return atomic_exchange_explicit(dst, val, memory_order_acquire); }
-static FORCEINLINE int     atomic_cas_ptr(atomicptr_t* dst, void* val, void* ref) { return atomic_compare_exchange_weak_explicit(dst, &ref, val, memory_order_relaxed, memory_order_relaxed); }
 
 #define EXPECTED(x) __builtin_expect((x), 1)
 #define UNEXPECTED(x) __builtin_expect((x), 0)
-
-}
 
 #endif
 
@@ -353,8 +324,8 @@ static FORCEINLINE int     atomic_cas_ptr(atomicptr_t* dst, void* val, void* ref
 //! Number of spans to transfer between thread and global cache for large spans
 #define THREAD_SPAN_LARGE_CACHE_TRANSFER 6
 
-_Static_assert((SMALL_GRANULARITY & (SMALL_GRANULARITY - 1)) == 0, "Small granularity must be power of two");
-_Static_assert((SPAN_HEADER_SIZE & (SPAN_HEADER_SIZE - 1)) == 0, "Span header size must be power of two");
+static_assert((SMALL_GRANULARITY & (SMALL_GRANULARITY - 1)) == 0, "Small granularity must be power of two");
+static_assert((SPAN_HEADER_SIZE & (SPAN_HEADER_SIZE - 1)) == 0, "Span header size must be power of two");
 
 #if ENABLE_VALIDATE_ARGS
 //! Maximum allocation size to avoid integer overflow
@@ -500,7 +471,7 @@ struct span_t {
 	//! Previous span
 	span_t*     prev;
 };
-_Static_assert(sizeof(span_t) <= SPAN_HEADER_SIZE, "span size mismatch");
+static_assert(sizeof(span_t) <= SPAN_HEADER_SIZE, "span size mismatch");
 
 struct span_cache_t {
 	size_t       count;
@@ -591,7 +562,7 @@ struct size_class_t {
 	//! Class index this class is merged with
 	uint16_t class_idx;
 };
-_Static_assert(sizeof(size_class_t) == 8, "Size class size mismatch");
+static_assert(sizeof(size_class_t) == 8, "Size class size mismatch");
 
 struct global_cache_t {
 	//! Cache lock
@@ -1851,7 +1822,7 @@ _rpmalloc_heap_extract_new_span(heap_t* heap, heap_size_class_t* heap_size_class
 
 static void
 _rpmalloc_heap_initialize(heap_t* heap) {
-	memset(heap, 0, sizeof(heap_t));
+	memset((void*)heap, 0, sizeof(heap_t));
 	//Get a new heap ID
 	heap->id = 1 + atomic_incr32(&_memory_heap_id);
 
@@ -1976,11 +1947,14 @@ _rpmalloc_heap_allocate(int first_class) {
 	return heap;
 }
 
+extern thread_local bool RpThreadShutdown;
+
 static void
 _rpmalloc_heap_release(void* heapptr, int first_class, int release_cache) {
 	heap_t* heap = (heap_t*)heapptr;
 	if (!heap)
 		return;
+	RpThreadShutdown = true;
 	//Release thread cache spans back to global cache
 	_rpmalloc_heap_cache_adopt_deferred(heap, 0);
 	if (release_cache  || heap->finalize) {
@@ -2719,7 +2693,7 @@ _rpmalloc_adjust_size_class(size_t iclass) {
 }
 
 //! Initialize the allocator and setup global data
-extern inline int
+TRACY_API int
 rpmalloc_initialize(void) {
 	if (_rpmalloc_initialized) {
 		rpmalloc_thread_initialize();
@@ -2938,7 +2912,7 @@ rpmalloc_initialize_config(const rpmalloc_config_t* config) {
 }
 
 //! Finalize the allocator
-void
+TRACY_API void
 rpmalloc_finalize(void) {
 	rpmalloc_thread_finalize(1);
 	//rpmalloc_dump_statistics(stdout);
@@ -2985,7 +2959,7 @@ rpmalloc_finalize(void) {
 }
 
 //! Initialize thread, assign heap
-extern inline void
+TRACY_API void
 rpmalloc_thread_initialize(void) {
 	if (!get_thread_heap_raw()) {
 		heap_t* heap = _rpmalloc_heap_allocate(0);
@@ -3000,7 +2974,7 @@ rpmalloc_thread_initialize(void) {
 }
 
 //! Finalize thread, orphan heap
-void
+TRACY_API void
 rpmalloc_thread_finalize(int release_caches) {
 	heap_t* heap = get_thread_heap_raw();
 	if (heap)
@@ -3023,7 +2997,7 @@ rpmalloc_config(void) {
 
 // Extern interface
 
-extern inline RPMALLOC_ALLOCATOR void*
+TRACY_API RPMALLOC_ALLOCATOR void*
 rpmalloc(size_t size) {
 #if ENABLE_VALIDATE_ARGS
 	if (size >= MAX_ALLOC_SIZE) {
@@ -3035,7 +3009,7 @@ rpmalloc(size_t size) {
 	return _rpmalloc_allocate(heap, size);
 }
 
-extern inline void
+TRACY_API void
 rpfree(void* ptr) {
 	_rpmalloc_deallocate(ptr);
 }
@@ -3067,7 +3041,7 @@ rpcalloc(size_t num, size_t size) {
 	return block;
 }
 
-extern inline RPMALLOC_ALLOCATOR void*
+TRACY_API RPMALLOC_ALLOCATOR void*
 rprealloc(void* ptr, size_t size) {
 #if ENABLE_VALIDATE_ARGS
 	if (size >= MAX_ALLOC_SIZE) {

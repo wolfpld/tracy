@@ -845,7 +845,7 @@ bool View::DrawImpl()
         {
             ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
         }
-        ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ) ) );
+        ImGui::Text( "%s: %s", GetFrameSetName( *m_frames ), RealToString( m_worker.GetFrameCount( *m_frames ) ) );
         if( !vis )
         {
             ImGui::PopStyleColor();
@@ -861,7 +861,7 @@ bool View::DrawImpl()
         for( auto& fd : frames )
         {
             bool isSelected = m_frames == fd;
-            if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
+            if( ImGui::Selectable( GetFrameSetName( *fd ), isSelected ) )
             {
                 m_frames = fd;
             }

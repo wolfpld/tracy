@@ -185,7 +185,7 @@ void View::DrawFrames()
                     }
                     else
                     {
-                        ImGui::TextDisabled( "%s:", m_worker.GetString( m_frames->name ) );
+                        ImGui::TextDisabled( "%s:", GetFrameSetName( *m_frames ) );
                         ImGui::SameLine();
                         ImGui::TextUnformatted( RealToString( fnum ) );
                         ImGui::Separator();

@@ -405,7 +405,7 @@ void View::DrawCompare()
             int idx = 0;
             for( auto& v : f0 )
             {
-                const auto name = m_worker.GetString( v->name );
+                const auto name = GetFrameSetName( *v );
                 ImGui::PushID( -1 - idx );
                 ImGui::RadioButton( name, &m_compare.selMatch[0], idx++ );
                 ImGui::SameLine();
@@ -418,7 +418,7 @@ void View::DrawCompare()
             idx = 0;
             for( auto& v : f1 )
             {
-                const auto name = m_compare.second->GetString( v->name );
+                const auto name = GetFrameSetName( *v, *m_compare.second );
                 ImGui::PushID( idx );
                 ImGui::RadioButton( name, &m_compare.selMatch[1], idx++ );
                 ImGui::SameLine();
@@ -435,8 +435,8 @@ void View::DrawCompare()
 
                 if( m_compare.link )
                 {
-                    auto string0 = m_worker.GetString( f0[m_compare.selMatch[0]]->name );
-                    auto string1 = m_compare.second->GetString( f1[m_compare.selMatch[1]]->name );
+                    auto string0 = GetFrameSetName( *f0[m_compare.selMatch[0]] );
+                    auto string1 = GetFrameSetName( *f1[m_compare.selMatch[1]], *m_compare.second );
 
                     if( strcmp( string0, string1 ) != 0 )
                     {
@@ -445,7 +445,7 @@ void View::DrawCompare()
                         {
                             for( auto& v : f1 )
                             {
-                                auto string = m_compare.second->GetString( v->name );
+                                auto string = GetFrameSetName( *v, *m_compare.second );
                                 if( strcmp( string0, string ) == 0 )
                                 {
                                     m_compare.selMatch[1] = idx;
@@ -459,7 +459,7 @@ void View::DrawCompare()
                             assert( prev1 != m_compare.selMatch[1] );
                             for( auto& v : f0 )
                             {
-                                auto string = m_worker.GetString( v->name );
+                                auto string = GetFrameSetName( *v );
                                 if( strcmp( string1, string ) == 0 )
                                 {
                                     m_compare.selMatch[0] = idx;

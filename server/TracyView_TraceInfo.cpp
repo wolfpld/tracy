@@ -188,7 +188,7 @@ void View::DrawInfo()
         auto fsz = m_worker.GetFullFrameCount( *m_frames );
         if( fsz != 0 )
         {
-            TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
+            TextFocused( "Frame set:", GetFrameSetName( *m_frames ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", m_frames->continuous ? "continuous" : "discontinuous" );
             ImGui::SameLine();
@@ -199,7 +199,7 @@ void View::DrawInfo()
                 for( auto& fd : frames )
                 {
                     bool isSelected = m_frames == fd;
-                    if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
+                    if( ImGui::Selectable( GetFrameSetName( *fd ), isSelected ) )
                     {
                         m_frames = fd;
                         fsz = m_worker.GetFullFrameCount( *m_frames );

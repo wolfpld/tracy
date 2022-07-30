@@ -813,6 +813,13 @@ const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
     {
         return "Frames";
     }
+    else if( fd.name >> 63 != 0 )
+    {
+        char* buf = bufpool[bufsel];
+        bufsel = ( bufsel + 1 ) % Pool;
+        sprintf( buf, "[%" PRIu32 "] Vsync", uint32_t( fd.name ) );
+        return buf;
+    }
     else
     {
         return worker.GetString( fd.name );

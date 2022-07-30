@@ -4675,6 +4675,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::FrameMarkMsgEnd:
         ProcessFrameMarkEnd( ev.frameMark );
         break;
+    case QueueType::FrameVsync:
+        ProcessFrameVsync( ev.frameVsync );
+        break;
     case QueueType::FrameImage:
         ProcessFrameImage( ev.frameImage );
         break;
@@ -5296,6 +5299,38 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     }
     assert( fd->frames.back().end == -1 );
     fd->frames.back().end = time;
+    if( m_data.lastTime < time ) m_data.lastTime = time;
+
+#ifndef TRACY_NO_STATISTICS
+    const auto timeSpan = GetFrameTime( *fd, fd->frames.size() - 1 );
+    if( timeSpan > 0 )
+    {
+        fd->min = std::min( fd->min, timeSpan );
+        fd->max = std::max( fd->max, timeSpan );
+        fd->total += timeSpan;
+        fd->sumSq += double( timeSpan ) * timeSpan;
+    }
+#endif
+}
+
+void Worker::ProcessFrameVsync( const QueueFrameVsync& ev )
+{
+    auto it = m_vsyncFrameMap.find( ev.id );
+    if( it == m_vsyncFrameMap.end() )
+    {
+        auto fd = m_slab.AllocInit<FrameData>();
+        // Hackfix workaround to maintain backwards compatibility.
+        // Frame name pointers won't be in kernel space. Exploit that to store custom IDs.
+        fd->name = uint64_t( m_vsyncFrameMap.size() ) | 0x8000000000000000;
+        fd->continuous = 1;
+        m_data.frames.AddExternal( fd );
+        it = m_vsyncFrameMap.emplace( ev.id, fd ).first;
+    }
+    auto fd = it->second;
+    assert( fd->continuous == 1 );
+    const auto time = TscTime( ev.time );
+    assert( fd->frames.empty() || fd->frames.back().start <= time );
+    fd->frames.push_back( FrameEvent{ time, -1, -1 } );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
 #ifndef TRACY_NO_STATISTICS

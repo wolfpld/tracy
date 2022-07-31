@@ -1705,6 +1705,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         m_data.symbolLocInline[symInlineIdx] = std::numeric_limits<uint64_t>::max();
     }
+#ifdef NO_PARALLEL_SORT
+    pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+    pdqsort_branchless( m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
+#else
+    std::sort( std::execution::par_unseq, m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+    std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
+#endif
 
     f.Read( sz );
     if( eventMask & EventType::SymbolCode )

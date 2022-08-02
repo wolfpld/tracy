@@ -3,7 +3,7 @@
 #include <inttypes.h>
 
 #include "TracyEventDebug.hpp"
-#include "../common/TracyQueue.hpp"
+#include "../public/common/TracyQueue.hpp"
 
 namespace tracy
 {
@@ -144,8 +144,14 @@ void EventDebug( const QueueItem& ev )
     case QueueType::GpuZoneEndSerial:
         fprintf( f, "ev %i (GpuZoneEndSerial)\n", ev.hdr.idx );
         break;
-    case QueueType::PlotData:
-        fprintf( f, "ev %i (PlotData)\n", ev.hdr.idx );
+    case QueueType::PlotDataInt:
+        fprintf( f, "ev %i (PlotDataInt)\n", ev.hdr.idx );
+        break;
+    case QueueType::PlotDataFloat:
+        fprintf( f, "ev %i (PlotDataFloat)\n", ev.hdr.idx );
+        break;
+    case QueueType::PlotDataDouble:
+        fprintf( f, "ev %i (PlotDataDouble)\n", ev.hdr.idx );
         break;
     case QueueType::ContextSwitch:
         fprintf( f, "ev %i (ContextSwitch)\n", ev.hdr.idx );

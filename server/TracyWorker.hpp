@@ -158,13 +158,13 @@ public:
         uint8_t inlineFrame;
     };
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
     struct GhostKey
     {
         CallstackFrameId frame;
         uint8_t inlineFrame;
     };
-#pragma pack()
+#pragma pack( pop )
 
     struct GhostKeyHasher
     {

@@ -18,7 +18,7 @@
 namespace tracy
 {
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 
 struct StringRef
 {
@@ -663,7 +663,7 @@ struct ChildSample
 
 enum { ChildSampleSize = sizeof( ChildSample ) };
 
-#pragma pack()
+#pragma pack( pop )
 
 
 struct ThreadData

@@ -19,7 +19,7 @@
 namespace tracy
 {
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 template<typename T>
 class Vector
 {
@@ -348,7 +348,7 @@ private:
 template<typename T> struct VectorAdapterDirect { const T& operator()( const T& it ) const { return it; } };
 template<typename T> struct VectorAdapterPointer { const T& operator()( const short_ptr<T>& it ) const { return *it; } };
 
-#pragma pack()
+#pragma pack( pop )
 
 enum { VectorSize = sizeof( Vector<int> ) };
 

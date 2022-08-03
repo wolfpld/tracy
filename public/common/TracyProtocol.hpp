@@ -34,7 +34,7 @@ enum HandshakeStatus : uint8_t
 enum { WelcomeMessageProgramNameSize = 64 };
 enum { WelcomeMessageHostInfoSize = 1024 };
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 
 // Must increase left query space after handling!
 enum ServerQuery : uint8_t
@@ -133,7 +133,7 @@ struct BroadcastMessage
 
 enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
 
-#pragma pack()
+#pragma pack( pop )
 
 }
 

@@ -122,7 +122,7 @@ enum class QueueType : uint8_t
     NUM_TYPES
 };
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 
 struct QueueThreadContext
 {
@@ -745,7 +745,7 @@ struct QueueItem
         QueueFiberLeave fiberLeave;
     };
 };
-#pragma pack()
+#pragma pack( pop )
 
 
 enum { QueueItemSize = sizeof( QueueItem ) };

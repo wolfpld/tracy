@@ -114,7 +114,7 @@ struct THREADNAME_INFO
     DWORD dwThreadID;
     DWORD dwFlags;
 };
-#  pragma pack(pop)
+#  pragma pack( pop )
 
 void ThreadNameMsvcMagic( const THREADNAME_INFO& info )
 {

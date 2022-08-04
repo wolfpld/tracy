@@ -4,10 +4,12 @@ project(Tracy LANGUAGES CXX)
 
 find_package(Threads REQUIRED)
 
-add_library(TracyClient TracyClient.cpp)
+set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
+
+add_library(TracyClient public/TracyClient.cpp)
 target_compile_features(TracyClient PUBLIC cxx_std_11)
-target_include_directories(TracyClient SYSTEM PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> 
+target_include_directories(TracyClient SYSTEM PUBLIC
+    $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(
     TracyClient
@@ -68,60 +70,59 @@ endif()
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-set(includes
-    ${CMAKE_CURRENT_LIST_DIR}/TracyC.h
-    ${CMAKE_CURRENT_LIST_DIR}/Tracy.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/TracyD3D11.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/TracyD3D12.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/TracyLua.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/TracyOpenCL.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/TracyOpenGL.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/TracyVulkan.hpp)
+set(tracy_includes
+    ${TRACY_PUBLIC_DIR}/tracy/TracyC.h
+    ${TRACY_PUBLIC_DIR}/tracy/Tracy.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyD3D11.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyD3D12.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyLua.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyOpenCL.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyOpenGL.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyVulkan.hpp)
 
 set(client_includes
-    ${CMAKE_CURRENT_LIST_DIR}/client/tracy_concurrentqueue.h
-    ${CMAKE_CURRENT_LIST_DIR}/client/tracy_rpmalloc.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/tracy_SPSCQueue.h
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyArmCpuTable.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyCallstack.h
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyCallstack.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyDebug.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyDxt1.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyFastVector.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyLock.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyProfiler.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyRingBuffer.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyScoped.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyStringHelpers.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracySysTime.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracySysTrace.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/client/TracyThread.hpp)
+    ${TRACY_PUBLIC_DIR}/client/tracy_concurrentqueue.h
+    ${TRACY_PUBLIC_DIR}/client/tracy_rpmalloc.hpp
+    ${TRACY_PUBLIC_DIR}/client/tracy_SPSCQueue.h
+    ${TRACY_PUBLIC_DIR}/client/TracyArmCpuTable.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyCallstack.h
+    ${TRACY_PUBLIC_DIR}/client/TracyCallstack.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyDebug.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyDxt1.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyFastVector.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyLock.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyProfiler.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyRingBuffer.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyScoped.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyStringHelpers.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracySysTime.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracySysTrace.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyThread.hpp)
 
 set(common_includes
-    ${CMAKE_CURRENT_LIST_DIR}/common/tracy_lz4.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/tracy_lz4hc.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyAlign.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyAlign.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyAlloc.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyApi.h
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyColor.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyForceInline.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyMutex.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyProtocol.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyQueue.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracySocket.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyStackFrames.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracySystem.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyUwp.hpp
-    ${CMAKE_CURRENT_LIST_DIR}/common/TracyYield.hpp)
+    ${TRACY_PUBLIC_DIR}/common/tracy_lz4.hpp
+    ${TRACY_PUBLIC_DIR}/common/tracy_lz4hc.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyAlign.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyAlloc.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyApi.h
+    ${TRACY_PUBLIC_DIR}/common/TracyColor.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyForceInline.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyMutex.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyProtocol.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyQueue.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracySocket.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyStackFrames.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracySystem.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyUwp.hpp
+    ${TRACY_PUBLIC_DIR}/common/TracyYield.hpp)
 
 install(TARGETS TracyClient
         EXPORT TracyConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES ${includes}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${tracy_includes}
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
 install(FILES ${client_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/client)
 install(FILES ${common_includes}

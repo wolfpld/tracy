@@ -24,6 +24,7 @@ void View::DrawOptions()
     m_vd.drawFrameTargets = val;
     ImGui::Indent();
     int tmp = m_vd.frameTarget;
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::SetNextItemWidth( 90 * scale );
     if( ImGui::InputInt( "Target FPS", &tmp ) )
     {
@@ -32,6 +33,7 @@ void View::DrawOptions()
     }
     ImGui::SameLine();
     TextDisabledUnformatted( TimeToString( 1000*1000*1000 / tmp ) );
+    ImGui::PopStyleVar();
     ImGui::Unindent();
     if( m_worker.HasContextSwitches() )
     {

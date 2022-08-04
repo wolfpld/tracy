@@ -34,19 +34,21 @@ void View::DrawOptions()
     ImGui::SameLine();
     TextDisabledUnformatted( TimeToString( 1000*1000*1000 / tmp ) );
     ImGui::PopStyleVar();
+    ImGui::PushFont( m_smallFont );
     SmallColorBox( 0xFF2222DD );
-    ImGui::SameLine();
-    ImGui::Text( "<  %i  <", tmp / 2 );
-    ImGui::SameLine();
+    ImGui::SameLine( 0, 0 );
+    ImGui::Text( "  <  %i  <  ", tmp / 2 );
+    ImGui::SameLine( 0, 0 );
     SmallColorBox( 0xFF22DDDD );
-    ImGui::SameLine();
-    ImGui::Text( "<  %i  <", tmp );
-    ImGui::SameLine();
+    ImGui::SameLine( 0, 0 );
+    ImGui::Text( "  <  %i  <  ", tmp );
+    ImGui::SameLine( 0, 0 );
     SmallColorBox( 0xFF22DD22 );
-    ImGui::SameLine();
-    ImGui::Text( "<  %i  <", tmp * 2 );
-    ImGui::SameLine();
+    ImGui::SameLine( 0, 0 );
+    ImGui::Text( "  <  %i  <  ", tmp * 2 );
+    ImGui::SameLine( 0, 0 );
     SmallColorBox( 0xFFDD9900 );
+    ImGui::PopFont();
     ImGui::Unindent();
     if( m_worker.HasContextSwitches() )
     {

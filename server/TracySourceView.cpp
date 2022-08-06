@@ -3594,7 +3594,9 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
         else
         {
-            SmallColorBox( 0 );
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ImGui::ColorButton( "c1", ImVec4( 0.f, 0.f, 0.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2( ty - 3 * scale, ty - 3 * scale) );
+            ImGui::PopStyleVar();
             ImGui::SameLine();
             startPos = ImGui::GetCursorScreenPos();
             TextDisabledUnformatted( "[unknown]" );

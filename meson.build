@@ -166,13 +166,13 @@ if compiler.get_id() != 'msvc'
 endif
 
 if tracy_shared_libs
-  tracy = shared_library('tracy', tracy_src, tracy_header_files
+  tracy = shared_library('tracy', tracy_src, tracy_header_files,
     dependencies        : [ threads_dep ],
     include_directories : tracy_public_include_dirs,
     override_options    : override_options,
     install             : true)
 else
-  tracy = static_library('tracy', tracy_src, tracy_header_files
+  tracy = static_library('tracy', tracy_src, tracy_header_files,
     dependencies        : [ threads_dep ],
     include_directories : tracy_public_include_dirs,
     override_options    : override_options,

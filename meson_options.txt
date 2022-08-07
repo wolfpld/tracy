@@ -22,5 +22,4 @@ option('tracy_shared_libs', type : 'boolean', value : false, description : 'Buil
 option('tracy_no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')
 
 option('tracy_use_wayland', type : 'boolean', value : false, description : 'Profiler: Set the Display Server on linux to wayland')
-option('tracy_no_fileselector', type : 'boolean', value : true, description : 'Profiler: Disable fileselector')
-option('tracy_gtk_fileselector', type : 'boolean', value : false, description : 'Profiler: Set the fileselector to native GTK')
+option('tracy_fileselector', type : 'combo', choices : ['none', 'gtk'], value : 'none', description : 'Profiler: Choose fileselector')

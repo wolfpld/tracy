@@ -1,4 +1,5 @@
 server_sources = files(
+        '../public/common/tracy_lz4hc.cpp',
         'TracyBadVersion.cpp',
         'TracyColor.cpp', 
         # 'TracyEventDebug.cpp', 
@@ -52,5 +53,5 @@ server_sources = files(
 capstone = dependency('capstone')
 
 deps = [imgui_dep, capstone, tracy_dep]
-server_lib = static_library('tracy_server', server_sources, dependencies: deps)
+server_lib = static_library('tracy_server', server_sources, dependencies: deps, cpp_args: '-UTRACY_ENABLE')
 server_dep = declare_dependency(dependencies: deps, link_with: server_lib)

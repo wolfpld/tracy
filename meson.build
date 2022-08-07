@@ -1,4 +1,4 @@
-project('tracy', ['cpp'])
+project('tracy', ['cpp', 'c'])
 
 if get_option('tracy_enable')
   add_project_arguments('-DTRACY_ENABLE', language : 'cpp')
@@ -156,7 +156,9 @@ common_includes = [
 tracy_header_files = common_includes + client_includes + includes
 
 tracy_src = [
-    'public/TracyClient.cpp'
+    'public/TracyClient.cpp',
+    'public/common/tracy_lz4.cpp',
+    'public/common/tracy_lz4hc.cpp'
 ]
 
 tracy_public_include_dirs = include_directories('public')
@@ -201,6 +203,7 @@ tracy_dep_dynamic = declare_dependency(
 
 meson.override_dependency('tracy', tracy_dep)
 
+subdir('zstd')
 subdir('imgui')
 subdir('server')
 subdir('profiler')

@@ -8,7 +8,9 @@ profiler_sources = files(
     'src/ImGuiContext.cpp', 
     'src/ResolvService.cpp',
     'src/RunQueue.cpp',
-    'src/WindowPosition.cpp')
+    'src/WindowPosition.cpp',
+    'src/imgui/imgui_impl_glfw.cpp',
+    'src/imgui/imgui_impl_opengl3.cpp')
 
 if get_option('tracy_gtk_fileselector')
     profiler_sources += files('../nfd/nfd_gtk.cpp')
@@ -18,4 +20,4 @@ profiler_inc = include_directories('src', 'src/imgui')
 
 glfw = dependency('glfw3')
 
-executable('profiler', profiler_sources, include_directories: profiler_inc, dependencies: [glfw, threads_dep, server_dep, tracy_dep])
+executable('profiler', profiler_sources, include_directories: profiler_inc, dependencies: [glfw, threads_dep, server_dep, tracy_dep, zstd_dep])

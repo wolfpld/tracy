@@ -28,8 +28,7 @@ zstd_sources = files(
     'dictBuilder/cover.c',
     'dictBuilder/divsufsort.c',
     'dictBuilder/fastcover.c',
-    'dictBuilder/zdict.c',
-    )
+    'dictBuilder/zdict.c')
 
 zstd_inc = include_directories('.')
 zstd_lib = static_library('zstd', zstd_sources, include_directories: zstd_inc)

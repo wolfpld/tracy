@@ -89,9 +89,21 @@ if get_option('tracy_no_crash_handler')
   add_project_arguments('-DTRACY_NO_CRASH_HANDLER', language : 'cpp')
 endif
 
+if get_option('tracy_use_wayland')
+  add_project_arguments('-DDISPLAY_SERVER_WAYLAND', language: 'cpp')
+else 
+  add_project_arguments('-DDISPLAY_SERVER_X11', language: 'cpp')
+endif
+
+if not get_option('tracy_gtk_fileselector')
+  if get_option('tracy_no_fileselector')
+    add_project_arguments('-DTRACY_NO_FILESELECTOR', language: 'cpp')
+  endif
+endif
+  
 threads_dep = dependency('threads')
 
-includes = [
+includes = files(
     'TracyC.h',
     'Tracy.hpp',
     'TracyD3D11.hpp',
@@ -100,9 +112,9 @@ includes = [
     'TracyOpenCL.hpp',
     'TracyOpenGL.hpp',
     'TracyVulkan.hpp'
-]
+)
 
-client_includes = [
+client_includes = files(
     'client/tracy_concurrentqueue.h',
     'client/tracy_rpmalloc.hpp',
     'client/tracy_SPSCQueue.h',
@@ -120,9 +132,9 @@ client_includes = [
     'client/TracySysTime.hpp',
     'client/TracySysTrace.hpp',
     'client/TracyThread.hpp'
-]
+)
 
-common_includes = [
+common_includes = files(
     'common/tracy_lz4.hpp',
     'common/tracy_lz4hc.hpp',
     'common/TracyAlign.hpp',
@@ -139,13 +151,13 @@ common_includes = [
     'common/TracySystem.hpp',
     'common/TracyUwp.hpp',
     'common/TracyYield.hpp'
-]
+)
 
 tracy_header_files = common_includes + client_includes + includes
 
-tracy_src = [
+tracy_src = files(
     'TracyClient.cpp'
-]
+)
 
 tracy_public_include_dirs = include_directories('.')
 
@@ -188,3 +200,7 @@ tracy_dep_dynamic = declare_dependency(
     include_directories : tracy_public_include_dirs)
 
 meson.override_dependency('tracy', tracy_dep)
+
+subdir('imgui')
+subdir('server')
+subdir('profiler')

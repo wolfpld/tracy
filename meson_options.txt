@@ -20,3 +20,7 @@ option('tracy_manual_lifetime', type : 'boolean', value : false, description : '
 option('tracy_fibers', type : 'boolean', value : false, description : 'Enable fibers support')
 option('tracy_shared_libs', type : 'boolean', value : false, description : 'Builds Tracy as a shared object')
 option('tracy_no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')
+
+option('tracy_use_wayland', type : 'boolean', value : false, description : 'Profiler: Set the Display Server on linux to wayland')
+option('tracy_no_fileselector', type : 'boolean', value : true, description : 'Profiler: Disable fileselector')
+option('tracy_gtk_fileselector', type : 'boolean', value : false, description : 'Profiler: Set the fileselector to native GTK')

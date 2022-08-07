@@ -213,10 +213,13 @@ int main( int argc, char** argv )
         } );
     } );
 
-    iconPx = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &iconX, &iconY, nullptr, 4 );
+    auto iconThread = std::thread( [] {
+        iconPx = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &iconX, &iconY, nullptr, 4 );
+    } );
 
     ImGuiTracyContext imguiContext;
     Backend backend( title, DrawContents, &mainThreadTasks );
+    iconThread.join();
     backend.SetIcon( iconPx, iconX, iconY );
     bptr = &backend;
 

@@ -7,7 +7,7 @@
 namespace tracy
 {
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 template<typename T, class CompareDefault = std::less<T>>
 class SortedVector
 {
@@ -118,7 +118,7 @@ private:
     uint32_t sortedEnd;
 };
 
-#pragma pack()
+#pragma pack( pop )
 
 enum { SortedVectorSize = sizeof( SortedVector<int> ) };
 

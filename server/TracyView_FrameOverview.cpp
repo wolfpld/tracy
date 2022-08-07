@@ -7,15 +7,11 @@
 namespace tracy
 {
 
-enum { BestTime = 1000 * 1000 * 1000 / 143 };
-enum { GoodTime = 1000 * 1000 * 1000 / 59 };
-enum { BadTime = 1000 * 1000 * 1000 / 29 };
-
-static ImU32 GetFrameColor( uint64_t frameTime )
+static uint32_t GetFrameColor( uint64_t time, uint64_t target )
 {
-    return frameTime > BadTime  ? 0xFF2222DD :
-        frameTime > GoodTime ? 0xFF22DDDD :
-        frameTime > BestTime ? 0xFF22DD22 : 0xFFDD9900;
+    return time > target * 2 ? 0xFF2222DD :
+           time > target     ? 0xFF22DDDD :
+           time > target / 2 ? 0xFF22DD22 : 0xFFDD9900;
 }
 
 static int GetFrameWidth( int frameScale )
@@ -41,10 +37,12 @@ void View::DrawFrames()
     const auto scale = GetScale();
     const auto Height = 50 * scale;
 
-    enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
+    constexpr uint64_t MaxFrameTime = 50 * 1000 * 1000;  // 50ms
 
     ImGuiWindow* window = ImGui::GetCurrentWindowRead();
     if( window->SkipItems ) return;
+
+    const uint64_t frameTarget = 1000 * 1000 * 1000 / m_vd.frameTarget;
 
     auto& io = ImGui::GetIO();
 
@@ -185,7 +183,7 @@ void View::DrawFrames()
                     }
                     else
                     {
-                        ImGui::TextDisabled( "%s:", m_worker.GetString( m_frames->name ) );
+                        ImGui::TextDisabled( "%s:", GetFrameSetName( *m_frames ) );
                         ImGui::SameLine();
                         ImGui::TextUnformatted( RealToString( fnum ) );
                         ImGui::Separator();
@@ -416,11 +414,11 @@ void View::DrawFrames()
             const auto h = std::max( 1.f, float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 ) );
             if( fwidth != 1 )
             {
-                draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), GetFrameColor( f ) );
+                draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), GetFrameColor( f, frameTarget ) );
             }
             else
             {
-                DrawLine( draw, dpos + ImVec2( 1+i, Height-2-h ), dpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
+                DrawLine( draw, dpos + ImVec2( 1+i, Height-2-h ), dpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f, frameTarget ) );
             }
 
             i++;
@@ -447,9 +445,9 @@ void View::DrawFrames()
         }
     }
 
-    DrawLine( draw, dpos + ImVec2( 0, round( Height - Height * BadTime / MaxFrameTime ) ),  dpos + ImVec2( w, round( Height - Height * BadTime / MaxFrameTime ) ),  0x4422DDDD );
-    DrawLine( draw, dpos + ImVec2( 0, round( Height - Height * GoodTime / MaxFrameTime ) ), dpos + ImVec2( w, round( Height - Height * GoodTime / MaxFrameTime ) ), 0x4422DD22 );
-    DrawLine( draw, dpos + ImVec2( 0, round( Height - Height * BestTime / MaxFrameTime ) ), dpos + ImVec2( w, round( Height - Height * BestTime / MaxFrameTime ) ), 0x44DD9900 );
+    if( frameTarget * 2 <= MaxFrameTime ) DrawLine( draw, dpos + ImVec2( 0, round( Height - Height * frameTarget * 2 / MaxFrameTime ) ), dpos + ImVec2( w, round( Height - Height * frameTarget * 2 / MaxFrameTime ) ), 0x442222DD );
+    if( frameTarget     <= MaxFrameTime ) DrawLine( draw, dpos + ImVec2( 0, round( Height - Height * frameTarget     / MaxFrameTime ) ), dpos + ImVec2( w, round( Height - Height * frameTarget     / MaxFrameTime ) ), 0x4422DDDD );
+    if( frameTarget / 2 <= MaxFrameTime ) DrawLine( draw, dpos + ImVec2( 0, round( Height - Height * frameTarget / 2 / MaxFrameTime ) ), dpos + ImVec2( w, round( Height - Height * frameTarget / 2 / MaxFrameTime ) ), 0x4422DD22 );
 }
 
 }

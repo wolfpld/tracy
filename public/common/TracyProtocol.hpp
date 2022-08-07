@@ -9,7 +9,7 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 59 };
+enum : uint32_t { ProtocolVersion = 60 };
 enum : uint16_t { BroadcastVersion = 2 };
 
 using lz4sz_t = uint32_t;
@@ -34,7 +34,7 @@ enum HandshakeStatus : uint8_t
 enum { WelcomeMessageProgramNameSize = 64 };
 enum { WelcomeMessageHostInfoSize = 1024 };
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 
 // Must increase left query space after handling!
 enum ServerQuery : uint8_t
@@ -133,7 +133,7 @@ struct BroadcastMessage
 
 enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
 
-#pragma pack()
+#pragma pack( pop )
 
 }
 

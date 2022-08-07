@@ -36,6 +36,13 @@ v0.x.x (xxxx-xx-xx)
   try to show which versions can be used to handle the connection.
 - Messages list in zone info window can now show messages exclusive to the
   zone, filtering out the messages emitted from child zones.
+- Added capture of vertical synchronization timings on Linux.
+- The range of frame bar colors in the frames overview on top of the screen
+  can be now controlled with the "Target FPS" entry box in the options menu.
+  - The "Draw frame targets" option does not need to be selected.
+  - Previously the hardcoded FPS target thresholds were: 30, 60, 144 FPS.
+  - Currently the FPS target threshold is: half of target, target, twice the
+    target.
 
 
 v0.8.2 (2022-06-28)

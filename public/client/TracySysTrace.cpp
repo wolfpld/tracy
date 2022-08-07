@@ -216,20 +216,6 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     }
 }
 
-static constexpr const char* VsyncName[] = {
-    "[0] Vsync",
-    "[1] Vsync",
-    "[2] Vsync",
-    "[3] Vsync",
-    "[4] Vsync",
-    "[5] Vsync",
-    "[6] Vsync",
-    "[7] Vsync",
-    "Vsync"
-};
-
-static uint32_t VsyncTarget[8] = {};
-
 void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
@@ -242,24 +228,9 @@ void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 
     const auto vs = (const VSyncInfo*)record->UserData;
 
-    int idx = 0;
-    do
-    {
-        if( VsyncTarget[idx] == 0 )
-        {
-            VsyncTarget[idx] = vs->vidPnTargetId;
-            break;
-        }
-        else if( VsyncTarget[idx] == vs->vidPnTargetId )
-        {
-            break;
-        }
-    }
-    while( ++idx < 8 );
-
-    TracyLfqPrepare( QueueType::FrameMarkMsg );
-    MemWrite( &item->frameMark.time, hdr.TimeStamp.QuadPart );
-    MemWrite( &item->frameMark.name, uint64_t( VsyncName[idx] ) );
+    TracyLfqPrepare( QueueType::FrameVsync );
+    MemWrite( &item->frameVsync.time, hdr.TimeStamp.QuadPart );
+    MemWrite( &item->frameVsync.id, vs->vidPnTargetId );
     TracyLfqCommit;
 }
 
@@ -690,6 +661,7 @@ enum TraceEventId
     EventCacheMiss,
     EventBranchRetired,
     EventBranchMiss,
+    EventVsync,
     EventContextSwitch,
     EventWakeup,
 };
@@ -780,13 +752,17 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "perf_event_paranoid: %i\n", paranoidLevel );
 #endif
 
-    int switchId = -1, wakeupId = -1;
+    int switchId = -1, wakeupId = -1, vsyncId = -1;
     const auto switchIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_switch/id" );
     if( switchIdStr ) switchId = atoi( switchIdStr );
     const auto wakeupIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_wakeup/id" );
     if( wakeupIdStr ) wakeupId = atoi( wakeupIdStr );
+    const auto vsyncIdStr = ReadFile( "/sys/kernel/debug/tracing/events/drm/drm_vblank_event/id" );
+    if( vsyncIdStr ) vsyncId = atoi( vsyncIdStr );
 
-    TracyDebug( "sched_switch id: %i\nsched_wakeup id: %i\n", switchId, wakeupId );
+    TracyDebug( "sched_switch id: %i\n", switchId );
+    TracyDebug( "sched_wakeup id: %i\n", wakeupId );
+    TracyDebug( "drm_vblank_event id: %i\n", vsyncId );
 
 #ifdef TRACY_NO_SAMPLE_RETIREMENT
     const bool noRetirement = true;
@@ -816,6 +792,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
     const bool noCtxSwitch = noCtxSwitchEnv && noCtxSwitchEnv[0] == '1';
 #endif
 
+#ifdef TRACY_NO_VSYNC_CAPTURE
+    const bool noVsync = true;
+#else
+    const char* noVsyncEnv = GetEnvVar( "TRACY_NO_VSYNC_CAPTURE" );
+    const bool noVsync = noVsyncEnv && noVsyncEnv[0] == '1';
+#endif
+
     samplingPeriod = GetSamplingPeriod();
     uint32_t currentPid = (uint32_t)getpid();
 
@@ -826,7 +809,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
         2 +     // CPU cycles + instructions retired
         2 +     // cache reference + miss
         2 +     // branch retired + miss
-        2       // context switches + wakeups
+        2 +     // context switches + wakeups
+        1       // vsync
     );
     s_ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * maxNumBuffers );
     s_numBuffers = 0;
@@ -1001,6 +985,37 @@ bool SysTraceStart( int64_t& samplingPeriod )
     }
 
     s_ctxBufferIdx = s_numBuffers;
+
+    // vsync
+    if( !noVsync && vsyncId != -1 )
+    {
+        pe = {};
+        pe.type = PERF_TYPE_TRACEPOINT;
+        pe.size = sizeof( perf_event_attr );
+        pe.sample_period = 1;
+        pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW;
+        pe.disabled = 1;
+        pe.config = vsyncId;
+#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+        pe.use_clockid = 1;
+        pe.clockid = CLOCK_MONOTONIC_RAW;
+#endif
+
+        TracyDebug( "Setup vsync capture\n" );
+        for( int i=0; i<s_numCpus; i++ )
+        {
+            const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
+            if( fd != -1 )
+            {
+                new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventVsync, i );
+                if( s_ring[s_numBuffers].IsValid() )
+                {
+                    s_numBuffers++;
+                    TracyDebug( "  Core %i ok\n", i );
+                }
+            }
+        }
+    }
 
     // context switches
     if( !noCtxSwitch && switchId != -1 )
@@ -1336,7 +1351,8 @@ void SysTraceWorker( void* ptr )
                         t0 = ring.ConvertTimeToTsc( t0 );
 #endif
 
-                        if( ring.GetId() == EventContextSwitch )
+                        const auto rid = ring.GetId();
+                        if( rid == EventContextSwitch )
                         {
                             // Layout:
                             //   u64 time
@@ -1404,10 +1420,8 @@ void SysTraceWorker( void* ptr )
                                 TracyLfqCommit;
                             }
                         }
-                        else
+                        else if( rid == EventWakeup )
                         {
-                            assert( ring.GetId() == EventWakeup );
-
                             // Layout:
                             //   u64 time
                             //   u32 size
@@ -1427,6 +1441,40 @@ void SysTraceWorker( void* ptr )
                             TracyLfqPrepare( QueueType::ThreadWakeup );
                             MemWrite( &item->threadWakeup.time, t0 );
                             MemWrite( &item->threadWakeup.thread, pid );
+                            TracyLfqCommit;
+                        }
+                        else
+                        {
+                            assert( rid == EventVsync );
+                            // Layout:
+                            //   u64 time
+                            //   u32 size
+                            //   u8  data[size]
+                            // Data (not ABI stable):
+                            //   u8  hdr[8]
+                            //   i32 crtc
+                            //   u32 seq
+                            //   i64 ktime
+                            //   u8  high precision
+
+                            offset += sizeof( perf_event_header ) + sizeof( uint64_t ) + sizeof( uint32_t ) + 8;
+
+                            int32_t crtc;
+                            ring.Read( &crtc, offset, sizeof( int32_t ) );
+
+                            // Note: The timestamp value t0 might be off by a number of microseconds from the
+                            // true hardware vblank event. The ktime value should be used instead, but it is
+                            // measured in CLOCK_MONOTONIC time. Tracy only supports the timestamp counter
+                            // register (TSC) or CLOCK_MONOTONIC_RAW clock.
+#if 0
+                            offset += sizeof( uint32_t ) * 2;
+                            int64_t ktime;
+                            ring.Read( &ktime, offset, sizeof( int64_t ) );
+#endif
+
+                            TracyLfqPrepare( QueueType::FrameVsync );
+                            MemWrite( &item->frameVsync.id, crtc );
+                            MemWrite( &item->frameVsync.time, t0 );
                             TracyLfqCommit;
                         }
 

@@ -844,7 +844,7 @@ Wait stacks & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 Hardware sampling & \faCheck{}\textsuperscript{\emph{a}} & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-VSync capture & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
+VSync capture & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
 \vspace{1em}
@@ -2128,7 +2128,7 @@ For proper program code retrieval, you can unload no module used by the applicat
 
 \subsubsection{Vertical synchronization}
 
-On Windows, Tracy will automatically capture hardware Vsync events if running with elevated privileges (see section~\ref{privilegeelevation}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, etc.
+On Windows and Linux, Tracy will automatically capture hardware Vsync events, provided that the application has access to the kernel data (privilege elevation may be needed, see section~\ref{privilegeelevation}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application due to desktop composition, command queue buffering, and so on. Also, in some instances, when there is nothing to update on the screen, the graphic driver may choose to stop issuing screen refresh. As a result, there may be periods where no vertical synchronization events are reported.
 
 Use the \texttt{TRACY\_NO\_VSYNC\_CAPTURE} macro to disable capture of Vsync events.
 
@@ -2583,12 +2583,12 @@ The graph of the currently selected frame set (figure~\ref{frametime}) provides 
 \label{frametime}
 \end{figure}
 
-Each bar displayed on the graph represents a unique frame in the current frame set\footnote{Unless the view is zoomed out and multiple frames are merged into one column.}. The progress of time is in the right direction. The height of the bar indicates the time spent in the frame, complemented with the color information:
+Each bar displayed on the graph represents a unique frame in the current frame set\footnote{Unless the view is zoomed out and multiple frames are merged into one column.}. The progress of time is in the right direction. The bar height indicates the time spent in the frame, complemented by the color information, which depends on the target FPS value. You can set the desired FPS in the options menu (see section~\ref{options}).
 
 \begin{itemize}
-\item If the bar is \emph{blue}, then the frame met the \emph{best} time of 143 FPS, or 6.99 \si{\milli\second}\footnote{The actual target is 144 FPS, but one frame leeway is allowed to account for timing inaccuracies.} (represented by blue target line).
-\item If the bar is \emph{green}, then the frame met the \emph{good} time of 59 FPS, or 16.94 \si{\milli\second} (represented by green target line).
-\item If the bar is \emph{yellow}, then the frame met the \emph{bad} time of 29 FPS, or 34.48 \si{\milli\second} (represented by yellow target line).
+\item If the bar is \emph{blue}, then the frame met the \emph{best} time of twice the target FPS (represented by the green target line).
+\item If the bar is \emph{green}, then the frame met the \emph{good} time of target FPS (represented by the yellow line).
+\item If the bar is \emph{yellow}, then the frame met the \emph{bad} time of half the FPS (represented by the red target line).
 \item If the bar is \emph{red}, then the frame didn't meet any time limits.
 \end{itemize}
 
@@ -2948,6 +2948,9 @@ In this window, you can set various trace-related options. For example, the time
 \begin{itemize}
 \item \emph{\faExpand{} Draw empty labels} -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
 \item \emph{\faFlagCheckered{} Draw frame targets} -- If enabled, time regions in any frame from the currently selected frame set, which exceed the specified \emph{Target FPS} value will be marked with a red background on timeline view.
+\begin{itemize}
+\item \emph{Target FPS} -- Controls the option above, but also the frame bar colors in the frame time graph (section~\ref{frametimegraph}). The color range thresholds are presented in a line directly below.
+\end{itemize}
 \item \emph{\faHiking{} Draw context switches} -- Allows disabling context switch display in threads.
 \begin{itemize}
 \item \emph{\faMoon{} Darken inactive thread} -- If enabled, inactive regions in threads will be dimmed out.

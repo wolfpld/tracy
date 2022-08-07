@@ -303,6 +303,8 @@ private:
     const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
     uint64_t GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) const;
     const char* GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const;
+    const char* GetFrameSetName( const FrameData& fd ) const;
+    static const char* GetFrameSetName( const FrameData& fd, const Worker& worker );
 
 #ifndef TRACY_NO_STATISTICS
     void FindZones();

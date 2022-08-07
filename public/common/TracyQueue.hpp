@@ -78,6 +78,7 @@ enum class QueueType : uint8_t
     FrameMarkMsg,
     FrameMarkMsgStart,
     FrameMarkMsgEnd,
+    FrameVsync,
     SourceLocation,
     LockAnnounce,
     LockTerminate,
@@ -121,7 +122,7 @@ enum class QueueType : uint8_t
     NUM_TYPES
 };
 
-#pragma pack( 1 )
+#pragma pack( push, 1 )
 
 struct QueueThreadContext
 {
@@ -194,6 +195,12 @@ struct QueueFrameMark
 {
     int64_t time;
     uint64_t name;      // ptr
+};
+
+struct QueueFrameVsync
+{
+    int64_t time;
+    uint32_t id;
 };
 
 struct QueueFrameImage
@@ -670,6 +677,7 @@ struct QueueItem
         QueueZoneValueThread zoneValueThread;
         QueueStringTransfer stringTransfer;
         QueueFrameMark frameMark;
+        QueueFrameVsync frameVsync;
         QueueFrameImage frameImage;
         QueueFrameImageFat frameImageFat;
         QueueSourceLocation srcloc;
@@ -737,7 +745,7 @@ struct QueueItem
         QueueFiberLeave fiberLeave;
     };
 };
-#pragma pack()
+#pragma pack( pop )
 
 
 enum { QueueItemSize = sizeof( QueueItem ) };
@@ -813,6 +821,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // continuous frames
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // start
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // end
+    sizeof( QueueHeader ) + sizeof( QueueFrameVsync ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
     sizeof( QueueHeader ) + sizeof( QueueLockTerminate ),

@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "TracyColor.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
@@ -791,9 +793,37 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
     }
     else
     {
-        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( fnum ), TimeToString( ftime ) );
+        sprintf( buf, "%s %s (%s)", GetFrameSetName( fd ), RealToString( fnum ), TimeToString( ftime ) );
     }
     return buf;
+}
+
+const char* View::GetFrameSetName( const FrameData& fd ) const
+{
+    return GetFrameSetName( fd, m_worker );
+}
+
+const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
+{
+    enum { Pool = 4 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+
+    if( fd.name == 0 )
+    {
+        return "Frames";
+    }
+    else if( fd.name >> 63 != 0 )
+    {
+        char* buf = bufpool[bufsel];
+        bufsel = ( bufsel + 1 ) % Pool;
+        sprintf( buf, "[%" PRIu32 "] Vsync", uint32_t( fd.name ) );
+        return buf;
+    }
+    else
+    {
+        return worker.GetString( fd.name );
+    }
 }
 
 const char* View::ShortenNamespace( const char* name ) const

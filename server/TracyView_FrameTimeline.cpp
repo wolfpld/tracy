@@ -320,7 +320,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
             ImGui::BeginTooltip();
             TextDisabledUnformatted( "Frame set:" );
             ImGui::SameLine();
-            ImGui::TextUnformatted( frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
+            ImGui::TextUnformatted( GetFrameSetName( frames ) );
             ImGui::EndTooltip();
         }
         if( IsMouseClicked( 0 ) )

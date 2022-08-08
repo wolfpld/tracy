@@ -242,10 +242,10 @@
 #  define TracySecureAllocS( ptr, size, depth ) TracySecureAlloc( ptr, size )
 #  define TracySecureFreeS( ptr, depth ) TracySecureFree( ptr )
 
-#  define TracyAllocNS( ptr, size, depth, name ) TracyAlloc( ptr, size, name )
-#  define TracyFreeNS( ptr, depth, name ) TracyFree( ptr, name )
-#  define TracySecureAllocNS( ptr, size, depth, name ) TracySecureAlloc( ptr, size, name )
-#  define TracySecureFreeNS( ptr, depth, name ) TracySecureFree( ptr, name )
+#  define TracyAllocNS( ptr, size, depth, name ) TracyAllocN( ptr, size, name )
+#  define TracyFreeNS( ptr, depth, name ) TracyFreeN( ptr, name )
+#  define TracySecureAllocNS( ptr, size, depth, name ) TracySecureAllocN( ptr, size, name )
+#  define TracySecureFreeNS( ptr, depth, name ) TracySecureFreeN( ptr, name )
 
 #  define TracyMessageS( txt, size, depth ) TracyMessage( txt, size )
 #  define TracyMessageLS( txt, depth ) TracyMessageL( txt )

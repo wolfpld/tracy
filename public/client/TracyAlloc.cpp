@@ -1,8 +1,9 @@
-#ifdef TRACY_ENABLE
+#include "../common/TracyAlloc.hpp"
+
+#ifdef TRACY_USE_RPMALLOC
 
 #include <atomic>
 
-#include "../common/TracyAlloc.hpp"
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracyYield.hpp"
 

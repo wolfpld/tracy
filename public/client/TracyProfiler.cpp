@@ -57,6 +57,7 @@
 #include <thread>
 
 #include "../common/TracyAlign.hpp"
+#include "../common/TracyAlloc.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyYield.hpp"
@@ -1547,7 +1548,9 @@ void Profiler::Worker()
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
+#ifdef TRACY_USE_RPMALLOC
     rpmalloc_thread_initialize();
+#endif
 
     m_exectime = 0;
     const auto execname = GetProcessExecutablePath();
@@ -2019,7 +2022,10 @@ void Profiler::CompressWorker()
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy DXT1" );
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+#ifdef TRACY_USE_RPMALLOC
     rpmalloc_thread_initialize();
+#endif
 
     for(;;)
     {
@@ -3291,7 +3297,10 @@ void Profiler::SymbolWorker()
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Symbol Worker" );
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+#ifdef TRACY_USE_RPMALLOC
     rpmalloc_thread_initialize();
+#endif
 
     for(;;)
     {

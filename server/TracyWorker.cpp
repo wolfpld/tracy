@@ -685,7 +685,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         auto dst = m_slab.Alloc<char>( ssz+1 );
         f.Read( dst, ssz );
         dst[ssz] = '\0';
-        m_data.stringMap.emplace( charutil::StringKey { dst, ssz }, i );
+        m_data.stringMap.emplace( charutil::StringKey { dst, size_t( ssz ) }, i );
         m_data.stringData[i] = ( dst );
         pointerMap.emplace( ptr, dst );
     }

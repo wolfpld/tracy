@@ -7,7 +7,9 @@ LDFLAGS := -fuse-ld=mold
 endif
 
 ifndef TRACY_NO_ISA_EXTENSIONS
-ifeq ($(ARCH),x86_64)
-CFLAGS += -msse4.1
+ifneq (,$(filter $(ARCH),aarch64 arm64))
+CFLAGS += -mcpu=native
+else
+CFLAGS += -march=native
 endif
 endif

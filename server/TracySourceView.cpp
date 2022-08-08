@@ -2133,7 +2133,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
 
 static constexpr char HexPrint[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-static int PrintHexBytesRaw( char* buf, const uint8_t* bytes, size_t len )
+static int FormatHexBytesRaw( char* buf, const uint8_t* bytes, size_t len )
 {
     const auto start = buf;
     for( size_t i=0; i<len; i++ )
@@ -2147,31 +2147,49 @@ static int PrintHexBytesRaw( char* buf, const uint8_t* bytes, size_t len )
     return buf - start;
 }
 
-static int PrintHexBytesArm( char* buf, const uint8_t* bytes )
+static int PrintHexBytesRaw( const uint8_t* bytes, size_t len )
 {
-    const auto start = buf;
-    for( int i=3; i>=0; i-- )
+    char buf[2];
+    bool first = true;
+    for( size_t i=0; i<len; i++ )
     {
+        if( first ) first = false;
+        else ImGui::SameLine( 0, 0 );
         const auto byte = bytes[i];
-        *buf++ = HexPrint[byte >> 4];
-        *buf++ = HexPrint[byte & 0xF];
-        *buf++ = ' ';
+        buf[0] = HexPrint[byte >> 4];
+        buf[1] = HexPrint[byte & 0xF];
+        TextColoredUnformatted( (i%2 == 0) ? 0xFFFFBBBB : 0xFFBB7777, buf, buf+2 );
     }
-    *--buf = '\0';
-    return buf - start;
+    return len * 2;
 }
 
-static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len, CpuArchitecture arch )
+static int PrintHexBytesArm( const uint8_t* bytes )
+{
+    char buf[2];
+    bool first = true;
+    for( int i=3; i>=0; i-- )
+    {
+        if( first ) first = false;
+        else ImGui::SameLine( 0, 0 );
+        const auto byte = bytes[i];
+        buf[0] = HexPrint[byte >> 4];
+        buf[1] = HexPrint[byte & 0xF];
+        TextColoredUnformatted( (i%2 != 0) ? 0xFFFFBBBB : 0xFFBB7777, buf, buf+2 );
+    }
+    return 8;
+}
+
+static int PrintHexBytes( const uint8_t* bytes, size_t len, CpuArchitecture arch )
 {
     switch( arch )
     {
     case CpuArchX86:
     case CpuArchX64:
-        return PrintHexBytesRaw( buf, bytes, len );
+        return PrintHexBytesRaw( bytes, len );
     case CpuArchArm32:
     case CpuArchArm64:
         assert( len == 4 );
-        return PrintHexBytesArm( buf, bytes );
+        return PrintHexBytesArm( bytes );
     default:
         assert( false );
         return 0;
@@ -2198,7 +2216,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             auto bytesLeft = std::min( 16u, m_codeLen - m_disasmFail );
             auto code = worker.GetSymbolCode( m_baseAddr, m_codeLen );
             assert( code );
-            PrintHexBytesRaw( tmp, (const uint8_t*)code, bytesLeft );
+            FormatHexBytesRaw( tmp, (const uint8_t*)code, bytesLeft );
             TextFocused( "Failure bytes:", tmp );
             TextDisabledUnformatted( "Click to copy to clipboard." );
             ImGui::EndTooltip();
@@ -3612,12 +3630,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     {
         auto code = (const uint8_t*)worker.GetSymbolCode( m_baseAddr, m_codeLen );
         assert( code );
-        char tmp[64];
-        const auto len = PrintHexBytes( tmp, code + line.addr - m_baseAddr, line.len, worker.GetCpuArch() );
         ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 0.5, 0.5, 1, 1 ), tmp );
+        const auto len = PrintHexBytes( code + line.addr - m_baseAddr, line.len, worker.GetCpuArch() );
         ImGui::SameLine( 0, 0 );
-        ImGui::ItemSize( ImVec2( stw * ( m_maxAsmBytes*3 - len ), ty ), 0 );
+        ImGui::ItemSize( ImVec2( stw * ( m_maxAsmBytes*2 - len ), ty ), 0 );
     }
     if( m_showJumps )
     {

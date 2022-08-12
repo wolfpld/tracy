@@ -101,7 +101,6 @@ if get_option('tracy_fileselector') == 'none'
 endif
 
 threads_dep = dependency('threads')
-imgui = dependency('imgui')
 zstd = dependency('libzstd')
 
 includes = [
@@ -201,5 +200,6 @@ tracy_dep_dynamic = declare_dependency(
 
 meson.override_dependency('tracy', tracy_dep)
 
+subdir('imgui')
 subdir('server')
 subdir('profiler')

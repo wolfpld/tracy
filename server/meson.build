@@ -52,6 +52,6 @@ server_sources = files(
 
 capstone = dependency('capstone')
 
-deps = [imgui_dep, capstone, tracy_dep]
+deps = [imgui, capstone, tracy_dep]
 server_lib = static_library('tracy_server', server_sources, dependencies: deps, cpp_args: '-UTRACY_ENABLE')
 server_dep = declare_dependency(dependencies: deps, link_with: server_lib)

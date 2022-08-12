@@ -102,7 +102,7 @@ endif
 
 threads_dep = dependency('threads')
 imgui = dependency('imgui')
-zstd = dependency('zstd')
+zstd = dependency('libzstd')
 
 includes = [
     'public/tracy/TracyC.h',

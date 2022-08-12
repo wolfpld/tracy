@@ -13,7 +13,7 @@ profiler_sources = files(
     'src/imgui/imgui_impl_opengl3.cpp')
 
 glfw = dependency('glfw3')
-deps = [glfw, threads_dep, server_dep, tracy_dep, zstd_dep]
+deps = [glfw, threads_dep, server_dep, tracy_dep, zstd]
 
 if get_option('tracy_fileselector') == 'gtk'
     profiler_sources += files('../nfd/nfd_gtk.cpp')

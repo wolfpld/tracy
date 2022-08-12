@@ -222,7 +222,7 @@ static void PrintSourceFragment( const SourceContents& src, uint32_t srcline, in
 enum { JumpSeparationBase = 6 };
 enum { JumpArrowBase = 9 };
 
-SourceView::SourceView( GetWindowCallback gwcb )
+SourceView::SourceView()
     : m_font( nullptr )
     , m_smallFont( nullptr )
     , m_symAddr( 0 )
@@ -248,7 +248,6 @@ SourceView::SourceView( GetWindowCallback gwcb )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
-    , m_gwcb( gwcb )
 {
     m_microArchOpMap.reserve( OpsNum );
     for( int i=0; i<OpsNum; i++ )

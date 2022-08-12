@@ -46,7 +46,7 @@ double s_time = 0;
 
 static View* s_instance = nullptr;
 
-View::View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb, SetScaleCallback sscb )
+View::View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb )
     : m_worker( addr, port )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
@@ -60,7 +60,6 @@ View::View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, 
     , m_bigFont( bigFont )
     , m_fixedFont( fixedWidth )
     , m_stcb( stcb )
-    , m_gwcb( gwcb )
     , m_sscb( sscb )
     , m_userData()
     , m_cbMainThread( cbMainThread )
@@ -72,7 +71,7 @@ View::View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, 
     InitTextEditor( fixedWidth );
 }
 
-View::View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb, SetScaleCallback sscb )
+View::View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
@@ -83,7 +82,6 @@ View::View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFon
     , m_bigFont( bigFont )
     , m_fixedFont( fixedWidth )
     , m_stcb( stcb )
-    , m_gwcb( gwcb )
     , m_sscb( sscb )
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
     , m_cbMainThread( cbMainThread )
@@ -152,7 +150,7 @@ void View::InitMemory()
 
 void View::InitTextEditor( ImFont* font )
 {
-    m_sourceView = std::make_unique<SourceView>( m_gwcb );
+    m_sourceView = std::make_unique<SourceView>();
     m_sourceViewFile = nullptr;
 }
 

@@ -141,9 +141,7 @@ private:
     };
 
 public:
-    using GetWindowCallback = void*(*)();
-
-    SourceView( GetWindowCallback gwcb );
+    SourceView();
 
     void UpdateFont( ImFont* fixed, ImFont* small ) { m_font = fixed; m_smallFont = small; }
     void SetCpuId( uint32_t cpuid );
@@ -259,7 +257,6 @@ private:
     float m_asmWidth;
     float m_jumpOffset;
 
-    GetWindowCallback m_gwcb;
     Tokenizer m_tokenizer;
 
     struct

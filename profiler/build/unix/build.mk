@@ -4,15 +4,6 @@ DEFINES += -DIMGUI_ENABLE_FREETYPE
 INCLUDES := $(shell pkg-config --cflags glfw3 freetype2 capstone) -I../../../imgui
 LIBS := $(shell pkg-config --libs glfw3 freetype2 capstone) -lpthread -ldl
 
-DISPLAY_SERVER := X11
-
-ifdef TRACY_USE_WAYLAND
-	DISPLAY_SERVER := WAYLAND
-	LIBS += $(shell pkg-config --libs wayland-client)
-endif
-
-CXXFLAGS += -D"DISPLAY_SERVER_$(DISPLAY_SERVER)"
-
 PROJECT := Tracy
 IMAGE := $(PROJECT)-$(BUILD)
 

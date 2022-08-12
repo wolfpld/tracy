@@ -24,7 +24,6 @@ public:
     void SetTitle( const char* title );
 
     float GetDpiScale();
-    void* GetNativeWindow();
 
 private:
     WindowPosition m_winPos;

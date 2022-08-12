@@ -26,4 +26,4 @@ endif
 
 profiler_inc = include_directories('src', 'src/imgui')
 
-executable('profiler', profiler_sources, include_directories: profiler_inc, dependencies: deps, cpp_args: '-UTRACY_ENABLE')
+executable('profiler', profiler_sources, include_directories: profiler_inc, dependencies: deps)

@@ -2622,37 +2622,51 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             {
                 uint32_t srcline;
                 const auto srcidx = worker.GetLocationForAddress( m_jumpPopupAddr, srcline );
-                if( srcline != 0 )
+                const auto fileName = srcline != 0 ? worker.GetString( srcidx ) : nullptr;
+                const auto fileColor = srcline != 0 ? GetHsvColor( srcidx.Idx(), 0 ) : 0;
+                SmallColorBox( fileColor );
+                ImGui::SameLine();
+                char buf[1024];
+                if( fileName )
                 {
-                    const auto fileName = worker.GetString( srcidx );
-                    const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
-                    SmallColorBox( fileColor );
-                    ImGui::SameLine();
-                    char buf[1024];
                     snprintf( buf, 1024, "%s:%i", fileName, srcline );
-                    if( ImGui::BeginMenu( buf ) )
+                }
+                else
+                {
+                    uint32_t jumpOffset = 0;
+                    uint64_t jumpBase = worker.GetSymbolForAddress( m_jumpPopupAddr, jumpOffset );
+                    auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( m_jumpPopupAddr ) : worker.GetSymbolData( jumpBase );
+                    if( jumpSym )
                     {
-                        if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                        snprintf( buf, 1024, "%s+%" PRIu32, worker.GetString( jumpSym->name ), jumpOffset );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "0x%" PRIx64, m_jumpPopupAddr );
+                    }
+                }
+                if( ImGui::BeginMenu( buf ) )
+                {
+                    if( fileName && SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                    {
+                        m_sourceTooltip.Parse( fileName, worker, view );
+                        if( !m_sourceTooltip.empty() )
                         {
-                            m_sourceTooltip.Parse( fileName, worker, view );
-                            if( !m_sourceTooltip.empty() )
-                            {
-                                SetFont();
-                                PrintSourceFragment( m_sourceTooltip, srcline );
-                                UnsetFont();
-                            }
+                            SetFont();
+                            PrintSourceFragment( m_sourceTooltip, srcline );
+                            UnsetFont();
                         }
-                        else
-                        {
-                            TextDisabledUnformatted( "Source not available" );
-                        }
-                        ImGui::EndMenu();
-                        if( ImGui::IsItemClicked() )
-                        {
-                            m_targetAddr = m_jumpPopupAddr;
-                            m_selectedAddresses.clear();
-                            m_selectedAddresses.emplace( m_jumpPopupAddr );
-                        }
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( "Source not available" );
+                    }
+                    ImGui::EndMenu();
+                    if( ImGui::IsItemClicked() )
+                    {
+                        m_targetAddr = m_jumpPopupAddr;
+                        m_selectedAddresses.clear();
+                        m_selectedAddresses.emplace( m_jumpPopupAddr );
                     }
                 }
                 ImGui::EndMenu();

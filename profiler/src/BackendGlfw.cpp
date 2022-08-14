@@ -24,7 +24,7 @@ static void glfw_error_callback( int error, const char* description )
 
 static void glfw_window_pos_callback( GLFWwindow* window, int x, int y )
 {
-    if( !glfwGetWindowAttrib( window, GLFW_MAXIMIZED) )
+    if( !glfwGetWindowAttrib( window, GLFW_MAXIMIZED ) )
     {
         s_winPos->x = x;
         s_winPos->y = y;
@@ -33,7 +33,7 @@ static void glfw_window_pos_callback( GLFWwindow* window, int x, int y )
 
 static void glfw_window_size_callback( GLFWwindow* window, int w, int h )
 {
-    if( !glfwGetWindowAttrib( window, GLFW_MAXIMIZED) )
+    if( !glfwGetWindowAttrib( window, GLFW_MAXIMIZED ) )
     {
         s_winPos->w = w;
         s_winPos->h = h;

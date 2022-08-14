@@ -853,7 +853,7 @@ void View::DrawInfo()
                 {
                     v.regex.assign( v.pattern );
                 }
-                catch( std::regex_error& err )
+                catch( std::regex_error& )
                 {
                     regexValid = false;
                     break;

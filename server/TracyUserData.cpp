@@ -272,7 +272,7 @@ bool UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
                 {
                     regex.assign( pattern );
                 }
-                catch( std::regex_error& err )
+                catch( std::regex_error& )
                 {
                     regexValid = false;
                 }

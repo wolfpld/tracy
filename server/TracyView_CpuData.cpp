@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum { MinVisSize = 3 };
+constexpr float MinVisSize = 3;
 
 int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {

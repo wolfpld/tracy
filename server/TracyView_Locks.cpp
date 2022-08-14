@@ -10,7 +10,7 @@
 namespace tracy
 {
 
-enum { MinVisSize = 3 };
+constexpr float MinVisSize = 3;
 
 static tracy_force_inline uint64_t GetThreadBit( uint8_t thread )
 {

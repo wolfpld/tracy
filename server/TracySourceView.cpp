@@ -219,8 +219,8 @@ static void PrintSourceFragment( const SourceContents& src, uint32_t srcline, in
 }
 
 
-enum { JumpSeparationBase = 6 };
-enum { JumpArrowBase = 9 };
+constexpr float JumpSeparationBase = 6;
+constexpr float JumpArrowBase = 9;
 
 SourceView::SourceView()
     : m_font( nullptr )

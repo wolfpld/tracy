@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum { MinVisSize = 3 };
+constexpr float MinVisSize = 3;
 
 static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
 {

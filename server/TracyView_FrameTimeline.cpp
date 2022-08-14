@@ -10,8 +10,8 @@
 namespace tracy
 {
 
-enum { MinVisSize = 3 };
-enum { MinFrameSize = 5 };
+constexpr float MinVisSize = 3;
+constexpr float MinFrameSize = 5;
 
 static tracy_force_inline uint32_t GetColorMuted( uint32_t color, bool active )
 {

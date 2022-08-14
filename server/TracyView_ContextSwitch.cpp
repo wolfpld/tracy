@@ -8,7 +8,7 @@
 namespace tracy
 {
 
-enum { MinCtxSize = 4 };
+constexpr float MinCtxSize = 4;
 
 const char* View::DecodeContextSwitchReasonCode( uint8_t reason )
 {

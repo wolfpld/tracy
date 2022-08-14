@@ -2137,6 +2137,10 @@ Worker::~Worker()
     {
         v.~Vector();
     }
+    for( auto& v : m_data.memNameMap )
+    {
+        v.second->~MemData();
+    }
     for( auto& v : m_data.ctxSwitch )
     {
         v.second->v.~Vector();

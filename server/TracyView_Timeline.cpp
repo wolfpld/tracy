@@ -287,8 +287,8 @@ void View::DrawTimeline()
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto h = std::max<float>( m_vd.zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
 
-    ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
-    bool hover = ImGui::IsItemHovered();
+    ImGui::ItemSize( ImVec2( w, h ) );
+    bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, h ) );
     draw = ImGui::GetWindowDrawList();
 
     const auto nspx = 1.0 / pxns;

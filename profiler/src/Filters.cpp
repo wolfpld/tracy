@@ -34,15 +34,15 @@ Filters::~Filters()
     FILE* f = fopen( m_fn.c_str(), "wb" );
     if( !f ) return;
 
-    uint8_t sz = strlen( m_addrFilter.InputBuf );
+    uint8_t sz = (uint8_t)strlen( m_addrFilter.InputBuf );
     fwrite( &sz, 1, sizeof( sz ), f );
     fwrite( m_addrFilter.InputBuf, 1, sz, f );
 
-    sz = strlen( m_portFilter.InputBuf );
+    sz = (uint8_t)strlen( m_portFilter.InputBuf );
     fwrite( &sz, 1, sizeof( sz ), f );
     fwrite( m_portFilter.InputBuf, 1, sz, f );
 
-    sz = strlen( m_progFilter.InputBuf );
+    sz = (uint8_t)strlen( m_progFilter.InputBuf );
     fwrite( &sz, 1, sizeof( sz ), f );
     fwrite( m_progFilter.InputBuf, 1, sz, f );
 

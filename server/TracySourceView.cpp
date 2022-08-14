@@ -3617,6 +3617,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             ImGui::SameLine();
             startPos = ImGui::GetCursorScreenPos();
             TextDisabledUnformatted( "[unknown]" );
+            if( ImGui::IsItemHovered() ) lineHovered = true;
         }
         ImGui::SameLine( 0, 0 );
         const auto endPos = ImGui::GetCursorScreenPos();

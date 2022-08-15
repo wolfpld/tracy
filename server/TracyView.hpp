@@ -128,7 +128,9 @@ private:
     {
         Never,
         Always,
-        WhenNoSpace
+        OnlyNormalize,
+        NoSpace,
+        NoSpaceAndNormalize,
     };
 
     enum class ShortcutAction : uint8_t
@@ -483,7 +485,7 @@ private:
     bool m_groupWaitStackTopDown = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
-    ShortenName m_shortenName = ShortenName::WhenNoSpace;
+    ShortenName m_shortenName = ShortenName::NoSpaceAndNormalize;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_sampleParentBuzzAnim;

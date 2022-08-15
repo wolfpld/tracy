@@ -923,7 +923,7 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
     }
 
     tsz = ImGui::CalcTextSize( ptr, end );
-    if( tsz.x < zsz ) return ptr;
+    if( m_shortenName == ShortenName::OnlyNormalize || tsz.x < zsz ) return ptr;
 
     for(;;)
     {

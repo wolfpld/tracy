@@ -226,8 +226,10 @@ void View::DrawOptions()
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Never", &ival, 0 );
-    ImGui::RadioButton( "Always", &ival, 1 );
-    ImGui::RadioButton( "When no space", &ival, 2 );
+    ImGui::RadioButton( "Always full", &ival, 1 );
+    ImGui::RadioButton( "Only normalize", &ival, 2 );
+    ImGui::RadioButton( "No space", &ival, 3 );
+    ImGui::RadioButton( "No space + normalize", &ival, 4 );
     ImGui::PopStyleVar();
     ImGui::Unindent();
     m_shortenName = (ShortenName)ival;

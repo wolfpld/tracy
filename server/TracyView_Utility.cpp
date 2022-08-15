@@ -826,6 +826,14 @@ const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
     }
 }
 
+// Short list based on GetTypes() in TracySourceTokenizer.cpp
+constexpr const char* TypesList[] = {
+    "bool ", "char ", "double ", "float ", "int ", "long ", "short ",
+    "signed ", "unsigned ", "void ", "wchar_t ", "size_t ", "int8_t ",
+    "int16_t ", "int32_t ", "int64_t ", "intptr_t ", "uint8_t ", "uint16_t ",
+    "uint32_t ", "uint64_t ", "ptrdiff_t ", nullptr
+};
+
 const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) const
 {
     assert( m_shortenName != ShortenName::Never );
@@ -890,8 +898,34 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
         end -= 6;
     }
 
-    tsz = ImGui::CalcTextSize( buf, end );
-    return buf;
+    ptr = buf;
+    for(;;)
+    {
+        auto match = TypesList;
+        while( *match )
+        {
+            auto m = *match;
+            auto p = ptr;
+            while( *m )
+            {
+                if( *m != *p ) break;
+                m++;
+                p++;
+            }
+            if( !*m )
+            {
+                ptr = p;
+                break;
+            }
+            match++;
+        }
+        if( !*match ) break;
+    }
+
+    tsz = ImGui::CalcTextSize( ptr, end );
+    if( tsz.x < zsz ) return ptr;
+
+    return ptr;
 }
 
 const char* View::GetThreadContextData( uint64_t thread, bool& _local, bool& _untracked, const char*& program )

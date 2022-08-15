@@ -18,6 +18,7 @@
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyUserData.hpp"
+#include "TracyUtility.hpp"
 #include "TracyVector.hpp"
 #include "TracyViewData.hpp"
 #include "TracyWorker.hpp"
@@ -124,15 +125,6 @@ public:
     Range m_waitStackRange;
 
 private:
-    enum class ShortenName : uint8_t
-    {
-        Never,
-        Always,
-        OnlyNormalize,
-        NoSpace,
-        NoSpaceAndNormalize,
-    };
-
     enum class ShortcutAction : uint8_t
     {
         None,
@@ -178,8 +170,6 @@ private:
 
     void InitMemory();
     void InitTextEditor( ImFont* font );
-
-    const char* ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) const;
 
     bool DrawImpl();
     void DrawNotificationArea();

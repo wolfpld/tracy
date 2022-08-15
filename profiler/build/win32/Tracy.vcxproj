@@ -138,6 +138,7 @@
     <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineController.cpp" />
     <ClCompile Include="..\..\..\server\TracyUserData.cpp" />
+    <ClCompile Include="..\..\..\server\TracyUtility.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Annotations.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Callstack.cpp" />
@@ -272,6 +273,7 @@
     <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineController.hpp" />
     <ClInclude Include="..\..\..\server\TracyUserData.hpp" />
+    <ClInclude Include="..\..\..\server\TracyUtility.hpp" />
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp" />
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
     <ClInclude Include="..\..\..\server\TracyVersion.hpp" />

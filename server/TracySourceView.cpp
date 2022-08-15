@@ -1287,6 +1287,18 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 ImGui::Spacing();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s:%i", file, line );
+                if( ImGui::IsItemHovered() && SourceFileValid( file, worker.GetCaptureTime(), view, worker ) )
+                {
+                    m_sourceTooltip.Parse( file, worker, view );
+                    if( !m_sourceTooltip.empty() )
+                    {
+                        ImGui::BeginTooltip();
+                        SetFont();
+                        PrintSourceFragment( m_sourceTooltip, line, 4, 7 );
+                        UnsetFont();
+                        ImGui::EndTooltip();
+                    }
+                }
                 ImGui::NextColumn();
                 ImGui::TextDisabled( "0x%" PRIx64, v.first );
                 ImGui::NextColumn();

@@ -829,6 +829,7 @@ const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
 const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) const
 {
     assert( m_shortenName != ShortenName::Never );
+    if( name[0] == '<' ) return name;
     if( m_shortenName == ShortenName::Always ) zsz = 0;
 
     static char buf[64*1024];

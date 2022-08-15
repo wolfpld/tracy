@@ -883,7 +883,14 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
         *dst++ = ')';
     }
 
-    tsz = ImGui::CalcTextSize( buf );
+    end = dst-1;
+    if( end - buf > 6 && memcmp( end-6, " const", 6 ) == 0 )
+    {
+        dst[-7] = '\0';
+        end -= 6;
+    }
+
+    tsz = ImGui::CalcTextSize( buf, end );
     return buf;
 }
 

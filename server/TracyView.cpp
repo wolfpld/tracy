@@ -1180,7 +1180,7 @@ void View::DrawTextEditor()
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
-        m_sourceView->UpdateFont( m_fixedFont, m_smallFont );
+        m_sourceView->UpdateFont( m_fixedFont, m_smallFont, m_bigFont );
         m_sourceView->Render( m_worker, *this );
     }
     ImGui::End();

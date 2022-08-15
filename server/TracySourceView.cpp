@@ -13,6 +13,7 @@
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
 #include "TracySourceView.hpp"
+#include "TracyUtility.hpp"
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"
 
@@ -1096,7 +1097,17 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         auto parent = worker.GetSymbolData( m_baseAddr );
         if( parent )
         {
-            TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", worker.GetString( parent->name ) );
+            const auto symName = worker.GetString( parent->name );
+            if( view.GetShortenName() == ShortenName::Never )
+            {
+                TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", symName );
+            }
+            else
+            {
+                const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
+                TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", normalized );
+                TooltipNormalizedName( symName, normalized );
+            }
         }
         else
         {
@@ -1107,7 +1118,17 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     }
     else
     {
-        TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", worker.GetString( sym->name ) );
+        const auto symName = worker.GetString( sym->name );
+        if( view.GetShortenName() == ShortenName::Never )
+        {
+            TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", symName );
+        }
+        else
+        {
+            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
+            TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", normalized );
+            TooltipNormalizedName( symName, normalized );
+        }
     }
     ImGui::SameLine();
     TextDisabledUnformatted( worker.GetString( sym->imageName ) );

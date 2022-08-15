@@ -225,11 +225,11 @@ void View::DrawOptions()
     ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    ImGui::RadioButton( "Never", &ival, 0 );
-    ImGui::RadioButton( "Always full", &ival, 1 );
+    ImGui::RadioButton( "Disabled", &ival, 0 );
+    ImGui::RadioButton( "Minimal length", &ival, 1 );
     ImGui::RadioButton( "Only normalize", &ival, 2 );
-    ImGui::RadioButton( "No space", &ival, 3 );
-    ImGui::RadioButton( "No space + normalize", &ival, 4 );
+    ImGui::RadioButton( "As needed", &ival, 3 );
+    ImGui::RadioButton( "As needed + normalize", &ival, 4 );
     ImGui::PopStyleVar();
     ImGui::Unindent();
     m_shortenName = (ShortenName)ival;

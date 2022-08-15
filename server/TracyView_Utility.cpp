@@ -925,7 +925,17 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
     tsz = ImGui::CalcTextSize( ptr, end );
     if( tsz.x < zsz ) return ptr;
 
-    return ptr;
+    for(;;)
+    {
+        auto p = ptr;
+        while( p < end && *p != ':' ) p++;
+        if( p == end ) return ptr;
+        p++;
+        while( p < end && *p == ':' ) p++;
+        ptr = p;
+        tsz = ImGui::CalcTextSize( ptr, end );
+        if( tsz.x < zsz ) return ptr;
+    }
 }
 
 const char* View::GetThreadContextData( uint64_t thread, bool& _local, bool& _untracked, const char*& program )

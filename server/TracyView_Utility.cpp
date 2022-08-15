@@ -835,21 +835,24 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
     static char buf[64*1024];
     char tmp[64*1024];
 
+    auto end = name;
+    while( *end ) end++;
+
     auto ptr = name;
     auto dst = tmp;
     int cnt = 0;
     for(;;)
     {
         auto start = ptr;
-        while( *ptr && *ptr != '<' ) ptr++;
+        while( ptr < end && *ptr != '<' ) ptr++;
         memcpy( dst, start, ptr - start + 1 );
-        if( !*ptr ) break;
         dst += ptr - start + 1;
+        if( ptr == end ) break;
         cnt++;
         ptr++;
         while( cnt > 0 )
         {
-            if( !*ptr ) break;
+            if( ptr == end ) break;
             if( *ptr == '<' ) cnt++;
             else if( *ptr == '>' ) cnt--;
             ptr++;
@@ -857,21 +860,22 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
         *dst++ = '>';
     }
 
+    end = dst;
     ptr = tmp;
     dst = buf;
     cnt = 0;
     for(;;)
     {
         auto start = ptr;
-        while( *ptr && *ptr != '(' ) ptr++;
+        while( ptr < end && *ptr != '(' ) ptr++;
         memcpy( dst, start, ptr - start + 1 );
-        if( !*ptr ) break;
         dst += ptr - start + 1;
+        if( ptr == end ) break;
         cnt++;
         ptr++;
         while( cnt > 0 )
         {
-            if( !*ptr ) break;
+            if( ptr == end ) break;
             if( *ptr == '(' ) cnt++;
             else if( *ptr == ')' ) cnt--;
             ptr++;

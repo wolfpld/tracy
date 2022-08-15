@@ -311,7 +311,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
         {
             SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
             ImGui::SameLine();
-            DrawCallstackCalls( cs, 4 );
+            DrawCallstackCalls( cs, 6 );
         }
     }
 }

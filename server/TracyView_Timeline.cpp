@@ -285,7 +285,7 @@ void View::DrawTimeline()
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    const auto h = std::max<float>( m_vd.zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
+    const auto h = std::max<float>( m_tc.GetHeight(), ImGui::GetContentRegionAvail().y - 4 );    // magic border value
 
     ImGui::ItemSize( ImVec2( w, h ) );
     bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, h ) );
@@ -976,17 +976,7 @@ void View::DrawTimeline()
         offset = DrawPlots( offset, pxns, wpos, hover, yMin, yMax );
     }
 
-    const auto scrollPos = ImGui::GetScrollY();
-    if( scrollPos == 0 && m_vd.zvScroll != 0 )
-    {
-        m_vd.zvHeight = 0;
-    }
-    else
-    {
-        if( offset > m_vd.zvHeight ) m_vd.zvHeight = offset;
-    }
-    m_vd.zvScroll = scrollPos;
-
+    m_tc.End( offset );
     ImGui::EndChild();
 
     for( auto& ann : m_annotations )

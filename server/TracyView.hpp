@@ -16,6 +16,7 @@
 #include "TracyFileWrite.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracySourceContents.hpp"
+#include "TracyTimelineController.hpp"
 #include "TracyUserData.hpp"
 #include "TracyVector.hpp"
 #include "TracyViewData.hpp"
@@ -402,6 +403,7 @@ private:
     uint64_t m_totalMemory;
 
     ViewData m_vd;
+    TimelineController m_tc;
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;

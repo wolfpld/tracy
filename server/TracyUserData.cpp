@@ -81,8 +81,10 @@ void UserData::LoadState( ViewData& data )
         {
             fread( &data.zvStart, 1, sizeof( data.zvStart ), f );
             fread( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
-            fread( &data.zvHeight, 1, sizeof( data.zvHeight ), f );
-            fread( &data.zvScroll, 1, sizeof( data.zvScroll ), f );
+            //fread( &data.zvHeight, 1, sizeof( data.zvHeight ), f );
+            fseek( f, sizeof( float ), SEEK_CUR );
+            //fread( &data.zvScroll, 1, sizeof( data.zvScroll ), f );
+            fseek( f, sizeof( float ), SEEK_CUR );
             fread( &data.frameScale, 1, sizeof( data.frameScale ), f );
             fread( &data.frameStart, 1, sizeof( data.frameStart ), f );
         }
@@ -128,8 +130,11 @@ void UserData::SaveState( const ViewData& data )
         fwrite( &ver, 1, sizeof( ver ), f );
         fwrite( &data.zvStart, 1, sizeof( data.zvStart ), f );
         fwrite( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
-        fwrite( &data.zvHeight, 1, sizeof( data.zvHeight ), f );
-        fwrite( &data.zvScroll, 1, sizeof( data.zvScroll ), f );
+        //fwrite( &data.zvHeight, 1, sizeof( data.zvHeight ), f );
+        float zero = 0;
+        fwrite( &zero, 1, sizeof( zero ), f );
+        //fwrite( &data.zvScroll, 1, sizeof( data.zvScroll ), f );
+        fwrite( &zero, 1, sizeof( zero ), f );
         fwrite( &data.frameScale, 1, sizeof( data.frameScale ), f );
         fwrite( &data.frameStart, 1, sizeof( data.frameStart ), f );
         fclose( f );

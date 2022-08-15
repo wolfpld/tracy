@@ -1090,6 +1090,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
 {
     assert( m_symAddr != 0 );
 
+    const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
     assert( sym );
     if( sym->isInline )
@@ -1098,7 +1099,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         if( parent )
         {
             const auto symName = worker.GetString( parent->name );
-            if( view.GetShortenName() == ShortenName::Never )
+            if( shortenName == ShortenName::Never )
             {
                 TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", symName );
             }
@@ -1119,7 +1120,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     else
     {
         const auto symName = worker.GetString( sym->name );
-        if( view.GetShortenName() == ShortenName::Never )
+        if( shortenName == ShortenName::Never )
         {
             TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", symName );
         }
@@ -1153,7 +1154,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        const auto currSymName = m_symAddr == m_baseAddr ? "[ - self - ]" : worker.GetString( sym->name );
+        auto currSymName = m_symAddr == m_baseAddr ? "[ - self - ]" : worker.GetString( sym->name );
+        if( shortenName != ShortenName::Never ) currSymName = ShortenZoneName( ShortenName::OnlyNormalize, currSymName );
         if( ImGui::BeginCombo( "##functionList", currSymName, ImGuiComboFlags_HeightLarge ) )
         {
             const auto symEnd = m_baseAddr + m_codeLen;
@@ -1267,7 +1269,12 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 }
                 ImGui::PushID( v.first );
                 const auto symName = v.first == m_baseAddr ? "[ - self - ]" : worker.GetString( isym->name );
-                if( ImGui::Selectable( symName, v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+                const auto selected = ImGui::Selectable( "", v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextUnformatted( normalized );
+                TooltipNormalizedName( symName, normalized );
+                if( selected )
                 {
                     m_symAddr = v.first;
                     ParseSource( file, worker, view );

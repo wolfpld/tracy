@@ -517,7 +517,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             }
 
             auto tsz = ImGui::CalcTextSize( zoneName );
-            if( m_shortenName != ShortenName::Never && ( m_shortenName != ShortenName::NoSpace || tsz.x > zsz ) )
+            if( m_shortenName == ShortenName::Always || ( ( m_shortenName == ShortenName::NoSpace || m_shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
             {
                 zoneName = ShortenZoneName( m_shortenName, zoneName, tsz, zsz );
             }

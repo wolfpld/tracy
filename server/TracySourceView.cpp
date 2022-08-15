@@ -1010,7 +1010,12 @@ void SourceView::Render( Worker& worker, View& view )
 
     if( m_symAddr == 0 )
     {
-        if( m_source.filename() ) TextFocused( ICON_FA_FILE " File:", m_source.filename() );
+        if( m_source.filename() )
+        {
+            ImGui::PushFont( m_bigFont );
+            TextFocused( ICON_FA_FILE " File:", m_source.filename() );
+            ImGui::PopFont();
+        }
         if( m_source.is_cached() )
         {
             TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );

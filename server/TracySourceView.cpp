@@ -1563,7 +1563,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                     const auto symName = sd ? worker.GetString( sd->name ) : "[unknown]";
                     if( v.addr >> 63 == 0 )
                     {
-                        ImGui::TextUnformatted( symName );
+                        if( shortenName == ShortenName::Never )
+                        {
+                            ImGui::TextUnformatted( symName );
+                        }
+                        else
+                        {
+                            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
+                            ImGui::TextUnformatted( normalized );
+                            TooltipNormalizedName( symName, normalized );
+                        }
                     }
                     else
                     {

@@ -4,6 +4,7 @@
 #include "../public/common/TracyStackFrames.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
+#include "TracyUtility.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -465,9 +466,13 @@ void View::CallstackTooltipContents( uint32_t idx )
                 {
                     TextColoredUnformatted( 0xFF8888FF, txt );
                 }
-                else
+                else if( m_shortenName == ShortenName::Never )
                 {
                     ImGui::TextUnformatted( txt );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( ShortenZoneName( ShortenName::OnlyNormalize, txt ) );
                 }
                 if( frameData->imageName.Active() )
                 {

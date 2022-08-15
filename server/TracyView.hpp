@@ -119,6 +119,7 @@ public:
     void ShowSampleParents( uint64_t symAddr, bool withInlines ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; m_sampleParents.withInlines = withInlines; }
     const ViewData& GetViewData() const { return m_vd; }
 
+    ShortenName GetShortenName() const { return m_shortenName; }
 
     bool m_showRanges = false;
     Range m_statRange;

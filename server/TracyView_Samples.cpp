@@ -664,8 +664,10 @@ void View::DrawSampleParents()
         }
         assert( !stats.empty() );
 
+        const auto symName = m_worker.GetString( symbol->name );
+        const char* normalized = m_shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : nullptr;
         ImGui::PushFont( m_bigFont );
-        TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
+        TextFocused( "Symbol:", normalized ? normalized : symName );
         if( symbol->isInline )
         {
             ImGui::SameLine();
@@ -677,6 +679,12 @@ void View::DrawSampleParents()
             TextDisabledUnformatted( "(without inlines)" );
         }
         ImGui::PopFont();
+        if( normalized && normalized != symName && strcmp( normalized, symName ) != 0 )
+        {
+            ImGui::PushFont( m_smallFont );
+            TextDisabledUnformatted( symName );
+            ImGui::PopFont();
+        }
         TextDisabledUnformatted( "Location:" );
         ImGui::SameLine();
         const auto callFile = m_worker.GetString( symbol->callFile );
@@ -816,9 +824,15 @@ void View::DrawSampleParents()
                             {
                                 TextColoredUnformatted( 0xFF8888FF, txt );
                             }
-                            else
+                            else if( m_shortenName == ShortenName::Never )
                             {
                                 ImGui::TextUnformatted( txt );
+                            }
+                            else
+                            {
+                                const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, txt );
+                                ImGui::TextUnformatted( normalized );
+                                TooltipNormalizedName( txt, normalized );
                             }
                             ImGui::PopTextWrapPos();
                         }

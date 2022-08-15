@@ -1647,7 +1647,16 @@ void View::DrawFindZone()
                                     TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
                                 }
                                 ImGui::SameLine();
-                                ImGui::TextUnformatted( txt );
+                                if( m_shortenName == ShortenName::Never )
+                                {
+                                    ImGui::TextUnformatted( txt );
+                                }
+                                else
+                                {
+                                    const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, txt );
+                                    ImGui::TextUnformatted( normalized );
+                                    TooltipNormalizedName( txt, normalized );
+                                }
                             }
                         }
                     }

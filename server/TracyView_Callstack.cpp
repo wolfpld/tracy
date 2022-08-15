@@ -405,9 +405,13 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
         {
             TextDisabledUnformatted( txt );
         }
-        else
+        else if( m_shortenName == ShortenName::Never )
         {
             ImGui::TextUnformatted( txt );
+        }
+        else
+        {
+            ImGui::TextUnformatted( ShortenZoneName( ShortenName::Always, txt ) );
         }
     }
 }

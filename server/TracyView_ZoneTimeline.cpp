@@ -258,11 +258,18 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                         TextDisabledUnformatted( ICON_FA_HAT_WIZARD " kernel" );
                     }
                     ImGui::Separator();
-                    ImGui::TextUnformatted( origSymName );
+                    const auto normalized = m_shortenName == ShortenName::Never ? origSymName : ShortenZoneName( ShortenName::OnlyNormalize, origSymName );
+                    ImGui::TextUnformatted( normalized );
                     if( isInline )
                     {
                         ImGui::SameLine();
                         TextDisabledUnformatted( "[inline]" );
+                    }
+                    if( normalized != origSymName && strcmp( normalized, origSymName ) != 0 )
+                    {
+                        ImGui::PushFont( m_smallFont );
+                        TextDisabledUnformatted( origSymName );
+                        ImGui::PopFont();
                     }
                     const auto symbol = m_worker.GetSymbolData( sym.symAddr );
                     if( symbol ) TextFocused( "Image:", m_worker.GetString( symbol->imageName ) );

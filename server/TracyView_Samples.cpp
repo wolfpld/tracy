@@ -673,6 +673,12 @@ void View::DrawSampleParents()
         const char* normalized = m_shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : nullptr;
         ImGui::PushFont( m_bigFont );
         TextFocused( "Symbol:", normalized ? normalized : symName );
+        if( normalized )
+        {
+            ImGui::PopFont();
+            TooltipNormalizedName( symName, normalized );
+            ImGui::PushFont( m_bigFont );
+        }
         if( symbol->isInline )
         {
             ImGui::SameLine();
@@ -684,12 +690,6 @@ void View::DrawSampleParents()
             TextDisabledUnformatted( "(without inlines)" );
         }
         ImGui::PopFont();
-        if( normalized && normalized != symName && strcmp( normalized, symName ) != 0 )
-        {
-            ImGui::PushFont( m_smallFont );
-            TextDisabledUnformatted( symName );
-            ImGui::PopFont();
-        }
         TextDisabledUnformatted( "Location:" );
         ImGui::SameLine();
         const auto callFile = m_worker.GetString( symbol->callFile );

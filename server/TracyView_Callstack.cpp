@@ -216,21 +216,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         {
                             const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, txt );
                             ImGui::TextUnformatted( normalized );
-                            if( ImGui::IsItemHovered() && normalized != txt && strcmp( normalized, txt ) != 0 )
-                            {
-                                if( ImGui::CalcTextSize( txt ).x > 1400 * GetScale() )
-                                {
-                                    ImGui::SetNextWindowSize( ImVec2( 1400 * GetScale(), 0 ) );
-                                    ImGui::BeginTooltip();
-                                    ImGui::TextWrapped( "%s", txt );
-                                }
-                                else
-                                {
-                                    ImGui::BeginTooltip();
-                                    ImGui::TextUnformatted( txt );
-                                }
-                                ImGui::EndTooltip();
-                            }
+                            TooltipNormalizedName( txt, normalized );
                         }
                         ImGui::PopTextWrapPos();
                     }

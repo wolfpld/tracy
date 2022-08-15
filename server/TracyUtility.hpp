@@ -18,6 +18,7 @@ enum class ShortenName : uint8_t
 };
 
 const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, float zsz );
+void TooltipNormalizedName( const char* name, const char* normalized );
 
 static inline const char* ShortenZoneName( ShortenName type, const char* name ) { ImVec2 tsz = {}; return ShortenZoneName( type, name, tsz, 0 ); }
 

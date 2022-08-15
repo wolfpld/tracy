@@ -117,4 +117,24 @@ const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, fl
     }
 }
 
+void TooltipNormalizedName( const char* name, const char* normalized )
+{
+    if( ImGui::IsItemHovered() && normalized != name && strcmp( normalized, name ) != 0 )
+    {
+        const auto scale = ImGui::GetTextLineHeight() / 15.f;
+        if( ImGui::CalcTextSize( name ).x > 1400 * scale )
+        {
+            ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 0 ) );
+            ImGui::BeginTooltip();
+            ImGui::TextWrapped( "%s", name );
+        }
+        else
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( name );
+        }
+        ImGui::EndTooltip();
+    }
+}
+
 }

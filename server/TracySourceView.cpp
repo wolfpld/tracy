@@ -1093,6 +1093,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
     assert( sym );
+    ImGui::PushFont( m_bigFont );
     if( sym->isInline )
     {
         auto parent = worker.GetSymbolData( m_baseAddr );
@@ -1107,7 +1108,9 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             {
                 const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
                 TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", normalized );
+                ImGui::PopFont();
                 TooltipNormalizedName( symName, normalized );
+                ImGui::PushFont( m_bigFont );
             }
         }
         else
@@ -1128,13 +1131,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
             TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", normalized );
+            ImGui::PopFont();
             TooltipNormalizedName( symName, normalized );
+            ImGui::PushFont( m_bigFont );
         }
     }
     ImGui::SameLine();
     TextDisabledUnformatted( worker.GetString( sym->imageName ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "0x%" PRIx64, m_baseAddr );
+    ImGui::PopFont();
 
     const bool limitView = view.m_statRange.active;
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );

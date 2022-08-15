@@ -325,7 +325,9 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         else
                         {
                             const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, name );
-                            clicked = ImGui::Selectable( normalized, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                            clicked = ImGui::Selectable( "", m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                            ImGui::SameLine( 0, 0 );
+                            ImGui::TextUnformatted( normalized );
                             TooltipNormalizedName( name, normalized );
                         }
                         if( clicked ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
@@ -533,7 +535,9 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                     else
                                     {
                                         const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, sn );
-                                        clicked = ImGui::Selectable( normalized, !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                                        clicked = ImGui::Selectable( "", !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                                        ImGui::SameLine( 0, 0 );
+                                        ImGui::TextUnformatted( normalized );
                                         TooltipNormalizedName( sn, normalized );
                                     }
                                     if( clicked ) ShowSampleParents( iv.symAddr, false );

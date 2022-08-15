@@ -19,6 +19,8 @@ enum class ShortenName : uint8_t
 
 const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, float zsz );
 
+static inline const char* ShortenZoneName( ShortenName type, const char* name ) { ImVec2 tsz = {}; return ShortenZoneName( type, name, tsz, 0 ); }
+
 }
 
 #endif

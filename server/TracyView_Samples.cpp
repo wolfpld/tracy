@@ -344,6 +344,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         {
                             const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, parentName );
                             ImGui::TextDisabled( "(%s)", normalized );
+                            TooltipNormalizedName( parentName, normalized );
                         }
                     }
                     if( !m_statSeparateInlines && v.count > 0 && v.symAddr != 0 )

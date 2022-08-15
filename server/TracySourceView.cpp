@@ -3615,9 +3615,17 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         const auto symData = worker.GetSymbolData( symAddr );
                         if( symData )
                         {
-                            TextFocused( "Function:", worker.GetString( symData->name ) );
+                            const auto symName = worker.GetString( symData->name );
+                            const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+                            TextFocused( "Function:", normalized );
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(0x%" PRIx64 ")", symAddr );
+                            if( normalized != symName && strcmp( normalized, symName ) != 0 )
+                            {
+                                ImGui::PushFont( m_smallFont );
+                                TextDisabledUnformatted( symName );
+                                ImGui::PopFont();
+                            }
                         }
                     }
                 }

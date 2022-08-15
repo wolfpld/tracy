@@ -208,9 +208,29 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         {
                             TextColoredUnformatted( 0xFF8888FF, txt );
                         }
-                        else
+                        else if( m_shortenName == ShortenName::Never )
                         {
                             ImGui::TextUnformatted( txt );
+                        }
+                        else
+                        {
+                            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, txt );
+                            ImGui::TextUnformatted( normalized );
+                            if( ImGui::IsItemHovered() && normalized != txt && strcmp( normalized, txt ) != 0 )
+                            {
+                                if( ImGui::CalcTextSize( txt ).x > 1400 * GetScale() )
+                                {
+                                    ImGui::SetNextWindowSize( ImVec2( 1400 * GetScale(), 0 ) );
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextWrapped( "%s", txt );
+                                }
+                                else
+                                {
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextUnformatted( txt );
+                                }
+                                ImGui::EndTooltip();
+                            }
                         }
                         ImGui::PopTextWrapPos();
                     }

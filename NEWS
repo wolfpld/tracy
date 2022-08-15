@@ -43,6 +43,30 @@ v0.x.x (xxxx-xx-xx)
   - Previously the hardcoded FPS target thresholds were: 30, 60, 144 FPS.
   - Currently the FPS target threshold is: half of target, target, twice the
     target.
+- Reworked the way zone names are shortened.
+  - Previously shortening supported only namespace removal, in a way that
+    didn't consider function parameters or template arguments.
+    - Shortening to one-letter namespace chains is no longer available.
+  - The new shortening rules first perform normalization of the function name.
+    - The function const qualifier is removed.
+    - Common return types are removed.
+    - All function parameters and all template arguments are removed.
+  - The next steps consist of repeated removal of namespaces, starting with
+    the most outermost one.
+    - While the old process was all or nothing, the new implementation by
+      default will dynamically adjust to the space available, trying to show
+      the most context possible.
+  - It is also possible to completely disable shortening, or require that it
+    is always performed in full.
+  - Function name normalization is enabled by default, even if there is space
+    to show full function name. This can be changed in options.
+  - Previously shortening was only applied to the zone names displayed on the
+    timeline. Currently this process will also apply to all other places in
+    the UI where function names are displayed. However, in these cases the
+    function names will only be normalized.
+    - Full function names are still available as tooltips, or in fine print if
+      the normalized name is already displayed in a tooltip.
+    - This functionality is disabled if zone name shortening is disabled.
 
 
 v0.8.2 (2022-06-28)

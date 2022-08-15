@@ -297,24 +297,52 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         {
                             TextColoredUnformatted( 0xFF8888FF, name );
                         }
-                        else
+                        else if( m_shortenName == ShortenName::Never )
                         {
                             ImGui::TextUnformatted( name );
+                        }
+                        else
+                        {
+                            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, name );
+                            ImGui::TextUnformatted( normalized );
+                            TooltipNormalizedName( name, normalized );
                         }
                     }
                     else
                     {
                         ImGui::PushID( idx++ );
-                        if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
-                        const auto clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
-                        if( isKernel ) ImGui::PopStyleColor();
+                        bool clicked;
+                        if( isKernel )
+                        {
+                            ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
+                            clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                            ImGui::PopStyleColor();
+                        }
+                        else if( m_shortenName == ShortenName::Never )
+                        {
+                            clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                        }
+                        else
+                        {
+                            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, name );
+                            clicked = ImGui::Selectable( normalized, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                            TooltipNormalizedName( name, normalized );
+                        }
                         if( clicked ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
                         ImGui::PopID();
                     }
                     if( parentName )
                     {
                         ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s)", parentName );
+                        if( m_shortenName == ShortenName::Never )
+                        {
+                            ImGui::TextDisabled( "(%s)", parentName );
+                        }
+                        else
+                        {
+                            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, parentName );
+                            ImGui::TextDisabled( "(%s)", normalized );
+                        }
                     }
                     if( !m_statSeparateInlines && v.count > 0 && v.symAddr != 0 )
                     {
@@ -483,15 +511,32 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
                                 if( iv.excl == 0 )
                                 {
-                                    ImGui::TextUnformatted( sn );
+                                    if( m_shortenName == ShortenName::Never )
+                                    {
+                                        ImGui::TextUnformatted( sn );
+                                    }
+                                    else
+                                    {
+                                        const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, sn );
+                                        ImGui::TextUnformatted( normalized );
+                                        TooltipNormalizedName( sn, normalized );
+                                    }
                                 }
                                 else
                                 {
                                     ImGui::PushID( idx++ );
-                                    if( ImGui::Selectable( sn, !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                                    bool clicked;
+                                    if( m_shortenName == ShortenName::Never )
                                     {
-                                        ShowSampleParents( iv.symAddr, false );
+                                        clicked = ImGui::Selectable( sn, !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns );
                                     }
+                                    else
+                                    {
+                                        const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, sn );
+                                        clicked = ImGui::Selectable( normalized, !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns );
+                                        TooltipNormalizedName( sn, normalized );
+                                    }
+                                    if( clicked ) ShowSampleParents( iv.symAddr, false );
                                     ImGui::PopID();
                                 }
                                 ImGui::TableNextColumn();

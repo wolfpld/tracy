@@ -860,7 +860,7 @@ const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) co
         *dst++ = '>';
     }
 
-    end = dst;
+    end = dst-1;
     ptr = tmp;
     dst = buf;
     cnt = 0;

@@ -132,6 +132,8 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     ImGui::TextDisabled( "(%s)", RealToString( trace.size() ) );
     if( !expand ) return;
 
+    const auto shortenName = view.GetShortenName();
+
     ImGui::SameLine();
     SmallCheckbox( "Show unknown frames", &showUnknownFrames );
 
@@ -186,7 +188,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     auto frame = frameData->data + frameData->size - 1;
                     ImGui::TextDisabled( "%i.", fidx++ );
                     ImGui::SameLine();
-                    TextDisabledUnformatted( worker.GetString( frame->name ) );
+                    const auto frameName = worker.GetString( frame->name );
+                    const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, frameName ) : frameName;
+                    TextDisabledUnformatted( normalized );
+                    TooltipNormalizedName( frameName, normalized );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     if( anim.Match( frame ) )
@@ -237,7 +242,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             auto frame = frameData->data + frameData->size - 1;
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
-            TextDisabledUnformatted( worker.GetString( frame->name ) );
+            const auto frameName = worker.GetString( frame->name );
+            const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, frameName ) : frameName;
+            TextDisabledUnformatted( normalized );
+            TooltipNormalizedName( frameName, normalized );
             ImGui::SameLine();
             ImGui::Spacing();
             if( anim.Match( frame ) )

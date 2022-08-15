@@ -221,16 +221,16 @@ void View::DrawOptions()
     ImGui::PopStyleVar();
     ImGui::Unindent();
     m_vd.dynamicColors = ival;
-    ival = (int)m_namespace;
-    ImGui::TextUnformatted( ICON_FA_BOX_OPEN " Namespaces" );
+    ival = (int)m_shortenName;
+    ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    ImGui::RadioButton( "Full", &ival, 0 );
-    ImGui::RadioButton( "Shortened", &ival, 1 );
-    ImGui::RadioButton( "None", &ival, 2 );
+    ImGui::RadioButton( "Never", &ival, 0 );
+    ImGui::RadioButton( "Always", &ival, 1 );
+    ImGui::RadioButton( "When no space", &ival, 2 );
     ImGui::PopStyleVar();
     ImGui::Unindent();
-    m_namespace = (Namespace)ival;
+    m_shortenName = (ShortenName)ival;
     ImGui::Unindent();
 
     if( !m_worker.GetLockMap().empty() )

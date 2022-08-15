@@ -217,10 +217,9 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, 1.f );
 
                 auto origSymName = symName;
-                if( tsz.x > zsz )
+                if( m_shortenName == ShortenName::Always || ( m_shortenName == ShortenName::WhenNoSpace && tsz.x > zsz ) )
                 {
-                    symName = ShortenNamespace( symName );
-                    tsz = ImGui::CalcTextSize( symName );
+                    symName = ShortenZoneName( symName, tsz, zsz );
                 }
 
                 if( tsz.x < zsz )
@@ -511,10 +510,9 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             }
 
             auto tsz = ImGui::CalcTextSize( zoneName );
-            if( tsz.x > zsz )
+            if( m_shortenName == ShortenName::Always || ( m_shortenName == ShortenName::WhenNoSpace && tsz.x > zsz ) )
             {
-                zoneName = ShortenNamespace( zoneName );
-                tsz = ImGui::CalcTextSize( zoneName );
+                zoneName = ShortenZoneName( zoneName, tsz, zsz );
             }
 
             const auto pr0 = ( ev.Start() - m_vd.zvStart ) * pxns;

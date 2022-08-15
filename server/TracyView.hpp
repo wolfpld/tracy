@@ -124,11 +124,11 @@ public:
     Range m_waitStackRange;
 
 private:
-    enum class Namespace : uint8_t
+    enum class ShortenName : uint8_t
     {
-        Full,
-        Mid,
-        Short
+        Never,
+        Always,
+        WhenNoSpace
     };
 
     enum class ShortcutAction : uint8_t
@@ -177,7 +177,7 @@ private:
     void InitMemory();
     void InitTextEditor( ImFont* font );
 
-    const char* ShortenNamespace( const char* name ) const;
+    const char* ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) const;
 
     bool DrawImpl();
     void DrawNotificationArea();
@@ -483,7 +483,7 @@ private:
     bool m_groupWaitStackTopDown = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
-    Namespace m_namespace = Namespace::Short;
+    ShortenName m_shortenName = ShortenName::WhenNoSpace;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_sampleParentBuzzAnim;

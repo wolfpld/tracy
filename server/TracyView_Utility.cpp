@@ -826,34 +826,60 @@ const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
     }
 }
 
-const char* View::ShortenNamespace( const char* name ) const
+const char* View::ShortenZoneName( const char* name, ImVec2& tsz, float zsz ) const
 {
-    if( m_namespace == Namespace::Full ) return name;
-    if( m_namespace == Namespace::Short )
-    {
-        auto ptr = name;
-        while( *ptr != '\0' ) ptr++;
-        while( ptr > name && *ptr != ':' ) ptr--;
-        if( *ptr == ':' ) ptr++;
-        return ptr;
-    }
+    assert( m_shortenName != ShortenName::Never );
+    if( m_shortenName == ShortenName::Always ) zsz = 0;
 
-    static char buf[1024];
-    auto dst = buf;
+    static char buf[64*1024];
+    char tmp[64*1024];
+
     auto ptr = name;
+    auto dst = tmp;
+    int cnt = 0;
     for(;;)
     {
         auto start = ptr;
-        while( *ptr != '\0' && *ptr != ':' ) ptr++;
-        if( *ptr == '\0' )
+        while( *ptr && *ptr != '<' ) ptr++;
+        memcpy( dst, start, ptr - start + 1 );
+        if( !*ptr ) break;
+        dst += ptr - start + 1;
+        cnt++;
+        ptr++;
+        while( cnt > 0 )
         {
-            memcpy( dst, start, ptr - start + 1 );
-            return buf;
+            if( !*ptr ) break;
+            if( *ptr == '<' ) cnt++;
+            else if( *ptr == '>' ) cnt--;
+            ptr++;
         }
-        *dst++ = *start;
-        *dst++ = ':';
-        while( *ptr == ':' ) ptr++;
+        *dst++ = '>';
     }
+
+    ptr = tmp;
+    dst = buf;
+    cnt = 0;
+    for(;;)
+    {
+        auto start = ptr;
+        while( *ptr && *ptr != '(' ) ptr++;
+        memcpy( dst, start, ptr - start + 1 );
+        if( !*ptr ) break;
+        dst += ptr - start + 1;
+        cnt++;
+        ptr++;
+        while( cnt > 0 )
+        {
+            if( !*ptr ) break;
+            if( *ptr == '(' ) cnt++;
+            else if( *ptr == ')' ) cnt--;
+            ptr++;
+        }
+        *dst++ = ')';
+    }
+
+    tsz = ImGui::CalcTextSize( buf );
+    return buf;
 }
 
 const char* View::GetThreadContextData( uint64_t thread, bool& _local, bool& _untracked, const char*& program )

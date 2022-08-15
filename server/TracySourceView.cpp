@@ -4204,14 +4204,18 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
     if( jumpName )
     {
+        const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
         if( jumpBase == m_baseAddr )
         {
-            ImGui::TextDisabled( "  -> [%s+%" PRIu32"]", jumpName, jumpOffset );
+            ImGui::TextDisabled( "  -> [%s+%" PRIu32"]", normalized, jumpOffset );
             if( ImGui::IsItemHovered() )
             {
+                UnsetFont();
+                TooltipNormalizedName( jumpName, normalized );
+                SetFont();
                 m_highlightAddr = line.jumpAddr;
                 if( ImGui::IsItemClicked() )
                 {
@@ -4223,8 +4227,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
         else
         {
-            ImGui::TextDisabled( "  [%s+%" PRIu32"]", jumpName, jumpOffset );
-            if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
+            ImGui::TextDisabled( "  [%s+%" PRIu32"]", normalized, jumpOffset );
+            if( ImGui::IsItemHovered() )
+            {
+                UnsetFont();
+                TooltipNormalizedName( jumpName, normalized );
+                SetFont();
+                if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
+            }
         }
     }
 

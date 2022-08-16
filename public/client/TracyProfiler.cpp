@@ -3876,6 +3876,10 @@ void Profiler::HandleSourceCodeQuery()
             }
         }
     }
+    else
+    {
+        TracyDebug( "DebugInfo invalid query fn: %s, image: %s\n", m_queryData, m_queryImage );
+    }
 #endif
 
     if( !ok ) AckSourceCodeNotAvailable();

@@ -138,9 +138,13 @@ KernelDriver* s_krnlCache = nullptr;
 size_t s_krnlCacheCnt;
 
 
-void InitCallstack()
+void InitCallstackCritical()
 {
     ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
+}
+
+void InitCallstack()
+{
     _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymAddrIncludeInlineTrace" );
     _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymQueryInlineTrace" );
     _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymFromInlineContext" );
@@ -695,6 +699,10 @@ static void InitKernelSymbols()
 }
 #endif
 
+void InitCallstackCritical()
+{
+}
+
 void InitCallstack()
 {
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
@@ -1027,6 +1035,10 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 }
 
 #elif TRACY_HAS_CALLSTACK == 5
+
+void InitCallstackCritical()
+{
+}
 
 void InitCallstack()
 {

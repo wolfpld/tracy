@@ -1444,7 +1444,7 @@ void Profiler::SpawnWorkerThreads()
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-    InitCallstack();
+    InitCallstackCritical();
 #endif
 
     m_timeBegin.store( GetTime(), std::memory_order_relaxed );
@@ -3296,11 +3296,11 @@ void Profiler::SymbolWorker()
 {
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Symbol Worker" );
-    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-
 #ifdef TRACY_USE_RPMALLOC
     rpmalloc_thread_initialize();
 #endif
+    InitCallstack();
+    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     for(;;)
     {

@@ -834,135 +834,135 @@ void View::DrawTimeline()
                 }
                 else
 #endif
-                    if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
+                if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
+                {
+                    m_drawThreadMigrations = v->id;
+                    m_drawThreadHighlight = v->id;
+                    ImGui::BeginTooltip();
+                    SmallColorBox( GetThreadColor( v->id, 0 ) );
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( v->id ) );
+                    if( crash.thread == v->id )
                     {
-                        m_drawThreadMigrations = v->id;
-                        m_drawThreadHighlight = v->id;
-                        ImGui::BeginTooltip();
-                        SmallColorBox( GetThreadColor( v->id, 0 ) );
                         ImGui::SameLine();
-                        ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
+                        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                    }
+                    if( v->isFiber )
+                    {
                         ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s)", RealToString( v->id ) );
-                        if( crash.thread == v->id )
-                        {
-                            ImGui::SameLine();
-                            TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
-                        }
-                        if( v->isFiber )
-                        {
-                            ImGui::SameLine();
-                            TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-                        }
+                        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                    }
 
-                        const auto ctx = m_worker.GetContextSwitchData( v->id );
+                    const auto ctx = m_worker.GetContextSwitchData( v->id );
 
-                        ImGui::Separator();
-                        int64_t first = std::numeric_limits<int64_t>::max();
-                        int64_t last = -1;
-                        if( ctx && !ctx->v.empty() )
+                    ImGui::Separator();
+                    int64_t first = std::numeric_limits<int64_t>::max();
+                    int64_t last = -1;
+                    if( ctx && !ctx->v.empty() )
+                    {
+                        const auto& back = ctx->v.back();
+                        first = ctx->v.begin()->Start();
+                        last = back.IsEndValid() ? back.End() : back.Start();
+                    }
+                    if( !v->timeline.empty() )
+                    {
+                        if( v->timeline.is_magic() )
                         {
-                            const auto& back = ctx->v.back();
-                            first = ctx->v.begin()->Start();
-                            last = back.IsEndValid() ? back.End() : back.Start();
+                            auto& tl = *((Vector<ZoneEvent>*)&v->timeline);
+                            first = std::min( first, tl.front().Start() );
+                            last = std::max( last, m_worker.GetZoneEnd( tl.back() ) );
                         }
-                        if( !v->timeline.empty() )
+                        else
                         {
-                            if( v->timeline.is_magic() )
-                            {
-                                auto& tl = *((Vector<ZoneEvent>*)&v->timeline);
-                                first = std::min( first, tl.front().Start() );
-                                last = std::max( last, m_worker.GetZoneEnd( tl.back() ) );
-                            }
-                            else
-                            {
-                                first = std::min( first, v->timeline.front()->Start() );
-                                last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
-                            }
-                        }
-                        if( !v->messages.empty() )
-                        {
-                            first = std::min( first, v->messages.front()->time );
-                            last = std::max( last, v->messages.back()->time );
-                        }
-                        size_t lockCnt = 0;
-                        for( const auto& lock : m_worker.GetLockMap() )
-                        {
-                            const auto& lockmap = *lock.second;
-                            if( !lockmap.valid ) continue;
-                            auto it = lockmap.threadMap.find( v->id );
-                            if( it == lockmap.threadMap.end() ) continue;
-                            lockCnt++;
-                            const auto thread = it->second;
-                            auto lptr = lockmap.timeline.data();
-                            auto eptr = lptr + lockmap.timeline.size() - 1;
-                            while( lptr->ptr->thread != thread ) lptr++;
-                            if( lptr->ptr->Time() < first ) first = lptr->ptr->Time();
-                            while( eptr->ptr->thread != thread ) eptr--;
-                            if( eptr->ptr->Time() > last ) last = eptr->ptr->Time();
-                        }
-
-                        if( last >= 0 )
-                        {
-                            const auto lifetime = last - first;
-                            const auto traceLen = m_worker.GetLastTime();
-
-                            TextFocused( "Appeared at", TimeToString( first ) );
-                            TextFocused( "Last event at", TimeToString( last ) );
-                            TextFocused( "Lifetime:", TimeToString( lifetime ) );
-                            ImGui::SameLine();
-                            char buf[64];
-                            PrintStringPercent( buf, lifetime / double( traceLen ) * 100 );
-                            TextDisabledUnformatted( buf );
-
-                            if( ctx )
-                            {
-                                TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
-                                ImGui::SameLine();
-                                PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
-                                TextDisabledUnformatted( buf );
-                            }
-                        }
-
-                        ImGui::Separator();
-                        if( !v->timeline.empty() )
-                        {
-                            TextFocused( "Zone count:", RealToString( v->count ) );
-                            TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
-                        }
-                        if( !v->messages.empty() )
-                        {
-                            TextFocused( "Messages:", RealToString( v->messages.size() ) );
-                        }
-                        if( lockCnt != 0 )
-                        {
-                            TextFocused( "Locks:", RealToString( lockCnt ) );
-                        }
-                        if( ctx )
-                        {
-                            TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
-                        }
-                        if( !v->samples.empty() )
-                        {
-                            TextFocused( "Call stack samples:", RealToString( v->samples.size() ) );
-                            if( v->kernelSampleCnt != 0 )
-                            {
-                                TextFocused( "Kernel samples:", RealToString( v->kernelSampleCnt ) );
-                                ImGui::SameLine();
-                                ImGui::TextDisabled( "(%.2f%%)", 100.f * v->kernelSampleCnt / v->samples.size() );
-                            }
-                        }
-                        ImGui::EndTooltip();
-
-                        if( IsMouseClicked( 0 ) )
-                        {
-                            Vis( v ).showFull = !showFull;
-                        }
-                        if( last >= 0 && IsMouseClicked( 2 ) )
-                        {
-                            ZoomToRange( first, last );
+                            first = std::min( first, v->timeline.front()->Start() );
+                            last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
                         }
                     }
+                    if( !v->messages.empty() )
+                    {
+                        first = std::min( first, v->messages.front()->time );
+                        last = std::max( last, v->messages.back()->time );
+                    }
+                    size_t lockCnt = 0;
+                    for( const auto& lock : m_worker.GetLockMap() )
+                    {
+                        const auto& lockmap = *lock.second;
+                        if( !lockmap.valid ) continue;
+                        auto it = lockmap.threadMap.find( v->id );
+                        if( it == lockmap.threadMap.end() ) continue;
+                        lockCnt++;
+                        const auto thread = it->second;
+                        auto lptr = lockmap.timeline.data();
+                        auto eptr = lptr + lockmap.timeline.size() - 1;
+                        while( lptr->ptr->thread != thread ) lptr++;
+                        if( lptr->ptr->Time() < first ) first = lptr->ptr->Time();
+                        while( eptr->ptr->thread != thread ) eptr--;
+                        if( eptr->ptr->Time() > last ) last = eptr->ptr->Time();
+                    }
+
+                    if( last >= 0 )
+                    {
+                        const auto lifetime = last - first;
+                        const auto traceLen = m_worker.GetLastTime();
+
+                        TextFocused( "Appeared at", TimeToString( first ) );
+                        TextFocused( "Last event at", TimeToString( last ) );
+                        TextFocused( "Lifetime:", TimeToString( lifetime ) );
+                        ImGui::SameLine();
+                        char buf[64];
+                        PrintStringPercent( buf, lifetime / double( traceLen ) * 100 );
+                        TextDisabledUnformatted( buf );
+
+                        if( ctx )
+                        {
+                            TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
+                            ImGui::SameLine();
+                            PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
+                            TextDisabledUnformatted( buf );
+                        }
+                    }
+
+                    ImGui::Separator();
+                    if( !v->timeline.empty() )
+                    {
+                        TextFocused( "Zone count:", RealToString( v->count ) );
+                        TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
+                    }
+                    if( !v->messages.empty() )
+                    {
+                        TextFocused( "Messages:", RealToString( v->messages.size() ) );
+                    }
+                    if( lockCnt != 0 )
+                    {
+                        TextFocused( "Locks:", RealToString( lockCnt ) );
+                    }
+                    if( ctx )
+                    {
+                        TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
+                    }
+                    if( !v->samples.empty() )
+                    {
+                        TextFocused( "Call stack samples:", RealToString( v->samples.size() ) );
+                        if( v->kernelSampleCnt != 0 )
+                        {
+                            TextFocused( "Kernel samples:", RealToString( v->kernelSampleCnt ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.2f%%)", 100.f * v->kernelSampleCnt / v->samples.size() );
+                        }
+                    }
+                    ImGui::EndTooltip();
+
+                    if( IsMouseClicked( 0 ) )
+                    {
+                        Vis( v ).showFull = !showFull;
+                    }
+                    if( last >= 0 && IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( first, last );
+                    }
+                }
             }
         }
 

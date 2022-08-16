@@ -3898,7 +3898,7 @@ read_function_info (struct backtrace_state *state, struct dwarf_data *ddata,
    Returns whatever CALLBACK returns, or 0 to keep going.  */
 
 static int
-report_inlined_functions (uintptr_t pc, struct function *function,
+report_inlined_functions (uintptr_t pc, struct function *function, const char* comp_dir,
 			  backtrace_full_callback callback, void *data,
 			  const char **filename, int *lineno)
 {
@@ -3952,13 +3952,22 @@ report_inlined_functions (uintptr_t pc, struct function *function,
   inlined = match->function;
 
   /* Report any calls inlined into this one.  */
-  ret = report_inlined_functions (pc, inlined, callback, data,
+  ret = report_inlined_functions (pc, inlined, comp_dir, callback, data,
 				  filename, lineno);
   if (ret != 0)
     return ret;
 
   /* Report this inlined call.  */
-  ret = callback (data, pc, match->low, *filename, *lineno, inlined->name);
+  if (*filename[0] != '/' && comp_dir)
+  {
+    char buf[1024];
+    snprintf (buf, 1024, "%s/%s", comp_dir, *filename);
+    ret = callback (data, pc, match->low, buf, *lineno, inlined->name);
+  }
+  else
+  {
+    ret = callback (data, pc, match->low, *filename, *lineno, inlined->name);
+  }
   if (ret != 0)
     return ret;
 
@@ -4225,12 +4234,21 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
   filename = ln->filename;
   lineno = ln->lineno;
 
-  ret = report_inlined_functions (pc, function, callback, data,
+  ret = report_inlined_functions (pc, function, entry->u->comp_dir, callback, data,
 				  &filename, &lineno);
   if (ret != 0)
     return ret;
 
-  return callback (data, pc, fmatch->low, filename, lineno, function->name);
+  if (filename[0] != '/' && entry->u->comp_dir)
+  {
+    char buf[1024];
+    snprintf (buf, 1024, "%s/%s", entry->u->comp_dir, filename);
+    return callback (data, pc, fmatch->low, buf, lineno, function->name);
+  }
+  else
+  {
+    return callback (data, pc, fmatch->low, filename, lineno, function->name);
+  }
 }
 
 

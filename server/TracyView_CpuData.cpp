@@ -30,6 +30,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     static int cpuDataVisStub;
     auto& vis = Vis( &cpuDataVisStub );
     bool& showFull = vis.showFull;
+    ImGui::PushID( &vis );
 
     const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
     const auto oldOffset = offset;
@@ -49,9 +50,16 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         DrawTextContrast( draw, wpos + ImVec2( ty, offset ), showFull ? 0xFFDD88DD : 0xFF6E446E, "CPU data" );
         DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0x66DD88DD );
 
-        if( hover && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
         {
-            showFull = !showFull;
+            if( IsMouseClicked( 0 ) )
+            {
+                showFull = !showFull;
+            }
+            if( IsMouseClicked( 1 ) )
+            {
+                ImGui::OpenPopup( "menuPopup" );
+            }
         }
     }
     offset += ostep;
@@ -446,9 +454,20 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         ImGui::PopFont();
     }
 
+    if( ImGui::BeginPopup( "menuPopup" ) )
+    {
+        if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
+        {
+            m_vd.drawCpuData = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
     offset += ostep * 0.2f;
     AdjustThreadHeight( vis, oldOffset, offset );
     ImGui::PopClipRect();
+    ImGui::PopID();
 
     return offset;
 }

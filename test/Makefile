@@ -1,6 +1,5 @@
 OPTFLAGS := -g3 -fmerge-constants
-TRACYFLAGS :=
-CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS)
+CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE
 CXXFLAGS := $(CFLAGS) -std=gnu++11
 DEFINES +=
 INCLUDES := -I../public/tracy
@@ -19,7 +18,7 @@ LIBS += -lexecinfo
 endif
 
 ifeq ($(shell uname),Linux)
-TRACYFLAGS += -DTRACY_DEBUGINFOD
+DEFINES += -DTRACY_DEBUGINFOD
 LIBS += -ldebuginfod
 endif
 

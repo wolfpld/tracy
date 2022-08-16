@@ -603,6 +603,7 @@ void View::DrawTimeline()
             continue;
         }
         bool showFull = vis.showFull;
+        ImGui::PushID( &vis );
 
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
@@ -962,12 +963,27 @@ void View::DrawTimeline()
                     {
                         ZoomToRange( first, last );
                     }
+                    if( IsMouseClicked( 1 ) )
+                    {
+                        ImGui::OpenPopup( "menuPopup" );
+                    }
                 }
             }
         }
 
+        if( ImGui::BeginPopup( "menuPopup" ) )
+        {
+            if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
+            {
+                vis.visible = false;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
         AdjustThreadHeight( Vis( v ), oldOffset, offset );
         ImGui::PopClipRect();
+        ImGui::PopID();
     }
     m_lockHighlight = nextLockHighlight;
 

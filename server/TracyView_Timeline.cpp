@@ -318,6 +318,7 @@ void View::DrawTimeline()
                 continue;
             }
             bool& showFull = vis.showFull;
+            ImGui::PushID( &vis );
 
             const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
             const auto oldOffset = offset;
@@ -468,6 +469,10 @@ void View::DrawTimeline()
                             ZoomToRange( t0, t1 );
                         }
                     }
+                    if( IsMouseClicked( 1 ) )
+                    {
+                        ImGui::OpenPopup( "menuPopup" );
+                    }
 
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( buf );
@@ -570,8 +575,19 @@ void View::DrawTimeline()
                 }
             }
 
+            if( ImGui::BeginPopup( "menuPopup" ) )
+            {
+                if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
+                {
+                    vis.visible = false;
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
             AdjustThreadHeight( vis, oldOffset, offset );
             ImGui::PopClipRect();
+            ImGui::PopID();
         }
     }
 

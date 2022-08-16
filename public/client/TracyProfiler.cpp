@@ -64,6 +64,7 @@
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
+#include "TracyDebug.hpp"
 #include "TracyDxt1.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
@@ -3854,6 +3855,7 @@ void Profiler::HandleSourceCodeQuery()
         if( buildid )
         {
             auto d = debuginfod_find_source( GetDebuginfodClient(), buildid, size, m_queryData, nullptr );
+            TracyDebug( "DebugInfo source query: %s, fn: %s, image: %s\n", d >= 0 ? " ok " : "fail", m_queryData, m_queryImage );
             if( d >= 0 )
             {
                 struct stat st;

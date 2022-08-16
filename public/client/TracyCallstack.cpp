@@ -755,6 +755,7 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const
     it->filename = (char*)tracy_malloc( fnsz );
     memcpy( it->filename, filename, fnsz );
     it->fd = fd >= 0 ? fd : -1;
+    TracyDebug( "DebugInfo descriptor query: %i, fn: %s\n", fd, filename );
     return it->fd;
 }
 

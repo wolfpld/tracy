@@ -98,6 +98,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         }
         if( v->data.empty() ) continue;
         bool& showFull = vis.showFull;
+        ImGui::PushID( &vis );
 
         float txtx = 0;
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
@@ -161,6 +162,10 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 if( IsMouseClicked( 2 ) )
                 {
                     ZoomToRange( first, last );
+                }
+                if( IsMouseClicked( 1 ) )
+                {
+                    ImGui::OpenPopup( "menuPopup" );
                 }
             }
         }
@@ -409,9 +414,21 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 offset += PlotHeight;
             }
         }
+
+        if( ImGui::BeginPopup( "menuPopup" ) )
+        {
+            if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
+            {
+                vis.visible = false;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
         offset += 0.2 * ty;
         AdjustThreadHeight( vis, oldOffset, offset );
         ImGui::PopClipRect();
+        ImGui::PopID();
     }
 
     return offset;

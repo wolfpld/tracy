@@ -3973,6 +3973,10 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz
         m_data.sourceLocationPayloadMap.emplace( slptr, idx );
         m_pendingSourceLocationPayload = -int16_t( idx + 1 );
         m_data.sourceLocationPayload.push_back( slptr );
+        if( m_checkedFileStrings.find( srcloc.file ) == m_checkedFileStrings.end() )
+        {
+            CacheSource( srcloc.file );
+        }
         const auto key = -int16_t( idx + 1 );
 #ifndef TRACY_NO_STATISTICS
         auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );

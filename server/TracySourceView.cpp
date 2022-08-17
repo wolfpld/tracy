@@ -2506,7 +2506,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                     ImGui::SameLine();
                                     ImGui::PushFont( m_smallFont );
                                     ImGui::AlignTextToFramePadding();
-                                    TextDisabledUnformatted( worker.GetString( symData->name ) );
+                                    TextDisabledUnformatted( ShortenZoneName( ShortenName::OnlyNormalize, worker.GetString( symData->name ) ) );
                                     ImGui::PopFont();
                                 }
                             }
@@ -2541,7 +2541,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                         ImGui::SameLine();
                                         ImGui::PushFont( m_smallFont );
                                         ImGui::AlignTextToFramePadding();
-                                        TextDisabledUnformatted( worker.GetString( symData->name ) );
+                                        TextDisabledUnformatted( ShortenZoneName( ShortenName::OnlyNormalize, worker.GetString( symData->name ) ) );
                                         ImGui::PopFont();
                                     }
                                 }

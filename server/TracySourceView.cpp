@@ -2639,7 +2639,14 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     {
                         SmallColorBox( 0 );
                         ImGui::SameLine();
-                        ImGui::TextDisabled( "0x%" PRIx64, src );
+                        char buf[32];
+                        sprintf( buf, "0x%" PRIx64, src );
+                        if( ImGui::MenuItem( buf ) )
+                        {
+                            m_targetAddr = src;
+                            m_selectedAddresses.clear();
+                            m_selectedAddresses.emplace( src );
+                        }
                     }
                     else
                     {

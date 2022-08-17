@@ -1685,7 +1685,7 @@ On Linux\footnote{And possibly other systems, if they decide to adapt the requir
 
 A modern alternative to installing static debug packages is to use the \emph{debuginfod} system, which performs on-demand delivery of debugging information across the internet. See \url{https://sourceware.org/elfutils/Debuginfod.html} for more details. Since this new method of symbol delivery is not yet universally supported, you will have to manually enable it, both in your system and in Tracy.
 
-First, make sure your distribution maintains a debuginfod server. Then, install the debuginfod library. You also need to ensure you have appropriately configured which server to access, but distribution maintainers usually provide this. Next, add the \texttt{TRACY\_DEBUGINFOD} define to the program you want to profile and link it with \texttt{libdebuginfod}. This will enable network symbol delivery.
+First, make sure your distribution maintains a debuginfod server. Then, install the debuginfod library. You also need to ensure you have appropriately configured which server to access, but distribution maintainers usually provide this. Next, add the \texttt{TRACY\_DEBUGINFOD} define to the program you want to profile and link it with \texttt{libdebuginfod}. This will enable network delivery of symbols and source file contents. However, the first run may be slow to respond until the local debuginfod cache becomes filled.
 
 \paragraph{Using the dbghelp library on Windows}
 
@@ -2152,6 +2152,20 @@ logo=\bcbombe
 ]{Important}
 Usage of trace parameters makes profiling runs dependent on user interaction with the profiler, and thus it's not recommended to be employed if a consistent profiling environment is desired. Furthermore, interaction with the parameters is only possible in the graphical profiling application but not in the command line capture utility.
 \end{bclogo}
+
+\subsection{Source contents callback}
+
+Tracy performs several data discovery attempts to show you the source file contents associated with the executed program, which is explained in more detail in chapter~\ref{sourceview}. However, sometimes the source files cannot be accessed without your help. For example, you may want to profile a script that is loaded by the game and which only resides in an archive accessible only by your program. Accordingly, Tracy allows inserting your own custom step at the end of the source discovery chain, with the \texttt{TracySourceCallbackRegister(callback, data)} macro, where \texttt{callback} is a function conforming to the following signature:
+
+\begin{lstlisting}
+char* Callback(void* data, const char* filename, size_t& size)
+\end{lstlisting}
+
+The \texttt{data} parameter will have the same value as was specified in the macro. The \texttt{filename} parameter contains the file name of the queried source file. Finally, the \texttt{size} parameter is used only as an out-value and does not contain any functional data.
+
+The return value must be \texttt{nullptr} if the input file name is not accessible to the client application. If the file can be accessed, then the data size must be stored in the \texttt{size} parameter, and the file contents must be returned in a buffer allocated with the \texttt{tracy::tracy\_malloc\_fast(size)} function. Buffer contents do not need to be null-terminated. If for some reason the already allocated buffer can no longer be used, it must be freed with the \texttt{tracy::tracy\_free\_fast(ptr)} function.
+
+Transfer of source files larger than some unspecified, but reasonably large\footnote{Let's say around 256~KB sounds reasonable.} threshold won't be performed.
 
 \subsection{Connection status}
 \label{connectionstatus}

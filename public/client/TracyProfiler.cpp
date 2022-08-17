@@ -3883,6 +3883,21 @@ void Profiler::HandleSourceCodeQuery()
     }
 #endif
 
+    if( !ok && m_sourceCallback )
+    {
+        size_t sz;
+        char* ptr = m_sourceCallback( m_sourceCallbackData, m_queryData, sz );
+        if( ptr )
+        {
+            if( sz < ( TargetFrameSize - 16 ) )
+            {
+                SendLongString( (uint64_t)ptr, ptr, sz, QueueType::SourceCode );
+                ok = true;
+            }
+            tracy_free_fast( ptr );
+        }
+    }
+
     if( !ok ) AckSourceCodeNotAvailable();
 
     tracy_free_fast( m_queryData );

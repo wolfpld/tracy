@@ -419,9 +419,6 @@
     <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\server\IconsFontAwesome5.h">
-      <Filter>server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\server\TracyStorage.hpp">
       <Filter>server</Filter>
     </ClInclude>
@@ -723,6 +720,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyUtility.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\IconsFontAwesome6.h">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

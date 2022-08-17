@@ -33,7 +33,7 @@
 #  include <sys/sysctl.h>
 #endif
 
-#include "IconsFontAwesome5.h"
+#include "IconsFontAwesome6.h"
 
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661923
@@ -260,7 +260,7 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         ImGui::PushFont( s_instance->m_bigFont );
-        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
         ImGui::Separator();
@@ -519,7 +519,7 @@ bool View::Draw()
 
         static FileWrite::Compression comp = FileWrite::Compression::Fast;
         static int zlvl = 6;
-        ImGui::TextUnformatted( ICON_FA_FILE_ARCHIVE " Trace compression" );
+        ImGui::TextUnformatted( ICON_FA_FILE_ZIPPER " Trace compression" );
         ImGui::SameLine();
         TextDisabledUnformatted( "Can be changed later with the upgrade utility" );
         ImGui::Indent();
@@ -552,7 +552,7 @@ bool View::Draw()
         }
 
         ImGui::Separator();
-        if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )
+        if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) )
         {
             saveFailed = !s_instance->Save( fn, comp, zlvl, buildDict );
             s_instance->m_filenameStaging.clear();
@@ -571,7 +571,7 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Save failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         ImGui::PushFont( s_instance->m_bigFont );
-        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "Could not save trace at the specified location. Try again somewhere else." );
         ImGui::Separator();
@@ -740,7 +740,7 @@ bool View::DrawImpl()
         }
         if( ImGui::BeginPopup( "viewMode" ) )
         {
-            if( ImGui::Selectable( ICON_FA_SEARCH_PLUS " Newest three frames" ) )
+            if( ImGui::Selectable( ICON_FA_MAGNIFYING_GLASS_PLUS " Newest three frames" ) )
             {
                 m_viewMode = ViewMode::LastFrames;
             }
@@ -776,21 +776,21 @@ bool View::DrawImpl()
         ImGui::PopStyleColor( 3 );
     }
     ImGui::SameLine();
-    ToggleButton( ICON_FA_COG " Options", m_showOptions );
+    ToggleButton( ICON_FA_GEAR " Options", m_showOptions );
     ImGui::SameLine();
     ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
     ImGui::SameLine();
-    ToggleButton( ICON_FA_SEARCH " Find zone", m_findZone.show );
+    ToggleButton( ICON_FA_MAGNIFYING_GLASS " Find zone", m_findZone.show );
     ImGui::SameLine();
-    ToggleButton( ICON_FA_SORT_AMOUNT_UP " Statistics", m_showStatistics );
+    ToggleButton( ICON_FA_ARROW_UP_WIDE_SHORT " Statistics", m_showStatistics );
     ImGui::SameLine();
     ToggleButton( ICON_FA_MEMORY " Memory", m_memInfo.show );
     ImGui::SameLine();
-    ToggleButton( ICON_FA_BALANCE_SCALE " Compare", m_compare.show );
+    ToggleButton( ICON_FA_SCALE_BALANCED " Compare", m_compare.show );
     ImGui::SameLine();
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
     ImGui::SameLine();
-    if( ImGui::Button( ICON_FA_TOOLS ) ) ImGui::OpenPopup( "ToolsPopup" );
+    if( ImGui::Button( ICON_FA_SCREWDRIVER_WRENCH ) ) ImGui::OpenPopup( "ToolsPopup" );
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {
         const auto ficnt = m_worker.GetFrameImageCount();
@@ -799,11 +799,11 @@ bool View::DrawImpl()
             m_showPlayback = true;
         }
         const auto& ctd = m_worker.GetCpuThreadData();
-        if( ButtonDisablable( ICON_FA_SLIDERS_H " CPU data", ctd.empty() ) )
+        if( ButtonDisablable( ICON_FA_SLIDERS " CPU data", ctd.empty() ) )
         {
             m_showCpuDataWindow = true;
         }
-        ToggleButton( ICON_FA_STICKY_NOTE " Annotations", m_showAnnotationList );
+        ToggleButton( ICON_FA_NOTE_STICKY " Annotations", m_showAnnotationList );
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
         const auto cscnt = m_worker.GetContextSwitchSampleCount();
         if( ButtonDisablable( ICON_FA_HOURGLASS_HALF " Wait stacks", cscnt == 0 ) )
@@ -815,7 +815,7 @@ bool View::DrawImpl()
     if( m_sscb )
     {
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_SEARCH_PLUS ) ) ImGui::OpenPopup( "ZoomPopup" );
+        if( ImGui::Button( ICON_FA_MAGNIFYING_GLASS_PLUS ) ) ImGui::OpenPopup( "ZoomPopup" );
         if( ImGui::BeginPopup( "ZoomPopup" ) )
         {
             if( ImGui::Button( "50%" ) )  m_sscb( 1.f/2,     m_fixedFont, m_bigFont, m_smallFont );
@@ -1003,13 +1003,13 @@ bool View::DrawImpl()
     {
         const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
         const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
-        if( ImGui::Selectable( ICON_FA_SEARCH " Limit find zone time range" ) )
+        if( ImGui::Selectable( ICON_FA_MAGNIFYING_GLASS " Limit find zone time range" ) )
         {
             m_findZone.range.active = true;
             m_findZone.range.min = s;
             m_findZone.range.max = e;
         }
-        if( ImGui::Selectable( ICON_FA_SORT_AMOUNT_UP " Limit statistics time range" ) )
+        if( ImGui::Selectable( ICON_FA_ARROW_UP_WIDE_SHORT " Limit statistics time range" ) )
         {
             m_statRange.active = true;
             m_statRange.min = s;
@@ -1028,7 +1028,7 @@ bool View::DrawImpl()
             m_memInfo.range.max = e;
         }
         ImGui::Separator();
-        if( ImGui::Selectable( ICON_FA_STICKY_NOTE " Add annotation" ) )
+        if( ImGui::Selectable( ICON_FA_NOTE_STICKY " Add annotation" ) )
         {
             AddAnnotation( s, e );
         }

@@ -27,7 +27,7 @@ const char* View::GetPlotName( const PlotData* plot ) const
             return tmp;
         }
     case PlotType::SysTime:
-        return ICON_FA_TACHOMETER_ALT " CPU usage";
+        return ICON_FA_GAUGE_HIGH " CPU usage";
     default:
         assert( false );
         return nullptr;

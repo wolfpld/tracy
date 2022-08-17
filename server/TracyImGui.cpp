@@ -121,7 +121,7 @@ void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImV
     draw->AddText( wpos + ImVec2( w-1-maxsz, ty15 ), 0x66FFFFFF, maxtxt );
 
     char range[64];
-    sprintf( range, ICON_FA_LONG_ARROW_ALT_LEFT " %s " ICON_FA_LONG_ARROW_ALT_RIGHT, TimeToString( tmax - tmin ) );
+    sprintf( range, ICON_FA_LEFT_LONG " %s " ICON_FA_RIGHT_LONG, TimeToString( tmax - tmin ) );
 
     const auto rsz = ImGui::CalcTextSize( range ).x;
     draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), ty15 ), 0x66FFFFFF, range );

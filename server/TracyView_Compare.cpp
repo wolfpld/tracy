@@ -234,7 +234,7 @@ void View::DrawCompare()
         ImGui::TextDisabled( "(%s)", m_compare.second->GetCaptureName().c_str() );
     }
 
-    if( ImGui::Button( ICON_FA_TRASH_ALT " Unload" ) )
+    if( ImGui::Button( ICON_FA_TRASH_CAN " Unload" ) )
     {
         m_compare.Reset();
         m_compare.second.reset();
@@ -264,7 +264,7 @@ void View::DrawCompare()
         findClicked |= ImGui::InputTextWithHint( "###compare", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::PopItemWidth();
 
-        findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
+        findClicked |= ImGui::Button( ICON_FA_MAGNIFYING_GLASS " Find" );
         ImGui::SameLine();
 
         if( ImGui::Button( ICON_FA_BAN " Clear" ) )

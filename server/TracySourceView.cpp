@@ -17,7 +17,7 @@
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"
 
-#include "IconsFontAwesome5.h"
+#include "IconsFontAwesome6.h"
 
 #ifndef TRACY_NO_FILESELECTOR
 #  include "../nfd/nfd.h"
@@ -1024,11 +1024,11 @@ void SourceView::Render( Worker& worker, View& view )
         }
         else
         {
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
             ImGui::SameLine();
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
         }
 
         RenderSimpleSourceView();
@@ -1155,7 +1155,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             ImGui::SameLine();
             ImGui::AlignTextToFramePadding();
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
             TooltipIfHovered( "Context is limited to an inline function" );
         }
         if( SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats ) )
@@ -1394,7 +1394,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             SmallCheckbox( ICON_FA_HAMMER " Hw samples", &m_hwSamples );
             ImGui::SameLine();
-            SmallCheckbox( ICON_FA_CAR_CRASH " Impact", &m_hwSamplesRelative );
+            SmallCheckbox( ICON_FA_CAR_BURST " Impact", &m_hwSamplesRelative );
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
@@ -1445,7 +1445,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             {
                 m_childCalls = !m_childCalls;
             }
-            SmallCheckbox( ICON_FA_SIGN_OUT_ALT " Child calls", &m_childCalls );
+            SmallCheckbox( ICON_FA_RIGHT_FROM_BRACKET " Child calls", &m_childCalls );
             if( !samplesReady )
             {
                 ImGui::PopStyleVar();
@@ -1526,7 +1526,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             if( view.m_statRange.active )
             {
                 ImGui::SameLine();
-                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
                 ImGui::SameLine();
                 ToggleButton( ICON_FA_RULER " Limits", view.m_showRanges );
             }
@@ -1770,11 +1770,11 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         }
         else
         {
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
             ImGui::SameLine();
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
         }
     }
     else
@@ -1786,15 +1786,15 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         }
         else
         {
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
                 ImGui::SameLine();
                 TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
                 ImGui::SameLine();
-                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
                 ImGui::EndTooltip();
             }
         }
@@ -2132,7 +2132,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         }
 
         ImGui::BeginChild( "##srcSelect" );
-        if( ImGui::SmallButton( ICON_FA_TIMES ) )
+        if( ImGui::SmallButton( ICON_FA_XMARK ) )
         {
             m_srcSampleSelect.clear();
             m_srcGroupSelect = -1;
@@ -2261,7 +2261,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
     const auto scale = GetScale();
     if( m_disasmFail >= 0 )
     {
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
         if( ImGui::IsItemHovered() )
         {
             const bool clicked = ImGui::IsItemClicked();
@@ -2284,7 +2284,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
         ImGui::SameLine();
     }
-    SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative loc.", &m_asmRelative );
+    SmallCheckbox( ICON_FA_MAGNIFYING_GLASS_LOCATION " Relative loc.", &m_asmRelative );
     if( !m_sourceFiles.empty() )
     {
         ImGui::SameLine();
@@ -2295,7 +2295,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( ICON_FA_COGS " Machine code", &m_asmBytes );
+    SmallCheckbox( ICON_FA_GEARS " Machine code", &m_asmBytes );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
@@ -2364,7 +2364,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
-            SmallCheckbox( ICON_FA_TRUCK_LOADING " Latency", &m_showLatency );
+            SmallCheckbox( ICON_FA_TRUCK_RAMP_BOX " Latency", &m_showLatency );
         }
     }
 
@@ -2907,7 +2907,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
 
         ImGui::BeginChild( "##asmSelect" );
-        if( ImGui::SmallButton( ICON_FA_TIMES ) )
+        if( ImGui::SmallButton( ICON_FA_XMARK ) )
         {
             m_asmSampleSelect.clear();
             m_asmGroupSelect = -1;

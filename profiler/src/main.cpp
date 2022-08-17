@@ -46,7 +46,7 @@
 #include "../../server/TracyWeb.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
-#include "../../server/IconsFontAwesome5.h"
+#include "../../server/IconsFontAwesome6.h"
 
 #include "icon.hpp"
 
@@ -404,13 +404,13 @@ static void DrawContents()
             tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
         }
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
+        if( ImGui::Button( ICON_FA_EARTH_AMERICAS " Web" ) )
         {
             ImGui::OpenPopup( "web" );
         }
         if( ImGui::BeginPopup( "web" ) )
         {
-            if( ImGui::Selectable( ICON_FA_HOME " Tracy Profiler home page" ) )
+            if( ImGui::Selectable( ICON_FA_HOUSE_CHIMNEY " Tracy Profiler home page" ) )
             {
                 tracy::OpenWebpage( "https://github.com/wolfpld/tracy" );
             }
@@ -585,12 +585,12 @@ static void DrawContents()
             if( filt->IsActive() )
             {
                 ImGui::SameLine();
-                tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+                tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
                 tracy::TooltipIfHovered( "Filters are active" );
                 if( showFilter )
                 {
                     ImGui::SameLine();
-                    if( ImGui::SmallButton( ICON_FA_BACKSPACE " Clear" ) )
+                    if( ImGui::SmallButton( ICON_FA_DELETE_LEFT " Clear" ) )
                     {
                         filt->Clear();
                     }

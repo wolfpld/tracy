@@ -280,7 +280,7 @@ void View::DrawFindZone()
     findClicked |= ImGui::InputTextWithHint( "###findzone", "Enter zone name to search for", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
-    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_MAGNIFYING_GLASS " Find" );
     ImGui::SameLine();
 
     if( ImGui::Button( ICON_FA_BAN " Clear" ) )
@@ -303,7 +303,7 @@ void View::DrawFindZone()
     if( m_findZone.range.active )
     {
         ImGui::SameLine();
-        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::SameLine();
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
@@ -1357,7 +1357,7 @@ void View::DrawFindZone()
         if( m_findZone.selGroup != m_findZone.Unselected )
         {
             ImGui::SameLine();
-            if( ImGui::SmallButton( ICON_FA_BACKSPACE " Clear" ) )
+            if( ImGui::SmallButton( ICON_FA_DELETE_LEFT " Clear" ) )
             {
                 m_findZone.selGroup = m_findZone.Unselected;
                 m_findZone.ResetSelection();

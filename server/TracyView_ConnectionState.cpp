@@ -122,7 +122,7 @@ bool View::DrawConnection()
     }
 
     ImGui::Separator();
-    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
+    if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
     {
 #ifndef TRACY_NO_FILESELECTOR
         nfdu8filteritem_t filter = { "Tracy Profiler trace file", "tracy" };
@@ -169,7 +169,7 @@ bool View::DrawConnection()
     }
 
     ImGui::SameLine();
-    if( ImGui::Button( ICON_FA_EXCLAMATION_TRIANGLE " Discard" ) )
+    if( ImGui::Button( ICON_FA_TRIANGLE_EXCLAMATION " Discard" ) )
     {
         ImGui::OpenPopup( "Confirm trace discard" );
     }
@@ -177,7 +177,7 @@ bool View::DrawConnection()
     if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         ImGui::PushFont( m_bigFont );
-        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );
         ImGui::TextUnformatted( "Are you sure you want to proceed?" );

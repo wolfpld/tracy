@@ -178,7 +178,7 @@ void View::DrawMemory()
     auto& memNameMap = m_worker.GetMemNameMap();
     if( memNameMap.size() > 1 )
     {
-        TextDisabledUnformatted( ICON_FA_ARCHIVE " Memory pool:" );
+        TextDisabledUnformatted( ICON_FA_BOX_ARCHIVE " Memory pool:" );
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##memoryPool", m_memInfo.pool == 0 ? "Default allocator" : m_worker.GetString( m_memInfo.pool ) ) )
         {
@@ -243,7 +243,7 @@ void View::DrawMemory()
     if( m_memInfo.range.active )
     {
         ImGui::SameLine();
-        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::SameLine();
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
@@ -255,13 +255,13 @@ void View::DrawMemory()
     {
         bool findClicked =  ImGui::InputTextWithHint( "###address", "Enter memory address to search for", m_memInfo.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
-        findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
+        findClicked |= ImGui::Button( ICON_FA_MAGNIFYING_GLASS " Find" );
         if( findClicked )
         {
             m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
         }
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+        if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
         {
             m_memInfo.ptrFind = 0;
             m_memInfo.pattern[0] = '\0';
@@ -320,7 +320,7 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
-    if( ImGui::TreeNode( ICON_FA_HEARTBEAT " Active allocations" ) )
+    if( ImGui::TreeNode( ICON_FA_HEART_PULSE " Active allocations" ) )
     {
         uint64_t total = 0;
         std::vector<const MemEvent*> items;
@@ -527,7 +527,7 @@ void View::DrawMemoryAllocWindow()
 
         if( m_worker.GetMemNameMap().size() > 1 )
         {
-            TextFocused( ICON_FA_ARCHIVE " Pool:", m_memoryAllocInfoPool == 0 ? "Default allocator" : m_worker.GetString( m_memoryAllocInfoPool ) );
+            TextFocused( ICON_FA_BOX_ARCHIVE " Pool:", m_memoryAllocInfoPool == 0 ? "Default allocator" : m_worker.GetString( m_memoryAllocInfoPool ) );
         }
         char buf[64];
         sprintf( buf, "0x%" PRIx64, ev.Ptr() );

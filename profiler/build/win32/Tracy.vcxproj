@@ -239,7 +239,7 @@
     <ClInclude Include="..\..\..\public\common\TracyYield.hpp" />
     <ClInclude Include="..\..\..\public\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\public\common\tracy_lz4hc.hpp" />
-    <ClInclude Include="..\..\..\server\IconsFontAwesome5.h" />
+    <ClInclude Include="..\..\..\server\IconsFontAwesome6.h" />
     <ClInclude Include="..\..\..\server\TracyBadVersion.hpp" />
     <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />

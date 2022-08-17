@@ -195,7 +195,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                         {
                             TextFocused( "CPU:", RealToString( pit->Cpu() ) );
                             ImGui::SameLine();
-                            TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu() ) );
+                            TextFocused( ICON_FA_RIGHT_LONG, RealToString( ev.Cpu() ) );
                         }
                         else
                         {
@@ -455,14 +455,14 @@ void View::DrawWaitStacks()
     if( m_waitStackRange.active )
     {
         ImGui::SameLine();
-        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::SameLine();
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
     ImGui::PopStyleVar();
 
     bool threadsChanged = false;
-    auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
+    auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
     if( expand )

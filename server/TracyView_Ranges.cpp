@@ -10,9 +10,9 @@ void View::DrawRanges()
 {
     ImGui::Begin( "Time range limits", &m_showRanges, ImGuiWindowFlags_AlwaysAutoResize );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-    DrawRangeEntry( m_findZone.range, ICON_FA_SEARCH " Find zone", 0x4488DD88, "RangeFindZoneCopyFrom", 0 );
+    DrawRangeEntry( m_findZone.range, ICON_FA_MAGNIFYING_GLASS " Find zone", 0x4488DD88, "RangeFindZoneCopyFrom", 0 );
     ImGui::Separator();
-    DrawRangeEntry( m_statRange, ICON_FA_SORT_AMOUNT_UP " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
+    DrawRangeEntry( m_statRange, ICON_FA_ARROW_UP_WIDE_SHORT " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
     ImGui::Separator();
     DrawRangeEntry( m_waitStackRange, ICON_FA_HOURGLASS_HALF " Wait stacks", 0x44EEB588, "RangeWaitStackCopyFrom", 2 );
     ImGui::Separator();
@@ -47,7 +47,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
         ImGui::TextDisabled( "(%s)", TimeToString( range.max - range.min ) );
         if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
         ImGui::SameLine();
-        if( SmallButtonDisablable( ICON_FA_STICKY_NOTE " Set from annotation", m_annotations.empty() ) ) ImGui::OpenPopup( popupLabel );
+        if( SmallButtonDisablable( ICON_FA_NOTE_STICKY " Set from annotation", m_annotations.empty() ) ) ImGui::OpenPopup( popupLabel );
         if( ImGui::BeginPopup( popupLabel ) )
         {
             for( auto& v : m_annotations )
@@ -69,12 +69,12 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
         if( id != 0 )
         {
             ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_SEARCH " Copy from find zone", m_findZone.range.min == 0 && m_findZone.range.max == 0 ) ) range = m_findZone.range;
+            if( SmallButtonDisablable( ICON_FA_MAGNIFYING_GLASS " Copy from find zone", m_findZone.range.min == 0 && m_findZone.range.max == 0 ) ) range = m_findZone.range;
         }
         if( id != 1 )
         {
             ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_SORT_AMOUNT_UP " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_statRange;
+            if( SmallButtonDisablable( ICON_FA_ARROW_UP_WIDE_SHORT " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_statRange;
         }
         if( id != 2 )
         {

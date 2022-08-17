@@ -439,7 +439,7 @@ void View::DrawStatistics()
     ImGui::SameLine();
     m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
     ImGui::SameLine();
-    if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+    if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
     {
         m_statisticsFilter.Clear();
     }
@@ -484,7 +484,7 @@ void View::DrawStatistics()
             ImGui::EndCombo();
         }
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_BACKSPACE " Clear###image" ) )
+        if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear###image" ) )
         {
             m_statisticsImageFilter.Clear();
         }
@@ -520,7 +520,7 @@ void View::DrawStatistics()
         if( m_statRange.active )
         {
             ImGui::SameLine();
-            TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+            TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
             ImGui::SameLine();
             ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
         }

@@ -396,7 +396,7 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
         else
         {
             ImGui::SameLine();
-            TextDisabledUnformatted( ICON_FA_LONG_ARROW_ALT_LEFT );
+            TextDisabledUnformatted( ICON_FA_LEFT_LONG );
             ImGui::SameLine();
         }
         const auto& frame = frameData->data[frameData->size - 1];

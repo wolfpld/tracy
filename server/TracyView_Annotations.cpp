@@ -29,7 +29,7 @@ void View::DrawSelectedAnnotation()
             ZoomToRange( m_selectedAnnotation->range.min, m_selectedAnnotation->range.max );
         }
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_TRASH_ALT " Remove" ) )
+        if( ImGui::Button( ICON_FA_TRASH_CAN " Remove" ) )
         {
             for( auto it = m_annotations.begin(); it != m_annotations.end(); ++it )
             {
@@ -100,7 +100,7 @@ void View::DrawAnnotationList()
     for( auto& ann : m_annotations )
     {
         ImGui::PushID( idx );
-        if( ImGui::Button( ICON_FA_EDIT ) )
+        if( ImGui::Button( ICON_FA_PEN_TO_SQUARE ) )
         {
             m_selectedAnnotation = ann.get();
         }
@@ -110,7 +110,7 @@ void View::DrawAnnotationList()
             ZoomToRange( ann->range.min, ann->range.max );
         }
         ImGui::SameLine();
-        if( ButtonDisablable( ICON_FA_TRASH_ALT, !ctrl ) )
+        if( ButtonDisablable( ICON_FA_TRASH_CAN, !ctrl ) )
         {
             remove = idx;
         }

@@ -104,7 +104,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawContextSwitches )
     {
         ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_HIKING );
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_PERSON_HIKING );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -116,7 +116,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawCpuData )
     {
         ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_SLIDERS_H );
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_SLIDERS );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -200,7 +200,7 @@ void View::DrawNotificationArea()
         if( hidden )
         {
             ImGui::SameLine();
-            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_LOW_VISION );
+            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE_LOW_VISION );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
@@ -213,7 +213,7 @@ void View::DrawNotificationArea()
     if( !m_worker.IsBackgroundDone() )
     {
         ImGui::SameLine();
-        TextDisabledUnformatted( ICON_FA_TASKS );
+        TextDisabledUnformatted( ICON_FA_LIST_CHECK );
         ImGui::SameLine();
         const auto pos = ImGui::GetCursorPos();
         ImGui::TextUnformatted( "  " );
@@ -231,7 +231,7 @@ void View::DrawNotificationArea()
     if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
     {
         ImGui::SameLine();
-        ImGui::TextUnformatted( ICON_FA_SAVE " Saving trace..." );
+        ImGui::TextUnformatted( ICON_FA_FLOPPY_DISK " Saving trace..." );
         m_notificationTime = 0;
     }
     else if( m_notificationTime > 0 )

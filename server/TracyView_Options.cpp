@@ -54,7 +54,7 @@ void View::DrawOptions()
     {
         ImGui::Separator();
         val = m_vd.drawContextSwitches;
-        ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &val );
+        ImGui::Checkbox( ICON_FA_PERSON_HIKING " Draw context switches", &val );
         m_vd.drawContextSwitches = val;
         ImGui::Indent();
         val = m_vd.darkenContextSwitches;
@@ -62,7 +62,7 @@ void View::DrawOptions()
         m_vd.darkenContextSwitches = val;
         ImGui::Unindent();
         val = m_vd.drawCpuData;
-        ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );
+        ImGui::Checkbox( ICON_FA_SLIDERS " Draw CPU data", &val );
         m_vd.drawCpuData = val;
         ImGui::Indent();
         val = m_vd.drawCpuUsageGraph;
@@ -573,7 +573,7 @@ void View::DrawOptions()
     }
 
     ImGui::Separator();
-    auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
+    auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
     if( expand )
@@ -612,7 +612,7 @@ void View::DrawOptions()
             if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_SourceNoHoldToOpenOthers ) )
             {
                 ImGui::SetDragDropPayload( "ThreadOrder", &idx, sizeof(int) );
-                ImGui::TextUnformatted( ICON_FA_RANDOM );
+                ImGui::TextUnformatted( ICON_FA_SHUFFLE );
                 ImGui::SameLine();
                 SmallColorBox( threadColor );
                 ImGui::SameLine();

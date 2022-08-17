@@ -27,7 +27,7 @@ void View::DrawMessages()
 
     bool filterChanged = m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
     ImGui::SameLine();
-    if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+    if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
     {
         m_messageFilter.Clear();
         filterChanged = true;
@@ -49,7 +49,7 @@ void View::DrawMessages()
     }
 
     bool threadsChanged = false;
-    auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
+    auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", tsz );
     if( expand )

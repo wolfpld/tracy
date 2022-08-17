@@ -12,7 +12,7 @@
 #include "imgui_internal.h"
 
 #include "../public/common/TracyForceInline.hpp"
-#include "IconsFontAwesome5.h"
+#include "IconsFontAwesome6.h"
 
 #if !IMGUI_DEFINE_MATH_OPERATORS
 static inline ImVec2 operator+( const ImVec2& l, const ImVec2& r ) { return ImVec2( l.x + r.x, l.y + r.y ); }

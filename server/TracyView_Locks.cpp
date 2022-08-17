@@ -303,9 +303,9 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             }
             ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
             ImGui::Separator();
-            TextFocused( ICON_FA_RANDOM " Appeared at", TimeToString( range.start ) );
-            TextFocused( ICON_FA_RANDOM " Last event at", TimeToString( range.end ) );
-            TextFocused( ICON_FA_RANDOM " Activity time:", TimeToString( activity ) );
+            TextFocused( ICON_FA_SHUFFLE " Appeared at", TimeToString( range.start ) );
+            TextFocused( ICON_FA_SHUFFLE " Last event at", TimeToString( range.end ) );
+            TextFocused( ICON_FA_SHUFFLE " Activity time:", TimeToString( activity ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%.2f%% of lock lifetime)", activity / double( lockLen ) * 100 );
             ImGui::Separator();

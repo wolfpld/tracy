@@ -219,7 +219,7 @@ void View::DrawInfo()
             if( m_frameSortData.limitToView )
             {
                 ImGui::SameLine();
-                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
             }
 
             const auto frameRange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
@@ -725,7 +725,7 @@ void View::DrawInfo()
 
                     for( auto& thread : core.second )
                     {
-                        sprintf( buf, ICON_FA_RANDOM "%" PRIu32, thread );
+                        sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, thread );
                         const auto tsz = ImGui::CalcTextSize( buf ).x;
                         if( tsz > ttsz ) ttsz = tsz;
                     }
@@ -777,7 +777,7 @@ void View::DrawInfo()
 
                     for( int i=0; i<core->second.size(); i++ )
                     {
-                        sprintf( buf, ICON_FA_RANDOM "%" PRIu32, core->second[i] );
+                        sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, core->second[i] );
                         draw->AddText( cpos + ImVec2( margin + i * ( margin + ttsz ), ty + small ), 0xFFFFFFFF, buf );
                     }
 
@@ -819,7 +819,7 @@ void View::DrawInfo()
         for( auto& v : m_sourceSubstitutions )
         {
             ImGui::PushID( idx );
-            if( ImGui::Button( ICON_FA_TRASH_ALT ) ) remove = idx;
+            if( ImGui::Button( ICON_FA_TRASH_CAN ) ) remove = idx;
             ImGui::SameLine();
             char tmp[1024];
             strncpy( tmp, v.pattern.c_str(), 1024 );

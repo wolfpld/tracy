@@ -1128,16 +1128,19 @@ void SysTraceWorker( void* ptr )
     InitRpmalloc();
     sched_param sp = { 99 };
     if( pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp ) != 0 ) TracyDebug( "Failed to increase SysTraceWorker thread priority!\n" );
-    for( int i=0; i<s_numBuffers; i++ ) s_ring[i].Enable();
+    auto ctxBufferIdx = s_ctxBufferIdx;
+    auto ringArray = s_ring;
+    auto numBuffers = s_numBuffers;
+    for( int i=0; i<numBuffers; i++ ) ringArray[i].Enable();
     for(;;)
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
             if( !traceActive.load( std::memory_order_relaxed ) ) break;
-            for( int i=0; i<s_numBuffers; i++ )
+            for( int i=0; i<numBuffers; i++ )
             {
-                auto& ring = s_ring[i];
+                auto& ring = ringArray[i];
                 const auto head = ring.LoadHead();
                 const auto tail = ring.GetTail();
                 if( head != tail )
@@ -1153,10 +1156,10 @@ void SysTraceWorker( void* ptr )
 #endif
 
         bool hadData = false;
-        for( int i=0; i<s_ctxBufferIdx; i++ )
+        for( int i=0; i<ctxBufferIdx; i++ )
         {
             if( !traceActive.load( std::memory_order_relaxed ) ) break;
-            auto& ring = s_ring[i];
+            auto& ring = ringArray[i];
             const auto head = ring.LoadHead();
             const auto tail = ring.GetTail();
             if( head == tail ) continue;
@@ -1273,9 +1276,9 @@ void SysTraceWorker( void* ptr )
         }
         if( !traceActive.load( std::memory_order_relaxed ) ) break;
 
-        if( s_ctxBufferIdx != s_numBuffers )
+        if( ctxBufferIdx != numBuffers )
         {
-            const auto ctxBufNum = s_numBuffers - s_ctxBufferIdx;
+            const auto ctxBufNum = numBuffers - ctxBufferIdx;
 
             int activeNum = 0;
             bool active[512];
@@ -1283,9 +1286,9 @@ void SysTraceWorker( void* ptr )
             uint32_t pos[512];
             for( int i=0; i<ctxBufNum; i++ )
             {
-                const auto rbIdx = s_ctxBufferIdx + i;
-                const auto rbHead = s_ring[rbIdx].LoadHead();
-                const auto rbTail = s_ring[rbIdx].GetTail();
+                const auto rbIdx = ctxBufferIdx + i;
+                const auto rbHead = ringArray[rbIdx].LoadHead();
+                const auto rbTail = ringArray[rbIdx].GetTail();
                 const auto rbActive = rbHead != rbTail;
 
                 active[i] = rbActive;
@@ -1312,13 +1315,13 @@ void SysTraceWorker( void* ptr )
                         if( !active[i] ) continue;
                         auto rbPos = pos[i];
                         assert( rbPos < end[i] );
-                        const auto rbIdx = s_ctxBufferIdx + i;
+                        const auto rbIdx = ctxBufferIdx + i;
                         perf_event_header hdr;
-                        s_ring[rbIdx].Read( &hdr, rbPos, sizeof( perf_event_header ) );
+                        ringArray[rbIdx].Read( &hdr, rbPos, sizeof( perf_event_header ) );
                         if( hdr.type == PERF_RECORD_SAMPLE )
                         {
                             int64_t rbTime;
-                            s_ring[rbIdx].Read( &rbTime, rbPos + sizeof( perf_event_header ), sizeof( int64_t ) );
+                            ringArray[rbIdx].Read( &rbTime, rbPos + sizeof( perf_event_header ), sizeof( int64_t ) );
                             if( rbTime < t0 )
                             {
                                 t0 = rbTime;
@@ -1341,7 +1344,7 @@ void SysTraceWorker( void* ptr )
                     }
                     if( sel >= 0 )
                     {
-                        auto& ring = s_ring[s_ctxBufferIdx + sel];
+                        auto& ring = ringArray[ctxBufferIdx + sel];
                         auto rbPos = pos[sel];
                         auto offset = rbPos;
                         perf_event_header hdr;
@@ -1492,7 +1495,7 @@ void SysTraceWorker( void* ptr )
                 }
                 for( int i=0; i<ctxBufNum; i++ )
                 {
-                    if( end[i] != 0 ) s_ring[s_ctxBufferIdx + i].Advance( end[i] );
+                    if( end[i] != 0 ) ringArray[ctxBufferIdx + i].Advance( end[i] );
                 }
             }
         }
@@ -1503,8 +1506,8 @@ void SysTraceWorker( void* ptr )
         }
     }
 
-    for( int i=0; i<s_numBuffers; i++ ) s_ring[i].~RingBuffer();
-    tracy_free_fast( s_ring );
+    for( int i=0; i<numBuffers; i++ ) ringArray[i].~RingBuffer();
+    tracy_free_fast( ringArray );
 }
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )

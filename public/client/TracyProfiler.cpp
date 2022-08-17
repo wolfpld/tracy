@@ -1356,6 +1356,7 @@ Profiler::Profiler()
     , m_deferredQueue( 64*1024 )
 #endif
     , m_paramCallback( nullptr )
+    , m_sourceCallback( nullptr )
     , m_queryImage( nullptr )
     , m_queryData( nullptr )
     , m_crashHandlerInstalled( false )

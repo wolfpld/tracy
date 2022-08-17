@@ -150,6 +150,7 @@ struct LuaZoneState
 
 
 typedef void(*ParameterCallback)( uint32_t idx, int32_t val );
+typedef char*(*SourceContentsCallback)( void* data, const char* filename, size_t& size );
 
 class Profiler
 {
@@ -634,6 +635,13 @@ public:
         TracyLfqCommit;
     }
 
+    static tracy_force_inline void SourceCallbackRegister( SourceContentsCallback cb, void* data )
+    {
+        auto& profiler = GetProfiler();
+        profiler.m_sourceCallback = cb;
+        profiler.m_sourceCallbackData = data;
+    }
+
 #ifdef TRACY_FIBERS
     static tracy_force_inline void EnterFiber( const char* fiber )
     {
@@ -928,6 +936,8 @@ private:
 #endif
 
     ParameterCallback m_paramCallback;
+    SourceContentsCallback m_sourceCallback;
+    void* m_sourceCallbackData;
 
     char* m_queryImage;
     char* m_queryData;

@@ -2706,7 +2706,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( m_jumpPopupAddr ) : worker.GetSymbolData( jumpBase );
                     if( jumpSym )
                     {
-                        snprintf( buf, 1024, "%s+%" PRIu32, worker.GetString( jumpSym->name ), jumpOffset );
+                        snprintf( buf, 1024, "%s+%" PRIu32, ShortenZoneName( ShortenName::OnlyNormalize, worker.GetString( jumpSym->name ) ), jumpOffset );
                     }
                     else
                     {

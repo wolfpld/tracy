@@ -2475,6 +2475,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     if( ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ) - JumpSeparation / 2, y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ) + JumpSeparation / 2, y1 + th2 ) ) )
                     {
                         thickness = 2;
+                        const auto shortenName = view.GetShortenName();
                         UnsetFont();
                         ImGui::BeginTooltip();
                         char tmp[32];
@@ -2506,7 +2507,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                     ImGui::SameLine();
                                     ImGui::PushFont( m_smallFont );
                                     ImGui::AlignTextToFramePadding();
-                                    TextDisabledUnformatted( ShortenZoneName( ShortenName::OnlyNormalize, worker.GetString( symData->name ) ) );
+                                    const auto symName = worker.GetString( symData->name );
+                                    const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+                                    TextDisabledUnformatted( normalized );
                                     ImGui::PopFont();
                                 }
                             }
@@ -2541,7 +2544,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                         ImGui::SameLine();
                                         ImGui::PushFont( m_smallFont );
                                         ImGui::AlignTextToFramePadding();
-                                        TextDisabledUnformatted( ShortenZoneName( ShortenName::OnlyNormalize, worker.GetString( symData->name ) ) );
+                                        const auto symName = worker.GetString( symData->name );
+                                        const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+                                        TextDisabledUnformatted( normalized );
                                         ImGui::PopFont();
                                     }
                                 }
@@ -2706,7 +2711,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( m_jumpPopupAddr ) : worker.GetSymbolData( jumpBase );
                     if( jumpSym )
                     {
-                        snprintf( buf, 1024, "%s+%" PRIu32, ShortenZoneName( ShortenName::OnlyNormalize, worker.GetString( jumpSym->name ) ), jumpOffset );
+                        const auto jumpName = worker.GetString( jumpSym->name );
+                        const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
+                        snprintf( buf, 1024, "%s+%" PRIu32, normalized, jumpOffset );
                     }
                     else
                     {

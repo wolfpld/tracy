@@ -1285,7 +1285,7 @@ void SysTraceWorker( void* ptr )
             const auto ctxBufNum = numBuffers - ctxBufferIdx;
 
             int activeNum = 0;
-            bool active[512];
+            uint16_t active[512];
             uint32_t end[512];
             uint32_t pos[512];
             for( int i=0; i<ctxBufNum; i++ )
@@ -1295,9 +1295,9 @@ void SysTraceWorker( void* ptr )
                 const auto rbTail = ringArray[rbIdx].GetTail();
                 const auto rbActive = rbHead != rbTail;
 
-                active[i] = rbActive;
                 if( rbActive )
                 {
+                    active[activeNum] = (uint16_t)i;
                     activeNum++;
                     end[i] = rbHead - rbTail;
                     pos[i] = 0;
@@ -1313,13 +1313,14 @@ void SysTraceWorker( void* ptr )
                 while( activeNum > 0 )
                 {
                     int sel = -1;
+                    int selPos;
                     int64_t t0 = std::numeric_limits<int64_t>::max();
-                    for( int i=0; i<ctxBufNum; i++ )
+                    for( int i=0; i<activeNum; i++ )
                     {
-                        if( !active[i] ) continue;
-                        auto rbPos = pos[i];
-                        assert( rbPos < end[i] );
-                        const auto rbIdx = ctxBufferIdx + i;
+                        auto idx = active[i];
+                        auto rbPos = pos[idx];
+                        assert( rbPos < end[idx] );
+                        const auto rbIdx = ctxBufferIdx + idx;
                         perf_event_header hdr;
                         ringArray[rbIdx].Read( &hdr, rbPos, sizeof( perf_event_header ) );
                         if( hdr.type == PERF_RECORD_SAMPLE )
@@ -1329,20 +1330,22 @@ void SysTraceWorker( void* ptr )
                             if( rbTime < t0 )
                             {
                                 t0 = rbTime;
-                                sel = i;
+                                sel = idx;
+                                selPos = i;
                             }
                         }
                         else
                         {
                             rbPos += hdr.size;
-                            if( rbPos == end[i] )
+                            if( rbPos == end[idx] )
                             {
-                                active[i] = false;
+                                memmove( active+i, active+i+1, sizeof(*active) * ( activeNum - i - 1 ) );
                                 activeNum--;
+                                i--;
                             }
                             else
                             {
-                                pos[i] = rbPos;
+                                pos[idx] = rbPos;
                             }
                         }
                     }
@@ -1488,7 +1491,7 @@ void SysTraceWorker( void* ptr )
                         rbPos += hdr.size;
                         if( rbPos == end[sel] )
                         {
-                            active[sel] = false;
+                            memmove( active+selPos, active+selPos+1, sizeof(*active) * ( activeNum - selPos - 1 ) );
                             activeNum--;
                         }
                         else

@@ -53,7 +53,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
 #ifdef DISPLAY_SERVER_WAYLAND
     glfwWindowHint( GLFW_ALPHA_BITS, 0 );
 #else
-    glfwWindowHint(GLFW_VISIBLE, 0 );
+    glfwWindowHint( GLFW_VISIBLE, 0 );
 #endif
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
     glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );

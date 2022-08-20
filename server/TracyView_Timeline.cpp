@@ -13,47 +13,6 @@ constexpr float MinVisSize = 3;
 
 extern double s_time;
 
-float View::AdjustThreadPosition( View::VisData& vis, float wy, int& offset )
-{
-    if( vis.offset < offset )
-    {
-        vis.offset = offset;
-    }
-    else if( vis.offset > offset )
-    {
-        const auto diff = vis.offset - offset;
-        const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
-        offset = vis.offset = int( std::max<double>( vis.offset - move, offset ) );
-    }
-
-    return offset + wy;
-}
-
-void View::AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
-{
-    const auto h = offset - oldOffset;
-    if( vis.height > h )
-    {
-        vis.height = h;
-        offset = oldOffset + vis.height;
-    }
-    else if( vis.height < h )
-    {
-        if( m_firstFrame )
-        {
-            vis.height = h;
-            offset = oldOffset + h;
-        }
-        else
-        {
-            const auto diff = h - vis.height;
-            const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
-            vis.height = int( std::min<double>( vis.height + move, h ) );
-            offset = oldOffset + vis.height;
-        }
-    }
-}
-
 void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
 {
     assert( timespan > 0 );
@@ -264,7 +223,7 @@ void View::DrawTimeline()
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
     {
-        if( Vis( fd ).visible )
+        if( m_tc.Vis( fd ).visible )
         {
             DrawTimelineFrames( *fd );
         }
@@ -310,7 +269,7 @@ void View::DrawTimeline()
         for( size_t i=0; i<m_worker.GetGpuData().size(); i++ )
         {
             const auto& v = m_worker.GetGpuData()[i];
-            auto& vis = Vis( v );
+            auto& vis = m_tc.Vis( v );
             if( !vis.visible )
             {
                 vis.height = 0;
@@ -320,7 +279,7 @@ void View::DrawTimeline()
             bool& showFull = vis.showFull;
             ImGui::PushID( &vis );
 
-            const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+            const auto yPos = m_tc.AdjustThreadPosition( vis, wpos.y, offset );
             const auto oldOffset = offset;
             ImGui::PushClipRect( wpos, wpos + ImVec2( w, oldOffset + vis.height ), true );
 
@@ -585,7 +544,7 @@ void View::DrawTimeline()
                 ImGui::EndPopup();
             }
 
-            AdjustThreadHeight( vis, oldOffset, offset );
+            m_tc.AdjustThreadHeight( vis, oldOffset, offset );
             ImGui::PopClipRect();
             ImGui::PopID();
         }
@@ -611,7 +570,7 @@ void View::DrawTimeline()
     LockHighlight nextLockHighlight { -1 };
     for( const auto& v : m_threadOrder )
     {
-        auto& vis = Vis( v );
+        auto& vis = m_tc.Vis( v );
         if( !vis.visible )
         {
             vis.height = 0;
@@ -621,7 +580,7 @@ void View::DrawTimeline()
         bool showFull = vis.showFull;
         ImGui::PushID( &vis );
 
-        const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+        const auto yPos = m_tc.AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
         ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
 
@@ -691,7 +650,7 @@ void View::DrawTimeline()
 
         if( !m_vd.drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
         {
-            auto& vis = Vis( v );
+            auto& vis = m_tc.Vis( v );
             vis.height = 0;
             vis.offset = 0;
             offset = oldOffset;
@@ -831,7 +790,7 @@ void View::DrawTimeline()
             float ghostSz;
             if( hasGhostZones && !v->timeline.empty() )
             {
-                auto& vis = Vis( v );
+                auto& vis = m_tc.Vis( v );
                 const auto color = vis.ghost ? 0xFFAA9999 : 0x88AA7777;
                 draw->AddText( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), color, ICON_FA_GHOST );
                 ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
@@ -845,7 +804,7 @@ void View::DrawTimeline()
                 {
                     if( IsMouseClicked( 0 ) )
                     {
-                        auto& vis = Vis( v );
+                        auto& vis = m_tc.Vis( v );
                         vis.ghost = !vis.ghost;
                     }
                 }
@@ -973,7 +932,7 @@ void View::DrawTimeline()
 
                     if( IsMouseClicked( 0 ) )
                     {
-                        Vis( v ).showFull = !showFull;
+                        m_tc.Vis( v ).showFull = !showFull;
                     }
                     if( last >= 0 && IsMouseClicked( 2 ) )
                     {
@@ -997,7 +956,7 @@ void View::DrawTimeline()
             ImGui::EndPopup();
         }
 
-        AdjustThreadHeight( Vis( v ), oldOffset, offset );
+        m_tc.AdjustThreadHeight( m_tc.Vis( v ), oldOffset, offset );
         ImGui::PopClipRect();
         ImGui::PopID();
     }

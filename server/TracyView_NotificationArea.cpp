@@ -189,7 +189,7 @@ void View::DrawNotificationArea()
     }
     {
         bool hidden = false;
-        for( auto& v : m_visData )
+        for( auto& v : m_tc.GetVisData() )
         {
             if( !v.second.visible )
             {

@@ -28,11 +28,11 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
     static int cpuDataVisStub;
-    auto& vis = Vis( &cpuDataVisStub );
+    auto& vis = m_tc.Vis( &cpuDataVisStub );
     bool& showFull = vis.showFull;
     ImGui::PushID( &vis );
 
-    const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+    const auto yPos = m_tc.AdjustThreadPosition( vis, wpos.y, offset );
     const auto oldOffset = offset;
     ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
     if( yPos + ty >= yMin && yPos <= yMax )
@@ -465,7 +465,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     }
 
     offset += ostep * 0.2f;
-    AdjustThreadHeight( vis, oldOffset, offset );
+    m_tc.AdjustThreadHeight( vis, oldOffset, offset );
     ImGui::PopClipRect();
     ImGui::PopID();
 

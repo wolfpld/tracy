@@ -838,7 +838,7 @@ bool View::DrawImpl()
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
     ImGui::SameLine();
     {
-        const auto vis = Vis( m_frames ).visible;
+        const auto vis = m_tc.Vis( m_frames ).visible;
         if( !vis )
         {
             ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
@@ -1085,6 +1085,7 @@ bool View::DrawImpl()
             if( std::chrono::duration_cast<std::chrono::milliseconds>( now - m_firstFrameTime ).count() > 500 )
             {
                 m_firstFrame = false;
+                m_tc.FirstFrameExpired();
             }
         }
     }

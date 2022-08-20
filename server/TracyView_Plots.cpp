@@ -89,7 +89,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
     for( const auto& v : m_worker.GetPlots() )
     {
-        auto& vis = Vis( v );
+        auto& vis = m_tc.Vis( v );
         if( !vis.visible )
         {
             vis.height = 0;
@@ -101,7 +101,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         ImGui::PushID( &vis );
 
         float txtx = 0;
-        const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+        const auto yPos = m_tc.AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
         ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
         if( yPos + ty >= yMin && yPos <= yMax )
@@ -426,7 +426,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         }
 
         offset += 0.2 * ty;
-        AdjustThreadHeight( vis, oldOffset, offset );
+        m_tc.AdjustThreadHeight( vis, oldOffset, offset );
         ImGui::PopClipRect();
         ImGui::PopID();
     }

@@ -362,7 +362,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     for( const auto& v : m_worker.GetLockMap() )
     {
         const auto& lockmap = *v.second;
-        if( !lockmap.valid || !Vis( &lockmap ).visible ) continue;
+        if( !lockmap.valid || !m_tc.Vis( &lockmap ).visible ) continue;
         if( m_vd.onlyContendedLocks && ( lockmap.threadList.size() == 1 || !lockmap.isContended ) && m_lockInfoWindow != v.first ) continue;
 
         auto it = lockmap.threadMap.find( tid );

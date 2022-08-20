@@ -80,15 +80,6 @@ class View
     };
 
 public:
-    struct VisData
-    {
-        bool visible = true;
-        bool showFull = true;
-        bool ghost = false;
-        int offset = 0;
-        int height = 0;
-    };
-
     struct PlotView
     {
         double min;
@@ -330,23 +321,12 @@ private:
     void SetPlaybackFrame( uint32_t idx );
     bool Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict );
 
-    unordered_flat_map<const void*, VisData> m_visData;
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;
     unordered_flat_map<const void*, int> m_gpuDrift;
     unordered_flat_map<const PlotData*, PlotView> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
     Vector<float> m_threadDnd;
-
-    tracy_force_inline VisData& Vis( const void* ptr )
-    {
-        auto it = m_visData.find( ptr );
-        if( it == m_visData.end() )
-        {
-            it = m_visData.emplace( ptr, VisData {} ).first;
-        }
-        return it->second;
-    }
 
     tracy_force_inline bool& VisibleMsgThread( uint64_t thread )
     {
@@ -378,8 +358,6 @@ private:
         return it->second;
     }
 
-    void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset );
-    float AdjustThreadPosition( View::VisData& vis, float wy, int& offset );
     static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift );
 
     static const char* DecodeContextSwitchState( uint8_t state );

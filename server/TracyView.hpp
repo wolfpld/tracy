@@ -1,6 +1,7 @@
 #ifndef __TRACYVIEW_HPP__
 #define __TRACYVIEW_HPP__
 
+#include <array>
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -152,6 +153,23 @@ private:
         Full,
         Active,
         Inactive
+    };
+
+    struct KeyboardNavigation {
+        enum Direction : uint8_t {
+            // Pan left / right
+            Left,
+            Right,
+            // Zoom in / out
+            In,
+            Out
+        };
+
+        constexpr static auto DirectionToKeyMap = std::array<int, 4>{ImGuiKey_A, ImGuiKey_D, ImGuiKey_W, ImGuiKey_S};
+        constexpr static auto StartRangeMod = std::array<int, 4>{-1, 1, 1, -1};
+        constexpr static auto EndRangeMod = std::array<int, 4>{-1, 1, -1, 1};
+
+        std::array<float, 4> m_scrollInertia;
     };
 
     struct ZoneColorData
@@ -397,6 +415,7 @@ private:
 
     ViewData m_vd;
     TimelineController m_tc;
+    KeyboardNavigation m_kbNavCtrl;
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;

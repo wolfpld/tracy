@@ -2135,13 +2135,13 @@ Use the \texttt{TRACY\_NO\_VSYNC\_CAPTURE} macro to disable capture of Vsync eve
 \subsection{Trace parameters}
 \label{traceparameters}
 
-Sometimes it is desired to change how the profiled application behaves during the profiling run. For example, you may want to enable or disable the capture of frame images without recompiling and restarting your program. To be able to do so you must register a callback function using the \texttt{TracyParameterRegister(callback)} macro, where \texttt{callback} is a function conforming to the following signature:
+Sometimes it is desired to change how the profiled application behaves during the profiling run. For example, you may want to enable or disable the capture of frame images without recompiling and restarting your program. To be able to do so you must register a callback function using the \texttt{TracyParameterRegister(callback, data)} macro, where \texttt{callback} is a function conforming to the following signature:
 
 \begin{lstlisting}
-void Callback(uint32_t idx, int32_t val)
+void Callback(void* data, uint32_t idx, int32_t val)
 \end{lstlisting}
 
-The \texttt{idx} argument is an user-defined parameter index and \texttt{val} is the value set in the profiler user interface.
+The \texttt{data} parameter will have the same value as was specified in the macro. The \texttt{idx} argument is an user-defined parameter index and \texttt{val} is the value set in the profiler user interface.
 
 To specify individual parameters, use the \texttt{TracyParameterSetup(idx, name, isBool, val)} macro. The \texttt{idx} value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to). \texttt{Name} is the parameter label,  displayed on the list of parameters. Finally, \texttt{isBool} determines if \texttt{val} should be interpreted as a boolean value, or as an integer number.
 

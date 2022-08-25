@@ -149,7 +149,7 @@ struct LuaZoneState
 #endif
 
 
-typedef void(*ParameterCallback)( uint32_t idx, int32_t val );
+typedef void(*ParameterCallback)( void* data, uint32_t idx, int32_t val );
 typedef char*(*SourceContentsCallback)( void* data, const char* filename, size_t& size );
 
 class Profiler
@@ -619,7 +619,13 @@ public:
 #endif
     }
 
-    static tracy_force_inline void ParameterRegister( ParameterCallback cb ) { GetProfiler().m_paramCallback = cb; }
+    static tracy_force_inline void ParameterRegister( ParameterCallback cb, void* data )
+    {
+        auto& profiler = GetProfiler();
+        profiler.m_paramCallback = cb;
+        profiler.m_paramCallbackData = data;
+    }
+
     static tracy_force_inline void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
     {
         TracyLfqPrepare( QueueType::ParamSetup );
@@ -936,6 +942,7 @@ private:
 #endif
 
     ParameterCallback m_paramCallback;
+    void* m_paramCallbackData;
     SourceContentsCallback m_sourceCallback;
     void* m_sourceCallbackData;
 

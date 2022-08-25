@@ -3796,7 +3796,7 @@ void Profiler::HandleParameter( uint64_t payload )
     assert( m_paramCallback );
     const auto idx = uint32_t( payload >> 32 );
     const auto val = int32_t( payload & 0xFFFFFFFF );
-    m_paramCallback( idx, val );
+    m_paramCallback( m_paramCallbackData, idx, val );
     AckServerQuery();
 }
 

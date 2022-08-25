@@ -21,6 +21,8 @@ v0.x.x (xxxx-xx-xx)
 - Tracy macros now require to be terminated with a semicolon.
 - The undocumented ___tracy_demangle() function API has been changed. Please
   refer to the source code for further instructions.
+- The parameter callback and its registration macro have been extended to
+  include user data pointer. You will need to update your code accordingly.
 - Plots visualization has been improved.
   - Each plot now has its own color, which can also be defined by the user.
   - The area below the plot is now optionally filled with a color.

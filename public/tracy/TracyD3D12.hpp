@@ -179,9 +179,9 @@ namespace tracy
 
 		void NewFrame()
 		{
-			m_payloadQueue.emplace(D3D12QueryPayload{ m_previousQueryCounter, m_queryCounter });
-			m_previousQueryCounter += m_queryCounter.load(std::memory_order::memory_order_acquire);
-			m_queryCounter = 0;
+			uint32_t queryCounter = m_queryCounter.exchange(0);
+			m_payloadQueue.emplace(D3D12QueryPayload{ m_previousQueryCounter, queryCounter });
+			m_previousQueryCounter += queryCounter;
 
 			if (m_previousQueryCounter >= m_queryLimit)
 			{
@@ -297,10 +297,10 @@ namespace tracy
 	private:
 		tracy_force_inline uint32_t NextQueryId()
 		{
-			uint32_t localQueryCounter = m_queryCounter.fetch_add(2);
-			assert(localQueryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
+			uint32_t queryCounter = m_queryCounter.fetch_add(2);
+			assert(queryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
 
-			const uint32_t id = (m_previousQueryCounter + localQueryCounter) % m_queryLimit;
+			const uint32_t id = (m_previousQueryCounter + queryCounter) % m_queryLimit;
 
 			return id;
 		}

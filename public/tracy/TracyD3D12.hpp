@@ -69,7 +69,7 @@ namespace tracy
 
 		// In-progress payload.
 		uint32_t m_queryLimit = MaxQueries;
-		uint32_t m_queryCounter = 0;
+		std::atomic<uint32_t> m_queryCounter = 0;
 		uint32_t m_previousQueryCounter = 0;
 
 		uint32_t m_activePayload = 0;
@@ -180,7 +180,7 @@ namespace tracy
 		void NewFrame()
 		{
 			m_payloadQueue.emplace(D3D12QueryPayload{ m_previousQueryCounter, m_queryCounter });
-			m_previousQueryCounter += m_queryCounter;
+			m_previousQueryCounter += m_queryCounter.load(std::memory_order::memory_order_acquire);
 			m_queryCounter = 0;
 
 			if (m_previousQueryCounter >= m_queryLimit)
@@ -297,10 +297,10 @@ namespace tracy
 	private:
 		tracy_force_inline uint32_t NextQueryId()
 		{
-			assert(m_queryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
+			uint32_t localQueryCounter = m_queryCounter.fetch_add(2);
+			assert(localQueryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
 
-			const uint32_t id = (m_previousQueryCounter + m_queryCounter) % m_queryLimit;
-			m_queryCounter += 2;  // Allocate space for a begin and end query.
+			const uint32_t id = (m_previousQueryCounter + localQueryCounter) % m_queryLimit;
 
 			return id;
 		}

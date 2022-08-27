@@ -236,6 +236,7 @@
     <ClInclude Include="..\..\..\public\common\TracyStackFrames.hpp" />
     <ClInclude Include="..\..\..\public\common\TracySystem.hpp" />
     <ClInclude Include="..\..\..\public\common\TracyUwp.hpp" />
+    <ClInclude Include="..\..\..\public\common\TracyVersion.hpp" />
     <ClInclude Include="..\..\..\public\common\TracyYield.hpp" />
     <ClInclude Include="..\..\..\public\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\public\common\tracy_lz4hc.hpp" />
@@ -276,7 +277,6 @@
     <ClInclude Include="..\..\..\server\TracyUtility.hpp" />
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp" />
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
-    <ClInclude Include="..\..\..\server\TracyVersion.hpp" />
     <ClInclude Include="..\..\..\server\TracyView.hpp" />
     <ClInclude Include="..\..\..\server\TracyViewData.hpp" />
     <ClInclude Include="..\..\..\server\TracyWeb.hpp" />

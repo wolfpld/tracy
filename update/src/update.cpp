@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../../public/common/TracyVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyPrint.hpp"
-#include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../zstd/zstd.h"
 #include "../../getopt/getopt.h"

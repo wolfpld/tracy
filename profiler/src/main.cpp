@@ -30,6 +30,7 @@
 #include "stb_image_resize.h"
 
 #include "../../public/common/TracyProtocol.hpp"
+#include "../../public/common/TracyVersion.hpp"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyBadVersion.hpp"
@@ -41,11 +42,9 @@
 #include "../../server/TracyProtoHistory.hpp"
 #include "../../server/TracyStorage.hpp"
 #include "../../server/TracyTexture.hpp"
-#include "../../server/TracyVersion.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWeb.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "../../server/TracyVersion.hpp"
 #include "../../server/IconsFontAwesome6.h"
 
 #include "icon.hpp"

@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include "../server/TracyFileRead.hpp"
-#include "../server/TracyVersion.hpp"
+#include "../public/common/TracyVersion.hpp"
 
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch };
 enum { FileHeaderMagic = 5 };

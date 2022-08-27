@@ -404,9 +404,6 @@
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\server\TracyVersion.hpp">
-      <Filter>server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\server\TracyStringDiscovery.hpp">
       <Filter>server</Filter>
     </ClInclude>
@@ -724,6 +721,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\IconsFontAwesome6.h">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\public\common\TracyVersion.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

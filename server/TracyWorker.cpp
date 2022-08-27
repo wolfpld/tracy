@@ -28,11 +28,11 @@
 #include "../public/common/TracySystem.hpp"
 #include "../public/common/TracyYield.hpp"
 #include "../public/common/TracyStackFrames.hpp"
+#include "../public/common/TracyVersion.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"
 #include "TracyTaskDispatch.hpp"
-#include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
 
 namespace tracy

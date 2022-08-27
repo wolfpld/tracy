@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "../server/TracyFileHeader.hpp"
-#include "../server/TracyVersion.hpp"
+#include "../public/common/TracyVersion.hpp"
 
 int main()
 {

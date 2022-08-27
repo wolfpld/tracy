@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "../public/common/TracySocket.hpp"
-#include "../server/TracyVersion.hpp"
+#include "../public/common/TracyVersion.hpp"
 #include "HttpRequest.hpp"
 
 #if defined _WIN32

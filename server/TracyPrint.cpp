@@ -117,7 +117,15 @@ static inline void PrintSmallIntFrac( char*& buf, uint64_t v )
     uint64_t fr = v % 1000;
     if( fr >= 995 )
     {
-        PrintSmallInt( buf, in+1 );
+        if( in < 999 )
+        {
+            PrintSmallInt( buf, in+1 );
+        }
+        else
+        {
+            memcpy( buf, "1000", 4 );
+            buf += 4;
+        }
     }
     else
     {

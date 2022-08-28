@@ -153,6 +153,78 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, d
         }
         ZoomToRange( t0, t1, !m_worker.IsConnected() || m_viewMode == ViewMode::Paused );
     }
+
+    int64_t nextTimelineRangeStart, nextTimelineRangeEnd;
+    bool anyDeltaApplied = false;
+    if ( m_zoomAnim.active )
+    {
+        nextTimelineRangeStart = m_zoomAnim.start1;
+        nextTimelineRangeEnd = m_zoomAnim.end1;
+    }
+    else
+    {
+        nextTimelineRangeStart = m_vd.zvStart;
+        nextTimelineRangeEnd = m_vd.zvEnd;
+    }
+
+    const auto bias = (io.MousePos.x - wpos.x) / w;
+    const auto span = nextTimelineRangeEnd - nextTimelineRangeStart;
+    // Move at a rate of 1/10th the length of the timeline per second, with a minimum of 500ns
+    const auto moveInTimelineNanos = std::max<int64_t>( span / 10, 500 );
+    const auto movement = moveInTimelineNanos * std::max( std::min( io.DeltaTime, 0.25f ), 0.016f );
+
+    for (int direction = 0; direction < 4; direction++)
+    {
+        auto& inertia = m_kbNavCtrl.m_scrollInertia[direction];
+
+        if ( ImGui::IsKeyDown( KeyboardNavigation::DirectionToKeyMap[direction] ) )
+        {
+            const auto timeStartDelta = movement * KeyboardNavigation::StartRangeMod[direction];
+            const auto timeEndDelta = movement * KeyboardNavigation::EndRangeMod[direction];
+
+            // This part is completely arbitrary, designed to work in the range ~ 0 -> 15
+            const auto x = inertia / 10.0f;
+            const auto mult = 1 + std::max( 0.0, 0.7 * std::pow( x, 1.6 ) - 0.8 * std::pow( x, 1.4 ) );
+
+            // If we are zooming in/out
+            if ( direction > KeyboardNavigation::Right )
+            {
+                // Bias if equal is 0.5. Multiply by 2 to offset back to the expected movement range.
+                nextTimelineRangeStart += timeStartDelta * mult * 2 * bias;
+                nextTimelineRangeEnd += timeEndDelta * mult * 2 * (1 - bias);
+            }
+            else
+            {
+                nextTimelineRangeStart += timeStartDelta * mult;
+                nextTimelineRangeEnd += timeEndDelta * mult;
+            }
+
+            inertia = std::min( 150.0f, inertia + 1 );
+            anyDeltaApplied = true;
+        }
+        else
+        {
+            inertia = std::max( 0.0f, inertia - 1 );
+        }
+    }
+
+    if ( anyDeltaApplied )
+    {
+        if( m_viewMode == ViewMode::LastFrames ) m_viewMode = ViewMode::LastRange;
+        if ( nextTimelineRangeStart > nextTimelineRangeEnd ) return;
+
+        // We want to cap the zoom at the range of values that the timeline has data for
+        const auto lastKnownTime = m_worker.GetLastTime();
+
+        // Bring into the range 0 -> lastKnownTime - 50 (must
+
+        nextTimelineRangeStart = std::max<int64_t>( std::min( nextTimelineRangeStart, lastKnownTime - 50 ), 0 );
+        nextTimelineRangeEnd = std::max<int64_t>( std::min( nextTimelineRangeEnd, lastKnownTime ), 1 );
+
+        if ( nextTimelineRangeEnd - nextTimelineRangeStart <= 50 ) return;
+        const auto shouldPause = m_viewMode == ViewMode::Paused || !m_worker.IsConnected();
+        ZoomToRange( nextTimelineRangeStart, nextTimelineRangeEnd, shouldPause );
+    }
 }
 
 

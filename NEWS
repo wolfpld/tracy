@@ -72,6 +72,10 @@ v0.x.x (xxxx-xx-xx)
 - Added context menu for timeline labels. Currently the only option is to hide
   the selected thread, plot, etc.
 - You can now provide custom source file contents through a profiler callback.
+- Exposed Tracy version to client applications (available through the
+  common/TracyVersion.hpp header file).
+- D3D12 instrumentation is now thread-safe.
+- Timeline can be now navigated with WASD keys.
 
 
 v0.8.2 (2022-06-28)

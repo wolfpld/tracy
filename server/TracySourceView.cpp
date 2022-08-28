@@ -3293,7 +3293,10 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         if( !mouseHandled && ( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) ) )
         {
             m_displayMode = DisplayMixed;
-            SelectLine( lineNum, worker, ImGui::IsMouseClicked( 1 ) );
+            auto targetAddresses = worker->GetAddressesForLocation( m_source.idx(), lineNum );
+            auto hasTarget = targetAddresses && !targetAddresses->empty();
+            auto midAddress = hasTarget ? targetAddresses->operator[]( targetAddresses->size() / 2 ) : 0;
+            SelectLine( lineNum, worker, ImGui::IsMouseClicked( 1 ), midAddress );
         }
         else
         {

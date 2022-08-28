@@ -146,8 +146,10 @@ private:
         Inactive
     };
 
-    struct KeyboardNavigation {
-        enum Direction : uint8_t {
+    struct KeyboardNavigation
+    {
+        enum Direction
+        {
             // Pan left / right
             Left,
             Right,
@@ -156,9 +158,9 @@ private:
             Out
         };
 
-        constexpr static auto DirectionToKeyMap = std::array<int, 4>{ImGuiKey_A, ImGuiKey_D, ImGuiKey_W, ImGuiKey_S};
-        constexpr static auto StartRangeMod = std::array<int, 4>{-1, 1, 1, -1};
-        constexpr static auto EndRangeMod = std::array<int, 4>{-1, 1, -1, 1};
+        constexpr static auto DirectionToKeyMap = std::array<int, 4> { ImGuiKey_A, ImGuiKey_D, ImGuiKey_W, ImGuiKey_S };
+        constexpr static auto StartRangeMod = std::array<int, 4> { -1, 1, 1, -1 };
+        constexpr static auto EndRangeMod = std::array<int, 4> { -1, 1, -1, 1 };
 
         std::array<float, 4> m_scrollInertia;
     };

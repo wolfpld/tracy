@@ -75,6 +75,50 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
 }
 }
 
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetAsmRegs()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+
+    for( auto& v : {
+            // X86
+            "invalid", "rflags", "rip",
+            "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+            "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp",
+             "ax",  "bx",  "cx",  "dx",  "si",  "di",  "bp",  "sp",
+             "ah",  "bh",  "ch",  "dh",  "SIL", "DIL", "BPL", "SPL",
+             "al",  "bl",  "cl",  "dl",
+            "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7",
+            "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "xmm8", "xmm9",
+            "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15", "xmm16", "xmm17", "xmm18", "xmm19",
+            "xmm20", "xmm21", "xmm22", "xmm23", "xmm24", "xmm25", "xmm26", "xmm27", "xmm28", "xmm29",
+            "xmm30", "xmm31", "k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7",
+
+            // ARM
+            "apsr", "apsr_nzcv", "cpsr", "fpexc", "fpinst", "fpscr", "fpscr_nzcv", "fpsid", "itstate",
+            "lr", "pc", "sp", "spsr", "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
+            "d11", "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19", "d20", "d21", "d22", "d23",
+            "d24", "d25", "d26", "d27", "d28", "d29", "d30", "d31", "fpinst2", "mvfr0", "mvfr1", "mvfr2",
+            "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14",
+            "q15", "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "s0",
+            "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
+            "s16", "s17", "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29",
+            "s30", "s31" })
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
+
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetAsmSizeDirectives()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+    for( auto& v : { "byte", "word", "dword", "qword", "xmmword", "ymmword" })
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
+
 Tokenizer::Tokenizer()
     : m_isInComment( false )
     , m_isInPreprocessor( false )
@@ -309,6 +353,66 @@ out:
     if( begin != tmp ) return TokenColor::Punctuation;
     begin = end;
     return TokenColor::Default;
+}
+    // Assembly
+Tokenizer::AsmOperand Tokenizer::TokenizeAsmOperand( const char assemblyText[160] ) {
+    static const auto s_regs = GetAsmRegs();
+    static const auto s_sizes = GetAsmSizeDirectives();
+
+    Tokenizer::AsmOperand operandString;
+    operandString.string = assemblyText;
+
+    uint8_t idx = 0;
+    char buf[160];
+
+    auto charAt = [&](int idx) -> char {
+        return idx < operandString.string.size() ? operandString.string.at( idx ) : 0;
+    };
+    auto putIntoBuf = [&](uint8_t beginIdx, uint8_t endIdx) -> void {
+        memcpy( buf, operandString.string.data() + beginIdx, endIdx - beginIdx );
+        buf[endIdx - beginIdx] = '\0';
+    };
+
+    while ( charAt( idx ) != 0 ) {
+        const auto beginIdx = idx;
+        const auto curChar = charAt(idx);
+        idx++;
+        // Lexeme, could be a register, directive or a `nop` operand
+        if( std::isalpha( curChar ) ) {
+            while( std::isalpha( charAt( idx ) ) || std::isdigit( charAt( idx ) ) ) {
+                idx++;
+            }
+
+            putIntoBuf( beginIdx, idx );
+
+            if( s_regs.find( buf ) != s_regs.end() ) {
+                operandString.tokens.emplace_back( AsmToken{ beginIdx, idx, AsmTokenColor::Register } );
+            } else if ( s_sizes.find( buf ) != s_sizes.end() ) {
+                if (operandString.string.substr( idx, 4 ) == " ptr") {
+                    idx += 4;
+                }
+
+                operandString.tokens.emplace_back( AsmToken{ beginIdx, idx, AsmTokenColor::SizeDirective } );
+            } else {
+                // specialized NOP's can reach here.
+                operandString.tokens.emplace_back( AsmToken{ beginIdx, idx, AsmTokenColor::Default } );
+            }
+        } else if( std::isdigit( curChar ) ){
+            while( std::isalpha( charAt( idx ) ) || std::isdigit( charAt( idx ) ) ) {
+                idx++;
+            }
+
+            operandString.tokens.emplace_back( AsmToken{ beginIdx, idx, AsmTokenColor::Literal } );
+        } else {
+            // is space, or isn't a digit or alpha numerical num
+            while ( charAt( idx ) != 0 && (std::isspace( charAt( idx ) ) || !(std::isdigit( charAt( idx ) ) || std::isalpha( charAt( idx) ) ))) {
+                idx++;
+            }
+            operandString.tokens.emplace_back( AsmToken{ beginIdx, idx, AsmTokenColor::Default } );
+        }
+    }
+
+    return operandString;
 }
 
 }

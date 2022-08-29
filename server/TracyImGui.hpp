@@ -53,6 +53,24 @@ static constexpr const ImVec4 SyntaxColorsDimmed[] = {
     { 0.21f, 0.69f, 0.89f, 0.6f },    // special
 };
 
+static constexpr const ImVec4 AsmSyntaxColors[] = {
+        { 0.25f, 0.52f, 0.96f, 1 },    // mnemonic
+        { 0.64f, 0.82f, 1,     1 },    // label
+        { 0.7f,  0.7f,  0.7f,  1 },    // default ('[', '+', '*', ',')
+        { 0.25f, 0.74f, 0.38f, 1 },    // dword/xmmword 'ptr'
+        { 0.78f, 0.46f, 0.75f, 1 },    // register
+        { 0.81f, 0.6f,  0.91f, 1 },    // literal
+};
+
+static constexpr const ImVec4 AsmSyntaxColorsDimmed[] = {
+        { 0.25f, 0.52f, 0.96f, 0.6f },    // mnemonic
+        { 0.64f, 0.82f, 1,     0.6f },    // label
+        { 0.7f,  0.7f,  0.7f,  0.6f },    // default ('[', '+', '*', ',')
+        { 0.25f, 0.74f, 0.38f, 0.6f },    // dword/xmmword 'ptr'
+        { 0.78f, 0.46f, 0.75f, 0.6f  },    // register
+        { 0.81f, 0.6f,  0.91f, 0.6f },    // literal
+};
+
 
 [[maybe_unused]] static inline float GetScale()
 {

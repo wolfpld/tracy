@@ -82,7 +82,7 @@ private:
         uint64_t addr;
         uint64_t jumpAddr;
         std::string mnemonic;
-        std::string operands;
+        Tokenizer::AsmOperand operands;
         uint8_t len;
         LeaData leaData;
         bool jumpConditional;

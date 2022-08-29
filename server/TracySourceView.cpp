@@ -4,6 +4,7 @@
 
 #include <capstone.h>
 
+#include "TracySourceTokenizer.hpp"
 #include "imgui.h"
 #include "TracyCharUtil.hpp"
 #include "TracyColor.hpp"
@@ -875,7 +876,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     }
                 }
             }
-            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, jumpConditional, std::move( params ) } );
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, m_tokenizer.TokenizeAsmOperand( op.op_str ), (uint8_t)op.size, leaData, jumpConditional, std::move( params ) } );
 
 #if CS_API_MAJOR >= 4
             auto& entry = m_asm.back();
@@ -906,7 +907,6 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 break;
             }
 #endif
-
             const auto mLen = (int)strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
             if( op.size > bytesMax ) bytesMax = op.size;
@@ -3843,68 +3843,53 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     memcpy( buf, line.mnemonic.c_str(), msz );
     memset( buf+msz, ' ', m_maxMnemonicLen-msz );
     bool hasJump = false;
+    int jumpLabel = 0;
     if( line.jumpAddr != 0 )
     {
         auto lit = m_locMap.find( line.jumpAddr );
         if( lit != m_locMap.end() )
         {
+            jumpLabel = lit->second;
             char tmp[64];
-            sprintf( tmp, ".L%" PRIu32, lit->second );
+            sprintf( tmp, ".L%" PRIu32, jumpLabel );
             strcpy( buf+m_maxMnemonicLen, tmp );
             hasJump = true;
         }
     }
     if( !hasJump )
     {
-        memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
+        memcpy( buf+m_maxMnemonicLen, line.operands.string.c_str(), line.operands.string.size() + 1 );
     }
 
     const bool isInContext = IsInContext( worker, line.addr );
-    if( asmIdx == m_asmSelected )
-    {
-        TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, isInContext ? 1.f : 0.5f ), buf );
+    const auto selected = m_asmSelected == asmIdx;
+    auto transitiveDependency = false;
+    for(int i = 0; line.regData[i] != 0; i++) {
+        transitiveDependency |= line.regData[i] & ( WriteBit | ReadBit );
     }
-    else if( line.regData[0] != 0 )
-    {
-        bool hasDepencency = false;
-        int idx = 0;
-        for(;;)
-        {
-            if( line.regData[idx] == 0 ) break;
-            if( line.regData[idx] & ( WriteBit | ReadBit ) )
-            {
-                hasDepencency = true;
-                break;
-            }
-            idx++;
-        }
-        if( hasDepencency )
-        {
-            TextColoredUnformatted( ImVec4( 1, 0.5f, 1, isInContext ? 1.f : 0.5f ), buf );
-        }
-        else
-        {
-            if( isInContext )
-            {
-                ImGui::TextUnformatted( buf );
-            }
-            else
-            {
-                TextDisabledUnformatted( buf );
-            }
+
+    const auto shouldFocus = (isInContext && m_asmSelected == -1) || selected || transitiveDependency;
+    const auto& colorPalette = shouldFocus ? AsmSyntaxColors : AsmSyntaxColorsDimmed;
+
+    ImGui::BeginGroup();
+    TextColoredUnformatted( colorPalette[(int)Tokenizer::AsmTokenColor::Mnemonic], buf, buf + m_maxMnemonicLen );
+
+    if ( hasJump ) {
+        char tmp[64];
+        sprintf( tmp, ".L%" PRIu32, jumpLabel );
+
+        ImGui::SameLine();
+        TextColoredUnformatted( colorPalette[(int)Tokenizer::AsmTokenColor::Label], tmp );
+    } else {
+        for (const auto& token : line.operands.tokens) {
+            auto* begin = line.operands.string.c_str() + token.beginIdx;
+            auto* end = line.operands.string.c_str() + token.endIdx;
+            ImGui::SameLine();
+            TextColoredUnformatted( colorPalette[(int)token.color], begin, end );
         }
     }
-    else
-    {
-        if( isInContext )
-        {
-            ImGui::TextUnformatted( buf );
-        }
-        else
-        {
-            TextDisabledUnformatted( buf );
-        }
-    }
+    ImGui::EndGroup();
+
 
     uint32_t jumpOffset;
     uint64_t jumpBase;
@@ -5286,13 +5271,13 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
                 }
                 if( !hasJump )
                 {
-                    if( v.operands.empty() )
+                    if( v.operands.string.empty() )
                     {
                         fprintf( f, "\t%s\n", v.mnemonic.c_str() );
                     }
                     else
                     {
-                        fprintf( f, "\t%-*s%s\n", m_maxMnemonicLen, v.mnemonic.c_str(), v.operands.c_str() );
+                        fprintf( f, "\t%-*s%s\n", m_maxMnemonicLen, v.mnemonic.c_str(), v.operands.string.c_str() );
                     }
                 }
             }

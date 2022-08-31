@@ -2,11 +2,19 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Tracy LANGUAGES CXX)
 
+option(TRACY_STATIC "Whether to build Tracy as a static library" NOT ${BUILD_SHARED_LIBS})
+
 find_package(Threads REQUIRED)
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
-add_library(TracyClient "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
+if(TRACY_STATIC)
+	set(TRACY_VISIBILITY "STATIC")
+else()
+	set(TRACY_VISIBILITY "SHARED")
+endif()
+
+add_library(TracyClient ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
 target_compile_features(TracyClient PUBLIC cxx_std_11)
 target_include_directories(TracyClient SYSTEM PUBLIC
     $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>
@@ -62,7 +70,7 @@ set_option(TRACY_FIBERS "Enable fibers support" OFF)
 set_option(TRACY_NO_CRASH_HANDLER "Disable crash handling" OFF)
 set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 
-if(BUILD_SHARED_LIBS)
+if(NOT TRACY_STATIC)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)
     target_compile_definitions(TracyClient PUBLIC TRACY_IMPORTS)
 endif()

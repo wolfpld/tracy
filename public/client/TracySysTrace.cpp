@@ -609,7 +609,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
 #    include <sys/syscall.h>
 
 #    if defined __i386 || defined __x86_64__
-#      include <cpuid.h>
+#      include "TracyCpuid.hpp"
 #    endif
 
 #    include "TracyProfiler.hpp"

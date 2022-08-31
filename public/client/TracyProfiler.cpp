@@ -106,7 +106,7 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 #endif
 
 #if !defined _WIN32 && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-#  include <cpuid.h>
+#  include "TracyCpuid.hpp"
 #endif
 
 #if !( ( defined _WIN32 && _WIN32_WINNT >= _WIN32_WINNT_VISTA ) || defined __linux__ )

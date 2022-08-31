@@ -6,7 +6,7 @@ find_package(Threads REQUIRED)
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
-add_library(TracyClient public/TracyClient.cpp)
+add_library(TracyClient "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
 target_compile_features(TracyClient PUBLIC cxx_std_11)
 target_include_directories(TracyClient SYSTEM PUBLIC
     $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>

@@ -429,7 +429,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     {
         // There is no specific chrome-tracing type for frame events. We use messages that contain the word "frame"
         std::string lower(v.message);
-        std::transform(lower.begin(), lower.end(), lower.begin(), std::tolower);
+        std::transform(lower.begin(), lower.end(), lower.begin(), [](char c) { return char(std::tolower(c)); });
         if (lower.find("frame") != std::string::npos)
         {
             // Reserve 0 as the default FrameSet, since it replaces the name with "Frame" and we want to keep our custom names.

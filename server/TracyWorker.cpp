@@ -423,21 +423,46 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         }
     }
 
+    std::unordered_map<std::string, uint64_t> frameNames;
+
     for( auto& v : messages )
     {
-        auto msg = m_slab.Alloc<MessageData>();
-        msg->time = v.timestamp;
-        msg->ref = StringRef( StringRef::Type::Idx, StoreString( v.message.c_str(), v.message.size() ).idx );
-        msg->thread = CompressThread( v.tid );
-        msg->color = 0xFFFFFFFF;
-        msg->callstack.SetVal( 0 );
-
-        if( m_threadCtx != v.tid )
+        // There is no specific chrome-tracing type for frame events. We use messages that contain the word "frame"
+        std::string lower(v.message);
+        std::transform(lower.begin(), lower.end(), lower.begin(), std::tolower);
+        if (lower.find("frame") != std::string::npos)
         {
-            m_threadCtx = v.tid;
-            m_threadCtxData = nullptr;
+            // Reserve 0 as the default FrameSet, since it replaces the name with "Frame" and we want to keep our custom names.
+            auto result = frameNames.emplace(v.message, frameNames.size() + 1);
+            auto fd = m_data.frames.Retrieve(result.first->second, [&](uint64_t name) {
+                auto fd = m_slab.AllocInit<FrameData>();
+                fd->name = name;
+                fd->continuous = 1;
+                return fd;
+            }, [&] (uint64_t name) {
+                HandleFrameName( name, v.message.c_str(), v.message.length() );
+            });
+
+            int64_t time = v.timestamp;
+            fd->frames.push_back(FrameEvent{ time, -1, -1 });
+            if (m_data.lastTime < time) m_data.lastTime = time;
         }
-        InsertMessageData( msg );
+        else
+        {
+            auto msg = m_slab.Alloc<MessageData>();
+            msg->time = v.timestamp;
+            msg->ref = StringRef( StringRef::Type::Idx, StoreString( v.message.c_str(), v.message.size() ).idx );
+            msg->thread = CompressThread( v.tid );
+            msg->color = 0xFFFFFFFF;
+            msg->callstack.SetVal( 0 );
+
+            if( m_threadCtx != v.tid )
+            {
+                m_threadCtx = v.tid;
+                m_threadCtxData = nullptr;
+            }
+            InsertMessageData( msg );
+        }
     }
 
     for( auto& v : plots )
@@ -512,19 +537,23 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
         }
     }
 
-    m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
-        auto fd = m_slab.AllocInit<FrameData>();
-        fd->name = name;
-        fd->continuous = 1;
-        return fd;
-    }, [this] ( uint64_t name ) {
-        assert( name == 0 );
-        char tmp[6] = "Frame";
-        HandleFrameName( name, tmp, 5 );
-    } );
+    // Add a default frame if we didn't have any framesets
+    if (frameNames.empty())
+    {
+        m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
+            auto fd = m_slab.AllocInit<FrameData>();
+            fd->name = name;
+            fd->continuous = 1;
+            return fd;
+        }, [this] ( uint64_t name ) {
+            assert( name == 0 );
+            char tmp[6] = "Frame";
+            HandleFrameName( name, tmp, 5 );
+        } );
 
-    m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
-    m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
+    }
 }
 
 Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )

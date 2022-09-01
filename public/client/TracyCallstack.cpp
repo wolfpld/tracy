@@ -894,7 +894,8 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, con
     }
     else
     {
-        sym.file = CopyString( fn );
+        sym.file = NormalizePath( fn );
+        if( !sym.file ) sym.file = CopyString( fn );
         sym.line = lineno;
         sym.needFree = true;
     }
@@ -934,7 +935,8 @@ static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* 
     }
 
     auto& sym = *(CallstackSymbolData*)data;
-    sym.file = CopyString( fn );
+    sym.file = NormalizePath( fn );
+    if( !sym.file ) sym.file = CopyString( fn );
     sym.line = lineno;
     sym.needFree = true;
     sym.symAddr = lowaddr;
@@ -1009,7 +1011,8 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
 
         const auto len = std::min<size_t>( strlen( function ), std::numeric_limits<uint16_t>::max() );
         cb_data[cb_num].name = CopyStringFast( function, len );
-        cb_data[cb_num].file = CopyStringFast( fn );
+        cb_data[cb_num].file = NormalizePath( fn );
+        if( !cb_data[cb_num].file ) cb_data[cb_num].file = CopyStringFast( fn );
         cb_data[cb_num].line = lineno;
     }
 

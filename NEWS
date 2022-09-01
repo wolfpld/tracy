@@ -76,6 +76,10 @@ v0.x.x (xxxx-xx-xx)
   common/TracyVersion.hpp header file).
 - D3D12 instrumentation is now thread-safe.
 - Timeline can be now navigated with WASD keys.
+- Symbol file paths are now normalized on libbacktrace systems. For example,
+  instead of "/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/12.2.0/../../../../
+  include/c++/12.2.0/bits/std_mutex.h" Tracy will now report such file as
+  "/usr/include/c++/12.2.0/bits/std_mutex.h".
 
 
 v0.8.2 (2022-06-28)

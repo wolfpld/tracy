@@ -30,6 +30,13 @@ using json = nlohmann::json;
 void Usage()
 {
     printf( "Usage: import-chrome input.json output.tracy\n\n" );
+    printf( "The following chrome-tracing phases are supported:\n\n" );
+    printf( "  b/B/e/E - Timeline events such as ZoneNamed\n" );
+    printf( "  X - Timeline events such as ZoneNamed\n" );
+    printf( "  i/I - Message events such as TracyMessage\n" );
+    printf( "    * Messages containing the word \"frame\" are interpreted as frame events such as FrameMarkNamed\n" );
+    printf( "  C - Plot events such as TracyPlot\n" );
+    printf( "  M - Metadata of type \"thread_name\" is used to name threads\n" );
     exit( 1 );
 }
 

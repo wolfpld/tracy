@@ -535,8 +535,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
-    m_data.callstackPayload.push_back( nullptr );
-
     int fileVer = 0;
 
     uint8_t hdr[8];
@@ -1344,7 +1342,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::CallStacks, std::memory_order_relaxed );
     f.Read( sz );
-    m_data.callstackPayload.reserve( sz );
+    m_data.callstackPayload.reserve_exact( sz+1, m_slab );
+    m_data.callstackPayload[0] = nullptr;
     for( uint64_t i=0; i<sz; i++ )
     {
         uint16_t csz;
@@ -1359,7 +1358,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         auto arr = (VarArray<CallstackFrameId>*)( mem + csz * sizeof( CallstackFrameId ) );
         new(arr) VarArray<CallstackFrameId>( csz, data );
 
-        m_data.callstackPayload.push_back_no_space_check( arr );
+        m_data.callstackPayload[i+1] = arr;
     }
 
     f.Read( sz );

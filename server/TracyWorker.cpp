@@ -538,7 +538,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     }
 
     // Add a default frame if we didn't have any framesets
-    if (frameNames.empty())
+    if( frameNames.empty() )
     {
         m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
             auto fd = m_slab.AllocInit<FrameData>();

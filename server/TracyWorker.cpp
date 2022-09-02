@@ -428,24 +428,24 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     for( auto& v : messages )
     {
         // There is no specific chrome-tracing type for frame events. We use messages that contain the word "frame"
-        std::string lower(v.message);
-        std::transform(lower.begin(), lower.end(), lower.begin(), [](char c) { return char(std::tolower(c)); });
-        if (lower.find("frame") != std::string::npos)
+        std::string lower( v.message );
+        std::transform( lower.begin(), lower.end(), lower.begin(), []( char c ) { return char( std::tolower( c ) ); } );
+        if( lower.find( "frame" ) != std::string::npos )
         {
             // Reserve 0 as the default FrameSet, since it replaces the name with "Frame" and we want to keep our custom names.
-            auto result = frameNames.emplace(v.message, frameNames.size() + 1);
-            auto fd = m_data.frames.Retrieve(result.first->second, [&](uint64_t name) {
+            auto result = frameNames.emplace( v.message, frameNames.size() + 1 );
+            auto fd = m_data.frames.Retrieve( result.first->second, [&] ( uint64_t name ) {
                 auto fd = m_slab.AllocInit<FrameData>();
                 fd->name = name;
                 fd->continuous = 1;
                 return fd;
-            }, [&] (uint64_t name) {
+            }, [&] ( uint64_t name ) {
                 HandleFrameName( name, v.message.c_str(), v.message.length() );
             });
 
             int64_t time = v.timestamp;
-            fd->frames.push_back(FrameEvent{ time, -1, -1 });
-            if (m_data.lastTime < time) m_data.lastTime = time;
+            fd->frames.push_back( FrameEvent{ time, -1, -1 } );
+            if ( m_data.lastTime < time ) m_data.lastTime = time;
         }
         else
         {

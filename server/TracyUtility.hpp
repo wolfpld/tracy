@@ -4,9 +4,12 @@
 #include <stdint.h>
 
 #include "imgui.h"
+#include "TracyEvent.hpp"
 
 namespace tracy
 {
+
+class Worker;
 
 enum class ShortenName : uint8_t
 {
@@ -21,6 +24,9 @@ const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, fl
 void TooltipNormalizedName( const char* name, const char* normalized );
 
 static inline const char* ShortenZoneName( ShortenName type, const char* name ) { ImVec2 tsz = {}; return ShortenZoneName( type, name, tsz, 0 ); }
+
+uint32_t GetPlotColor( const PlotData& plot, const Worker& worker );
+const char* FormatPlotValue( double val, PlotValueFormatting format );
 
 }
 

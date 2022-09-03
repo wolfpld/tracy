@@ -1,6 +1,9 @@
 #include <assert.h>
 
+#include "TracyColor.hpp"
+#include "TracyPrint.hpp"
 #include "TracyUtility.hpp"
+#include "TracyWorker.hpp"
 
 namespace tracy
 {
@@ -135,6 +138,44 @@ void TooltipNormalizedName( const char* name, const char* normalized )
         }
         ImGui::EndTooltip();
     }
+}
+
+uint32_t GetPlotColor( const PlotData& plot, const Worker& worker )
+{
+    switch( plot.type )
+    {
+    case PlotType::User:
+        if( plot.color != 0 ) return plot.color | 0xFF000000;
+        return GetHsvColor( charutil::hash( worker.GetString( plot.name ) ), -10 );
+    case PlotType::Memory:
+        return 0xFF2266CC;
+    case PlotType::SysTime:
+        return 0xFFBAB220;
+    default:
+        assert( false );
+        return 0;
+    }
+}
+
+const char* FormatPlotValue( double val, PlotValueFormatting format )
+{
+    static char buf[64];
+    switch( format )
+    {
+    case PlotValueFormatting::Number:
+        return RealToString( val );
+        break;
+    case PlotValueFormatting::Memory:
+        return MemSizeToString( val );
+        break;
+    case PlotValueFormatting::Percentage:
+        sprintf( buf, "%.2f%%", val );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+    return buf;
 }
 
 }

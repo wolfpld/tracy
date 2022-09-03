@@ -13,6 +13,7 @@ public:
     TimelineItemPlot( View& view, Worker& worker, PlotData* plot );
 
     void DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) override;
+    bool IsEmpty() const override;
 
 protected:
     uint32_t HeaderColor() const override { return 0xFF44DDDD; }

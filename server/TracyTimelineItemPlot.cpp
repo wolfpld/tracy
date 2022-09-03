@@ -14,6 +14,11 @@ TimelineItemPlot::TimelineItemPlot( View& view, Worker& worker, PlotData* plot )
 {
 }
 
+bool TimelineItemPlot::IsEmpty() const
+{
+    return m_plot->data.empty();
+}
+
 const char* TimelineItemPlot::HeaderLabel() const
 {
     static char tmp[1024];

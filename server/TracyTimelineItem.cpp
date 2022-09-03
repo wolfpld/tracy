@@ -53,6 +53,8 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         }
     }
 
+    ImGui::PopClipRect();
+
     float labelWidth;
     const auto hdrOffset = oldOffset;
     const bool drawHeader = yPos + ty >= yMin && yPos <= yMax;
@@ -110,7 +112,6 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
     offset += 0.2f * ostep;
     AdjustThreadHeight( firstFrame, oldOffset, offset );
 
-    ImGui::PopClipRect();
     ImGui::PopID();
 }
 

@@ -750,6 +750,8 @@ struct PlotData
     uint8_t showSteps;
     uint8_t fill;
     uint32_t color;
+
+    double rMin, rMax, num;
 };
 
 struct MemData

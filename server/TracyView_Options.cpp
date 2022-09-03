@@ -5,6 +5,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyUtility.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -562,9 +563,9 @@ void View::DrawOptions()
 
             for( const auto& p : m_worker.GetPlots() )
             {
-                SmallColorBox( GetPlotColor( p ) );
+                SmallColorBox( GetPlotColor( *p, m_worker ) );
                 ImGui::SameLine();
-                SmallCheckbox( GetPlotName( p ), &m_tc.Vis( p ).visible );
+                m_tc.GetItem( p ).VisibilityCheckbox();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );
             }

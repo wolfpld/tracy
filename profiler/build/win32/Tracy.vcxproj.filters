@@ -357,6 +357,9 @@
     <ClCompile Include="..\..\..\server\TracyUtility.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTimelineItemPlot.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\server\TracyTimelineItem.cpp">
       <Filter>server</Filter>
     </ClCompile>
@@ -729,6 +732,9 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyTimelineItem.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTimelineItemPlot.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

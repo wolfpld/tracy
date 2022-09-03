@@ -4,6 +4,7 @@
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracySourceView.hpp"
+#include "TracyTimelineItemPlot.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -1037,7 +1038,10 @@ void View::DrawTimeline()
 
     if( m_vd.drawPlots )
     {
-        offset = DrawPlots( offset, pxns, wpos, hover, yMin, yMax );
+        for( const auto& v : m_worker.GetPlots() )
+        {
+            m_tc.AddItem<TimelineItemPlot>( v );
+        }
     }
 
     m_tc.End( pxns, offset, wpos, hover, yMin, yMax );

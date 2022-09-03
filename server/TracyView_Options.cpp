@@ -549,7 +549,7 @@ void View::DrawOptions()
             {
                 for( const auto& p : m_worker.GetPlots() )
                 {
-                    m_tc.Vis( p ).visible = true;
+                    m_tc.GetItem( p ).SetVisible( true );
                 }
             }
             ImGui::SameLine();
@@ -557,7 +557,7 @@ void View::DrawOptions()
             {
                 for( const auto& p : m_worker.GetPlots() )
                 {
-                    m_tc.Vis( p ).visible = false;
+                    m_tc.GetItem( p ).SetVisible( false );
                 }
             }
 

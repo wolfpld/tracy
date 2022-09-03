@@ -23,6 +23,7 @@ public:
     virtual bool IsEmpty() const { return false; }
 
     void VisibilityCheckbox();
+    void SetVisible( bool visible ) { m_visible = visible; }
 
 protected:
     virtual uint32_t HeaderColor() const = 0;

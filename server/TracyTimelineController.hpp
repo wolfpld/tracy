@@ -19,7 +19,7 @@ class TimelineController
     };
 
 public:
-    TimelineController();
+    TimelineController( View& view, const Worker& worker );
 
     void FirstFrameExpired();
     void End( float offset );
@@ -48,6 +48,9 @@ private:
     float m_scroll;
 
     bool m_firstFrame;
+
+    View& m_view;
+    const Worker& m_worker;
 };
 
 }

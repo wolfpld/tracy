@@ -5,11 +5,13 @@
 namespace tracy
 {
 
-TimelineController::TimelineController()
+TimelineController::TimelineController( View& view, const Worker& worker )
     : m_height( 0 )
     , m_offset( 0 )
     , m_scroll( 0 )
     , m_firstFrame( true )
+    , m_view( view )
+    , m_worker( worker )
 {
 }
 

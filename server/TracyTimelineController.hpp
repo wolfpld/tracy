@@ -39,6 +39,7 @@ public:
 
     float GetHeight() const { return m_height; }
     const unordered_flat_map<const void*, VisData>& GetVisData() const { return m_visData; }
+    const unordered_flat_map<const void*, std::unique_ptr<TimelineItem>>& GetItemMap() const { return m_itemMap; }
 
     void AdjustThreadHeight( VisData& vis, int oldOffset, int& offset );
     float AdjustThreadPosition( VisData& vis, float wy, int& offset );

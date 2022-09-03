@@ -139,6 +139,7 @@
     <ClCompile Include="..\..\..\server\TracyTimelineController.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineItem.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineItemPlot.cpp" />
+    <ClCompile Include="..\..\..\server\TracyTimelineItemThread.cpp" />
     <ClCompile Include="..\..\..\server\TracyUserData.cpp" />
     <ClCompile Include="..\..\..\server\TracyUtility.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
@@ -277,6 +278,7 @@
     <ClInclude Include="..\..\..\server\TracyTimelineController.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineItem.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineItemPlot.hpp" />
+    <ClInclude Include="..\..\..\server\TracyTimelineItemThread.hpp" />
     <ClInclude Include="..\..\..\server\TracyUserData.hpp" />
     <ClInclude Include="..\..\..\server\TracyUtility.hpp" />
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp" />

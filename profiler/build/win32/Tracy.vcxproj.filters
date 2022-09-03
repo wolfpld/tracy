@@ -363,6 +363,9 @@
     <ClCompile Include="..\..\..\server\TracyTimelineItem.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTimelineItemThread.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -735,6 +738,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyTimelineItemPlot.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTimelineItemThread.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

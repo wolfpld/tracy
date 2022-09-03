@@ -9,6 +9,8 @@
 namespace tracy
 {
 
+extern double s_time;
+
 constexpr float MinVisSize = 3;
 
 static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
@@ -17,6 +19,209 @@ static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
         ( ( ( ( ( c0 & 0x00FF0000 ) >> 16 ) + 3 * ( ( c1 & 0x00FF0000 ) >> 16 ) ) >> 2 ) << 16 ) |
         ( ( ( ( ( c0 & 0x0000FF00 ) >> 8  ) + 3 * ( ( c1 & 0x0000FF00 ) >> 8  ) ) >> 2 ) << 8  ) |
         ( ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 )       );
+}
+
+bool View::DrawThread( const ThreadData& thread, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax, bool ghostMode )
+{
+    const auto ty = ImGui::GetTextLineHeight();
+    const auto ostep = ty + 1;
+    const auto nspx = 1.0 / pxns;
+
+    ImGui::PushFont( m_smallFont );
+    const auto sty = ImGui::GetTextLineHeight();
+    const auto sstep = sty + 1;
+    ImGui::PopFont();
+
+    int depth = 0;
+    const auto sampleOffset = offset;
+    const auto hasSamples = m_vd.drawSamples && !thread.samples.empty();
+    const auto hasCtxSwitch = m_vd.drawContextSwitches && m_worker.GetContextSwitchData( thread.id );
+
+    if( hasSamples )
+    {
+        if( hasCtxSwitch )
+        {
+            offset += round( ostep * 0.5f );
+        }
+        else
+        {
+            offset += round( ostep * 0.75f );
+        }
+    }
+
+    const auto ctxOffset = offset;
+    if( hasCtxSwitch )
+    {
+        offset += round( ostep * 0.75f );
+    }
+
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreGhostZonesReady() && ( ghostMode || ( m_vd.ghostZones && thread.timeline.empty() ) ) )
+    {
+        depth = DispatchGhostLevel( thread.ghostZones, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, thread.id );
+    }
+    else
+#endif
+    {
+        depth = DispatchZoneLevel( thread.timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, thread.id );
+    }
+    offset += ostep * depth;
+
+    if( hasCtxSwitch )
+    {
+        auto ctxSwitch = m_worker.GetContextSwitchData( thread.id );
+        if( ctxSwitch )
+        {
+            DrawContextSwitches( ctxSwitch, thread.samples, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset, thread.isFiber );
+        }
+    }
+    if( hasSamples )
+    {
+        DrawSamples( thread.samples, hover, pxns, int64_t( nspx ), wpos, sampleOffset );
+    }
+
+    if( m_vd.drawLocks )
+    {
+        const auto lockDepth = DrawLocks( thread.id, hover, pxns, wpos, offset, m_nextLockHighlight, yMin, yMax );
+        offset += sstep * lockDepth;
+        depth += lockDepth;
+    }
+
+    if( depth == 0 )
+    {
+        auto msgit = std::lower_bound( thread.messages.begin(), thread.messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        auto msgend = std::lower_bound( msgit, thread.messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        return msgit != msgend;
+    }
+    return true;
+}
+
+void View::DrawThreadMessages( const ThreadData& thread, double pxns, int offset, const ImVec2& wpos, bool hover )
+{
+    const auto nspx = 1.0 / pxns;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto ty = ImGui::GetTextLineHeight();
+    const auto to = 9.f * GetScale();
+    const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
+
+    auto msgit = std::lower_bound( thread.messages.begin(), thread.messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+    auto msgend = std::lower_bound( msgit, thread.messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+
+    while( msgit < msgend )
+    {
+        const auto next = std::upper_bound( msgit, thread.messages.end(), (*msgit)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
+        const auto dist = std::distance( msgit, next );
+
+        const auto px = ( (*msgit)->time - m_vd.zvStart ) * pxns;
+        const bool isMsgHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) );
+
+        unsigned int color = 0xFFDDDDDD;
+        float animOff = 0;
+        if( dist > 1 )
+        {
+            if( m_msgHighlight && m_worker.DecompressThread( m_msgHighlight->thread ) == thread.id )
+            {
+                const auto hTime = m_msgHighlight->time;
+                if( (*msgit)->time <= hTime && ( next == thread.messages.end() || (*next)->time > hTime ) )
+                {
+                    color = 0xFF4444FF;
+                    if( !isMsgHovered )
+                    {
+                        animOff = -fabs( sin( s_time * 8 ) ) * th;
+                    }
+                }
+            }
+            draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color );
+            draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color, 2.0f );
+        }
+        else
+        {
+            if( m_msgHighlight == *msgit )
+            {
+                color = 0xFF4444FF;
+                if( !isMsgHovered )
+                {
+                    animOff = -fabs( sin( s_time * 8 ) ) * th;
+                }
+            }
+            draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color, 2.0f );
+        }
+        if( isMsgHovered )
+        {
+            ImGui::BeginTooltip();
+            if( dist > 1 )
+            {
+                ImGui::Text( "%i messages", (int)dist );
+            }
+            else
+            {
+                TextFocused( "Message at", TimeToStringExact( (*msgit)->time ) );
+                ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
+                ImGui::TextUnformatted( m_worker.GetString( (*msgit)->ref ) );
+                ImGui::PopStyleColor();
+            }
+            ImGui::EndTooltip();
+            m_msgHighlight = *msgit;
+
+            if( IsMouseClicked( 0 ) )
+            {
+                m_showMessages = true;
+                m_msgToFocus = *msgit;
+            }
+            if( IsMouseClicked( 2 ) )
+            {
+                CenterAtTime( (*msgit)->time );
+            }
+        }
+        msgit = next;
+    }
+
+    auto& crash = m_worker.GetCrashEvent();
+    if( crash.thread == thread.id && crash.time >= m_vd.zvStart && crash.time <= m_vd.zvEnd )
+    {
+        const auto px = ( crash.time - m_vd.zvStart ) * pxns;
+
+        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF );
+        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF, 2.0f );
+
+        const auto crashText = ICON_FA_SKULL " crash " ICON_FA_SKULL;
+        auto ctw = ImGui::CalcTextSize( crashText ).x;
+        DrawTextContrast( draw, wpos + ImVec2( px - ctw * 0.5f, offset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
+
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
+        {
+            CrashTooltip();
+            if( IsMouseClicked( 0 ) )
+            {
+                m_showInfo = true;
+            }
+            if( IsMouseClicked( 2 ) )
+            {
+                CenterAtTime( crash.time );
+            }
+        }
+    }
+}
+
+void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr )
+{
+    auto draw = ImGui::GetWindowDrawList();
+
+    if( m_gpuThread == thread.id )
+    {
+        draw->AddRectFilled( ul, dr, 0x228888DD );
+        draw->AddRect( ul, dr, 0x448888DD );
+    }
+    if( m_gpuInfoWindow && m_gpuInfoWindowThread == thread.id )
+    {
+        draw->AddRectFilled( ul, dr, 0x2288DD88 );
+        draw->AddRect( ul, dr, 0x4488DD88 );
+    }
+    if( m_cpuDataThread == thread.id )
+    {
+        draw->AddRectFilled( ul, dr, 0x2DFF8888 );
+        draw->AddRect( ul, dr, 0x4DFF8888 );
+    }
 }
 
 #ifndef TRACY_NO_STATISTICS

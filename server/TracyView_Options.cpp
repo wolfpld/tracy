@@ -586,7 +586,7 @@ void View::DrawOptions()
         {
             for( const auto& t : m_threadOrder )
             {
-                m_tc.Vis( t ).visible = true;
+                m_tc.GetItem( t ).SetVisible( true );
             }
         }
         ImGui::SameLine();
@@ -594,7 +594,7 @@ void View::DrawOptions()
         {
             for( const auto& t : m_threadOrder )
             {
-                m_tc.Vis( t ).visible = false;
+                m_tc.GetItem( t ).SetVisible( false );
             }
         }
 
@@ -609,7 +609,7 @@ void View::DrawOptions()
             const auto threadColor = GetThreadColor( t->id, 0 );
             SmallColorBox( threadColor );
             ImGui::SameLine();
-            SmallCheckbox( threadName, &m_tc.Vis( t ).visible );
+            m_tc.GetItem( t ).VisibilityCheckbox();
             if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_SourceNoHoldToOpenOthers ) )
             {
                 ImGui::SetDragDropPayload( "ThreadOrder", &idx, sizeof(int) );

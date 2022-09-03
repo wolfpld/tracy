@@ -5,6 +5,7 @@
 #include "TracyPrint.hpp"
 #include "TracySourceView.hpp"
 #include "TracyTimelineItemPlot.hpp"
+#include "TracyTimelineItemThread.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -244,6 +245,7 @@ void View::DrawTimeline()
     m_waitStackRange.StartFrame();
     m_memInfo.range.StartFrame();
     m_yDelta = 0;
+    m_nextLockHighlight = { -1 };
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
     assert( m_vd.zvStart < m_vd.zvEnd );
@@ -629,413 +631,22 @@ void View::DrawTimeline()
     {
         offset = DrawCpuData( offset, pxns, wpos, hover, yMin, yMax );
     }
-
-    const auto& threadData = m_worker.GetThreadData();
-    if( threadData.size() != m_threadOrder.size() )
+    if( m_vd.drawZones )
     {
-        m_threadOrder.reserve( threadData.size() );
-        for( size_t i=m_threadOrder.size(); i<threadData.size(); i++ )
+        const auto& threadData = m_worker.GetThreadData();
+        if( threadData.size() != m_threadOrder.size() )
         {
-            m_threadOrder.push_back( threadData[i] );
+            m_threadOrder.reserve( threadData.size() );
+            for( size_t i=m_threadOrder.size(); i<threadData.size(); i++ )
+            {
+                m_threadOrder.push_back( threadData[i] );
+            }
+        }
+        for( const auto& v : m_threadOrder )
+        {
+            m_tc.AddItem<TimelineItemThread>( v );
         }
     }
-
-    auto& crash = m_worker.GetCrashEvent();
-    LockHighlight nextLockHighlight { -1 };
-    for( const auto& v : m_threadOrder )
-    {
-        auto& vis = m_tc.Vis( v );
-        if( !vis.visible )
-        {
-            vis.height = 0;
-            vis.offset = 0;
-            continue;
-        }
-        bool showFull = vis.showFull;
-        ImGui::PushID( &vis );
-
-        const auto yPos = m_tc.AdjustThreadPosition( vis, wpos.y, offset );
-        const auto oldOffset = offset;
-        ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
-
-        int depth = 0;
-        offset += ostep;
-        if( showFull )
-        {
-            const auto sampleOffset = offset;
-            const auto hasSamples = m_vd.drawSamples && !v->samples.empty();
-            const auto hasCtxSwitch = m_vd.drawContextSwitches && m_worker.GetContextSwitchData( v->id );
-
-            if( hasSamples )
-            {
-                if( hasCtxSwitch )
-                {
-                    offset += round( ostep * 0.5f );
-                }
-                else
-                {
-                    offset += round( ostep * 0.75f );
-                }
-            }
-
-            const auto ctxOffset = offset;
-            if( hasCtxSwitch ) offset += round( ostep * 0.75f );
-
-            if( m_vd.drawZones )
-            {
-#ifndef TRACY_NO_STATISTICS
-                if( m_worker.AreGhostZonesReady() && ( vis.ghost || ( m_vd.ghostZones && v->timeline.empty() ) ) )
-                {
-                    depth = DispatchGhostLevel( v->ghostZones, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
-                }
-                else
-#endif
-                {
-                    depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
-                }
-                offset += ostep * depth;
-            }
-
-            if( hasCtxSwitch )
-            {
-                auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
-                if( ctxSwitch )
-                {
-                    DrawContextSwitches( ctxSwitch, v->samples, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset, v->isFiber );
-                }
-            }
-
-            if( hasSamples )
-            {
-                DrawSamples( v->samples, hover, pxns, int64_t( nspx ), wpos, sampleOffset );
-            }
-
-            if( m_vd.drawLocks )
-            {
-                const auto lockDepth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight, yMin, yMax );
-                offset += sstep * lockDepth;
-                depth += lockDepth;
-            }
-        }
-        offset += ostep * 0.2f;
-
-        auto msgit = std::lower_bound( v->messages.begin(), v->messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        auto msgend = std::lower_bound( msgit, v->messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-
-        if( !m_vd.drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
-        {
-            auto& vis = m_tc.Vis( v );
-            vis.height = 0;
-            vis.offset = 0;
-            offset = oldOffset;
-        }
-        else if( yPos + ostep >= yMin && yPos <= yMax )
-        {
-            DrawLine( draw, dpos + ImVec2( 0, oldOffset + ostep - 1 ), dpos + ImVec2( w, oldOffset + ostep - 1 ), 0x33FFFFFF );
-
-            uint32_t labelColor;
-            if( crash.thread == v->id ) labelColor = showFull ? 0xFF2222FF : 0xFF111188;
-            else if( v->isFiber ) labelColor = showFull ? 0xFF88FF88 : 0xFF448844;
-            else labelColor = showFull ? 0xFFFFFFFF : 0xFF888888;
-
-            if( showFull )
-            {
-                draw->AddTriangleFilled( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( ty - to/2, oldOffset + to/2 ), wpos + ImVec2( ty * 0.5, oldOffset + to/2 + th ), labelColor );
-
-                while( msgit < msgend )
-                {
-                    const auto next = std::upper_bound( msgit, v->messages.end(), (*msgit)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
-                    const auto dist = std::distance( msgit, next );
-
-                    const auto px = ( (*msgit)->time - m_vd.zvStart ) * pxns;
-                    const bool isMsgHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) );
-
-                    unsigned int color = 0xFFDDDDDD;
-                    float animOff = 0;
-                    if( dist > 1 )
-                    {
-                        if( m_msgHighlight && m_worker.DecompressThread( m_msgHighlight->thread ) == v->id )
-                        {
-                            const auto hTime = m_msgHighlight->time;
-                            if( (*msgit)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
-                            {
-                                color = 0xFF4444FF;
-                                if( !isMsgHovered )
-                                {
-                                    animOff = -fabs( sin( s_time * 8 ) ) * th;
-                                }
-                            }
-                        }
-                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color );
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color, 2.0f );
-                    }
-                    else
-                    {
-                        if( m_msgHighlight == *msgit )
-                        {
-                            color = 0xFF4444FF;
-                            if( !isMsgHovered )
-                            {
-                                animOff = -fabs( sin( s_time * 8 ) ) * th;
-                            }
-                        }
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color, 2.0f );
-                    }
-                    if( isMsgHovered )
-                    {
-                        ImGui::BeginTooltip();
-                        if( dist > 1 )
-                        {
-                            ImGui::Text( "%i messages", (int)dist );
-                        }
-                        else
-                        {
-                            TextFocused( "Message at", TimeToStringExact( (*msgit)->time ) );
-                            ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
-                            ImGui::TextUnformatted( m_worker.GetString( (*msgit)->ref ) );
-                            ImGui::PopStyleColor();
-                        }
-                        ImGui::EndTooltip();
-                        m_msgHighlight = *msgit;
-
-                        if( IsMouseClicked( 0 ) )
-                        {
-                            m_showMessages = true;
-                            m_msgToFocus = *msgit;
-                        }
-                        if( IsMouseClicked( 2 ) )
-                        {
-                            CenterAtTime( (*msgit)->time );
-                        }
-                    }
-                    msgit = next;
-                }
-
-                if( crash.thread == v->id && crash.time >= m_vd.zvStart && crash.time <= m_vd.zvEnd )
-                {
-                    const auto px = ( crash.time - m_vd.zvStart ) * pxns;
-
-                    draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF );
-                    draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF, 2.0f );
-
-                    const auto crashText = ICON_FA_SKULL " crash " ICON_FA_SKULL;
-                    auto ctw = ImGui::CalcTextSize( crashText ).x;
-                    DrawTextContrast( draw, wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
-
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
-                    {
-                        CrashTooltip();
-                        if( IsMouseClicked( 0 ) )
-                        {
-                            m_showInfo = true;
-                        }
-                        if( IsMouseClicked( 2 ) )
-                        {
-                            CenterAtTime( crash.time );
-                        }
-                    }
-                }
-            }
-            else
-            {
-                draw->AddTriangle( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( to/2, oldOffset + ty - to/2 ), wpos + ImVec2( to/2 + th, oldOffset + ty * 0.5 ), labelColor, 2.0f );
-            }
-            const auto txt = m_worker.GetThreadName( v->id );
-            const auto txtsz = ImGui::CalcTextSize( txt );
-            if( m_gpuThread == v->id )
-            {
-                draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x228888DD );
-                draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x448888DD );
-            }
-            if( m_gpuInfoWindow && m_gpuInfoWindowThread == v->id )
-            {
-                draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x2288DD88 );
-                draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x4488DD88 );
-            }
-            if( m_cpuDataThread == v->id )
-            {
-                draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x2DFF8888 );
-                draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x4DFF8888 );
-            }
-            DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), labelColor, txt );
-
-#ifndef TRACY_NO_STATISTICS
-            const bool hasGhostZones = showFull && m_worker.AreGhostZonesReady() && !v->ghostZones.empty();
-            float ghostSz;
-            if( hasGhostZones && !v->timeline.empty() )
-            {
-                auto& vis = m_tc.Vis( v );
-                const auto color = vis.ghost ? 0xFFAA9999 : 0x88AA7777;
-                draw->AddText( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), color, ICON_FA_GHOST );
-                ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
-            }
-#endif
-
-            if( hover )
-            {
-#ifndef TRACY_NO_STATISTICS
-                if( hasGhostZones && !v->timeline.empty() && ImGui::IsMouseHoveringRect( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), wpos + ImVec2( 1.5f * ty + txtsz.x + ghostSz, oldOffset + ty ) ) )
-                {
-                    if( IsMouseClicked( 0 ) )
-                    {
-                        auto& vis = m_tc.Vis( v );
-                        vis.ghost = !vis.ghost;
-                    }
-                }
-                else
-#endif
-                if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
-                {
-                    m_drawThreadMigrations = v->id;
-                    m_drawThreadHighlight = v->id;
-                    ImGui::BeginTooltip();
-                    SmallColorBox( GetThreadColor( v->id, 0 ) );
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", RealToString( v->id ) );
-                    if( crash.thread == v->id )
-                    {
-                        ImGui::SameLine();
-                        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
-                    }
-                    if( v->isFiber )
-                    {
-                        ImGui::SameLine();
-                        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-                    }
-
-                    const auto ctx = m_worker.GetContextSwitchData( v->id );
-
-                    ImGui::Separator();
-                    int64_t first = std::numeric_limits<int64_t>::max();
-                    int64_t last = -1;
-                    if( ctx && !ctx->v.empty() )
-                    {
-                        const auto& back = ctx->v.back();
-                        first = ctx->v.begin()->Start();
-                        last = back.IsEndValid() ? back.End() : back.Start();
-                    }
-                    if( !v->timeline.empty() )
-                    {
-                        if( v->timeline.is_magic() )
-                        {
-                            auto& tl = *((Vector<ZoneEvent>*)&v->timeline);
-                            first = std::min( first, tl.front().Start() );
-                            last = std::max( last, m_worker.GetZoneEnd( tl.back() ) );
-                        }
-                        else
-                        {
-                            first = std::min( first, v->timeline.front()->Start() );
-                            last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
-                        }
-                    }
-                    if( !v->messages.empty() )
-                    {
-                        first = std::min( first, v->messages.front()->time );
-                        last = std::max( last, v->messages.back()->time );
-                    }
-                    size_t lockCnt = 0;
-                    for( const auto& lock : m_worker.GetLockMap() )
-                    {
-                        const auto& lockmap = *lock.second;
-                        if( !lockmap.valid ) continue;
-                        auto it = lockmap.threadMap.find( v->id );
-                        if( it == lockmap.threadMap.end() ) continue;
-                        lockCnt++;
-                        const auto thread = it->second;
-                        auto lptr = lockmap.timeline.data();
-                        auto eptr = lptr + lockmap.timeline.size() - 1;
-                        while( lptr->ptr->thread != thread ) lptr++;
-                        if( lptr->ptr->Time() < first ) first = lptr->ptr->Time();
-                        while( eptr->ptr->thread != thread ) eptr--;
-                        if( eptr->ptr->Time() > last ) last = eptr->ptr->Time();
-                    }
-
-                    if( last >= 0 )
-                    {
-                        const auto lifetime = last - first;
-                        const auto traceLen = m_worker.GetLastTime();
-
-                        TextFocused( "Appeared at", TimeToString( first ) );
-                        TextFocused( "Last event at", TimeToString( last ) );
-                        TextFocused( "Lifetime:", TimeToString( lifetime ) );
-                        ImGui::SameLine();
-                        char buf[64];
-                        PrintStringPercent( buf, lifetime / double( traceLen ) * 100 );
-                        TextDisabledUnformatted( buf );
-
-                        if( ctx )
-                        {
-                            TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
-                            ImGui::SameLine();
-                            PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
-                            TextDisabledUnformatted( buf );
-                        }
-                    }
-
-                    ImGui::Separator();
-                    if( !v->timeline.empty() )
-                    {
-                        TextFocused( "Zone count:", RealToString( v->count ) );
-                        TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
-                    }
-                    if( !v->messages.empty() )
-                    {
-                        TextFocused( "Messages:", RealToString( v->messages.size() ) );
-                    }
-                    if( lockCnt != 0 )
-                    {
-                        TextFocused( "Locks:", RealToString( lockCnt ) );
-                    }
-                    if( ctx )
-                    {
-                        TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
-                    }
-                    if( !v->samples.empty() )
-                    {
-                        TextFocused( "Call stack samples:", RealToString( v->samples.size() ) );
-                        if( v->kernelSampleCnt != 0 )
-                        {
-                            TextFocused( "Kernel samples:", RealToString( v->kernelSampleCnt ) );
-                            ImGui::SameLine();
-                            ImGui::TextDisabled( "(%.2f%%)", 100.f * v->kernelSampleCnt / v->samples.size() );
-                        }
-                    }
-                    ImGui::EndTooltip();
-
-                    if( IsMouseClicked( 0 ) )
-                    {
-                        m_tc.Vis( v ).showFull = !showFull;
-                    }
-                    if( last >= 0 && IsMouseClicked( 2 ) )
-                    {
-                        ZoomToRange( first, last );
-                    }
-                    if( IsMouseClicked( 1 ) )
-                    {
-                        ImGui::OpenPopup( "menuPopup" );
-                    }
-                }
-            }
-        }
-
-        if( ImGui::BeginPopup( "menuPopup" ) )
-        {
-            if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
-            {
-                vis.visible = false;
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-
-        m_tc.AdjustThreadHeight( m_tc.Vis( v ), oldOffset, offset );
-        ImGui::PopClipRect();
-        ImGui::PopID();
-    }
-    m_lockHighlight = nextLockHighlight;
-
     if( m_vd.drawPlots )
     {
         for( const auto& v : m_worker.GetPlots() )
@@ -1046,6 +657,8 @@ void View::DrawTimeline()
 
     m_tc.End( pxns, offset, wpos, hover, yMin, yMax );
     ImGui::EndChild();
+
+    m_lockHighlight = m_nextLockHighlight;
 
     for( auto& ann : m_annotations )
     {

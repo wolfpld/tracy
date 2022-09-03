@@ -81,7 +81,7 @@ void TimelineItemPlot::HeaderTooltip( const char* label ) const
     ImGui::EndTooltip();
 }
 
-void TimelineItemPlot::HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, bool hover )
+void TimelineItemPlot::HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetTextLineHeight();

@@ -25,7 +25,7 @@ protected:
     int64_t RangeEnd() const override;
 
     void HeaderTooltip( const char* label ) const override;
-    void HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, bool hover ) override;
+    void HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover ) override;
 
 private:
     PlotData* m_plot;

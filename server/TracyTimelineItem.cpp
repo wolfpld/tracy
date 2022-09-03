@@ -75,7 +75,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         if( m_showFull )
         {
             DrawLine( draw, dpos + ImVec2( 0, hdrOffset + ty - 1 ), dpos + ImVec2( w, hdrOffset + ty - 1 ), HeaderLineColor() );
-            HeaderExtraContents( hdrOffset, wpos, labelWidth, hover );
+            HeaderExtraContents( hdrOffset, wpos, labelWidth, pxns, hover );
         }
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, hdrOffset ), wpos + ImVec2( ty + labelWidth, hdrOffset + ty ) ) )

@@ -25,6 +25,7 @@ void TooltipNormalizedName( const char* name, const char* normalized );
 
 static inline const char* ShortenZoneName( ShortenName type, const char* name ) { ImVec2 tsz = {}; return ShortenZoneName( type, name, tsz, 0 ); }
 
+uint32_t GetThreadColor( uint64_t thread, int depth, bool dynamic );
 uint32_t GetPlotColor( const PlotData& plot, const Worker& worker );
 const char* FormatPlotValue( double val, PlotValueFormatting format );
 

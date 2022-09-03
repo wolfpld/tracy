@@ -140,6 +140,12 @@ void TooltipNormalizedName( const char* name, const char* normalized )
     }
 }
 
+uint32_t GetThreadColor( uint64_t thread, int depth, bool dynamic )
+{
+    if( !dynamic ) return 0xFFCC5555;
+    return GetHsvColor( thread, depth );
+}
+
 uint32_t GetPlotColor( const PlotData& plot, const Worker& worker )
 {
     switch( plot.type )

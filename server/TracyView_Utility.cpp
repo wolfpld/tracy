@@ -2,6 +2,7 @@
 
 #include "TracyColor.hpp"
 #include "TracyPrint.hpp"
+#include "TracyUtility.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -9,8 +10,7 @@ namespace tracy
 
 uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
-    if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
-    return GetHsvColor( thread, depth );
+    return tracy::GetThreadColor( thread, depth, m_vd.dynamicColors != 0 );
 }
 
 uint32_t View::GetRawSrcLocColor( const SourceLocation& srcloc, int depth )

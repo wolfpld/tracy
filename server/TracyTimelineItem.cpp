@@ -30,6 +30,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetTextLineHeight();
+    const auto ostep = ty + 1;
     const auto yPos = AdjustThreadPosition( wpos.y, offset );
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto oldOffset = offset;
@@ -88,7 +89,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
     }
 
     auto hdrOffset = offset;
-    offset += ty;
+    offset += ostep;
     if( m_showFull )
     {
         DrawContents( pxns, offset, wpos, hover, yMin, yMax );
@@ -98,7 +99,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         }
     }
 
-    offset += 0.2 * ty;
+    offset += 0.2f * ostep;
     AdjustThreadHeight( firstFrame, oldOffset, offset );
 
     ImGui::PopClipRect();

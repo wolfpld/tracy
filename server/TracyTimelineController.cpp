@@ -20,8 +20,18 @@ void TimelineController::FirstFrameExpired()
     m_firstFrame = false;
 }
 
-void TimelineController::End( float offset )
+void TimelineController::Begin()
 {
+    m_items.clear();
+}
+
+void TimelineController::End( double pxns, int offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+{
+    for( auto& item : m_items )
+    {
+        item->Draw( m_firstFrame, pxns, offset, wpos, hover, yMin, yMax );
+    }
+
     const auto scrollPos = ImGui::GetScrollY();
     if( scrollPos == 0 && m_scroll != 0 )
     {

@@ -25,7 +25,8 @@ public:
     TimelineController( View& view, const Worker& worker );
 
     void FirstFrameExpired();
-    void End( float offset );
+    void Begin();
+    void End( double pxns, int offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
 
     template<class T, class U>
     void AddItem( U* data )

@@ -291,6 +291,7 @@ void View::DrawTimeline()
         }
     }
 
+    m_tc.Begin();
     DrawTimelineFramesHeader();
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
@@ -1039,7 +1040,7 @@ void View::DrawTimeline()
         offset = DrawPlots( offset, pxns, wpos, hover, yMin, yMax );
     }
 
-    m_tc.End( offset );
+    m_tc.End( pxns, offset, wpos, hover, yMin, yMax );
     ImGui::EndChild();
 
     for( auto& ann : m_annotations )

@@ -113,6 +113,8 @@ public:
 
     ShortenName GetShortenName() const { return m_shortenName; }
 
+    void ZoomToRange( int64_t start, int64_t end, bool pause = true );
+
     bool m_showRanges = false;
     Range m_statRange;
     Range m_waitStackRange;
@@ -279,7 +281,6 @@ private:
 
     void ZoomToZone( const ZoneEvent& ev );
     void ZoomToZone( const GpuEvent& ev );
-    void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
     void CenterAtTime( int64_t t );

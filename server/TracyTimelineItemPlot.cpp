@@ -101,9 +101,9 @@ int64_t TimelineItemPlot::RangeEnd() const
     return m_plot->data.back().time.Val();
 }
 
-void TimelineItemPlot::DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+bool TimelineItemPlot::DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
-    m_view.DrawPlot( *m_plot, pxns, offset, wpos, hover, yMin, yMax );
+    return m_view.DrawPlot( *m_plot, pxns, offset, wpos, hover, yMin, yMax );
 }
 
 }

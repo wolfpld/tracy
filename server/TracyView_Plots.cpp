@@ -10,7 +10,7 @@
 namespace tracy
 {
 
-void View::DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+bool View::DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
     const auto PlotHeight = 100 * GetScale();
 
@@ -257,6 +257,7 @@ void View::DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpo
     {
         offset += PlotHeight;
     }
+    return true;
 }
 
 void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, PlotValueFormatting format, float PlotHeight )

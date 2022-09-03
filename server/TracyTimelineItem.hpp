@@ -18,7 +18,7 @@ public:
     virtual ~TimelineItem() = default;
 
     void Draw( bool firstFrame, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
-    virtual void DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) = 0;
+    virtual bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) = 0;
 
     virtual bool IsEmpty() const { return false; }
 

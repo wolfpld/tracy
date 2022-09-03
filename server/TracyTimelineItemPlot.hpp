@@ -12,9 +12,6 @@ class TimelineItemPlot final : public TimelineItem
 public:
     TimelineItemPlot( View& view, Worker& worker, PlotData* plot );
 
-    bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) override;
-    bool IsEmpty() const override;
-
 protected:
     uint32_t HeaderColor() const override { return 0xFF44DDDD; }
     uint32_t HeaderColorInactive() const override { return 0xFF226E6E; }
@@ -26,6 +23,10 @@ protected:
 
     void HeaderTooltip( const char* label ) const override;
     void HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover ) override;
+
+    bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) override;
+
+    bool IsEmpty() const override;
 
 private:
     PlotData* m_plot;

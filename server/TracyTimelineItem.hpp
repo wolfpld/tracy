@@ -18,9 +18,6 @@ public:
     virtual ~TimelineItem() = default;
 
     void Draw( bool firstFrame, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
-    virtual bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) = 0;
-
-    virtual bool IsEmpty() const { return false; }
 
     void VisibilityCheckbox();
     void SetVisible( bool visible ) { m_visible = visible; }
@@ -36,6 +33,10 @@ protected:
 
     virtual int64_t RangeBegin() const = 0;
     virtual int64_t RangeEnd() const = 0;
+
+    virtual bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) = 0;
+
+    virtual bool IsEmpty() const { return false; }
 
 private:
     void AdjustThreadHeight( bool firstFrame, int oldOffset, int& offset );

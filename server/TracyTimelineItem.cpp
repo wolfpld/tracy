@@ -53,6 +53,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         }
     }
 
+    DrawOverlay( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ) );
     ImGui::PopClipRect();
 
     float labelWidth;

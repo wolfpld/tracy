@@ -35,6 +35,7 @@ protected:
     virtual int64_t RangeEnd() const = 0;
 
     virtual bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) = 0;
+    virtual void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) {}
 
     virtual bool IsEmpty() const { return false; }
 

@@ -14,7 +14,7 @@ class Worker;
 class TimelineItem
 {
 public:
-    TimelineItem( View& view, const Worker& worker );
+    TimelineItem( View& view, Worker& worker );
     virtual ~TimelineItem() = default;
 
     void Draw( bool firstFrame, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
@@ -47,7 +47,7 @@ private:
 
 protected:
     View& m_view;
-    const Worker& m_worker;
+    Worker& m_worker;
 };
 
 }

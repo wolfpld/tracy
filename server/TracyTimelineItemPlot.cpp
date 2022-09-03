@@ -8,7 +8,7 @@
 namespace tracy
 {
 
-TimelineItemPlot::TimelineItemPlot( View& view, const Worker& worker, PlotData* plot )
+TimelineItemPlot::TimelineItemPlot( View& view, Worker& worker, PlotData* plot )
     : TimelineItem( view, worker )
     , m_plot( plot )
 {

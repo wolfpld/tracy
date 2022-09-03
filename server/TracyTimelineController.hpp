@@ -23,7 +23,7 @@ class TimelineController
     };
 
 public:
-    TimelineController( View& view, const Worker& worker );
+    TimelineController( View& view, Worker& worker );
 
     void FirstFrameExpired();
     void Begin();
@@ -73,7 +73,7 @@ private:
     bool m_firstFrame;
 
     View& m_view;
-    const Worker& m_worker;
+    Worker& m_worker;
 };
 
 }

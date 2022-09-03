@@ -10,7 +10,7 @@ namespace tracy
 class TimelineItemPlot final : public TimelineItem
 {
 public:
-    TimelineItemPlot( View& view, const Worker& worker, PlotData* plot );
+    TimelineItemPlot( View& view, Worker& worker, PlotData* plot );
 
     void DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) override;
 

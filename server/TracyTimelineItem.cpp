@@ -8,7 +8,7 @@
 namespace tracy
 {
 
-TimelineItem::TimelineItem( View& view, const Worker& worker )
+TimelineItem::TimelineItem( View& view, Worker& worker )
     : m_visible( true )
     , m_showFull( true )
     , m_height( 0 )

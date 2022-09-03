@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Tracy LANGUAGES CXX)
 
-option(TRACY_STATIC "Whether to build Tracy as a static library" NOT ${BUILD_SHARED_LIBS})
+if(${BUILD_SHARED_LIBS})
+	set(DEFAULT_STATIC OFF)
+else()
+	set(DEFAULT_STATIC ON)
+endif()
+
+option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATIC})
 
 find_package(Threads REQUIRED)
 

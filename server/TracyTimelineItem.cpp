@@ -39,7 +39,22 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
     ImGui::PushID( this );
     ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + m_height ), true );
 
+    offset += ostep;
+    if( m_showFull )
+    {
+        if( !DrawContents( pxns, offset, wpos, hover, yMin, yMax ) && !m_view.GetViewData().drawEmptyLabels )
+        {
+            m_height = 0;
+            m_offset = 0;
+            offset = oldOffset;
+            ImGui::PopClipRect();
+            ImGui::PopID();
+            return;
+        }
+    }
+
     float labelWidth;
+    const auto hdrOffset = oldOffset;
     const bool drawHeader = yPos + ty >= yMin && yPos <= yMax;
     if( drawHeader )
     {
@@ -48,21 +63,22 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
 
         if( m_showFull )
         {
-            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), color, ICON_FA_CARET_DOWN );
+            DrawTextContrast( draw, wpos + ImVec2( 0, hdrOffset ), color, ICON_FA_CARET_DOWN );
         }
         else
         {
-            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), colorInactive, ICON_FA_CARET_RIGHT );
+            DrawTextContrast( draw, wpos + ImVec2( 0, hdrOffset ), colorInactive, ICON_FA_CARET_RIGHT );
         }
         const auto label = HeaderLabel();
         labelWidth = ImGui::CalcTextSize( label ).x;
-        DrawTextContrast( draw, wpos + ImVec2( ty, offset ), m_showFull ? color : colorInactive, label );
+        DrawTextContrast( draw, wpos + ImVec2( ty, hdrOffset ), m_showFull ? color : colorInactive, label );
         if( m_showFull )
         {
-            DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), HeaderLineColor() );
+            DrawLine( draw, dpos + ImVec2( 0, hdrOffset + ty - 1 ), dpos + ImVec2( w, hdrOffset + ty - 1 ), HeaderLineColor() );
+            HeaderExtraContents( hdrOffset, wpos, labelWidth, hover );
         }
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + labelWidth, offset + ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, hdrOffset ), wpos + ImVec2( ty + labelWidth, hdrOffset + ty ) ) )
         {
             HeaderTooltip( label );
 
@@ -89,17 +105,6 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
-    }
-
-    auto hdrOffset = offset;
-    offset += ostep;
-    if( m_showFull )
-    {
-        DrawContents( pxns, offset, wpos, hover, yMin, yMax );
-        if( drawHeader )
-        {
-            HeaderExtraContents( hdrOffset, wpos, labelWidth, hover );
-        }
     }
 
     offset += 0.2f * ostep;

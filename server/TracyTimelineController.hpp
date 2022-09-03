@@ -1,8 +1,11 @@
 #ifndef __TRACYTIMELINECONTROLLER_HPP__
 #define __TRACYTIMELINECONTROLLER_HPP__
 
+#include <vector>
+
 #include "../public/common/TracyForceInline.hpp"
 #include "tracy_robin_hood.h"
+#include "TracyTimelineItem.hpp"
 
 namespace tracy
 {
@@ -24,6 +27,14 @@ public:
     void FirstFrameExpired();
     void End( float offset );
 
+    template<class T, class U>
+    void AddItem( U* data )
+    {
+        auto it = m_itemMap.find( data );
+        if( it == m_itemMap.end() ) it = m_itemMap.emplace( data, std::make_unique<T>( m_view, m_worker, data ) ).first;
+        m_items.emplace_back( it->second.get() );
+    }
+
     float GetHeight() const { return m_height; }
     const unordered_flat_map<const void*, VisData>& GetVisData() const { return m_visData; }
 
@@ -41,6 +52,9 @@ public:
     }
 
 private:
+    std::vector<TimelineItem*> m_items;
+    unordered_flat_map<const void*, std::unique_ptr<TimelineItem>> m_itemMap;
+
     unordered_flat_map<const void*, VisData> m_visData;
 
     float m_height;

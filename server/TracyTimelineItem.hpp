@@ -39,12 +39,13 @@ protected:
 
     virtual bool IsEmpty() const { return false; }
 
+    bool m_visible;
+    bool m_showFull;
+
 private:
     void AdjustThreadHeight( bool firstFrame, int oldOffset, int& offset );
     float AdjustThreadPosition( float wy, int& offset );
 
-    bool m_visible;
-    bool m_showFull;
     int m_height;
     int m_offset;
 

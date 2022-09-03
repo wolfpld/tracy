@@ -16,6 +16,11 @@ TimelineItemThread::TimelineItemThread( View& view, Worker& worker, const Thread
     , m_thread( thread )
     , m_ghost( false )
 {
+    auto name = worker.GetThreadName( thread->id );
+    if( strncmp( name, "Tracy ", 6 ) == 0 )
+    {
+        m_showFull = false;
+    }
 }
 
 bool TimelineItemThread::IsEmpty() const

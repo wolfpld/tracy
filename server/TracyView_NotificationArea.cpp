@@ -197,6 +197,18 @@ void View::DrawNotificationArea()
                 break;
             }
         }
+        if( !hidden )
+        {
+            for( auto& v : m_tc.GetItemMap() )
+            {
+                if( !v.second->IsVisible() )
+                {
+                    hidden = true;
+                    break;
+                }
+            }
+        }
+
         if( hidden )
         {
             ImGui::SameLine();

@@ -21,6 +21,7 @@ public:
 
     void VisibilityCheckbox();
     void SetVisible( bool visible ) { m_visible = visible; }
+    bool IsVisible() const { return m_visible; }
 
 protected:
     virtual uint32_t HeaderColor() const = 0;

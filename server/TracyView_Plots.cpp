@@ -23,12 +23,13 @@ bool View::DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpo
     const auto nspx = 1.0 / pxns;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
+    auto& vec = plot.data;
+    vec.ensure_sorted();
+    if( vec.front().time.Val() > m_vd.zvEnd || vec.back().time.Val() < m_vd.zvStart ) return false;
+
     auto yPos = wpos.y + offset;
     if( yPos + PlotHeight >= yMin && yPos <= yMax )
     {
-        auto& vec = plot.data;
-        vec.ensure_sorted();
-
         const auto color = GetPlotColor( plot, m_worker );
         const auto bg = 0x22000000 | ( DarkenColorMore( color ) & 0xFFFFFF );
         const auto fill = 0x22000000 | ( DarkenColor( color ) & 0xFFFFFF );

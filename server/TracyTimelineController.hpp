@@ -1,6 +1,7 @@
 #ifndef __TRACYTIMELINECONTROLLER_HPP__
 #define __TRACYTIMELINECONTROLLER_HPP__
 
+#include <assert.h>
 #include <vector>
 
 #include "../public/common/TracyForceInline.hpp"
@@ -41,6 +42,13 @@ public:
 
     void AdjustThreadHeight( VisData& vis, int oldOffset, int& offset );
     float AdjustThreadPosition( VisData& vis, float wy, int& offset );
+
+    tracy_force_inline TimelineItem& GetItem( const void* data )
+    {
+        auto it = m_itemMap.find( data );
+        assert( it != m_itemMap.end() );
+        return *it->second;
+    }
 
     tracy_force_inline VisData& Vis( const void* ptr )
     {

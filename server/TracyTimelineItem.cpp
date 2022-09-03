@@ -56,7 +56,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         const auto label = HeaderLabel();
         labelWidth = ImGui::CalcTextSize( label ).x;
         DrawTextContrast( draw, wpos + ImVec2( ty, offset ), m_showFull ? color : colorInactive, label );
-        DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
+        DrawLine( draw, dpos + ImVec2( 0, offset + ty - 1 ), dpos + ImVec2( w, offset + ty - 1 ), HeaderLineColor() );
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + labelWidth, offset + ty ) ) )
         {

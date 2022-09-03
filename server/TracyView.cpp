@@ -1277,4 +1277,10 @@ bool View::Save( const char* fn, FileWrite::Compression comp, int zlevel, bool b
     return true;
 }
 
+void View::HighlightThread( uint64_t thread )
+{
+    m_drawThreadMigrations = thread;
+    m_drawThreadHighlight = thread;
+}
+
 }

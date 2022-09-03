@@ -113,6 +113,7 @@ public:
 
     ShortenName GetShortenName() const { return m_shortenName; }
 
+    void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     void DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
 

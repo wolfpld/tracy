@@ -94,7 +94,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         DrawContents( pxns, offset, wpos, hover, yMin, yMax );
         if( drawHeader )
         {
-            HeaderExtraContents( hdrOffset, wpos, labelWidth );
+            HeaderExtraContents( hdrOffset, wpos, labelWidth, hover );
         }
     }
 

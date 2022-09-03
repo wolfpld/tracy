@@ -42,19 +42,16 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
     const bool drawHeader = yPos + ty >= yMin && yPos <= yMax;
     if( drawHeader )
     {
-        const auto to = 9.f;
-        const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
-
         const auto color = HeaderColor();
         const auto colorInactive = HeaderColorInactive();
 
         if( m_showFull )
         {
-            draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), color );
+            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), color, ICON_FA_CARET_DOWN );
         }
         else
         {
-            draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), colorInactive, 2.0f );
+            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), colorInactive, ICON_FA_CARET_RIGHT );
         }
         const auto label = HeaderLabel();
         labelWidth = ImGui::CalcTextSize( label ).x;

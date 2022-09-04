@@ -283,7 +283,7 @@ void View::DrawOptions()
             {
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    m_tc.Vis( l.second ).visible = true;
+                    Vis( l.second ) = true;
                 }
             }
             ImGui::SameLine();
@@ -291,7 +291,7 @@ void View::DrawOptions()
             {
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    m_tc.Vis( l.second ).visible = false;
+                    Vis( l.second ) = false;
                 }
             }
             ImGui::SameLine();
@@ -307,7 +307,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && l.second->isContended ) m_tc.Vis( l.second ).visible = true;
+                        if( l.second->threadList.size() != 1 && l.second->isContended ) Vis( l.second ) = true;
                     }
                 }
                 ImGui::SameLine();
@@ -315,7 +315,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && l.second->isContended ) m_tc.Vis( l.second ).visible = false;
+                        if( l.second->threadList.size() != 1 && l.second->isContended ) Vis( l.second ) = false;
                     }
                 }
 
@@ -335,7 +335,7 @@ void View::DrawOptions()
                         {
                             sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
                         }
-                        SmallCheckbox( buf, &m_tc.Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -385,7 +385,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && !l.second->isContended ) m_tc.Vis( l.second ).visible = true;
+                        if( l.second->threadList.size() != 1 && !l.second->isContended ) Vis( l.second ) = true;
                     }
                 }
                 ImGui::SameLine();
@@ -393,7 +393,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 && !l.second->isContended ) m_tc.Vis( l.second ).visible = false;
+                        if( l.second->threadList.size() != 1 && !l.second->isContended ) Vis( l.second ) = false;
                     }
                 }
 
@@ -413,7 +413,7 @@ void View::DrawOptions()
                         {
                             sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
                         }
-                        SmallCheckbox( buf, &m_tc.Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -463,7 +463,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() == 1 ) m_tc.Vis( l.second ).visible = true;
+                        if( l.second->threadList.size() == 1 ) Vis( l.second ) = true;
                     }
                 }
                 ImGui::SameLine();
@@ -471,7 +471,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() == 1 ) m_tc.Vis( l.second ).visible = false;
+                        if( l.second->threadList.size() == 1 ) Vis( l.second ) = false;
                     }
                 }
 
@@ -491,7 +491,7 @@ void View::DrawOptions()
                         {
                             sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
                         }
-                        SmallCheckbox( buf, &m_tc.Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -707,7 +707,7 @@ void View::DrawOptions()
         {
             for( const auto& fd : m_worker.GetFrames() )
             {
-                m_tc.Vis( fd ).visible = true;
+                Vis( fd ) = true;
             }
         }
         ImGui::SameLine();
@@ -715,7 +715,7 @@ void View::DrawOptions()
         {
             for( const auto& fd : m_worker.GetFrames() )
             {
-                m_tc.Vis( fd ).visible = false;
+                Vis( fd ) = false;
             }
         }
 
@@ -723,7 +723,7 @@ void View::DrawOptions()
         for( const auto& fd : m_worker.GetFrames() )
         {
             ImGui::PushID( idx++ );
-            SmallCheckbox( GetFrameSetName( *fd ), &m_tc.Vis( fd ).visible );
+            SmallCheckbox( GetFrameSetName( *fd ), &Vis( fd ) );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size() ), fd->continuous ? "" : "discontinuous " );

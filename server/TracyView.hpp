@@ -392,6 +392,13 @@ private:
     static const char* DecodeContextSwitchReason( uint8_t reason );
     static const char* DecodeContextSwitchReasonCode( uint8_t reason );
 
+    tracy_force_inline bool& Vis( const void* ptr )
+    {
+        auto it = m_visMap.find( ptr );
+        if( it == m_visMap.end() ) it = m_visMap.emplace( ptr, true ).first;
+        return it->second;
+    }
+
     Worker m_worker;
     std::string m_filename, m_filenameStaging;
     bool m_staticView;
@@ -560,6 +567,8 @@ private:
 
     unordered_flat_map<int16_t, StatisticsCache> m_statCache;
     unordered_flat_map<int16_t, StatisticsCache> m_gpuStatCache;
+
+    unordered_flat_map<const void*, bool> m_visMap;
 
     void(*m_cbMainThread)(std::function<void()>, bool);
 

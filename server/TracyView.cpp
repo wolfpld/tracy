@@ -840,7 +840,7 @@ bool View::DrawImpl()
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
     ImGui::SameLine();
     {
-        const auto vis = m_tc.Vis( m_frames ).visible;
+        const auto vis = Vis( m_frames );
         if( !vis )
         {
             ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );

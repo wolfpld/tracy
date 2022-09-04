@@ -112,6 +112,7 @@ public:
     const ViewData& GetViewData() const { return m_vd; }
 
     ShortenName GetShortenName() const { return m_shortenName; }
+    int GetNextGpuIdx() { return m_gpuIdx++; }
 
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
@@ -558,6 +559,8 @@ private:
     unordered_flat_map<int16_t, StatisticsCache> m_gpuStatCache;
 
     void(*m_cbMainThread)(std::function<void()>, bool);
+
+    int m_gpuIdx = 0;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

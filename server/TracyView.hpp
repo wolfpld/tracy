@@ -109,6 +109,8 @@ public:
     const char* SourceSubstitution( const char* srcFile ) const;
 
     void ShowSampleParents( uint64_t symAddr, bool withInlines ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; m_sampleParents.withInlines = withInlines; }
+
+    ViewData& GetViewData() { return m_vd; }
     const ViewData& GetViewData() const { return m_vd; }
 
     ShortenName GetShortenName() const { return m_shortenName; }

@@ -12,6 +12,8 @@ class TimelineItemGpu final : public TimelineItem
 public:
     TimelineItemGpu( View& view, Worker& worker, GpuCtxData* gpu );
 
+    int GetIdx() const { return m_idx; }
+
 protected:
     uint32_t HeaderColor() const override { return 0xFFFFAAAA; }
     uint32_t HeaderColorInactive() const override { return 0xFF886666; }

@@ -5,6 +5,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineItemGpu.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
 
@@ -94,9 +95,7 @@ void View::DrawOptions()
             for( size_t i=0; i<gpuData.size(); i++ )
             {
                 const auto& timeline = gpuData[i]->threadData.begin()->second.timeline;
-                char buf[1024];
-                sprintf( buf, "%s context %zu", GpuContextNames[(int)gpuData[i]->type], i );
-                SmallCheckbox( buf, &m_tc.Vis( gpuData[i] ).visible );
+                m_tc.GetItem( gpuData[i] ).VisibilityCheckbox();
                 ImGui::SameLine();
                 if( gpuData[i]->threadData.size() == 1 )
                 {
@@ -108,8 +107,11 @@ void View::DrawOptions()
                 }
                 if( gpuData[i]->name.Active() )
                 {
+                    char buf[64];
+                    auto& item = (TimelineItemGpu&)( m_tc.GetItem( gpuData[i] ) );
+                    sprintf( buf, "%s context %zu", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
                     ImGui::PushFont( m_smallFont );
-                    TextFocused( "Name:", m_worker.GetString( gpuData[i]->name ) );
+                    ImGui::TextUnformatted( buf );
                     ImGui::PopFont();
                 }
                 if( !gpuData[i]->hasCalibration )

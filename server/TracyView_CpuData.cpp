@@ -19,12 +19,9 @@ bool View::DrawCpuData( double pxns, int& offset, const ImVec2& wpos, bool hover
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetTextLineHeight();
-    const auto ostep = ty + 1;
     const auto nspxdbl = 1.0 / pxns;
     const auto nspx = int64_t( nspxdbl );
     auto draw = ImGui::GetWindowDrawList();
-    const auto to = 9.f;
-    const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
 
 #ifdef TRACY_NO_STATISTICS

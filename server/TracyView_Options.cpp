@@ -109,7 +109,7 @@ void View::DrawOptions()
                 {
                     char buf[64];
                     auto& item = (TimelineItemGpu&)( m_tc.GetItem( gpuData[i] ) );
-                    sprintf( buf, "%s context %zu", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
+                    sprintf( buf, "%s context %i", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
                     ImGui::PushFont( m_smallFont );
                     ImGui::TextUnformatted( buf );
                     ImGui::PopFont();

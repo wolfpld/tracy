@@ -13,8 +13,6 @@
 namespace tracy
 {
 
-constexpr float MinVisSize = 3;
-
 extern double s_time;
 
 void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
@@ -328,15 +326,7 @@ void View::DrawTimeline()
     bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, h ) );
     draw = ImGui::GetWindowDrawList();
 
-    const auto nspx = 1.0 / pxns;
-
-    ImGui::PushFont( m_smallFont );
-    const auto sty = ImGui::GetTextLineHeight();
-    const auto sstep = sty + 1;
-    ImGui::PopFont();
-
     const auto ty = ImGui::GetTextLineHeight();
-    const auto ostep = ty + 1;
     int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;

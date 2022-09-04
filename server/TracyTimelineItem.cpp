@@ -91,7 +91,12 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
             }
             if( IsMouseClicked( 2 ) )
             {
-                m_view.ZoomToRange( RangeBegin(), RangeEnd() );
+                const auto t0 = RangeBegin();
+                const auto t1 = RangeEnd();
+                if( t0 < t1 )
+                {
+                    m_view.ZoomToRange( t0, t1 );
+                }
             }
             if( IsMouseClicked( 1 ) )
             {

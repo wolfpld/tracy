@@ -138,6 +138,7 @@
     <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineController.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineItem.cpp" />
+    <ClCompile Include="..\..\..\server\TracyTimelineItemGpu.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineItemPlot.cpp" />
     <ClCompile Include="..\..\..\server\TracyTimelineItemThread.cpp" />
     <ClCompile Include="..\..\..\server\TracyUserData.cpp" />
@@ -153,6 +154,7 @@
     <ClCompile Include="..\..\..\server\TracyView_FrameOverview.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FrameTimeline.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_FrameTree.cpp" />
+    <ClCompile Include="..\..\..\server\TracyView_GpuTimeline.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Locks.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Memory.cpp" />
     <ClCompile Include="..\..\..\server\TracyView_Messages.cpp" />
@@ -277,6 +279,7 @@
     <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineController.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineItem.hpp" />
+    <ClInclude Include="..\..\..\server\TracyTimelineItemGpu.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineItemPlot.hpp" />
     <ClInclude Include="..\..\..\server\TracyTimelineItemThread.hpp" />
     <ClInclude Include="..\..\..\server\TracyUserData.hpp" />

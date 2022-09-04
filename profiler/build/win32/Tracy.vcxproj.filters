@@ -366,6 +366,12 @@
     <ClCompile Include="..\..\..\server\TracyTimelineItemThread.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTimelineItemGpu.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyView_GpuTimeline.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -741,6 +747,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyTimelineItemThread.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTimelineItemGpu.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

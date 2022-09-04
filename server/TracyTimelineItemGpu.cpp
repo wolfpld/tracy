@@ -26,7 +26,7 @@ const char* TimelineItemGpu::HeaderLabel() const
     static char buf[4096];
     if( m_gpu->name.Active() )
     {
-        sprintf( buf, "%s context %i: %s", GpuContextNames[(int)m_gpu->type], m_idx, m_worker.GetString( m_gpu->name ) );
+        sprintf( buf, "%s", m_worker.GetString( m_gpu->name ) );
     }
     else
     {
@@ -47,8 +47,8 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
     sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
 
     ImGui::BeginTooltip();
-    ImGui::TextUnformatted( buf );
     if( m_gpu->name.Active() ) TextFocused( "Name:", m_worker.GetString( m_gpu->name ) );
+    ImGui::TextUnformatted( buf );
     ImGui::Separator();
     if( !isMultithreaded )
     {
@@ -126,14 +126,15 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
 
 void TimelineItemGpu::HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover )
 {
-    auto draw = ImGui::GetWindowDrawList();
-    const auto ty = ImGui::GetTextLineHeight();
+    if( m_gpu->name.Active() )
+    {
+        auto draw = ImGui::GetWindowDrawList();
+        const auto ty = ImGui::GetTextLineHeight();
 
-    /*
-    char tmp[128];
-    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( m_plot->rMax - m_plot->rMin, m_plot->format ), RealToString( m_plot->num ) );
-    draw->AddText( wpos + ImVec2( ty * 1.5f + labelWidth, offset ), 0xFF226E6E, tmp );
-    */
+        char buf[64];
+        sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+        draw->AddText( wpos + ImVec2( ty * 1.5f + labelWidth, offset ), HeaderColorInactive(), buf );
+    }
 }
 
 int64_t TimelineItemGpu::RangeBegin() const

@@ -20,8 +20,8 @@ public:
     void Draw( bool firstFrame, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
 
     void VisibilityCheckbox();
-    void SetVisible( bool visible ) { m_visible = visible; }
-    bool IsVisible() const { return m_visible; }
+    virtual void SetVisible( bool visible ) { m_visible = visible; }
+    virtual bool IsVisible() const { return m_visible; }
 
 protected:
     virtual uint32_t HeaderColor() const = 0;

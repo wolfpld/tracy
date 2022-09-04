@@ -20,7 +20,7 @@ TimelineItem::TimelineItem( View& view, Worker& worker )
 
 void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
-    if( !m_visible )
+    if( !IsVisible() )
     {
         m_height = 0;
         m_offset = 0;
@@ -109,7 +109,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
     {
         if( ImGui::MenuItem( ICON_FA_EYE_SLASH " Hide" ) )
         {
-            m_visible = false;
+            SetVisible( false );
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

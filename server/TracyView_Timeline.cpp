@@ -4,6 +4,7 @@
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracySourceView.hpp"
+#include "TracyTimelineItemCpuData.hpp"
 #include "TracyTimelineItemGpu.hpp"
 #include "TracyTimelineItemPlot.hpp"
 #include "TracyTimelineItemThread.hpp"
@@ -349,7 +350,8 @@ void View::DrawTimeline()
     }
     if( m_vd.drawCpuData && m_worker.HasContextSwitches() )
     {
-        offset = DrawCpuData( offset, pxns, wpos, hover, yMin, yMax );
+        static char uptr;
+        m_tc.AddItem<TimelineItemCpuData>( &uptr );
     }
     if( m_vd.drawZones )
     {

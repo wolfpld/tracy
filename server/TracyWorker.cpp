@@ -2397,6 +2397,12 @@ size_t Worker::GetFullFrameCount( const FrameData& fd ) const
     }
 }
 
+bool Worker::AreFramesUsed() const
+{
+    if( m_data.frames.Data().size() > 1 ) return true;
+    return m_data.framesBase->frames.size() > 2;
+}
+
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
     if( fd.continuous )

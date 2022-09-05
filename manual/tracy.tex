@@ -2867,6 +2867,8 @@ Each line in the thread execution display represents a separate logical CPU thre
 
 When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores.
 
+Clicking the \LMB{}~left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before.
+
 Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironmentos}) or give you a hint to add more instrumentation macros.
 
 \subparagraph{Locks}

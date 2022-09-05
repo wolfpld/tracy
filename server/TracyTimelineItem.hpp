@@ -23,6 +23,8 @@ public:
     virtual void SetVisible( bool visible ) { m_visible = visible; }
     virtual bool IsVisible() const { return m_visible; }
 
+    void SetShowFull( bool showFull ) { m_showFull = showFull; }
+
 protected:
     virtual uint32_t HeaderColor() const = 0;
     virtual uint32_t HeaderColorInactive() const = 0;

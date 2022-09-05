@@ -326,6 +326,12 @@ bool View::DrawCpuData( double pxns, int& offset, const ImVec2& wpos, bool hover
                                 ImGui::EndTooltip();
                                 ImGui::PushFont( m_smallFont );
 
+                                if( local && IsMouseClicked( 0 ) )
+                                {
+                                    auto& item = m_tc.GetItem( m_worker.GetThreadData( thread ) );
+                                    item.SetVisible( true );
+                                    item.SetShowFull( true );
+                                }
                                 if( IsMouseClicked( 2 ) )
                                 {
                                     ZoomToRange( start, end );

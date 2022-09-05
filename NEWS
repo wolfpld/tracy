@@ -88,6 +88,9 @@ v0.x.x (xxxx-xx-xx)
   - Note that some automated functionality (e.g. vertical synchronization
     capture) may automatically generate frame data, which will force frames to
     be displayed.
+- Tracy threads will now be collapsed by default on the timeline.
+- Clicking on a local thread in the CPU data view will make the thread visible
+  and uncollapsed on the timeline.
 
 
 v0.8.2 (2022-06-28)

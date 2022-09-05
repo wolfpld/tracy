@@ -696,39 +696,42 @@ void View::DrawOptions()
         ImGui::TreePop();
     }
 
-    ImGui::Separator();
-    expand = ImGui::TreeNode( ICON_FA_IMAGES " Visible frame sets:" );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
-    if( expand )
+    if( m_worker.AreFramesUsed() )
     {
+        ImGui::Separator();
+        expand = ImGui::TreeNode( ICON_FA_IMAGES " Visible frame sets:" );
         ImGui::SameLine();
-        if( ImGui::SmallButton( "Select all" ) )
+        ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
+        if( expand )
         {
-            for( const auto& fd : m_worker.GetFrames() )
-            {
-                Vis( fd ) = true;
-            }
-        }
-        ImGui::SameLine();
-        if( ImGui::SmallButton( "Unselect all" ) )
-        {
-            for( const auto& fd : m_worker.GetFrames() )
-            {
-                Vis( fd ) = false;
-            }
-        }
-
-        int idx = 0;
-        for( const auto& fd : m_worker.GetFrames() )
-        {
-            ImGui::PushID( idx++ );
-            SmallCheckbox( GetFrameSetName( *fd ), &Vis( fd ) );
-            ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size() ), fd->continuous ? "" : "discontinuous " );
+            if( ImGui::SmallButton( "Select all" ) )
+            {
+                for( const auto& fd : m_worker.GetFrames() )
+                {
+                    Vis( fd ) = true;
+                }
+            }
+            ImGui::SameLine();
+            if( ImGui::SmallButton( "Unselect all" ) )
+            {
+                for( const auto& fd : m_worker.GetFrames() )
+                {
+                    Vis( fd ) = false;
+                }
+            }
+
+            int idx = 0;
+            for( const auto& fd : m_worker.GetFrames() )
+            {
+                ImGui::PushID( idx++ );
+                SmallCheckbox( GetFrameSetName( *fd ), &Vis( fd ) );
+                ImGui::PopID();
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size() ), fd->continuous ? "" : "discontinuous " );
+            }
+            ImGui::TreePop();
         }
-        ImGui::TreePop();
     }
     ImGui::End();
 }

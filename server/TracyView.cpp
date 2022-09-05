@@ -836,55 +836,58 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
-    ImGui::SameLine();
-    if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
-    ImGui::SameLine();
+    if( m_worker.AreFramesUsed() )
     {
-        const auto vis = Vis( m_frames );
-        if( !vis )
+        ImGui::SameLine();
+        if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
+        ImGui::SameLine();
         {
-            ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
-        }
-        ImGui::Text( "%s: %s", GetFrameSetName( *m_frames ), RealToString( m_worker.GetFrameCount( *m_frames ) ) );
-        if( !vis )
-        {
-            ImGui::PopStyleColor();
-        }
-        if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "GoToFramePopup" );
-    }
-    ImGui::SameLine();
-    if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) ) ZoomToNextFrame();
-    ImGui::SameLine();
-    if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
-    {
-        auto& frames = m_worker.GetFrames();
-        for( auto& fd : frames )
-        {
-            bool isSelected = m_frames == fd;
-            if( ImGui::Selectable( GetFrameSetName( *fd ), isSelected ) )
+            const auto vis = Vis( m_frames );
+            if( !vis )
             {
-                m_frames = fd;
+                ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
             }
-            if( isSelected )
+            ImGui::Text( "%s: %s", GetFrameSetName( *m_frames ), RealToString( m_worker.GetFrameCount( *m_frames ) ) );
+            if( !vis )
             {
-                ImGui::SetItemDefaultFocus();
+                ImGui::PopStyleColor();
             }
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size() ) );
+            if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "GoToFramePopup" );
         }
-        ImGui::EndCombo();
-    }
-    if( ImGui::BeginPopup( "GoToFramePopup" ) )
-    {
-        static int frameNum = 1;
-        const bool mainFrameSet = m_frames->name == 0;
-        const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
-        const auto frameOffset = mainFrameSet ? 0 : 1;
-        ImGui::SetNextItemWidth( 120 * GetScale() );
-        const bool clicked = ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-        frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
-        if( clicked ) ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
-        ImGui::EndPopup();
+        ImGui::SameLine();
+        if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) ) ZoomToNextFrame();
+        ImGui::SameLine();
+        if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
+        {
+            auto& frames = m_worker.GetFrames();
+            for( auto& fd : frames )
+            {
+                bool isSelected = m_frames == fd;
+                if( ImGui::Selectable( GetFrameSetName( *fd ), isSelected ) )
+                {
+                    m_frames = fd;
+                }
+                if( isSelected )
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size() ) );
+            }
+            ImGui::EndCombo();
+        }
+        if( ImGui::BeginPopup( "GoToFramePopup" ) )
+        {
+            static int frameNum = 1;
+            const bool mainFrameSet = m_frames->name == 0;
+            const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
+            const auto frameOffset = mainFrameSet ? 0 : 1;
+            ImGui::SetNextItemWidth( 120 * GetScale() );
+            const bool clicked = ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+            frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+            if( clicked ) ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
+            ImGui::EndPopup();
+        }
     }
 
     {

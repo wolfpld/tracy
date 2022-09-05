@@ -296,12 +296,15 @@ void View::DrawTimeline()
 
     m_tc.Begin();
     DrawTimelineFramesHeader();
-    auto& frames = m_worker.GetFrames();
-    for( auto fd : frames )
+    if( m_worker.AreFramesUsed() )
     {
-        if( Vis( fd ) )
+        auto& frames = m_worker.GetFrames();
+        for( auto fd : frames )
         {
-            DrawTimelineFrames( *fd );
+            if( Vis( fd ) )
+            {
+                DrawTimelineFrames( *fd );
+            }
         }
     }
 

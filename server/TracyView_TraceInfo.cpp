@@ -183,7 +183,7 @@ void View::DrawInfo()
         ImGui::TreePop();
     }
 
-    if( ImGui::TreeNode( "Frame statistics" ) )
+    if( m_worker.AreFramesUsed() && ImGui::TreeNode( "Frame statistics" ) )
     {
         auto fsz = m_worker.GetFullFrameCount( *m_frames );
         if( fsz != 0 )

@@ -83,6 +83,11 @@ v0.x.x (xxxx-xx-xx)
 - The import-chrome utility interprets Instant (`i`/`I`) events where the
   `name` field contains the word `frame` as a frame event. The `name` is the
   frame set name.
+- Frame data won't be displayed if there was no frame instrumentation in the
+  profiling session.
+  - Note that some automated functionality (e.g. vertical synchronization
+    capture) may automatically generate frame data, which will force frames to
+    be displayed.
 
 
 v0.8.2 (2022-06-28)

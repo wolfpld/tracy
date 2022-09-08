@@ -3735,7 +3735,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     if( m_showJumps )
     {
         ImGui::SameLine( 0, 0 );
-        const auto xoff = ImGui::GetCursorScreenPos().x - wpos.x + round( ty * 0.66f );
+        const auto xoff = round( ImGui::GetCursorScreenPos().x - wpos.x + ( ty * 0.66f ) );
         m_jumpOffset = xoff;
 
         const auto JumpArrow = JumpArrowBase * ty / 15;

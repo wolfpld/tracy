@@ -4219,6 +4219,16 @@ TRACY_API void ___tracy_emit_gpu_context_name( const struct ___tracy_gpu_context
     TracyLfqCommitC;
 }
 
+TRACY_API void ___tracy_emit_gpu_calibration( const struct ___tracy_gpu_calibration_data data )
+{
+    TracyLfqPrepareC( tracy::QueueType::GpuCalibration );
+    tracy::MemWrite( &item->gpuCalibration.cpuTime, tracy::Profiler::GetTime() );
+    tracy::MemWrite( &item->gpuCalibration.gpuTime, data.gpuTime );
+    tracy::MemWrite( &item->gpuCalibration.cpuDelta, data.cpuDelta );
+    tracy::MemWrite( &item->gpuCalibration.context, data.context );
+    TracyLfqCommitC;
+}
+
 TRACY_API void ___tracy_emit_gpu_zone_begin_alloc_serial( const struct ___tracy_gpu_zone_begin_data data )
 {
     auto item = tracy::Profiler::QueueSerial();
@@ -4276,6 +4286,17 @@ TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_
     tracy::MemWrite( &item->gpuContextNameFat.context, data.context );
     tracy::MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
     tracy::MemWrite( &item->gpuContextNameFat.size, data.len );
+    tracy::Profiler::QueueSerialFinish();
+}
+
+TRACY_API void ___tracy_emit_gpu_calibration_serial( const struct ___tracy_gpu_calibration_data data )
+{
+    auto item = tracy::Profiler::QueueSerial();
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::GpuCalibration );
+    tracy::MemWrite( &item->gpuCalibration.cpuTime, tracy::Profiler::GetTime() );
+    tracy::MemWrite( &item->gpuCalibration.gpuTime, data.gpuTime );
+    tracy::MemWrite( &item->gpuCalibration.cpuDelta, data.cpuDelta );
+    tracy::MemWrite( &item->gpuCalibration.context, data.context );
     tracy::Profiler::QueueSerialFinish();
 }
 

@@ -177,7 +177,7 @@ TRACY_API void ___tracy_emit_gpu_zone_end_serial( const struct ___tracy_gpu_zone
 TRACY_API void ___tracy_emit_gpu_time_serial( const struct ___tracy_gpu_time_data );
 TRACY_API void ___tracy_emit_gpu_new_context_serial( const struct ___tracy_gpu_new_context_data );
 TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_context_name_data );
-TRACY_API void ___tracy_emit_gpu_calibration_serial(const struct ___tracy_gpu_calibration_data );
+TRACY_API void ___tracy_emit_gpu_calibration_serial( const struct ___tracy_gpu_calibration_data );
 
 TRACY_API int ___tracy_connected(void);
 

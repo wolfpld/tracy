@@ -701,11 +701,24 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             const auto& detail = *op.detail;
             bool hasJump = false;
             bool jumpConditional = false;
+            OpType opType = OpType::None;
             for( auto j=0; j<detail.groups_count; j++ )
             {
                 if( detail.groups[j] == CS_GRP_JUMP || detail.groups[j] == CS_GRP_CALL || detail.groups[j] == CS_GRP_RET )
                 {
                     hasJump = true;
+                    break;
+                }
+            }
+            for( auto j=0; j<detail.groups_count; j++ )
+            {
+                if( detail.groups[j] == CS_GRP_JUMP && opType < OpType::Jump ) opType = OpType::Jump;
+                else if( detail.groups[j] == CS_GRP_BRANCH_RELATIVE && opType < OpType::Branch ) opType = OpType::Branch;
+                else if( detail.groups[j] == CS_GRP_CALL && opType < OpType::Call ) opType = OpType::Call;
+                else if( detail.groups[j] == CS_GRP_RET && opType < OpType::Ret ) opType = OpType::Ret;
+                else if( detail.groups[j] == CS_GRP_PRIVILEGE && opType < OpType::Privileged )
+                {
+                    opType = OpType::Privileged;
                     break;
                 }
             }
@@ -875,7 +888,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     }
                 }
             }
-            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, jumpConditional, std::move( params ) } );
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, opType, jumpConditional, std::move( params ) } );
 
 #if CS_API_MAJOR >= 4
             auto& entry = m_asm.back();

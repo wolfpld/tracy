@@ -10,9 +10,9 @@ SRC4 := $(SRC4)
 # this file, so ../win32/$(PROJECT).vcxproj refers to the Visual Studio project
 # of whichever tool is including this makefile fragment.
 
-BASE := $(shell egrep 'ClCompile.*cpp"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
-BASE2 := $(shell egrep 'ClCompile.*c"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
-BASE4 := $(shell egrep 'None.*S"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
+BASE := $(shell grep -E 'ClCompile.*cpp"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
+BASE2 := $(shell grep -E 'ClCompile.*c"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
+BASE4 := $(shell grep -E 'None.*S"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
 
 # The tool-specific makefile may request that certain files be omitted.
 SRC += $(filter-out $(FILTER),$(BASE))

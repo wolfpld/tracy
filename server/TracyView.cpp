@@ -1247,7 +1247,9 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
                     ImGui::TextUnformatted( ptr, it->begin );
                     ImGui::SameLine( 0, 0 );
                 }
-                TextColoredUnformatted( i == srcline-1 ? SyntaxColors[(int)it->color] : SyntaxColorsDimmed[(int)it->color], it->begin, it->end );
+                auto color = SyntaxColors[(int)it->color];
+                if( i != srcline-1 ) color = ( color & 0xFFFFFF ) | 0x99000000;
+                TextColoredUnformatted( color, it->begin, it->end );
                 ImGui::SameLine( 0, 0 );
                 ptr = it->end;
                 ++it;

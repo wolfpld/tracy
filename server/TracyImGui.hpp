@@ -27,30 +27,17 @@ void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0
 void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty );
 
 
-static constexpr const ImVec4 SyntaxColors[] = {
-    { 0.7f,  0.7f,  0.7f,  1 },    // default
-    { 0.45f, 0.68f, 0.32f, 1 },    // comment
-    { 0.72f, 0.37f, 0.12f, 1 },    // preprocessor
-    { 0.64f, 0.64f, 1,     1 },    // string
-    { 0.64f, 0.82f, 1,     1 },    // char literal
-    { 1,     0.91f, 0.53f, 1 },    // keyword
-    { 0.81f, 0.6f,  0.91f, 1 },    // number
-    { 0.9f,  0.9f,  0.9f,  1 },    // punctuation
-    { 0.78f, 0.46f, 0.75f, 1 },    // type
-    { 0.21f, 0.69f, 0.89f, 1 },    // special
-};
-
-static constexpr const ImVec4 SyntaxColorsDimmed[] = {
-    { 0.7f,  0.7f,  0.7f,  0.6f },    // default
-    { 0.45f, 0.68f, 0.32f, 0.6f },    // comment
-    { 0.72f, 0.37f, 0.12f, 0.6f },    // preprocessor
-    { 0.64f, 0.64f, 1,     0.6f },    // string
-    { 0.64f, 0.82f, 1,     0.6f },    // char literal
-    { 1,     0.91f, 0.53f, 0.6f },    // keyword
-    { 0.81f, 0.6f,  0.91f, 0.6f },    // number
-    { 0.9f,  0.9f,  0.9f,  0.6f },    // punctuation
-    { 0.78f, 0.46f, 0.75f, 0.6f },    // type
-    { 0.21f, 0.69f, 0.89f, 0.6f },    // special
+static constexpr const uint32_t SyntaxColors[] = {
+    0xFFB2B2B2,     // default
+    0xFF51AD72,     // comment
+    0xFF1E5EB7,     // preprocessor
+    0xFFFFA3A3,     // string
+    0xFFFFD1A3,     // char literal
+    0xFF87E8FF,     // keyword
+    0xFFE899CE,     // number
+    0xFFE5E5E5,     // punctuation
+    0xFFBF75C6,     // type
+    0xFFE2AF35,     // special
 };
 
 

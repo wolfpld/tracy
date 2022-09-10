@@ -75,7 +75,11 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
     const auto zsz = zones.size();
     char buf[32];
     sprintf( buf, "%i##zonelist", id );
-    if( !ImGui::BeginTable( buf, 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<size_t>( zsz + 1, 15 ) ) ) ) return;
+    if( !ImGui::BeginTable( buf, 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollY, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<size_t>( zsz + 1, 15 ) ) ) )
+    {
+        ImGui::TreePop();
+        return;
+    }
     ImGui::TableSetupScrollFreeze( 0, 1 );
     ImGui::TableSetupColumn( "Time from start" );
     ImGui::TableSetupColumn( "Execution time", ImGuiTableColumnFlags_PreferSortDescending );

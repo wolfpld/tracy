@@ -1241,7 +1241,7 @@ void SysTraceWorker( void* ptr )
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
                         t0 = ring.ConvertTimeToTsc( t0 );
 #endif
-                        QueueType type;
+                        QueueType type{};
                         switch( id )
                         {
                         case EventCpuCycles:
@@ -1313,7 +1313,7 @@ void SysTraceWorker( void* ptr )
                 while( activeNum > 0 )
                 {
                     int sel = -1;
-                    int selPos;
+                    int selPos = -1;
                     int64_t t0 = std::numeric_limits<int64_t>::max();
                     for( int i=0; i<activeNum; i++ )
                     {

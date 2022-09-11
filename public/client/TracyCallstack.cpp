@@ -661,7 +661,7 @@ static void InitKernelSymbols()
         while( *ptr != '\t' && *ptr != '\n' ) ptr++;
         const auto nameend = ptr;
         const char* modstart = nullptr;
-        const char* modend;
+        const char* modend = nullptr;
         if( *ptr == '\t' )
         {
             ptr += 2;

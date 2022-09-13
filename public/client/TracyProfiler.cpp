@@ -1485,7 +1485,6 @@ Profiler::~Profiler()
 #ifdef TRACY_HAS_CALLSTACK
     s_symbolThread->~Thread();
     tracy_free( s_symbolThread );
-    s_symbolThreadGone.store( true, std::memory_order_release );
 #endif
 
 #ifndef TRACY_NO_FRAME_IMAGE
@@ -3310,7 +3309,11 @@ void Profiler::SymbolWorker()
 #ifdef TRACY_ON_DEMAND
         if( !IsConnected() )
         {
-            if( shouldExit ) return;
+            if( shouldExit )
+            {
+                s_symbolThreadGone.store( true, std::memory_order_release );
+                return;
+            }
             while( m_symbolQueue.front() ) m_symbolQueue.pop();
             std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
             continue;
@@ -3324,7 +3327,11 @@ void Profiler::SymbolWorker()
         }
         else
         {
-            if( shouldExit ) return;
+            if( shouldExit )
+            {
+                s_symbolThreadGone.store( true, std::memory_order_release );
+                return;
+            }
             std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
         }
     }

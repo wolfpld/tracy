@@ -73,6 +73,46 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
     }
     return ret;
 }
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetAsmRegs()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+    for( auto& v : {
+        // X86
+        "invalid", "rflags", "rip",
+        "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+        "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp",
+        "ax",  "bx",  "cx",  "dx",  "si",  "di",  "bp",  "sp",
+        "ah",  "bh",  "ch",  "dh",  "SIL", "DIL", "BPL", "SPL",
+        "al",  "bl",  "cl",  "dl",
+        "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7",
+        "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "xmm8", "xmm9",
+        "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15", "xmm16", "xmm17", "xmm18", "xmm19",
+        "xmm20", "xmm21", "xmm22", "xmm23", "xmm24", "xmm25", "xmm26", "xmm27", "xmm28", "xmm29",
+        "xmm30", "xmm31", "k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7",
+        // ARM
+        "apsr", "apsr_nzcv", "cpsr", "fpexc", "fpinst", "fpscr", "fpscr_nzcv", "fpsid", "itstate",
+        "lr", "pc", "sp", "spsr", "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10",
+        "d11", "d12", "d13", "d14", "d15", "d16", "d17", "d18", "d19", "d20", "d21", "d22", "d23",
+        "d24", "d25", "d26", "d27", "d28", "d29", "d30", "d31", "fpinst2", "mvfr0", "mvfr1", "mvfr2",
+        "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14",
+        "q15", "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "s0",
+        "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
+        "s16", "s17", "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29",
+        "s30", "s31" })
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetAsmSizeDirectives()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+    for( auto& v : { "byte", "word", "dword", "qword", "xmmword", "ymmword" })
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
 }
 
 Tokenizer::Tokenizer()

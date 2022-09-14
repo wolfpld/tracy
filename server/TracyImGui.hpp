@@ -40,6 +40,23 @@ static constexpr const uint32_t SyntaxColors[] = {
     0xFFE2AF35,     // special
 };
 
+static constexpr const uint32_t AsmOpTypeColors[] = {
+    0xFFF4843F,     // None
+    0xFFF4843F,     // Jump
+    0xFFF4843F,     // Branch
+    0xFFF4843F,     // Call
+    0xFFF4843F,     // Ret
+    0xFFF4843F,     // Privileged
+};
+
+static constexpr const uint32_t AsmSyntaxColors[] = {
+    0xFFFFD1A3,     // label
+    0xFFB2B2B2,     // default ('[', '+', '*', ',')
+    0xFF60BC3F,     // dword/xmmword 'ptr'
+    0xFFBF75C6,     // register
+    0xFFE899CE,     // literal
+};
+
 
 [[maybe_unused]] static inline float GetScale()
 {

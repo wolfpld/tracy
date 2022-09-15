@@ -3913,7 +3913,28 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     }
     if( !hasJump )
     {
-        TextColoredUnformatted( AsmColor( 0xFFFFFFFF, inContext, isSelected ), line.operands.c_str() );
+        auto ptr = line.operands.c_str();
+        auto end = ptr + line.operands.size();
+        auto it = line.opTokens.begin();
+        while( ptr < end )
+        {
+            if( it == line.opTokens.end() )
+            {
+                ImGui::TextUnformatted( ptr, end );
+                ImGui::SameLine( 0, 0 );
+                break;
+            }
+            if( ptr < it->begin )
+            {
+                ImGui::TextUnformatted( ptr, it->begin );
+                ImGui::SameLine( 0, 0 );
+            }
+            TextColoredUnformatted( AsmColor( AsmSyntaxColors[(int)it->color], inContext, isSelected ), it->begin, it->end );
+            ImGui::SameLine( 0, 0 );
+            ptr = it->end;
+            ++it;
+        }
+        ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
     }
     ImGui::EndGroup();
 

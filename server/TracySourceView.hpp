@@ -98,6 +98,7 @@ private:
         OpType opType;
         bool jumpConditional;
         std::vector<AsmOpParams> params;
+        std::vector<Tokenizer::AsmToken> opTokens;
         union
         {
             RegsX86 readX86[12];

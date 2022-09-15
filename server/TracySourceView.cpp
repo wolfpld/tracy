@@ -891,6 +891,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 }
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, opType, jumpConditional, std::move( params ) } );
+            const auto& operands = m_asm.back().operands;
+            m_asm.back().opTokens = m_tokenizer.TokenizeAsm( operands.c_str(), operands.c_str() + operands.size() );
 
 #if CS_API_MAJOR >= 4
             auto& entry = m_asm.back();

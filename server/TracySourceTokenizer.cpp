@@ -351,4 +351,26 @@ out:
     return TokenColor::Default;
 }
 
+std::vector<Tokenizer::AsmToken> Tokenizer::TokenizeAsm( const char* begin, const char* end )
+{
+    std::vector<AsmToken> ret;
+    while( begin != end )
+    {
+        while( begin != end && isspace( (uint8_t)*begin ) ) begin++;
+        const auto pos = begin;
+        const auto col = IdentifyAsmToken( begin, end );
+        ret.emplace_back( AsmToken { pos, begin, col } );
+    }
+    return ret;
+}
+
+Tokenizer::AsmTokenColor Tokenizer::IdentifyAsmToken( const char*& begin, const char* end )
+{
+    static const auto s_regs = GetAsmRegs();
+    static const auto s_sizes = GetAsmSizeDirectives();
+
+    begin = end;
+    return AsmTokenColor::Default;
+}
+
 }

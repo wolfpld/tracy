@@ -843,8 +843,6 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     GetProfiler().RequestShutdown();
     while( !GetProfiler().HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
 
-    TerminateProcess( GetCurrentProcess(), 1 );
-
     return EXCEPTION_CONTINUE_SEARCH;
 }
 #endif

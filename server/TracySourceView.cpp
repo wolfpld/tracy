@@ -3319,6 +3319,30 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     DrawLine( draw, dpos + ImVec2( 0, ty ), dpos + ImVec2( w, ty ), 0x08FFFFFF );
 }
 
+static tracy_force_inline uint32_t AsmColor( uint32_t base, bool inContext, int isSelected )
+{
+    if( inContext )
+    {
+        switch( isSelected )
+        {
+        case 0: return base;
+        case 1: return 0xFF3F3FFF;
+        case 2: return 0xFFFF88FF;
+        default: assert( false ); return 0;
+        }
+    }
+    else
+    {
+        switch( isSelected )
+        {
+        case 0: return ( base & 0xFFFFFF ) | 0x88000000;
+        case 1: return 0x883F3FFF;
+        case 2: return 0x88FF88FF;
+        default: assert( false ); return 0;
+        }
+    }
+}
+
 void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto scale = GetScale();
@@ -3854,72 +3878,42 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
     }
 
-    const auto msz = line.mnemonic.size();
-    memcpy( buf, line.mnemonic.c_str(), msz );
-    memset( buf+msz, ' ', m_maxMnemonicLen-msz );
+    const bool inContext = IsInContext( worker, line.addr );
+    int isSelected = asmIdx == m_asmSelected;
+    if( !isSelected && line.regData[0] != 0 )
+    {
+        int idx = 0;
+        while( line.regData[idx] != 0 )
+        {
+            if( line.regData[idx] & ( WriteBit | ReadBit ) )
+            {
+                isSelected = 2;
+                break;
+            }
+            idx++;
+        }
+    }
+
+    ImGui::BeginGroup();
+    TextColoredUnformatted( AsmColor( AsmOpTypeColors[(int)line.opType], inContext, isSelected ), line.mnemonic.c_str() );
+    ImGui::SameLine( 0, ImGui::CalcTextSize( " " ).x * ( m_maxMnemonicLen - line.mnemonic.size() ) );
     bool hasJump = false;
     if( line.jumpAddr != 0 )
     {
         auto lit = m_locMap.find( line.jumpAddr );
         if( lit != m_locMap.end() )
         {
-            char tmp[64];
-            sprintf( tmp, ".L%" PRIu32, lit->second );
-            strcpy( buf+m_maxMnemonicLen, tmp );
+            ImGui::PushStyleColor( ImGuiCol_Text, AsmColor( AsmSyntaxColors[(int)Tokenizer::AsmTokenColor::Label], inContext, isSelected ) );
+            ImGui::Text( ".L%" PRIu32, lit->second );
+            ImGui::PopStyleColor();
             hasJump = true;
         }
     }
     if( !hasJump )
     {
-        memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
+        TextColoredUnformatted( AsmColor( 0xFFFFFFFF, inContext, isSelected ), line.operands.c_str() );
     }
-
-    const bool isInContext = IsInContext( worker, line.addr );
-    if( asmIdx == m_asmSelected )
-    {
-        TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, isInContext ? 1.f : 0.5f ), buf );
-    }
-    else if( line.regData[0] != 0 )
-    {
-        bool hasDepencency = false;
-        int idx = 0;
-        for(;;)
-        {
-            if( line.regData[idx] == 0 ) break;
-            if( line.regData[idx] & ( WriteBit | ReadBit ) )
-            {
-                hasDepencency = true;
-                break;
-            }
-            idx++;
-        }
-        if( hasDepencency )
-        {
-            TextColoredUnformatted( ImVec4( 1, 0.5f, 1, isInContext ? 1.f : 0.5f ), buf );
-        }
-        else
-        {
-            if( isInContext )
-            {
-                ImGui::TextUnformatted( buf );
-            }
-            else
-            {
-                TextDisabledUnformatted( buf );
-            }
-        }
-    }
-    else
-    {
-        if( isInContext )
-        {
-            ImGui::TextUnformatted( buf );
-        }
-        else
-        {
-            TextDisabledUnformatted( buf );
-        }
-    }
+    ImGui::EndGroup();
 
     uint32_t jumpOffset;
     uint64_t jumpBase;

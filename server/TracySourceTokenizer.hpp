@@ -38,6 +38,15 @@ public:
         std::vector<Token> tokens;
     };
 
+    enum class AsmTokenColor : uint8_t
+    {
+        Label,          // no-op, padding
+        Default,        // '+', '[', '*', etc
+        SizeDirective,  // byte, word, dword, etc
+        Register,       // rax, rip, etc
+        Literal,        // 0x04, etc
+    };
+
     Tokenizer();
 
     std::vector<Token> Tokenize( const char* begin, const char* end );

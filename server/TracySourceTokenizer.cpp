@@ -369,8 +369,39 @@ Tokenizer::AsmTokenColor Tokenizer::IdentifyAsmToken( const char*& begin, const 
     static const auto s_regs = GetAsmRegs();
     static const auto s_sizes = GetAsmSizeDirectives();
 
-    begin = end;
-    return AsmTokenColor::Default;
+    while( begin < end && *begin == ' ' ) begin++;
+    if( ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) )
+    {
+        const char* tmp = begin;
+        begin++;
+        while( begin < end && ( ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || ( *begin >= '0' && *begin <= '9' ) || *begin == '_' ) ) begin++;
+        if( begin - tmp <= 10 )
+        {
+            char buf[11];
+            memcpy( buf, tmp, begin-tmp );
+            buf[begin-tmp] = '\0';
+            if( s_regs.find( buf ) != s_regs.end() ) return AsmTokenColor::Register;
+            if( s_sizes.find( buf ) != s_sizes.end() )
+            {
+                if( end - begin >= 4 && memcmp( begin, " ptr", 4 ) == 0 )
+                {
+                    begin += 4;
+                    return AsmTokenColor::SizeDirective;
+                }
+            }
+        }
+        return AsmTokenColor::Default;
+    }
+    else if( *begin >= '0' && *begin <= '9' )
+    {
+        while( begin < end && ( ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || ( *begin >= '0' && *begin <= '9' ) || *begin == '_' ) ) begin++;
+        return AsmTokenColor::Literal;
+    }
+    else
+    {
+        while( begin < end && !( ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || ( *begin >= '0' && *begin <= '9' ) || *begin == '_' ) ) begin++;
+        return AsmTokenColor::Default;
+    }
 }
 
 }

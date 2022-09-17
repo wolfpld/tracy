@@ -91,6 +91,7 @@ v0.x.x (xxxx-xx-xx)
 - Tracy threads will now be collapsed by default on the timeline.
 - Clicking on a local thread in the CPU data view will make the thread visible
   and uncollapsed on the timeline.
+- Assembly view is now in color.
 
 
 v0.8.2 (2022-06-28)

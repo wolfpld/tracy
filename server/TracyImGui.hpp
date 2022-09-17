@@ -41,18 +41,18 @@ static constexpr const uint32_t SyntaxColors[] = {
 };
 
 static constexpr const uint32_t AsmOpTypeColors[] = {
-    0xFFF4843F,     // None
-    0xFFF4843F,     // Jump
-    0xFFF4843F,     // Branch
-    0xFFF4843F,     // Call
-    0xFFF4843F,     // Ret
-    0xFFF4843F,     // Privileged
+    0xFFE2AF35,     // None
+    0xFFE2AF35,     // Jump
+    0xFFE2AF35,     // Branch
+    0xFFE2AF35,     // Call
+    0xFFE2AF35,     // Ret
+    0xFFE2AF35,     // Privileged
 };
 
 static constexpr const uint32_t AsmSyntaxColors[] = {
     0xFFFFD1A3,     // label
-    0xFFB2B2B2,     // default ('[', '+', '*', ',')
-    0xFF60BC3F,     // dword/xmmword 'ptr'
+    0xFFE5E5E5,     // default ('[', '+', '*', ',')
+    0xFF51AD72,     // dword/xmmword 'ptr'
     0xFFBF75C6,     // register
     0xFFE899CE,     // literal
 };

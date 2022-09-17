@@ -3960,7 +3960,21 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             ImGui::BeginTooltip();
             if( jumpName || opdesc != 0 )
             {
-                if( opdesc != 0 ) ImGui::TextUnformatted( OpDescList[opdesc] );
+                if( opdesc != 0 )
+                {
+                    ImGui::TextUnformatted( OpDescList[opdesc] );
+                    if( line.opType == OpType::Privileged )
+                    {
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextColoredUnformatted( AsmOpTypeColors[(int)OpType::Privileged], "privileged" );
+                    }
+                }
+                else if( line.opType == OpType::Privileged )
+                {
+                    TextColoredUnformatted( AsmOpTypeColors[(int)OpType::Privileged], "Privileged" );
+                }
                 if( jumpName )
                 {
                     if( jumpBase == m_baseAddr )

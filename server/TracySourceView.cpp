@@ -3896,6 +3896,19 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
     }
 
+    uint32_t jumpOffset;
+    uint64_t jumpBase;
+    const char* jumpName = nullptr;
+    const char* normalized = nullptr;
+    if( line.jumpAddr != 0 )
+    {
+        jumpOffset = 0;
+        jumpBase = worker.GetSymbolForAddress( line.jumpAddr, jumpOffset );
+        auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( line.jumpAddr ) : worker.GetSymbolData( jumpBase );
+        if( jumpSym ) jumpName = worker.GetString( jumpSym->name );
+        if( jumpName ) normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
+    }
+
     ImGui::BeginGroup();
     TextColoredUnformatted( AsmColor( AsmOpTypeColors[(int)line.opType], inContext, isSelected ), line.mnemonic.c_str() );
     ImGui::SameLine( 0, ImGui::CalcTextSize( " " ).x * ( m_maxMnemonicLen - line.mnemonic.size() ) );
@@ -3910,6 +3923,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             ImGui::PopStyleColor();
             hasJump = true;
         }
+    }
+    if( !hasJump && jumpName && jumpBase != m_baseAddr )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, AsmColor( AsmSyntaxColors[(int)Tokenizer::AsmTokenColor::Label], inContext, isSelected ) );
+        if( jumpOffset == 0 )
+        {
+            ImGui::Text( "%s", normalized );
+        }
+        else
+        {
+            ImGui::Text( "%s+%" PRIu32, normalized, jumpOffset );
+        }
+        ImGui::PopStyleColor();
+        hasJump = true;
     }
     if( !hasJump )
     {
@@ -3937,19 +3964,6 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
     }
     ImGui::EndGroup();
-
-    uint32_t jumpOffset;
-    uint64_t jumpBase;
-    const char* jumpName = nullptr;
-    const char* normalized = nullptr;
-    if( line.jumpAddr != 0 )
-    {
-        jumpOffset = 0;
-        jumpBase = worker.GetSymbolForAddress( line.jumpAddr, jumpOffset );
-        auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( line.jumpAddr ) : worker.GetSymbolData( jumpBase );
-        if( jumpSym ) jumpName = worker.GetString( jumpSym->name );
-        if( jumpName ) normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
-    }
 
     if( ImGui::IsItemHovered() )
     {
@@ -3986,7 +4000,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         TextDisabledUnformatted( "External target:" );
                     }
                     ImGui::SameLine();
-                    ImGui::Text( "%s+%" PRIu32, normalized, jumpOffset );
+                    if( jumpOffset == 0 )
+                    {
+                        ImGui::Text( "%s", normalized );
+                    }
+                    else
+                    {
+                        ImGui::Text( "%s+%" PRIu32, normalized, jumpOffset );
+                    }
+                    if( normalized != jumpName )
+                    {
+                        ImGui::PushFont( m_smallFont );
+                        TextDisabledUnformatted( jumpName );
+                        ImGui::PopFont();
+                    }
                     if( jumpBase == m_baseAddr )
                     {
                         uint32_t srcline;
@@ -4125,7 +4152,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 TextDisabledUnformatted( "External target:" );
             }
             ImGui::SameLine();
-            ImGui::Text( "%s+%" PRIu32, normalized, jumpOffset );
+            if( jumpOffset == 0 )
+            {
+                ImGui::Text( "%s", normalized );
+            }
+            else
+            {
+                ImGui::Text( "%s+%" PRIu32, normalized, jumpOffset );
+            }
+            if( normalized != jumpName && strcmp( normalized, jumpName ) != 0 )
+            {
+                ImGui::PushFont( m_smallFont );
+                TextDisabledUnformatted( jumpName );
+                ImGui::PopFont();
+            }
             if( jumpBase == m_baseAddr )
             {
                 uint32_t srcline;
@@ -4309,13 +4349,10 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         }
         else
         {
-            ImGui::TextDisabled( "  [%s+%" PRIu32"]", normalized, jumpOffset );
-            if( ImGui::IsItemHovered() )
+            ImGui::TextDisabled( "  [%s]", line.operands.c_str() );
+            if( ImGui::IsItemClicked() )
             {
-                UnsetFont();
-                TooltipNormalizedName( jumpName, normalized );
-                SetFont();
-                if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
+                jumpOut = line.jumpAddr;
             }
         }
     }

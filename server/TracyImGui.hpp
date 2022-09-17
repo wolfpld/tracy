@@ -42,11 +42,11 @@ static constexpr const uint32_t SyntaxColors[] = {
 
 static constexpr const uint32_t AsmOpTypeColors[] = {
     0xFFE2AF35,     // None
-    0xFFE2AF35,     // Jump
-    0xFFE2AF35,     // Branch
-    0xFFE2AF35,     // Call
-    0xFFE2AF35,     // Ret
-    0xFFE2AF35,     // Privileged
+    0xFF358FE2,     // Jump
+    0xFF358FE2,     // Branch
+    0xFF35E2AF,     // Call
+    0xFF35E2AF,     // Ret
+    0xFF22FFFF,     // Privileged
 };
 
 static constexpr const uint32_t AsmSyntaxColors[] = {

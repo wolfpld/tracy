@@ -3328,8 +3328,8 @@ static tracy_force_inline uint32_t AsmColor( uint32_t base, bool inContext, int 
         switch( isSelected )
         {
         case 0: return base;
-        case 1: return 0xFF3F3FFF;
-        case 2: return 0xFFFF88FF;
+        case 1: return 0xFFFFFFFF;
+        case 2: return 0xFF2F2FFF;
         default: assert( false ); return 0;
         }
     }
@@ -3338,8 +3338,8 @@ static tracy_force_inline uint32_t AsmColor( uint32_t base, bool inContext, int 
         switch( isSelected )
         {
         case 0: return ( base & 0xFFFFFF ) | 0x88000000;
-        case 1: return 0x883F3FFF;
-        case 2: return 0x88FF88FF;
+        case 1: return 0x88FFFFFF;
+        case 2: return 0x882F2FFF;
         default: assert( false ); return 0;
         }
     }

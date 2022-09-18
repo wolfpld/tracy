@@ -4348,7 +4348,35 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             if( ImGui::IsItemHovered() )
             {
                 UnsetFont();
-                TooltipNormalizedName( jumpName, normalized );
+                ImGui::BeginTooltip();
+                if( normalized != jumpName && strcmp( normalized, jumpName ) != 0 )
+                {
+                    ImGui::TextUnformatted( jumpName );
+                }
+                char tmp[32];
+                sprintf( tmp, "+%" PRIu32, jumpOffset );
+                TextFocused( "Jump target:", tmp );
+                uint32_t srcline;
+                const auto srcidx = worker.GetLocationForAddress( line.jumpAddr, srcline );
+                if( srcline != 0 )
+                {
+                    const auto fileName = worker.GetString( srcidx );
+                    if( fileName )
+                    {
+                        if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                        {
+                            m_sourceTooltip.Parse( fileName, worker, view );
+                            if( !m_sourceTooltip.empty() )
+                            {
+                                ImGui::Separator();
+                                SetFont();
+                                PrintSourceFragment( m_sourceTooltip, srcline );
+                                UnsetFont();
+                            }
+                        }
+                    }
+                }
+                ImGui::EndTooltip();
                 SetFont();
                 m_highlightAddr = line.jumpAddr;
                 if( ImGui::IsItemClicked() )

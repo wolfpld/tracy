@@ -3905,8 +3905,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         jumpOffset = 0;
         jumpBase = worker.GetSymbolForAddress( line.jumpAddr, jumpOffset );
         auto jumpSym = jumpBase == 0 ? worker.GetSymbolData( line.jumpAddr ) : worker.GetSymbolData( jumpBase );
-        if( jumpSym ) jumpName = worker.GetString( jumpSym->name );
-        if( jumpName ) normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
+        if( jumpSym )
+        {
+            if( worker.HasInlineSymbolAddresses() )
+            {
+                const auto symAddr = worker.GetInlineSymbolForAddress( line.jumpAddr );
+                if( symAddr != 0 )
+                {
+                    const auto symData = worker.GetSymbolData( symAddr );
+                    if( symData ) jumpName = worker.GetString( symData->name );
+                }
+            }
+            if( !jumpName ) jumpName = worker.GetString( jumpSym->name );
+            if( jumpName ) normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
+        }
     }
 
     ImGui::BeginGroup();
@@ -4332,7 +4344,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         ImGui::SameLine();
         if( jumpBase == m_baseAddr )
         {
-            ImGui::TextDisabled( "  -> [%s+%" PRIu32"]", normalized, jumpOffset );
+            ImGui::TextDisabled( "  -> [%s]", normalized );
             if( ImGui::IsItemHovered() )
             {
                 UnsetFont();

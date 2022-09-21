@@ -2401,10 +2401,14 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
     SetFont();
 
     int maxAddrLen;
+    int maxAddrLenRel;
     {
-        char tmp[32];
+        char tmp[32], tmp2[32];
         sprintf( tmp, "%" PRIx64, m_baseAddr + m_codeLen );
         maxAddrLen = strlen( tmp );
+        sprintf( tmp, "%zu", m_asm.size() );
+        sprintf( tmp2, "+%" PRIu32, m_codeLen );
+        maxAddrLenRel = std::max( strlen( tmp ) + 3, strlen( tmp2 ) );      // +3: [-123]
     }
 
     uint64_t selJumpStart = 0;
@@ -2422,7 +2426,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 m_targetAddr = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderAsmLine( line, zero.ipMaxAsm, as, worker, jumpOut, maxAddrLen, view );
+            RenderAsmLine( line, zero.ipMaxAsm, as, worker, jumpOut, maxAddrLen, maxAddrLenRel, view );
         }
         const auto win = ImGui::GetCurrentWindowRead();
         m_asmWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -2442,7 +2446,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderAsmLine( m_asm[i], zero.ipMaxAsm, zero, worker, jumpOut, maxAddrLen, view );
+                    RenderAsmLine( m_asm[i], zero.ipMaxAsm, zero, worker, jumpOut, maxAddrLen, maxAddrLenRel, view );
                     insList.emplace_back( m_asm[i].addr );
                     const auto win = ImGui::GetCurrentWindowRead();
                     const auto lineWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -2456,7 +2460,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     auto& line = m_asm[i];
                     auto it = as.ipCountAsm.find( line.addr );
                     const auto ipcnt = it == as.ipCountAsm.end() ? zero.ipMaxAsm : it->second;
-                    RenderAsmLine( line, ipcnt, as, worker, jumpOut, maxAddrLen, view );
+                    RenderAsmLine( line, ipcnt, as, worker, jumpOut, maxAddrLen, maxAddrLenRel, view );
                     insList.emplace_back( line.addr );
                     const auto win = ImGui::GetCurrentWindowRead();
                     const auto lineWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
@@ -3345,7 +3349,7 @@ static tracy_force_inline uint32_t AsmColor( uint32_t base, bool inContext, int 
     }
 }
 
-void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
+void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, int maxAddrLenRel, View& view )
 {
     const auto scale = GetScale();
     const auto ty = ImGui::GetTextLineHeight();
@@ -3602,8 +3606,16 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         sprintf( buf, "%" PRIx64, line.addr );
     }
     const auto asz = strlen( buf );
-    memset( buf+asz, ' ', maxAddrLen-asz );
-    buf[maxAddrLen] = '\0';
+    if( m_asmRelative )
+    {
+        memset( buf+asz, ' ', maxAddrLenRel-asz );
+        buf[maxAddrLenRel] = '\0';
+    }
+    else
+    {
+        memset( buf+asz, ' ', maxAddrLen-asz );
+        buf[maxAddrLen] = '\0';
+    }
     if( m_asmCountBase >= 0 )
     {
         TextColoredUnformatted( asmIdx - m_asmCountBase < 0 ? 0xFFBB6666 : 0xFF66BBBB, buf );

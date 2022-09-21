@@ -178,7 +178,7 @@ private:
     uint64_t RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view );
 
     void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStatData& as, Worker* worker, const View* view );
-    void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view );
+    void RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const AddrStatData& as, Worker& worker, uint64_t& jumpOut, int maxAddrLen, int maxAddrLenRel, View& view );
     void RenderHwLinePart( size_t cycles, size_t retired, size_t branchRetired, size_t branchMiss, size_t cacheRef, size_t cacheMiss, size_t branchRel, size_t branchRelMax, size_t cacheRel, size_t cacheRelMax, const ImVec2& ts );
 
     void SelectLine( uint32_t line, const Worker* worker, bool updateAsmLine = true, uint64_t targetAddr = 0, bool changeAsmLine = true );

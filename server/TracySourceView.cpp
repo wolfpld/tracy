@@ -3248,7 +3248,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         const auto itemsWidth = ( endPos - startPos ).x;
         const auto fixedWidth = 17 * ts.x;
         ImGui::ItemSize( ImVec2( fixedWidth - itemsWidth, 0 ) );
-        ImGui::SameLine( 0, ty );
+        ImGui::SameLine( 0, 0 );
     }
 
     const auto lineCount = m_source.get().size();
@@ -3585,7 +3585,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         const auto itemsWidth = ( endPos - startPos ).x;
         const auto fixedWidth = 17 * ts.x;
         ImGui::ItemSize( ImVec2( fixedWidth - itemsWidth, 0 ) );
-        ImGui::SameLine( 0, ty );
+        ImGui::SameLine( 0, 0 );
     }
 
     char buf[256];
@@ -3654,7 +3654,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     bool lineHovered = false;
     if( m_asmShowSourceLocation && !m_sourceFiles.empty() )
     {
-        ImGui::SameLine();
+        ImGui::SameLine( 0, stw );
         ImVec2 startPos;
         uint32_t srcline;
         const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
@@ -3768,7 +3768,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     {
         auto code = (const uint8_t*)worker.GetSymbolCode( m_baseAddr, m_codeLen );
         assert( code );
-        ImGui::SameLine();
+        ImGui::SameLine( 0, stw );
         const auto len = PrintHexBytes( code + line.addr - m_baseAddr, line.len, worker.GetCpuArch() );
         ImGui::SameLine( 0, 0 );
         ImGui::ItemSize( ImVec2( stw * ( m_maxAsmBytes*2 - len ), ty ), 0 );
@@ -4414,14 +4414,13 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
         uint32_t col = unreliable ? 0x44FFFFFF : GetGoodnessColor( ipc * 0.25f );
         if( ipc >= 10 )
         {
-            TextColoredUnformatted( col, "  10+ " );
+            TextColoredUnformatted( col, " 10+ " );
         }
         else
         {
             char buf[16];
-            *buf = ' ';
-            const auto end = PrintFloat( buf+1, buf+16, ipc, 2 );
-            assert( end == buf + 5 );
+            const auto end = PrintFloat( buf, buf+16, ipc, 2 );
+            assert( end == buf + 4 );
             memcpy( end, " ", 2 );
             TextColoredUnformatted( col, buf );
         }
@@ -4442,7 +4441,7 @@ void SourceView::RenderHwLinePart( size_t cycles, size_t retired, size_t branchR
     }
     else
     {
-        ImGui::ItemSize( ImVec2( 6 * ts.x, ts.y ) );
+        ImGui::ItemSize( ImVec2( 5 * ts.x, ts.y ) );
     }
     ImGui::SameLine( 0, 0 );
     if( m_hwSamplesRelative )

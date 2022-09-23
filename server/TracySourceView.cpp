@@ -3666,6 +3666,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     bool lineHovered = false;
     if( m_asmShowSourceLocation && !m_sourceFiles.empty() )
     {
+        constexpr size_t MaxSourceLength = 26;
         ImGui::SameLine( 0, stw );
         ImVec2 startPos;
         uint32_t srcline;
@@ -3681,13 +3682,13 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             startPos = ImGui::GetCursorScreenPos();
             char buf[64];
             const auto fnsz = strlen( fileName );
-            if( fnsz < 30 - m_maxLine )
+            if( fnsz < MaxSourceLength - m_maxLine )
             {
                 sprintf( buf, "%s:%i", fileName, srcline );
             }
             else
             {
-                sprintf( buf, "\xe2\x80\xa6%s:%i", fileName+fnsz-(30-1-1-m_maxLine), srcline );
+                sprintf( buf, "\xe2\x80\xa6%s:%i", fileName+fnsz-(MaxSourceLength-1-1-m_maxLine), srcline );
             }
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemHovered() )
@@ -3772,7 +3773,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         ImGui::SameLine( 0, 0 );
         const auto endPos = ImGui::GetCursorScreenPos();
         const auto itemsWidth = ( endPos - startPos ).x;
-        const auto fixedWidth = 32 * ts.x;
+        const auto fixedWidth = ( MaxSourceLength + 2 ) * ts.x;
         ImGui::ItemSize( ImVec2( fixedWidth - itemsWidth, 0 ) );
 
     }

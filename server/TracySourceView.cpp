@@ -3687,7 +3687,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             }
             else
             {
-                sprintf( buf, "...%s:%i", fileName+fnsz-(30-3-1-m_maxLine), srcline );
+                sprintf( buf, "\xe2\x80\xa6%s:%i", fileName+fnsz-(30-1-1-m_maxLine), srcline );
             }
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemHovered() )

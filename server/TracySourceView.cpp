@@ -946,7 +946,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             m_maxLine = strlen( tmp ) + 1;
         }
         cs_free( insn, cnt );
-        m_maxMnemonicLen = mLenMax + 2;
+        m_maxMnemonicLen = mLenMax + 1;
         m_maxAsmBytes = bytesMax;
         if( !m_jumpTable.empty() )
         {

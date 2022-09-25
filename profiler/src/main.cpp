@@ -392,9 +392,17 @@ static void DrawContents()
             tracy::TextDisabledUnformatted( "<wolf@nereid.pl>" );
             tracy::TextDisabledUnformatted( "Additional authors listed in AUTHORS file and in git history." );
             ImGui::Separator();
+            ImGui::PushFont( s_smallFont );
             tracy::TextFocused( "Protocol version", tracy::RealToString( tracy::ProtocolVersion ) );
+            ImGui::SameLine();
+            ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+            ImGui::SameLine();
             tracy::TextFocused( "Broadcast version", tracy::RealToString( tracy::BroadcastVersion ) );
+            ImGui::SameLine();
+            ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+            ImGui::SameLine();
             tracy::TextFocused( "Build date", __DATE__ ", " __TIME__ );
+            ImGui::PopFont();
             ImGui::EndPopup();
         }
         ImGui::Spacing();

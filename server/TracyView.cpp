@@ -1294,6 +1294,7 @@ bool View::WasActive() const
     return m_wasActive ||
         m_zoomAnim.active ||
         m_notificationTime > 0 ||
+        !m_playback.pause ||
         m_worker.IsConnected() ||
         !m_worker.IsBackgroundDone();
 }

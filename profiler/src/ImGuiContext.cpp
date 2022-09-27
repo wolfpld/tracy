@@ -10,6 +10,7 @@ ImGuiTracyContext::ImGuiTracyContext()
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = m_iniFilename.c_str();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+    io.ConfigInputTextCursorBlink = false;
 }
 
 ImGuiTracyContext::~ImGuiTracyContext()

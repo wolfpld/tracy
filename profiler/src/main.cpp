@@ -269,6 +269,27 @@ static void DrawContents()
 
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );
+
+    static int activeFrames = 3;
+    auto& inputQueue = ImGui::GetCurrentContext()->InputEventsQueue;
+    if( !inputQueue.empty() )
+    {
+        for( auto& v : inputQueue )
+        {
+            if( v.Type != ImGuiInputEventType_MouseViewport )
+            {
+                activeFrames = 3;
+                break;
+            }
+        }
+    }
+    if( activeFrames == 0 )
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 16 ) );
+        return;
+    }
+    activeFrames--;
+
     ImGui::NewFrame();
     tracy::MouseFrame();
 

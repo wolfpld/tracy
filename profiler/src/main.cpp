@@ -271,15 +271,22 @@ static void DrawContents()
     bptr->NewFrame( display_w, display_h );
 
     static int activeFrames = 3;
-    auto& inputQueue = ImGui::GetCurrentContext()->InputEventsQueue;
-    if( !inputQueue.empty() )
+    if( view && view->WasActive() )
     {
-        for( auto& v : inputQueue )
+        activeFrames = 3;
+    }
+    else
+    {
+        auto& inputQueue = ImGui::GetCurrentContext()->InputEventsQueue;
+        if( !inputQueue.empty() )
         {
-            if( v.Type != ImGuiInputEventType_MouseViewport )
+            for( auto& v : inputQueue )
             {
-                activeFrames = 3;
-                break;
+                if( v.Type != ImGuiInputEventType_MouseViewport )
+                {
+                    activeFrames = 3;
+                    break;
+                }
             }
         }
     }

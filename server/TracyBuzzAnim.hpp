@@ -28,13 +28,15 @@ public:
         id = val;
     }
 
-    void Update( float dt )
+    bool Update( float dt )
     {
         if( active )
         {
             time -= dt;
             if( time <= 0 ) active = false;
+            return true;
         }
+        return false;
     }
 
 private:

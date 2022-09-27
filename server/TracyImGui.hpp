@@ -110,6 +110,7 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
 
 [[maybe_unused]] static inline void DrawWaitingDots( double time )
 {
+    s_wasActive = true;
     ImGui::TextUnformatted( "" );
     auto draw = ImGui::GetWindowDrawList();
     const auto wpos = ImGui::GetWindowPos();

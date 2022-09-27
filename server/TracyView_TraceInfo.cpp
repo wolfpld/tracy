@@ -675,6 +675,7 @@ void View::DrawInfo()
                                 const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
                                 const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
                                 DrawLine( draw, ImVec2( dpos.x + framePos, dpos.y ), ImVec2( dpos.x + framePos, dpos.y+Height-2 ), color );
+                                m_wasActive = true;
                             }
                         }
                     }

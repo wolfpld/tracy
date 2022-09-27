@@ -16,6 +16,7 @@ static GLFWwindow* s_window;
 static std::function<void()> s_redraw;
 static RunQueue* s_mainThreadTasks;
 static WindowPosition* s_winPos;
+static bool s_iconified;
 
 static void glfw_error_callback( int error, const char* description )
 {
@@ -43,6 +44,11 @@ static void glfw_window_size_callback( GLFWwindow* window, int w, int h )
 static void glfw_window_maximize_callback( GLFWwindow*, int maximized )
 {
     s_winPos->maximize = maximized;
+}
+
+static void glfw_window_iconify_callback( GLFWwindow*, int iconified )
+{
+    s_iconified = iconified != 0;
 }
 
 
@@ -79,10 +85,12 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_redraw = redraw;
     s_mainThreadTasks = mainThreadTasks;
     s_winPos = &m_winPos;
+    s_iconified = false;
 
     glfwSetWindowPosCallback( s_window, glfw_window_pos_callback );
     glfwSetWindowSizeCallback( s_window, glfw_window_size_callback );
     glfwSetWindowMaximizeCallback( s_window, glfw_window_maximize_callback );
+    glfwSetWindowIconifyCallback( s_window, glfw_window_iconify_callback );
 }
 
 Backend::~Backend()
@@ -104,18 +112,20 @@ void Backend::Run()
 {
     while( !glfwWindowShouldClose( s_window ) )
     {
-        glfwPollEvents();
-        if( glfwGetWindowAttrib( s_window, GLFW_ICONIFIED ) )
+        if( s_iconified )
         {
-            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-            continue;
+            glfwWaitEvents();
         }
-        s_redraw();
-        if( !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) )
+        else
         {
-            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            glfwPollEvents();
+            s_redraw();
+            if( !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) )
+            {
+                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            }
+            s_mainThreadTasks->Run();
         }
-        s_mainThreadTasks->Run();
     }
 }
 

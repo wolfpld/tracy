@@ -92,6 +92,8 @@ v0.x.x (xxxx-xx-xx)
 - Clicking on a local thread in the CPU data view will make the thread visible
   and uncollapsed on the timeline.
 - Assembly view is now in color.
+- The profiler UI will no longer unnecessarily redraw the screen if nothing
+  was changed. This should have a profound impact on power usage.
 
 
 v0.8.2 (2022-06-28)

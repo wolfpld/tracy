@@ -277,15 +277,23 @@ static void DrawContents()
     }
     else
     {
-        auto& inputQueue = ImGui::GetCurrentContext()->InputEventsQueue;
-        if( !inputQueue.empty() )
+        auto ctx = ImGui::GetCurrentContext();
+        if( ctx->DimBgRatio != 0 && ctx->DimBgRatio != 1 )
         {
-            for( auto& v : inputQueue )
+            activeFrames = 3;
+        }
+        else
+        {
+            auto& inputQueue = ctx->InputEventsQueue;
+            if( !inputQueue.empty() )
             {
-                if( v.Type != ImGuiInputEventType_MouseViewport )
+                for( auto& v : inputQueue )
                 {
-                    activeFrames = 3;
-                    break;
+                    if( v.Type != ImGuiInputEventType_MouseViewport )
+                    {
+                        activeFrames = 3;
+                        break;
+                    }
                 }
             }
         }

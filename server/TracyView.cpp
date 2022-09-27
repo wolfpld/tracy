@@ -1288,4 +1288,9 @@ void View::HighlightThread( uint64_t thread )
     m_drawThreadHighlight = thread;
 }
 
+bool View::WasActive() const
+{
+    return m_worker.IsConnected();
+}
+
 }

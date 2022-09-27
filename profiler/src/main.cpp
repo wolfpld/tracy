@@ -201,7 +201,7 @@ int main( int argc, char** argv )
             {
                 uint32_t ver;
                 memcpy( &ver, data, 4 );
-                RunOnMainThread( [ver] { updateVersion = ver; } );
+                RunOnMainThread( [ver] { updateVersion = ver; tracy::s_wasActive = true; } );
             }
             delete[] data;
         } );
@@ -512,7 +512,7 @@ static void DrawContents()
                         HttpRequest( "nereid.pl", "/tracy/notes", 8099, [] ( int size, char* data ) {
                             std::string notes( data, data+size );
                             delete[] data;
-                            RunOnMainThread( [notes = move( notes )] { releaseNotes = std::move( notes ); } );
+                            RunOnMainThread( [notes = move( notes )] { releaseNotes = std::move( notes ); tracy::s_wasActive = true; } );
                         } );
                     } );
                 }

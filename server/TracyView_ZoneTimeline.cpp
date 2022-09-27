@@ -128,6 +128,7 @@ void View::DrawThreadMessages( const ThreadData& thread, double pxns, int offset
                     if( !isMsgHovered )
                     {
                         animOff = -fabs( sin( s_time * 8 ) ) * th;
+                        m_wasActive = true;
                     }
                 }
             }
@@ -142,6 +143,7 @@ void View::DrawThreadMessages( const ThreadData& thread, double pxns, int offset
                 if( !isMsgHovered )
                 {
                     animOff = -fabs( sin( s_time * 8 ) ) * th;
+                    m_wasActive = true;
                 }
             }
             draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color, 2.0f );

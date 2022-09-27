@@ -1290,7 +1290,8 @@ void View::HighlightThread( uint64_t thread )
 
 bool View::WasActive() const
 {
-    return m_worker.IsConnected();
+    return m_zoomAnim.active ||
+        m_worker.IsConnected();
 }
 
 }

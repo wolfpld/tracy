@@ -267,57 +267,8 @@ static void DrawContents()
     static uint16_t reconnectPort;
     static bool showFilter = false;
 
-    int display_w, display_h;
-    bptr->NewFrame( display_w, display_h );
-
-    static int activeFrames = 3;
-    if( tracy::WasActive() || ( view && view->WasActive() ) )
-    {
-        activeFrames = 3;
-    }
-    else
-    {
-        auto ctx = ImGui::GetCurrentContext();
-        if( ctx->DimBgRatio != 0 && ctx->DimBgRatio != 1 )
-        {
-            activeFrames = 3;
-        }
-        else
-        {
-            auto& inputQueue = ctx->InputEventsQueue;
-            if( !inputQueue.empty() )
-            {
-                for( auto& v : inputQueue )
-                {
-                    if( v.Type != ImGuiInputEventType_MouseViewport )
-                    {
-                        activeFrames = 3;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    if( activeFrames == 0 )
-    {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 16 ) );
-        return;
-    }
-    activeFrames--;
-
-    ImGui::NewFrame();
-    tracy::MouseFrame();
-
-    setlocale( LC_NUMERIC, "C" );
-
     if( !view )
     {
-        if( s_customTitle )
-        {
-            s_customTitle = false;
-            bptr->SetTitle( title );
-        }
-
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
         if( !broadcastListen )
         {
@@ -397,6 +348,58 @@ static void DrawContents()
                     ++it;
                 }
             }
+        }
+    }
+
+    int display_w, display_h;
+    bptr->NewFrame( display_w, display_h );
+
+    static int activeFrames = 3;
+    if( tracy::WasActive() || ( view && view->WasActive() ) )
+    {
+        activeFrames = 3;
+    }
+    else
+    {
+        auto ctx = ImGui::GetCurrentContext();
+        if( ctx->DimBgRatio != 0 && ctx->DimBgRatio != 1 )
+        {
+            activeFrames = 3;
+        }
+        else
+        {
+            auto& inputQueue = ctx->InputEventsQueue;
+            if( !inputQueue.empty() )
+            {
+                for( auto& v : inputQueue )
+                {
+                    if( v.Type != ImGuiInputEventType_MouseViewport )
+                    {
+                        activeFrames = 3;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if( activeFrames == 0 )
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 16 ) );
+        return;
+    }
+    activeFrames--;
+
+    ImGui::NewFrame();
+    tracy::MouseFrame();
+
+    setlocale( LC_NUMERIC, "C" );
+
+    if( !view )
+    {
+        if( s_customTitle )
+        {
+            s_customTitle = false;
+            bptr->SetTitle( title );
         }
 
         auto& style = ImGui::GetStyle();
@@ -656,9 +659,10 @@ static void DrawContents()
                 ImGui::SetColumnWidth( 1, w * 0.175f );
                 ImGui::SetColumnWidth( 2, w * 0.425f );
             }
-            std::lock_guard<std::mutex> lock( resolvLock );
+            const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
             int idx = 0;
             int passed = 0;
+            std::lock_guard<std::mutex> lock( resolvLock );
             for( auto& v : clients )
             {
                 const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;

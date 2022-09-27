@@ -350,6 +350,10 @@ static void DrawContents()
             }
         }
     }
+    else if( !clients.empty() )
+    {
+        clients.clear();
+    }
 
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );

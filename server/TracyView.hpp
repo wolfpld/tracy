@@ -555,6 +555,7 @@ private:
     std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;
 
+    bool m_wasActive = false;
     bool m_reconnectRequested = false;
     bool m_firstFrame = true;
     std::chrono::time_point<std::chrono::high_resolution_clock> m_firstFrameTime;

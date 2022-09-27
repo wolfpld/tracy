@@ -199,6 +199,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                         const auto time = anim.Time();
                         const auto indentVal = sin( time * 60.f ) * 10.f * time;
                         ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                        s_wasActive = true;
                     }
                     else
                     {
@@ -253,6 +254,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                 const auto time = anim.Time();
                 const auto indentVal = sin( time * 60.f ) * 10.f * time;
                 ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                s_wasActive = true;
             }
             else
             {

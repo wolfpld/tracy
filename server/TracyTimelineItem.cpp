@@ -142,6 +142,7 @@ void TimelineItem::AdjustThreadHeight( bool firstFrame, int oldOffset, int& offs
             const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
             m_height = int( std::min<double>( m_height + move, h ) );
             offset = oldOffset + m_height;
+            s_wasActive = true;
         }
     }
 }
@@ -157,6 +158,7 @@ float TimelineItem::AdjustThreadPosition( float wy, int& offset )
         const auto diff = m_offset - offset;
         const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
         offset = m_offset = int( std::max<double>( m_offset - move, offset ) );
+        s_wasActive = true;
     }
     return offset + wy;
 }

@@ -271,7 +271,7 @@ static void DrawContents()
     bptr->NewFrame( display_w, display_h );
 
     static int activeFrames = 3;
-    if( view && view->WasActive() )
+    if( tracy::WasActive() || ( view && view->WasActive() ) )
     {
         activeFrames = 3;
     }

@@ -22,6 +22,10 @@ static inline ImVec2 operator-( const ImVec2& l, const ImVec2& r ) { return ImVe
 namespace tracy
 {
 
+extern bool s_wasActive;
+bool WasActive();
+
+
 void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f );
 void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted );
 void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty );

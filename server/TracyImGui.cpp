@@ -13,6 +13,19 @@
 namespace tracy
 {
 
+bool s_wasActive = false;
+
+bool WasActive()
+{
+    if( s_wasActive )
+    {
+        s_wasActive = false;
+        return true;
+    }
+    return false;
+}
+
+
 void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness )
 {
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );

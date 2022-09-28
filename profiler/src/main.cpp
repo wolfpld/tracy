@@ -366,7 +366,7 @@ static void DrawContents()
     else
     {
         auto ctx = ImGui::GetCurrentContext();
-        if( ctx->DimBgRatio != 0 && ctx->DimBgRatio != 1 )
+        if( ctx->NavWindowingTarget || ( ctx->DimBgRatio != 0 && ctx->DimBgRatio != 1 ) )
         {
             activeFrames = 3;
         }

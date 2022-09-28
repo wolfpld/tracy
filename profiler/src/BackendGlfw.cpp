@@ -71,7 +71,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     if( !s_window ) exit( 1 );
 
     glfwSetWindowPos( s_window, m_winPos.x, m_winPos.y );
-#ifdef GLFW_MAXIMIZED
+#if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 2 )
     if( m_winPos.maximize ) glfwMaximizeWindow( s_window );
 #endif
 
@@ -89,7 +89,9 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
 
     glfwSetWindowPosCallback( s_window, glfw_window_pos_callback );
     glfwSetWindowSizeCallback( s_window, glfw_window_size_callback );
+#if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
     glfwSetWindowMaximizeCallback( s_window, glfw_window_maximize_callback );
+#endif
     glfwSetWindowIconifyCallback( s_window, glfw_window_iconify_callback );
 }
 

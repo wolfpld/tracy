@@ -3,6 +3,7 @@
 # Ensure these are simply-substituted variables, without changing their values.
 LIBS := $(LIBS)
 
+ifndef NO_TBB
 # Tracy does not use TBB directly, but the implementation of parallel algorithms
 # in some versions of libstdc++ depends on TBB. When it does, you must
 # explicitly link against -ltbb.
@@ -12,6 +13,7 @@ ifeq (0,$(shell pkg-config --libs tbb >/dev/null 2>&1; echo $$?))
 	LIBS += $(shell pkg-config --libs tbb)
 else ifeq (0,$(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?))
 	LIBS += -ltbb
+endif
 endif
 
 OBJDIRBASE := obj/$(BUILD)

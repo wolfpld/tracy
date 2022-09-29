@@ -519,7 +519,7 @@ static void DrawContents()
                         HttpRequest( "nereid.pl", "/tracy/notes", 8099, [] ( int size, char* data ) {
                             std::string notes( data, data+size );
                             delete[] data;
-                            RunOnMainThread( [notes = move( notes )] { releaseNotes = std::move( notes ); tracy::s_wasActive = true; } );
+                            RunOnMainThread( [notes = std::move( notes )] { releaseNotes = std::move( notes ); tracy::s_wasActive = true; } );
                         } );
                     } );
                 }

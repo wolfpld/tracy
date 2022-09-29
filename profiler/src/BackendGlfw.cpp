@@ -1,6 +1,10 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_opengl3_loader.h"
+#ifdef __EMSCRIPTEN__
+#  include <GLES2/gl2.h>
+#else
+#  include "imgui/imgui_impl_opengl3_loader.h"
+#endif
 
 #include <chrono>
 #include <GLFW/glfw3.h>
@@ -80,7 +84,11 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     glfwSetWindowRefreshCallback( s_window, []( GLFWwindow* ) { s_redraw(); } );
 
     ImGui_ImplGlfw_InitForOpenGL( s_window, true );
+#ifdef __EMSCRIPTEN__
+    ImGui_ImplOpenGL3_Init( "#version 100" );
+#else
     ImGui_ImplOpenGL3_Init( "#version 150" );
+#endif
 
     s_redraw = redraw;
     s_mainThreadTasks = mainThreadTasks;

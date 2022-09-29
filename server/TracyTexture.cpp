@@ -1,6 +1,10 @@
 #include <inttypes.h>
 
-#include "../profiler/src/imgui/imgui_impl_opengl3_loader.h"
+#ifdef __EMSCRIPTEN__
+#  include <GLES2/gl2.h>
+#else
+#  include "../profiler/src/imgui/imgui_impl_opengl3_loader.h"
+#endif
 #include "TracyTexture.hpp"
 
 #ifndef COMPRESSED_RGB_S3TC_DXT1_EXT

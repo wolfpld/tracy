@@ -2,6 +2,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 #ifdef __EMSCRIPTEN__
 #  include <GLES2/gl2.h>
+#  include <emscripten/html5.h>
 #else
 #  include "imgui/imgui_impl_opengl3_loader.h"
 #endif
@@ -120,6 +121,13 @@ void Backend::Show()
 
 void Backend::Run()
 {
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop( []() {
+        glfwPollEvents();
+        s_redraw();
+        s_mainThreadTasks->Run();
+    }, 0, 1 );
+#else
     while( !glfwWindowShouldClose( s_window ) )
     {
         if( s_iconified )
@@ -137,6 +145,7 @@ void Backend::Run()
             s_mainThreadTasks->Run();
         }
     }
+#endif
 }
 
 void Backend::NewFrame( int& w, int& h )

@@ -384,7 +384,6 @@ bool View::Draw()
 
                     auto& cs = s_instance->m_worker.GetCallstack( data.callstack );
                     int fidx = 0;
-                    int bidx = 0;
                     for( auto& entry : cs )
                     {
                         auto frameData = s_instance->m_worker.GetCallstackFrame( entry );
@@ -431,8 +430,6 @@ bool View::Draw()
                                     while( *++test );
                                     if( match ) continue;
                                 }
-
-                                bidx++;
 
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();

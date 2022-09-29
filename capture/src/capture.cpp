@@ -267,7 +267,6 @@ int main( int argc, char** argv )
             AnsiPrintf( ANSI_BOLD, "\n%sFailure callstack:%s\n" );
             auto& cs = worker.GetCallstack( fd.callstack );
             int fidx = 0;
-            int bidx = 0;
             for( auto& entry : cs )
             {
                 auto frameData = worker.GetCallstackFrame( entry );
@@ -298,8 +297,6 @@ int main( int argc, char** argv )
                             while( *++test );
                             if( match ) continue;
                         }
-
-                        bidx++;
 
                         if( f == fsz-1 )
                         {

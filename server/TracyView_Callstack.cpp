@@ -31,7 +31,6 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     {
         std::ostringstream s;
         int fidx = 0;
-        int bidx = 0;
         for( auto& entry : cs )
         {
             char buf[64*1024];
@@ -64,8 +63,6 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         while( *++test );
                         if( match ) continue;
                     }
-
-                    bidx++;
 
                     if( f == fsz-1 )
                     {

@@ -94,6 +94,7 @@ v0.x.x (xxxx-xx-xx)
 - Assembly view is now in color.
 - The profiler UI will no longer unnecessarily redraw the screen if nothing
   was changed. This should have a profound impact on power usage.
+- Added microarchitecture data for Zen 4.
 
 
 v0.8.2 (2022-06-28)

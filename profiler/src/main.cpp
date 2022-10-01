@@ -148,6 +148,9 @@ int main( int argc, char** argv )
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
 
     std::unique_ptr<tracy::FileRead> initFileOpen;
+#ifdef __EMSCRIPTEN__
+    initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( "embed.tracy" ) );
+#endif
     if( argc == 2 )
     {
         if( strcmp( argv[1], "--help" ) == 0 )

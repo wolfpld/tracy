@@ -199,3 +199,11 @@ float Backend::GetDpiScale()
 #endif
     return 1;
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C" int nativeResize( int width, int height )
+{
+    glfwSetWindowSize( s_window, width, height );
+    return 0;
+}
+#endif

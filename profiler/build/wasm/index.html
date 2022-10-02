@@ -90,6 +90,10 @@
       var preloadElement = document.getElementById('preload');
       var canvasElement = document.getElementById('canvas');
 
+      function resizeHandler() {
+        Module.ccall('nativeResize', 'number', ['number', 'number'], [window.innerWidth, window.innerHeight]);
+      }
+
       var Module = {
         preRun: [],
         postRun: [],
@@ -129,11 +133,10 @@
             progressElement.max = null;
             progressElement.hidden = true;
             preloadElement.hidden = true;
-            if (!text) spinnerElement.style.display = 'none';
-            /*
-            canvasElement.width = window.innerWidth;
-            canvasElement.height = window.innerHeight;
-            */
+            if (!text) {
+              spinnerElement.style.display = 'none';
+              resizeHandler();
+            }
           }
           statusElement.innerHTML = text;
         },
@@ -152,15 +155,8 @@
           if (text) console.error('[post-exception status] ' + text);
         };
       };
-      /*
-      addEventListener('resize', (event) => {
-        canvasElement.width = window.innerWidth;
-        canvasElement.height = window.innerHeight;
-      });
-      */
+      addEventListener('resize', resizeHandler);
     </script>
     <script async type="text/javascript" src="Tracy-release.js"></script>
   </body>
 </html>
-
-

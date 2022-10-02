@@ -35,7 +35,7 @@
         border-right: 5px solid rgb(235, 235, 235);
         border-bottom: 5px solid rgb(235, 235, 235);
         border-top: 5px solid rgb(120, 120, 120);
-        
+
         border-radius: 100%;
         background-color: rgb(189, 215, 46);
       }
@@ -88,7 +88,6 @@
       var progressElement = document.getElementById('progress');
       var spinnerElement = document.getElementById('spinner');
       var preloadElement = document.getElementById('preload');
-      var canvasElement = document.getElementById('canvas');
 
       function resizeHandler() {
         Module.ccall('nativeResize', 'number', ['number', 'number'], [window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio]);
@@ -134,8 +133,8 @@
             progressElement.value = null;
             progressElement.max = null;
             progressElement.hidden = true;
-            preloadElement.hidden = true;
             if (!text) {
+              preloadElement.hidden = true;
               spinnerElement.style.display = 'none';
               resizeHandler();
             }

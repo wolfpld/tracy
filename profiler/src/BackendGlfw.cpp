@@ -187,7 +187,9 @@ void Backend::SetTitle( const char* title )
 
 float Backend::GetDpiScale()
 {
-#if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
+#ifdef __EMSCRIPTEN__
+    return EM_ASM_DOUBLE( { return window.devicePixelRatio; } );
+#elif GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
     auto monitor = glfwGetWindowMonitor( s_window );
     if( !monitor ) monitor = glfwGetPrimaryMonitor();
     if( monitor )

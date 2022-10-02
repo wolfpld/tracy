@@ -91,7 +91,9 @@
       var canvasElement = document.getElementById('canvas');
 
       function resizeHandler() {
-        Module.ccall('nativeResize', 'number', ['number', 'number'], [window.innerWidth, window.innerHeight]);
+        Module.ccall('nativeResize', 'number', ['number', 'number'], [window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio]);
+        Module.canvas.style.width = window.innerWidth + 'px';
+        Module.canvas.style.height = window.innerHeight + 'px';
       }
 
       var Module = {

@@ -9,6 +9,7 @@ Tracy supports profiling CPU (Direct support is provided for C, C++, and Lua int
 - [Documentation](https://github.com/wolfpld/tracy/releases/latest/download/tracy.pdf) for usage and build process instructions
 - [Releases](https://github.com/wolfpld/tracy/releases) containing the documentation (`tracy.pdf`) and compiled Windows x64 binaries (`Tracy-<version>.7z`) as assets
 - [Changelog](NEWS)
+- [Interactive demo](https://tracy.nereid.pl/)
 
 ![](doc/profiler.png)
 

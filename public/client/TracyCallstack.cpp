@@ -96,7 +96,7 @@ namespace tracy
 
 #if TRACY_HAS_CALLSTACK == 1
 
-enum { MaxCbTrace = 16 };
+enum { MaxCbTrace = 64 };
 enum { MaxNameSize = 8*1024 };
 
 int cb_num;
@@ -583,7 +583,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
 
-enum { MaxCbTrace = 16 };
+enum { MaxCbTrace = 64 };
 
 struct backtrace_state* cb_bts;
 int cb_num;

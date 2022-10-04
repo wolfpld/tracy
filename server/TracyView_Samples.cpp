@@ -672,7 +672,7 @@ void View::DrawSampleParents()
         const auto symName = m_worker.GetString( symbol->name );
         const char* normalized = m_shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : nullptr;
         ImGui::PushFont( m_bigFont );
-        TextFocused( "Symbol:", normalized ? normalized : symName );
+        TextFocused( "Function:", normalized ? normalized : symName );
         if( normalized )
         {
             ImGui::PopFont();

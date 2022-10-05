@@ -9,4 +9,7 @@ release:
 clean:
 	@+make -f build.mk clean
 
-.PHONY: all clean debug release db
+serve:
+	@python httpd.py
+
+.PHONY: all clean debug release serve

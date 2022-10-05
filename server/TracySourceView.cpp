@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "TracyCharUtil.hpp"
 #include "TracyColor.hpp"
+#include "TracyFileselector.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyMicroArchitecture.hpp"
@@ -18,10 +19,6 @@
 #include "TracyWorker.hpp"
 
 #include "IconsFontAwesome6.h"
-
-#ifndef TRACY_NO_FILESELECTOR
-#  include "../nfd/nfd.h"
-#endif
 
 namespace tracy
 {
@@ -5359,14 +5356,12 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
     assert( start < m_asm.size() );
     assert( start < stop );
 
-    nfdu8filteritem_t filter = { "Assembly file", "asm" };
-    nfdu8char_t* fn;
-    auto res = NFD_SaveDialogU8( &fn, &filter, 1, nullptr, nullptr );
-    if( res == NFD_OKAY )
+    auto fn = Fileselector::SaveFile( "asm", "Assembly file" );
+    if( !fn.empty() )
     {
         FILE* f = nullptr;
-        const auto sz = strlen( fn );
-        if( sz < 5 || memcmp( fn + sz - 4, ".asm", 4 ) != 0 )
+        const auto sz = fn.size();
+        if( sz < 5 || memcmp( fn.c_str() + sz - 4, ".asm", 4 ) != 0 )
         {
             char tmp[1024];
             sprintf( tmp, "%s.asm", fn );
@@ -5374,7 +5369,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
         }
         else
         {
-            f = fopen( fn, "wb" );
+            f = fopen( fn.c_str(), "wb" );
         }
         if( f )
         {
@@ -5435,7 +5430,6 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             }
             fclose( f );
         }
-        NFD_FreePathU8( fn );
     }
 }
 #endif

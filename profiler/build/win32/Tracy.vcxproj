@@ -120,6 +120,7 @@
     <ClCompile Include="..\..\..\public\common\tracy_lz4hc.cpp" />
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
     <ClCompile Include="..\..\..\server\TracyColor.cpp" />
+    <ClCompile Include="..\..\..\server\TracyFileselector.cpp" />
     <ClCompile Include="..\..\..\server\TracyFilesystem.cpp" />
     <ClCompile Include="..\..\..\server\TracyImGui.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
@@ -255,6 +256,7 @@
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileHeader.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp" />
+    <ClInclude Include="..\..\..\server\TracyFileselector.hpp" />
     <ClInclude Include="..\..\..\server\TracyFilesystem.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileWrite.hpp" />
     <ClInclude Include="..\..\..\server\TracyImGui.hpp" />

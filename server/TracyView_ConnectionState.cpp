@@ -1,7 +1,4 @@
-#ifndef TRACY_NO_FILESELECTOR
-#  include "../nfd/nfd.h"
-#endif
-
+#include "TracyFileselector.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyTexture.hpp"
@@ -125,28 +122,23 @@ bool View::DrawConnection()
     if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
     {
 #ifndef TRACY_NO_FILESELECTOR
-        nfdu8filteritem_t filter = { "Tracy Profiler trace file", "tracy" };
-        nfdu8char_t* fn;
-        auto res = NFD_SaveDialogU8( &fn, &filter, 1, nullptr, nullptr );
-        if( res == NFD_OKAY )
+        auto fn = Fileselector::SaveFile( "tracy", "Tracy Profiler trace file" );
+        if( !fn.empty() )
 #else
-        const char* fn = "trace.tracy";
+        std::string fn = "trace.tracy";
 #endif
         {
-            const auto sz = strlen( fn );
-            if( sz < 7 || memcmp( fn + sz - 6, ".tracy", 6 ) != 0 )
+            const auto sz = fn.size();
+            if( sz < 7 || memcmp( fn.c_str() + sz - 6, ".tracy", 6 ) != 0 )
             {
                 char tmp[1024];
-                sprintf( tmp, "%s.tracy", fn );
+                sprintf( tmp, "%s.tracy", fn.c_str() );
                 m_filenameStaging = tmp;
             }
             else
             {
-                m_filenameStaging = fn;
+                m_filenameStaging = std::move( fn );
             }
-#ifndef TRACY_NO_FILESELECTOR
-            NFD_FreePathU8( fn );
-#endif
         }
     }
 

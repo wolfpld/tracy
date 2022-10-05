@@ -14,10 +14,6 @@
 #include <sys/stat.h>
 #include <locale.h>
 
-#ifndef TRACY_NO_FILESELECTOR
-#  include "../nfd/nfd.h"
-#endif
-
 #ifdef _WIN32
 #  include <windows.h>
 #endif
@@ -36,6 +32,7 @@
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileHeader.hpp"
 #include "../../server/TracyFileRead.hpp"
+#include "../../server/TracyFileselector.hpp"
 #include "../../server/TracyImGui.hpp"
 #include "../../server/TracyMouse.hpp"
 #include "../../server/TracyPrint.hpp"
@@ -241,9 +238,7 @@ int main( int argc, char** argv )
         view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback );
     }
 
-#ifndef TRACY_NO_FILESELECTOR
-    NFD_Init();
-#endif
+    tracy::Fileselector::Init();
 
     backend.Show();
     backend.Run();
@@ -256,9 +251,7 @@ int main( int argc, char** argv )
     tracy::FreeTexture( iconTex, RunOnMainThread );
     free( iconPx );
 
-#ifndef TRACY_NO_FILESELECTOR
-    NFD_Quit();
-#endif
+    tracy::Fileselector::Shutdown();
 
     return 0;
 }
@@ -582,14 +575,12 @@ static void DrawContents()
 #ifndef TRACY_NO_FILESELECTOR
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
         {
-            nfdu8filteritem_t filter = { "Tracy Profiler trace file", "tracy" };
-            nfdu8char_t* fn;
-            auto res = NFD_OpenDialogU8( &fn, &filter, 1, nullptr );
-            if( res == NFD_OKAY )
+            auto fn = tracy::Fileselector::OpenFile( "tracy", "Tracy Profiler trace file" );
+            if( !fn.empty() )
             {
                 try
                 {
-                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
+                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn.c_str() ) );
                     if( f )
                     {
                         loadThread = std::thread( [f] {
@@ -618,7 +609,6 @@ static void DrawContents()
                 {
                     badVer.state = tracy::BadVersionState::ReadError;
                 }
-                NFD_FreePathU8( fn );
             }
         }
 

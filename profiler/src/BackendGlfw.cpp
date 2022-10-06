@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <thread>
 
+#include "../../server/TracyImGui.hpp"
+
 #include "Backend.hpp"
 #include "RunQueue.hpp"
 
@@ -44,6 +46,7 @@ static void glfw_window_size_callback( GLFWwindow* window, int w, int h )
         s_winPos->w = w;
         s_winPos->h = h;
     }
+    tracy::s_wasActive = true;
 }
 
 static void glfw_window_maximize_callback( GLFWwindow*, int maximized )

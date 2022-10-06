@@ -1,7 +1,7 @@
 #ifndef __TRACYFILESELECTOR_HPP__
 #define __TRACYFILESELECTOR_HPP__
 
-#include <string>
+#include <functional>
 
 namespace tracy::Fileselector
 {
@@ -9,8 +9,8 @@ namespace tracy::Fileselector
 void Init();
 void Shutdown();
 
-std::string OpenFile( const char* ext, const char* desc );
-std::string SaveFile( const char* ext, const char* desc );
+void OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback );
+void SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback );
 
 }
 

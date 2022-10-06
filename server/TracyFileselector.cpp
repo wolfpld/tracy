@@ -21,34 +21,30 @@ void Shutdown()
 #endif
 }
 
-std::string OpenFile( const char* ext, const char* desc )
+void OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
 {
-    std::string ret;
 #ifndef TRACY_NO_FILESELECTOR
     nfdu8filteritem_t filter = { desc, ext };
     nfdu8char_t* fn;
     if( NFD_OpenDialogU8( &fn, &filter, 1, nullptr ) == NFD_OKAY )
     {
-        ret.assign( fn );
+        callback( (const char*)fn );
         NFD_FreePathU8( fn );
     }
 #endif
-    return ret;
 }
 
-std::string SaveFile( const char* ext, const char* desc )
+void SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
 {
-    std::string ret;
 #ifndef TRACY_NO_FILESELECTOR
     nfdu8filteritem_t filter = { desc, ext };
     nfdu8char_t* fn;
     if( NFD_SaveDialogU8( &fn, &filter, 1, nullptr, nullptr ) == NFD_OKAY )
     {
-        ret.assign( fn );
+        callback( (const char*)fn );
         NFD_FreePathU8( fn );
     }
 #endif
-    return ret;
 }
 
 }

@@ -121,25 +121,25 @@ bool View::DrawConnection()
     ImGui::Separator();
     if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
     {
-#ifndef TRACY_NO_FILESELECTOR
-        auto fn = Fileselector::SaveFile( "tracy", "Tracy Profiler trace file" );
-        if( !fn.empty() )
-#else
-        std::string fn = "trace.tracy";
-#endif
-        {
-            const auto sz = fn.size();
-            if( sz < 7 || memcmp( fn.c_str() + sz - 6, ".tracy", 6 ) != 0 )
+        auto cb = [this]( const char* fn ) {
+            const auto sz = strlen( fn );
+            if( sz < 7 || memcmp( fn + sz - 6, ".tracy", 6 ) != 0 )
             {
                 char tmp[1024];
-                sprintf( tmp, "%s.tracy", fn.c_str() );
+                sprintf( tmp, "%s.tracy", fn );
                 m_filenameStaging = tmp;
             }
             else
             {
-                m_filenameStaging = std::move( fn );
+                m_filenameStaging = fn;
             }
-        }
+        };
+
+#ifndef TRACY_NO_FILESELECTOR
+        Fileselector::SaveFile( "tracy", "Tracy Profiler trace file", cb );
+#else
+        cb( "trace.tracy" );
+#endif
     }
 
     ImGui::SameLine( 0, 2 * ty );

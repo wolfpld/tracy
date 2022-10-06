@@ -149,12 +149,10 @@ void View::DrawCompare()
         ImGui::TextWrapped( "Please load a second trace to compare results." );
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open second trace" ) && !m_compare.loadThread.joinable() )
         {
-            auto fn = Fileselector::OpenFile( "tracy", "Tracy Profiler trace file" );
-            if( !fn.empty() )
-            {
+            Fileselector::OpenFile( "tracy", "Tracy Profiler trace file", [this]( const char* fn ) {
                 try
                 {
-                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn.c_str() ) );
+                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                     if( f )
                     {
                         m_compare.loadThread = std::thread( [this, f] {
@@ -168,7 +166,7 @@ void View::DrawCompare()
                                 m_compare.badVer.state = BadVersionState::UnsupportedVersion;
                                 m_compare.badVer.version = e.version;
                             }
-                            } );
+                        } );
                     }
                 }
                 catch( const tracy::NotTracyDump& )
@@ -179,7 +177,7 @@ void View::DrawCompare()
                 {
                     m_compare.badVer.state = BadVersionState::ReadError;
                 }
-            }
+            } );
         }
         tracy::BadVersion( m_compare.badVer, m_bigFont );
         ImGui::End();

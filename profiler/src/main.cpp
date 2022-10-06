@@ -575,12 +575,10 @@ static void DrawContents()
 #ifndef TRACY_NO_FILESELECTOR
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
         {
-            auto fn = tracy::Fileselector::OpenFile( "tracy", "Tracy Profiler trace file" );
-            if( !fn.empty() )
-            {
+            tracy::Fileselector::OpenFile( "tracy", "Tracy Profiler trace file", []( const char* fn ) {
                 try
                 {
-                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn.c_str() ) );
+                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                     if( f )
                     {
                         loadThread = std::thread( [f] {
@@ -609,7 +607,7 @@ static void DrawContents()
                 {
                     badVer.state = tracy::BadVersionState::ReadError;
                 }
-            }
+            } );
         }
 
         if( badVer.state != tracy::BadVersionState::Ok )

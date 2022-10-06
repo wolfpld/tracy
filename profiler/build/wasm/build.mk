@@ -5,7 +5,7 @@ CFLAGS += -sUSE_FREETYPE=1 -pthread
 CXXFLAGS := $(CFLAGS) -std=c++17
 DEFINES += -DIMGUI_ENABLE_FREETYPE -DIMGUI_IMPL_OPENGL_ES2
 INCLUDES := -I../../../imgui -I$(HOME)/.emscripten_cache/sysroot/include/capstone
-LIBS += -lpthread -ldl $(HOME)/.emscripten_cache/sysroot/lib/libcapstone.a -sUSE_GLFW=3 -sTOTAL_MEMORY=512mb -sWASM_BIGINT=1 -sPTHREAD_POOL_SIZE=4 -sEXPORTED_FUNCTIONS=_main,_nativeResize,_nativeOpenFile -sEXPORTED_RUNTIME_METHODS=ccall --preload-file embed.tracy
+LIBS += -lpthread -ldl $(HOME)/.emscripten_cache/sysroot/lib/libcapstone.a -sUSE_GLFW=3 -sTOTAL_MEMORY=2gb -sWASM_BIGINT=1 -sPTHREAD_POOL_SIZE=4 -sEXPORTED_FUNCTIONS=_main,_nativeResize,_nativeOpenFile -sEXPORTED_RUNTIME_METHODS=ccall --preload-file embed.tracy
 
 PROJECT := Tracy
 IMAGE := $(PROJECT)-$(BUILD).html

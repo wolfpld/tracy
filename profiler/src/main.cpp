@@ -265,6 +265,7 @@ static void DrawContents()
     static uint16_t reconnectPort;
     static bool showFilter = false;
 
+#ifndef __EMSCRIPTEN__
     if( !view )
     {
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
@@ -352,6 +353,7 @@ static void DrawContents()
     {
         clients.clear();
     }
+#endif
 
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );

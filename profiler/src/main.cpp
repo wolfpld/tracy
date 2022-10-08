@@ -195,6 +195,7 @@ int main( int argc, char** argv )
     connHist = &connHistory;
     filt = &filters;
 
+#ifndef __EMSCRIPTEN__
     updateThread = std::thread( [] {
         HttpRequest( "nereid.pl", "/tracy/version", 8099, [] ( int size, char* data ) {
             if( size == 4 )
@@ -206,6 +207,7 @@ int main( int argc, char** argv )
             delete[] data;
         } );
     } );
+#endif
 
     auto iconThread = std::thread( [] {
         iconPx = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &iconX, &iconY, nullptr, 4 );

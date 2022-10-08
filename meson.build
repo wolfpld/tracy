@@ -1,4 +1,4 @@
-project('tracy', ['cpp'])
+project('tracy', ['cpp', 'c'], default_options: 'cpp_std=c++17')
 
 if get_option('tracy_enable')
   add_project_arguments('-DTRACY_ENABLE', language : 'cpp')
@@ -89,7 +89,19 @@ if get_option('tracy_no_crash_handler')
   add_project_arguments('-DTRACY_NO_CRASH_HANDLER', language : 'cpp')
 endif
 
+if get_option('tracy_use_wayland')
+  add_project_arguments('-DDISPLAY_SERVER_WAYLAND', language: 'cpp')
+  add_project_arguments('-DGLFW_EXPOSE_NATIVE_WAYLAND', language: 'cpp')
+else
+  add_project_arguments('-DDISPLAY_SERVER_X11', language: 'cpp')
+endif
+
+if get_option('tracy_fileselector') == 'none'
+  add_project_arguments('-DTRACY_NO_FILESELECTOR', language: 'cpp')
+endif
+
 threads_dep = dependency('threads')
+zstd = dependency('libzstd')
 
 includes = [
     'public/tracy/TracyC.h',
@@ -125,7 +137,6 @@ client_includes = [
 common_includes = [
     'public/common/tracy_lz4.hpp',
     'public/common/tracy_lz4hc.hpp',
-    'public/common/TracyAlign.hpp',
     'public/common/TracyAlign.hpp',
     'public/common/TracyAlloc.hpp',
     'public/common/TracyApi.h',
@@ -188,3 +199,7 @@ tracy_dep_dynamic = declare_dependency(
     include_directories : tracy_public_include_dirs)
 
 meson.override_dependency('tracy', tracy_dep)
+
+subdir('imgui')
+subdir('server')
+subdir('profiler')

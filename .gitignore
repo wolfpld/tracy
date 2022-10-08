@@ -40,3 +40,7 @@ extra/vswhere.exe
 extra/tracy-build
 /.cache
 compile_commands.json
+
+subprojects/*
+!subprojects/imgui.wrap
+!subprojects/zstd.wrap

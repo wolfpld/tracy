@@ -742,6 +742,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
 
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
 static DWORD s_profilerThreadId = 0;
+static DWORD s_symbolThreadId = 0;
 static char s_crashText[1024];
 
 LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
@@ -821,7 +822,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 
     do
     {
-        if( te.th32OwnerProcessID == pid && te.th32ThreadID != tid && te.th32ThreadID != s_profilerThreadId )
+        if( te.th32OwnerProcessID == pid && te.th32ThreadID != tid && te.th32ThreadID != s_profilerThreadId && te.th32ThreadID != s_symbolThreadId )
         {
             HANDLE th = OpenThread( THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID );
             if( th != INVALID_HANDLE_VALUE )
@@ -1421,6 +1422,7 @@ void Profiler::SpawnWorkerThreads()
 
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
+    s_symbolThreadId = GetThreadId( s_symbolThread->Handle() );
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 

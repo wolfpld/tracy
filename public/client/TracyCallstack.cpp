@@ -844,42 +844,24 @@ void EndCallstack()
 #endif
 }
 
-static int FastCallstackDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
-{
-    if( function )
-    {
-        strcpy( (char*)data, function );
-    }
-    else
-    {
-        const char* symname = nullptr;
-        auto vptr = (void*)pc;
-        Dl_info dlinfo;
-        if( dladdr( vptr, &dlinfo ) )
-        {
-            symname = dlinfo.dli_sname;
-        }
-        if( symname )
-        {
-            strcpy( (char*)data, symname );
-        }
-        else
-        {
-            *(char*)data = '\0';
-        }
-    }
-    return 1;
-}
-
-static void FastCallstackErrorCb( void* data, const char* /*msg*/, int /*errnum*/ )
-{
-    *(char*)data = '\0';
-}
-
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     static char ret[1024];
-    backtrace_pcinfo( cb_bts, ptr, FastCallstackDataCb, FastCallstackErrorCb, ret );
+    auto vptr = (void*)ptr;
+    const char* symname = nullptr;
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) && dlinfo.dli_sname )
+    {
+        symname = dlinfo.dli_sname;
+    }
+    if( symname )
+    {
+        strcpy( ret, symname );
+    }
+    else
+    {
+        *ret = '\0';
+    }
     return ret;
 }
 

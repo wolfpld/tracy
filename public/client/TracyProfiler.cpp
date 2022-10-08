@@ -853,6 +853,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 #  endif
 
 static long s_profilerTid = 0;
+static long s_symbolTid = 0;
 static char s_crashText[1024];
 static std::atomic<bool> s_alreadyCrashed( false );
 
@@ -1057,7 +1058,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     {
         if( ep->d_name[0] == '.' ) continue;
         int tid = atoi( ep->d_name );
-        if( tid != selfTid && tid != s_profilerTid )
+        if( tid != selfTid && tid != s_profilerTid && tid != s_symbolTid )
         {
             syscall( SYS_tkill, tid, TRACY_CRASH_SIGNAL );
         }
@@ -3293,6 +3294,10 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 
 void Profiler::SymbolWorker()
 {
+#ifdef __linux__
+    s_symbolTid = syscall( SYS_gettid );
+#endif
+
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Symbol Worker" );
 #ifdef TRACY_USE_RPMALLOC

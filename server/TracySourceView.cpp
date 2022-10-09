@@ -2015,7 +2015,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         const auto maxAsm = strlen( tmp ) + 1;
         lx += ts * maxAsm + ty;
     }
-    if( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) lx += 17 * ts + ty;
+    if( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) lx += 15 * ts + ty;
     DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
     const AddrStatData zero;

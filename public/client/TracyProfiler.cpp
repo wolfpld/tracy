@@ -732,6 +732,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     msg.broadcastVersion = BroadcastVersion;
     msg.protocolVersion = ProtocolVersion;
     msg.listenPort = port;
+    msg.pid = GetPid();
 
     memcpy( msg.programName, procname, pnsz );
     memset( msg.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );

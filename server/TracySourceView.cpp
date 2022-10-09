@@ -5038,25 +5038,29 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, c
                 auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
                 if( frame )
                 {
-                    auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, filename ) == 0 )
+                    const auto end = m_propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
                     {
-                        const auto line = frame->data[0].line;
-                        if( line != 0 )
+                        auto ffn = worker.GetString( frame->data[i].file );
+                        if( strcmp( ffn, filename ) == 0 )
                         {
-                            auto sit = as.ipCountSrc.find( line );
-                            if( sit == as.ipCountSrc.end() )
+                            const auto line = frame->data[i].line;
+                            if( line != 0 )
                             {
-                                as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
-                                if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
+                                auto sit = as.ipCountSrc.find( line );
+                                if( sit == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                    if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
+                                }
+                                else
+                                {
+                                    const auto csum = sit->second.ext + ccnt;
+                                    sit->second.ext = csum;
+                                    if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
+                                }
+                                as.ipTotalSrc.ext += ccnt;
                             }
-                            else
-                            {
-                                const auto csum = sit->second.ext + ccnt;
-                                sit->second.ext = csum;
-                                if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
-                            }
-                            as.ipTotalSrc.ext += ccnt;
                         }
                     }
                 }
@@ -5087,25 +5091,29 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, c
                 auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
                 if( frame )
                 {
-                    auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, filename ) == 0 )
+                    const auto end = m_propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
                     {
-                        const auto line = frame->data[0].line;
-                        if( line != 0 )
+                        auto ffn = worker.GetString( frame->data[i].file );
+                        if( strcmp( ffn, filename ) == 0 )
                         {
-                            auto sit = as.ipCountSrc.find( line );
-                            if( sit == as.ipCountSrc.end() )
+                            const auto line = frame->data[i].line;
+                            if( line != 0 )
                             {
-                                as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
-                                if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
+                                auto sit = as.ipCountSrc.find( line );
+                                if( sit == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                    if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
+                                }
+                                else
+                                {
+                                    const auto csum = sit->second.ext + ccnt;
+                                    sit->second.ext = csum;
+                                    if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
+                                }
+                                as.ipTotalSrc.ext += ccnt;
                             }
-                            else
-                            {
-                                const auto csum = sit->second.ext + ccnt;
-                                sit->second.ext = csum;
-                                if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
-                            }
-                            as.ipTotalSrc.ext += ccnt;
                         }
                     }
                 }

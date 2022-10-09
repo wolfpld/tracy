@@ -245,6 +245,7 @@ SourceView::SourceView()
     , m_hwSamplesRelative( true )
     , m_childCalls( false )
     , m_childCallList( false )
+    , m_propagateInlines( false )
     , m_cost( CostType::SampleCount )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
@@ -1163,6 +1164,9 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     ImGui::TextDisabled( "0x%" PRIx64, m_baseAddr );
     ImGui::PopFont();
 
+    if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
+    if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
+
     const bool limitView = view.m_statRange.active;
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
     if( inlineList )
@@ -1456,10 +1460,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
                 m_childCalls = false;
                 m_childCallList = false;
-            }
-            else if( ImGui::IsKeyDown( ImGuiKey_Z ) )
-            {
-                m_childCalls = !m_childCalls;
+                m_propagateInlines = false;
             }
             SmallCheckbox( ICON_FA_RIGHT_FROM_BRACKET " Child calls", &m_childCalls );
             if( !samplesReady )
@@ -1663,7 +1664,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         break;
     }
 
-    if( samplesReady && ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
+    if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
+    if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
 
     if( jumpOut != 0 )
     {
@@ -1776,6 +1778,29 @@ static uint32_t GetGoodnessColor( float inRatio )
 void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view )
 {
     const auto scale = GetScale();
+    if( m_cost == CostType::SampleCount && ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
+    {
+        const auto samplesReady = worker.AreSymbolSamplesReady();
+        if( !samplesReady )
+        {
+            ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
+            ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+        }
+        SmallCheckbox( ICON_FA_ARROWS_TURN_TO_DOTS " Propagate inlines", &m_propagateInlines );
+        if( !samplesReady )
+        {
+            ImGui::PopStyleVar();
+            ImGui::PopItemFlag();
+            TooltipIfHovered( "Please wait, processing data..." );
+        }
+        else
+        {
+            TooltipIfHovered( "Press X key to temporarily reverse selection." );
+        }
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+    }
     if( m_sourceFiles.empty() )
     {
         if( m_source.is_cached() )

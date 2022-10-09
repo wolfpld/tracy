@@ -236,6 +236,7 @@ private:
     bool m_hwSamples, m_hwSamplesRelative;
     bool m_childCalls;
     bool m_childCallList;
+    bool m_propagateInlines;
     CostType m_cost;
 
     SourceContents m_source;

@@ -706,6 +706,7 @@ static void DrawContents()
                     }
                     tracy::TextFocused( "IP:", v.second.address.c_str() );
                     tracy::TextFocused( "Port:", portstr );
+                    tracy::TextFocused( "PID:", tracy::RealToString( v.second.pid ) );
                     ImGui::EndTooltip();
                 }
                 if( v.second.port != port )

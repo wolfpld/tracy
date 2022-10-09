@@ -324,7 +324,7 @@ static void DrawContents()
                             it->second.time = time;
                             it->second.activeTime = activeTime;
                             it->second.port = listenPort;
-                            if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
+                            it->second.protocolVersion = protoVer;
                             if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
                         }
                     }

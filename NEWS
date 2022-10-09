@@ -106,6 +106,7 @@ v0.x.x (xxxx-xx-xx)
     attached. Hardware sample data does not, and thus does not support cost
     propagation.
   - Assembly line costs are not affected.
+- Available clients now also broadcast their PID.
 
 
 v0.8.2 (2022-06-28)

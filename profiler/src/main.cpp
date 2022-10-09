@@ -62,6 +62,7 @@ struct ClientData
     uint32_t protocolVersion;
     int32_t activeTime;
     uint16_t port;
+    uint64_t pid;
     std::string procName;
     std::string address;
 };
@@ -295,6 +296,7 @@ static void DrawContents()
                     const auto procname = bm.programName;
                     const auto activeTime = bm.activeTime;
                     const auto listenPort = bm.listenPort;
+                    const auto pid = bm.pid;
                     auto address = addr.GetText();
 
                     const auto ipNumerical = addr.GetNumber();
@@ -317,13 +319,14 @@ static void DrawContents()
                                     } );
                             }
                             resolvLock.unlock();
-                            clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, procname, std::move( ip ) } );
+                            clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, pid, procname, std::move( ip ) } );
                         }
                         else
                         {
                             it->second.time = time;
                             it->second.activeTime = activeTime;
                             it->second.port = listenPort;
+                            it->second.pid = pid;
                             it->second.protocolVersion = protoVer;
                             if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
                         }

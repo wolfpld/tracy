@@ -4911,25 +4911,29 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
                 auto frame = worker.GetCallstackFrame( it->ip );
                 if( frame )
                 {
-                    auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, filename ) == 0 )
+                    const auto end = m_propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
                     {
-                        const auto line = frame->data[0].line;
-                        if( line != 0 )
+                        auto ffn = worker.GetString( frame->data[i].file );
+                        if( strcmp( ffn, filename ) == 0 )
                         {
-                            auto sit = as.ipCountSrc.find( line );
-                            if( sit == as.ipCountSrc.end() )
+                            const auto line = frame->data[i].line;
+                            if( line != 0 )
                             {
-                                as.ipCountSrc.emplace( line, AddrStat { 1, 0 } );
-                                if( as.ipMaxSrc.local < 1 ) as.ipMaxSrc.local = 1;
+                                auto sit = as.ipCountSrc.find( line );
+                                if( sit == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat { 1, 0 } );
+                                    if( as.ipMaxSrc.local < 1 ) as.ipMaxSrc.local = 1;
+                                }
+                                else
+                                {
+                                    const auto sum = sit->second.local + 1;
+                                    sit->second.local = sum;
+                                    if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
+                                }
+                                as.ipTotalSrc.local++;
                             }
-                            else
-                            {
-                                const auto sum = sit->second.local + 1;
-                                sit->second.local = sum;
-                                if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
-                            }
-                            as.ipTotalSrc.local++;
                         }
                     }
                 }
@@ -4969,25 +4973,29 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
                 auto frame = worker.GetCallstackFrame( ip.first );
                 if( frame )
                 {
-                    auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, filename ) == 0 )
+                    const auto end = m_propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
                     {
-                        const auto line = frame->data[0].line;
-                        if( line != 0 )
+                        auto ffn = worker.GetString( frame->data[i].file );
+                        if( strcmp( ffn, filename ) == 0 )
                         {
-                            auto it = as.ipCountSrc.find( line );
-                            if( it == as.ipCountSrc.end() )
+                            const auto line = frame->data[i].line;
+                            if( line != 0 )
                             {
-                                as.ipCountSrc.emplace( line, AddrStat{ ip.second, 0 } );
-                                if( as.ipMaxSrc.local < ip.second ) as.ipMaxSrc.local = ip.second;
+                                auto it = as.ipCountSrc.find( line );
+                                if( it == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat{ ip.second, 0 } );
+                                    if( as.ipMaxSrc.local < ip.second ) as.ipMaxSrc.local = ip.second;
+                                }
+                                else
+                                {
+                                    const auto sum = it->second.local + ip.second;
+                                    it->second.local = sum;
+                                    if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
+                                }
+                                as.ipTotalSrc.local += ip.second;
                             }
-                            else
-                            {
-                                const auto sum = it->second.local + ip.second;
-                                it->second.local = sum;
-                                if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
-                            }
-                            as.ipTotalSrc.local += ip.second;
                         }
                     }
                 }

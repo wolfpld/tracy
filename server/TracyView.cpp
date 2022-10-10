@@ -96,7 +96,8 @@ View::View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFon
 
     InitMemory();
     InitTextEditor( fixedWidth );
-    SetViewToLastFrames();
+    m_vd.zvStart = 0;
+    m_vd.zvEnd = m_worker.GetLastTime();
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
     m_userData.LoadAnnotations( m_annotations );

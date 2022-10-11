@@ -2587,16 +2587,17 @@ uint64_t Worker::GetInlineSymbolForAddress( uint64_t address ) const
 
 StringIdx Worker::GetLocationForAddress( uint64_t address, uint32_t& line ) const
 {
-    auto it = m_data.codeAddressToLocation.find( address );
-    if( it == m_data.codeAddressToLocation.end() )
+    auto frame = GetCallstackFrame( PackPointer( address ) );
+    if( !frame )
     {
         line = 0;
         return StringIdx();
     }
     else
     {
-        const auto idx = UnpackFileLine( it->second, line );
-        return StringIdx( idx );
+        auto subFrame = frame->data[0];
+        line = subFrame.line;
+        return subFrame.file;
     }
 }
 

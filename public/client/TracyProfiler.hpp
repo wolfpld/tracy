@@ -167,7 +167,6 @@ class Profiler
     {
         CallstackFrame,
         SymbolQuery,
-        CodeLocation,
         ExternalName,
         KernelCode
     };

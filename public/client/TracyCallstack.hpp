@@ -51,7 +51,6 @@ struct CallstackEntryData
 };
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
-CallstackSymbolData DecodeCodeAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
 void InitCallstack();

@@ -61,7 +61,6 @@ enum class QueueType : uint8_t
     GpuContextName,
     CallstackFrameSize,
     SymbolInformation,
-    CodeInformation,
     ExternalNameMetadata,
     SymbolCodeMetadata,
     FiberEnter,
@@ -546,19 +545,6 @@ struct QueueSymbolInformationFat : public QueueSymbolInformation
     uint8_t needFree;
 };
 
-struct QueueCodeInformation
-{
-    uint64_t symAddr;
-    uint32_t line;
-    uint64_t ptrOffset;
-};
-
-struct QueueCodeInformationFat : public QueueCodeInformation
-{
-    uint64_t fileString;
-    uint8_t needFree;
-};
-
 struct QueueCrashReport
 {
     int64_t time;
@@ -727,8 +713,6 @@ struct QueueItem
         QueueCallstackFrame callstackFrame;
         QueueSymbolInformation symbolInformation;
         QueueSymbolInformationFat symbolInformationFat;
-        QueueCodeInformation codeInformation;
-        QueueCodeInformationFat codeInformationFat;
         QueueCrashReport crashReport;
         QueueCrashReportThread crashReportThread;
         QueueSysTime sysTime;
@@ -803,7 +787,6 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuContextName ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
-    sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ),                                  // ExternalNameMetadata - not for wire transfer
     sizeof( QueueHeader ),                                  // SymbolCodeMetadata - not for wire transfer
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),

@@ -2173,16 +2173,6 @@ static void FreeAssociatedMemory( const QueueItem& item )
         }
         break;
     }
-    case QueueType::CodeInformation:
-    {
-        uint8_t needFree = MemRead<uint8_t>( &item.codeInformationFat.needFree );
-        if( needFree )
-        {
-            ptr = MemRead<uint64_t>( &item.codeInformationFat.fileString );
-            tracy_free( (void*)ptr );
-        }
-        break;
-    }
     case QueueType::SymbolCodeMetadata:
         ptr = MemRead<uint64_t>( &item.symbolCodeMetadata.ptr );
         tracy_free( (void*)ptr );
@@ -2477,14 +2467,6 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     {
                         auto fileString = (const char*)MemRead<uint64_t>( &item->symbolInformationFat.fileString );
                         auto needFree = MemRead<uint8_t>( &item->symbolInformationFat.needFree );
-                        SendSingleString( fileString );
-                        if( needFree ) tracy_free_fast( (void*)fileString );
-                        break;
-                    }
-                    case QueueType::CodeInformation:
-                    {
-                        auto fileString = (const char*)MemRead<uint64_t>( &item->codeInformationFat.fileString );
-                        auto needFree = MemRead<uint8_t>( &item->codeInformationFat.needFree );
                         SendSingleString( fileString );
                         if( needFree ) tracy_free_fast( (void*)fileString );
                         break;
@@ -3163,15 +3145,6 @@ void Profiler::QueueSymbolQuery( uint64_t symbol )
 #endif
 }
 
-void Profiler::QueueCodeLocation( uint64_t ptr )
-{
-#ifdef TRACY_HAS_CALLSTACK
-    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::CodeLocation, ptr } );
-#else
-    AckServerQuery();
-#endif
-}
-
 void Profiler::QueueExternalName( uint64_t ptr )
 {
 #ifdef TRACY_HAS_SYSTEM_TRACING
@@ -3225,19 +3198,6 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
         MemWrite( &item->symbolInformationFat.symAddr, si.ptr );
         MemWrite( &item->symbolInformationFat.fileString, (uint64_t)sym.file );
         MemWrite( &item->symbolInformationFat.needFree, (uint8_t)sym.needFree );
-        TracyLfqCommit;
-        break;
-    }
-    case SymbolQueueItemType::CodeLocation:
-    {
-        const auto sym = DecodeCodeAddress( si.ptr );
-        const uint64_t offset = si.ptr - sym.symAddr;
-        TracyLfqPrepare( QueueType::CodeInformation );
-        MemWrite( &item->codeInformationFat.ptrOffset, offset );
-        MemWrite( &item->codeInformationFat.line, sym.line );
-        MemWrite( &item->codeInformationFat.symAddr, sym.symAddr );
-        MemWrite( &item->codeInformationFat.fileString, (uint64_t)sym.file );
-        MemWrite( &item->codeInformationFat.needFree, (uint8_t)sym.needFree );
         TracyLfqCommit;
         break;
     }
@@ -3404,9 +3364,6 @@ bool Profiler::HandleServerQuery()
         HandleSymbolCodeQuery( ptr, extra );
         break;
 #endif
-    case ServerQueryCodeLocation:
-        QueueCodeLocation( ptr );
-        break;
     case ServerQuerySourceCode:
         HandleSourceCodeQuery();
         break;

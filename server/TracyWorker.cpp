@@ -277,7 +277,6 @@ Worker::Worker( const char* addr, uint16_t port )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_pendingCallstackSubframes( 0 )
-    , m_pendingCodeInformation( 0 )
     , m_pendingSymbolCode( 0 )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
@@ -3201,7 +3200,7 @@ void Worker::Exec()
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 m_data.plots.IsPending() || m_pendingCallstackId != 0 || m_pendingExternalNames != 0 ||
                 m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr || !m_pendingSymbols.empty() ||
-                m_pendingSymbolCode != 0 || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() || !m_serverQueryQueuePrio.empty() ||
+                m_pendingSymbolCode != 0 || !m_serverQueryQueue.empty() || !m_serverQueryQueuePrio.empty() ||
                 m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr ||
                 !m_sourceCodeQuery.empty() || m_pendingFibers != 0 )
             {
@@ -3426,7 +3425,6 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 ProcessCallstackFrame( ev.callstackFrame, false );
                 break;
             case QueueType::SymbolInformation:
-            case QueueType::CodeInformation:
             case QueueType::AckServerQueryNoop:
             case QueueType::AckSourceCodeNotAvailable:
             case QueueType::AckSymbolCodeNotAvailable:
@@ -4913,10 +4911,6 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::SymbolInformation:
         ProcessSymbolInformation( ev.symbolInformation );
-        m_serverQuerySpaceLeft++;
-        break;
-    case QueueType::CodeInformation:
-        ProcessCodeInformation( ev.codeInformation );
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::Terminate:
@@ -6821,67 +6815,6 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     if( cit == m_checkedFileStrings.end() ) CacheSource( ref, it->second.imageName );
 
     m_pendingSymbols.erase( it );
-}
-
-void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
-{
-    assert( m_pendingCodeInformation > 0 );
-    m_pendingCodeInformation--;
-
-    const auto idx = GetSingleStringIdx();
-    const uint64_t ptr = ev.symAddr + ev.ptrOffset;
-
-    if( ev.line != 0 )
-    {
-        assert( m_data.codeAddressToLocation.find( ptr ) == m_data.codeAddressToLocation.end() );
-        const auto packed = PackFileLine( idx, ev.line );
-        m_data.codeAddressToLocation.emplace( ptr, packed );
-
-        auto lit = m_data.locationCodeAddressList.find( packed );
-        if( lit == m_data.locationCodeAddressList.end() )
-        {
-            m_data.locationCodeAddressList.emplace( packed, Vector<uint64_t>( ptr ) );
-        }
-        else
-        {
-            const bool needSort = lit->second.back() > ptr;
-            lit->second.push_back( ptr );
-            if( needSort ) pdqsort_branchless( lit->second.begin(), lit->second.end() );
-        }
-
-        StringRef ref( StringRef::Idx, idx );
-        auto cit = m_checkedFileStrings.find( ref );
-        if( cit == m_checkedFileStrings.end() )
-        {
-            uint64_t baseAddr = 0;
-            if( HasSymbolCode( ev.symAddr ) )
-            {
-                baseAddr = ev.symAddr;
-            }
-            else
-            {
-                const auto parentAddr = GetSymbolForAddress( ev.symAddr );
-                if( parentAddr != 0 && HasSymbolCode( parentAddr ) )
-                {
-                    baseAddr = parentAddr;
-                }
-            }
-            const SymbolData* sym = baseAddr == 0 ? nullptr : GetSymbolData( baseAddr );
-            if( !sym )
-            {
-                CacheSource( ref );
-            }
-            else
-            {
-                CacheSource( ref, sym->imageName );
-            }
-        }
-    }
-    if( ev.symAddr != 0 )
-    {
-        assert( m_data.codeSymbolMap.find( ptr ) == m_data.codeSymbolMap.end() );
-        m_data.codeSymbolMap.emplace( ptr, ev.symAddr );
-    }
 }
 
 void Worker::ProcessCrashReport( const QueueCrashReport& ev )

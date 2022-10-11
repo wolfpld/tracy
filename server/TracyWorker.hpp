@@ -737,7 +737,6 @@ private:
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols );
     tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );
-    tracy_force_inline void ProcessCodeInformation( const QueueCodeInformation& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
@@ -1000,7 +999,6 @@ private:
     uint32_t m_pendingSourceLocation;
     uint32_t m_pendingCallstackFrames;
     uint8_t m_pendingCallstackSubframes;
-    uint32_t m_pendingCodeInformation;
     uint32_t m_pendingSymbolCode;
 
     CallstackFrameData* m_callstackFrameStaging;

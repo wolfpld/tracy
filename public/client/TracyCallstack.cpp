@@ -6,7 +6,6 @@
 #include "TracyFastVector.hpp"
 #include "TracyStringHelpers.hpp"
 #include "../common/TracyAlloc.hpp"
-#include "../common/TracyStackFrames.hpp"
 #include "TracyDebug.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
@@ -378,85 +377,6 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
         sym.file = CopyString( line.FileName );
         sym.line = line.LineNumber;
         sym.needFree = true;
-    }
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_UNLOCK;
-#endif
-    return sym;
-}
-
-CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
-{
-    CallstackSymbolData sym = {};
-    const auto proc = GetCurrentProcess();
-    bool done = false;
-
-    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
-    auto si = (SYMBOL_INFO*)buf;
-    si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = MaxNameSize;
-
-    IMAGEHLP_LINE64 line;
-    DWORD displacement = 0;
-    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
-#if !defined TRACY_NO_CALLSTACK_INLINES
-    if( _SymAddrIncludeInlineTrace )
-    {
-        DWORD inlineNum = _SymAddrIncludeInlineTrace( proc, ptr );
-        DWORD ctx = 0;
-        DWORD idx;
-        BOOL doInline = FALSE;
-        if( inlineNum != 0 ) doInline = _SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
-        if( doInline )
-        {
-            if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) != 0 )
-            {
-                sym.file = CopyString( line.FileName );
-                sym.line = line.LineNumber;
-                sym.needFree = true;
-                done = true;
-
-                if( _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0 )
-                {
-                    sym.symAddr = si->Address;
-                }
-                else
-                {
-                    sym.symAddr = 0;
-                }
-            }
-        }
-    }
-#endif
-    if( !done )
-    {
-        const auto res = SymGetLineFromAddr64( proc, ptr, &displacement, &line );
-        if( res == 0 || line.LineNumber >= 0xF00000 )
-        {
-            sym.file = "[unknown]";
-            sym.line = 0;
-            sym.symAddr = 0;
-            sym.needFree = false;
-        }
-        else
-        {
-            sym.file = CopyString( line.FileName );
-            sym.line = line.LineNumber;
-            sym.needFree = true;
-
-            if( SymFromAddr( proc, ptr, nullptr, si ) != 0 )
-            {
-                sym.symAddr = si->Address;
-            }
-            else
-            {
-                sym.symAddr = 0;
-            }
-        }
     }
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
@@ -900,42 +820,6 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
-static int CodeDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
-{
-    if( !fn ) return 1;
-
-    const auto fnsz = strlen( fn );
-    if( fnsz >= s_tracySkipSubframesMinLen )
-    {
-        auto ptr = s_tracySkipSubframes;
-        do
-        {
-            if( fnsz >= ptr->len && memcmp( fn + fnsz - ptr->len, ptr->str, ptr->len ) == 0 ) return 0;
-            ptr++;
-        }
-        while( ptr->str );
-    }
-
-    auto& sym = *(CallstackSymbolData*)data;
-    sym.file = NormalizePath( fn );
-    if( !sym.file ) sym.file = CopyString( fn );
-    sym.line = lineno;
-    sym.needFree = true;
-    sym.symAddr = lowaddr;
-    return 1;
-}
-
-static void CodeErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
-{
-}
-
-CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
-{
-    CallstackSymbolData sym = { "[unknown]", 0, false, 0 };
-    backtrace_pcinfo( cb_bts, ptr, CodeDataCb, CodeErrorCb, &sym );
-    return sym;
-}
-
 static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
     cb_data[cb_num].symLen = 0;
@@ -1120,11 +1004,6 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
     if( !symloc ) symloc = "[unknown]";
     return CallstackSymbolData { symloc, 0, false, 0 };
-}
-
-CallstackSymbolData DecodeCodeAddress( uint64_t ptr )
-{
-    return DecodeSymbolAddress( ptr );
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )

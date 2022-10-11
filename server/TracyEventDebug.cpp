@@ -171,9 +171,6 @@ void EventDebug( const QueueItem& ev )
     case QueueType::SymbolInformation:
         fprintf( f, "ev %i (SymbolInformation)\n", ev.hdr.idx );
         break;
-    case QueueType::CodeInformation:
-        fprintf( f, "ev %i (CodeInformation)\n", ev.hdr.idx );
-        break;
     case QueueType::FiberEnter:
         fprintf( f, "ev %i (FiberEnter)\n", ev.hdr.idx );
         fprintf( f, "\ttime   = %" PRIi64 "\n", ev.fiberEnter.time );

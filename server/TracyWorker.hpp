@@ -385,8 +385,6 @@ private:
         unordered_flat_map<uint64_t, MemoryBlock> symbolCode;
         uint64_t symbolCodeSize = 0;
 
-        unordered_flat_map<uint64_t, uint64_t> codeAddressToLocation;
-
         unordered_flat_map<const char*, MemoryBlock, charutil::Hasher, charutil::Comparator> sourceFileCache;
 
         unordered_flat_map<uint64_t, HwSampleData> hwSamples;
@@ -484,7 +482,6 @@ public:
     uint64_t GetSymbolsCount() const { return m_data.symbolMap.size(); }
     uint64_t GetSymbolCodeCount() const { return m_data.symbolCode.size(); }
     uint64_t GetSymbolCodeSize() const { return m_data.symbolCodeSize; }
-    uint64_t GetCodeLocationsSize() const { return m_data.codeAddressToLocation.size(); }
     uint64_t GetGhostZonesCount() const { return m_data.ghostCnt; }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }

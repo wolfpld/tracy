@@ -99,7 +99,6 @@ void View::DrawInfo()
         TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
         TextFocused( "Symbol code fragments:", RealToString( m_worker.GetSymbolCodeCount() ) );
         TooltipIfHovered( MemSizeToString( m_worker.GetSymbolCodeSize() ) );
-        TextFocused( "Code locations:", RealToString( m_worker.GetCodeLocationsSize() ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
         if( m_worker.AreCallstackSamplesReady() )
         {

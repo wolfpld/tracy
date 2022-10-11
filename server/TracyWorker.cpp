@@ -1775,7 +1775,26 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             uint64_t packed;
             uint16_t lsz;
             f.Read2( packed, lsz );
-            f.Skip( lsz * sizeof( uint64_t ) );
+            uint32_t line;
+            const auto fidx = UnpackFileLine( packed, line );
+            uint64_t ref = 0;
+            for( uint16_t j=0; j<lsz; j++ )
+            {
+                uint64_t diff;
+                f.Read( diff );
+                ref += diff;
+                auto frameId = PackPointer( ref );
+                if( m_data.callstackFrameMap.find( frameId ) == m_data.callstackFrameMap.end() )
+                {
+                    auto cs = m_slab.AllocInit<CallstackFrameData>();
+                    cs->size = 1;
+                    cs->data = m_slab.AllocInit<CallstackFrame>( 1 );
+                    cs->data->file = StringIdx( fidx );
+                    cs->data->line = line;
+                    cs->data->symAddr = 0;
+                    m_data.callstackFrameMap.emplace( frameId, cs );
+                }
+            }
         }
     }
 

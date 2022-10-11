@@ -3769,6 +3769,20 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         UnsetFont();
                     }
                 }
+                const auto frame = worker.GetCallstackFrame( worker.PackPointer( line.addr ) );
+                if( frame && frame->size > 1 )
+                {
+                    ImGui::Separator();
+                    TextDisabledUnformatted( "Local call stack:" );
+                    for( uint8_t i=0; i<frame->size; i++ )
+                    {
+                        ImGui::TextDisabled( "%i.", i+1 );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s", worker.GetString( frame->data[i].name ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), frame->data[i].line );
+                    }
+                }
                 ImGui::EndTooltip();
                 SetFont();
                 if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )

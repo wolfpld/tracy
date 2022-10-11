@@ -6766,6 +6766,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
         {
             assert( m_data.callstackFrameMap.find( frameId ) == m_data.callstackFrameMap.end() );
             m_data.callstackFrameMap.emplace( frameId, m_callstackFrameStaging );
+            m_data.codeSymbolMap.emplace( m_callstackFrameStagingPtr, m_callstackFrameStaging->data[0].symAddr );
             m_callstackFrameStaging = nullptr;
         }
     }

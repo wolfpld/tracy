@@ -107,6 +107,8 @@ v0.x.x (xxxx-xx-xx)
     propagation.
   - Assembly line costs are not affected.
 - Available clients now also broadcast their PID.
+- Assembly lines tooltip will now display local call stack of inline functions
+  (within the symbol).
 
 
 v0.8.2 (2022-06-28)

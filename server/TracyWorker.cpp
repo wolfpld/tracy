@@ -4166,10 +4166,15 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, sz, ptr, 0, &insn );
     if( cnt > 0 )
     {
-        m_pendingCodeInformation += cnt;
         for( size_t i=0; i<cnt; i++ )
         {
-            Query( ServerQueryCodeLocation, insn[i].address );
+            const auto addr = insn[i].address;
+            const auto ptr = PackPointer( addr );
+            if( m_data.callstackFrameMap.find( ptr ) == m_data.callstackFrameMap.end() )
+            {
+                m_pendingCallstackFrames++;
+                Query( ServerQueryCallstackFrame, addr );
+            }
         }
         cs_free( insn, cnt );
     }

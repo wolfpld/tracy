@@ -386,7 +386,6 @@ private:
         uint64_t symbolCodeSize = 0;
 
         unordered_flat_map<uint64_t, uint64_t> codeAddressToLocation;
-        unordered_flat_map<uint64_t, Vector<uint64_t>> locationCodeAddressList;
 
         unordered_flat_map<const char*, MemoryBlock, charutil::Hasher, charutil::Comparator> sourceFileCache;
 
@@ -546,7 +545,6 @@ public:
     uint64_t GetInlineSymbolForAddress( uint64_t address ) const;
     bool HasInlineSymbolAddresses() const { return !m_data.codeSymbolMap.empty(); }
     StringIdx GetLocationForAddress( uint64_t address, uint32_t& line ) const;
-    const Vector<uint64_t>* GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const;
     const uint64_t* GetInlineSymbolList( uint64_t sym, uint32_t len );
 
 #ifndef TRACY_NO_STATISTICS

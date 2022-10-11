@@ -96,6 +96,11 @@ struct ChildStat
 };
 
 
+static tracy_force_inline uint64_t PackFileLine( uint32_t fileIdx, uint32_t line )
+{
+    return ( uint64_t( fileIdx ) << 32 ) | line;
+}
+
 static size_t CountHwSamples( const SortedVector<Int48, Int48Sort>& vec, const Range& range )
 {
     if( vec.empty() ) return 0;
@@ -655,6 +660,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     m_locMap.clear();
     m_jumpTable.clear();
     m_jumpOut.clear();
+    m_locationAddress.clear();
     m_maxJumpLevel = 0;
     m_asmSelected = -1;
     m_asmCountBase = -1;
@@ -936,9 +942,17 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 if( srcline > mLineMax ) mLineMax = srcline;
                 const auto idx = srcidx.Idx();
                 auto sit = m_sourceFiles.find( idx );
-                if( sit == m_sourceFiles.end() )
+                if( sit == m_sourceFiles.end() ) m_sourceFiles.emplace( idx, srcline );
+                const auto packed = PackFileLine( idx, srcline );
+                auto lit = m_locationAddress.find( packed );
+                if( lit == m_locationAddress.end() )
                 {
-                    m_sourceFiles.emplace( idx, srcline );
+                    m_locationAddress.emplace( packed, std::vector<uint64_t>( { op.address } ) );
+                }
+                else
+                {
+                    assert( lit->second.back() < op.address );
+                    lit->second.push_back( op.address );
                 }
             }
             char tmp[16];
@@ -2109,7 +2123,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         {
             if( as.ipCountSrc.find( lineNum ) == as.ipCountSrc.end() )
             {
-                auto addresses = worker.GetAddressesForLocation( m_source.idx(), lineNum );
+                auto addresses = GetAddressesForLocation( m_source.idx(), lineNum );
                 if( addresses )
                 {
                     for( auto& addr : *addresses )
@@ -3076,7 +3090,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     if( !m_asm.empty() )
     {
         assert( worker && view );
-        auto addresses = worker->GetAddressesForLocation( m_source.idx(), lineNum );
+        auto addresses = GetAddressesForLocation( m_source.idx(), lineNum );
         if( addresses )
         {
             for( auto& addr : *addresses )
@@ -4678,7 +4692,7 @@ void SourceView::SelectLine( uint32_t line, const Worker* worker, bool updateAsm
 void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool updateAsmLine, uint64_t targetAddr, bool changeAsmLine )
 {
     m_selectedAddresses.clear();
-    auto addresses = worker.GetAddressesForLocation( file, line );
+    auto addresses = GetAddressesForLocation( file, line );
     if( addresses )
     {
         const auto& addr = *addresses;
@@ -4736,7 +4750,7 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
 void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker )
 {
     assert( m_selectedAddressesHover.empty() );
-    auto addresses = worker.GetAddressesForLocation( file, line );
+    auto addresses = GetAddressesForLocation( file, line );
     if( addresses )
     {
         for( auto& v : *addresses )
@@ -5389,6 +5403,19 @@ void SourceView::CheckWrite( size_t line, RegsX86 reg, size_t limit )
 bool SourceView::IsInContext( const Worker& worker, uint64_t addr ) const
 {
     return !m_calcInlineStats || !worker.HasInlineSymbolAddresses() || worker.GetInlineSymbolForAddress( addr ) == m_symAddr;
+}
+
+const std::vector<uint64_t>* SourceView::GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const
+{
+    auto it = m_locationAddress.find( PackFileLine( fileStringIdx, line ) );
+    if( it == m_locationAddress.end() )
+    {
+        return nullptr;
+    }
+    else
+    {
+        return &it->second;
+    }
 }
 
 #ifndef TRACY_NO_FILESELECTOR

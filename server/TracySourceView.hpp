@@ -202,6 +202,7 @@ private:
     void CheckWrite( size_t line, RegsX86 reg, size_t limit );
 
     bool IsInContext( const Worker& worker, uint64_t addr ) const;
+    const std::vector<uint64_t>* GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const;
 
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
@@ -248,6 +249,8 @@ private:
     unordered_flat_set<uint64_t> m_jumpOut;
     size_t m_maxJumpLevel;
     bool m_showJumps;
+
+    unordered_flat_map<uint64_t, std::vector<uint64_t>> m_locationAddress;
 
     unordered_flat_map<uint32_t, uint32_t> m_sourceFiles;
     unordered_flat_set<uint64_t> m_selectedAddresses;

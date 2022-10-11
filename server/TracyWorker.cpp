@@ -38,11 +38,6 @@
 namespace tracy
 {
 
-static tracy_force_inline uint64_t PackFileLine( uint32_t fileIdx, uint32_t line )
-{
-    return ( uint64_t( fileIdx ) << 32 ) | line;
-}
-
 static tracy_force_inline uint32_t UnpackFileLine( uint64_t packed, uint32_t& line )
 {
     line = packed & 0xFFFFFFFF;
@@ -1772,31 +1767,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
-    f.Read( sz );
-    if( eventMask & EventType::SymbolCode )
+    if( fileVer <= FileVersion( 0, 8, 4 ) )
     {
-        m_data.locationCodeAddressList.reserve( sz );
-        for( uint64_t i=0; i<sz; i++ )
-        {
-            uint64_t packed;
-            uint16_t lsz;
-            f.Read2( packed, lsz );
-            Vector<uint64_t> data;
-            data.reserve_exact( lsz, m_slab );
-            uint64_t ref = 0;
-            for( uint16_t j=0; j<lsz; j++ )
-            {
-                uint64_t diff;
-                f.Read( diff );
-                ref += diff;
-                data[j] = ref;
-                m_data.codeAddressToLocation.emplace( ref, packed );
-            }
-            m_data.locationCodeAddressList.emplace( packed, std::move( data ) );
-        }
-    }
-    else
-    {
+        f.Read( sz );
         for( uint64_t i=0; i<sz; i++ )
         {
             uint64_t packed;
@@ -2597,19 +2570,6 @@ StringIdx Worker::GetLocationForAddress( uint64_t address, uint32_t& line ) cons
         auto subFrame = frame->data[0];
         line = subFrame.line;
         return subFrame.file;
-    }
-}
-
-const Vector<uint64_t>* Worker::GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const
-{
-    auto it = m_data.locationCodeAddressList.find( PackFileLine( fileStringIdx, line ) );
-    if( it == m_data.locationCodeAddressList.end() )
-    {
-        return nullptr;
-    }
-    else
-    {
-        return &it->second;
     }
 }
 
@@ -8399,23 +8359,6 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second.len, sizeof( v.second.len ) );
         f.Write( v.second.data, v.second.len );
-    }
-
-    sz = m_data.locationCodeAddressList.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_data.locationCodeAddressList )
-    {
-        f.Write( &v.first, sizeof( v.first ) );
-        uint16_t lsz = uint16_t( v.second.size() );
-        f.Write( &lsz, sizeof( lsz ) );
-        uint64_t ref = 0;
-        const uint64_t* ptr = v.second.data();
-        for( uint16_t i=0; i<lsz; i++ )
-        {
-            uint64_t diff = *ptr++ - ref;
-            ref += diff;
-            f.Write( &diff, sizeof( diff ) );
-        }
     }
 
     sz = m_data.codeSymbolMap.size();

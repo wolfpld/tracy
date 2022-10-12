@@ -175,7 +175,7 @@ class Profiler
     {
         SymbolQueueItemType type;
         uint64_t ptr;
-        uint32_t extra;
+        uint64_t extra;
     };
 
 public:

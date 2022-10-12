@@ -709,14 +709,6 @@ void Profiler::AckServerQuery()
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::AckServerQueryNoop] );
 }
 
-void Profiler::AckSourceCodeNotAvailable()
-{
-    QueueItem item;
-    MemWrite( &item.hdr.type, QueueType::AckSourceCodeNotAvailable );
-    NeedDataSize( QueueDataSize[(int)QueueType::AckSourceCodeNotAvailable] );
-    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::AckSourceCodeNotAvailable] );
-}
-
 void Profiler::AckSymbolCodeNotAvailable()
 {
     QueueItem item;
@@ -2202,6 +2194,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free_fast( (void*)ptr );
         break;
 #endif
+    case QueueType::SourceCodeMetadata:
+        ptr = MemRead<uint64_t>( &item.sourceCodeMetadata.ptr );
+        tracy_free( (void*)ptr );
+        break;
     default:
         break;
     }
@@ -2496,6 +2492,15 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         continue;
                     }
 #endif
+                    case QueueType::SourceCodeMetadata:
+                    {
+                        auto ptr = (const char*)MemRead<uint64_t>( &item->sourceCodeMetadata.ptr );
+                        auto size = MemRead<uint32_t>( &item->sourceCodeMetadata.size );
+                        SendLongString( (uint64_t)ptr, ptr, size, QueueType::SourceCode );
+                        tracy_free_fast( (void*)ptr );
+                        ++item;
+                        continue;
+                    }
                     default:
                         assert( false );
                         break;
@@ -3162,6 +3167,15 @@ void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 #endif
 }
 
+void Profiler::QueueSourceCodeQuery()
+{
+    assert( m_exectime != 0 );
+    assert( m_queryData );
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SourceCode, uint64_t( m_queryData ), uint64_t( m_queryImage ) } );
+    m_queryData = nullptr;
+    m_queryImage = nullptr;
+}
+
 #ifdef TRACY_HAS_CALLSTACK
 void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 {
@@ -3249,6 +3263,9 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
         TracyLfqCommit;
         break;
     }
+    case SymbolQueueItemType::SourceCode:
+        HandleSourceCodeQuery( (char*)si.ptr, (char*)si.extra );
+        break;
     default:
         assert( false );
         break;
@@ -3365,7 +3382,7 @@ bool Profiler::HandleServerQuery()
         break;
 #endif
     case ServerQuerySourceCode:
-        HandleSourceCodeQuery();
+        QueueSourceCodeQuery();
         break;
     case ServerQueryDataTransfer:
         if( m_queryData )
@@ -3791,19 +3808,15 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
 }
 
-void Profiler::HandleSourceCodeQuery()
+void Profiler::HandleSourceCodeQuery( char* data, char* image )
 {
-    assert( m_exectime != 0 );
-    assert( m_queryData );
-
-    InitRpmalloc();
     bool ok = false;
     struct stat st;
-    if( stat( m_queryData, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime )
+    if( stat( data, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime )
     {
         if( st.st_size < ( TargetFrameSize - 16 ) )
         {
-            FILE* f = fopen( m_queryData, "rb" );
+            FILE* f = fopen( data, "rb" );
             if( f )
             {
                 auto ptr = (char*)tracy_malloc_fast( st.st_size );
@@ -3811,22 +3824,25 @@ void Profiler::HandleSourceCodeQuery()
                 fclose( f );
                 if( rd == (size_t)st.st_size )
                 {
-                    SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+                    TracyLfqPrepare( QueueType::SourceCodeMetadata );
+                    MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
+                    MemWrite( &item->sourceCodeMetadata.size, (uint32_t)rd );
+                    TracyLfqCommit;
                     ok = true;
                 }
-                tracy_free_fast( ptr );
             }
         }
     }
+
 #ifdef TRACY_DEBUGINFOD
-    else if( m_queryImage && m_queryData[0] == '/' )
+    else if( image && data[0] == '/' )
     {
         size_t size;
-        auto buildid = GetBuildIdForImage( m_queryImage, size );
+        auto buildid = GetBuildIdForImage( image, size );
         if( buildid )
         {
-            auto d = debuginfod_find_source( GetDebuginfodClient(), buildid, size, m_queryData, nullptr );
-            TracyDebug( "DebugInfo source query: %s, fn: %s, image: %s\n", d >= 0 ? " ok " : "fail", m_queryData, m_queryImage );
+            auto d = debuginfod_find_source( GetDebuginfodClient(), buildid, size, data, nullptr );
+            TracyDebug( "DebugInfo source query: %s, fn: %s, image: %s\n", d >= 0 ? " ok " : "fail", data, image );
             if( d >= 0 )
             {
                 struct stat st;
@@ -3838,10 +3854,12 @@ void Profiler::HandleSourceCodeQuery()
                     auto rd = read( d, ptr, st.st_size );
                     if( rd == (size_t)st.st_size )
                     {
-                        SendLongString( (uint64_t)ptr, ptr, rd, QueueType::SourceCode );
+                        TracyLfqPrepare( QueueType::SourceCodeMetadata );
+                        MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
+                        MemWrite( &item->sourceCodeMetadata.size, (uint32_t)rd );
+                        TracyLfqCommit;
                         ok = true;
                     }
-                    tracy_free_fast( ptr );
                 }
                 close( d );
             }
@@ -3849,31 +3867,35 @@ void Profiler::HandleSourceCodeQuery()
     }
     else
     {
-        TracyDebug( "DebugInfo invalid query fn: %s, image: %s\n", m_queryData, m_queryImage );
+        TracyDebug( "DebugInfo invalid query fn: %s, image: %s\n", data, image );
     }
 #endif
 
     if( !ok && m_sourceCallback )
     {
         size_t sz;
-        char* ptr = m_sourceCallback( m_sourceCallbackData, m_queryData, sz );
+        char* ptr = m_sourceCallback( m_sourceCallbackData, data, sz );
         if( ptr )
         {
             if( sz < ( TargetFrameSize - 16 ) )
             {
-                SendLongString( (uint64_t)ptr, ptr, sz, QueueType::SourceCode );
+                TracyLfqPrepare( QueueType::SourceCodeMetadata );
+                MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
+                MemWrite( &item->sourceCodeMetadata.size, (uint32_t)sz );
+                TracyLfqCommit;
                 ok = true;
             }
-            tracy_free_fast( ptr );
         }
     }
 
-    if( !ok ) AckSourceCodeNotAvailable();
+    if( !ok )
+    {
+        TracyLfqPrepare( QueueType::AckSourceCodeNotAvailable );
+        TracyLfqCommit;
+    }
 
-    tracy_free_fast( m_queryData );
-    tracy_free_fast( m_queryImage );
-    m_queryData = nullptr;
-    m_queryImage = nullptr;
+    tracy_free_fast( data );
+    tracy_free_fast( image );
 }
 
 #if defined _WIN32 && defined TRACY_TIMER_QPC

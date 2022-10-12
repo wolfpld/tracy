@@ -168,7 +168,8 @@ class Profiler
         CallstackFrame,
         SymbolQuery,
         ExternalName,
-        KernelCode
+        KernelCode,
+        SourceCode
     };
 
     struct SymbolQueueItem
@@ -807,15 +808,15 @@ private:
     void QueueSymbolQuery( uint64_t symbol );
     void QueueExternalName( uint64_t ptr );
     void QueueKernelCode( uint64_t symbol, uint32_t size );
+    void QueueSourceCodeQuery();
 
     bool HandleServerQuery();
     void HandleDisconnect();
     void HandleParameter( uint64_t payload );
     void HandleSymbolCodeQuery( uint64_t symbol, uint32_t size );
-    void HandleSourceCodeQuery();
+    void HandleSourceCodeQuery( char* data, char* image );
 
     void AckServerQuery();
-    void AckSourceCodeNotAvailable();
     void AckSymbolCodeNotAvailable();
 
     void CalibrateTimer();

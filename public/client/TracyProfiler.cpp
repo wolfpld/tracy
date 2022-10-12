@@ -849,6 +849,19 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 }
 #endif
 
+static Profiler* s_instance = nullptr;
+static Thread* s_thread;
+#ifndef TRACY_NO_FRAME_IMAGE
+static Thread* s_compressThread;
+#endif
+#ifdef TRACY_HAS_CALLSTACK
+static Thread* s_symbolThread;
+std::atomic<bool> s_symbolThreadGone { false };
+#endif
+#ifdef TRACY_HAS_SYSTEM_TRACING
+static Thread* s_sysTraceThread = nullptr;
+#endif
+
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
 #  ifndef TRACY_CRASH_SIGNAL
 #    define TRACY_CRASH_SIGNAL SIGPWR
@@ -1067,10 +1080,10 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     }
     closedir( dp );
 
-    {
-        TracyLfqPrepare( QueueType::Crash );
-        TracyLfqCommit;
-    }
+    if( selfTid == s_symbolTid ) s_symbolThreadGone.store( true, std::memory_order_release );
+
+    TracyLfqPrepare( QueueType::Crash );
+    TracyLfqCommit;
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
     GetProfiler().RequestShutdown();
@@ -1082,19 +1095,6 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 
 
 enum { QueuePrealloc = 256 * 1024 };
-
-static Profiler* s_instance = nullptr;
-static Thread* s_thread;
-#ifndef TRACY_NO_FRAME_IMAGE
-static Thread* s_compressThread;
-#endif
-#ifdef TRACY_HAS_CALLSTACK
-static Thread* s_symbolThread;
-std::atomic<bool> s_symbolThreadGone { false };
-#endif
-#ifdef TRACY_HAS_SYSTEM_TRACING
-static Thread* s_sysTraceThread = nullptr;
-#endif
 
 TRACY_API int64_t GetFrequencyQpc()
 {

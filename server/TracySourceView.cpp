@@ -3805,10 +3805,8 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         SelectLine( srcline, &worker, false );
                         SelectViewMode();
                     }
-                    else
-                    {
-                        SelectAsmLines( srcidx.Idx(), srcline, worker, false );
-                    }
+                    m_selectedAddresses.clear();
+                    m_selectedAddresses.emplace( line.addr );
                 }
                 else
                 {

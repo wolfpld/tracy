@@ -741,6 +741,7 @@ bool View::DrawImpl()
         }
         else
         {
+            Attention( m_attnDisconnected );
             ImGui::BeginDisabled();
             ImGui::ButtonEx( MainWindowButtons[2], ImVec2( bw, 0 ) );
             ImGui::EndDisabled();

@@ -840,6 +840,7 @@ private:
     bool m_attnDropped = false;
     bool m_attnFailure = false;
     bool m_attnWorking = false;
+    bool m_attnDisconnected = false;
 };
 
 }

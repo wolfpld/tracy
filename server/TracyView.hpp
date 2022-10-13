@@ -839,6 +839,7 @@ private:
     bool m_attnNotAvailable = false;
     bool m_attnDropped = false;
     bool m_attnFailure = false;
+    bool m_attnWorking = false;
 };
 
 }

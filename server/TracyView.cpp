@@ -611,6 +611,8 @@ bool View::DrawImpl()
         return keepOpen;
     }
 
+    Attention( m_attnWorking );
+
     if( !m_uarchSet )
     {
         m_uarchSet = true;

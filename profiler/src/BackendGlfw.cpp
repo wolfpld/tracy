@@ -151,6 +151,11 @@ void Backend::Run()
 #endif
 }
 
+void Backend::Attention()
+{
+    glfwRequestWindowAttention( s_window );
+}
+
 void Backend::NewFrame( int& w, int& h )
 {
     glfwGetFramebufferSize( s_window, &w, &h );

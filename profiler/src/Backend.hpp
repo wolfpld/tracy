@@ -16,6 +16,7 @@ public:
 
     void Show();
     void Run();
+    void Attention();
 
     void NewFrame( int& w, int& h );
     void EndFrame();

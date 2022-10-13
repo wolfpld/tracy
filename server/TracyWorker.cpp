@@ -3444,6 +3444,7 @@ void Worker::QuerySourceFile( const char* fn, const char* image )
 {
     if( image ) QueryDataTransfer( image, strlen( image ) + 1 );
     QueryDataTransfer( fn, strlen( fn ) + 1 );
+    m_sourceCodeQuery.emplace_back( fn );
     Query( ServerQuerySourceCode, 0 );
 }
 
@@ -8571,7 +8572,6 @@ void Worker::CacheSource( const StringRef& str, const StringIdx& image )
     }
     else if( execTime != 0 )
     {
-        m_sourceCodeQuery.emplace_back( file );
         QuerySourceFile( file, image.Active() ? GetString( image ) : nullptr );
     }
 }

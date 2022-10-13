@@ -3352,7 +3352,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         if( !mouseHandled && ( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) ) )
         {
             m_displayMode = DisplayMixed;
-            SelectLine( lineNum, worker, ImGui::IsMouseClicked( 1 ) );
+            SelectLine( lineNum, worker, ImGui::IsMouseClicked( 0 ) );
         }
         else
         {
@@ -3794,7 +3794,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 {
                     if( m_source.filename() == fileName )
                     {
-                        if( ImGui::IsMouseClicked( 1 ) ) m_targetLine = srcline;
+                        if( ImGui::IsMouseClicked( 0 ) ) m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }

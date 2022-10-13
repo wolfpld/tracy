@@ -834,6 +834,11 @@ private:
     } m_sendQueueWarning;
 
     std::vector<std::pair<int, int>> m_cpuUsageBuf;
+
+    bool m_attnProtoMismatch = false;
+    bool m_attnNotAvailable = false;
+    bool m_attnDropped = false;
+    bool m_attnFailure = false;
 };
 
 }

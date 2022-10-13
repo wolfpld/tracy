@@ -227,18 +227,22 @@ static const char* CompressionDesc[] = {
 
 static_assert( sizeof( CompressionName ) == sizeof( CompressionDesc ), "Unmatched compression names and descriptions" );
 
+
 bool View::Draw()
 {
     HandshakeStatus status = (HandshakeStatus)m_worker.GetHandshakeStatus();
     switch( status )
     {
     case HandshakeProtocolMismatch:
+        Attention( m_attnProtoMismatch );
         ImGui::OpenPopup( "Protocol mismatch" );
         break;
     case HandshakeNotAvailable:
+        Attention( m_attnNotAvailable );
         ImGui::OpenPopup( "Client not ready" );
         break;
     case HandshakeDropped:
+        Attention( m_attnDropped );
         ImGui::OpenPopup( "Client disconnected" );
         break;
     default:
@@ -248,6 +252,7 @@ bool View::Draw()
     const auto& failure = m_worker.GetFailureType();
     if( failure != Worker::Failure::None )
     {
+        Attention( m_attnFailure );
         ImGui::OpenPopup( "Instrumentation failure" );
     }
 
@@ -262,6 +267,7 @@ bool View::Draw()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
+            m_attnProtoMismatch = false;
             return false;
         }
         ImGui::SameLine();
@@ -270,6 +276,7 @@ bool View::Draw()
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
             m_reconnectRequested = true;
+            m_attnProtoMismatch = false;
             return false;
         }
         ImGui::EndPopup();
@@ -286,6 +293,7 @@ bool View::Draw()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
+            m_attnNotAvailable = false;
             return false;
         }
         ImGui::SameLine();
@@ -294,6 +302,7 @@ bool View::Draw()
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
             m_reconnectRequested = true;
+            m_attnNotAvailable = false;
             return false;
         }
         ImGui::EndPopup();
@@ -310,6 +319,7 @@ bool View::Draw()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
+            m_attnDropped = false;
             return false;
         }
         ImGui::SameLine();
@@ -318,6 +328,7 @@ bool View::Draw()
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
             m_reconnectRequested = true;
+            m_attnDropped = false;
             return false;
         }
         ImGui::EndPopup();
@@ -490,6 +501,7 @@ bool View::Draw()
         {
             ImGui::CloseCurrentPopup();
             m_worker.ClearFailure();
+            m_attnFailure = false;
         }
         ImGui::EndPopup();
     }

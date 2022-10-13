@@ -627,6 +627,7 @@ bool View::DrawImpl()
         char buf[1024];
         sprintf( buf, "Trace size %s (%.2f%% ratio)", MemSizeToString( dst ), 100.f * dst / src );
         m_notificationText = buf;
+        m_acb();
     }
 
     const auto& io = ImGui::GetIO();

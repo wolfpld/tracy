@@ -90,7 +90,6 @@ public:
     using SetTitleCallback = void(*)( const char* );
     using SetScaleCallback = void(*)( float, ImFont*&, ImFont*&, ImFont*& );
 
-    View( void(*cbMainThread)(std::function<void()>, bool), ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, SetScaleCallback sscb = nullptr ) : View( cbMainThread, "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb, sscb ) {}
     View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, SetScaleCallback sscb = nullptr );
     View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, SetScaleCallback sscb = nullptr );
     ~View();

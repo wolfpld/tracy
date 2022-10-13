@@ -3778,9 +3778,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     {
                         ImGui::TextDisabled( "%i.", i+1 );
                         ImGui::SameLine();
-                        ImGui::Text( "%s", worker.GetString( frame->data[i].name ) );
+                        const auto symName = worker.GetString( frame->data[i].name );
+                        const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+                        ImGui::Text( "%s", normalized );
                         ImGui::SameLine();
+                        ImGui::PushFont( m_smallFont );
+                        ImGui::AlignTextToFramePadding();
                         ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), frame->data[i].line );
+                        ImGui::PopFont();
                     }
                 }
                 ImGui::EndTooltip();

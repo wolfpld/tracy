@@ -349,6 +349,8 @@ private:
     void SetPlaybackFrame( uint32_t idx );
     bool Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict );
 
+    void Attention( bool& alreadyDone );
+
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;
     unordered_flat_map<const void*, int> m_gpuDrift;

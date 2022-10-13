@@ -864,4 +864,13 @@ const char* View::GetThreadContextData( uint64_t thread, bool& _local, bool& _un
     return label;
 }
 
+void View::Attention( bool& alreadyDone )
+{
+    if( !alreadyDone )
+    {
+        alreadyDone = true;
+        m_acb();
+    }
+}
+
 }

@@ -90,8 +90,8 @@ public:
     using SetTitleCallback = void(*)( const char* );
     using SetScaleCallback = void(*)( float, ImFont*&, ImFont*&, ImFont*& );
 
-    View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, SetScaleCallback sscb = nullptr );
-    View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, SetScaleCallback sscb = nullptr );
+    View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb );
+    View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb );
     ~View();
 
     static bool Draw();

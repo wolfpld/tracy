@@ -109,6 +109,10 @@ v0.x.x (xxxx-xx-xx)
 - Available clients now also broadcast their PID.
 - Assembly lines tooltip will now display local call stack of inline functions
   (within the symbol).
+- The profiler UI will now indicate that it needs attention if the window is
+  not focused and something interesting happens. For example when a connection
+  is established, or when a saved trace finishes loading, etc. How the
+  attention request is indicated depends on the operating system.
 
 
 v0.8.2 (2022-06-28)

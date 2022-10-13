@@ -95,7 +95,7 @@ public:
     View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb );
     ~View();
 
-    static bool Draw();
+    bool Draw();
     bool WasActive() const;
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }

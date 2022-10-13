@@ -89,9 +89,10 @@ public:
 
     using SetTitleCallback = void(*)( const char* );
     using SetScaleCallback = void(*)( float, ImFont*&, ImFont*&, ImFont*& );
+    using AttentionCallback = void(*)();
 
-    View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb );
-    View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb );
+    View( void(*cbMainThread)(std::function<void()>, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb );
+    View( void(*cbMainThread)(std::function<void()>, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb );
     ~View();
 
     static bool Draw();
@@ -517,6 +518,7 @@ private:
     SetTitleCallback m_stcb;
     bool m_titleSet = false;
     SetScaleCallback m_sscb;
+    AttentionCallback m_acb;
 
     float m_notificationTime = 0;
     std::string m_notificationText;

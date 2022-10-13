@@ -2496,7 +2496,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     {
                         auto ptr = (const char*)MemRead<uint64_t>( &item->sourceCodeMetadata.ptr );
                         auto size = MemRead<uint32_t>( &item->sourceCodeMetadata.size );
-                        SendLongString( (uint64_t)ptr, ptr, size, QueueType::SourceCode );
+                        auto id = MemRead<uint32_t>( &item->sourceCodeMetadata.id );
+                        SendLongString( (uint64_t)id, ptr, size, QueueType::SourceCode );
                         tracy_free_fast( (void*)ptr );
                         ++item;
                         continue;
@@ -3167,11 +3168,11 @@ void Profiler::QueueKernelCode( uint64_t symbol, uint32_t size )
 #endif
 }
 
-void Profiler::QueueSourceCodeQuery()
+void Profiler::QueueSourceCodeQuery( uint32_t id )
 {
     assert( m_exectime != 0 );
     assert( m_queryData );
-    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SourceCode, uint64_t( m_queryData ), uint64_t( m_queryImage ) } );
+    m_symbolQueue.emplace( SymbolQueueItem { SymbolQueueItemType::SourceCode, uint64_t( m_queryData ), uint64_t( m_queryImage ), id } );
     m_queryData = nullptr;
     m_queryImage = nullptr;
 }
@@ -3264,7 +3265,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
         break;
     }
     case SymbolQueueItemType::SourceCode:
-        HandleSourceCodeQuery( (char*)si.ptr, (char*)si.extra );
+        HandleSourceCodeQuery( (char*)si.ptr, (char*)si.extra, si.id );
         break;
     default:
         assert( false );
@@ -3382,7 +3383,7 @@ bool Profiler::HandleServerQuery()
         break;
 #endif
     case ServerQuerySourceCode:
-        QueueSourceCodeQuery();
+        QueueSourceCodeQuery( uint32_t( ptr ) );
         break;
     case ServerQueryDataTransfer:
         if( m_queryData )
@@ -3808,7 +3809,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
 }
 
-void Profiler::HandleSourceCodeQuery( char* data, char* image )
+void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
 {
     bool ok = false;
     struct stat st;
@@ -3827,6 +3828,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image )
                     TracyLfqPrepare( QueueType::SourceCodeMetadata );
                     MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
                     MemWrite( &item->sourceCodeMetadata.size, (uint32_t)rd );
+                    MemWrite( &item->sourceCodeMetadata.id, id );
                     TracyLfqCommit;
                     ok = true;
                 }
@@ -3857,6 +3859,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image )
                         TracyLfqPrepare( QueueType::SourceCodeMetadata );
                         MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
                         MemWrite( &item->sourceCodeMetadata.size, (uint32_t)rd );
+                        MemWrite( &item->sourceCodeMetadata.id, id );
                         TracyLfqCommit;
                         ok = true;
                     }
@@ -3882,6 +3885,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image )
                 TracyLfqPrepare( QueueType::SourceCodeMetadata );
                 MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
                 MemWrite( &item->sourceCodeMetadata.size, (uint32_t)sz );
+                MemWrite( &item->sourceCodeMetadata.id, id );
                 TracyLfqCommit;
                 ok = true;
             }
@@ -3891,6 +3895,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image )
     if( !ok )
     {
         TracyLfqPrepare( QueueType::AckSourceCodeNotAvailable );
+        MemWrite( &item->sourceCodeNotAvailable, id );
         TracyLfqCommit;
     }
 

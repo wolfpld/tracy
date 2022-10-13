@@ -744,6 +744,7 @@ private:
     tracy_force_inline void ProcessHwSampleBranchRetired( const QueueHwSample& ev );
     tracy_force_inline void ProcessHwSampleBranchMiss( const QueueHwSample& ev );
     tracy_force_inline void ProcessParamSetup( const QueueParamSetup& ev );
+    tracy_force_inline void ProcessSourceCodeNotAvailable( const QueueSourceCodeNotAvailable& ev );
     tracy_force_inline void ProcessCpuTopology( const QueueCpuTopology& ev );
     tracy_force_inline void ProcessMemNamePayload( const QueueMemNamePayload& ev );
     tracy_force_inline void ProcessFiberEnter( const QueueFiberEnter& ev );
@@ -861,7 +862,7 @@ private:
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( uint64_t ptr, const char* data, size_t sz );
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
-    void AddSourceCode( const char* data, size_t sz );
+    void AddSourceCode( uint32_t id, const char* data, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t sz );
@@ -1062,7 +1063,8 @@ private:
     size_t m_tmpBufSize = 0;
 
     unordered_flat_map<uint64_t, uint32_t> m_nextCallstack;
-    std::vector<const char*> m_sourceCodeQuery;
+    unordered_flat_map<uint32_t, const char*> m_sourceCodeQuery;
+    uint32_t m_nextSourceCodeQuery = 0;
 };
 
 }

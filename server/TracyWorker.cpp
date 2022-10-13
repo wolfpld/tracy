@@ -3444,8 +3444,9 @@ void Worker::QuerySourceFile( const char* fn, const char* image )
 {
     if( image ) QueryDataTransfer( image, strlen( image ) + 1 );
     QueryDataTransfer( fn, strlen( fn ) + 1 );
-    m_sourceCodeQuery.emplace_back( fn );
-    Query( ServerQuerySourceCode, 0 );
+    m_sourceCodeQuery.emplace( m_nextSourceCodeQuery, fn );
+    Query( ServerQuerySourceCode, m_nextSourceCodeQuery );
+    m_nextSourceCodeQuery++;
 }
 
 void Worker::QueryDataTransfer( const void* ptr, size_t size )
@@ -3503,7 +3504,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
                 m_serverQuerySpaceLeft++;
                 break;
             case QueueType::SourceCode:
-                AddSourceCode( ptr, sz );
+                AddSourceCode( (uint32_t)ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
             default:
@@ -4161,11 +4162,12 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
 }
 
 
-void Worker::AddSourceCode( const char* data, size_t sz )
+void Worker::AddSourceCode( uint32_t id, const char* data, size_t sz )
 {
-    assert( !m_sourceCodeQuery.empty() );
-    auto file = m_sourceCodeQuery.front();
-    m_sourceCodeQuery.erase( m_sourceCodeQuery.begin() );
+    auto it = m_sourceCodeQuery.find( id );
+    assert( it != m_sourceCodeQuery.end() );
+    auto file = it->second;
+    m_sourceCodeQuery.erase( it );
     if( m_data.sourceFileCache.find( file ) != m_data.sourceFileCache.end() ) return;
     auto src = (char*)m_slab.AllocBig( sz );
     memcpy( src, data, sz );
@@ -4941,8 +4943,7 @@ bool Worker::Process( const QueueItem& ev )
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::AckSourceCodeNotAvailable:
-        assert( !m_sourceCodeQuery.empty() );
-        m_sourceCodeQuery.erase( m_sourceCodeQuery.begin() );
+        ProcessSourceCodeNotAvailable( ev.sourceCodeNotAvailable );
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::AckSymbolCodeNotAvailable:
@@ -7029,6 +7030,13 @@ void Worker::ProcessParamSetup( const QueueParamSetup& ev )
 {
     CheckString( ev.name );
     m_params.push_back( Parameter { ev.idx, StringRef( StringRef::Ptr, ev.name ), bool( ev.isBool ), ev.val } );
+}
+
+void Worker::ProcessSourceCodeNotAvailable( const QueueSourceCodeNotAvailable& ev )
+{
+    auto it = m_sourceCodeQuery.find( ev.id );
+    assert( it != m_sourceCodeQuery.end() );
+    m_sourceCodeQuery.erase( it );
 }
 
 void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )

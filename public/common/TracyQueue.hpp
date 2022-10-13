@@ -615,6 +615,11 @@ struct QueueParamSetup
     int32_t val;
 };
 
+struct QueueSourceCodeNotAvailable
+{
+    uint32_t id;
+};
+
 struct QueueCpuTopology
 {
     uint32_t package;
@@ -640,6 +645,7 @@ struct QueueSourceCodeMetadata
 {
     uint64_t ptr;
     uint32_t size;
+    uint32_t id;
 };
 
 struct QueueHeader
@@ -733,6 +739,7 @@ struct QueueItem
         QueueExternalNameMetadata externalNameMetadata;
         QueueSymbolCodeMetadata symbolCodeMetadata;
         QueueSourceCodeMetadata sourceCodeMetadata;
+        QueueSourceCodeNotAvailable sourceCodeNotAvailable;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
     };
@@ -835,7 +842,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // server query acknowledgement
-    sizeof( QueueHeader ),                                  // source code not available
+    sizeof( QueueHeader ) + sizeof( QueueSourceCodeNotAvailable ),
     sizeof( QueueHeader ),                                  // symbol code not available
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data

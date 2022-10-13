@@ -177,6 +177,7 @@ class Profiler
         SymbolQueueItemType type;
         uint64_t ptr;
         uint64_t extra;
+        uint32_t id;
     };
 
 public:
@@ -808,13 +809,13 @@ private:
     void QueueSymbolQuery( uint64_t symbol );
     void QueueExternalName( uint64_t ptr );
     void QueueKernelCode( uint64_t symbol, uint32_t size );
-    void QueueSourceCodeQuery();
+    void QueueSourceCodeQuery( uint32_t id );
 
     bool HandleServerQuery();
     void HandleDisconnect();
     void HandleParameter( uint64_t payload );
     void HandleSymbolCodeQuery( uint64_t symbol, uint32_t size );
-    void HandleSourceCodeQuery( char* data, char* image );
+    void HandleSourceCodeQuery( char* data, char* image, uint32_t id );
 
     void AckServerQuery();
     void AckSymbolCodeNotAvailable();

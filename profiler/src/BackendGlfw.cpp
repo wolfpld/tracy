@@ -153,7 +153,10 @@ void Backend::Run()
 
 void Backend::Attention()
 {
-    glfwRequestWindowAttention( s_window );
+    if( !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) )
+    {
+        glfwRequestWindowAttention( s_window );
+    }
 }
 
 void Backend::NewFrame( int& w, int& h )

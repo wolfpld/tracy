@@ -153,10 +153,12 @@ void Backend::Run()
 
 void Backend::Attention()
 {
+#if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
     if( !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) )
     {
         glfwRequestWindowAttention( s_window );
     }
+#endif
 }
 
 void Backend::NewFrame( int& w, int& h )

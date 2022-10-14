@@ -171,7 +171,7 @@ private:
             Out
         };
 
-        constexpr static auto DirectionToKeyMap = std::array<int, 4> { ImGuiKey_A, ImGuiKey_D, ImGuiKey_W, ImGuiKey_S };
+        constexpr static auto DirectionToKeyMap = std::array<ImGuiKey, 4> { ImGuiKey_A, ImGuiKey_D, ImGuiKey_W, ImGuiKey_S };
         constexpr static auto StartRangeMod = std::array<int, 4> { -1, 1, 1, -1 };
         constexpr static auto EndRangeMod = std::array<int, 4> { -1, 1, -1, 1 };
 

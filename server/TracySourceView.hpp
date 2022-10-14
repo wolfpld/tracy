@@ -21,6 +21,7 @@ namespace tracy
 
 class View;
 class Worker;
+struct CallstackFrameData;
 
 class SourceView
 {
@@ -234,6 +235,7 @@ private:
     uint8_t m_maxAsmBytes;
     bool m_atnt;
     uint64_t m_jumpPopupAddr;
+    const CallstackFrameData* m_localCallstackPopup;
     bool m_hwSamples, m_hwSamplesRelative;
     bool m_childCalls;
     bool m_childCallList;

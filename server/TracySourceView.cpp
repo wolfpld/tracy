@@ -2807,6 +2807,60 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             }
             ImGui::EndPopup();
         }
+        if( ImGui::BeginPopup( "localCallstackPopup" ) )
+        {
+            const auto lcs = m_localCallstackPopup;
+            for( uint8_t i=0; i<lcs->size; i++ )
+            {
+                ImGui::PushID( i );
+                ImGui::TextDisabled( "%i.", i+1 );
+                ImGui::SameLine();
+                const auto symName = worker.GetString( lcs->data[i].name );
+                const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
+                const auto fn = worker.GetString( lcs->data[i].file );
+                const auto srcline = lcs->data[i].line;
+                if( ImGui::Selectable( normalized ) )
+                {
+                    m_targetLine = srcline;
+                    if( m_source.filename() == fn )
+                    {
+                        SelectLine( srcline, &worker, false );
+                        m_displayMode = DisplayMixed;
+                    }
+                    else if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
+                    {
+                        ParseSource( fn, worker, view );
+                        SelectLine( srcline, &worker, false );
+                        SelectViewMode();
+                    }
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
+                    {
+                        m_sourceTooltip.Parse( fn, worker, view );
+                        if( !m_sourceTooltip.empty() )
+                        {
+                            ImGui::PushFont( m_smallFont );
+                            ImGui::TextDisabled( "%s:%i", fn, srcline );
+                            ImGui::PopFont();
+                            ImGui::Separator();
+                            SetFont();
+                            PrintSourceFragment( m_sourceTooltip, srcline );
+                            UnsetFont();
+                        }
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( "Source not available" );
+                    }
+                    ImGui::EndTooltip();
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndPopup();
+        }
         SetFont();
     }
 
@@ -3790,18 +3844,17 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 }
                 ImGui::EndTooltip();
                 SetFont();
-                if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )
+                if( ImGui::IsItemClicked( 0 ) )
                 {
+                    m_targetLine = srcline;
                     if( m_source.filename() == fileName )
                     {
-                        if( ImGui::IsMouseClicked( 0 ) ) m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
                     else if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
                     {
                         ParseSource( fileName, worker, view );
-                        m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         SelectViewMode();
                     }
@@ -3812,6 +3865,13 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 {
                     m_hoveredLine = srcline;
                     m_hoveredSource = srcidx.Idx();
+                }
+                if( frame && frame->data[0].name.Active() && ImGui::IsItemClicked( 1 ) )
+                {
+                    ImGui::OpenPopup( "localCallstackPopup" );
+                    m_localCallstackPopup = frame;
+                    m_selectedAddresses.clear();
+                    m_selectedAddresses.emplace( line.addr );
                 }
             }
         }

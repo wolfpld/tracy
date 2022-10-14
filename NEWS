@@ -98,13 +98,8 @@ v0.x.x (xxxx-xx-xx)
 - Implemented optional propagation of inline cost down the local call stack.
   - This feature may be useful when trying to get a general outlook of the
     cost at the top-level function in the symbol.
-  - This only has effect on the displayed source cost. It is not currently
-    possible to dig deeper into this data.
   - It is possible to get nonsense data when this is enabled, for example
     total cost exceeding 100%. This is by design.
-  - The feature only works for the "sample count" data, as it has call stacks
-    attached. Hardware sample data does not, and thus does not support cost
-    propagation.
   - Assembly line costs are not affected.
 - Available clients now also broadcast their PID.
 - Reversed mouse button assignments for jumping to source / assembly line in

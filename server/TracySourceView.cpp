@@ -4882,11 +4882,11 @@ void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& 
                 const auto end = m_propagateInlines ? frame->size : 1;
                 for( uint8_t i=0; i<end; i++ )
                 {
-                    auto ffn = worker.GetString( frame->data[i].file );
-                    if( strcmp( ffn, filename ) == 0 )
+                    const auto line = frame->data[i].line;
+                    if( line != 0 )
                     {
-                        const auto line = frame->data[i].line;
-                        if( line != 0 )
+                        auto ffn = worker.GetString( frame->data[i].file );
+                        if( strcmp( ffn, filename ) == 0 )
                         {
                             auto it = as.ipCountSrc.find( line );
                             if( it == as.ipCountSrc.end() )
@@ -4957,11 +4957,11 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
                 const auto end = m_propagateInlines ? frame->size : 1;
                 for( uint8_t i=0; i<end; i++ )
                 {
-                    auto ffn = worker.GetString( frame->data[i].file );
-                    if( strcmp( ffn, filename ) == 0 )
+                    const auto line = frame->data[i].line;
+                    if( line != 0 )
                     {
-                        const auto line = frame->data[i].line;
-                        if( line != 0 )
+                        auto ffn = worker.GetString( frame->data[i].file );
+                        if( strcmp( ffn, filename ) == 0 )
                         {
                             auto it = as.hwCountSrc.find( line );
                             if( it == as.hwCountSrc.end() )
@@ -5008,11 +5008,11 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
                     const auto end = m_propagateInlines ? frame->size : 1;
                     for( uint8_t i=0; i<end; i++ )
                     {
-                        auto ffn = worker.GetString( frame->data[i].file );
-                        if( strcmp( ffn, filename ) == 0 )
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
                         {
-                            const auto line = frame->data[i].line;
-                            if( line != 0 )
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
                             {
                                 auto sit = as.ipCountSrc.find( line );
                                 if( sit == as.ipCountSrc.end() )
@@ -5070,11 +5070,11 @@ void SourceView::GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worke
                     const auto end = m_propagateInlines ? frame->size : 1;
                     for( uint8_t i=0; i<end; i++ )
                     {
-                        auto ffn = worker.GetString( frame->data[i].file );
-                        if( strcmp( ffn, filename ) == 0 )
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
                         {
-                            const auto line = frame->data[i].line;
-                            if( line != 0 )
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
                             {
                                 auto it = as.ipCountSrc.find( line );
                                 if( it == as.ipCountSrc.end() )
@@ -5135,11 +5135,11 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, c
                     const auto end = m_propagateInlines ? frame->size : 1;
                     for( uint8_t i=0; i<end; i++ )
                     {
-                        auto ffn = worker.GetString( frame->data[i].file );
-                        if( strcmp( ffn, filename ) == 0 )
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
                         {
-                            const auto line = frame->data[i].line;
-                            if( line != 0 )
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
                             {
                                 auto sit = as.ipCountSrc.find( line );
                                 if( sit == as.ipCountSrc.end() )
@@ -5188,11 +5188,11 @@ void SourceView::GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, c
                     const auto end = m_propagateInlines ? frame->size : 1;
                     for( uint8_t i=0; i<end; i++ )
                     {
-                        auto ffn = worker.GetString( frame->data[i].file );
-                        if( strcmp( ffn, filename ) == 0 )
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
                         {
-                            const auto line = frame->data[i].line;
-                            if( line != 0 )
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
                             {
                                 auto sit = as.ipCountSrc.find( line );
                                 if( sit == as.ipCountSrc.end() )

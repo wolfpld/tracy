@@ -253,6 +253,7 @@ SourceView::SourceView()
     , m_propagateInlines( false )
     , m_cost( CostType::SampleCount )
     , m_showJumps( true )
+    , m_locAddrIsProp( false )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
 {
@@ -943,17 +944,6 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 const auto idx = srcidx.Idx();
                 auto sit = m_sourceFiles.find( idx );
                 if( sit == m_sourceFiles.end() ) m_sourceFiles.emplace( idx, srcline );
-                const auto packed = PackFileLine( idx, srcline );
-                auto lit = m_locationAddress.find( packed );
-                if( lit == m_locationAddress.end() )
-                {
-                    m_locationAddress.emplace( packed, std::vector<uint64_t>( { op.address } ) );
-                }
-                else
-                {
-                    assert( lit->second.back() < op.address );
-                    lit->second.push_back( op.address );
-                }
             }
             char tmp[16];
             sprintf( tmp, "%" PRIu32, mLineMax );
@@ -2123,7 +2113,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         {
             if( as.ipCountSrc.find( lineNum ) == as.ipCountSrc.end() )
             {
-                auto addresses = GetAddressesForLocation( m_source.idx(), lineNum );
+                auto addresses = GetAddressesForLocation( m_source.idx(), lineNum, worker );
                 if( addresses )
                 {
                     for( auto& addr : *addresses )
@@ -3143,7 +3133,7 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     if( !m_asm.empty() )
     {
         assert( worker && view );
-        auto addresses = GetAddressesForLocation( m_source.idx(), lineNum );
+        auto addresses = GetAddressesForLocation( m_source.idx(), lineNum, *worker );
         if( addresses )
         {
             for( auto& addr : *addresses )
@@ -4768,7 +4758,7 @@ void SourceView::SelectLine( uint32_t line, const Worker* worker, bool updateAsm
 void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool updateAsmLine, uint64_t targetAddr, bool changeAsmLine )
 {
     m_selectedAddresses.clear();
-    auto addresses = GetAddressesForLocation( file, line );
+    auto addresses = GetAddressesForLocation( file, line, worker );
     if( addresses )
     {
         const auto& addr = *addresses;
@@ -4826,7 +4816,7 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
 void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker )
 {
     assert( m_selectedAddressesHover.empty() );
-    auto addresses = GetAddressesForLocation( file, line );
+    auto addresses = GetAddressesForLocation( file, line, worker );
     if( addresses )
     {
         for( auto& v : *addresses )
@@ -5481,8 +5471,39 @@ bool SourceView::IsInContext( const Worker& worker, uint64_t addr ) const
     return !m_calcInlineStats || !worker.HasInlineSymbolAddresses() || worker.GetInlineSymbolForAddress( addr ) == m_symAddr;
 }
 
-const std::vector<uint64_t>* SourceView::GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const
+const std::vector<uint64_t>* SourceView::GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line, const Worker& worker )
 {
+    if( m_locationAddress.empty() || m_propagateInlines != m_locAddrIsProp )
+    {
+        m_locationAddress.clear();
+        m_locAddrIsProp = m_propagateInlines;
+
+        for( auto& op : m_asm )
+        {
+            auto frame = worker.GetCallstackFrame( worker.PackPointer( op.addr ) );
+            if( frame )
+            {
+                uint8_t end = m_propagateInlines ? frame->size : 1;
+                for( uint8_t i=0; i<end; i++ )
+                {
+                    const auto idx = frame->data[i].file.Idx();
+                    const auto line = frame->data[i].line;
+                    const auto packed = PackFileLine( idx, line );
+                    auto lit = m_locationAddress.find( packed );
+                    if( lit == m_locationAddress.end() )
+                    {
+                        m_locationAddress.emplace( packed, std::vector<uint64_t>( { op.addr } ) );
+                    }
+                    else
+                    {
+                        assert( lit->second.back() < op.addr );
+                        lit->second.emplace_back( op.addr );
+                    }
+                }
+            }
+        }
+    }
+
     auto it = m_locationAddress.find( PackFileLine( fileStringIdx, line ) );
     if( it == m_locationAddress.end() )
     {

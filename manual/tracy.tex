@@ -3526,13 +3526,23 @@ The \emph{Propagate inlines} option, available when sample data is present, will
 
 This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the \emph{\faSitemap{}~Function} selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, the profiler will print an offset from the symbol beginning instead. Clicking the \LMB{}~left mouse button on the address/offset will switch to counting line numbers, using the selected one as the origin (i.e., zero value). Line numbers are displayed inside \texttt{[]} brackets. This display mode can be useful to correlate lines with the output of external tools, such as \texttt{llvm-mca}. To disable line numbering click the \RMB{}~right mouse button on a line number.
 
-If the \emph{\faFileImport{}~Source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. Each file is assigned its own color for easier differentiation between different source files. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on the selected line. Additionally, hovering the \faMousePointer{}~mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment.
+If the \emph{\faFileImport{}~Source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. Each file is assigned its own color for easier differentiation between different source files. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on the selected line. Additionally, hovering the \faMousePointer{}~mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment and the local call stack if it exists.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Local call stack}
+In some cases, it may be challenging to understand what is being displayed in the disassembly. For example, calling the \texttt{std::lower\_bound} function may generate multiple levels of inlined functions: first, we enter the search algorithm, then the comparison functions, which in turn may be lambdas that call even more external code, and so on. In such an event, you will most likely see that some external code is taking a long time to execute, and you will be none the wiser on improving things.
+
+The local call stack for an assembly instruction represents all the inline function calls \emph{within the symbol} (hence the 'local' part), which were made to reach the instruction. Deeper inspection of the local call stack, including navigation to the source call site of each participating inline function, can be performed through the context menu accessible by pressing the \RMB{}~right mouse button on the source location.
+\end{bclogo}
 
 Selecting the \emph{\faCogs{}~Machine code} option will enable the display of raw machine code bytes for each line.
 
 If any instruction would jump to a predefined address, the symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol, an \texttt{->}~arrow will be prepended to the name. Hovering the \faMousePointer{}~mouse pointer over such symbol name will highlight the target location. Clicking on it with the \LMB{}~left mouse button will focus the view on the destination instruction or switch view to the destination symbol.
 
-Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target and hovering the \faMousePointer{}~mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the \LMB{}~left mouse button will focus the view on the target location. Jumps going out of the symbol\footnote{This includes jumps, procedure calls, and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
+Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the \faMousePointer{}~mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the \LMB{}~left mouse button will focus the view on the target location. The \RMB{}~right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol\footnote{This includes jumps, procedure calls, and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
 
 The \emph{AT\&T} switch can be used to select between \emph{Intel} and \emph{AT\&T} assembly syntax. Beware that microarchitecture data is only available if Intel syntax is selected.
 
@@ -3576,7 +3586,7 @@ For more straightforward navigation, dependencies are also marked on the left si
 
 \paragraph{Combined mode}
 
-In this mode, both the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the \faMousePointer{}~mouse pointer over the source file line or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the \LMB{}~left mouse button on a line will select it in both panes. Note that while an assembly line always has only one corresponding source line, a single source line may have many associated assembly lines, not necessarily next to each other. Clicking the \RMB{}~right mouse button will perform the same action as the left mouse button, but it will also focus the secondary view on the selected line. Clicking on the same \emph{source} line more than once will focus the \emph{assembly} view on the next associated instructions block.
+In this mode, the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the \faMousePointer{}~mouse pointer over the source file line or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the \LMB{}~left mouse button on a line will select it and focus on it in both panes. Note that while an assembly line always has only one corresponding source line, a single source line may have many associated assembly lines, not necessarily next to each other. Clicking on the same \emph{source} line more than once will focus the \emph{assembly} view on the next associated instructions block.
 
 \paragraph{Instruction pointer cost statistics}
 
@@ -3587,16 +3597,6 @@ By default, samples are displayed only within the selected symbol, in isolation.
 Instruction timings can be viewed as a group. To begin constructing such a group, click the \LMB{}~left mouse button on the percentage value. Additional instructions can be added using the \keys{\ctrl}~key while holding the \keys{\shift}~key will allow selection of a range. To cancel the selection, click the \RMB{}~right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
 
 Clicking the \MMB{}~middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter~\ref{sampleparents}). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bclampe
-]{How did I get here?}
-In some cases, it may be challenging to understand what is being displayed in the disassembly. For example, calling the \texttt{std::lower\_bound} function may generate multiple levels of inlined functions: first, we enter the search algorithm, then the comparison functions, which in turn may be lambdas that call even more external code, and so on. In such an event, you will most likely see that some external code is taking a long time to execute, and you will be none the wiser on improving things.
-
-Using the entry call stacks view can be very helpful in such cases, as you will be able to see the call stack of inline functions originating from a call site in the code you are familiar with. With this critical piece of information, you will be able to connect the functions you call and the executed instructions.
-\end{bclogo}
 
 The sample data source is controlled by the \emph{\faSitemap{}~Function} control in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. You can change the currently selected function by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to the total number of samples collected within the symbol.
 

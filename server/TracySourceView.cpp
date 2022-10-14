@@ -2819,24 +2819,8 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
                 const auto fn = worker.GetString( lcs->data[i].file );
                 const auto srcline = lcs->data[i].line;
-                if( ImGui::Selectable( normalized ) )
+                if( ImGui::BeginMenu( normalized ) )
                 {
-                    m_targetLine = srcline;
-                    if( m_source.filename() == fn )
-                    {
-                        SelectLine( srcline, &worker, false );
-                        m_displayMode = DisplayMixed;
-                    }
-                    else if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
-                    {
-                        ParseSource( fn, worker, view );
-                        SelectLine( srcline, &worker, false );
-                        SelectViewMode();
-                    }
-                }
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
                     if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
                     {
                         m_sourceTooltip.Parse( fn, worker, view );
@@ -2855,7 +2839,22 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     {
                         TextDisabledUnformatted( "Source not available" );
                     }
-                    ImGui::EndTooltip();
+                    ImGui::EndMenu();
+                    if( ImGui::IsItemClicked() )
+                    {
+                        m_targetLine = srcline;
+                        if( m_source.filename() == fn )
+                        {
+                            SelectLine( srcline, &worker, false );
+                            m_displayMode = DisplayMixed;
+                        }
+                        else if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
+                        {
+                            ParseSource( fn, worker, view );
+                            SelectLine( srcline, &worker, false );
+                            SelectViewMode();
+                        }
+                    }
                 }
                 ImGui::PopID();
             }

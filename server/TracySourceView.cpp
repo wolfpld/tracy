@@ -4876,26 +4876,33 @@ void SourceView::GatherIpHwStats( AddrStatData& as, Worker& worker, const View& 
 
         if( filename )
         {
-            uint32_t line;
-            const auto fref = worker.GetLocationForAddress( addr, line );
-            if( line != 0 )
+            auto frame = worker.GetCallstackFrame( worker.PackPointer( addr ) );
+            if( frame )
             {
-                auto ffn = worker.GetString( fref );
-                if( strcmp( ffn, filename ) == 0 )
+                const auto end = m_propagateInlines ? frame->size : 1;
+                for( uint8_t i=0; i<end; i++ )
                 {
-                    auto it = as.ipCountSrc.find( line );
-                    if( it == as.ipCountSrc.end() )
+                    auto ffn = worker.GetString( frame->data[i].file );
+                    if( strcmp( ffn, filename ) == 0 )
                     {
-                        as.ipCountSrc.emplace( line, AddrStat{ stat, 0 } );
-                        if( as.ipMaxSrc.local < stat ) as.ipMaxSrc.local = stat;
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
+                        {
+                            auto it = as.ipCountSrc.find( line );
+                            if( it == as.ipCountSrc.end() )
+                            {
+                                as.ipCountSrc.emplace( line, AddrStat{ stat, 0 } );
+                                if( as.ipMaxSrc.local < stat ) as.ipMaxSrc.local = stat;
+                            }
+                            else
+                            {
+                                const auto sum = it->second.local + stat;
+                                it->second.local = sum;
+                                if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
+                            }
+                            as.ipTotalSrc.local += stat;
+                        }
                     }
-                    else
-                    {
-                        const auto sum = it->second.local + stat;
-                        it->second.local = sum;
-                        if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
-                    }
-                    as.ipTotalSrc.local += stat;
                 }
             }
         }

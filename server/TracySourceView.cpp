@@ -4951,28 +4951,35 @@ void SourceView::CountHwStats( AddrStatData& as, Worker& worker, const View& vie
 
         if( filename )
         {
-            uint32_t line;
-            const auto fref = worker.GetLocationForAddress( addr, line );
-            if( line != 0 )
+            auto frame = worker.GetCallstackFrame( worker.PackPointer( addr ) );
+            if( frame )
             {
-                auto ffn = worker.GetString( fref );
-                if( strcmp( ffn, filename ) == 0 )
+                const auto end = m_propagateInlines ? frame->size : 1;
+                for( uint8_t i=0; i<end; i++ )
                 {
-                    auto it = as.hwCountSrc.find( line );
-                    if( it == as.hwCountSrc.end() )
+                    auto ffn = worker.GetString( frame->data[i].file );
+                    if( strcmp( ffn, filename ) == 0 )
                     {
-                        as.hwCountSrc.emplace( line, AddrStat{ branch, cache } );
-                        if( as.hwMaxSrc.local < branch ) as.hwMaxSrc.local = branch;
-                        if( as.hwMaxSrc.ext < cache ) as.hwMaxSrc.ext = cache;
-                    }
-                    else
-                    {
-                        const auto branchSum = it->second.local + branch;
-                        const auto cacheSum = it->second.ext + cache;
-                        it->second.local = branchSum;
-                        it->second.ext = cacheSum;
-                        if( as.hwMaxSrc.local < branchSum ) as.hwMaxSrc.local = branchSum;
-                        if( as.hwMaxSrc.ext < cacheSum ) as.hwMaxSrc.ext = cacheSum;
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
+                        {
+                            auto it = as.hwCountSrc.find( line );
+                            if( it == as.hwCountSrc.end() )
+                            {
+                                as.hwCountSrc.emplace( line, AddrStat{ branch, cache } );
+                                if( as.hwMaxSrc.local < branch ) as.hwMaxSrc.local = branch;
+                                if( as.hwMaxSrc.ext < cache ) as.hwMaxSrc.ext = cache;
+                            }
+                            else
+                            {
+                                const auto branchSum = it->second.local + branch;
+                                const auto cacheSum = it->second.ext + cache;
+                                it->second.local = branchSum;
+                                it->second.ext = cacheSum;
+                                if( as.hwMaxSrc.local < branchSum ) as.hwMaxSrc.local = branchSum;
+                                if( as.hwMaxSrc.ext < cacheSum ) as.hwMaxSrc.ext = cacheSum;
+                            }
+                        }
                     }
                 }
             }

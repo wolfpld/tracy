@@ -221,6 +221,7 @@ int main( int argc, char** argv )
 
     ImGuiTracyContext imguiContext;
     Backend backend( title, DrawContents, &mainThreadTasks );
+    iconTex = tracy::MakeTexture();
     iconThread.join();
     backend.SetIcon( iconPx, iconX, iconY );
     bptr = &backend;
@@ -233,7 +234,6 @@ int main( int argc, char** argv )
         if( cnv != 0 ) dpiScale = cnv;
     }
 
-    iconTex = tracy::MakeTexture();
     SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
 
     if( initFileOpen )

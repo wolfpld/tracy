@@ -221,6 +221,7 @@ int main( int argc, char** argv )
 
     ImGuiTracyContext imguiContext;
     Backend backend( title, DrawContents, &mainThreadTasks );
+    tracy::InitTexture();
     iconTex = tracy::MakeTexture();
     iconThread.join();
     backend.SetIcon( iconPx, iconX, iconY );

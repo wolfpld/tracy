@@ -1,6 +1,7 @@
 #include <inttypes.h>
 
 #ifdef __EMSCRIPTEN__
+#  include <emscripten/html5.h>
 #  include <GLES2/gl2.h>
 #else
 #  include "../profiler/src/imgui/imgui_impl_opengl3_loader.h"
@@ -13,6 +14,28 @@
 
 namespace tracy
 {
+
+static bool s_hardwareS3tc;
+
+void InitTexture()
+{
+#ifdef __EMSCRIPTEN__
+    s_hardwareS3tc = emscripten_webgl_enable_extension( emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc" );
+#else
+    s_hardwareS3tc = false;
+    GLint num;
+    glGetIntegerv( GL_NUM_EXTENSIONS, &num );
+    for( GLint i=0; i<num; i++ )
+    {
+        auto ext = (const char*)glGetStringi( GL_EXTENSIONS, GLuint( i ) );
+        if( strcmp( ext, "GL_EXT_texture_compression_s3tc" ) == 0 )
+        {
+            s_hardwareS3tc = true;
+            break;
+        }
+    }
+#endif
+}
 
 void* MakeTexture()
 {
@@ -36,7 +59,10 @@ void UpdateTexture( void* _tex, const char* data, int w, int h )
 {
     auto tex = (GLuint)(intptr_t)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
-    glCompressedTexImage2D( GL_TEXTURE_2D, 0, COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
+    if( s_hardwareS3tc )
+    {
+        glCompressedTexImage2D( GL_TEXTURE_2D, 0, COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
+    }
 }
 
 void UpdateTextureRGBA( void* _tex, void* data, int w, int h )

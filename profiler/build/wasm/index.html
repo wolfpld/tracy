@@ -90,9 +90,11 @@
       var preloadElement = document.getElementById('preload');
 
       function resizeHandler() {
-        Module.ccall('nativeResize', 'number', ['number', 'number'], [window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio]);
-        Module.canvas.style.width = window.innerWidth + 'px';
-        Module.canvas.style.height = window.innerHeight + 'px';
+        let w = Math.floor(Math.floor(window.innerWidth * window.devicePixelRatio) / window.devicePixelRatio);
+        let h = Math.floor(Math.floor(window.innerHeight * window.devicePixelRatio) / window.devicePixelRatio);
+        Module.ccall('nativeResize', 'number', ['number', 'number'], [w * window.devicePixelRatio, h * window.devicePixelRatio]);
+        Module.canvas.style.width = w + 'px';
+        Module.canvas.style.height = h + 'px';
       }
 
       var Module = {

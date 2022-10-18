@@ -133,15 +133,13 @@
             progressElement.hidden = false;
             spinnerElement.hidden = false;
             preloadElement.hidden = false;
-          } else {
+          } else if (!text) {
             progressElement.value = null;
             progressElement.max = null;
             progressElement.hidden = true;
-            if (!text) {
-              preloadElement.hidden = true;
-              spinnerElement.style.display = 'none';
-              resizeHandler();
-            }
+            preloadElement.hidden = true;
+            spinnerElement.style.display = 'none';
+            resizeHandler();
           }
           statusElement.innerHTML = text;
         },

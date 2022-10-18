@@ -230,7 +230,11 @@ constexpr float JumpArrowBase = 9;
 
 float SourceView::CalcJumpSeparation( float scale )
 {
-    return round( JumpSeparationBase * scale );
+    float jsb = JumpSeparationBase;
+    if( m_maxJumpLevel > 45 ) jsb -= 3;
+    else if( m_maxJumpLevel > 30 ) jsb -= 2;
+    else if( m_maxJumpLevel > 15 ) jsb -= 1;
+    return round( jsb * scale );
 }
 
 

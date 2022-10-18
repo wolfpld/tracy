@@ -113,6 +113,9 @@ v0.x.x (xxxx-xx-xx)
   not focused and something interesting happens. For example when a connection
   is established, or when a saved trace finishes loading, etc. How the
   attention request is indicated depends on the operating system.
+- Clicking on the red microarchitecture icon in the symbol view assembly pane
+  will switch the selected microarchitecture to one the profiled application
+  was running on.
 
 
 v0.8.2 (2022-06-28)

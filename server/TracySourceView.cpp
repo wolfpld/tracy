@@ -2374,11 +2374,13 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), ICON_FA_MICROCHIP );
                 if( ImGui::IsItemHovered() )
                 {
+                    const bool clicked = ImGui::IsItemClicked();
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( "Selected microarchitecture does not match the one profiled application was running on" );
                     if( m_profileMicroArch >= 0 )
                     {
                         ImGui::Text( "Measurements were performed on the %s microarchitecture", s_uArchUx[m_profileMicroArch].uArch );
+                        if( clicked ) SelectMicroArchitecture( s_uArchUx[m_profileMicroArch].moniker );
                     }
                     else
                     {

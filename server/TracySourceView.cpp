@@ -2027,25 +2027,29 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
     SetFont();
 
     auto& lines = m_source.get();
-    auto draw = ImGui::GetWindowDrawList();
-    const auto wpos = ImGui::GetWindowPos() - ImVec2( ImGui::GetCurrentWindowRead()->Scroll.x, 0 );
-    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    const auto wh = ImGui::GetWindowHeight();
-    const auto ty = ImGui::GetTextLineHeight();
-    const auto ts = ImGui::CalcTextSize( " " ).x;
-    const auto lineCount = lines.size();
-    const auto tmp = RealToString( lineCount );
-    const auto maxLine = strlen( tmp );
-    auto lx = ts * maxLine + ty + round( ts*0.4f );
-    if( as.ipTotalSrc.local + as.ipTotalSrc.ext != 0 ) lx += ts * 7 + ty;
-    if( !m_asm.empty() )
+
     {
-        const auto tmp = RealToString( m_asm.size() );
-        const auto maxAsm = strlen( tmp ) + 1;
-        lx += ts * maxAsm + ty;
+        auto draw = ImGui::GetWindowDrawList();
+        const auto wpos = ImGui::GetWindowPos() - ImVec2( ImGui::GetCurrentWindowRead()->Scroll.x, 0 );
+        const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+        const auto wh = ImGui::GetWindowHeight();
+        const auto ty = ImGui::GetTextLineHeight();
+        const auto ts = ImGui::CalcTextSize( " " ).x;
+        const auto lineCount = lines.size();
+        char buf[32];
+        sprintf( buf, "%zu", lineCount );
+        const auto maxLine = strlen( buf );
+        auto lx = ts * maxLine + ty + round( ts*0.4f );
+        if( as.ipTotalSrc.local + as.ipTotalSrc.ext != 0 ) lx += ts * 7 + ty;
+        if( !m_asm.empty() )
+        {
+            sprintf( buf, "%zu", m_asm.size() );
+            const auto maxAsm = strlen( buf ) + 1;
+            lx += ts * maxAsm + ty;
+        }
+        if( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) lx += 15 * ts + ty;
+        DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
     }
-    if( m_hwSamples && worker.GetHwSampleCountAddress() != 0 ) lx += 15 * ts + ty;
-    DrawLine( draw, dpos + ImVec2( lx, 0 ), dpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
     const AddrStatData zero;
     m_selectedAddressesHover.clear();
@@ -3338,25 +3342,27 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
         ImGui::SameLine( 0, 0 );
     }
 
-    const auto lineCount = m_source.get().size();
-    const auto tmp = RealToString( lineCount );
-    const auto maxLine = strlen( tmp );
-    const auto lineString = RealToString( lineNum );
-    const auto linesz = strlen( lineString );
-    char buf[16];
-    memset( buf, ' ', maxLine - linesz );
-    memcpy( buf + maxLine - linesz, lineString, linesz+1 );
-    TextDisabledUnformatted( buf );
-    ImGui::SameLine( 0, ty );
+    {
+        char tmp[32], buf[32];
+        const auto lineCount = m_source.get().size();
+        sprintf( tmp, "%zu", lineCount );
+        const auto maxLine = strlen( tmp );
+        sprintf( tmp, "%i", lineNum );
+        const auto linesz = strlen( tmp );
+        memset( buf, ' ', maxLine - linesz );
+        memcpy( buf + maxLine - linesz, tmp, linesz+1 );
+        TextDisabledUnformatted( buf );
+        ImGui::SameLine( 0, ty );
+    }
 
     if( !m_asm.empty() )
     {
-        const auto tmp = RealToString( m_asm.size() );
-        const auto maxAsm = strlen( tmp ) + 1;
+        char buf[32];
+        sprintf( buf, "%zu", m_asm.size() );
+        const auto maxAsm = strlen( buf ) + 1;
         if( match > 0 )
         {
-            const auto asmString = RealToString( match );
-            sprintf( buf, "@%s", asmString );
+            sprintf( buf, "@%" PRIu32, match );
             const auto asmsz = strlen( buf );
             TextDisabledUnformatted( buf );
             ImGui::SameLine( 0, 0 );

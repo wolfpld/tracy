@@ -177,6 +177,7 @@ int main( int argc, char** argv )
             printf( "\nThe client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration.\n" );
             return 3;
         }
+        std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", tracy::TimeToString( worker.GetDelay() ), tracy::TimeToString( worker.GetResolution() ) );

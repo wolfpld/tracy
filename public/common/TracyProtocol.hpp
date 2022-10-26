@@ -131,7 +131,36 @@ struct BroadcastMessage
     char programName[WelcomeMessageProgramNameSize];
 };
 
+struct BroadcastMessage_v2
+{
+    uint16_t broadcastVersion;
+    uint16_t listenPort;
+    uint32_t protocolVersion;
+    int32_t activeTime;
+    char programName[WelcomeMessageProgramNameSize];
+};
+
+struct BroadcastMessage_v1
+{
+    uint32_t broadcastVersion;
+    uint32_t protocolVersion;
+    uint32_t listenPort;
+    uint32_t activeTime;
+    char programName[WelcomeMessageProgramNameSize];
+};
+
+struct BroadcastMessage_v0
+{
+    uint32_t broadcastVersion;
+    uint32_t protocolVersion;
+    uint32_t activeTime;
+    char programName[WelcomeMessageProgramNameSize];
+};
+
 enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
+enum { BroadcastMessageSize_v2 = sizeof( BroadcastMessage_v2 ) };
+enum { BroadcastMessageSize_v1 = sizeof( BroadcastMessage_v1 ) };
+enum { BroadcastMessageSize_v0 = sizeof( BroadcastMessage_v0 ) };
 
 #pragma pack( pop )
 

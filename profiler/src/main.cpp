@@ -293,18 +293,71 @@ static void DrawContents()
                 auto msg = broadcastListen->Read( len, addr, 0 );
                 if( !msg ) break;
                 if( len > sizeof( tracy::BroadcastMessage ) ) continue;
-                tracy::BroadcastMessage bm;
-                memcpy( &bm, msg, len );
-
-                if( bm.broadcastVersion == tracy::BroadcastVersion )
+                uint16_t broadcastVersion;
+                memcpy( &broadcastVersion, msg, sizeof( uint16_t ) );
+                if( broadcastVersion <= tracy::BroadcastVersion )
                 {
-                    const uint32_t protoVer = bm.protocolVersion;
-                    const auto procname = bm.programName;
-                    const auto activeTime = bm.activeTime;
-                    const auto listenPort = bm.listenPort;
-                    const auto pid = bm.pid;
-                    auto address = addr.GetText();
+                    uint32_t protoVer;
+                    char procname[tracy::WelcomeMessageProgramNameSize];
+                    int32_t activeTime;
+                    uint16_t listenPort;
+                    uint64_t pid;
 
+                    switch( broadcastVersion )
+                    {
+                    case 3:
+                    {
+                        tracy::BroadcastMessage bm;
+                        memcpy( &bm, msg, len );
+                        protoVer = bm.protocolVersion;
+                        strcpy( procname, bm.programName );
+                        activeTime = bm.activeTime;
+                        listenPort = bm.listenPort;
+                        pid = bm.pid;
+                        break;
+                    }
+                    case 2:
+                    {
+                        if( len > sizeof( tracy::BroadcastMessage_v2 ) ) continue;
+                        tracy::BroadcastMessage_v2 bm;
+                        memcpy( &bm, msg, len );
+                        protoVer = bm.protocolVersion;
+                        strcpy( procname, bm.programName );
+                        activeTime = bm.activeTime;
+                        listenPort = bm.listenPort;
+                        pid = 0;
+                        break;
+                    }
+                    case 1:
+                    {
+                        if( len > sizeof( tracy::BroadcastMessage_v1 ) ) continue;
+                        tracy::BroadcastMessage_v1 bm;
+                        memcpy( &bm, msg, len );
+                        protoVer = bm.protocolVersion;
+                        strcpy( procname, bm.programName );
+                        activeTime = bm.activeTime;
+                        listenPort = bm.listenPort;
+                        pid = 0;
+                        break;
+                    }
+                    case 0:
+                    {
+                        if( len > sizeof( tracy::BroadcastMessage_v0 ) ) continue;
+                        tracy::BroadcastMessage_v0 bm;
+                        memcpy( &bm, msg, len );
+                        protoVer = bm.protocolVersion;
+                        strcpy( procname, bm.programName );
+                        activeTime = bm.activeTime;
+                        listenPort = 8086;
+                        pid = 0;
+                        break;
+                    }
+                    default:
+                        assert( false );
+                        break;
+                    }
+
+                    auto address = addr.GetText();
                     const auto ipNumerical = addr.GetNumber();
                     const auto clientId = uint64_t( ipNumerical ) | ( uint64_t( listenPort ) << 32 );
                     auto it = clients.find( clientId );

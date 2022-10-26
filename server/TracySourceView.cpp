@@ -2346,18 +2346,18 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
         ImGui::SameLine();
     }
-    SmallCheckbox( ICON_FA_MAGNIFYING_GLASS_LOCATION " Relative loc.", &m_asmRelative );
+    SmallCheckbox( ICON_FA_MAGNIFYING_GLASS_LOCATION " Relative", &m_asmRelative );
     if( !m_sourceFiles.empty() )
     {
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        SmallCheckbox( ICON_FA_FILE_IMPORT " Source loc.", &m_asmShowSourceLocation );
+        SmallCheckbox( ICON_FA_FILE_IMPORT " Source", &m_asmShowSourceLocation );
     }
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( ICON_FA_GEARS " Machine code", &m_asmBytes );
+    SmallCheckbox( ICON_FA_GEARS " Raw code", &m_asmBytes );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

@@ -116,6 +116,8 @@ v0.x.x (xxxx-xx-xx)
 - Clicking on the red microarchitecture icon in the symbol view assembly pane
   will switch the selected microarchitecture to one the profiled application
   was running on.
+- Removed option to display instruction latencies in a graphical form. Latency
+  data is still available in instruction tooltip.
 
 
 v0.8.2 (2022-06-28)

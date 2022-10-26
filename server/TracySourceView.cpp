@@ -1377,14 +1377,6 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
     }
 
-    if( !m_asm.empty() )
-    {
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        TextFocused( ICON_FA_WEIGHT_HANGING " Code:", MemSizeToString( m_codeLen ) );
-    }
-
     AddrStatData as;
     if( m_cost == CostType::SampleCount )
     {
@@ -2431,6 +2423,12 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             SmallCheckbox( ICON_FA_TRUCK_RAMP_BOX " Latency", &m_showLatency );
         }
     }
+
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( ICON_FA_WEIGHT_HANGING, MemSizeToString( m_codeLen ) );
+    TooltipIfHovered( "Code size" );
 
 #ifndef TRACY_NO_FILESELECTOR
     ImGui::SameLine();

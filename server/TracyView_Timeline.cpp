@@ -155,6 +155,12 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, d
         }
         ZoomToRange( t0, t1, !m_worker.IsConnected() || m_viewMode == ViewMode::Paused );
     }
+}
+
+void View::HandleTimelineKeyboard( int64_t timespan, const ImVec2& wpos, float w )
+{
+    assert( timespan > 0 );
+    auto& io = ImGui::GetIO();
 
     int64_t nextTimelineRangeStart, nextTimelineRangeEnd;
     bool anyDeltaApplied = false;
@@ -279,6 +285,10 @@ void View::DrawTimeline()
             HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
         }
         HandleTimelineMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
+    }
+    if( ImGui::IsWindowFocused( ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem ) )
+    {
+        HandleTimelineKeyboard( timespan, ImGui::GetCursorScreenPos(), w );
     }
 
     {

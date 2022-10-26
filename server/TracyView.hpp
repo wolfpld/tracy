@@ -277,6 +277,7 @@ private:
 
     void HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w );
     void HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
+    void HandleTimelineKeyboard( int64_t timespan, const ImVec2& wpos, float w );
 
     void AddAnnotation( int64_t start, int64_t end );
 

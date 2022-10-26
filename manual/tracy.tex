@@ -3511,7 +3511,7 @@ Additionally, you may use the \emph{Mode} selector to decide what content should
 \begin{itemize}
 \item \emph{Source} -- only the source code will be displayed.
 \item \emph{Assembly} -- only the machine code disassembly will be shown.
-\item \emph{Combined} -- both source code and disassembly will be listed next to each other.
+\item \emph{Both} -- selects combined mode, in which source code and disassembly will be listed next to each other.
 \end{itemize}
 
 Some modes may be unavailable in some circumstances (missing or outdated source files, lack of machine code). In case the \emph{Assembly} mode is unavailable, this might be due to the \texttt{capstone} disassembly engine failing to disassemble the machine instructions. See section~\ref{buildingserver} for more information.
@@ -3622,7 +3622,7 @@ As described in chapter~\ref{hardwaresampling}, on some platforms, Tracy can cap
 \item The rest of the available selections just show raw values gathered from the hardware counters. These are: \emph{Retirements}, \emph{Branches taken}, \emph{Branch miss}, \emph{Cache access} and \emph{Cache miss}.
 \end{itemize}
 
-If the \emph{\faHammer{}~Hardware samples} switch is enabled, the profiler will supplement the cost percentages column with three additional columns. The first added column displays the instructions per cycle (IPC) value. The two remaining columns show branch and cache data, as described below. The displayed values are color-coded, with green indicating good execution performance and red indicating that the code stalled the CPU pipeline for one reason or another.
+If the \emph{\faHammer{}~HW} (hardware samples) switch is enabled, the profiler will supplement the cost percentages column with three additional columns. The first added column displays the instructions per cycle (IPC) value. The two remaining columns show branch and cache data, as described below. The displayed values are color-coded, with green indicating good execution performance and red indicating that the code stalled the CPU pipeline for one reason or another.
 
 If the \emph{\faCarCrash{}~Impact} switch is enabled, the branch and cache columns will show how much impact the branch mispredictions and cache misses have. The way these statistics are calculated is described in the list above. In the other case, the columns will show the raw branch and cache miss rate ratios, isolated to their respective source and assembly lines and not relative to the whole symbol.
 

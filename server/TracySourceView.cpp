@@ -1369,7 +1369,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::SameLine();
             ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
             ImGui::SameLine();
-            ImGui::RadioButton( "Combined", &m_displayMode, DisplayMixed );
+            ImGui::RadioButton( "Both", &m_displayMode, DisplayMixed );
         }
     }
     else
@@ -1429,7 +1429,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         ImGui::SameLine();
         if( worker.GetHwSampleCountAddress() != 0 )
         {
-            SmallCheckbox( ICON_FA_HAMMER " Hw samples", &m_hwSamples );
+            SmallCheckbox( ICON_FA_HAMMER " HW", &m_hwSamples );
             ImGui::SameLine();
             SmallCheckbox( ICON_FA_CAR_BURST " Impact", &m_hwSamplesRelative );
             ImGui::SameLine();

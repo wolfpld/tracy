@@ -1175,10 +1175,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
     }
     ImGui::SameLine();
+    ImGui::PopFont();
+    ImGui::AlignTextToFramePadding();
     TextDisabledUnformatted( worker.GetString( sym->imageName ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "0x%" PRIx64, m_baseAddr );
-    ImGui::PopFont();
 
     if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
     if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;

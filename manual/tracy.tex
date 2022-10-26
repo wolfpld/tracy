@@ -3561,8 +3561,6 @@ If the listed assembly code targets x86 or x64 instruction set architectures, ho
 
 Selection of the CPU microarchitecture can be performed using the \emph{\faMicrochip{}~\textmu{}arch} drop-down. Each architecture is accompanied by the name of an example CPU implementing it. If the current selection matches the microarchitecture on which the profiled application was running, the \faMicrochip{}~icon will be green\footnote{Comparing sampled instruction counts with microarchitectural details only makes sense when this selection is properly matched.}. Otherwise, it will be red\footnote{You can use this to gain insight into how the code \emph{may} behave on other processors.}. Clicking on the \faMicrochip{}~icon when it is red will reset the selected microarchitecture to the one the profiled application was running on.
 
-Enabling the \emph{\faTruckLoading{}~Latency} option will display a graphical representation of instruction latencies on the listing. The minimum latency of instruction is represented by a red bar, while the maximum latency is represented by a yellow bar.
-
 Clicking on the \emph{\faFileImport{}~Save} button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as \emph{LLVM Machine Code Analyzer} (\texttt{llvm-mca})\footnote{\url{https://llvm.org/docs/CommandGuide/llvm-mca.html}}, to see how the code is executed and if there are any pipeline bubbles. Consult the \texttt{llvm-mca} documentation for more details. Alternatively, you might click the \RMB{}~right mouse button on a jump arrow and save only the instructions within the jump range, using the \emph{\faFileImport{}~Save jump range} button.
 
 \subparagraph{Instruction dependencies}

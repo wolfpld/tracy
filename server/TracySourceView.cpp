@@ -267,7 +267,6 @@ SourceView::SourceView()
     , m_showJumps( true )
     , m_locAddrIsProp( false )
     , m_cpuArch( CpuArchUnknown )
-    , m_showLatency( false )
 {
     m_microArchOpMap.reserve( OpsNum );
     for( int i=0; i<OpsNum; i++ )
@@ -2416,11 +2415,6 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 ImGui::EndCombo();
             }
             ImGui::PopStyleVar();
-
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-            SmallCheckbox( ICON_FA_TRUCK_RAMP_BOX " Latency", &m_showLatency );
         }
     }
 
@@ -3994,25 +3988,6 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     asmVar = op->variant[res[0].first];
                 }
             }
-        }
-    }
-
-    if( m_showLatency && asmVar && asmVar->minlat >= 0 )
-    {
-        const auto pos = ImVec2( (int)ImGui::GetCursorScreenPos().x, (int)ImGui::GetCursorScreenPos().y );
-        const auto ty = ImGui::GetTextLineHeight();
-
-        if( asmVar->minlat == 0 )
-        {
-            DrawLine( draw, pos + ImVec2( 0.5f, -0.5f ), pos + ImVec2( 0.5f, ty + 0.5f ), 0x660000FF );
-        }
-        else
-        {
-            draw->AddRectFilled( pos, pos + ImVec2( ty * asmVar->minlat + 1, ty + 1 ), 0x660000FF );
-        }
-        if( asmVar->minlat != asmVar->maxlat )
-        {
-            draw->AddRectFilled( pos + ImVec2( ty * asmVar->minlat + 1, 0 ), pos + ImVec2( ty * asmVar->maxlat + 1, ty + 1 ), 0x5500FFFF );
         }
     }
 

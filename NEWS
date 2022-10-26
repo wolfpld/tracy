@@ -2,7 +2,7 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-v0.x.x (xxxx-xx-xx)
+v0.9.0 (2022-10-26)
 -------------------
 
 - Attention! All the header and source files used for integrating Tracy with

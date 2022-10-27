@@ -3329,10 +3329,8 @@ bool Profiler::HandleServerQuery()
 
     uint8_t type;
     uint64_t ptr;
-    uint32_t extra;
     memcpy( &type, &payload.type, sizeof( payload.type ) );
     memcpy( &ptr, &payload.ptr, sizeof( payload.ptr ) );
-    memcpy( &extra, &payload.extra, sizeof( payload.extra ) );
 
     switch( type )
     {
@@ -3379,7 +3377,7 @@ bool Profiler::HandleServerQuery()
         break;
 #ifndef TRACY_NO_CODE_TRANSFER
     case ServerQuerySymbolCode:
-        HandleSymbolCodeQuery( ptr, extra );
+        HandleSymbolCodeQuery( ptr, payload.extra );
         break;
 #endif
     case ServerQuerySourceCode:
@@ -3396,7 +3394,7 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQueryDataTransferPart:
         memcpy( m_queryDataPtr, &ptr, 8 );
-        memcpy( m_queryDataPtr+8, &extra, 4 );
+        memcpy( m_queryDataPtr+8, &payload.extra, 4 );
         m_queryDataPtr += 12;
         AckServerQuery();
         break;

@@ -6,6 +6,7 @@ v0.x.x (xxxx-xx-xx)
 -------------------
 
 - Support for pre-0.8 traces has been dropped.
+- Profiled programs will ignore dlclose() calls.
 
 
 v0.9.0 (2022-10-26)

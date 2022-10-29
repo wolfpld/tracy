@@ -11,6 +11,8 @@
 namespace tracy::Fileselector
 {
 
+static bool s_hasFailed = false;
+
 void Init()
 {
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
@@ -25,6 +27,19 @@ void Shutdown()
 #endif
 }
 
+bool HasFailed()
+{
+    if( s_hasFailed )
+    {
+        s_hasFailed = false;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 #ifdef __EMSCRIPTEN__
 static std::function<void(const char*)> s_openFileCallback;
 
@@ -35,7 +50,7 @@ extern "C" int nativeOpenFile()
 }
 #endif
 
-bool OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+static bool OpenFileImpl( const char* ext, const char* desc, std::function<void(const char*)> callback )
 {
 #ifndef TRACY_NO_FILESELECTOR
 #  ifdef __EMSCRIPTEN__
@@ -73,7 +88,7 @@ bool OpenFile( const char* ext, const char* desc, std::function<void(const char*
     return false;
 }
 
-bool SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+static bool SaveFileImpl( const char* ext, const char* desc, std::function<void(const char*)> callback )
 {
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
     nfdu8filteritem_t filter = { desc, ext };
@@ -86,6 +101,16 @@ bool SaveFile( const char* ext, const char* desc, std::function<void(const char*
     }
 #endif
     return false;
+}
+
+void OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+{
+    if( !OpenFileImpl( ext, desc, callback ) ) s_hasFailed = true;
+}
+
+void SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+{
+    if( !SaveFileImpl( ext, desc, callback ) ) s_hasFailed = true;
 }
 
 }

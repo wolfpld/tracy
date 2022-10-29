@@ -965,5 +965,15 @@ static void DrawContents()
         ImGui::EndPopup();
     }
 
+    if( tracy::Fileselector::HasFailed() ) ImGui::OpenPopup( "File selector is not available" );
+    if( ImGui::BeginPopupModal( "File selector is not available", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        ImGui::TextUnformatted( "File selector cannot be displayed." );
+        ImGui::TextUnformatted( "Check nfd library implementation for details." );
+        ImGui::Separator();
+        if( ImGui::Button( "Ok" ) ) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
     bptr->EndFrame();
 }

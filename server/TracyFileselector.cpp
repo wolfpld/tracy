@@ -35,7 +35,7 @@ extern "C" int nativeOpenFile()
 }
 #endif
 
-void OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+bool OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
 {
 #ifndef TRACY_NO_FILESELECTOR
 #  ifdef __EMSCRIPTEN__
@@ -58,6 +58,7 @@ void OpenFile( const char* ext, const char* desc, std::function<void(const char*
         };
         input.click();
     }, ext );
+    return true;
 #  else
     nfdu8filteritem_t filter = { desc, ext };
     nfdu8char_t* fn;
@@ -65,12 +66,14 @@ void OpenFile( const char* ext, const char* desc, std::function<void(const char*
     {
         callback( (const char*)fn );
         NFD_FreePathU8( fn );
+        return true;
     }
 #  endif
 #endif
+    return false;
 }
 
-void SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+bool SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
 {
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
     nfdu8filteritem_t filter = { desc, ext };
@@ -79,8 +82,10 @@ void SaveFile( const char* ext, const char* desc, std::function<void(const char*
     {
         callback( (const char*)fn );
         NFD_FreePathU8( fn );
+        return true;
     }
 #endif
+    return false;
 }
 
 }

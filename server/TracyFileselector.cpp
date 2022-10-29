@@ -77,11 +77,16 @@ static bool OpenFileImpl( const char* ext, const char* desc, std::function<void(
 #  else
     nfdu8filteritem_t filter = { desc, ext };
     nfdu8char_t* fn;
-    if( NFD_OpenDialogU8( &fn, &filter, 1, nullptr ) == NFD_OKAY )
+    const auto res = NFD_OpenDialogU8( &fn, &filter, 1, nullptr );
+    if( res == NFD_OKAY )
     {
         callback( (const char*)fn );
         NFD_FreePathU8( fn );
         return true;
+    }
+    else
+    {
+        return res != NFD_ERROR;
     }
 #  endif
 #endif
@@ -93,11 +98,16 @@ static bool SaveFileImpl( const char* ext, const char* desc, std::function<void(
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
     nfdu8filteritem_t filter = { desc, ext };
     nfdu8char_t* fn;
-    if( NFD_SaveDialogU8( &fn, &filter, 1, nullptr, nullptr ) == NFD_OKAY )
+    const auto res = NFD_SaveDialogU8( &fn, &filter, 1, nullptr, nullptr );
+    if( res == NFD_OKAY )
     {
         callback( (const char*)fn );
         NFD_FreePathU8( fn );
         return true;
+    }
+    else
+    {
+        return res != NFD_ERROR;
     }
 #endif
     return false;

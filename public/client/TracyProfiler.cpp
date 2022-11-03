@@ -854,7 +854,7 @@ std::atomic<bool> s_symbolThreadGone { false };
 static Thread* s_sysTraceThread = nullptr;
 #endif
 
-#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
+#if defined __linux__
 #  ifndef TRACY_CRASH_SIGNAL
 #    define TRACY_CRASH_SIGNAL SIGPWR
 #  endif

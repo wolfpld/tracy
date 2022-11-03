@@ -1454,7 +1454,7 @@ Profiler::~Profiler()
     if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
 #endif
 
-#ifdef __linux__
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled )
     {
         sigaction( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr, nullptr );

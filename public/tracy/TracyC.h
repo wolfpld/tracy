@@ -47,6 +47,8 @@ typedef const void* TracyCZoneCtx;
 #define TracyCFrameImage(x,y,z,w,a)
 
 #define TracyCPlot(x,y)
+#define TracyCPlotF(x,y)
+#define TracyCPlotI(x,y)
 #define TracyCMessage(x,y)
 #define TracyCMessageL(x)
 #define TracyCMessageC(x,y,z)
@@ -274,9 +276,13 @@ TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_
 
 
 TRACY_API void ___tracy_emit_plot( const char* name, double val );
+TRACY_API void ___tracy_emit_plot_float( const char* name, float val );
+TRACY_API void ___tracy_emit_plot_int( const char* name, int64_t val );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
+#define TracyCPlotF( name, val ) ___tracy_emit_plot_float( name, val );
+#define TracyCPlotI( name, val ) ___tracy_emit_plot_int( name, val );
 #define TracyCAppInfo( txt, size ) ___tracy_emit_message_appinfo( txt, size );
 
 

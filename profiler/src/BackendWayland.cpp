@@ -49,7 +49,7 @@ static void RegistryGlobalCb( void*, struct wl_registry* reg, uint32_t name, con
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
     {
-        s_comp = (wl_compositor*)wl_registry_bind( reg, name, &wl_compositor_interface, 5 );
+        s_comp = (wl_compositor*)wl_registry_bind( reg, name, &wl_compositor_interface, 4 );
     }
     else if( strcmp( interface, wl_shm_interface.name ) == 0 )
     {

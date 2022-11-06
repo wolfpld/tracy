@@ -164,6 +164,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_toplevel = xdg_surface_get_toplevel( s_xdgSurf );
     xdg_toplevel_add_listener( s_toplevel, &toplevelListener, nullptr );
     xdg_toplevel_set_title( s_toplevel, title );
+    xdg_toplevel_set_app_id( s_toplevel, "tracy" );
 
     ImGuiIO& io = ImGui::GetIO();
     io.BackendPlatformName = "wayland (tracy profiler)";

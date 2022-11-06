@@ -121,6 +121,8 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_eglWin = wl_egl_window_create( s_surf, m_winPos.w, m_winPos.h );
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
     xdg_surface_add_listener( s_xdgSurf, &surfaceListener, nullptr );
+    wl_display_roundtrip( s_dpy );
+
     s_toplevel = xdg_surface_get_toplevel( s_xdgSurf );
     xdg_toplevel_add_listener( s_toplevel, &toplevelListener, nullptr );
     xdg_toplevel_set_title( s_toplevel, title );

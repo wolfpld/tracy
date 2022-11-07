@@ -13,7 +13,7 @@
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
 
-#include "xdg-shell.h"
+#include "wayland/xdg-shell.h"
 
 #include "Backend.hpp"
 #include "RunQueue.hpp"

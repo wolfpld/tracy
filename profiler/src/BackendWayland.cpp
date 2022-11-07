@@ -7,8 +7,10 @@
 #include <chrono>
 #include <linux/input-event-codes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 #include <wayland-egl.h>
 
 #include "xdg-shell.h"
@@ -32,6 +34,9 @@ static struct xdg_surface* s_xdgSurf;
 static struct xdg_toplevel* s_toplevel;
 static struct wl_seat* s_seat;
 static struct wl_pointer* s_pointer;
+static struct wl_cursor_theme* s_cursorTheme;
+static struct wl_surface* s_cursorSurf;
+static int32_t s_cursorX, s_cursorY;
 
 static bool s_running = true;
 static int s_w, s_h;
@@ -42,6 +47,7 @@ static bool s_wheel;
 
 static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
 {
+    wl_pointer_set_cursor( pointer, serial, s_cursorSurf, s_cursorX, s_cursorY );
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent( wl_fixed_to_double( sx ), wl_fixed_to_double( sy ) );
 }
@@ -239,6 +245,17 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
     xdg_surface_add_listener( s_xdgSurf, &surfaceListener, nullptr );
 
+    auto env_xcursor_theme = getenv( "XCURSOR_THEME" );
+    auto env_xcursor_size = getenv( "XCURSOR_SIZE" );
+
+    s_cursorTheme = wl_cursor_theme_load( env_xcursor_theme, env_xcursor_size ? atoi( env_xcursor_size ) : 24, s_shm );
+    auto cursor = wl_cursor_theme_get_cursor( s_cursorTheme, "left_ptr" );
+    s_cursorSurf = wl_compositor_create_surface( s_comp );
+    wl_surface_attach( s_cursorSurf, wl_cursor_image_get_buffer( cursor->images[0] ), 0, 0 );
+    wl_surface_commit( s_cursorSurf );
+    s_cursorX = cursor->images[0]->hotspot_x;
+    s_cursorY = cursor->images[0]->hotspot_y;
+
     constexpr EGLint eglConfigAttrib[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_RED_SIZE, 8,
@@ -296,6 +313,8 @@ Backend::~Backend()
     eglDestroyContext( s_eglDpy, s_eglCtx );
     eglTerminate( s_eglDpy );
     xdg_toplevel_destroy( s_toplevel );
+    wl_surface_destroy( s_cursorSurf );
+    wl_cursor_theme_destroy( s_cursorTheme );
     xdg_surface_destroy( s_xdgSurf );
     wl_egl_window_destroy( s_eglWin );
     wl_surface_destroy( s_surf );

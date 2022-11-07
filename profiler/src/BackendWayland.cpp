@@ -5,6 +5,7 @@
 #include "imgui/imgui_impl_opengl3_loader.h"
 
 #include <chrono>
+#include <linux/input-event-codes.h>
 #include <stdio.h>
 #include <string.h>
 #include <wayland-client.h>
@@ -30,10 +31,119 @@ static EGLSurface s_eglSurf;
 static struct xdg_surface* s_xdgSurf;
 static struct xdg_toplevel* s_toplevel;
 static struct wl_seat* s_seat;
+static struct wl_pointer* s_pointer;
 
 static bool s_running = true;
 static int s_w, s_h;
 static uint64_t s_time;
+
+static wl_fixed_t s_wheelAxisX, s_wheelAxisY;
+static bool s_wheel;
+
+static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddMousePosEvent( wl_fixed_to_double( sx ), wl_fixed_to_double( sy ) );
+}
+
+static void PointerLeave( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf )
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddMousePosEvent( -FLT_MAX, -FLT_MAX );
+}
+
+static void PointerMotion( void*, struct wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy )
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddMousePosEvent( wl_fixed_to_double( sx ), wl_fixed_to_double( sy ) );
+}
+
+static void PointerButton( void*, struct wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state )
+{
+    int b;
+    switch( button )
+    {
+    case BTN_LEFT: b = 0; break;
+    case BTN_MIDDLE: b = 1; break;
+    case BTN_RIGHT: b = 2; break;
+    default: return;
+    }
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddMouseButtonEvent( b, state == WL_POINTER_BUTTON_STATE_PRESSED );
+}
+
+static void PointerAxis( void*, struct wl_pointer* pointer, uint32_t time, uint32_t axis, wl_fixed_t value )
+{
+    s_wheel = true;
+    if( axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL )
+    {
+        s_wheelAxisX += value;
+    }
+    else
+    {
+        s_wheelAxisY += value;
+    }
+}
+
+static void PointerAxisSource( void*, struct wl_pointer* pointer, uint32_t source )
+{
+}
+
+static void PointerAxisStop( void*, struct wl_pointer* pointer, uint32_t time, uint32_t axis )
+{
+}
+
+static void PointerAxisDiscrete( void*, struct wl_pointer* pointer, uint32_t axis, int32_t type )
+{
+}
+
+static void PointerFrame( void*, struct wl_pointer* pointer )
+{
+    if( s_wheel )
+    {
+        s_wheel = false;
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMouseWheelEvent( wl_fixed_to_double( s_wheelAxisX ), wl_fixed_to_double( s_wheelAxisY ) );
+        s_wheelAxisX = s_wheelAxisY = 0;
+    }
+}
+
+constexpr struct wl_pointer_listener pointerListener = {
+    .enter = PointerEnter,
+    .leave = PointerLeave,
+    .motion = PointerMotion,
+    .button = PointerButton,
+    .axis = PointerAxis,
+    .frame = PointerFrame,
+    .axis_source = PointerAxisSource,
+    .axis_stop = PointerAxisStop,
+    .axis_discrete = PointerAxisDiscrete
+};
+
+
+static void SeatCapabilities( void*, struct wl_seat* seat, uint32_t caps )
+{
+    const bool hasPointer = caps & WL_SEAT_CAPABILITY_POINTER;
+    if( hasPointer && !s_pointer )
+    {
+        s_pointer = wl_seat_get_pointer( s_seat );
+        wl_pointer_add_listener( s_pointer, &pointerListener, nullptr );
+    }
+    else if( !hasPointer && s_pointer )
+    {
+        wl_pointer_release( s_pointer );
+        s_pointer = nullptr;
+    }
+}
+
+static void SeatName( void*, struct wl_seat* seat, const char* name )
+{
+}
+
+constexpr struct wl_seat_listener seatListener = {
+    .capabilities = SeatCapabilities,
+    .name = SeatName
+};
 
 
 static void WmPing( void*, struct xdg_wm_base* shell, uint32_t serial )
@@ -43,21 +153,6 @@ static void WmPing( void*, struct xdg_wm_base* shell, uint32_t serial )
 
 constexpr struct xdg_wm_base_listener wmListener = {
     .ping = WmPing
-};
-
-
-static void SeatCapabilities( void*, struct wl_seat* seat, uint32_t caps )
-{
-}
-
-static void SeatName( void*, struct wl_seat* seat, const char* name )
-{
-}
-
-
-constexpr struct wl_seat_listener seatListener = {
-    .capabilities = SeatCapabilities,
-    .name = SeatName
 };
 
 
@@ -195,6 +290,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
 
 Backend::~Backend()
 {
+    if( s_pointer ) wl_pointer_destroy( s_pointer );
     eglMakeCurrent( s_eglDpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
     eglDestroySurface( s_eglDpy, s_eglSurf );
     eglDestroyContext( s_eglDpy, s_eglCtx );

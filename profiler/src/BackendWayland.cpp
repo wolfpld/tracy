@@ -29,6 +29,7 @@ static EGLContext s_eglCtx;
 static EGLSurface s_eglSurf;
 static struct xdg_surface* s_xdgSurf;
 static struct xdg_toplevel* s_toplevel;
+static struct wl_seat* s_seat;
 
 static bool s_running = true;
 static int s_w, s_h;
@@ -42,6 +43,21 @@ static void WmPing( void*, struct xdg_wm_base* shell, uint32_t serial )
 
 constexpr struct xdg_wm_base_listener wmListener = {
     .ping = WmPing
+};
+
+
+static void SeatCapabilities( void*, struct wl_seat* seat, uint32_t caps )
+{
+}
+
+static void SeatName( void*, struct wl_seat* seat, const char* name )
+{
+}
+
+
+constexpr struct wl_seat_listener seatListener = {
+    .capabilities = SeatCapabilities,
+    .name = SeatName
 };
 
 
@@ -59,6 +75,11 @@ static void RegistryGlobalCb( void*, struct wl_registry* reg, uint32_t name, con
     {
         s_wm = (xdg_wm_base*)wl_registry_bind( reg, name, &xdg_wm_base_interface, 1 );
         xdg_wm_base_add_listener( s_wm, &wmListener, nullptr );
+    }
+    else if( strcmp( interface, wl_seat_interface.name ) == 0 )
+    {
+        s_seat = (wl_seat*)wl_registry_bind( reg, name, &wl_seat_interface, 7 );
+        wl_seat_add_listener( s_seat, &seatListener, nullptr );
     }
 }
 
@@ -116,6 +137,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     if( !s_comp ) { fprintf( stderr, "No wayland compositor!\n" ); exit( 1 ); }
     if( !s_shm ) { fprintf( stderr, "No wayland shared memory!\n" ); exit( 1 ); }
     if( !s_wm ) { fprintf( stderr, "No wayland window manager!\n" ); exit( 1 ); }
+    if( !s_seat ) { fprintf( stderr, "No wayland seat!\n" ); exit( 1 ); }
 
     s_surf = wl_compositor_create_surface( s_comp );
     s_eglWin = wl_egl_window_create( s_surf, m_winPos.w, m_winPos.h );
@@ -181,6 +203,7 @@ Backend::~Backend()
     xdg_surface_destroy( s_xdgSurf );
     wl_egl_window_destroy( s_eglWin );
     wl_surface_destroy( s_surf );
+    wl_seat_destroy( s_seat );
     xdg_wm_base_destroy( s_wm );
     wl_shm_destroy( s_shm );
     wl_compositor_destroy( s_comp );

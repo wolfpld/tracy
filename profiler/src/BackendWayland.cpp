@@ -165,7 +165,7 @@ constexpr struct xdg_wm_base_listener wmListener = {
 };
 
 
-static void RegistryGlobalCb( void*, struct wl_registry* reg, uint32_t name, const char* interface, uint32_t version )
+static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const char* interface, uint32_t version )
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
     {
@@ -191,8 +191,13 @@ static void RegistryGlobalCb( void*, struct wl_registry* reg, uint32_t name, con
     }
 }
 
+static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name )
+{
+}
+
 constexpr struct wl_registry_listener registryListener = {
-    .global = RegistryGlobalCb
+    .global = RegistryGlobal,
+    .global_remove = RegistryGlobalRemove
 };
 
 

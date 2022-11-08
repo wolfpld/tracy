@@ -13,6 +13,7 @@
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
 
+#include "wayland/xdg-activation.h"
 #include "wayland/xdg-shell.h"
 
 #include "Backend.hpp"
@@ -37,6 +38,8 @@ static struct wl_pointer* s_pointer;
 static struct wl_cursor_theme* s_cursorTheme;
 static struct wl_surface* s_cursorSurf;
 static int32_t s_cursorX, s_cursorY;
+static struct xdg_activation_v1* s_activation;
+static struct xdg_activation_token_v1* s_actToken;
 
 static bool s_running = true;
 static int s_w, s_h;
@@ -182,6 +185,10 @@ static void RegistryGlobalCb( void*, struct wl_registry* reg, uint32_t name, con
         s_seat = (wl_seat*)wl_registry_bind( reg, name, &wl_seat_interface, 7 );
         wl_seat_add_listener( s_seat, &seatListener, nullptr );
     }
+    else if( strcmp( interface, xdg_activation_v1_interface.name ) == 0 )
+    {
+        s_activation = (xdg_activation_v1*)wl_registry_bind( reg, name, &xdg_activation_v1_interface, 1 );
+    }
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -307,6 +314,8 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
 
 Backend::~Backend()
 {
+    if( s_actToken ) xdg_activation_token_v1_destroy( s_actToken );
+    if( s_activation ) xdg_activation_v1_destroy( s_activation );
     if( s_pointer ) wl_pointer_destroy( s_pointer );
     eglMakeCurrent( s_eglDpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
     eglDestroySurface( s_eglDpy, s_eglSurf );
@@ -339,8 +348,27 @@ void Backend::Run()
     }
 }
 
+
+static void TokenDone( void*, xdg_activation_token_v1* token, const char* str )
+{
+    xdg_activation_v1_activate( s_activation, str, s_surf );
+    xdg_activation_token_v1_destroy( token );
+    s_actToken = nullptr;
+}
+
+constexpr struct xdg_activation_token_v1_listener tokenListener = {
+    .done = TokenDone
+}; 
+
+
 void Backend::Attention()
 {
+    if( !s_activation ) return;
+    if( s_actToken ) return;
+    s_actToken = xdg_activation_v1_get_activation_token( s_activation );
+    xdg_activation_token_v1_set_surface( s_actToken, s_surf );
+    xdg_activation_token_v1_commit( s_actToken );
+    xdg_activation_token_v1_add_listener( s_actToken, &tokenListener, nullptr );
 }
 
 void Backend::NewFrame( int& w, int& h )

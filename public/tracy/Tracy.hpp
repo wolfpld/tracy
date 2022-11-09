@@ -37,14 +37,14 @@
 
 #define FrameImage(x,y,z,w,a)
 
-#define TracyLockable( type, varname ) type varname;
-#define TracyLockableN( type, varname, desc ) type varname;
-#define TracySharedLockable( type, varname ) type varname;
-#define TracySharedLockableN( type, varname, desc ) type varname;
+#define TracyLockable( type, varname ) type varname
+#define TracyLockableN( type, varname, desc ) type varname
+#define TracySharedLockable( type, varname ) type varname
+#define TracySharedLockableN( type, varname, desc ) type varname
 #define LockableBase( type ) type
 #define SharedLockableBase( type ) type
-#define LockMark(x) (void)x;
-#define LockableName(x,y,z);
+#define LockMark(x) (void)x
+#define LockableName(x,y,z)
 
 #define TracyPlot(x,y)
 #define TracyPlotConfig(x,y,z,w,a)

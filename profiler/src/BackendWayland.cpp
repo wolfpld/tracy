@@ -6,9 +6,11 @@
 
 #include <chrono>
 #include <linux/input-event-codes.h>
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unordered_map>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
@@ -40,6 +42,13 @@ static struct wl_surface* s_cursorSurf;
 static int32_t s_cursorX, s_cursorY;
 static struct xdg_activation_v1* s_activation;
 static struct xdg_activation_token_v1* s_actToken;
+
+struct Output
+{
+    int32_t scale;
+    wl_output* obj;
+};
+static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
 
 static bool s_running = true;
 static int s_w, s_h;
@@ -165,6 +174,32 @@ constexpr struct xdg_wm_base_listener wmListener = {
 };
 
 
+static void OutputGeometry( void*, struct wl_output* output, int32_t x, int32_t y, int32_t phys_w, int32_t phys_h, int32_t subpixel, const char* make, const char* model, int32_t transform )
+{
+}
+
+static void OutputMode( void*, struct wl_output* output, uint32_t flags, int32_t w, int32_t h, int32_t refresh )
+{
+}
+
+static void OutputDone( void*, struct wl_output* output )
+{
+}
+
+static void OutputScale( void* data, struct wl_output* output, int32_t scale )
+{
+    auto out = (Output*)data;
+    out->scale = scale;
+}
+
+constexpr struct wl_output_listener outputListener = {
+    .geometry = OutputGeometry,
+    .mode = OutputMode,
+    .done = OutputDone,
+    .scale = OutputScale
+};
+
+
 static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const char* interface, uint32_t version )
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
@@ -189,10 +224,21 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
     {
         s_activation = (xdg_activation_v1*)wl_registry_bind( reg, name, &xdg_activation_v1_interface, 1 );
     }
+    else if( strcmp( interface, wl_output_interface.name ) == 0 )
+    {
+        auto output = (wl_output*)wl_registry_bind( reg, name, &wl_output_interface, 2 );
+        auto ptr = std::make_unique<Output>( Output { 1, output } );
+        wl_output_add_listener( output, &outputListener, ptr.get() );
+        s_output.emplace( name, std::move( ptr ) );
+    }
 }
 
 static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name )
 {
+    auto it = s_output.find( name );
+    if( it == s_output.end() ) return;
+    wl_output_destroy( it->second->obj );
+    s_output.erase( it );
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -332,6 +378,8 @@ Backend::~Backend()
     xdg_surface_destroy( s_xdgSurf );
     wl_egl_window_destroy( s_eglWin );
     wl_surface_destroy( s_surf );
+    for( auto& v : s_output ) wl_output_destroy( v.second->obj );
+    s_output.clear();
     wl_seat_destroy( s_seat );
     xdg_wm_base_destroy( s_wm );
     wl_shm_destroy( s_shm );

@@ -255,6 +255,7 @@ namespace tracy {
             Profiler::QueueSerialFinish();
         }
 
+#ifdef TRACY_HAS_CALLSTACK
         tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, const SourceLocationData* srcLoc, int depth, bool is_active)
 #ifdef TRACY_ON_DEMAND
             : m_active(is_active&& GetProfiler().IsConnected())
@@ -279,6 +280,7 @@ namespace tracy {
             MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
             Profiler::QueueSerialFinish();
         }
+#endif
 
         tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active)
 #ifdef TRACY_ON_DEMAND
@@ -304,6 +306,7 @@ namespace tracy {
             Profiler::QueueSerialFinish();
         }
 
+#ifdef TRACY_HAS_CALLSTACK
         tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active)
 #ifdef TRACY_ON_DEMAND
             : m_active(is_active && GetProfiler().IsConnected())
@@ -327,6 +330,7 @@ namespace tracy {
             MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
             Profiler::QueueSerialFinish();
         }
+#endif
 
         tracy_force_inline void SetEvent(cl_event event)
         {

@@ -345,6 +345,7 @@ namespace tracy
 			Profiler::QueueSerialFinish();
 		}
 
+#ifdef TRACY_HAS_CALLSTACK
 		tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, int depth, bool active)
 #ifdef TRACY_ON_DEMAND
 			: m_active(active&& GetProfiler().IsConnected())
@@ -370,6 +371,7 @@ namespace tracy
 
 			Profiler::QueueSerialFinish();
 		}
+#endif
 
 		tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, ID3D12GraphicsCommandList* cmdList, bool active)
 #ifdef TRACY_ON_DEMAND
@@ -399,6 +401,7 @@ namespace tracy
 			Profiler::QueueSerialFinish();
 		}
 
+#ifdef TRACY_HAS_CALLSTACK
 		tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, ID3D12GraphicsCommandList* cmdList, int depth, bool active)
 #ifdef TRACY_ON_DEMAND
 			: m_active(active&& GetProfiler().IsConnected())
@@ -426,6 +429,7 @@ namespace tracy
 
 			Profiler::QueueSerialFinish();
 		}
+#endif
 
 		tracy_force_inline ~D3D12ZoneScope()
 		{

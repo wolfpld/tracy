@@ -252,7 +252,7 @@ static void XdgSurfaceConfigure( void*, struct xdg_surface* surf, uint32_t seria
     xdg_surface_ack_configure( surf, serial );
 }
 
-constexpr struct xdg_surface_listener surfaceListener = {
+constexpr struct xdg_surface_listener xdgSurfaceListener = {
     .configure = XdgSurfaceConfigure
 };
 
@@ -301,7 +301,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_surf = wl_compositor_create_surface( s_comp );
     s_eglWin = wl_egl_window_create( s_surf, m_winPos.w, m_winPos.h );
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
-    xdg_surface_add_listener( s_xdgSurf, &surfaceListener, nullptr );
+    xdg_surface_add_listener( s_xdgSurf, &xdgSurfaceListener, nullptr );
 
     auto env_xcursor_theme = getenv( "XCURSOR_THEME" );
     auto env_xcursor_size = getenv( "XCURSOR_SIZE" );

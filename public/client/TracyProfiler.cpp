@@ -1520,7 +1520,7 @@ bool Profiler::ShouldExit()
 
 void Profiler::Worker()
 {
-#ifdef __linux__
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     s_profilerTid = syscall( SYS_gettid );
 #endif
 

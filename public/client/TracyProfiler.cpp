@@ -3544,7 +3544,7 @@ void Profiler::CalibrateDelay()
     constexpr int Events = Iterations * 2;   // start + end
     static_assert( Events < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
-    static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+    static const tracy::SourceLocationData __tracy_source_location { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 };
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {

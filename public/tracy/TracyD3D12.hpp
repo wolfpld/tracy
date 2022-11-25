@@ -474,23 +474,23 @@ using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZoneS(ctx, ___tracy_gpu_zone, cmdList, name, TRACY_CALLSTACK, true)
 #  define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneCS(ctx, ___tracy_gpu_zone, cmdList, name, color, TRACY_CALLSTACK, true)
-#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), TRACY_CALLSTACK, active };
-#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), TRACY_CALLSTACK, active };
+#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), TRACY_CALLSTACK, active };
+#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), TRACY_CALLSTACK, active };
 #  define TracyD3D12ZoneTransient(ctx, varname, cmdList, name, active) TracyD3D12ZoneTransientS(ctx, varname, cmdList, name, TRACY_CALLSTACK, active)
 #else
 #  define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZone(ctx, ___tracy_gpu_zone, cmdList, name, true)
 #  define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneC(ctx, ___tracy_gpu_zone, cmdList, name, color, true)
-#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), active };
-#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), active };
-#  define TracyD3D12ZoneTransient(ctx, varname, cmdList, name, active) tracy::D3D12ZoneScope varname{ ctx, __LINE__, __FILE__, strlen(__FILE__), __FUNCTION__, strlen(__FUNCTION__), name, strlen(name), cmdList, active };
+#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), active };
+#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), active };
+#  define TracyD3D12ZoneTransient(ctx, varname, cmdList, name, active) tracy::D3D12ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), cmdList, active };
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
 #  define TracyD3D12ZoneS(ctx, cmdList, name, depth) TracyD3D12NamedZoneS(ctx, ___tracy_gpu_zone, cmdList, name, depth, true)
 #  define TracyD3D12ZoneCS(ctx, cmdList, name, color, depth) TracyD3D12NamedZoneCS(ctx, ___tracy_gpu_zone, cmdList, name, color, depth, true)
-#  define TracyD3D12NamedZoneS(ctx, varname, cmdList, name, depth, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), depth, active };
-#  define TracyD3D12NamedZoneCS(ctx, varname, cmdList, name, color, depth, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, __LINE__) { name, __FUNCTION__, __FILE__, (uint32_t)__LINE__, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, __LINE__), depth, active };
-#  define TracyD3D12ZoneTransientS(ctx, varname, cmdList, name, depth, active) tracy::D3D12ZoneScope varname{ ctx, __LINE__, __FILE__, strlen(__FILE__), __FUNCTION__, strlen(__FUNCTION__), name, strlen(name), cmdList, depth, active };
+#  define TracyD3D12NamedZoneS(ctx, varname, cmdList, name, depth, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), depth, active };
+#  define TracyD3D12NamedZoneCS(ctx, varname, cmdList, name, color, depth, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), depth, active };
+#  define TracyD3D12ZoneTransientS(ctx, varname, cmdList, name, depth, active) tracy::D3D12ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), cmdList, depth, active };
 #else
 #  define TracyD3D12ZoneS(ctx, cmdList, name, depth) TracyD3D12Zone(ctx, cmdList, name)
 #  define TracyD3D12ZoneCS(ctx, cmdList, name, color, depth) TracyD3D12Zone(ctx, cmdList, name, color)

@@ -51,6 +51,7 @@
 #include "Filters.hpp"
 #include "Fonts.hpp"
 #include "HttpRequest.hpp"
+#include "IsElevated.hpp"
 #include "ImGuiContext.hpp"
 #include "ResolvService.hpp"
 #include "RunQueue.hpp"
@@ -96,6 +97,7 @@ static void* iconTex;
 static int iconTexSz;
 static Backend* bptr;
 static bool s_customTitle = false;
+static bool s_isElevated = false;
 
 static void SetWindowTitleCallback( const char* title )
 {
@@ -248,6 +250,7 @@ int main( int argc, char** argv )
     }
 
     tracy::Fileselector::Init();
+    s_isElevated = IsElevated();
 
     backend.Show();
     backend.Run();

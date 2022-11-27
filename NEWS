@@ -7,6 +7,8 @@ v0.x.x (xxxx-xx-xx)
 
 - Support for pre-0.8 traces has been dropped.
 - Profiled programs will ignore dlclose() calls.
+- Added warning when the profiler interface is run with privilege elevation.
+  Advice is given to instead run the client with admin rights.
 
 
 v0.9.0 (2022-10-26)

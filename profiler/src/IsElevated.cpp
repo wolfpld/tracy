@@ -24,9 +24,11 @@ bool IsElevated()
 
 #else
 
+#include <unistd.h>
+
 bool IsElevated()
 {
-    return false;
+    return getuid() == 0;
 }
 
 #endif

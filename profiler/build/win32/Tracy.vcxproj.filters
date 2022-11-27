@@ -378,6 +378,9 @@
     <ClCompile Include="..\..\..\server\TracyFileselector.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\IsElevated.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyEvent.hpp">
@@ -763,6 +766,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFileselector.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\IsElevated.hpp">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -212,6 +212,7 @@
     <ClCompile Include="..\..\src\ImGuiContext.cpp" />
     <ClCompile Include="..\..\src\imgui\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\..\src\IsElevated.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\ResolvService.cpp" />
     <ClCompile Include="..\..\src\RunQueue.cpp" />
@@ -347,6 +348,7 @@
     <ClInclude Include="..\..\src\imgui\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3.h" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\..\src\IsElevated.hpp" />
     <ClInclude Include="..\..\src\ResolvService.hpp" />
     <ClInclude Include="..\..\src\RunQueue.hpp" />
     <ClInclude Include="..\..\src\stb_image.h" />

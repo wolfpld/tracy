@@ -9,6 +9,7 @@ v0.x.x (xxxx-xx-xx)
 - Profiled programs will ignore dlclose() calls.
 - Added warning when the profiler interface is run with privilege elevation.
   Advice is given to instead run the client with admin rights.
+- Switched to official ZEN4 uarch data.
 
 
 v0.9.0 (2022-10-26)

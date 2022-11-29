@@ -31,7 +31,7 @@ struct MicroArchUx
 };
 
 static constexpr MicroArchUx s_uArchUx[] = {
-    { "AMD Zen 4", "Ryzen 9 7950X", "ZEN4" },
+    { "AMD Zen 4", "Ryzen 5 7600X", "ZEN4" },
     { "AMD Zen 3", "Ryzen 5 5600X", "ZEN3" },
     { "AMD Zen 2", "Ryzen 7 3700X", "ZEN2" },
     { "AMD Zen+", "Ryzen 5 2600", "ZEN+" },

@@ -10,6 +10,11 @@ v0.x.x (xxxx-xx-xx)
 - Added warning when the profiler interface is run with privilege elevation.
   Advice is given to instead run the client with admin rights.
 - Switched to official ZEN4 uarch data.
+- Handle cases when thread name is set, but not through Tracy facilities.
+- Allow customization of source location data through the following macros:
+  - TracyFunction - defaults to __FUNCTION__
+  - TracyFile - defaults to __FILE__
+  - TracyLine - defaults to __LINE__
 
 
 v0.9.0 (2022-10-26)

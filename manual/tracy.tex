@@ -801,6 +801,28 @@ Remember to set thread names for proper identification of threads. You should do
 
 Tracy will try to capture thread names through operating system data if context switch capture is active. However, this is only a fallback mechanism, and it shouldn't be relied upon.
 
+\subsubsection{Source location data customization}
+
+Some source location data such as function name, file path or line number can be overriden with defines \texttt{TracyFunction}, \texttt{TracyFile}, \texttt{TracyLine}\footnote{By default the macros unwrap to \texttt{\_\_FUNCTION\_\_}, \texttt{\_\_FILE\_\_} and \texttt{\_\_LINE\_\_} respectively.} made before including \texttt{public/tracy/Tracy.hpp} header file\footnote{You should add either \texttt{public} or \texttt{public/tracy} directory from the Tracy root to the include directories list in your project. Then you will be able to \texttt{\#include "tracy/Tracy.hpp"} or \texttt{\#include "Tracy.hpp"}, respectively.}.
+
+\begin{lstlisting}
+#if defined(__clang__) || defined(__GNUC__)
+#  define TracyFunction __PRETTY_FUNCTION__
+#elif defined(_MSC_VER)
+#  define TracyFunction __FUNCSIG__
+#endif
+
+#include <tracy/Tracy.hpp>
+
+...
+
+void Graphics::Render()
+{
+    ZoneScoped;
+    ...
+}
+\end{lstlisting}
+
 \subsection{Crash handling}
 \label{crashhandling}
 

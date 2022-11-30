@@ -52,26 +52,26 @@ public:
 #define TracyGpuContext tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
 #define TracyGpuContextName( name, size ) tracy::GetGpuCtx().ptr->Name( name, size );
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyGpuNamedZone( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );
-#  define TracyGpuNamedZoneC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );
+#  define TracyGpuNamedZone( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
+#  define TracyGpuNamedZoneC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
 #  define TracyGpuZone( name ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, TRACY_CALLSTACK, true )
 #  define TracyGpuZoneC( name, color ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, TRACY_CALLSTACK, true )
-#  define TracyGpuZoneTransient( varname, name, active ) tracy::GpuCtxScope varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name, strlen( name ), TRACY_CALLSTACK, active );
+#  define TracyGpuZoneTransient( varname, name, active ) tracy::GpuCtxScope varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), TRACY_CALLSTACK, active );
 #else
-#  define TracyGpuNamedZone( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), active );
-#  define TracyGpuNamedZoneC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), active );
+#  define TracyGpuNamedZone( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
+#  define TracyGpuNamedZoneC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
 #  define TracyGpuZone( name ) TracyGpuNamedZone( ___tracy_gpu_zone, name, true )
 #  define TracyGpuZoneC( name, color ) TracyGpuNamedZoneC( ___tracy_gpu_zone, name, color, true )
-#  define TracyGpuZoneTransient( varname, name, active ) tracy::GpuCtxScope varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name, strlen( name ), active );
+#  define TracyGpuZoneTransient( varname, name, active ) tracy::GpuCtxScope varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), active );
 #endif
 #define TracyGpuCollect tracy::GetGpuCtx().ptr->Collect();
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyGpuNamedZoneS( varname, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth, active );
-#  define TracyGpuNamedZoneCS( varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth, active );
+#  define TracyGpuNamedZoneS( varname, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
+#  define TracyGpuNamedZoneCS( varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
 #  define TracyGpuZoneS( name, depth ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, depth, true )
 #  define TracyGpuZoneCS( name, color, depth ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, depth, true )
-#  define TracyGpuZoneTransientS( varname, name, depth, active ) tracy::GpuCtxScope varname( __LINE__, __FILE__, strlen( __FILE__ ), __FUNCTION__, strlen( __FUNCTION__ ), name, strlen( name ), depth, active );
+#  define TracyGpuZoneTransientS( varname, name, depth, active ) tracy::GpuCtxScope varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), depth, active );
 #else
 #  define TracyGpuNamedZoneS( varname, name, depth, active ) TracyGpuNamedZone( varname, name, active )
 #  define TracyGpuNamedZoneCS( varname, name, color, depth, active ) TracyGpuNamedZoneC( varname, name, color, active )

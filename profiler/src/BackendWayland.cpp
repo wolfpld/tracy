@@ -16,6 +16,7 @@
 #include <wayland-egl.h>
 
 #include "wayland/xdg-activation.h"
+#include "wayland/xdg-decoration.h"
 #include "wayland/xdg-shell.h"
 
 #include "Backend.hpp"
@@ -42,6 +43,8 @@ static struct wl_surface* s_cursorSurf;
 static int32_t s_cursorX, s_cursorY;
 static struct xdg_activation_v1* s_activation;
 static struct xdg_activation_token_v1* s_actToken;
+static struct zxdg_decoration_manager_v1* s_decoration;
+static struct zxdg_toplevel_decoration_v1* s_tldec;
 
 struct Output
 {
@@ -200,6 +203,15 @@ constexpr struct wl_output_listener outputListener = {
 };
 
 
+static void DecorationConfigure( void*, struct zxdg_toplevel_decoration_v1* tldec, uint32_t mode )
+{
+}
+
+constexpr struct zxdg_toplevel_decoration_v1_listener decorationListener = {
+    .configure = DecorationConfigure
+};
+
+
 static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const char* interface, uint32_t version )
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
@@ -230,6 +242,16 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
         auto ptr = std::make_unique<Output>( Output { 1, output } );
         wl_output_add_listener( output, &outputListener, ptr.get() );
         s_output.emplace( name, std::move( ptr ) );
+    }
+    else if( strcmp( interface, zxdg_decoration_manager_v1_interface.name ) == 0 )
+    {
+        s_decoration = (zxdg_decoration_manager_v1*)wl_registry_bind( reg, name, &zxdg_decoration_manager_v1_interface, 1 );
+    }
+    else if( strcmp( interface, zxdg_toplevel_decoration_v1_interface.name ) == 0 )
+    {
+        s_tldec = (zxdg_toplevel_decoration_v1*)wl_registry_bind( reg, name, &zxdg_toplevel_decoration_v1_interface, 1 );
+        zxdg_toplevel_decoration_v1_add_listener( s_tldec, &decorationListener, nullptr );
+        zxdg_toplevel_decoration_v1_set_mode( s_tldec, ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE );
     }
 }
 
@@ -358,6 +380,12 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     xdg_toplevel_set_title( s_toplevel, title );
     xdg_toplevel_set_app_id( s_toplevel, "tracy" );
 
+    if( s_decoration )
+    {
+        zxdg_decoration_manager_v1_get_toplevel_decoration( s_decoration, s_toplevel );
+        wl_display_roundtrip( s_dpy );
+    }
+
     ImGuiIO& io = ImGui::GetIO();
     io.BackendPlatformName = "wayland (tracy profiler)";
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
@@ -365,6 +393,8 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
 
 Backend::~Backend()
 {
+    if( s_tldec ) zxdg_toplevel_decoration_v1_destroy( s_tldec );
+    if( s_decoration ) zxdg_decoration_manager_v1_destroy( s_decoration );
     if( s_actToken ) xdg_activation_token_v1_destroy( s_actToken );
     if( s_activation ) xdg_activation_v1_destroy( s_activation );
     if( s_pointer ) wl_pointer_destroy( s_pointer );

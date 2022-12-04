@@ -19,6 +19,8 @@
 #include "wayland/xdg-decoration.h"
 #include "wayland/xdg-shell.h"
 
+#include "../../server/TracyImGui.hpp"
+
 #include "Backend.hpp"
 #include "RunQueue.hpp"
 
@@ -271,6 +273,7 @@ constexpr struct wl_registry_listener registryListener = {
 
 static void XdgSurfaceConfigure( void*, struct xdg_surface* surf, uint32_t serial )
 {
+    tracy::s_wasActive = true;
     xdg_surface_ack_configure( surf, serial );
 }
 

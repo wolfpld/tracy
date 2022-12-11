@@ -330,6 +330,27 @@ constexpr struct xdg_toplevel_listener toplevelListener = {
     .close = XdgToplevelClose
 };
 
+static void SetupCursor()
+{
+    auto env_xcursor_theme = getenv( "XCURSOR_THEME" );
+    auto env_xcursor_size = getenv( "XCURSOR_SIZE" );
+
+    int size = env_xcursor_size ? atoi( env_xcursor_size ) : 24;
+    size *= s_maxScale;
+
+    if( s_cursorSurf ) wl_surface_destroy( s_cursorSurf );
+    if( s_cursorTheme ) wl_cursor_theme_destroy( s_cursorTheme );
+
+    s_cursorTheme = wl_cursor_theme_load( env_xcursor_theme, size, s_shm );
+    auto cursor = wl_cursor_theme_get_cursor( s_cursorTheme, "left_ptr" );
+    s_cursorSurf = wl_compositor_create_surface( s_comp );
+    if( s_maxScale != 1 ) wl_surface_set_buffer_scale( s_cursorSurf, s_maxScale );
+    wl_surface_attach( s_cursorSurf, wl_cursor_image_get_buffer( cursor->images[0] ), 0, 0 );
+    wl_surface_commit( s_cursorSurf );
+    s_cursorX = cursor->images[0]->hotspot_x / s_maxScale;
+    s_cursorY = cursor->images[0]->hotspot_y / s_maxScale;
+}
+
 Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mainThreadTasks )
 {
     s_redraw = redraw;
@@ -354,16 +375,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
     xdg_surface_add_listener( s_xdgSurf, &xdgSurfaceListener, nullptr );
 
-    auto env_xcursor_theme = getenv( "XCURSOR_THEME" );
-    auto env_xcursor_size = getenv( "XCURSOR_SIZE" );
-
-    s_cursorTheme = wl_cursor_theme_load( env_xcursor_theme, env_xcursor_size ? atoi( env_xcursor_size ) : 24, s_shm );
-    auto cursor = wl_cursor_theme_get_cursor( s_cursorTheme, "left_ptr" );
-    s_cursorSurf = wl_compositor_create_surface( s_comp );
-    wl_surface_attach( s_cursorSurf, wl_cursor_image_get_buffer( cursor->images[0] ), 0, 0 );
-    wl_surface_commit( s_cursorSurf );
-    s_cursorX = cursor->images[0]->hotspot_x;
-    s_cursorY = cursor->images[0]->hotspot_y;
+    SetupCursor();
 
     constexpr EGLint eglConfigAttrib[] = {
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -487,6 +499,7 @@ void Backend::NewFrame( int& w, int& h )
 {
     if( s_prevScale != s_maxScale )
     {
+        SetupCursor();
         wl_surface_set_buffer_scale( s_surf, s_maxScale );
         s_prevScale = s_maxScale;
     }

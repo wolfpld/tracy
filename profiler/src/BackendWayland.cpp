@@ -521,7 +521,7 @@ void Backend::NewFrame( int& w, int& h )
     ImGui_ImplOpenGL3_NewFrame();
 
     uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-    io.DeltaTime = ( time - s_time ) / 1000000.f;
+    io.DeltaTime = std::min( 0.1f, ( time - s_time ) / 1000000.f );
     s_time = time;
 }
 

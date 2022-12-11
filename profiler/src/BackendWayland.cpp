@@ -57,6 +57,7 @@ static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
 
 static bool s_running = true;
 static int s_w, s_h;
+static bool s_maximized;
 static uint64_t s_time;
 
 static wl_fixed_t s_wheelAxisX, s_wheelAxisY;
@@ -285,6 +286,19 @@ constexpr struct xdg_surface_listener xdgSurfaceListener = {
 static void XdgToplevelConfigure( void*, struct xdg_toplevel* toplevel, int32_t width, int32_t height, struct wl_array* states )
 {
     if( width == 0 || height == 0 ) return;
+
+    bool max = false;
+    auto data = (uint32_t*)states->data;
+    for( size_t i = 0; i < states->size / sizeof(uint32_t); i++ )
+    {
+        if( data[i] == XDG_TOPLEVEL_STATE_MAXIMIZED )
+        {
+            max = true;
+            break;
+        }
+    }
+    s_maximized = max;
+
     if( s_w != width || s_h != height )
     {
         s_w = width;
@@ -311,6 +325,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     s_mainThreadTasks = mainThreadTasks;
     s_w = m_winPos.w;
     s_h = m_winPos.h;
+    s_maximized = m_winPos.maximize;
 
     s_dpy = wl_display_connect( nullptr );
     if( !s_dpy ) { fprintf( stderr, "Cannot establish wayland display connection!\n" ); exit( 1 ); }
@@ -459,8 +474,15 @@ void Backend::Attention()
 
 void Backend::NewFrame( int& w, int& h )
 {
-    w = m_winPos.w = s_w;
-    h = m_winPos.h = s_h;
+    m_winPos.maximize = s_maximized;
+    if( !s_maximized )
+    {
+        m_winPos.w = s_w;
+        m_winPos.h = s_h;
+    }
+
+    w = s_w;
+    h = s_h;
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2( w, h );

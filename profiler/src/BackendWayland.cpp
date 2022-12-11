@@ -55,6 +55,7 @@ struct Output
 };
 static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
 static int s_maxScale = 1;
+static int s_prevScale = 1;
 
 static bool s_running = true;
 static int s_w, s_h;
@@ -68,7 +69,7 @@ static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, st
 {
     wl_pointer_set_cursor( pointer, serial, s_cursorSurf, s_cursorX, s_cursorY );
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent( wl_fixed_to_double( sx ), wl_fixed_to_double( sy ) );
+    io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale ), wl_fixed_to_double( sy * s_maxScale ) );
 }
 
 static void PointerLeave( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf )
@@ -80,7 +81,7 @@ static void PointerLeave( void*, struct wl_pointer* pointer, uint32_t serial, st
 static void PointerMotion( void*, struct wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy )
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent( wl_fixed_to_double( sx ), wl_fixed_to_double( sy ) );
+    io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale ), wl_fixed_to_double( sy * s_maxScale ) );
 }
 
 static void PointerButton( void*, struct wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state )
@@ -128,7 +129,7 @@ static void PointerFrame( void*, struct wl_pointer* pointer )
     {
         s_wheel = false;
         ImGuiIO& io = ImGui::GetIO();
-        io.AddMouseWheelEvent( wl_fixed_to_double( s_wheelAxisX ), wl_fixed_to_double( s_wheelAxisY ) );
+        io.AddMouseWheelEvent( wl_fixed_to_double( s_wheelAxisX * s_maxScale ), wl_fixed_to_double( s_wheelAxisY * s_maxScale ) );
         s_wheelAxisX = s_wheelAxisY = 0;
     }
 }
@@ -306,6 +307,9 @@ static void XdgToplevelConfigure( void*, struct xdg_toplevel* toplevel, int32_t 
     }
     s_maximized = max;
 
+    width *= s_maxScale;
+    height *= s_maxScale;
+
     if( s_w != width || s_h != height )
     {
         s_w = width;
@@ -481,6 +485,12 @@ void Backend::Attention()
 
 void Backend::NewFrame( int& w, int& h )
 {
+    if( s_prevScale != s_maxScale )
+    {
+        wl_surface_set_buffer_scale( s_surf, s_maxScale );
+        s_prevScale = s_maxScale;
+    }
+
     m_winPos.maximize = s_maximized;
     if( !s_maximized )
     {
@@ -526,5 +536,5 @@ void Backend::SetTitle( const char* title )
 
 float Backend::GetDpiScale()
 {
-    return 1.f;
+    return s_maxScale;
 }

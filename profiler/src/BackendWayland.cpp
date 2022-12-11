@@ -54,6 +54,7 @@ struct Output
     wl_output* obj;
 };
 static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
+static int s_maxScale = 1;
 
 static bool s_running = true;
 static int s_w, s_h;
@@ -190,6 +191,12 @@ static void OutputMode( void*, struct wl_output* output, uint32_t flags, int32_t
 
 static void OutputDone( void*, struct wl_output* output )
 {
+    int max = 1;
+    for( auto& out : s_output )
+    {
+        if( out.second->scale > max ) max = out.second->scale;
+    }
+    s_maxScale = max;
 }
 
 static void OutputScale( void* data, struct wl_output* output, int32_t scale )

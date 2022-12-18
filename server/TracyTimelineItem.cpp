@@ -121,8 +121,8 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
 
 void TimelineItem::AdjustThreadHeight( bool firstFrame, int oldOffset, int& offset )
 {
-    const auto speed = 5.0;
-    const auto minMove = 1.0;
+    const auto speed = 4.0;
+    const auto baseMove = 1.0;
 
     const auto h = offset - oldOffset;
     if( firstFrame )
@@ -135,12 +135,12 @@ void TimelineItem::AdjustThreadHeight( bool firstFrame, int oldOffset, int& offs
         const auto preClampMove = diff * speed * ImGui::GetIO().DeltaTime;
         if( diff > 0 )
         {
-            const auto move = std::max( minMove, preClampMove );
+            const auto move = preClampMove + baseMove;
             m_height = int( std::min<double>( m_height + move, h ) );
         }
         else
         {
-            const auto move = std::min( -minMove, preClampMove );
+            const auto move = preClampMove - baseMove;
             m_height = int( std::max<double>( m_height + move, h ) );
         }
         s_wasActive = true;

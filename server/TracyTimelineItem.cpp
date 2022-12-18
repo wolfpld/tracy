@@ -121,8 +121,8 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
 
 void TimelineItem::AdjustThreadHeight( bool firstFrame, int oldOffset, int& offset )
 {
-    const auto speed = 10.0;
-    const auto minMove = 2.0;
+    const auto speed = 5.0;
+    const auto minMove = 1.0;
 
     const auto h = offset - oldOffset;
     if( firstFrame )

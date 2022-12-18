@@ -43,6 +43,7 @@ private:
     unordered_flat_map<const void*, std::unique_ptr<TimelineItem>> m_itemMap;
 
     float m_height;
+    float m_scroll;
 
     bool m_firstFrame;
 

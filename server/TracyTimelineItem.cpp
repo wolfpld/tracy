@@ -21,8 +21,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
 {
     if( !IsVisible() )
     {
-        if( m_height != 0 )
-            AdjustThreadHeight( firstFrame, offset, offset );
+        if( m_height != 0 ) AdjustThreadHeight( firstFrame, offset, offset );
         return;
     }
     if( IsEmpty() ) return;

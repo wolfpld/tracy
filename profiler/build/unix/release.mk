@@ -6,4 +6,9 @@ DEFINES := -DNDEBUG
 BUILD := release
 
 include ../../../common/unix-release.mk
-include build.mk
+
+ifeq ($(LEGACY),1)
+    include legacy.mk
+else
+    include build.mk
+endif

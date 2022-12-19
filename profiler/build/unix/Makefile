@@ -1,3 +1,7 @@
+ifneq ($(shell uname),Linux)
+    export LEGACY=1
+endif
+
 all: release
 
 debug:

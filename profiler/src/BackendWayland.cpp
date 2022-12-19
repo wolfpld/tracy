@@ -10,7 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <unordered_map>
+#include <xkbcommon/xkbcommon.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
@@ -48,6 +51,9 @@ static struct xdg_activation_token_v1* s_actToken;
 static struct zxdg_decoration_manager_v1* s_decoration;
 static struct zxdg_toplevel_decoration_v1* s_tldec;
 static struct wl_keyboard* s_keyboard;
+static struct xkb_context* s_xkbCtx;
+static struct xkb_keymap* s_xkbKeymap;
+static struct xkb_state* s_xkbState;
 
 struct Output
 {
@@ -158,6 +164,23 @@ constexpr struct wl_pointer_listener pointerListener = {
 
 static void KeyboardKeymap( void*, struct wl_keyboard* kbd, uint32_t format, int32_t fd, uint32_t size )
 {
+    if( format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1 )
+    {
+        close( fd );
+        return;
+    }
+
+    auto map = (char*)mmap( nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0 );
+    close( fd );
+    if( map == MAP_FAILED ) return;
+
+    if( s_xkbKeymap ) xkb_keymap_unref( s_xkbKeymap );
+    s_xkbKeymap = xkb_keymap_new_from_string( s_xkbCtx, map, XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS );
+    munmap( map, size );
+    if( !s_xkbKeymap ) return;
+
+    if( s_xkbState ) xkb_state_unref( s_xkbState );
+    s_xkbState = xkb_state_new( s_xkbKeymap );
 }
 
 static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf, struct wl_array* keys )
@@ -419,6 +442,7 @@ Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mai
     if( !s_dpy ) { fprintf( stderr, "Cannot establish wayland display connection!\n" ); exit( 1 ); }
 
     wl_registry_add_listener( wl_display_get_registry( s_dpy ), &registryListener, nullptr );
+    s_xkbCtx = xkb_context_new( XKB_CONTEXT_NO_FLAGS );
     wl_display_roundtrip( s_dpy );
 
     if( !s_comp ) { fprintf( stderr, "No wayland compositor!\n" ); exit( 1 ); }
@@ -512,6 +536,9 @@ Backend::~Backend()
     xdg_wm_base_destroy( s_wm );
     wl_shm_destroy( s_shm );
     wl_compositor_destroy( s_comp );
+    if( s_xkbState ) xkb_state_unref( s_xkbState );
+    if( s_xkbKeymap ) xkb_keymap_unref( s_xkbKeymap );
+    xkb_context_unref( s_xkbCtx );
     wl_display_disconnect( s_dpy );
 }
 

@@ -47,6 +47,7 @@ static struct xdg_activation_v1* s_activation;
 static struct xdg_activation_token_v1* s_actToken;
 static struct zxdg_decoration_manager_v1* s_decoration;
 static struct zxdg_toplevel_decoration_v1* s_tldec;
+static struct wl_keyboard* s_keyboard;
 
 struct Output
 {
@@ -155,9 +156,45 @@ constexpr struct wl_pointer_listener pointerListener = {
 };
 
 
+static void KeyboardKeymap( void*, struct wl_keyboard* kbd, uint32_t format, int32_t fd, uint32_t size )
+{
+}
+
+static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf, struct wl_array* keys )
+{
+}
+
+static void KeyboardLeave( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf )
+{
+}
+
+static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32_t time, uint32_t key, uint32_t state )
+{
+}
+
+static void KeyboardModifiers( void*, struct wl_keyboard* kbd, uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group )
+{
+}
+
+static void KeyboardRepeatInfo( void*, struct wl_keyboard* kbd, int32_t rate, int32_t delay )
+{
+}
+
+constexpr struct wl_keyboard_listener keyboardListener = {
+    .keymap = KeyboardKeymap,
+    .enter = KeyboardEnter,
+    .leave = KeyboardLeave,
+    .key = KeyboardKey,
+    .modifiers = KeyboardModifiers,
+    .repeat_info = KeyboardRepeatInfo
+};
+
+
 static void SeatCapabilities( void*, struct wl_seat* seat, uint32_t caps )
 {
     const bool hasPointer = caps & WL_SEAT_CAPABILITY_POINTER;
+    const bool hasKeyboard = caps & WL_SEAT_CAPABILITY_KEYBOARD;
+
     if( hasPointer && !s_pointer )
     {
         s_pointer = wl_seat_get_pointer( s_seat );
@@ -167,6 +204,17 @@ static void SeatCapabilities( void*, struct wl_seat* seat, uint32_t caps )
     {
         wl_pointer_release( s_pointer );
         s_pointer = nullptr;
+    }
+
+    if( hasKeyboard && !s_keyboard )
+    {
+        s_keyboard = wl_seat_get_keyboard( s_seat );
+        wl_keyboard_add_listener( s_keyboard, &keyboardListener, nullptr );
+    }
+    else if( !hasKeyboard && s_keyboard )
+    {
+        wl_keyboard_release( s_keyboard );
+        s_keyboard = nullptr;
     }
 }
 
@@ -446,6 +494,7 @@ Backend::~Backend()
     if( s_decoration ) zxdg_decoration_manager_v1_destroy( s_decoration );
     if( s_actToken ) xdg_activation_token_v1_destroy( s_actToken );
     if( s_activation ) xdg_activation_v1_destroy( s_activation );
+    if( s_keyboard ) wl_keyboard_destroy( s_keyboard );
     if( s_pointer ) wl_pointer_destroy( s_pointer );
     eglMakeCurrent( s_eglDpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
     eglDestroySurface( s_eglDpy, s_eglSurf );

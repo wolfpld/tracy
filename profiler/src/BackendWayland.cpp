@@ -64,6 +64,7 @@ static uint64_t s_time;
 
 static wl_fixed_t s_wheelAxisX, s_wheelAxisY;
 static bool s_wheel;
+static bool s_wheelPrecise;
 
 static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
 {
@@ -113,6 +114,7 @@ static void PointerAxis( void*, struct wl_pointer* pointer, uint32_t time, uint3
 
 static void PointerAxisSource( void*, struct wl_pointer* pointer, uint32_t source )
 {
+    if( source == WL_POINTER_AXIS_SOURCE_FINGER ) s_wheelPrecise = true;
 }
 
 static void PointerAxisStop( void*, struct wl_pointer* pointer, uint32_t time, uint32_t axis )
@@ -128,6 +130,12 @@ static void PointerFrame( void*, struct wl_pointer* pointer )
     if( s_wheel )
     {
         s_wheel = false;
+        if( s_wheelPrecise )
+        {
+            s_wheelAxisX /= 8;
+            s_wheelAxisY /= 8;
+            s_wheelPrecise = false;
+        }
         ImGuiIO& io = ImGui::GetIO();
         io.AddMouseWheelEvent( wl_fixed_to_double( s_wheelAxisX * s_maxScale ), wl_fixed_to_double( s_wheelAxisY * s_maxScale ) );
         s_wheelAxisX = s_wheelAxisY = 0;

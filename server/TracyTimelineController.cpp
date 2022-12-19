@@ -32,13 +32,9 @@ void TimelineController::End( double pxns, int offset, const ImVec2& wpos, bool 
     }
 
     const auto scrollPos = ImGui::GetScrollY();
-    if( scrollPos == 0 && m_scroll != 0 )
+    if( ( scrollPos == 0 && m_scroll != 0 ) || offset > m_height )
     {
-        m_height = 0;
-    }
-    else
-    {
-        if( offset > m_height ) m_height = offset;
+        m_height = offset;
     }
     m_scroll = scrollPos;
 }

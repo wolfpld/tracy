@@ -103,11 +103,11 @@ static void PointerAxis( void*, struct wl_pointer* pointer, uint32_t time, uint3
     s_wheel = true;
     if( axis == WL_POINTER_AXIS_HORIZONTAL_SCROLL )
     {
-        s_wheelAxisX += value;
+        s_wheelAxisX -= value;
     }
     else
     {
-        s_wheelAxisY += value;
+        s_wheelAxisY -= value;
     }
 }
 

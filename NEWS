@@ -15,6 +15,14 @@ v0.x.x (xxxx-xx-xx)
   - TracyFunction - defaults to __FUNCTION__
   - TracyFile - defaults to __FILE__
   - TracyLine - defaults to __LINE__
+- Tracy on Linux now targets and requires Wayland by default.
+  - Please don't ask about window decorations on Gnome. Current behavior is
+    the intended behavior. Gnome does not want windows to have decorations,
+    and Tracy respects this choice. If you find this problematic, use a
+    desktop environment that actually listens to its users.
+  - Pass LEGACY=1 parameter to make, if you want to instead rely on the GLFW
+    library, like before.
+  - Other platforms still use GLFW.
 
 
 v0.9.0 (2022-10-26)

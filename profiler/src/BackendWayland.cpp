@@ -90,8 +90,8 @@ static void PointerButton( void*, struct wl_pointer* pointer, uint32_t serial, u
     switch( button )
     {
     case BTN_LEFT: b = 0; break;
-    case BTN_MIDDLE: b = 1; break;
-    case BTN_RIGHT: b = 2; break;
+    case BTN_MIDDLE: b = 2; break;
+    case BTN_RIGHT: b = 1; break;
     default: return;
     }
     ImGuiIO& io = ImGui::GetIO();

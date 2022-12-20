@@ -210,12 +210,43 @@ static void KeyboardLeave( void*, struct wl_keyboard* kbd, uint32_t serial, stru
     ImGui::GetIO().AddFocusEvent( false );
 }
 
+static xkb_keysym_t Compose( const xkb_keysym_t sym )
+{
+    if( sym == XKB_KEY_NoSymbol ) return sym;
+    if( xkb_compose_state_feed( s_xkbComposeState, sym ) != XKB_COMPOSE_FEED_ACCEPTED ) return sym;
+    switch( xkb_compose_state_get_status( s_xkbComposeState ) )
+    {
+    case XKB_COMPOSE_COMPOSED:
+        return xkb_compose_state_get_one_sym( s_xkbComposeState );
+    case XKB_COMPOSE_COMPOSING:
+    case XKB_COMPOSE_CANCELLED:
+        return XKB_KEY_NoSymbol;
+    case XKB_COMPOSE_NOTHING:
+    default:
+        return sym;
+    }
+}
+
 static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32_t time, uint32_t key, uint32_t state )
 {
+    if( state == WL_KEYBOARD_KEY_STATE_PRESSED )
+    {
+        const xkb_keysym_t* keysyms;
+        if( xkb_state_key_get_syms( s_xkbState, key + 8, &keysyms ) == 1 )
+        {
+            const auto sym = Compose( keysyms[0] );
+            char txt[8];
+            if( xkb_keysym_to_utf8( sym, txt, sizeof( txt ) ) > 0 )
+            {
+                ImGui::GetIO().AddInputCharactersUTF8( txt );
+            }
+        }
+    }
 }
 
 static void KeyboardModifiers( void*, struct wl_keyboard* kbd, uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group )
 {
+    xkb_state_update_mask( s_xkbState, mods_depressed, mods_latched, mods_locked, 0, 0, group );
 }
 
 static void KeyboardRepeatInfo( void*, struct wl_keyboard* kbd, int32_t rate, int32_t delay )

@@ -179,10 +179,12 @@ static void KeyboardKeymap( void*, struct wl_keyboard* kbd, uint32_t format, int
 
 static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf, struct wl_array* keys )
 {
+    ImGui::GetIO().AddFocusEvent( true );
 }
 
 static void KeyboardLeave( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf )
 {
+    ImGui::GetIO().AddFocusEvent( false );
 }
 
 static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32_t time, uint32_t key, uint32_t state )

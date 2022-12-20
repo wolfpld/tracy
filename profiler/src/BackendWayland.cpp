@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbcommon-compose.h>
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
@@ -54,6 +55,8 @@ static struct wl_keyboard* s_keyboard;
 static struct xkb_context* s_xkbCtx;
 static struct xkb_keymap* s_xkbKeymap;
 static struct xkb_state* s_xkbState;
+static struct xkb_compose_table* s_xkbComposeTable;
+static struct xkb_compose_state* s_xkbComposeState;
 
 struct Output
 {
@@ -175,6 +178,26 @@ static void KeyboardKeymap( void*, struct wl_keyboard* kbd, uint32_t format, int
 
     if( s_xkbState ) xkb_state_unref( s_xkbState );
     s_xkbState = xkb_state_new( s_xkbKeymap );
+
+    const char* locale = getenv( "LC_ALL" );
+    if( !locale )
+    {
+        locale = getenv( "LC_CTYPE" );
+        if( !locale )
+        {
+            locale = getenv( "LANG" );
+            if( !locale )
+            {
+                locale = "C";
+            }
+        }
+    }
+
+    if( s_xkbComposeTable ) xkb_compose_table_unref( s_xkbComposeTable );
+    s_xkbComposeTable = xkb_compose_table_new_from_locale( s_xkbCtx, locale, XKB_COMPOSE_COMPILE_NO_FLAGS );
+
+    if( s_xkbComposeState ) xkb_compose_state_unref( s_xkbComposeState );
+    s_xkbComposeState = xkb_compose_state_new( s_xkbComposeTable, XKB_COMPOSE_STATE_NO_FLAGS );
 }
 
 static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf, struct wl_array* keys )
@@ -532,6 +555,8 @@ Backend::~Backend()
     xdg_wm_base_destroy( s_wm );
     wl_shm_destroy( s_shm );
     wl_compositor_destroy( s_comp );
+    if( s_xkbComposeState ) xkb_compose_state_unref( s_xkbComposeState );
+    if( s_xkbComposeTable ) xkb_compose_table_unref( s_xkbComposeTable );
     if( s_xkbState ) xkb_state_unref( s_xkbState );
     if( s_xkbKeymap ) xkb_keymap_unref( s_xkbKeymap );
     xkb_context_unref( s_xkbCtx );

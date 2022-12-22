@@ -1415,7 +1415,9 @@ void Profiler::SpawnWorkerThreads()
 
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
+#  ifdef TRACY_HAS_CALLSTACK
     s_symbolThreadId = GetThreadId( s_symbolThread->Handle() );
+#  endif
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 

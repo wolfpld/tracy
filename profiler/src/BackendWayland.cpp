@@ -188,6 +188,7 @@ static struct xkb_keymap* s_xkbKeymap;
 static struct xkb_state* s_xkbState;
 static struct xkb_compose_table* s_xkbComposeTable;
 static struct xkb_compose_state* s_xkbComposeState;
+static xkb_mod_index_t s_xkbCtrl, s_xkbAlt, s_xkbShift, s_xkbSuper;
 
 struct Output
 {
@@ -329,6 +330,11 @@ static void KeyboardKeymap( void*, struct wl_keyboard* kbd, uint32_t format, int
 
     if( s_xkbComposeState ) xkb_compose_state_unref( s_xkbComposeState );
     s_xkbComposeState = xkb_compose_state_new( s_xkbComposeTable, XKB_COMPOSE_STATE_NO_FLAGS );
+
+    s_xkbCtrl = xkb_keymap_mod_get_index( s_xkbKeymap, "Control" );
+    s_xkbAlt = xkb_keymap_mod_get_index( s_xkbKeymap, "Mod1" );
+    s_xkbShift = xkb_keymap_mod_get_index( s_xkbKeymap, "Shift" );
+    s_xkbSuper = xkb_keymap_mod_get_index( s_xkbKeymap, "Mod4" );
 }
 
 static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf, struct wl_array* keys )
@@ -384,6 +390,13 @@ static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32
 static void KeyboardModifiers( void*, struct wl_keyboard* kbd, uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched, uint32_t mods_locked, uint32_t group )
 {
     xkb_state_update_mask( s_xkbState, mods_depressed, mods_latched, mods_locked, 0, 0, group );
+
+    auto& io = ImGui::GetIO();
+
+    io.AddKeyEvent( ImGuiMod_Ctrl, xkb_state_mod_index_is_active( s_xkbState, s_xkbCtrl, XKB_STATE_MODS_EFFECTIVE ) );
+    io.AddKeyEvent( ImGuiMod_Shift, xkb_state_mod_index_is_active( s_xkbState, s_xkbShift, XKB_STATE_MODS_EFFECTIVE ) );
+    io.AddKeyEvent( ImGuiMod_Alt, xkb_state_mod_index_is_active( s_xkbState, s_xkbAlt, XKB_STATE_MODS_EFFECTIVE ) );
+    io.AddKeyEvent( ImGuiMod_Super, xkb_state_mod_index_is_active( s_xkbState, s_xkbSuper, XKB_STATE_MODS_EFFECTIVE ) );
 }
 
 static void KeyboardRepeatInfo( void*, struct wl_keyboard* kbd, int32_t rate, int32_t delay )

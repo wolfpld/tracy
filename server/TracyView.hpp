@@ -741,6 +741,9 @@ private:
         int64_t total[2];
         int minBinVal = 1;
         int compareMode = 0;
+        bool diffDone = false;
+        std::vector<const char*> thisUnique;
+        std::vector<const char*> secondUnique;
 
         void ResetSelection()
         {
@@ -762,6 +765,9 @@ private:
                 match[i].clear();
                 selMatch[i] = 0;
             }
+            diffDone = false;
+            thisUnique.clear();
+            secondUnique.clear();
         }
     } m_compare;
 

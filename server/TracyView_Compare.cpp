@@ -254,6 +254,40 @@ void View::DrawCompare()
     {
         ImGui::Separator();
         ImGui::BeginChild( "##compare" );
+
+        if( !m_compare.diffDone )
+        {
+            m_compare.diffDone = true;
+
+            const auto& tfc = m_worker.GetSourceFileCache();
+            const auto& ofc = m_compare.second->GetSourceFileCache();
+
+            if( !tfc.empty() && !ofc.empty() )
+            {
+                for( auto& tv : tfc )
+                {
+                    auto it = ofc.find( tv.first );
+                    if( it == ofc.end() )
+                    {
+                        m_compare.thisUnique.emplace_back( tv.first );
+                    }
+                    else if( tv.second.len != it->second.len || memcmp( tv.second.data, it->second.data, tv.second.len ) != 0 )
+                    {
+                    }
+                }
+                for( auto& ov : ofc )
+                {
+                    auto it = tfc.find( ov.first );
+                    if( it == tfc.end() )
+                    {
+                        m_compare.secondUnique.emplace_back( ov.first );
+                    }
+                }
+
+                std::sort( m_compare.thisUnique.begin(), m_compare.thisUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+                std::sort( m_compare.secondUnique.begin(), m_compare.secondUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+            }
+        }
     }
     else
     {

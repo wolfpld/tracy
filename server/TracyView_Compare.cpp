@@ -1,4 +1,7 @@
 #include <numeric>
+#include <sstream>
+
+#include "../dtl/dtl.hpp"
 
 #include "TracyImGui.hpp"
 #include "TracyFileRead.hpp"
@@ -299,6 +302,14 @@ void View::DrawCompare()
                     }
                     else if( tv.second.len != it->second.len || memcmp( tv.second.data, it->second.data, tv.second.len ) != 0 )
                     {
+                        auto src0 = SplitLines( tv.second.data, tv.second.len );
+                        auto src1 = SplitLines( it->second.data, it->second.len );
+                        dtl::Diff<std::string, std::vector<std::string>> diff { src0, src1 };
+                        diff.compose();
+                        diff.composeUnifiedHunks();
+                        std::ostringstream stream;
+                        diff.printUnifiedFormat( stream );
+                        m_compare.diffs.emplace_back( std::make_pair( tv.first, stream.str() ) );
                     }
                 }
                 for( auto& ov : ofc )
@@ -312,6 +323,7 @@ void View::DrawCompare()
 
                 std::sort( m_compare.thisUnique.begin(), m_compare.thisUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
                 std::sort( m_compare.secondUnique.begin(), m_compare.secondUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+                std::sort( m_compare.diffs.begin(), m_compare.diffs.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs.first, rhs.first ) < 0; } );
             }
         }
     }

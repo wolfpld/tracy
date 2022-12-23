@@ -744,6 +744,7 @@ private:
         bool diffDone = false;
         std::vector<const char*> thisUnique;
         std::vector<const char*> secondUnique;
+        std::vector<std::pair<const char*, std::string>> diffs;
 
         void ResetSelection()
         {
@@ -768,6 +769,7 @@ private:
             diffDone = false;
             thisUnique.clear();
             secondUnique.clear();
+            diffs.clear();
         }
     } m_compare;
 

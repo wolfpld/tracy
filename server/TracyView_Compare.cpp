@@ -131,6 +131,32 @@ bool View::FindMatchingZone( int prev0, int prev1, int flags )
     return found;
 }
 
+static std::vector<std::string> SplitLines( const char* data, size_t sz )
+{
+    std::vector<std::string> ret;
+    auto txt = data;
+    for(;;)
+    {
+        auto end = txt;
+        while( *end != '\n' && *end != '\r' && end - data < sz ) end++;
+        ret.emplace_back( std::string { txt, end } );
+        if( end - data == sz ) break;
+        if( *end == '\n' )
+        {
+            end++;
+            if( end - data < sz && *end == '\r' ) end++;
+        }
+        else if( *end == '\r' )
+        {
+            end++;
+            if( end - data < sz && *end == '\n' ) end++;
+        }
+        if( end - data == sz ) break;
+        txt = end;
+    }
+    return ret;
+}
+
 void View::DrawCompare()
 {
     const auto scale = GetScale();

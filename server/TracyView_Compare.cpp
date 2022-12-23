@@ -372,7 +372,9 @@ void View::DrawCompare()
                             auto it = tfc.find( v );
                             assert( it != tfc.end() );
                             ImGui::PushFont( m_fixedFont );
+                            ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintFile( it->second.data, it->second.len, 0xFF6666FF );
+                            ImGui::PopStyleVar();
                             ImGui::PopFont();
                             ImGui::TreePop();
                         }
@@ -394,7 +396,9 @@ void View::DrawCompare()
                             auto it = ofc.find( v );
                             assert( it != ofc.end() );
                             ImGui::PushFont( m_fixedFont );
+                            ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintFile( it->second.data, it->second.len, 0xFF66DD66 );
+                            ImGui::PopStyleVar();
                             ImGui::PopFont();
                             ImGui::TreePop();
                         }
@@ -414,7 +418,9 @@ void View::DrawCompare()
                         if( ImGui::TreeNode( v.first ) )
                         {
                             ImGui::PushFont( m_fixedFont );
+                            ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintDiff( v.second );
+                            ImGui::PopStyleVar();
                             ImGui::PopFont();
                             ImGui::TreePop();
                         }

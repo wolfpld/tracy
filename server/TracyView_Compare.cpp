@@ -309,12 +309,12 @@ void View::DrawCompare()
         ImGui::Separator();
         ImGui::BeginChild( "##compare" );
 
+        const auto& tfc = m_worker.GetSourceFileCache();
+        const auto& ofc = m_compare.second->GetSourceFileCache();
+
         if( !m_compare.diffDone )
         {
             m_compare.diffDone = true;
-
-            const auto& tfc = m_worker.GetSourceFileCache();
-            const auto& ofc = m_compare.second->GetSourceFileCache();
 
             if( !tfc.empty() && !ofc.empty() )
             {
@@ -349,6 +349,79 @@ void View::DrawCompare()
                 std::sort( m_compare.thisUnique.begin(), m_compare.thisUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
                 std::sort( m_compare.secondUnique.begin(), m_compare.secondUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
                 std::sort( m_compare.diffs.begin(), m_compare.diffs.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs.first, rhs.first ) < 0; } );
+            }
+        }
+
+        if( m_compare.thisUnique.empty() && m_compare.secondUnique.empty() && m_compare.diffs.empty() )
+        {
+            ImGui::TextUnformatted( "Source files are identical." );
+        }
+        else
+        {
+            if( !m_compare.thisUnique.empty() )
+            {
+                const auto expand = ImGui::TreeNodeEx( ICON_FA_FILE_CIRCLE_XMARK " Deleted files", ImGuiTreeNodeFlags_DefaultOpen );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( m_compare.thisUnique.size() ) );
+                if( expand )
+                {
+                    for( auto& v : m_compare.thisUnique )
+                    {
+                        if( ImGui::TreeNode( v ) )
+                        {
+                            auto it = tfc.find( v );
+                            assert( it != tfc.end() );
+                            ImGui::PushFont( m_fixedFont );
+                            PrintFile( it->second.data, it->second.len, 0xFF6666FF );
+                            ImGui::PopFont();
+                            ImGui::TreePop();
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+            }
+            if( !m_compare.secondUnique.empty() )
+            {
+                const auto expand = ImGui::TreeNodeEx( ICON_FA_FILE_CIRCLE_PLUS " Added files", ImGuiTreeNodeFlags_DefaultOpen );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( m_compare.secondUnique.size() ) );
+                if( expand )
+                {
+                    for( auto& v : m_compare.secondUnique )
+                    {
+                        if( ImGui::TreeNode( v ) )
+                        {
+                            auto it = ofc.find( v );
+                            assert( it != ofc.end() );
+                            ImGui::PushFont( m_fixedFont );
+                            PrintFile( it->second.data, it->second.len, 0xFF66DD66 );
+                            ImGui::PopFont();
+                            ImGui::TreePop();
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+            }
+            if( !m_compare.diffs.empty() )
+            {
+                const auto expand = ImGui::TreeNodeEx( ICON_FA_FILE_PEN " Changed files", ImGuiTreeNodeFlags_DefaultOpen );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( m_compare.diffs.size() ) );
+                if( expand )
+                {
+                    for( auto& v : m_compare.diffs )
+                    {
+                        if( ImGui::TreeNode( v.first ) )
+                        {
+                            ImGui::PushFont( m_fixedFont );
+                            PrintDiff( v.second );
+                            ImGui::PopFont();
+                            ImGui::TreePop();
+                        }
+                    }
+
+                    ImGui::TreePop();
+                }
             }
         }
     }

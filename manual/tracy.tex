@@ -3318,6 +3318,12 @@ logo=\bclampe
 Set custom trace descriptions (see section~\ref{traceinfo}) to easily differentiate the two loaded traces. If no trace description is set, the name of the profiled program will be displayed along with the capture time.
 \end{bclogo}
 
+\subsubsection{Source files diff}
+
+To see what changes were made in the source code between the two compared traces, select the \emph{Source diff} compare mode. This will display a list of deleted, added, and changed files.
+
+Please note that changes will be registered only if the file has the same name and location in both traces. Tracy does not resolve file renames or moves.
+
 \subsection{Memory window}
 \label{memorywindow}
 

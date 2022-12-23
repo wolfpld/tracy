@@ -158,7 +158,7 @@ void View::DrawCompare()
                         m_compare.loadThread = std::thread( [this, f] {
                             try
                             {
-                                m_compare.second = std::make_unique<Worker>( *f, EventType::None );
+                                m_compare.second = std::make_unique<Worker>( *f, EventType::SourceCache );
                                 m_compare.userData = std::make_unique<UserData>( m_compare.second->GetCaptureProgram().c_str(), m_compare.second->GetCaptureTime() );
                             }
                             catch( const tracy::UnsupportedVersion& e )

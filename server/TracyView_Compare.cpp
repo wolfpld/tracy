@@ -160,6 +160,31 @@ static std::vector<std::string> SplitLines( const char* data, size_t sz )
     return ret;
 }
 
+static void PrintFile( const char* data, size_t sz, uint32_t color )
+{
+    auto lines = SplitLines( data, sz );
+    for( auto& v : lines )
+    {
+        TextColoredUnformatted( color, v.c_str() );
+    }
+}
+
+static void PrintDiff( const std::string& diff )
+{
+    auto lines = SplitLines( diff.data(), diff.size() );
+    for( auto& v : lines )
+    {
+        assert( !v.empty() );
+        switch( v[0] )
+        {
+            case '@': TextColoredUnformatted( 0xFFFFAAAA, v.c_str() ); break;
+            case '-': TextColoredUnformatted( 0xFF6666FF, v.c_str() ); break;
+            case '+': TextColoredUnformatted( 0xFF66DD66, v.c_str() ); break;
+            default:  TextDisabledUnformatted( v.c_str() ); break;
+        }
+    }
+}
+
 void View::DrawCompare()
 {
     const auto scale = GetScale();

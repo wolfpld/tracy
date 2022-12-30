@@ -360,7 +360,7 @@ void View::DrawCompare()
         {
             if( !m_compare.thisUnique.empty() )
             {
-                const auto expand = ImGui::TreeNodeEx( ICON_FA_FILE_CIRCLE_XMARK " Deleted files", ImGuiTreeNodeFlags_DefaultOpen );
+                const auto expand = ImGui::TreeNode( ICON_FA_FILE_CIRCLE_XMARK " Deleted files" );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%s)", RealToString( m_compare.thisUnique.size() ) );
                 if( expand )
@@ -384,7 +384,7 @@ void View::DrawCompare()
             }
             if( !m_compare.secondUnique.empty() )
             {
-                const auto expand = ImGui::TreeNodeEx( ICON_FA_FILE_CIRCLE_PLUS " Added files", ImGuiTreeNodeFlags_DefaultOpen );
+                const auto expand = ImGui::TreeNode( ICON_FA_FILE_CIRCLE_PLUS " Added files" );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%s)", RealToString( m_compare.secondUnique.size() ) );
                 if( expand )

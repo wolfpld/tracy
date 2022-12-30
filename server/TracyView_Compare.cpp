@@ -214,6 +214,7 @@ void View::DrawCompare()
                             {
                                 m_compare.second = std::make_unique<Worker>( *f, EventType::SourceCache );
                                 m_compare.userData = std::make_unique<UserData>( m_compare.second->GetCaptureProgram().c_str(), m_compare.second->GetCaptureTime() );
+                                m_compare.diffDirection = m_worker.GetCaptureTime() < m_compare.second->GetCaptureTime();
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -309,8 +310,25 @@ void View::DrawCompare()
         ImGui::Separator();
         ImGui::BeginChild( "##compare" );
 
-        const auto& tfc = m_worker.GetSourceFileCache();
-        const auto& ofc = m_compare.second->GetSourceFileCache();
+        TextDisabledUnformatted( "Diff direction: " );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
+        ImGui::SameLine();
+        ImGui::Text( " %s ", m_compare.diffDirection ? ICON_FA_ARROW_RIGHT : ICON_FA_ARROW_LEFT );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Switch" ) )
+        {
+            m_compare.diffDirection = !m_compare.diffDirection;
+            m_compare.Reset();
+        }
+        ImGui::Separator();
+
+        ImGui::BeginChild( "##diff" );
+
+        const auto& tfc = m_compare.diffDirection ? m_worker.GetSourceFileCache() : m_compare.second->GetSourceFileCache();
+        const auto& ofc = m_compare.diffDirection ? m_compare.second->GetSourceFileCache() : m_worker.GetSourceFileCache();
 
         if( !m_compare.diffDone )
         {
@@ -430,6 +448,7 @@ void View::DrawCompare()
                 }
             }
         }
+        ImGui::EndChild();
     }
     else
     {

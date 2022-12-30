@@ -742,6 +742,7 @@ private:
         int minBinVal = 1;
         int compareMode = 0;
         bool diffDone = false;
+        bool diffDirection;
         std::vector<const char*> thisUnique;
         std::vector<const char*> secondUnique;
         std::vector<std::pair<const char*, std::string>> diffs;

@@ -5564,7 +5564,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
         {
             symName = worker.GetString( sym->name );
         }
-        fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram().c_str() );
+        fprintf( f, "# Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram().c_str() );
         if( !m_atnt ) fprintf( f, ".intel_syntax\n\n" );
 
         const auto end = m_asm.size() < stop ? m_asm.size() : stop;

@@ -263,6 +263,7 @@ private:
 
     uint32_t m_maxLine;
     int m_maxMnemonicLen;
+    int m_maxOperandLen;
 
     unordered_flat_map<const char*, int, charutil::Hasher, charutil::Comparator> m_microArchOpMap;
     CpuArchitecture m_cpuArch;

@@ -714,6 +714,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         if( insn[cnt-1].address - symAddr + insn[cnt-1].size < len ) m_disasmFail = insn[cnt-1].address - symAddr;
         int bytesMax = 0;
         int mLenMax = 0;
+        int oLenMax = 0;
         m_asm.reserve( cnt );
         for( size_t i=0; i<cnt; i++ )
         {
@@ -944,6 +945,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 
             const auto mLen = (int)strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
+            const auto oLen = (int)strlen( op.op_str );
+            if( oLen > oLenMax ) oLenMax = oLen;
             if( op.size > bytesMax ) bytesMax = op.size;
 
             uint32_t mLineMax = 0;
@@ -962,6 +965,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         }
         cs_free( insn, cnt );
         m_maxMnemonicLen = mLenMax + 1;
+        m_maxOperandLen = oLenMax + 1;
         m_maxAsmBytes = bytesMax;
         if( !m_jumpTable.empty() )
         {

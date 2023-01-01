@@ -5581,12 +5581,13 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
                 fprintf( f, ".L%" PRIu32 ":\n", it->second );
             }
             bool hasJump = false;
+            int psz = 0;
             if( v.jumpAddr != 0 )
             {
                 auto lit = m_locMap.find( v.jumpAddr );
                 if( lit != m_locMap.end() )
                 {
-                    fprintf( f, "\t%-*s.L%" PRIu32 "\n", m_maxMnemonicLen, v.mnemonic.c_str(), lit->second );
+                    psz = fprintf( f, "\t%-*s.L%" PRIu32, m_maxMnemonicLen, v.mnemonic.c_str(), lit->second );
                     hasJump = true;
                 }
             }
@@ -5594,12 +5595,24 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             {
                 if( v.operands.empty() )
                 {
-                    fprintf( f, "\t%s\n", v.mnemonic.c_str() );
+                    psz = fprintf( f, "\t%s", v.mnemonic.c_str() );
                 }
                 else
                 {
-                    fprintf( f, "\t%-*s%s\n", m_maxMnemonicLen, v.mnemonic.c_str(), v.operands.c_str() );
+                    psz = fprintf( f, "\t%-*s%s", m_maxMnemonicLen, v.mnemonic.c_str(), v.operands.c_str() );
                 }
+            }
+            uint32_t srcline;
+            const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
+            if( srcline != 0 && psz > 0 )
+            {
+                int spaces = std::max( m_maxMnemonicLen + m_maxOperandLen - psz, 0 ) + 1;
+                while( spaces-- ) fputc( ' ', f );
+                fprintf( f, "# %s:%i\n", worker.GetString( srcidx ), srcline );
+            }
+            else
+            {
+                fputc( '\n', f );
             }
         }
         fclose( f );

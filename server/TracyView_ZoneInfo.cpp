@@ -1239,8 +1239,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
             if( expandGroup )
             {
-                auto ctt = std::make_unique<uint64_t[]>( cgr.v.size() );
-                auto cti = std::make_unique<uint32_t[]>( cgr.v.size() );
+                auto ctt = std::unique_ptr<uint64_t[]>( new uint64_t[cgr.v.size()] );
+                auto cti = std::unique_ptr<uint32_t[]>( new uint32_t[cgr.v.size()] );
                 for( size_t i=0; i<cgr.v.size(); i++ )
                 {
                     const auto& child = a(children[cgr.v[i]]);
@@ -1293,8 +1293,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
     }
     else
     {
-        auto ctt = std::make_unique<uint64_t[]>( children.size() );
-        auto cti = std::make_unique<uint32_t[]>( children.size() );
+        auto ctt = std::unique_ptr<uint64_t[]>( new uint64_t[children.size()] );
+        auto cti = std::unique_ptr<uint32_t[]>( new uint32_t[children.size()] );
         uint64_t ctime = 0;
         for( size_t i=0; i<children.size(); i++ )
         {
@@ -1691,8 +1691,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
             if( expandGroup )
             {
-                auto ctt = std::make_unique<uint64_t[]>( cgr.v.size() );
-                auto cti = std::make_unique<uint32_t[]>( cgr.v.size() );
+                auto ctt = std::unique_ptr<uint64_t[]>( new uint64_t[cgr.v.size()] );
+                auto cti = std::unique_ptr<uint32_t[]>( new uint32_t[cgr.v.size()] );
                 for( size_t i=0; i<cgr.v.size(); i++ )
                 {
                     const auto& child = a(children[cgr.v[i]]);
@@ -1740,8 +1740,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
     }
     else
     {
-        auto ctt = std::make_unique<uint64_t[]>( children.size() );
-        auto cti = std::make_unique<uint32_t[]>( children.size() );
+        auto ctt = std::unique_ptr<uint64_t[]>( new uint64_t[children.size()] );
+        auto cti = std::unique_ptr<uint32_t[]>( new uint32_t[children.size()] );
         uint64_t ctime = 0;
         for( size_t i=0; i<children.size(); i++ )
         {

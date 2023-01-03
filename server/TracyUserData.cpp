@@ -40,7 +40,7 @@ UserData::UserData( const char* program, uint64_t time )
         fseek( f, 0, SEEK_END );
         const auto sz = ftell( f );
         fseek( f, 0, SEEK_SET );
-        auto buf = std::make_unique<char[]>( sz );
+        auto buf = std::unique_ptr<char[]>( new char[sz] );
         fread( buf.get(), 1, sz, f );
         fclose( f );
         m_description.assign( buf.get(), buf.get() + sz );

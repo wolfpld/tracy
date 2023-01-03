@@ -2722,7 +2722,7 @@ const unordered_flat_map<CallstackFrameId, uint32_t, Worker::CallstackFrameIdHas
 void Worker::Network()
 {
     auto ShouldExit = [this] { return m_shutdown.load( std::memory_order_relaxed ); };
-    auto lz4buf = std::make_unique<char[]>( LZ4Size );
+    auto lz4buf = std::unique_ptr<char[]>( new char[LZ4Size] );
 
     for(;;)
     {

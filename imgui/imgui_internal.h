@@ -1,4 +1,4 @@
-// dear imgui, v1.89 WIP
+// dear imgui, v1.89.2
 // (internal structures/api)
 
 // You may use this file to debug, understand or extend ImGui features but we don't provide any guarantee of forward compatibility!
@@ -26,6 +26,7 @@ Index of this file:
 // [SECTION] Docking support
 // [SECTION] Viewport support
 // [SECTION] Settings support
+// [SECTION] Localization support
 // [SECTION] Metrics, Debug tools
 // [SECTION] Generic context hooks
 // [SECTION] ImGuiContext (main imgui context)
@@ -55,7 +56,7 @@ Index of this file:
 #include <limits.h>     // INT_MIN, INT_MAX
 
 // Enable SSE intrinsics if available
-#if (defined __SSE__ || defined __x86_64__ || defined _M_X64) && !defined(IMGUI_DISABLE_SSE)
+#if (defined __SSE__ || defined __x86_64__ || defined _M_X64 || (defined(_M_IX86_FP) && (_M_IX86_FP >= 1))) && !defined(IMGUI_DISABLE_SSE)
 #define IMGUI_ENABLE_SSE
 #include <immintrin.h>
 #endif
@@ -125,6 +126,7 @@ struct ImGuiDockNodeSettings;       // Storage for a dock node in .ini file (we 
 struct ImGuiGroupData;              // Stacked storage data for BeginGroup()/EndGroup()
 struct ImGuiInputTextState;         // Internal state of the currently focused/edited text input box
 struct ImGuiLastItemData;           // Status storage for last submitted items
+struct ImGuiLocEntry;               // A localization entry.
 struct ImGuiMenuColumns;            // Simple column measurement, currently used for MenuItem() only
 struct ImGuiNavItemData;            // Result of a gamepad/keyboard directional navigation move query result
 struct ImGuiMetricsConfig;          // Storage for ShowMetricsWindow() and DebugNodeXXX() functions
@@ -148,9 +150,13 @@ struct ImGuiWindow;                 // Storage for one window
 struct ImGuiWindowTempData;         // Temporary storage for one window (that's the data which in theory we could ditch at the end of the frame, in practice we currently keep it for each window)
 struct ImGuiWindowSettings;         // Storage for a window .ini settings (we keep one of those even if the actual window wasn't instanced during this session)
 
+// Enumerations
 // Use your programming IDE "Go to definition" facility on the names of the center columns to find the actual flags/enum lists.
+enum ImGuiLocKey : int;                 // -> enum ImGuiLocKey              // Enum: a localization entry for translation.
 typedef int ImGuiDataAuthority;         // -> enum ImGuiDataAuthority_      // Enum: for storing the source authority (dock node vs window) of a field
 typedef int ImGuiLayoutType;            // -> enum ImGuiLayoutType_         // Enum: Horizontal or vertical
+
+// Flags
 typedef int ImGuiActivateFlags;         // -> enum ImGuiActivateFlags_      // Flags: for navigation/focus function (will be for ActivateItem() later)
 typedef int ImGuiDebugLogFlags;         // -> enum ImGuiDebugLogFlags_      // Flags: for ShowDebugLogWindow(), g.DebugLogFlags
 typedef int ImGuiInputFlags;            // -> enum ImGuiInputFlags_         // Flags: for IsKeyPressed(), IsMouseClicked(), SetKeyOwner(), SetItemKeyOwner() etc.
@@ -208,12 +214,16 @@ namespace ImStb
 #ifndef IMGUI_DISABLE_DEFAULT_FORMAT_FUNCTIONS
 #define IMGUI_DEBUG_PRINTF(_FMT,...)    printf(_FMT, __VA_ARGS__)
 #else
-#define IMGUI_DEBUG_PRINTF(_FMT,...)
+#define IMGUI_DEBUG_PRINTF(_FMT,...)    ((void)0)
 #endif
 #endif
 
 // Debug Logging for ShowDebugLogWindow(). This is designed for relatively rare events so please don't spam.
+#ifndef IMGUI_DISABLE_DEBUG_TOOLS
 #define IMGUI_DEBUG_LOG(...)            ImGui::DebugLog(__VA_ARGS__)
+#else
+#define IMGUI_DEBUG_LOG(...)            ((void)0)
+#endif
 #define IMGUI_DEBUG_LOG_ACTIVEID(...)   do { if (g.DebugLogFlags & ImGuiDebugLogFlags_EventActiveId) IMGUI_DEBUG_LOG(__VA_ARGS__); } while (0)
 #define IMGUI_DEBUG_LOG_FOCUS(...)      do { if (g.DebugLogFlags & ImGuiDebugLogFlags_EventFocus)    IMGUI_DEBUG_LOG(__VA_ARGS__); } while (0)
 #define IMGUI_DEBUG_LOG_POPUP(...)      do { if (g.DebugLogFlags & ImGuiDebugLogFlags_EventPopup)    IMGUI_DEBUG_LOG(__VA_ARGS__); } while (0)
@@ -477,6 +487,7 @@ static inline ImVec2 ImRotate(const ImVec2& v, float cos_a, float sin_a)        
 static inline float  ImLinearSweep(float current, float target, float speed)    { if (current < target) return ImMin(current + speed, target); if (current > target) return ImMax(current - speed, target); return current; }
 static inline ImVec2 ImMul(const ImVec2& lhs, const ImVec2& rhs)                { return ImVec2(lhs.x * rhs.x, lhs.y * rhs.y); }
 static inline bool   ImIsFloatAboveGuaranteedIntegerPrecision(float f)          { return f <= -16777216 || f >= 16777216; }
+static inline float  ImExponentialMovingAverage(float avg, float sample, int n) { avg -= avg / n; avg += sample / n; return avg; }
 IM_MSVC_RUNTIME_CHECKS_RESTORE
 
 // Helpers: Geometry
@@ -890,10 +901,9 @@ enum ImGuiSelectableFlagsPrivate_
     ImGuiSelectableFlags_SelectOnClick          = 1 << 22,  // Override button behavior to react on Click (default is Click+Release)
     ImGuiSelectableFlags_SelectOnRelease        = 1 << 23,  // Override button behavior to react on Release (default is Click+Release)
     ImGuiSelectableFlags_SpanAvailWidth         = 1 << 24,  // Span all avail width even if we declared less for layout purpose. FIXME: We may be able to remove this (added in 6251d379, 2bcafc86 for menus)
-    ImGuiSelectableFlags_DrawHoveredWhenHeld    = 1 << 25,  // Always show active when held, even is not hovered. This concept could probably be renamed/formalized somehow.
-    ImGuiSelectableFlags_SetNavIdOnHover        = 1 << 26,  // Set Nav/Focus ID on mouse hover (used by MenuItem)
-    ImGuiSelectableFlags_NoPadWithHalfSpacing   = 1 << 27,  // Disable padding each side with ItemSpacing * 0.5f
-    ImGuiSelectableFlags_NoSetKeyOwner          = 1 << 28,  // Don't set key/input owner on the initial click (note: mouse buttons are keys! often, the key in question will be ImGuiKey_MouseLeft!)
+    ImGuiSelectableFlags_SetNavIdOnHover        = 1 << 25,  // Set Nav/Focus ID on mouse hover (used by MenuItem)
+    ImGuiSelectableFlags_NoPadWithHalfSpacing   = 1 << 26,  // Disable padding each side with ItemSpacing * 0.5f
+    ImGuiSelectableFlags_NoSetKeyOwner          = 1 << 27,  // Don't set key/input owner on the initial click (note: mouse buttons are keys! often, the key in question will be ImGuiKey_MouseLeft!)
 };
 
 // Extend ImGuiTreeNodeFlags_
@@ -1050,6 +1060,7 @@ struct IMGUI_API ImGuiMenuColumns
 // For a given item ID, access with ImGui::GetInputTextState()
 struct IMGUI_API ImGuiInputTextState
 {
+    ImGuiContext*           Ctx;                    // parent dear imgui context
     ImGuiID                 ID;                     // widget id owning the text state
     int                     CurLenW, CurLenA;       // we need to maintain our buffer length in both UTF-8 and wchar format. UTF-8 length is valid even if TextA is not.
     ImVector<ImWchar>       TextW;                  // edit buffer, we need to persist but can't guarantee the persistence of the user-provided buffer. so we copy into own buffer.
@@ -1065,7 +1076,7 @@ struct IMGUI_API ImGuiInputTextState
     bool                    Edited;                 // edited this frame
     ImGuiInputTextFlags     Flags;                  // copy of InputText() flags. may be used to check if e.g. ImGuiInputTextFlags_Password is set.
 
-    ImGuiInputTextState()                   { memset(this, 0, sizeof(*this)); }
+    ImGuiInputTextState(ImGuiContext* ctx)  { memset(this, 0, sizeof(*this)); Ctx = ctx;}
     void        ClearText()                 { CurLenW = CurLenA = 0; TextW[0] = 0; TextA[0] = 0; CursorClamp(); }
     void        ClearFreeMemory()           { TextW.clear(); TextA.clear(); InitialTextA.clear(); }
     int         GetUndoAvailCount() const   { return Stb.undostate.undo_point; }
@@ -1228,8 +1239,10 @@ typedef ImBitArray<ImGuiKey_NamedKey_COUNT, -ImGuiKey_NamedKey_BEGIN>    ImBitAr
 #define ImGuiKey_Keyboard_END           (ImGuiKey_GamepadStart)
 #define ImGuiKey_Gamepad_BEGIN          (ImGuiKey_GamepadStart)
 #define ImGuiKey_Gamepad_END            (ImGuiKey_GamepadRStickDown + 1)
-#define ImGuiKey_Aliases_BEGIN          (ImGuiKey_MouseLeft)
-#define ImGuiKey_Aliases_END            (ImGuiKey_MouseWheelY + 1)
+#define ImGuiKey_Mouse_BEGIN            (ImGuiKey_MouseLeft)
+#define ImGuiKey_Mouse_END              (ImGuiKey_MouseWheelY + 1)
+#define ImGuiKey_Aliases_BEGIN          (ImGuiKey_Mouse_BEGIN)
+#define ImGuiKey_Aliases_END            (ImGuiKey_Mouse_END)
 
 // [Internal] Named shortcuts for Navigation
 #define ImGuiKey_NavKeyboardTweakSlow   ImGuiMod_Ctrl
@@ -1295,7 +1308,7 @@ struct ImGuiInputEvent
 };
 
 // Input function taking an 'ImGuiID owner_id' argument defaults to (ImGuiKeyOwner_Any == 0) aka don't test ownership, which matches legacy behavior.
-#define ImGuiKeyOwner_Any           ((ImGuiID)0)    // Accept key that have an owner, UNLESS a call to SetKeyOwner() explicitely used ImGuiInputFlags_LockThisFrame or ImGuiInputFlags_LockUntilRelease.
+#define ImGuiKeyOwner_Any           ((ImGuiID)0)    // Accept key that have an owner, UNLESS a call to SetKeyOwner() explicitly used ImGuiInputFlags_LockThisFrame or ImGuiInputFlags_LockUntilRelease.
 #define ImGuiKeyOwner_None          ((ImGuiID)-1)   // Require key to have no owner.
 
 typedef ImS16 ImGuiKeyRoutingIndex;
@@ -1304,15 +1317,15 @@ typedef ImS16 ImGuiKeyRoutingIndex;
 struct ImGuiKeyRoutingData
 {
     ImGuiKeyRoutingIndex            NextEntryIndex;
-    ImU16                           Mods;
-    ImU8                            RoutingNextScore;               // Lower is better (0: perfect score)
+    ImU16                           Mods;               // Technically we'd only need 4-bits but for simplify we store ImGuiMod_ values which need 16-bits. ImGuiMod_Shortcut is already translated to Ctrl/Super.
+    ImU8                            RoutingNextScore;   // Lower is better (0: perfect score)
     ImGuiID                         RoutingCurr;
     ImGuiID                         RoutingNext;
 
     ImGuiKeyRoutingData()           { NextEntryIndex = -1; Mods = 0; RoutingNextScore = 255; RoutingCurr = RoutingNext = ImGuiKeyOwner_None; }
 };
 
-// Routing table maintain a desired owner for each possible key-chord (key + mods), and setup owner in NewFrame() when mods are matching.
+// Routing table: maintain a desired owner for each possible key-chord (key + mods), and setup owner in NewFrame() when mods are matching.
 // Stored in main context (1 instance)
 struct ImGuiKeyRoutingTable
 {
@@ -1324,8 +1337,8 @@ struct ImGuiKeyRoutingTable
     void Clear()                    { for (int n = 0; n < IM_ARRAYSIZE(Index); n++) Index[n] = -1; Entries.clear(); EntriesNext.clear(); }
 };
 
-// This extend ImGuiKeyData but only for named keys (legacy keys don't support the new features)
-// Stored in main context (1 per named key). In the future might be merged into ImGuiKeyData.
+// This extends ImGuiKeyData but only for named keys (legacy keys don't support the new features)
+// Stored in main context (1 per named key). In the future it might be merged into ImGuiKeyData.
 struct ImGuiKeyOwnerData
 {
     ImGuiID     OwnerCurr;
@@ -1355,8 +1368,8 @@ enum ImGuiInputFlags_
     ImGuiInputFlags_CondMask_           = ImGuiInputFlags_CondHovered | ImGuiInputFlags_CondActive,
 
     // Flags for SetKeyOwner(), SetItemKeyOwner()
-    ImGuiInputFlags_LockThisFrame       = 1 << 6,   // Access to key data will requires EXPLICIT owner ID (ImGuiKeyOwner_Any/0 will NOT accepted for polling). Cleared at end of frame. This is useful to make input-owner-aware code steal keys from non-input-owner-aware code.
-    ImGuiInputFlags_LockUntilRelease    = 1 << 7,   // Access to key data will requires EXPLICIT owner ID (ImGuiKeyOwner_Any/0 will NOT accepted for polling). Cleared when key is released or at end of frame is not down. This is useful to make input-owner-aware code steal keys from non-input-owner-aware code.
+    ImGuiInputFlags_LockThisFrame       = 1 << 6,   // Access to key data will require EXPLICIT owner ID (ImGuiKeyOwner_Any/0 will NOT accepted for polling). Cleared at end of frame. This is useful to make input-owner-aware code steal keys from non-input-owner-aware code.
+    ImGuiInputFlags_LockUntilRelease    = 1 << 7,   // Access to key data will require EXPLICIT owner ID (ImGuiKeyOwner_Any/0 will NOT accepted for polling). Cleared when the key is released or at end of each frame if key is released. This is useful to make input-owner-aware code steal keys from non-input-owner-aware code.
 
     // Routing policies for Shortcut() + low-level SetShortcutRouting()
     // - The general idea is that several callers register interest in a shortcut, and only one owner gets it.
@@ -1713,7 +1726,6 @@ struct ImGuiViewportP : public ImGuiViewport
     float               Alpha;                  // Window opacity (when dragging dockable windows/viewports we make them transparent)
     float               LastAlpha;
     short               PlatformMonitor;
-    bool                PlatformWindowCreated;
     ImGuiWindow*        Window;                 // Set when the viewport is owned by a window (and ImGuiViewportFlags_CanHostOtherWindows is NOT set)
     int                 DrawListsLastFrame[2];  // Last frame number the background (0) and foreground (1) draw lists were used
     ImDrawList*         DrawLists[2];           // Convenience background (0) and foreground (1) draw lists. We use them to draw software mouser cursor when io.MouseDrawCursor is set and to draw most debug overlays.
@@ -1727,7 +1739,7 @@ struct ImGuiViewportP : public ImGuiViewport
     ImVec2              BuildWorkOffsetMin;     // Work Area: Offset being built during current frame. Generally >= 0.0f.
     ImVec2              BuildWorkOffsetMax;     // Work Area: Offset being built during current frame. Generally <= 0.0f.
 
-    ImGuiViewportP()                    { Idx = -1; LastFrameActive = DrawListsLastFrame[0] = DrawListsLastFrame[1] = LastFrontMostStampCount = -1; LastNameHash = 0; Alpha = LastAlpha = 1.0f; PlatformMonitor = -1; PlatformWindowCreated = false; Window = NULL; DrawLists[0] = DrawLists[1] = NULL; LastPlatformPos = LastPlatformSize = LastRendererSize = ImVec2(FLT_MAX, FLT_MAX); }
+    ImGuiViewportP()                    { Idx = -1; LastFrameActive = DrawListsLastFrame[0] = DrawListsLastFrame[1] = LastFrontMostStampCount = -1; LastNameHash = 0; Alpha = LastAlpha = 1.0f; PlatformMonitor = -1; Window = NULL; DrawLists[0] = DrawLists[1] = NULL; LastPlatformPos = LastPlatformSize = LastRendererSize = ImVec2(FLT_MAX, FLT_MAX); }
     ~ImGuiViewportP()                   { if (DrawLists[0]) IM_DELETE(DrawLists[0]); if (DrawLists[1]) IM_DELETE(DrawLists[1]); }
     void    ClearRequestFlags()         { PlatformRequestClose = PlatformRequestMove = PlatformRequestResize = false; }
 
@@ -1780,6 +1792,31 @@ struct ImGuiSettingsHandler
 
     ImGuiSettingsHandler() { memset(this, 0, sizeof(*this)); }
 };
+
+//-----------------------------------------------------------------------------
+// [SECTION] Localization support
+//-----------------------------------------------------------------------------
+
+// This is experimental and not officially supported, it'll probably fall short of features, if/when it does we may backtrack.
+enum ImGuiLocKey : int
+{
+    ImGuiLocKey_TableSizeOne,
+    ImGuiLocKey_TableSizeAllFit,
+    ImGuiLocKey_TableSizeAllDefault,
+    ImGuiLocKey_TableResetOrder,
+    ImGuiLocKey_WindowingMainMenuBar,
+    ImGuiLocKey_WindowingPopup,
+    ImGuiLocKey_WindowingUntitled,
+    ImGuiLocKey_DockingHideTabBar,
+    ImGuiLocKey_COUNT
+};
+
+struct ImGuiLocEntry
+{
+    ImGuiLocKey     Key;
+    const char*     Text;
+};
+
 
 //-----------------------------------------------------------------------------
 // [SECTION] Metrics, Debug Tools
@@ -1911,7 +1948,10 @@ struct ImGuiContext
     ImGuiWindow*            MovingWindow;                       // Track the window we clicked on (in order to preserve focus). The actual window that is moved is generally MovingWindow->RootWindowDockTree.
     ImGuiWindow*            WheelingWindow;                     // Track the window we started mouse-wheeling on. Until a timer elapse or mouse has moved, generally keep scrolling the same window even if during the course of scrolling the mouse ends up hovering a child window.
     ImVec2                  WheelingWindowRefMousePos;
+    int                     WheelingWindowStartFrame;           // This may be set one frame before WheelingWindow is != NULL
     float                   WheelingWindowReleaseTimer;
+    ImVec2                  WheelingWindowWheelRemainder;
+    ImVec2                  WheelingAxisAvg;
 
     // Item/widgets state and tracking information
     ImGuiID                 DebugHookIdInfo;                    // Will call core hooks: DebugHookIdInfo() from GetID functions, used by Stack Tool [next HoveredId/ActiveId to not pull in an extra cache-line]
@@ -1950,7 +1990,7 @@ struct ImGuiContext
     ImU32                   ActiveIdUsingNavDirMask;            // Active widget will want to read those nav move requests (e.g. can activate a button and move away from it)
     bool                    ActiveIdUsingAllKeyboardKeys;       // Active widget will want to read all keyboard keys inputs. (FIXME: This is a shortcut for not taking ownership of 100+ keys but perhaps best to not have the inconsistency)
 #ifndef IMGUI_DISABLE_OBSOLETE_KEYIO
-    ImU32                   ActiveIdUsingNavInputMask;          // If you used this. Since (IMGUI_VERSION_NUM >= 18804) : 'g.ActiveIdUsingNavInputMask |= (1 << ImGuiNavInput_Cancel);' becomes 'SetActiveIdUsingKey(ImGuiKey_Escape); SetActiveIdUsingKey(ImGuiKey_NavGamepadCancel);'
+    ImU32                   ActiveIdUsingNavInputMask;          // If you used this. Since (IMGUI_VERSION_NUM >= 18804) : 'g.ActiveIdUsingNavInputMask |= (1 << ImGuiNavInput_Cancel);' becomes 'SetKeyOwner(ImGuiKey_Escape, g.ActiveId) and/or SetKeyOwner(ImGuiKey_NavGamepadCancel, g.ActiveId);'
 #endif
 
     // Next window/item data
@@ -2131,6 +2171,9 @@ struct ImGuiContext
     ImVector<ImGuiContextHook>          Hooks;                  // Hooks for extensions (e.g. test engine)
     ImGuiID                             HookIdNext;             // Next available HookId
 
+    // Localization
+    const char*             LocalizationTable[ImGuiLocKey_COUNT];
+
     // Capture/Logging
     bool                    LogEnabled;                         // Currently capturing
     ImGuiLogType            LogType;                            // Capture target
@@ -2167,6 +2210,7 @@ struct ImGuiContext
     ImVector<char>          TempBuffer;                         // Temporary text buffer
 
     ImGuiContext(ImFontAtlas* shared_font_atlas)
+        : InputTextState(this)
     {
         Initialized = false;
         ConfigFlagsCurrFrame = ConfigFlagsLastFrame = ImGuiConfigFlags_None;
@@ -2188,6 +2232,7 @@ struct ImGuiContext
         HoveredWindowUnderMovingWindow = NULL;
         MovingWindow = NULL;
         WheelingWindow = NULL;
+        WheelingWindowStartFrame = -1;
         WheelingWindowReleaseTimer = 0.0f;
 
         DebugHookIdInfo = 0;
@@ -2311,6 +2356,8 @@ struct ImGuiContext
         SettingsDirtyTimer = 0.0f;
         HookIdNext = 0;
 
+        memset(LocalizationTable, 0, sizeof(LocalizationTable));
+
         LogEnabled = false;
         LogType = ImGuiLogType_None;
         LogNextPrefix = LogNextSuffix = NULL;
@@ -2409,6 +2456,9 @@ struct IMGUI_API ImGuiWindow
     ImVec2                  WindowPadding;                      // Window padding at the time of Begin().
     float                   WindowRounding;                     // Window rounding at the time of Begin(). May be clamped lower to avoid rendering artifacts with title bar, menu bar etc.
     float                   WindowBorderSize;                   // Window border size at the time of Begin().
+    float                   DecoOuterSizeX1, DecoOuterSizeY1;   // Left/Up offsets. Sum of non-scrolling outer decorations (X1 generally == 0.0f. Y1 generally = TitleBarHeight + MenuBarHeight). Locked during Begin().
+    float                   DecoOuterSizeX2, DecoOuterSizeY2;   // Right/Down offsets (X2 generally == ScrollbarSize.x, Y2 == ScrollbarSizes.y).
+    float                   DecoInnerSizeX1, DecoInnerSizeY1;   // Applied AFTER/OVER InnerRect. Specialized for Tables as they use specialized form of clipping and frozen rows/columns are inside InnerRect (and not part of regular decoration sizes).
     int                     NameBufLen;                         // Size of buffer storing Name. May be larger than strlen(Name)!
     ImGuiID                 MoveId;                             // == window->GetID("#MOVE")
     ImGuiID                 TabId;                              // == window->GetID("#TAB")
@@ -2701,13 +2751,14 @@ struct ImGuiTableCellData
 // Per-instance data that needs preserving across frames (seemingly most others do not need to be preserved aside from debug needs, does that needs they could be moved to ImGuiTableTempData ?)
 struct ImGuiTableInstanceData
 {
-    float                       LastOuterHeight;            // Outer height from last frame // FIXME: multi-instance issue (#3955)
-    float                       LastFirstRowHeight;         // Height of first row from last frame // FIXME: possible multi-instance issue?
+    float                       LastOuterHeight;            // Outer height from last frame
+    float                       LastFirstRowHeight;         // Height of first row from last frame (FIXME: this is used as "header height" and may be reworked)
+    float                       LastFrozenHeight;           // Height of frozen section from last frame
 
-    ImGuiTableInstanceData()    { LastOuterHeight = LastFirstRowHeight = 0.0f; }
+    ImGuiTableInstanceData()    { LastOuterHeight = LastFirstRowHeight = LastFrozenHeight = 0.0f; }
 };
 
-// FIXME-TABLE: more transient data could be stored in a per-stacked table structure: DrawSplitter, SortSpecs, incoming RowData
+// FIXME-TABLE: more transient data could be stored in a stacked ImGuiTableTempData: e.g. SortSpecs, incoming RowData
 struct IMGUI_API ImGuiTable
 {
     ImGuiID                     ID;
@@ -2812,6 +2863,8 @@ struct IMGUI_API ImGuiTable
     bool                        IsResetDisplayOrderRequest;
     bool                        IsUnfrozenRows;             // Set when we got past the frozen row.
     bool                        IsDefaultSizingPolicy;      // Set if user didn't explicitly set a sizing policy in BeginTable()
+    bool                        HasScrollbarYCurr;          // Whether ANY instance of this table had a vertical scrollbar during the current frame.
+    bool                        HasScrollbarYPrev;          // Whether ANY instance of this table had a vertical scrollbar during the previous.
     bool                        MemoryCompacted;
     bool                        HostSkipItems;              // Backup of InnerWindow->SkipItem at the end of BeginTable(), because we will overwrite InnerWindow->SkipItem on a per-column basis
 
@@ -2961,8 +3014,11 @@ namespace ImGui
     IMGUI_API void                  RemoveSettingsHandler(const char* type_name);
     IMGUI_API ImGuiSettingsHandler* FindSettingsHandler(const char* type_name);
 
+    // Localization
+    IMGUI_API void          LocalizeRegisterEntries(const ImGuiLocEntry* entries, int count);
+    inline const char*      LocalizeGetMsg(ImGuiLocKey key) { ImGuiContext& g = *GImGui; const char* msg = g.LocalizationTable[key]; return msg ? msg : "*Missing Text*"; }
+
     // Scrolling
-    IMGUI_API void          SetNextWindowScroll(const ImVec2& scroll); // Use -1.0f on one axis to leave as-is
     IMGUI_API void          SetScrollX(ImGuiWindow* window, float scroll_x);
     IMGUI_API void          SetScrollY(ImGuiWindow* window, float scroll_y);
     IMGUI_API void          SetScrollFromPosX(ImGuiWindow* window, float local_x, float center_x_ratio);
@@ -2977,7 +3033,6 @@ namespace ImGui
 //#endif
 
     // Basic Accessors
-    inline ImGuiID          GetItemID()     { ImGuiContext& g = *GImGui; return g.LastItemData.ID; }   // Get ID of last item (~~ often same ImGui::GetID(label) beforehand)
     inline ImGuiItemStatusFlags GetItemStatusFlags(){ ImGuiContext& g = *GImGui; return g.LastItemData.StatusFlags; }
     inline ImGuiItemFlags   GetItemFlags()  { ImGuiContext& g = *GImGui; return g.LastItemData.InFlags; }
     inline ImGuiID          GetActiveID()   { ImGuiContext& g = *GImGui; return g.ActiveId; }
@@ -3058,16 +3113,21 @@ namespace ImGui
     // Inputs
     // FIXME: Eventually we should aim to move e.g. IsActiveIdUsingKey() into IsKeyXXX functions.
     inline bool             IsNamedKey(ImGuiKey key)                                    { return key >= ImGuiKey_NamedKey_BEGIN && key < ImGuiKey_NamedKey_END; }
-    inline bool             IsNamedKeyOrModKey(ImGuiKey key)                            { return (key >= ImGuiKey_NamedKey_BEGIN && key < ImGuiKey_NamedKey_END) || key == ImGuiMod_Ctrl || key == ImGuiMod_Shift || key == ImGuiMod_Alt || key == ImGuiMod_Super; }
+    inline bool             IsNamedKeyOrModKey(ImGuiKey key)                            { return (key >= ImGuiKey_NamedKey_BEGIN && key < ImGuiKey_NamedKey_END) || key == ImGuiMod_Ctrl || key == ImGuiMod_Shift || key == ImGuiMod_Alt || key == ImGuiMod_Super || key == ImGuiMod_Shortcut; }
     inline bool             IsLegacyKey(ImGuiKey key)                                   { return key >= ImGuiKey_LegacyNativeKey_BEGIN && key < ImGuiKey_LegacyNativeKey_END; }
+    inline bool             IsKeyboardKey(ImGuiKey key)                                 { return key >= ImGuiKey_Keyboard_BEGIN && key < ImGuiKey_Keyboard_END; }
     inline bool             IsGamepadKey(ImGuiKey key)                                  { return key >= ImGuiKey_Gamepad_BEGIN && key < ImGuiKey_Gamepad_END; }
+    inline bool             IsMouseKey(ImGuiKey key)                                    { return key >= ImGuiKey_Mouse_BEGIN && key < ImGuiKey_Mouse_END; }
     inline bool             IsAliasKey(ImGuiKey key)                                    { return key >= ImGuiKey_Aliases_BEGIN && key < ImGuiKey_Aliases_END; }
+    inline ImGuiKeyChord    ConvertShortcutMod(ImGuiKeyChord key_chord)                 { ImGuiContext& g = *GImGui; IM_ASSERT_PARANOID(key_chord & ImGuiMod_Shortcut); return (key_chord & ~ImGuiMod_Shortcut) | (g.IO.ConfigMacOSXBehaviors ? ImGuiMod_Super : ImGuiMod_Ctrl); }
     inline ImGuiKey         ConvertSingleModFlagToKey(ImGuiKey key)
     {
+        ImGuiContext& g = *GImGui;
         if (key == ImGuiMod_Ctrl) return ImGuiKey_ReservedForModCtrl;
         if (key == ImGuiMod_Shift) return ImGuiKey_ReservedForModShift;
         if (key == ImGuiMod_Alt) return ImGuiKey_ReservedForModAlt;
         if (key == ImGuiMod_Super) return ImGuiKey_ReservedForModSuper;
+        if (key == ImGuiMod_Shortcut) return (g.IO.ConfigMacOSXBehaviors ? ImGuiKey_ReservedForModSuper : ImGuiKey_ReservedForModCtrl);
         return key;
     }
 
@@ -3075,7 +3135,7 @@ namespace ImGui
     IMGUI_API void          GetKeyChordName(ImGuiKeyChord key_chord, char* out_buf, int out_buf_size);
     inline ImGuiKey         MouseButtonToKey(ImGuiMouseButton button)                   { IM_ASSERT(button >= 0 && button < ImGuiMouseButton_COUNT); return (ImGuiKey)(ImGuiKey_MouseLeft + button); }
     IMGUI_API bool          IsMouseDragPastThreshold(ImGuiMouseButton button, float lock_threshold = -1.0f);
-    IMGUI_API ImVec2        GetKeyVector2d(ImGuiKey key_left, ImGuiKey key_right, ImGuiKey key_up, ImGuiKey key_down);
+    IMGUI_API ImVec2        GetKeyMagnitude2d(ImGuiKey key_left, ImGuiKey key_right, ImGuiKey key_up, ImGuiKey key_down);
     IMGUI_API float         GetNavTweakPressedAmount(ImGuiAxis axis);
     IMGUI_API int           CalcTypematicRepeatAmount(float t0, float t1, float repeat_delay, float repeat_rate);
     IMGUI_API void          GetTypematicRepeatRate(ImGuiInputFlags flags, float* repeat_delay, float* repeat_rate);
@@ -3083,12 +3143,12 @@ namespace ImGui
     inline bool             IsActiveIdUsingNavDir(ImGuiDir dir)                         { ImGuiContext& g = *GImGui; return (g.ActiveIdUsingNavDirMask & (1 << dir)) != 0; }
 
     // [EXPERIMENTAL] Low-Level: Key/Input Ownership
-    // - The idea is that instead of "eating" a given input, we can link to an owner.
+    // - The idea is that instead of "eating" a given input, we can link to an owner id.
     // - Ownership is most often claimed as a result of reacting to a press/down event (but occasionally may be claimed ahead).
     // - Input queries can then read input by specifying ImGuiKeyOwner_Any (== 0), ImGuiKeyOwner_None (== -1) or a custom ID.
     // - Legacy input queries (without specifying an owner or _Any or _None) are equivalent to using ImGuiKeyOwner_Any (== 0).
     // - Input ownership is automatically released on the frame after a key is released. Therefore:
-    //   - for ownership registration happening a result of a down/press event, the SetKeyOwner() call may be done once (common case).
+    //   - for ownership registration happening as a result of a down/press event, the SetKeyOwner() call may be done once (common case).
     //   - for ownership registration happening ahead of a down/press event, the SetKeyOwner() call needs to be made every frame (happens if e.g. claiming ownership on hover).
     // - SetItemKeyOwner() is a shortcut for common simple case. A custom widget will probably want to call SetKeyOwner() multiple times directly based on its interaction state.
     // - This is marked experimental because not all widgets are fully honoring the Set/Test idioms. We will need to move forward step by step.
@@ -3103,7 +3163,7 @@ namespace ImGui
     // - Important: legacy IsKeyPressed(ImGuiKey, bool repeat=true) _DEFAULTS_ to repeat, new IsKeyPressed() requires _EXPLICIT_ ImGuiInputFlags_Repeat flag.
     // - Expected to be later promoted to public API, the prototypes are designed to replace existing ones (since owner_id can default to Any == 0)
     // - Specifying a value for 'ImGuiID owner' will test that EITHER the key is NOT owned (UNLESS locked), EITHER the key is owned by 'owner'.
-    //   Legacy functions use ImGuiKeyOwner_Any meaning that they typically ignore ownership, unless a call to SetKeyOwner() explicitely used ImGuiInputFlags_LockThisFrame or ImGuiInputFlags_LockUntilRelease.
+    //   Legacy functions use ImGuiKeyOwner_Any meaning that they typically ignore ownership, unless a call to SetKeyOwner() explicitly used ImGuiInputFlags_LockThisFrame or ImGuiInputFlags_LockUntilRelease.
     // - Binding generators may want to ignore those for now, or suffix them with Ex() until we decide if this gets moved into public API.
     IMGUI_API bool              IsKeyDown(ImGuiKey key, ImGuiID owner_id);
     IMGUI_API bool              IsKeyPressed(ImGuiKey key, ImGuiID owner_id, ImGuiInputFlags flags = 0);    // Important: when transitioning from old to new IsKeyPressed(): old API has "bool repeat = true", so would default to repeat. New API requiress explicit ImGuiInputFlags_Repeat.
@@ -3120,7 +3180,7 @@ namespace ImGui
     // - When using one of the routing flags (e.g. ImGuiInputFlags_RouteFocused): routes requested ahead of time given a chord (key + modifiers) and a routing policy.
     // - Routes are resolved during NewFrame(): if keyboard modifiers are matching current ones: SetKeyOwner() is called + route is granted for the frame.
     // - Route is granted to a single owner. When multiple requests are made we have policies to select the winning route.
-    // - Multiple read sites may use a same owner and will all get the granted route.
+    // - Multiple read sites may use the same owner id and will all get the granted route.
     // - For routing: when owner_id is 0 we use the current Focus Scope ID as a default owner in order to identify our location.
     IMGUI_API bool              Shortcut(ImGuiKeyChord key_chord, ImGuiID owner_id = 0, ImGuiInputFlags flags = 0);
     IMGUI_API bool              SetShortcutRouting(ImGuiKeyChord key_chord, ImGuiID owner_id = 0, ImGuiInputFlags flags = 0);
@@ -3307,19 +3367,21 @@ namespace ImGui
     // Widgets
     IMGUI_API void          TextEx(const char* text, const char* text_end = NULL, ImGuiTextFlags flags = 0);
     IMGUI_API bool          ButtonEx(const char* label, const ImVec2& size_arg = ImVec2(0, 0), ImGuiButtonFlags flags = 0);
+    IMGUI_API bool          ArrowButtonEx(const char* str_id, ImGuiDir dir, ImVec2 size_arg, ImGuiButtonFlags flags = 0);
+    IMGUI_API bool          ImageButtonEx(ImGuiID id, ImTextureID texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& bg_col, const ImVec4& tint_col);
+    IMGUI_API void          SeparatorEx(ImGuiSeparatorFlags flags);
+    IMGUI_API bool          CheckboxFlags(const char* label, ImS64* flags, ImS64 flags_value);
+    IMGUI_API bool          CheckboxFlags(const char* label, ImU64* flags, ImU64 flags_value);
+
+    // Widgets: Window Decorations
     IMGUI_API bool          CloseButton(ImGuiID id, const ImVec2& pos);
     IMGUI_API bool          CollapseButton(ImGuiID id, const ImVec2& pos, ImGuiDockNode* dock_node);
-    IMGUI_API bool          ArrowButtonEx(const char* str_id, ImGuiDir dir, ImVec2 size_arg, ImGuiButtonFlags flags = 0);
     IMGUI_API void          Scrollbar(ImGuiAxis axis);
     IMGUI_API bool          ScrollbarEx(const ImRect& bb, ImGuiID id, ImGuiAxis axis, ImS64* p_scroll_v, ImS64 avail_v, ImS64 contents_v, ImDrawFlags flags);
-    IMGUI_API bool          ImageButtonEx(ImGuiID id, ImTextureID texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& bg_col, const ImVec4& tint_col);
     IMGUI_API ImRect        GetWindowScrollbarRect(ImGuiWindow* window, ImGuiAxis axis);
     IMGUI_API ImGuiID       GetWindowScrollbarID(ImGuiWindow* window, ImGuiAxis axis);
     IMGUI_API ImGuiID       GetWindowResizeCornerID(ImGuiWindow* window, int n); // 0..3: corners
     IMGUI_API ImGuiID       GetWindowResizeBorderID(ImGuiWindow* window, ImGuiDir dir);
-    IMGUI_API void          SeparatorEx(ImGuiSeparatorFlags flags);
-    IMGUI_API bool          CheckboxFlags(const char* label, ImS64* flags, ImS64 flags_value);
-    IMGUI_API bool          CheckboxFlags(const char* label, ImU64* flags, ImU64 flags_value);
 
     // Widgets low-level behaviors
     IMGUI_API bool          ButtonBehavior(const ImRect& bb, ImGuiID id, bool* out_hovered, bool* out_held, ImGuiButtonFlags flags = 0);
@@ -3404,6 +3466,7 @@ namespace ImGui
     IMGUI_API void          DebugNodeWindowsList(ImVector<ImGuiWindow*>* windows, const char* label);
     IMGUI_API void          DebugNodeWindowsListByBeginStackParent(ImGuiWindow** windows, int windows_size, ImGuiWindow* parent_in_begin_stack);
     IMGUI_API void          DebugNodeViewport(ImGuiViewportP* viewport);
+    IMGUI_API void          DebugRenderKeyboardPreview(ImDrawList* draw_list);
     IMGUI_API void          DebugRenderViewportThumbnail(ImDrawList* draw_list, ImGuiViewportP* viewport, const ImRect& bb);
 
     // Obsolete functions

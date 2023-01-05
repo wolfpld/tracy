@@ -530,10 +530,12 @@ void View::DrawCpuDataWindow()
 
         auto& style = ImGui::GetStyle();
         const auto framePaddingY = style.FramePadding.y;
+        bool drawSeparator = false;
         for( auto& pidit : psort )
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
+            if( drawSeparator ) ImGui::Separator();
 
             char buf[128];
             auto& pid = *pidit;
@@ -562,6 +564,7 @@ void View::DrawCpuDataWindow()
                 ImGui::TextDisabled( "(%s)", RealToString( tsz ) );
             }
             ImGui::TableNextColumn();
+            if( drawSeparator ) ImGui::Separator();
             ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
             if( ImGui::IsItemHovered() )
             {
@@ -573,20 +576,26 @@ void View::DrawCpuDataWindow()
                 m_drawThreadHighlight = pid.first;
             }
             ImGui::TableNextColumn();
+            if( drawSeparator ) ImGui::Separator();
             PrintStringPercent( buf, TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
             style.FramePadding.y = 0;
             ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
             style.FramePadding.y = framePaddingY;
             ImGui::TableNextColumn();
+            if( drawSeparator ) ImGui::Separator();
             ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions ) );
             ImGui::TableNextColumn();
+            if( drawSeparator )
+            {
+                drawSeparator = false;
+                ImGui::Separator();
+            }
             ImGui::TextUnformatted( RealToString( pid.second.data.migrations ) );
             ImGui::SameLine();
             PrintStringPercent( buf, double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
             TextDisabledUnformatted( buf );
             if( expand )
             {
-                ImGui::Separator();
                 switch( sortspec.ColumnIndex )
                 {
                 case 0:
@@ -643,10 +652,12 @@ void View::DrawCpuDataWindow()
                     assert( false );
                     break;
                 }
+                drawSeparator = true;
                 for( auto& tid : pid.second.tids )
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
+                    if( drawSeparator ) ImGui::Separator();
 
                     const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );
                     const char* tname;
@@ -672,6 +683,7 @@ void View::DrawCpuDataWindow()
                         m_drawThreadHighlight = tid;
                     }
                     ImGui::TableNextColumn();
+                    if( drawSeparator ) ImGui::Separator();
                     if( tidMatch )
                     {
                         SmallColorBox( GetThreadColor( tid, 0 ) );
@@ -688,13 +700,20 @@ void View::DrawCpuDataWindow()
                         m_drawThreadHighlight = tid;
                     }
                     ImGui::TableNextColumn();
+                    if( drawSeparator ) ImGui::Separator();
                     PrintStringPercent( buf, TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
                     style.FramePadding.y = 0;
                     ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
                     style.FramePadding.y = framePaddingY;
                     ImGui::TableNextColumn();
+                    if( drawSeparator ) ImGui::Separator();
                     ImGui::TextUnformatted( RealToString( tit->second.runningRegions ) );
                     ImGui::TableNextColumn();
+                    if( drawSeparator )
+                    {
+                        drawSeparator = false;
+                        ImGui::Separator();
+                    }
                     ImGui::TextUnformatted( RealToString( tit->second.migrations ) );
                     ImGui::SameLine();
                     PrintStringPercent( buf, double( tit->second.migrations ) / tit->second.runningRegions * 100 );
@@ -705,7 +724,7 @@ void View::DrawCpuDataWindow()
                     }
                 }
                 ImGui::TreePop();
-                ImGui::Separator();
+                drawSeparator = true;
             }
             if( pidMatch )
             {

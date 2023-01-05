@@ -5114,7 +5114,7 @@ elf_uncompress_chdr (struct backtrace_state *state,
   else
     {
       alc_len = chdr->ch_size;
-      alc = backtrace_alloc (state, alc_len, error_callback, data);
+      alc = (char*)backtrace_alloc (state, alc_len, error_callback, data);
       if (alc == NULL)
 	return 0;
       po = (unsigned char *) alc;

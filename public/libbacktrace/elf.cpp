@@ -1240,6 +1240,57 @@ elf_fetch_bits_backward (const unsigned char **ppin,
   return 1;
 }
 
+/* Initialize backward fetching when the bitstream starts with a 1 bit in the
+   last byte in memory (which is the first one that we read).  This is used by
+   zstd decompression.  Returns 1 on success, 0 on error.  */
+
+static int
+elf_fetch_backward_init (const unsigned char **ppin,
+			 const unsigned char *pinend,
+			 uint64_t *pval, unsigned int *pbits)
+{
+  const unsigned char *pin;
+  unsigned int stream_start;
+  uint64_t val;
+  unsigned int bits;
+
+  pin = *ppin;
+  stream_start = (unsigned int)*pin;
+  if (unlikely (stream_start == 0))
+    {
+      elf_uncompress_failed ();
+      return 0;
+    }
+  val = 0;
+  bits = 0;
+
+  /* Align to a 32-bit boundary.  */
+  while ((((uintptr_t)pin) & 3) != 0)
+    {
+      val <<= 8;
+      val |= (uint64_t)*pin;
+      bits += 8;
+      --pin;
+    }
+
+  val <<= 8;
+  val |= (uint64_t)*pin;
+  bits += 8;
+
+  *ppin = pin;
+  *pval = val;
+  *pbits = bits;
+  if (!elf_fetch_bits_backward (ppin, pinend, pval, pbits))
+    return 0;
+
+  *pbits -= __builtin_clz (stream_start) - (sizeof (unsigned int) - 1) * 8 + 1;
+
+  if (!elf_fetch_bits_backward (ppin, pinend, pval, pbits))
+    return 0;
+
+  return 1;
+}
+
 /* Huffman code tables, like the rest of the zlib format, are defined
    by RFC 1951.  We store a Huffman code table as a series of tables
    stored sequentially in memory.  Each entry in a table is 16 bits.
@@ -2634,14 +2685,13 @@ elf_zlib_inflate_and_verify (const unsigned char *pin, size_t sin,
    - scratch space, one of
      - to build an FSE table: 512 uint16_t values == 1024 bytes
      - to build a Huffman tree: 512 uint16_t + 256 uint32_t == 2048 bytes
-     - buffer for literal values == 2048 bytes
 */
 
 #define ZSTD_TABLE_SIZE					\
   (2 * 512 * sizeof (struct elf_zstd_fse_baseline_entry)	\
    + 256 * sizeof (struct elf_zstd_fse_baseline_entry)		\
    + 2048 * sizeof (uint16_t)					\
-   + 2048)
+   + 512 * sizeof (uint16_t) + 256 * sizeof (uint32_t))
 
 #define ZSTD_TABLE_LITERAL_FSE_OFFSET (0)
 
@@ -2658,8 +2708,6 @@ elf_zlib_inflate_and_verify (const unsigned char *pin, size_t sin,
 
 #define ZSTD_TABLE_WORK_OFFSET \
   (ZSTD_TABLE_HUFFMAN_OFFSET + 2048 * sizeof (uint16_t))
-
-#define ZSTD_TABLE_WORK_LIT_SIZE 2048
 
 /* An entry in a zstd FSE table.  */
 
@@ -3444,7 +3492,6 @@ elf_zstd_read_huff (const unsigned char **ppin, const unsigned char *pinend,
       uint16_t *scratch;
       const unsigned char *pfse;
       const unsigned char *pback;
-      unsigned char stream_start;
       uint64_t val;
       unsigned int bits;
       unsigned int state1, state2;
@@ -3471,31 +3518,8 @@ elf_zstd_read_huff (const unsigned char **ppin, const unsigned char *pinend,
 	 FSE_TABLE.  */
 
       pback = pin + hdr - 1;
-      stream_start = *pback;
-      if (unlikely (stream_start == 0))
-	{
-	  elf_uncompress_failed ();
-	  return 0;
-	}
-      val = 0;
-      bits = 0;
-      while ((((uintptr_t)pback) & 3) != 0)
-	{
-	  val <<= 8;
-	  val |= (uint64_t)*pback;
-	  bits += 8;
-	  --pback;
-	}
-      val <<= 8;
-      val |= (uint64_t)*pback;
-      bits += 8;
 
-      if (!elf_fetch_bits_backward (&pback, pfse, &val, &bits))
-	return 0;
-
-      bits -= __builtin_clz (stream_start) - 24 + 1;
-
-      if (!elf_fetch_bits_backward (&pback, pfse, &val, &bits))
+      if (!elf_fetch_backward_init (&pback, pfse, &val, &bits))
 	return 0;
 
       bits -= fse_table_bits;
@@ -3719,6 +3743,533 @@ elf_zstd_read_huff (const unsigned char **ppin, const unsigned char *pinend,
   return 1;
 }
 
+/* Read and decompress the literals and store them ending at POUTEND.  This
+   works because we are going to use all the literals in the output, so they
+   must fit into the output buffer.  HUFFMAN_TABLE, and PHUFFMAN_TABLE_BITS
+   store the Huffman table across calls.  SCRATCH is used to read a Huffman
+   table.  Store the start of the decompressed literals in *PPLIT.  Update
+   *PPIN.  Return 1 on success, 0 on error.  */
+
+static int
+elf_zstd_read_literals (const unsigned char **ppin,
+			const unsigned char *pinend,
+			unsigned char *pout,
+			unsigned char *poutend,
+			uint16_t *scratch,
+			uint16_t *huffman_table,
+			int *phuffman_table_bits,
+			unsigned char **pplit)
+{
+  const unsigned char *pin;
+  unsigned char *plit;
+  unsigned char hdr;
+  uint32_t regenerated_size;
+  uint32_t compressed_size;
+  int streams;
+  uint32_t total_streams_size;
+  unsigned int huffman_table_bits;
+  uint64_t huffman_mask;
+
+  pin = *ppin;
+  if (unlikely (pin >= pinend))
+    {
+      elf_uncompress_failed ();
+      return 0;
+    }
+  hdr = *pin;
+  ++pin;
+
+  if ((hdr & 3) == 0 || (hdr & 3) == 1)
+    {
+      int raw;
+
+      /* Raw_literals_Block or RLE_Literals_Block */
+
+      raw = (hdr & 3) == 0;
+
+      switch ((hdr >> 2) & 3)
+	{
+	case 0: case 2:
+	  regenerated_size = hdr >> 3;
+	  break;
+	case 1:
+	  if (unlikely (pin >= pinend))
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+	  regenerated_size = (hdr >> 4) + ((uint32_t)(*pin) << 4);
+	  ++pin;
+	  break;
+	case 3:
+	  if (unlikely (pin + 1 >= pinend))
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+	  regenerated_size = ((hdr >> 4)
+			      + ((uint32_t)*pin << 4)
+			      + ((uint32_t)pin[1] << 12));
+	  pin += 2;
+	  break;
+	default:
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+
+      if (unlikely ((size_t)(poutend - pout) < regenerated_size))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+
+      plit = poutend - regenerated_size;
+
+      if (raw)
+	{
+	  if (unlikely (pin + regenerated_size >= pinend))
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+	  memcpy (plit, pin, regenerated_size);
+	  pin += regenerated_size;
+	}
+      else
+	{
+	  if (pin >= pinend)
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+	  memset (plit, *pin, regenerated_size);
+	  ++pin;
+	}
+
+      *ppin = pin;
+      *pplit = plit;
+
+      return 1;
+    }
+
+  /* Compressed_Literals_Block or Treeless_Literals_Block */
+
+  switch ((hdr >> 2) & 3)
+    {
+    case 0: case 1:
+      if (unlikely (pin + 1 >= pinend))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+      regenerated_size = (hdr >> 4) | ((uint32_t)(*pin & 0x3f) << 4);
+      compressed_size = (uint32_t)*pin >> 6 | ((uint32_t)pin[1] << 2);
+      pin += 2;
+      streams = ((hdr >> 2) & 3) == 0 ? 1 : 4;
+      break;
+    case 2:
+      if (unlikely (pin + 2 >= pinend))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+      regenerated_size = (((uint32_t)hdr >> 4)
+			  | ((uint32_t)*pin << 4)
+			  | (((uint32_t)pin[1] & 3) << 12));
+      compressed_size = (((uint32_t)pin[1] >> 2)
+			 | ((uint32_t)pin[2] << 6));
+      pin += 3;
+      streams = 4;
+      break;
+    case 3:
+      if (unlikely (pin + 3 >= pinend))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+      regenerated_size = (((uint32_t)hdr >> 4)
+			  | ((uint32_t)*pin << 4)
+			  | (((uint32_t)pin[1] & 0x3f) << 12));
+      compressed_size = (((uint32_t)pin[1] >> 6)
+			 | ((uint32_t)pin[2] << 2)
+			 | ((uint32_t)pin[3] << 10));
+      pin += 4;
+      streams = 4;
+      break;
+    default:
+      elf_uncompress_failed ();
+      return 0;
+    }
+
+  if (unlikely (pin + compressed_size > pinend))
+    {
+      elf_uncompress_failed ();
+      return 0;
+    }
+
+  pinend = pin + compressed_size;
+  *ppin = pinend;
+
+  if (unlikely ((size_t)(poutend - pout) < regenerated_size))
+    {
+      elf_uncompress_failed ();
+      return 0;
+    }
+
+  plit = poutend - regenerated_size;
+
+  *pplit = plit;
+
+  total_streams_size = compressed_size;
+  if ((hdr & 3) == 2)
+    {
+      const unsigned char *ptable;
+
+      /* Compressed_Literals_Block.  Read Huffman tree.  */
+
+      ptable = pin;
+      if (!elf_zstd_read_huff (&ptable, pinend, scratch, huffman_table,
+			       phuffman_table_bits))
+	return 0;
+
+      if (unlikely (total_streams_size < (size_t)(ptable - pin)))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+
+      total_streams_size -= ptable - pin;
+      pin = ptable;
+    }
+  else
+    {
+      /* Treeless_Literals_Block.  Reuse previous Huffman tree.  */
+      if (unlikely (*phuffman_table_bits == 0))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+    }
+
+  /* Decompress COMPRESSED_SIZE bytes of data at PIN using the huffman table,
+     storing REGENERATED_SIZE bytes of decompressed data at PLIT.  */
+
+  huffman_table_bits = (unsigned int)*phuffman_table_bits;
+  huffman_mask = ((uint64_t)1 << huffman_table_bits) - 1;
+
+  if (streams == 1)
+    {
+      const unsigned char *pback;
+      const unsigned char *pbackend;
+      uint64_t val;
+      unsigned int bits;
+      uint32_t i;
+
+      pback = pin + compressed_size - 1;
+      pbackend = pin;
+      if (!elf_fetch_backward_init (&pback, pbackend, &val, &bits))
+	return 0;
+
+      /* This is one of the inner loops of the decompression algorithm, so we
+	 put some effort into optimization.  We can't get more than 64 bytes
+	 from a single call to elf_fetch_bits_backward, and we can't subtract
+	 more than 11 bits at a time.  */
+
+      if (regenerated_size >= 64)
+	{
+	  unsigned char *plitstart;
+	  unsigned char *plitstop;
+
+	  plitstart = plit;
+	  plitstop = plit + regenerated_size - 64;
+	  while (plit < plitstop)
+	    {
+	      uint16_t t;
+
+	      if (!elf_fetch_bits_backward (&pback, pbackend, &val, &bits))
+		return 0;
+
+	      if (bits < 16)
+		break;
+
+	      while (bits >= 33)
+		{
+		  t = huffman_table[(val >> (bits - huffman_table_bits))
+				    & huffman_mask];
+		  *plit = t >> 8;
+		  ++plit;
+		  bits -= t & 0xff;
+
+		  t = huffman_table[(val >> (bits - huffman_table_bits))
+				    & huffman_mask];
+		  *plit = t >> 8;
+		  ++plit;
+		  bits -= t & 0xff;
+
+		  t = huffman_table[(val >> (bits - huffman_table_bits))
+				    & huffman_mask];
+		  *plit = t >> 8;
+		  ++plit;
+		  bits -= t & 0xff;
+		}
+
+	      while (bits > 11)
+		{
+		  t = huffman_table[(val >> (bits - huffman_table_bits))
+				    & huffman_mask];
+		  *plit = t >> 8;
+		  ++plit;
+		  bits -= t & 0xff;
+		}
+	    }
+
+	  regenerated_size -= plit - plitstart;
+	}
+
+      for (i = 0; i < regenerated_size; ++i)
+	{
+	  uint16_t t;
+
+	  if (!elf_fetch_bits_backward (&pback, pbackend, &val, &bits))
+	    return 0;
+
+	  if (unlikely (bits < huffman_table_bits))
+	    {
+	      t = huffman_table[(val << (huffman_table_bits - bits))
+				& huffman_mask];
+	      if (unlikely (bits < (t & 0xff)))
+		{
+		  elf_uncompress_failed ();
+		  return 0;
+		}
+	    }
+	  else
+	    t = huffman_table[(val >> (bits - huffman_table_bits))
+			      & huffman_mask];
+
+	  *plit = t >> 8;
+	  ++plit;
+	  bits -= t & 0xff;
+	}
+
+      return 1;
+    }
+
+  {
+    uint32_t stream_size1, stream_size2, stream_size3, stream_size4;
+    uint32_t tot;
+    const unsigned char *pback1, *pback2, *pback3, *pback4;
+    const unsigned char *pbackend1, *pbackend2, *pbackend3, *pbackend4;
+    uint64_t val1, val2, val3, val4;
+    unsigned int bits1, bits2, bits3, bits4;
+    unsigned char *plit1, *plit2, *plit3, *plit4;
+    uint32_t regenerated_stream_size;
+    uint32_t regenerated_stream_size4;
+    uint16_t t1, t2, t3, t4;
+    uint32_t i;
+    uint32_t limit;
+
+    /* Read jump table.  */
+    if (unlikely (pin + 5 >= pinend))
+      {
+	elf_uncompress_failed ();
+	return 0;
+      }
+    stream_size1 = (uint32_t)*pin | ((uint32_t)pin[1] << 8);
+    pin += 2;
+    stream_size2 = (uint32_t)*pin | ((uint32_t)pin[1] << 8);
+    pin += 2;
+    stream_size3 = (uint32_t)*pin | ((uint32_t)pin[1] << 8);
+    pin += 2;
+    tot = stream_size1 + stream_size2 + stream_size3;
+    if (unlikely (tot > total_streams_size - 6))
+      {
+	elf_uncompress_failed ();
+	return 0;
+      }
+    stream_size4 = total_streams_size - 6 - tot;
+
+    pback1 = pin + stream_size1 - 1;
+    pbackend1 = pin;
+
+    pback2 = pback1 + stream_size2;
+    pbackend2 = pback1 + 1;
+
+    pback3 = pback2 + stream_size3;
+    pbackend3 = pback2 + 1;
+
+    pback4 = pback3 + stream_size4;
+    pbackend4 = pback3 + 1;
+
+    if (!elf_fetch_backward_init (&pback1, pbackend1, &val1, &bits1))
+      return 0;
+    if (!elf_fetch_backward_init (&pback2, pbackend2, &val2, &bits2))
+      return 0;
+    if (!elf_fetch_backward_init (&pback3, pbackend3, &val3, &bits3))
+      return 0;
+    if (!elf_fetch_backward_init (&pback4, pbackend4, &val4, &bits4))
+      return 0;
+
+    regenerated_stream_size = (regenerated_size + 3) / 4;
+
+    plit1 = plit;
+    plit2 = plit1 + regenerated_stream_size;
+    plit3 = plit2 + regenerated_stream_size;
+    plit4 = plit3 + regenerated_stream_size;
+
+    regenerated_stream_size4 = regenerated_size - regenerated_stream_size * 3;
+
+    /* We can't get more than 64 literal bytes from a single call to
+       elf_fetch_bits_backward.  The fourth stream can be up to 3 bytes less,
+       so use as the limit.  */
+
+    limit = regenerated_stream_size4 <= 64 ? 0 : regenerated_stream_size4 - 64;
+    i = 0;
+    while (i < limit)
+      {
+	if (!elf_fetch_bits_backward (&pback1, pbackend1, &val1, &bits1))
+	  return 0;
+	if (!elf_fetch_bits_backward (&pback2, pbackend2, &val2, &bits2))
+	  return 0;
+	if (!elf_fetch_bits_backward (&pback3, pbackend3, &val3, &bits3))
+	  return 0;
+	if (!elf_fetch_bits_backward (&pback4, pbackend4, &val4, &bits4))
+	  return 0;
+
+	/* We can't subtract more than 11 bits at a time.  */
+
+	do
+	  {
+	    t1 = huffman_table[(val1 >> (bits1 - huffman_table_bits))
+			       & huffman_mask];
+	    t2 = huffman_table[(val2 >> (bits2 - huffman_table_bits))
+			       & huffman_mask];
+	    t3 = huffman_table[(val3 >> (bits3 - huffman_table_bits))
+			       & huffman_mask];
+	    t4 = huffman_table[(val4 >> (bits4 - huffman_table_bits))
+			       & huffman_mask];
+
+	    *plit1 = t1 >> 8;
+	    ++plit1;
+	    bits1 -= t1 & 0xff;
+
+	    *plit2 = t2 >> 8;
+	    ++plit2;
+	    bits2 -= t2 & 0xff;
+
+	    *plit3 = t3 >> 8;
+	    ++plit3;
+	    bits3 -= t3 & 0xff;
+
+	    *plit4 = t4 >> 8;
+	    ++plit4;
+	    bits4 -= t4 & 0xff;
+
+	    ++i;
+	  }
+	while (bits1 > 11 && bits2 > 11 && bits3 > 11 && bits4 > 11);
+      }
+
+    while (i < regenerated_stream_size)
+      {
+	int use4;
+
+	use4 = i < regenerated_stream_size4;
+
+	if (!elf_fetch_bits_backward (&pback1, pbackend1, &val1, &bits1))
+	  return 0;
+	if (!elf_fetch_bits_backward (&pback2, pbackend2, &val2, &bits2))
+	  return 0;
+	if (!elf_fetch_bits_backward (&pback3, pbackend3, &val3, &bits3))
+	  return 0;
+	if (use4)
+	  {
+	    if (!elf_fetch_bits_backward (&pback4, pbackend4, &val4, &bits4))
+	      return 0;
+	  }
+
+	if (unlikely (bits1 < huffman_table_bits))
+	  {
+	    t1 = huffman_table[(val1 << (huffman_table_bits - bits1))
+			       & huffman_mask];
+	    if (unlikely (bits1 < (t1 & 0xff)))
+	      {
+		elf_uncompress_failed ();
+		return 0;
+	      }
+	  }
+	else
+	  t1 = huffman_table[(val1 >> (bits1 - huffman_table_bits))
+			     & huffman_mask];
+
+	if (unlikely (bits2 < huffman_table_bits))
+	  {
+	    t2 = huffman_table[(val2 << (huffman_table_bits - bits2))
+			       & huffman_mask];
+	    if (unlikely (bits2 < (t2 & 0xff)))
+	      {
+		elf_uncompress_failed ();
+		return 0;
+	      }
+	  }
+	else
+	  t2 = huffman_table[(val2 >> (bits2 - huffman_table_bits))
+			     & huffman_mask];
+
+	if (unlikely (bits3 < huffman_table_bits))
+	  {
+	    t3 = huffman_table[(val3 << (huffman_table_bits - bits3))
+			       & huffman_mask];
+	    if (unlikely (bits3 < (t3 & 0xff)))
+	      {
+		elf_uncompress_failed ();
+		return 0;
+	      }
+	  }
+	else
+	  t3 = huffman_table[(val3 >> (bits3 - huffman_table_bits))
+			     & huffman_mask];
+
+	if (use4)
+	  {
+	    if (unlikely (bits4 < huffman_table_bits))
+	      {
+		t4 = huffman_table[(val4 << (huffman_table_bits - bits4))
+				   & huffman_mask];
+		if (unlikely (bits4 < (t4 & 0xff)))
+		  {
+		    elf_uncompress_failed ();
+		    return 0;
+		  }
+	      }
+	    else
+	      t4 = huffman_table[(val4 >> (bits4 - huffman_table_bits))
+				 & huffman_mask];
+
+	    *plit4 = t4 >> 8;
+	    ++plit4;
+	    bits4 -= t4 & 0xff;
+	  }
+
+	*plit1 = t1 >> 8;
+	++plit1;
+	bits1 -= t1 & 0xff;
+
+	*plit2 = t2 >> 8;
+	++plit2;
+	bits2 -= t2 & 0xff;
+
+	*plit3 = t3 >> 8;
+	++plit3;
+	bits3 -= t3 & 0xff;
+
+	++i;
+      }
+  }
+
+  return 1;
+}
+
 /* The information used to decompress a sequence code, which can be a literal
    length, an offset, or a match length.  */
 
@@ -3800,249 +4351,6 @@ elf_zstd_unpack_seq_decode (int mode,
       elf_uncompress_failed ();
       return 0;
     }
-
-  return 1;
-}
-
-/* The different ways that the literals are encoded.  */
-
-#define ZSTD_LIT_RAW (0)
-#define ZSTD_LIT_RLE (1)
-#define ZSTD_LIT_HUFF (2)
-
-/* A struct used to decompress the literals.  The order of these fields is
-   chosen for packing, not for comprehensibility.  */
-
-struct elf_zstd_literals
-{
-  /* Current bits in Huffman encoded stream.  */
-  uint64_t val;
-
-  /* For RAW, the current position in the byte stream.
-     For RLE, a pointer to the byte being repeated.
-     For HUFF, start of encoded streams.
-  */
-  const unsigned char *plit;
-
-  /* Current position of current Huffman encoded stream.  */
-  const unsigned char *pback;
-
-  /* End (reading backward) of current Huffman encoded stream.  */
-  const unsigned char *pbackend;
-
-  /* The Huffman table.  */
-  const uint16_t *huffman_table;
-
-  /* Remaining number of uncompressed bytes.  */
-  uint32_t regenerated_size;
-
-  /* Current number of available bits in Huffman encoded stream.  */
-  unsigned int bits;
-
-  /* Number of bits in the Huffman table.  */
-  int huffman_table_bits;
-
-  /* Offsets from PLIT to next Huffman encoded streams, 0 if none.  */
-  uint32_t stream_off[3];
-
-  /* Sizes of next Huffman encoded streams, 0 if none.  */
-  uint32_t stream_size[3];
-
-  /* A ZSTD_LIT_* code.  */
-  unsigned char type;
-};
-
-/* Output COUNT bytes from the literal byte stream in LITERALS to POUT.  */
-
-static int
-elf_zstd_literal_output (struct elf_zstd_literals *literals,
-			 size_t count,
-			 unsigned char *pout)
-{
-  size_t i;
-  const unsigned char *pback;
-  const unsigned char *pbackend;
-  uint64_t val;
-  unsigned int bits;
-  const uint16_t *huffman_table;
-  unsigned int huffman_table_bits;
-  uint64_t huffman_mask;
-
-  if (literals->regenerated_size < count)
-    {
-      elf_uncompress_failed ();
-      return 0;
-    }
-  literals->regenerated_size -= count;
-
-  switch (literals->type)
-    {
-    case ZSTD_LIT_RAW:
-      memcpy (pout, literals->plit, count);
-      literals->plit += count;
-      return 1;
-
-    case ZSTD_LIT_RLE:
-      memset (pout, *literals->plit, count);
-      return 1;
-
-    case ZSTD_LIT_HUFF:
-      break;
-
-    default:
-      elf_uncompress_failed ();
-      return 0;
-    }
-
-  /* The literal string is Huffman encoded.  */
-
-  pback = literals->pback;
-  pbackend = literals->pbackend;
-  val = literals->val;
-  bits = literals->bits;
-
-  huffman_table = literals->huffman_table;
-  huffman_table_bits = literals->huffman_table_bits;
-  huffman_mask = ((uint64_t)1 << huffman_table_bits) - 1;
-
-  /* This is one of the inner loops of the decompression algorithm, so we put
-     some effort into optimization.  We can't get more than 64 bytes from a
-     single call to elf_fetch_bits_backward, and we can't subtract more than 11
-     bits at a time.  */
-
-  if (count >= 64)
-    {
-      unsigned char *poutstart;
-      unsigned char *poutstop;
-
-      poutstart = pout;
-      poutstop = pout + count - 64;
-      while (pout <= poutstop)
-	{
-	  uint16_t t;
-
-	  if (!elf_fetch_bits_backward (&pback, pbackend, &val, &bits))
-	    return 0;
-
-	  if (bits < 16)
-	    break;
-
-	  while (bits >= 33)
-	    {
-	      t = huffman_table[(val >> (bits - huffman_table_bits))
-				& huffman_mask];
-	      *pout = t >> 8;
-	      ++pout;
-	      bits -= t & 0xff;
-
-	      t = huffman_table[(val >> (bits - huffman_table_bits))
-				& huffman_mask];
-	      *pout = t >> 8;
-	      ++pout;
-	      bits -= t & 0xff;
-
-	      t = huffman_table[(val >> (bits - huffman_table_bits))
-				& huffman_mask];
-	      *pout = t >> 8;
-	      ++pout;
-	      bits -= t & 0xff;
-	    }
-
-	  while (bits > 11)
-	    {
-	      t = huffman_table[(val >> (bits - huffman_table_bits))
-				& huffman_mask];
-	      *pout = t >> 8;
-	      ++pout;
-	      bits -= t & 0xff;
-	    }
-	}
-
-      count -= pout - poutstart;
-
-      if (!elf_fetch_bits_backward (&pback, pbackend, &val, &bits))
-	return 0;
-    }
-
-  for (i = 0; i < count; ++i)
-    {
-      uint16_t t;
-
-      if (unlikely (bits == 0))
-	{
-	  unsigned char stream_start;
-
-	  /* Advance to next stream.  */
-	  if (unlikely (literals->stream_off[0] == 0))
-	    {
-	      elf_uncompress_failed ();
-	      return 0;
-	    }
-
-	  pback = literals->plit + literals->stream_off[0];
-	  pbackend = pback;
-	  pback += literals->stream_size[0];
-
-	  /* Align to a 32-bit boundary.  */
-	  val = 0;
-	  bits = 0;
-	  --pback;
-	  stream_start = *pback;
-	  if (unlikely (stream_start == 0))
-	    {
-	      elf_uncompress_failed ();
-	      return 0;
-	    }
-	  while ((((uintptr_t) pback) & 3) != 0)
-	    {
-	      val <<= 8;
-	      val |= (uint64_t)*pback;
-	      bits += 8;
-	      --pback;
-	    }
-	  val <<= 8;
-	  val |= (uint64_t)*pback;
-	  bits += 8;
-
-	  if (!elf_fetch_bits_backward (&pback, pbackend, &val, &bits))
-	    return 0;
-
-	  bits -= __builtin_clz (stream_start) - 24 + 1;
-
-	  literals->stream_off[0] = literals->stream_off[1];
-	  literals->stream_off[1] = literals->stream_off[2];
-	  literals->stream_off[2] = 0;
-	  literals->stream_size[0] = literals->stream_size[1];
-	  literals->stream_size[1] = literals->stream_size[2];
-	  literals->stream_size[2] = 0;
-	}
-
-      if (!elf_fetch_bits_backward (&pback, pbackend, &val, &bits))
-	return 0;
-
-      if (unlikely (bits < huffman_table_bits))
-	{
-	  t = huffman_table[(val << (huffman_table_bits - bits))
-			    & huffman_mask];
-	  if (unlikely (bits < (t & 0xff)))
-	    {
-	      elf_uncompress_failed ();
-	      return 0;
-	    }
-	}
-      else
-	t = huffman_table[(val >> (bits - huffman_table_bits)) & huffman_mask];
-
-      *pout = t >> 8;
-      ++pout;
-
-      bits -= t & 0xff;
-    }
-
-  literals->pback = pback;
-  literals->pbackend = pbackend;
-  literals->val = val;
-  literals->bits = bits;
 
   return 1;
 }
@@ -4267,16 +4575,9 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 	case 2:
 	  {
 	    const unsigned char *pblockend;
-	    struct elf_zstd_literals literals;
-	    unsigned char lit_hdr;
-	    uint32_t lit_section_content;
-	    uint32_t lit_compressed_size;
-	    uint32_t lit_total_streams_size;
-	    const unsigned char *plitend;
-	    unsigned char *plitexp;
-	    size_t litexp_count;
-	    int lit_streams;
-	    uint32_t stream_size_1;
+	    unsigned char *plitstack;
+	    unsigned char *plit;
+	    uint32_t literal_count;
 	    unsigned char seq_hdr;
 	    size_t seq_count;
 	    size_t seq;
@@ -4286,7 +4587,6 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 	    unsigned int literal_state;
 	    unsigned int offset_state;
 	    unsigned int match_state;
-	    unsigned char stream_start;
 
 	    /* Compressed_Block */
 	    if (unlikely ((size_t) block_size > (size_t) (pinend - pin)))
@@ -4297,248 +4597,16 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 
 	    pblockend = pin + block_size;
 
-	    if (unlikely (pin >= pinend))
-	      {
-		elf_uncompress_failed ();
-		return 0;
-	      }
-	    lit_hdr = *pin;
-	    ++pin;
+	    /* Read the literals into the end of the output space, and leave
+	       PLIT pointing at them.  */
 
-	    if ((lit_hdr & 3) == 0 || (lit_hdr & 3) == 1)
-	      {
-		if ((lit_hdr & 3) == 0)
-		  literals.type = ZSTD_LIT_RAW;
-		else
-		  literals.type = ZSTD_LIT_RLE;
-
-		/* Raw_literals_Block or RLE_Literals_Block */
-		switch ((lit_hdr >> 2) & 3)
-		  {
-		  case 0: case 2:
-		    literals.regenerated_size = lit_hdr >> 3;
-		    break;
-		  case 1:
-		    if (unlikely (pin >= pinend))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
-		    literals.regenerated_size = (lit_hdr >> 4) + ((*pin) << 4);
-		    pin++;
-		    break;
-		  case 3:
-		    if (unlikely (pin + 1 >= pinend))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
-		    literals.regenerated_size = ((lit_hdr >> 4)
-						 + (*pin << 4)
-						 + (pin[1] << 12));
-		    pin += 2;
-		    break;
-		  default:
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-		if (literals.type == ZSTD_LIT_RAW)
-		  lit_section_content = literals.regenerated_size;
-		else
-		  lit_section_content = 1;
-		lit_compressed_size = 0;
-		lit_streams = 1;
-	      }
-	    else
-	      {
-		/* Compressed_Literals_Block or Treeless_Literals_Block */
-		literals.type = ZSTD_LIT_HUFF;
-		switch ((lit_hdr >> 2) & 3)
-		  {
-		  case 0: case 1:
-		    if (unlikely (pin + 1 >= pinend))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
-		    literals.regenerated_size = ((lit_hdr >> 4)
-						 | ((*pin & 0x3f) << 4));
-		    lit_compressed_size = ((*pin >> 6)
-					   | (pin[1] << 2));
-		    pin += 2;
-		    lit_streams = ((lit_hdr >> 2) & 3) == 0 ? 1 : 4;
-		    break;
-		  case 2:
-		    if (unlikely (pin + 2 >= pinend))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
-		    literals.regenerated_size = ((lit_hdr >> 4)
-						 | (*pin << 4)
-						 | ((pin[1] & 3) << 12));
-		    lit_compressed_size = ((pin[1] >> 2)
-					   | (pin[2] << 6));
-		    pin += 3;
-		    lit_streams = 4;
-		    break;
-		  case 3:
-		    if (unlikely (pin + 3 >= pinend))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
-		    literals.regenerated_size = ((lit_hdr >> 4)
-						 | (*pin << 4)
-						 | ((pin[1] & 0x3f) << 12));
-		    lit_compressed_size = ((pin[1] >> 6)
-					   | (pin[2] << 2)
-					   | (pin[3] << 10));
-		    pin += 4;
-		    lit_streams = 4;
-		    break;
-		  default:
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-
-		lit_section_content = lit_compressed_size;
-	      }
-
-	    if (unlikely ((size_t)lit_section_content > (size_t)(pinend - pin)))
-	      {
-		elf_uncompress_failed ();
-		return 0;
-	      }
-	    plitend = pin + lit_section_content;
-
-	    lit_total_streams_size = lit_compressed_size;
-	    if ((lit_hdr & 3) == 2)
-	      {
-		/* Compressed_Literals_Block.  Read Huffman tree.  */
-
-		const unsigned char *ptable;
-
-		ptable = pin;
-		if (!elf_zstd_read_huff (&ptable, pinend, scratch,
-					 huffman_table, &huffman_table_bits))
-		  return 0;
-		literals.huffman_table = huffman_table;
-		literals.huffman_table_bits = huffman_table_bits;
-
-		lit_total_streams_size -= ptable - pin;
-		pin = ptable;
-	      }
-	    else if ((lit_hdr & 3) == 3)
-	      {
-		/* Treeless_Literals_Block.  Reuse previous Huffman tree.  */
-		if (huffman_table_bits == 0)
-		  {
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-		literals.huffman_table = huffman_table;
-		literals.huffman_table_bits = huffman_table_bits;
-	      }
-	    else
-	      {
-		literals.huffman_table = NULL;
-		literals.huffman_table_bits = 0;
-	      }
-
-	    if (lit_streams == 1)
-	      {
-		stream_size_1 = block_size;
-		literals.stream_off[0] = 0;
-		literals.stream_off[1] = 0;
-		literals.stream_off[2] = 0;
-		literals.stream_size[0] = 0;
-		literals.stream_size[1] = 0;
-		literals.stream_size[2] = 0;
-	      }
-	    else
-	      {
-		uint32_t tot;
-
-		/* Read jump table.  */
-		if (unlikely (pin + 5 >= pinend))
-		  {
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-		stream_size_1 = *pin | (pin[1] << 8);
-		pin += 2;
-		literals.stream_size[0] = *pin | (pin[1] << 8);
-		pin += 2;
-		literals.stream_size[1] = *pin | (pin[1] << 8);
-		pin += 2;
-		tot = (stream_size_1
-		       + literals.stream_size[0]
-		       + literals.stream_size[1]);
-		if (unlikely (tot > lit_total_streams_size - 6))
-		  {
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-		literals.stream_size[2] = lit_total_streams_size - 6 - tot;
-
-		literals.stream_off[0] = stream_size_1;
-		literals.stream_off[1] = (literals.stream_off[0]
-					  + literals.stream_size[0]);
-		literals.stream_off[2] = (literals.stream_off[1]
-					  + literals.stream_size[1]);
-	      }
-
-	    literals.plit = pin;
-
-	    if (literals.type == ZSTD_LIT_HUFF)
-	      {
-		const unsigned char *plback;
-
-		/* Set up the first huffman stream.  */
-
-		literals.pbackend = literals.plit;
-		plback = literals.plit + stream_size_1;
-		literals.val = 0;
-		literals.bits = 0;
-		--plback;
-		stream_start = *plback;
-		if (unlikely (stream_start == 0))
-		  {
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-		while ((((uintptr_t) plback) & 3) != 0)
-		  {
-		    literals.val <<= 8;
-		    literals.val |= (uint64_t)*plback;
-		    literals.bits += 8;
-		    --plback;
-		  }
-		literals.val <<= 8;
-		literals.val |= (uint64_t)*plback;
-		literals.bits += 8;
-
-		if (!elf_fetch_bits_backward (&plback, literals.pbackend,
-					      &literals.val, &literals.bits))
-		  return 0;
-
-		literals.bits -= __builtin_clz (stream_start) - 24 + 1;
-
-		literals.pback = plback;
-	      }
-	    else
-	      {
-		literals.val = 0;
-		literals.bits = 0;
-		literals.pback = NULL;
-		literals.pbackend = NULL;
-	      }
-
-	    /* We have read all the literal header information.  The literal
-	       data starts at LITERALS.PLIT.  Skip ahead to the sequences.  */
-
-	    pin = plitend;
+	    if (!elf_zstd_read_literals (&pin, pblockend, pout, poutend,
+					 scratch, huffman_table,
+					 &huffman_table_bits,
+					 &plitstack))
+	      return 0;
+	    plit = plitstack;
+	    literal_count = poutend - plit;
 
 	    seq_hdr = *pin;
 	    pin++;
@@ -4606,53 +4674,10 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 		  return 0;
 	      }
 
-	    /* Expand 2048 bytes of literals.  The expanded literals are
-	       recorded in PLITEXP and LITEXP_COUNT.  */
-
-	    if (literals.type != ZSTD_LIT_HUFF
-		|| literals.regenerated_size == 0)
-	      {
-		plitexp = NULL;
-		litexp_count = 0;
-	      }
-	    else
-	      {
-		plitexp = (unsigned char *)scratch;
-		litexp_count = ZSTD_TABLE_WORK_LIT_SIZE;
-		if (litexp_count > literals.regenerated_size)
-		  litexp_count = literals.regenerated_size;
-		if (!elf_zstd_literal_output (&literals, litexp_count,
-					      plitexp))
-		  return 0;
-	      }
-
 	    pback = pblockend - 1;
-	    val = 0;
-	    bits = 0;
-	    stream_start = *pback;
-	    if (unlikely (stream_start == 0))
-	      {
-		elf_uncompress_failed ();
-		return 0;
-	      }
-	    while ((((uintptr_t)pback) & 3) != 0)
-	      {
-		val <<= 8;
-		val |= (uint64_t)*pback;
-		bits += 8;
-		--pback;
-	      }
-	    val <<= 8;
-	    val |= (uint64_t)*pback;
-	    bits += 8;
-
-	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+	    if (!elf_fetch_backward_init (&pback, pin, &val, &bits))
 	      return 0;
 
-	    bits -= __builtin_clz (stream_start) - 24 + 1;
-
-	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-	      return 0;
 	    bits -= literal_decode.table_bits;
 	    literal_state = ((val >> bits)
 			     & ((1U << literal_decode.table_bits) - 1));
@@ -4825,66 +4850,71 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 
 		/* The next sequence is now in LITERAL, OFFSET, MATCH.  */
 
-		if (literal > 0)
+		/* Copy LITERAL bytes from the literals.  */
+
+		if (unlikely ((size_t)(poutend - pout) < literal))
 		  {
-		    /* Copy LITERAL bytes from the literals.  */
+		    elf_uncompress_failed ();
+		    return 0;
+		  }
 
-		    if (unlikely ((size_t)(poutend - pout) < literal))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
+		if (unlikely (literal_count < literal))
+		  {
+		    elf_uncompress_failed ();
+		    return 0;
+		  }
 
-		    if (literals.type != ZSTD_LIT_HUFF)
-		      {
-			if (!elf_zstd_literal_output (&literals, literal,
-						      pout))
-			  return 0;
-			pout += literal;
-		      }
-		    else if (literal <= litexp_count)
-		      {
-			memcpy (pout, plitexp, literal);
-			plitexp += literal;
-			litexp_count -= literal;
-			pout += literal;
-		      }
-		    else
-		      {
-			memcpy (pout, plitexp, litexp_count);
-			pout += litexp_count;
-			literal -= litexp_count;
-			litexp_count = 0;
+		literal_count -= literal;
 
-			if (unlikely (literal >= ZSTD_TABLE_WORK_LIT_SIZE))
+		/* Often LITERAL is small, so handle small cases quickly.  */
+		switch (literal)
+		  {
+		  case 8:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 7:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 6:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 5:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 4:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 3:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 2:
+		    *pout++ = *plit++;
+		    /* FALLTHROUGH */
+		  case 1:
+		    *pout++ = *plit++;
+		    break;
+
+		  case 0:
+		    break;
+
+		  default:
+		    if (unlikely ((size_t)(plit - pout) < literal))
+		      {
+			uint32_t move;
+
+			move = plit - pout;
+			while (literal > move)
 			  {
-			    if (!elf_zstd_literal_output (&literals, literal,
-							  pout))
-			      return 0;
-			    pout += literal;
-			    literal = 0;
+			    memcpy (pout, plit, move);
+			    pout += move;
+			    plit += move;
+			    literal -= move;
 			  }
-
-			plitexp = (unsigned char *)scratch;
-			litexp_count = ZSTD_TABLE_WORK_LIT_SIZE;
-			if (litexp_count > literals.regenerated_size)
-			  litexp_count = literals.regenerated_size;
-			if (!elf_zstd_literal_output (&literals,
-						      litexp_count,
-						      plitexp))
-			  return 0;
-
-			if (unlikely (literal > litexp_count))
-			  {
-			    elf_uncompress_failed ();
-			    return 0;
-			  }
-
-			memcpy (pout, plitexp, literal);
-			plitexp += literal;
-			litexp_count -= literal;
-			pout += literal;
 		      }
+
+		    memcpy (pout, plit, literal);
+		    pout += literal;
+		    plit += literal;
 		  }
 
 		if (match > 0)
@@ -4924,33 +4954,34 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 
 		if (unlikely (seq >= seq_count))
 		  {
-		    size_t copy;
-
 		    /* Copy remaining literals.  */
-		    if (litexp_count > 0)
+		    if (literal_count > 0 && plit != pout)
 		      {
-			if (unlikely ((size_t)(poutend - pout) < litexp_count))
-			  {
-			    elf_uncompress_failed ();
-			    return 0;
-			  }
-			memcpy (pout, plitexp, litexp_count);
-			pout += litexp_count;
-		      }
-		    copy = literals.regenerated_size;
-		    if (copy > 0)
-		      {
-			if (unlikely ((size_t)(poutend - pout) < copy))
+			if (unlikely ((size_t)(poutend - pout)
+				      < literal_count))
 			  {
 			    elf_uncompress_failed ();
 			    return 0;
 			  }
 
-			if (!elf_zstd_literal_output (&literals, copy, pout))
-			  return 0;
+			if ((size_t)(plit - pout) < literal_count)
+			  {
+			    uint32_t move;
 
-			pout += copy;
+			    move = plit - pout;
+			    while (literal_count > move)
+			      {
+				memcpy (pout, plit, move);
+				pout += move;
+				plit += move;
+				literal_count -= move;
+			      }
+			  }
+
+			memcpy (pout, plit, literal_count);
 		      }
+
+		    pout += literal_count;
 
 		    break;
 		  }

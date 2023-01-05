@@ -724,6 +724,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
                 auto v = vec[i];
                 const auto arrIdx = std::distance( mem.data.begin(), v );
 
+                ImGui::PushFont( m_fixedFont );
                 if( m_memoryAllocInfoPool == pool && m_memoryAllocInfoWindow == arrIdx )
                 {
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );
@@ -739,6 +740,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
                         m_memoryAllocInfoPool = pool;
                     }
                 }
+                ImGui::PopFont();
                 if( ImGui::IsItemClicked( 2 ) )
                 {
                     ZoomToRange( v->TimeAlloc(), v->TimeFree() >= 0 ? v->TimeFree() : m_worker.GetLastTime() );

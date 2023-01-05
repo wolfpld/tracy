@@ -2627,9 +2627,9 @@ elf_zlib_inflate_and_verify (const unsigned char *pin, size_t sin,
 }
 
 /* For working memory during zstd compression, we need
-   - a literal length FSE table: 512 32-bit values == 2048 bytes
-   - a match length FSE table: 512 32-bit values == 2048 bytes
-   - a offset FSE table: 256 32-bit values == 1024 bytes
+   - a literal length FSE table: 512 64-bit values == 4096 bytes
+   - a match length FSE table: 512 64-bit values == 4096 bytes
+   - a offset FSE table: 256 64-bit values == 2048 bytes
    - a Huffman tree: 2048 uint16_t values == 4096 bytes
    - scratch space, one of
      - to build an FSE table: 512 uint16_t values == 1024 bytes
@@ -2637,21 +2637,24 @@ elf_zlib_inflate_and_verify (const unsigned char *pin, size_t sin,
      - buffer for literal values == 2048 bytes
 */
 
-#define ZSTD_TABLE_SIZE				\
-  (2 * 512 * sizeof (struct elf_zstd_fse_entry)	\
-   + 256 * sizeof (struct elf_zstd_fse_entry)	\
-   + 2048 * sizeof (uint16_t)			\
+#define ZSTD_TABLE_SIZE					\
+  (2 * 512 * sizeof (struct elf_zstd_fse_baseline_entry)	\
+   + 256 * sizeof (struct elf_zstd_fse_baseline_entry)		\
+   + 2048 * sizeof (uint16_t)					\
    + 2048)
 
 #define ZSTD_TABLE_LITERAL_FSE_OFFSET (0)
 
-#define ZSTD_TABLE_MATCH_FSE_OFFSET (512 * sizeof (struct elf_zstd_fse_entry))
+#define ZSTD_TABLE_MATCH_FSE_OFFSET			\
+  (512 * sizeof (struct elf_zstd_fse_baseline_entry))
 
-#define ZSTD_TABLE_OFFSET_FSE_OFFSET \
-  (ZSTD_TABLE_MATCH_FSE_OFFSET + 512 * sizeof (struct elf_zstd_fse_entry))
+#define ZSTD_TABLE_OFFSET_FSE_OFFSET			\
+  (ZSTD_TABLE_MATCH_FSE_OFFSET				\
+   + 512 * sizeof (struct elf_zstd_fse_baseline_entry))
 
-#define ZSTD_TABLE_HUFFMAN_OFFSET \
-  (ZSTD_TABLE_OFFSET_FSE_OFFSET + 256 * sizeof (struct elf_zstd_fse_entry))
+#define ZSTD_TABLE_HUFFMAN_OFFSET					\
+  (ZSTD_TABLE_OFFSET_FSE_OFFSET						\
+   + 256 * sizeof (struct elf_zstd_fse_baseline_entry))
 
 #define ZSTD_TABLE_WORK_OFFSET \
   (ZSTD_TABLE_HUFFMAN_OFFSET + 2048 * sizeof (uint16_t))
@@ -2662,8 +2665,11 @@ elf_zlib_inflate_and_verify (const unsigned char *pin, size_t sin,
 
 struct elf_zstd_fse_entry
 {
+  /* The value that this FSE entry represents.  */
   unsigned char symbol;
+  /* The number of bits to read to determine the next state.  */
   unsigned char bits;
+  /* Add the bits to this base to get the next state.  */
   uint16_t base;
 };
 
@@ -2942,6 +2948,270 @@ elf_zstd_build_fse (const int16_t *norm, int idx, uint16_t *next,
   return 1;
 }
 
+/* Encode the baseline and bits into a single 32-bit value.  */
+
+#define ZSTD_ENCODE_BASELINE_BITS(baseline, basebits)	\
+  ((uint32_t)(baseline) | ((uint32_t)(basebits) << 24))
+
+#define ZSTD_DECODE_BASELINE(baseline_basebits)	\
+  ((uint32_t)(baseline_basebits) & 0xffffff)
+
+#define ZSTD_DECODE_BASEBITS(baseline_basebits)	\
+  ((uint32_t)(baseline_basebits) >> 24)
+
+/* Given a literal length code, we need to read a number of bits and add that
+   to a baseline.  For states 0 to 15 the baseline is the state and the number
+   of bits is zero.  */
+
+#define ZSTD_LITERAL_LENGTH_BASELINE_OFFSET (16)
+
+static const uint32_t elf_zstd_literal_length_base[] =
+{
+  ZSTD_ENCODE_BASELINE_BITS(16, 1),
+  ZSTD_ENCODE_BASELINE_BITS(18, 1),
+  ZSTD_ENCODE_BASELINE_BITS(20, 1),
+  ZSTD_ENCODE_BASELINE_BITS(22, 1),
+  ZSTD_ENCODE_BASELINE_BITS(24, 2),
+  ZSTD_ENCODE_BASELINE_BITS(28, 2),
+  ZSTD_ENCODE_BASELINE_BITS(32, 3),
+  ZSTD_ENCODE_BASELINE_BITS(40, 3),
+  ZSTD_ENCODE_BASELINE_BITS(48, 4),
+  ZSTD_ENCODE_BASELINE_BITS(64, 6),
+  ZSTD_ENCODE_BASELINE_BITS(128, 7),
+  ZSTD_ENCODE_BASELINE_BITS(256, 8),
+  ZSTD_ENCODE_BASELINE_BITS(512, 9),
+  ZSTD_ENCODE_BASELINE_BITS(1024, 10),
+  ZSTD_ENCODE_BASELINE_BITS(2048, 11),
+  ZSTD_ENCODE_BASELINE_BITS(4096, 12),
+  ZSTD_ENCODE_BASELINE_BITS(8192, 13),
+  ZSTD_ENCODE_BASELINE_BITS(16384, 14),
+  ZSTD_ENCODE_BASELINE_BITS(32768, 15),
+  ZSTD_ENCODE_BASELINE_BITS(65536, 16)
+};
+
+/* The same applies to match length codes.  For states 0 to 31 the baseline is
+   the state + 3 and the number of bits is zero.  */
+
+#define ZSTD_MATCH_LENGTH_BASELINE_OFFSET (32)
+
+static const uint32_t elf_zstd_match_length_base[] =
+{
+  ZSTD_ENCODE_BASELINE_BITS(35, 1),
+  ZSTD_ENCODE_BASELINE_BITS(37, 1),
+  ZSTD_ENCODE_BASELINE_BITS(39, 1),
+  ZSTD_ENCODE_BASELINE_BITS(41, 1),
+  ZSTD_ENCODE_BASELINE_BITS(43, 2),
+  ZSTD_ENCODE_BASELINE_BITS(47, 2),
+  ZSTD_ENCODE_BASELINE_BITS(51, 3),
+  ZSTD_ENCODE_BASELINE_BITS(59, 3),
+  ZSTD_ENCODE_BASELINE_BITS(67, 4),
+  ZSTD_ENCODE_BASELINE_BITS(83, 4),
+  ZSTD_ENCODE_BASELINE_BITS(99, 5),
+  ZSTD_ENCODE_BASELINE_BITS(131, 7),
+  ZSTD_ENCODE_BASELINE_BITS(259, 8),
+  ZSTD_ENCODE_BASELINE_BITS(515, 9),
+  ZSTD_ENCODE_BASELINE_BITS(1027, 10),
+  ZSTD_ENCODE_BASELINE_BITS(2051, 11),
+  ZSTD_ENCODE_BASELINE_BITS(4099, 12),
+  ZSTD_ENCODE_BASELINE_BITS(8195, 13),
+  ZSTD_ENCODE_BASELINE_BITS(16387, 14),
+  ZSTD_ENCODE_BASELINE_BITS(32771, 15),
+  ZSTD_ENCODE_BASELINE_BITS(65539, 16)
+};
+
+/* An entry in an FSE table used for literal/match/length values.  For these we
+   have to map the symbol to a baseline value, and we have to read zero or more
+   bits and add that value to the baseline value.  Rather than look the values
+   up in a separate table, we grow the FSE table so that we get better memory
+   caching.  */
+
+struct elf_zstd_fse_baseline_entry
+{
+  /* The baseline for the value that this FSE entry represents..  */
+  uint32_t baseline;
+  /* The number of bits to read to add to the baseline.  */
+  unsigned char basebits;
+  /* The number of bits to read to determine the next state.  */
+  unsigned char bits;
+  /* Add the bits to this base to get the next state.  */
+  uint16_t base;
+};
+
+/* Convert the literal length FSE table FSE_TABLE to an FSE baseline table at
+   BASELINE_TABLE.  Note that FSE_TABLE and BASELINE_TABLE will overlap.  */
+
+static int
+elf_zstd_make_literal_baseline_fse (
+    const struct elf_zstd_fse_entry *fse_table,
+    int table_bits,
+    struct elf_zstd_fse_baseline_entry *baseline_table)
+{
+  size_t count;
+  const struct elf_zstd_fse_entry *pfse;
+  struct elf_zstd_fse_baseline_entry *pbaseline;
+
+  /* Convert backward to avoid overlap.  */
+
+  count = 1U << table_bits;
+  pfse = fse_table + count;
+  pbaseline = baseline_table + count;
+  while (pfse > fse_table)
+    {
+      unsigned char symbol;
+      unsigned char bits;
+      uint16_t base;
+
+      --pfse;
+      --pbaseline;
+      symbol = pfse->symbol;
+      bits = pfse->bits;
+      base = pfse->base;
+      if (symbol < ZSTD_LITERAL_LENGTH_BASELINE_OFFSET)
+	{
+	  pbaseline->baseline = (uint32_t)symbol;
+	  pbaseline->basebits = 0;
+	}
+      else
+	{
+	  unsigned int idx;
+	  uint32_t basebits;
+
+	  if (unlikely (symbol > 35))
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+	  idx = symbol - ZSTD_LITERAL_LENGTH_BASELINE_OFFSET;
+	  basebits = elf_zstd_literal_length_base[idx];
+	  pbaseline->baseline = ZSTD_DECODE_BASELINE(basebits);
+	  pbaseline->basebits = ZSTD_DECODE_BASEBITS(basebits);
+	}
+      pbaseline->bits = bits;
+      pbaseline->base = base;
+    }
+
+  return 1;
+}
+
+/* Convert the offset length FSE table FSE_TABLE to an FSE baseline table at
+   BASELINE_TABLE.  Note that FSE_TABLE and BASELINE_TABLE will overlap.  */
+
+static int
+elf_zstd_make_offset_baseline_fse (
+    const struct elf_zstd_fse_entry *fse_table,
+    int table_bits,
+    struct elf_zstd_fse_baseline_entry *baseline_table)
+{
+  size_t count;
+  const struct elf_zstd_fse_entry *pfse;
+  struct elf_zstd_fse_baseline_entry *pbaseline;
+
+  /* Convert backward to avoid overlap.  */
+
+  count = 1U << table_bits;
+  pfse = fse_table + count;
+  pbaseline = baseline_table + count;
+  while (pfse > fse_table)
+    {
+      unsigned char symbol;
+      unsigned char bits;
+      uint16_t base;
+
+      --pfse;
+      --pbaseline;
+      symbol = pfse->symbol;
+      bits = pfse->bits;
+      base = pfse->base;
+      if (unlikely (symbol > 31))
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
+
+      /* The simple way to write this is
+
+	   pbaseline->baseline = (uint32_t)1 << symbol;
+	   pbaseline->basebits = symbol;
+
+	 That will give us an offset value that corresponds to the one
+	 described in the RFC.  However, for offset values > 3, we have to
+	 subtract 3.  And for offset values 1, 2, 3 we use a repeated offset.
+	 The baseline is always a power of 2, and is never 0, so for these low
+	 values we will see one entry that is baseline 1, basebits 0, and one
+	 entry that is baseline 2, basebits 1.  All other entries will have
+	 baseline >= 4 and basebits >= 2.
+
+	 So we can check for RFC offset <= 3 by checking for basebits <= 1.
+	 And that means that we can subtract 3 here and not worry about doing
+	 it in the hot loop.  */
+
+      pbaseline->baseline = (uint32_t)1 << symbol;
+      if (symbol >= 2)
+	pbaseline->baseline -= 3;
+      pbaseline->basebits = symbol;
+      pbaseline->bits = bits;
+      pbaseline->base = base;
+    }
+
+  return 1;
+}
+
+/* Convert the match length FSE table FSE_TABLE to an FSE baseline table at
+   BASELINE_TABLE.  Note that FSE_TABLE and BASELINE_TABLE will overlap.  */
+
+static int
+elf_zstd_make_match_baseline_fse (
+    const struct elf_zstd_fse_entry *fse_table,
+    int table_bits,
+    struct elf_zstd_fse_baseline_entry *baseline_table)
+{
+  size_t count;
+  const struct elf_zstd_fse_entry *pfse;
+  struct elf_zstd_fse_baseline_entry *pbaseline;
+
+  /* Convert backward to avoid overlap.  */
+
+  count = 1U << table_bits;
+  pfse = fse_table + count;
+  pbaseline = baseline_table + count;
+  while (pfse > fse_table)
+    {
+      unsigned char symbol;
+      unsigned char bits;
+      uint16_t base;
+
+      --pfse;
+      --pbaseline;
+      symbol = pfse->symbol;
+      bits = pfse->bits;
+      base = pfse->base;
+      if (symbol < ZSTD_MATCH_LENGTH_BASELINE_OFFSET)
+	{
+	  pbaseline->baseline = (uint32_t)symbol + 3;
+	  pbaseline->basebits = 0;
+	}
+      else
+	{
+	  unsigned int idx;
+	  uint32_t basebits;
+
+	  if (unlikely (symbol > 52))
+	    {
+	      elf_uncompress_failed ();
+	      return 0;
+	    }
+	  idx = symbol - ZSTD_MATCH_LENGTH_BASELINE_OFFSET;
+	  basebits = elf_zstd_match_length_base[idx];
+	  pbaseline->baseline = ZSTD_DECODE_BASELINE(basebits);
+	  pbaseline->basebits = ZSTD_DECODE_BASEBITS(basebits);
+	}
+      pbaseline->bits = bits;
+      pbaseline->base = base;
+    }
+
+  return 1;
+}
+
 #ifdef BACKTRACE_GENERATE_ZSTD_FSE_TABLES
 
 /* Used to generate the predefined FSE decoding tables for zstd.  */
@@ -2974,18 +3244,19 @@ static int16_t offset[29] =
 static uint16_t next[256];
 
 static void
-print_table (const struct elf_zstd_fse_entry *table, size_t size)
+print_table (const struct elf_zstd_fse_baseline_entry *table, size_t size)
 {
   size_t i;
 
   printf ("{\n");
-  for (i = 0; i < size; i += 4)
+  for (i = 0; i < size; i += 3)
     {
       int j;
 
       printf (" ");
-      for (j = 0; j < 4 && i + j < size; ++j)
-	printf (" { %d, %d, %d },", table[i + j].symbol, table[i + j].bits,
+      for (j = 0; j < 3 && i + j < size; ++j)
+	printf (" { %u, %d, %d, %d },", table[i + j].baseline,
+		table[i + j].basebits, table[i + j].bits,
 		table[i + j].base);
       printf ("\n");
     }
@@ -2996,8 +3267,11 @@ int
 main ()
 {
   struct elf_zstd_fse_entry lit_table[64];
+  struct elf_zstd_fse_baseline_entry lit_baseline[64];
   struct elf_zstd_fse_entry match_table[64];
+  struct elf_zstd_fse_baseline_entry match_baseline[64];
   struct elf_zstd_fse_entry offset_table[32];
+  struct elf_zstd_fse_baseline_entry offset_baseline[32];
 
   if (!elf_zstd_build_fse (lit, sizeof lit / sizeof lit[0], next,
 			   6, lit_table))
@@ -3006,9 +3280,16 @@ main ()
       exit (EXIT_FAILURE);
     }
 
-  printf ("static const struct elf_zstd_fse_entry "
+  if (!elf_zstd_make_literal_baseline_fse (lit_table, 6, lit_baseline))
+    {
+      fprintf (stderr, "elf_zstd_make_literal_baseline_fse failed\n");
+      exit (EXIT_FAILURE);
+    }
+
+  printf ("static const struct elf_zstd_fse_baseline_entry "
 	  "elf_zstd_lit_table[64] =\n");
-  print_table (lit_table, sizeof lit_table / sizeof lit_table[0]);
+  print_table (lit_baseline,
+	       sizeof lit_baseline / sizeof lit_baseline[0]);
   printf ("\n");
 
   if (!elf_zstd_build_fse (match, sizeof match / sizeof match[0], next,
@@ -3018,9 +3299,16 @@ main ()
       exit (EXIT_FAILURE);
     }
 
-  printf ("static const struct elf_zstd_fse_entry "
+  if (!elf_zstd_make_match_baseline_fse (match_table, 6, match_baseline))
+    {
+      fprintf (stderr, "elf_zstd_make_match_baseline_fse failed\n");
+      exit (EXIT_FAILURE);
+    }
+
+  printf ("static const struct elf_zstd_fse_baseline_entry "
 	  "elf_zstd_match_table[64] =\n");
-  print_table (match_table, sizeof match_table / sizeof match_table[0]);
+  print_table (match_baseline,
+	       sizeof match_baseline / sizeof match_baseline[0]);
   printf ("\n");
 
   if (!elf_zstd_build_fse (offset, sizeof offset / sizeof offset[0], next,
@@ -3030,9 +3318,16 @@ main ()
       exit (EXIT_FAILURE);
     }
 
-  printf ("static const struct elf_zstd_fse_entry "
+  if (!elf_zstd_make_offset_baseline_fse (offset_table, 5, offset_baseline))
+    {
+      fprintf (stderr, "elf_zstd_make_offset_baseline_fse failed\n");
+      exit (EXIT_FAILURE);
+    }
+
+  printf ("static const struct elf_zstd_fse_baseline_entry "
 	  "elf_zstd_offset_table[32] =\n");
-  print_table (offset_table, sizeof offset_table / sizeof offset_table[0]);
+  print_table (offset_baseline,
+	       sizeof offset_baseline / sizeof offset_baseline[0]);
   printf ("\n");
 
   return 0;
@@ -3043,56 +3338,71 @@ main ()
 /* The fixed tables generated by the #ifdef'ed out main function
    above.  */
 
-static const struct elf_zstd_fse_entry elf_zstd_lit_table[64] =
+static const struct elf_zstd_fse_baseline_entry elf_zstd_lit_table[64] =
 {
-  { 0, 4, 0 }, { 0, 4, 16 }, { 1, 5, 32 }, { 3, 5, 0 },
-  { 4, 5, 0 }, { 6, 5, 0 }, { 7, 5, 0 }, { 9, 5, 0 },
-  { 10, 5, 0 }, { 12, 5, 0 }, { 14, 6, 0 }, { 16, 5, 0 },
-  { 18, 5, 0 }, { 19, 5, 0 }, { 21, 5, 0 }, { 22, 5, 0 },
-  { 24, 5, 0 }, { 25, 5, 32 }, { 26, 5, 0 }, { 27, 6, 0 },
-  { 29, 6, 0 }, { 31, 6, 0 }, { 0, 4, 32 }, { 1, 4, 0 },
-  { 2, 5, 0 }, { 4, 5, 32 }, { 5, 5, 0 }, { 7, 5, 32 },
-  { 8, 5, 0 }, { 10, 5, 32 }, { 11, 5, 0 }, { 13, 6, 0 },
-  { 16, 5, 32 }, { 17, 5, 0 }, { 19, 5, 32 }, { 20, 5, 0 },
-  { 22, 5, 32 }, { 23, 5, 0 }, { 25, 4, 0 }, { 25, 4, 16 },
-  { 26, 5, 32 }, { 28, 6, 0 }, { 30, 6, 0 }, { 0, 4, 48 },
-  { 1, 4, 16 }, { 2, 5, 32 }, { 3, 5, 32 }, { 5, 5, 32 },
-  { 6, 5, 32 }, { 8, 5, 32 }, { 9, 5, 32 }, { 11, 5, 32 },
-  { 12, 5, 32 }, { 15, 6, 0 }, { 17, 5, 32 }, { 18, 5, 32 },
-  { 20, 5, 32 }, { 21, 5, 32 }, { 23, 5, 32 }, { 24, 5, 32 },
-  { 35, 6, 0 }, { 34, 6, 0 }, { 33, 6, 0 }, { 32, 6, 0 },
+  { 0, 0, 4, 0 }, { 0, 0, 4, 16 }, { 1, 0, 5, 32 },
+  { 3, 0, 5, 0 }, { 4, 0, 5, 0 }, { 6, 0, 5, 0 },
+  { 7, 0, 5, 0 }, { 9, 0, 5, 0 }, { 10, 0, 5, 0 },
+  { 12, 0, 5, 0 }, { 14, 0, 6, 0 }, { 16, 1, 5, 0 },
+  { 20, 1, 5, 0 }, { 22, 1, 5, 0 }, { 28, 2, 5, 0 },
+  { 32, 3, 5, 0 }, { 48, 4, 5, 0 }, { 64, 6, 5, 32 },
+  { 128, 7, 5, 0 }, { 256, 8, 6, 0 }, { 1024, 10, 6, 0 },
+  { 4096, 12, 6, 0 }, { 0, 0, 4, 32 }, { 1, 0, 4, 0 },
+  { 2, 0, 5, 0 }, { 4, 0, 5, 32 }, { 5, 0, 5, 0 },
+  { 7, 0, 5, 32 }, { 8, 0, 5, 0 }, { 10, 0, 5, 32 },
+  { 11, 0, 5, 0 }, { 13, 0, 6, 0 }, { 16, 1, 5, 32 },
+  { 18, 1, 5, 0 }, { 22, 1, 5, 32 }, { 24, 2, 5, 0 },
+  { 32, 3, 5, 32 }, { 40, 3, 5, 0 }, { 64, 6, 4, 0 },
+  { 64, 6, 4, 16 }, { 128, 7, 5, 32 }, { 512, 9, 6, 0 },
+  { 2048, 11, 6, 0 }, { 0, 0, 4, 48 }, { 1, 0, 4, 16 },
+  { 2, 0, 5, 32 }, { 3, 0, 5, 32 }, { 5, 0, 5, 32 },
+  { 6, 0, 5, 32 }, { 8, 0, 5, 32 }, { 9, 0, 5, 32 },
+  { 11, 0, 5, 32 }, { 12, 0, 5, 32 }, { 15, 0, 6, 0 },
+  { 18, 1, 5, 32 }, { 20, 1, 5, 32 }, { 24, 2, 5, 32 },
+  { 28, 2, 5, 32 }, { 40, 3, 5, 32 }, { 48, 4, 5, 32 },
+  { 65536, 16, 6, 0 }, { 32768, 15, 6, 0 }, { 16384, 14, 6, 0 },
+  { 8192, 13, 6, 0 },
 };
 
-static const struct elf_zstd_fse_entry elf_zstd_match_table[64] =
+static const struct elf_zstd_fse_baseline_entry elf_zstd_match_table[64] =
 {
-  { 0, 6, 0 }, { 1, 4, 0 }, { 2, 5, 32 }, { 3, 5, 0 },
-  { 5, 5, 0 }, { 6, 5, 0 }, { 8, 5, 0 }, { 10, 6, 0 },
-  { 13, 6, 0 }, { 16, 6, 0 }, { 19, 6, 0 }, { 22, 6, 0 },
-  { 25, 6, 0 }, { 28, 6, 0 }, { 31, 6, 0 }, { 33, 6, 0 },
-  { 35, 6, 0 }, { 37, 6, 0 }, { 39, 6, 0 }, { 41, 6, 0 },
-  { 43, 6, 0 }, { 45, 6, 0 }, { 1, 4, 16 }, { 2, 4, 0 },
-  { 3, 5, 32 }, { 4, 5, 0 }, { 6, 5, 32 }, { 7, 5, 0 },
-  { 9, 6, 0 }, { 12, 6, 0 }, { 15, 6, 0 }, { 18, 6, 0 },
-  { 21, 6, 0 }, { 24, 6, 0 }, { 27, 6, 0 }, { 30, 6, 0 },
-  { 32, 6, 0 }, { 34, 6, 0 }, { 36, 6, 0 }, { 38, 6, 0 },
-  { 40, 6, 0 }, { 42, 6, 0 }, { 44, 6, 0 }, { 1, 4, 32 },
-  { 1, 4, 48 }, { 2, 4, 16 }, { 4, 5, 32 }, { 5, 5, 32 },
-  { 7, 5, 32 }, { 8, 5, 32 }, { 11, 6, 0 }, { 14, 6, 0 },
-  { 17, 6, 0 }, { 20, 6, 0 }, { 23, 6, 0 }, { 26, 6, 0 },
-  { 29, 6, 0 }, { 52, 6, 0 }, { 51, 6, 0 }, { 50, 6, 0 },
-  { 49, 6, 0 }, { 48, 6, 0 }, { 47, 6, 0 }, { 46, 6, 0 },
+  { 3, 0, 6, 0 }, { 4, 0, 4, 0 }, { 5, 0, 5, 32 },
+  { 6, 0, 5, 0 }, { 8, 0, 5, 0 }, { 9, 0, 5, 0 },
+  { 11, 0, 5, 0 }, { 13, 0, 6, 0 }, { 16, 0, 6, 0 },
+  { 19, 0, 6, 0 }, { 22, 0, 6, 0 }, { 25, 0, 6, 0 },
+  { 28, 0, 6, 0 }, { 31, 0, 6, 0 }, { 34, 0, 6, 0 },
+  { 37, 1, 6, 0 }, { 41, 1, 6, 0 }, { 47, 2, 6, 0 },
+  { 59, 3, 6, 0 }, { 83, 4, 6, 0 }, { 131, 7, 6, 0 },
+  { 515, 9, 6, 0 }, { 4, 0, 4, 16 }, { 5, 0, 4, 0 },
+  { 6, 0, 5, 32 }, { 7, 0, 5, 0 }, { 9, 0, 5, 32 },
+  { 10, 0, 5, 0 }, { 12, 0, 6, 0 }, { 15, 0, 6, 0 },
+  { 18, 0, 6, 0 }, { 21, 0, 6, 0 }, { 24, 0, 6, 0 },
+  { 27, 0, 6, 0 }, { 30, 0, 6, 0 }, { 33, 0, 6, 0 },
+  { 35, 1, 6, 0 }, { 39, 1, 6, 0 }, { 43, 2, 6, 0 },
+  { 51, 3, 6, 0 }, { 67, 4, 6, 0 }, { 99, 5, 6, 0 },
+  { 259, 8, 6, 0 }, { 4, 0, 4, 32 }, { 4, 0, 4, 48 },
+  { 5, 0, 4, 16 }, { 7, 0, 5, 32 }, { 8, 0, 5, 32 },
+  { 10, 0, 5, 32 }, { 11, 0, 5, 32 }, { 14, 0, 6, 0 },
+  { 17, 0, 6, 0 }, { 20, 0, 6, 0 }, { 23, 0, 6, 0 },
+  { 26, 0, 6, 0 }, { 29, 0, 6, 0 }, { 32, 0, 6, 0 },
+  { 65539, 16, 6, 0 }, { 32771, 15, 6, 0 }, { 16387, 14, 6, 0 },
+  { 8195, 13, 6, 0 }, { 4099, 12, 6, 0 }, { 2051, 11, 6, 0 },
+  { 1027, 10, 6, 0 },
 };
 
-static const struct elf_zstd_fse_entry elf_zstd_offset_table[32] =
+static const struct elf_zstd_fse_baseline_entry elf_zstd_offset_table[32] =
 {
-  { 0, 5, 0 }, { 6, 4, 0 }, { 9, 5, 0 }, { 15, 5, 0 },
-  { 21, 5, 0 }, { 3, 5, 0 }, { 7, 4, 0 }, { 12, 5, 0 },
-  { 18, 5, 0 }, { 23, 5, 0 }, { 5, 5, 0 }, { 8, 4, 0 },
-  { 14, 5, 0 }, { 20, 5, 0 }, { 2, 5, 0 }, { 7, 4, 16 },
-  { 11, 5, 0 }, { 17, 5, 0 }, { 22, 5, 0 }, { 4, 5, 0 },
-  { 8, 4, 16 }, { 13, 5, 0 }, { 19, 5, 0 }, { 1, 5, 0 },
-  { 6, 4, 16 }, { 10, 5, 0 }, { 16, 5, 0 }, { 28, 5, 0 },
-  { 27, 5, 0 }, { 26, 5, 0 }, { 25, 5, 0 }, { 24, 5, 0 },
+  { 1, 0, 5, 0 }, { 64, 6, 4, 0 }, { 512, 9, 5, 0 },
+  { 32768, 15, 5, 0 }, { 2097152, 21, 5, 0 }, { 8, 3, 5, 0 },
+  { 128, 7, 4, 0 }, { 4096, 12, 5, 0 }, { 262144, 18, 5, 0 },
+  { 8388608, 23, 5, 0 }, { 32, 5, 5, 0 }, { 256, 8, 4, 0 },
+  { 16384, 14, 5, 0 }, { 1048576, 20, 5, 0 }, { 4, 2, 5, 0 },
+  { 128, 7, 4, 16 }, { 2048, 11, 5, 0 }, { 131072, 17, 5, 0 },
+  { 4194304, 22, 5, 0 }, { 16, 4, 5, 0 }, { 256, 8, 4, 16 },
+  { 8192, 13, 5, 0 }, { 524288, 19, 5, 0 }, { 2, 1, 5, 0 },
+  { 64, 6, 4, 16 }, { 1024, 10, 5, 0 }, { 65536, 16, 5, 0 },
+  { 268435456, 28, 5, 0 }, { 134217728, 27, 5, 0 }, { 67108864, 26, 5, 0 },
+  { 33554432, 25, 5, 0 }, { 16777216, 24, 5, 0 },
 };
 
 /* Read a zstd Huffman table and build the decoding table in *TABLE, reading
@@ -3414,10 +3724,8 @@ elf_zstd_read_huff (const unsigned char **ppin, const unsigned char *pinend,
 
 struct elf_zstd_seq_decode
 {
-  const struct elf_zstd_fse_entry *table;
+  const struct elf_zstd_fse_baseline_entry *table;
   int table_bits;
-  int use_rle;
-  unsigned char rle;
 };
 
 /* Unpack a sequence code compression mode.  */
@@ -3426,43 +3734,62 @@ static int
 elf_zstd_unpack_seq_decode (int mode,
 			    const unsigned char **ppin,
 			    const unsigned char *pinend,
-			    const struct elf_zstd_fse_entry *predefined,
-			    int predefined_bits, uint16_t *scratch,
-			    int maxidx, struct elf_zstd_fse_entry *fse_table,
-			    int fse_table_bits,
+			    const struct elf_zstd_fse_baseline_entry *predef,
+			    int predef_bits,
+			    uint16_t *scratch,
+			    int maxidx,
+			    struct elf_zstd_fse_baseline_entry *table,
+			    int table_bits,
+			    int (*conv)(const struct elf_zstd_fse_entry *,
+					int,
+					struct elf_zstd_fse_baseline_entry *),
 			    struct elf_zstd_seq_decode *decode)
 {
   switch (mode)
     {
     case 0:
-      decode->table = predefined;
-      decode->table_bits = predefined_bits;
-      decode->use_rle = 0;
+      decode->table = predef;
+      decode->table_bits = predef_bits;
       break;
 
     case 1:
-      if (unlikely (*ppin >= pinend))
-	{
-	  elf_uncompress_failed ();
+      {
+	struct elf_zstd_fse_entry entry;
+
+	if (unlikely (*ppin >= pinend))
+	  {
+	    elf_uncompress_failed ();
+	    return 0;
+	  }
+	entry.symbol = **ppin;
+	++*ppin;
+	entry.bits = 0;
+	entry.base = 0;
+	decode->table_bits = 0;
+	if (!conv (&entry, 0, table))
 	  return 0;
-	}
-      decode->use_rle = 1;
-      decode->rle = **ppin;
-      decode->table_bits = 0;
-      ++*ppin;
+      }
       break;
 
     case 2:
-      decode->table_bits = fse_table_bits;
-      if (!elf_zstd_read_fse (ppin, pinend, scratch, maxidx, fse_table,
-			      &decode->table_bits))
-	return 0;
-      decode->table = fse_table;
-      decode->use_rle = 0;
+      {
+	struct elf_zstd_fse_entry *fse_table;
+
+	/* We use the same space for the simple FSE table and the baseline
+	   table.  */
+	fse_table = (struct elf_zstd_fse_entry *)table;
+	decode->table_bits = table_bits;
+	if (!elf_zstd_read_fse (ppin, pinend, scratch, maxidx, fse_table,
+				&decode->table_bits))
+	  return 0;
+	if (!conv (fse_table, decode->table_bits, table))
+	  return 0;
+	decode->table = table;
+      }
       break;
 
     case 3:
-      if (unlikely (decode->table_bits == 0 && !decode->use_rle))
+      if (unlikely (decode->table_bits == -1))
 	{
 	  elf_uncompress_failed ();
 	  return 0;
@@ -3720,39 +4047,6 @@ elf_zstd_literal_output (struct elf_zstd_literals *literals,
   return 1;
 }
 
-/* Given a literal length code, we need to read a number of bits and add that
-   to a baseline.  For states 0 to 15 the baseline is the state and the number
-   of bits is zero.  */
-
-#define ZSTD_LITERAL_LENGTH_BASELINE_OFFSET (16)
-
-static const uint32_t elf_zstd_literal_length_baseline[] =
-{
-  16, 18, 20, 22, 24, 28, 32, 40, 48, 64, 128, 256, 512,
-  1024, 2048, 4096, 8192, 16384, 32768, 65536
-};
-
-static const unsigned char elf_zstd_literal_length_bits[] =
-{
-  1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
-};
-
-/* The same applies to match length codes.  For states 0 to 31 the baseline is
-   the state + 3 and the number of bits is zero.  */
-
-#define ZSTD_MATCH_LENGTH_BASELINE_OFFSET (32)
-
-static const uint32_t elf_zstd_match_length_baseline[] =
-{
-  35, 37, 39, 41, 43, 47, 51, 59, 67, 83, 99, 131, 259, 515,
-  1027, 2051, 4099, 8195, 16387, 32771, 65539
-};
-
-static const unsigned char elf_zstd_match_length_bits[] =
-{
-  1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
-};
-
 /* Decompress a zstd stream from PIN/SIN to POUT/SOUT.  Code based on RFC 8878.
    Return 1 on success, 0 on error.  */
 
@@ -3765,11 +4059,11 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
   unsigned char *poutstart;
   unsigned char *poutend;
   struct elf_zstd_seq_decode literal_decode;
-  struct elf_zstd_fse_entry *literal_fse_table;
+  struct elf_zstd_fse_baseline_entry *literal_fse_table;
   struct elf_zstd_seq_decode match_decode;
-  struct elf_zstd_fse_entry *match_fse_table;
+  struct elf_zstd_fse_baseline_entry *match_fse_table;
   struct elf_zstd_seq_decode offset_decode;
-  struct elf_zstd_fse_entry *offset_fse_table;
+  struct elf_zstd_fse_baseline_entry *offset_fse_table;
   uint16_t *huffman_table;
   int huffman_table_bits;
   uint32_t repeated_offset1;
@@ -3786,21 +4080,18 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
   poutend = pout + sout;
 
   literal_decode.table = NULL;
-  literal_decode.table_bits = 0;
-  literal_decode.use_rle = 0;
-  literal_fse_table = ((struct elf_zstd_fse_entry *)
+  literal_decode.table_bits = -1;
+  literal_fse_table = ((struct elf_zstd_fse_baseline_entry *)
 		       (zdebug_table + ZSTD_TABLE_LITERAL_FSE_OFFSET));
 
   match_decode.table = NULL;
-  match_decode.table_bits = 0;
-  match_decode.use_rle = 0;
-  match_fse_table = ((struct elf_zstd_fse_entry *)
+  match_decode.table_bits = -1;
+  match_fse_table = ((struct elf_zstd_fse_baseline_entry *)
 		     (zdebug_table + ZSTD_TABLE_MATCH_FSE_OFFSET));
 
   offset_decode.table = NULL;
-  offset_decode.table_bits = 0;
-  offset_decode.use_rle = 0;
-  offset_fse_table = ((struct elf_zstd_fse_entry *)
+  offset_decode.table_bits = -1;
+  offset_fse_table = ((struct elf_zstd_fse_baseline_entry *)
 		      (zdebug_table + ZSTD_TABLE_OFFSET_FSE_OFFSET));
   huffman_table = ((uint16_t *)
 		   (zdebug_table + ZSTD_TABLE_HUFFMAN_OFFSET));
@@ -4276,6 +4567,9 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 
 	    if (seq_count > 0)
 	      {
+		int (*pfn)(const struct elf_zstd_fse_entry *,
+			   int, struct elf_zstd_fse_baseline_entry *);
+
 		if (unlikely (pin >= pinend))
 		  {
 		    elf_uncompress_failed ();
@@ -4284,27 +4578,30 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 		seq_hdr = *pin;
 		++pin;
 
+		pfn = elf_zstd_make_literal_baseline_fse;
 		if (!elf_zstd_unpack_seq_decode ((seq_hdr >> 6) & 3,
 						 &pin, pinend,
 						 &elf_zstd_lit_table[0], 6,
 						 scratch, 35,
-						 literal_fse_table, 9,
+						 literal_fse_table, 9, pfn,
 						 &literal_decode))
 		  return 0;
 
+		pfn = elf_zstd_make_offset_baseline_fse;
 		if (!elf_zstd_unpack_seq_decode ((seq_hdr >> 4) & 3,
 						 &pin, pinend,
 						 &elf_zstd_offset_table[0], 5,
 						 scratch, 31,
-						 offset_fse_table, 8,
+						 offset_fse_table, 8, pfn,
 						 &offset_decode))
 		  return 0;
 
+		pfn = elf_zstd_make_match_baseline_fse;
 		if (!elf_zstd_unpack_seq_decode ((seq_hdr >> 2) & 3,
 						 &pin, pinend,
 						 &elf_zstd_match_table[0], 6,
 						 scratch, 52,
-						 match_fse_table, 9,
+						 match_fse_table, 9, pfn,
 						 &match_decode))
 		  return 0;
 	      }
@@ -4354,77 +4651,53 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 
 	    bits -= __builtin_clz (stream_start) - 24 + 1;
 
-	    if (unlikely (literal_decode.use_rle))
-	      literal_state = 0;
-	    else
-	      {
-		if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-		  return 0;
-		bits -= literal_decode.table_bits;
-		literal_state = ((val >> bits)
-				 & ((1U << literal_decode.table_bits) - 1));
-	      }
+	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+	      return 0;
+	    bits -= literal_decode.table_bits;
+	    literal_state = ((val >> bits)
+			     & ((1U << literal_decode.table_bits) - 1));
 
-	    if (unlikely (offset_decode.use_rle))
-	      offset_state = 0;
-	    else
-	      {
-		if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-		  return 0;
-		bits -= offset_decode.table_bits;
-		offset_state = ((val >> bits)
-				& ((1U << offset_decode.table_bits) - 1));
-	      }
+	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+	      return 0;
+	    bits -= offset_decode.table_bits;
+	    offset_state = ((val >> bits)
+			    & ((1U << offset_decode.table_bits) - 1));
 
-	    if (unlikely (match_decode.use_rle))
-	      match_state = 0;
-	    else
-	      {
-		if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-		  return 0;
-		bits -= match_decode.table_bits;
-		match_state = ((val >> bits)
-			       & ((1U << match_decode.table_bits) - 1));
-	      }
+	    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+	      return 0;
+	    bits -= match_decode.table_bits;
+	    match_state = ((val >> bits)
+			   & ((1U << match_decode.table_bits) - 1));
 
 	    seq = 0;
 	    while (1)
 	      {
+		const struct elf_zstd_fse_baseline_entry *pt;
+		uint32_t offset_basebits;
+		uint32_t offset_baseline;
+		uint32_t offset_bits;
 		uint32_t offset_base;
-		uint32_t need;
-		uint32_t add;
 		uint32_t offset;
-		uint32_t use_offset;
+		uint32_t match_baseline;
+		uint32_t match_bits;
 		uint32_t match_base;
 		uint32_t match;
+		uint32_t literal_baseline;
+		uint32_t literal_bits;
 		uint32_t literal_base;
 		uint32_t literal;
-		const struct elf_zstd_fse_entry *pt;
-		uint64_t v;
+		uint32_t need;
+		uint32_t add;
 
-		if (unlikely (offset_decode.use_rle))
-		  offset_base = offset_decode.rle;
-		else
-		  offset_base = offset_decode.table[offset_state].symbol;
+		pt = &offset_decode.table[offset_state];
+		offset_basebits = pt->basebits;
+		offset_baseline = pt->baseline;
+		offset_bits = pt->bits;
+		offset_base = pt->base;
 
-		if (unlikely (match_decode.use_rle))
-		  match_base = match_decode.rle;
-		else
-		  match_base = match_decode.table[match_state].symbol;
-
-		if (unlikely (literal_decode.use_rle))
-		  literal_base = literal_decode.rle;
-		else
-		  literal_base = literal_decode.table[literal_state].symbol;
-
-		need = offset_base;
-		if (unlikely (need > 31))
-		  {
-		    elf_uncompress_failed ();
-		    return 0;
-		  }
-
-		/* elf_fetch_bits_backward only promises us 16 bits.  */
+		/* This case can be more than 16 bits, which is all that
+		   elf_fetch_bits_backward promises.  */
+		need = offset_basebits;
 		add = 0;
 		if (unlikely (need > 16))
 		  {
@@ -4435,147 +4708,122 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 		    need -= 16;
 		    add <<= need;
 		  }
-		if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-		  return 0;
-		bits -= need;
-		add += (val >> bits) & ((1U << need) - 1);
-
-		offset = (1U << offset_base) + add;
-
-		if (match_base < ZSTD_MATCH_LENGTH_BASELINE_OFFSET)
-		  match = match_base + 3;
-		else
+		if (need > 0)
 		  {
-		    unsigned int idx;
-		    unsigned int baseline;
+		    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+		      return 0;
+		    bits -= need;
+		    add += (val >> bits) & ((1U << need) - 1);
+		  }
 
-		    if (unlikely (match_base > 52))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
+		offset = offset_baseline + add;
 
-		    idx = match_base - ZSTD_MATCH_LENGTH_BASELINE_OFFSET;
-		    baseline = elf_zstd_match_length_baseline[idx];
-		    need = elf_zstd_match_length_bits[idx];
+		pt = &match_decode.table[match_state];
+		need = pt->basebits;
+		match_baseline = pt->baseline;
+		match_bits = pt->bits;
+		match_base = pt->base;
 
+		add = 0;
+		if (need > 0)
+		  {
 		    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
 		      return 0;
 		    bits -= need;
 		    add = (val >> bits) & ((1U << need) - 1);
-
-		    match = baseline + add;
 		  }
 
-		if (literal_base < ZSTD_LITERAL_LENGTH_BASELINE_OFFSET)
-		  literal = literal_base;
-		else
+		match = match_baseline + add;
+
+		pt = &literal_decode.table[literal_state];
+		need = pt->basebits;
+		literal_baseline = pt->baseline;
+		literal_bits = pt->bits;
+		literal_base = pt->base;
+
+		add = 0;
+		if (need > 0)
 		  {
-		    unsigned int idx;
-		    unsigned int baseline;
-
-		    if (unlikely (literal_base > 35))
-		      {
-			elf_uncompress_failed ();
-			return 0;
-		      }
-
-		    idx = literal_base - ZSTD_LITERAL_LENGTH_BASELINE_OFFSET;
-		    baseline = elf_zstd_literal_length_baseline[idx];
-		    need = elf_zstd_literal_length_bits[idx];
-
 		    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
 		      return 0;
 		    bits -= need;
 		    add = (val >> bits) & ((1U << need) - 1);
-
-		    literal = baseline + add;
 		  }
 
-		switch (offset)
+		literal = literal_baseline + add;
+
+		/* See the comment in elf_zstd_make_offset_baseline_fse.  */
+		if (offset_basebits > 1)
 		  {
-		  case 0:
-		    elf_uncompress_failed ();
-		    return 0;
-		  case 1:
-		    if (literal == 0)
+		    repeated_offset3 = repeated_offset2;
+		    repeated_offset2 = repeated_offset1;
+		    repeated_offset1 = offset;
+		  }
+		else
+		  {
+		    if (unlikely (literal == 0))
+		      ++offset;
+		    switch (offset)
 		      {
-			use_offset = repeated_offset2;
+		      case 1:
+			offset = repeated_offset1;
+			break;
+		      case 2:
+			offset = repeated_offset2;
 			repeated_offset2 = repeated_offset1;
-		      }
-		    else
-		      use_offset = repeated_offset1;
-		    break;
-		  case 2:
-		    if (literal == 0)
-		      {
-			use_offset = repeated_offset3;
+			repeated_offset1 = offset;
+			break;
+		      case 3:
+			offset = repeated_offset3;
 			repeated_offset3 = repeated_offset2;
+			repeated_offset2 = repeated_offset1;
+			repeated_offset1 = offset;
+			break;
+		      case 4:
+			offset = repeated_offset1 - 1;
+			repeated_offset3 = repeated_offset2;
+			repeated_offset2 = repeated_offset1;
+			repeated_offset1 = offset;
+			break;
 		      }
-		    else
-		      use_offset = repeated_offset2;
-		    repeated_offset2 = repeated_offset1;
-		    break;
-		  case 3:
-		    if (literal == 0)
-		      use_offset = repeated_offset1 - 1;
-		    else
-		      use_offset = repeated_offset3;
-		    repeated_offset3 = repeated_offset2;
-		    repeated_offset2 = repeated_offset1;
-		    break;
-		  default:
-		    use_offset = offset - 3;
-		    repeated_offset3 = repeated_offset2;
-		    repeated_offset2 = repeated_offset1;
-		    break;
 		  }
-
-		repeated_offset1 = use_offset;
 
 		++seq;
 		if (seq < seq_count)
 		  {
+		    uint32_t v;
+
 		    /* Update the three states.  */
 
-		    if (unlikely (literal_decode.use_rle))
-		      ;
-		    else
-		      {
-			if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-			  return 0;
-			pt = &literal_decode.table[literal_state];
-			bits -= pt->bits;
-			v = (val >> bits) & (((uint64_t)1 << pt->bits) - 1);
-			literal_state = pt->base + v;
-		      }
+		    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+		      return 0;
 
-		    if (unlikely (match_decode.use_rle))
-		      ;
-		    else
-		      {
-			if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-			  return 0;
-			pt = &match_decode.table[match_state];
-			bits -= pt->bits;
-			v = (val >> bits) & (((uint64_t)1 << pt->bits) - 1);
-			match_state = pt->base + v;
-		      }
+		    need = literal_bits;
+		    bits -= need;
+		    v = (val >> bits) & (((uint32_t)1 << need) - 1);
 
-		    if (unlikely (offset_decode.use_rle))
-		      ;
-		    else
-		      {
-			if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
-			  return 0;
-			pt = &offset_decode.table[offset_state];
-			bits -= pt->bits;
-			v = (val >> bits) & (((uint64_t)1 << pt->bits) - 1);
-			offset_state = pt->base + v;
-		      }
+		    literal_state = literal_base + v;
+
+		    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+		      return 0;
+
+		    need = match_bits;
+		    bits -= need;
+		    v = (val >> bits) & (((uint32_t)1 << need) - 1);
+
+		    match_state = match_base + v;
+
+		    if (!elf_fetch_bits_backward (&pback, pin, &val, &bits))
+		      return 0;
+
+		    need = offset_bits;
+		    bits -= need;
+		    v = (val >> bits) & (((uint32_t)1 << need) - 1);
+
+		    offset_state = offset_base + v;
 		  }
 
-		/* The next sequence is now in LITERAL, USE_OFFSET, MATCH.  */
+		/* The next sequence is now in LITERAL, OFFSET, MATCH.  */
 
 		if (literal > 0)
 		  {
@@ -4587,7 +4835,14 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 			return 0;
 		      }
 
-		    if (literal <= litexp_count)
+		    if (literals.type != ZSTD_LIT_HUFF)
+		      {
+			if (!elf_zstd_literal_output (&literals, literal,
+						      pout))
+			  return 0;
+			pout += literal;
+		      }
+		    else if (literal <= litexp_count)
 		      {
 			memcpy (pout, plitexp, literal);
 			plitexp += literal;
@@ -4596,17 +4851,12 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 		      }
 		    else
 		      {
-			if (litexp_count > 0)
-			  {
-			    memcpy (pout, plitexp, litexp_count);
-			    pout += litexp_count;
-			    literal -= litexp_count;
-			    plitexp = NULL;
-			    litexp_count = 0;
-			  }
+			memcpy (pout, plitexp, litexp_count);
+			pout += litexp_count;
+			literal -= litexp_count;
+			litexp_count = 0;
 
-			if (literals.type != ZSTD_LIT_HUFF
-			    || literal >= ZSTD_TABLE_WORK_LIT_SIZE)
+			if (unlikely (literal >= ZSTD_TABLE_WORK_LIT_SIZE))
 			  {
 			    if (!elf_zstd_literal_output (&literals, literal,
 							  pout))
@@ -4615,61 +4865,47 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 			    literal = 0;
 			  }
 
-			if (literals.type != ZSTD_LIT_HUFF
-			    || literals.regenerated_size == 0)
-			  {
-			    plitexp = NULL;
-			    litexp_count = 0;
-			    if (unlikely (literal > 0))
-			      {
-				elf_uncompress_failed ();
-				return 0;
-			      }
-			  }
-			else
-			  {
-			    plitexp = (unsigned char *)scratch;
-			    litexp_count = ZSTD_TABLE_WORK_LIT_SIZE;
-			    if (litexp_count > literals.regenerated_size)
-			      litexp_count = literals.regenerated_size;
-			    if (!elf_zstd_literal_output (&literals,
-							  litexp_count,
-							  plitexp))
-			      return 0;
+			plitexp = (unsigned char *)scratch;
+			litexp_count = ZSTD_TABLE_WORK_LIT_SIZE;
+			if (litexp_count > literals.regenerated_size)
+			  litexp_count = literals.regenerated_size;
+			if (!elf_zstd_literal_output (&literals,
+						      litexp_count,
+						      plitexp))
+			  return 0;
 
-			    if (unlikely (literal > litexp_count))
-			      {
-				elf_uncompress_failed ();
-				return 0;
-			      }
-
-			    memcpy (pout, plitexp, literal);
-			    plitexp += literal;
-			    litexp_count -= literal;
-			    pout += literal;
+			if (unlikely (literal > litexp_count))
+			  {
+			    elf_uncompress_failed ();
+			    return 0;
 			  }
+
+			memcpy (pout, plitexp, literal);
+			plitexp += literal;
+			litexp_count -= literal;
+			pout += literal;
 		      }
-		  }
-
-		/* Copy MATCH bytes from the decoded output at USE_OFFSET.  */
-
-		if (unlikely ((size_t)(poutend - pout) < match))
-		  {
-		    elf_uncompress_failed ();
-		    return 0;
 		  }
 
 		if (match > 0)
 		  {
-		    if (unlikely ((size_t)(pout - poutstart) < use_offset))
+		    /* Copy MATCH bytes from the decoded output at OFFSET.  */
+
+		    if (unlikely ((size_t)(poutend - pout) < match))
 		      {
 			elf_uncompress_failed ();
 			return 0;
 		      }
 
-		    if (use_offset >= match)
+		    if (unlikely ((size_t)(pout - poutstart) < offset))
 		      {
-			memcpy (pout, pout - use_offset, match);
+			elf_uncompress_failed ();
+			return 0;
+		      }
+
+		    if (offset >= match)
+		      {
+			memcpy (pout, pout - offset, match);
 			pout += match;
 		      }
 		    else
@@ -4678,8 +4914,8 @@ elf_zstd_decompress (const unsigned char *pin, size_t sin,
 			  {
 			    uint32_t copy;
 
-			    copy = match < use_offset ? match : use_offset;
-			    memcpy (pout, pout - use_offset, copy);
+			    copy = match < offset ? match : offset;
+			    memcpy (pout, pout - offset, copy);
 			    match -= copy;
 			    pout += copy;
 			  }

@@ -1249,15 +1249,19 @@ void View::DrawFindZone()
                             }
 
                             int64_t tBefore = 0;
+                            int64_t cntBefore = 0;
                             for( int i=0; i<bin; i++ )
                             {
                                 tBefore += binTime[i];
+                                cntBefore += bins[i];
                             }
 
                             int64_t tAfter = 0;
+                            int64_t cntAfter = 0;
                             for( int i=bin+1; i<numBins; i++ )
                             {
                                 tAfter += binTime[i];
+                                cntAfter += bins[i];
                             }
 
                             ImGui::BeginTooltip();
@@ -1265,6 +1269,8 @@ void View::DrawFindZone()
                             ImGui::SameLine();
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                             TextFocused( "Count:", RealToString( bins[bin] ) );
+                            TextFocused( "Count in the left bins:", RealToString( cntBefore ) );
+                            TextFocused( "Count in the right bins:", RealToString( cntAfter ) );
                             TextFocused( "Time spent in bin:", TimeToString( binTime[bin] ) );
                             TextFocused( "Time spent in the left bins:", TimeToString( tBefore ) );
                             TextFocused( "Time spent in the right bins:", TimeToString( tAfter ) );

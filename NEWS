@@ -27,6 +27,7 @@ v0.x.x (xxxx-xx-xx)
   traces.
 - Files containing assembly listings are now annotated with source line
   information.
+- Histogram tooltip will now also show left/right counts.
 
 
 v0.9.0 (2022-10-26)

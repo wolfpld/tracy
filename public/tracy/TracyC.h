@@ -341,10 +341,10 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCIsConnected ___tracy_connected()
 
+#ifdef TRACY_FIBERS
 TRACY_API void ___tracy_fiber_enter( const char* fiber );
 TRACY_API void ___tracy_fiber_leave( void );
 
-#ifdef TRACY_FIBERS
 #  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif

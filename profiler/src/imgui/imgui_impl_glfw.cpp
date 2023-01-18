@@ -313,6 +313,11 @@ void ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow* window, int button, int acti
 
 void ImGui_ImplGlfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
+#if defined(__EMSCRIPTEN__)
+    // Running under Emscripten, GLFW reports grossly mis-scaled scroll events and even flips the X axis.
+    xoffset /= -20.0f;
+#endif
+
     ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();
     if (bd->PrevUserCallbackScroll != nullptr && window == bd->Window)
         bd->PrevUserCallbackScroll(window, xoffset, yoffset);

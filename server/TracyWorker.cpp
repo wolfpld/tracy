@@ -3917,18 +3917,59 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         break;
     }
     if( rval != CS_ERR_OK ) return;
+    cs_option( handle, CS_OPT_DETAIL, CS_OPT_ON );
     cs_insn* insn;
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, sz, ptr, 0, &insn );
     if( cnt > 0 )
     {
         for( size_t i=0; i<cnt; i++ )
         {
-            const auto addr = insn[i].address;
-            const auto ptr = PackPointer( addr );
-            if( m_data.callstackFrameMap.find( ptr ) == m_data.callstackFrameMap.end() )
+            const auto& op = insn[i];
+            const auto addr = op.address;
+            if( m_data.callstackFrameMap.find( PackPointer( addr ) ) == m_data.callstackFrameMap.end() )
             {
                 m_pendingCallstackFrames++;
                 Query( ServerQueryCallstackFrame, addr );
+            }
+
+            uint64_t callAddr = 0;
+            const auto& detail = *op.detail;
+            for( auto j=0; j<detail.groups_count; j++ )
+            {
+                if( detail.groups[j] == CS_GRP_JUMP || detail.groups[j] == CS_GRP_CALL )
+                {
+                    switch( GetCpuArch() )
+                    {
+                    case CpuArchX86:
+                    case CpuArchX64:
+                        if( detail.x86.op_count == 1 && detail.x86.operands[0].type == X86_OP_IMM )
+                        {
+                            callAddr = (uint64_t)detail.x86.operands[0].imm;
+                        }
+                        break;
+                    case CpuArchArm32:
+                        if( detail.arm.op_count == 1 && detail.arm.operands[0].type == ARM_OP_IMM )
+                        {
+                            callAddr = (uint64_t)detail.arm.operands[0].imm;
+                        }
+                        break;
+                    case CpuArchArm64:
+                        if( detail.arm64.op_count == 1 && detail.arm64.operands[0].type == ARM64_OP_IMM )
+                        {
+                            callAddr = (uint64_t)detail.arm64.operands[0].imm;
+                        }
+                        break;
+                    default:
+                        assert( false );
+                        break;
+                    }
+                    if( callAddr != 0 ) break;
+                }
+            }
+            if( callAddr != 0 && m_data.callstackFrameMap.find( PackPointer( callAddr ) ) == m_data.callstackFrameMap.end() )
+            {
+                m_pendingCallstackFrames++;
+                Query( ServerQueryCallstackFrame, callAddr );
             }
         }
         cs_free( insn, cnt );

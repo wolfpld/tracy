@@ -3725,7 +3725,7 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
         }
     }
     CheckString( srcloc.function );
-    const uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
+    const uint32_t color = srcloc.r | ( srcloc.g << 8 ) | ( srcloc.b << 16 );
     it->second = SourceLocation {{ srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color }};
 }
 
@@ -5331,7 +5331,7 @@ void Worker::ProcessZoneColor( const QueueZoneColor& ev )
     auto& stack = td->stack;
     auto zone = stack.back();
     auto& extra = RequestZoneExtra( *zone );
-    const uint32_t color = ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    const uint32_t color = ev.r | ( ev.g << 8 ) | ( ev.b << 16);
     extra.color = color;
 }
 
@@ -5625,7 +5625,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
     msg->thread = CompressThread( td->id );
-    msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    msg->color = 0xFF000000 | ev.r | ( ev.g << 8 ) | ( ev.b << 16 );
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
@@ -5640,7 +5640,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( td->id );
-    msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    msg->color = 0xFF000000 | ev.r | ( ev.g << 8 ) | ( ev.b << 16 );
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );

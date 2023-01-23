@@ -143,9 +143,9 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         TracyQueuePrepare( QueueType::ZoneColor );
-        MemWrite( &item->zoneColor.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->zoneColor.b, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->zoneColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->zoneColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        MemWrite( &item->zoneColor.r, uint8_t( ( color >> 16 ) & 0xFF ) );
         TracyQueueCommit( zoneColorThread );
     }
 

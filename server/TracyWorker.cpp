@@ -5625,7 +5625,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
     msg->thread = CompressThread( td->id );
-    msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    msg->color = 0xFF000000 | ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
@@ -5640,7 +5640,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
     msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( td->id );
-    msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    msg->color = 0xFF000000 | ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );

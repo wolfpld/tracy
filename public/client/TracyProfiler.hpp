@@ -414,9 +414,9 @@ public:
         TracyQueuePrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColorFat.time, GetTime() );
         MemWrite( &item->messageColorFat.text, (uint64_t)ptr );
-        MemWrite( &item->messageColorFat.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->messageColorFat.b, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColorFat.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->messageColorFat.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        MemWrite( &item->messageColorFat.r, uint8_t( ( color >> 16 ) & 0xFF ) );
         MemWrite( &item->messageColorFat.size, (uint16_t)size );
         TracyQueueCommit( messageColorFatThread );
     }
@@ -434,9 +434,9 @@ public:
         TracyQueuePrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColorLiteral.time, GetTime() );
         MemWrite( &item->messageColorLiteral.text, (uint64_t)txt );
-        MemWrite( &item->messageColorLiteral.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->messageColorLiteral.b, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->messageColorLiteral.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        MemWrite( &item->messageColorLiteral.r, uint8_t( ( color >> 16 ) & 0xFF ) );
         TracyQueueCommit( messageColorLiteralThread );
     }
 

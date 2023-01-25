@@ -166,7 +166,7 @@ private:
     const bool m_active;
 
 #ifdef TRACY_ON_DEMAND
-    uint64_t m_connectionId;
+    uint64_t m_connectionId = 0;
 #endif
 };
 

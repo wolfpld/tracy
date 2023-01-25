@@ -1265,8 +1265,7 @@ void SysTraceWorker( void* ptr )
                             type = QueueType::HwSampleBranchMiss;
                             break;
                         default:
-                            assert( false );
-                            break;
+                            abort();
                         }
 
                         TracyLfqPrepare( type );

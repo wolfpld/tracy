@@ -159,7 +159,7 @@ int main( int argc, char** argv )
     printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );
     tracy::Worker worker( address, port );
-    while( !worker.IsConnected() )
+    while( !worker.HasData() )
     {
         const auto handshake = worker.GetHandshakeStatus();
         if( handshake == tracy::HandshakeProtocolMismatch )
@@ -179,7 +179,6 @@ int main( int argc, char** argv )
         }
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
-    while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", tracy::TimeToString( worker.GetDelay() ), tracy::TimeToString( worker.GetResolution() ) );
 
 #ifdef _WIN32

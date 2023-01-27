@@ -30,8 +30,10 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, float
 
     for( auto& item : m_items )
     {
+        auto currentFrameItemHeight = item->GetNextFrameHeight();
         item->Draw( m_firstFrame, pxns, yOffset, wpos, hover, yMin, yMax );
-        yOffset += item->GetNextFrameHeight();
+        if( m_firstFrame ) currentFrameItemHeight = item->GetNextFrameHeight();
+        yOffset += currentFrameItemHeight;
     }
 
     const auto scrollPos = ImGui::GetScrollY();

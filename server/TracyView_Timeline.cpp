@@ -321,6 +321,7 @@ void View::DrawTimeline()
     const auto yMin = ImGui::GetCursorScreenPos().y;
     const auto yMax = linepos.y + lineh;
 
+    ImGui::SetNextWindowContentSize( ImVec2( 0, m_tc.GetHeight() ) );
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     if( m_yDelta != 0 )
@@ -333,7 +334,6 @@ void View::DrawTimeline()
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    // note that m_tc.GetHeight() returns the height from the previous draw
     const auto h = std::max<float>( m_tc.GetHeight(), ImGui::GetContentRegionAvail().y - 4 );    // magic border value
 
     ImGui::ItemSize( ImVec2( w, h ) );

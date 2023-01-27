@@ -2,6 +2,7 @@
 #define __TRACYTIMELINECONTROLLER_HPP__
 
 #include <assert.h>
+#include <optional>
 #include <vector>
 
 #include "../public/common/TracyForceInline.hpp"
@@ -18,7 +19,7 @@ public:
 
     void FirstFrameExpired();
     void Begin();
-    void End( double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
+    void End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax );
 
     template<class T, class U>
     void AddItem( U* data )
@@ -39,11 +40,17 @@ public:
     }
 
 private:
+    void UpdateCenterItem();
+    std::optional<int> CalculateScrollPosition() const;
+
     std::vector<TimelineItem*> m_items;
     unordered_flat_map<const void*, std::unique_ptr<TimelineItem>> m_itemMap;
 
     float m_height;
     float m_scroll;
+
+    const void* m_centerItemkey;
+    int m_centerItemOffsetY;
 
     bool m_firstFrame;
 

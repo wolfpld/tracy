@@ -327,8 +327,6 @@ void View::DrawTimeline()
     if( m_yDelta != 0 )
     {
         auto& io = ImGui::GetIO();
-        auto y = ImGui::GetScrollY();
-        ImGui::SetScrollY( y - m_yDelta );
         io.MouseClickedPos[1].y = io.MousePos.y;
     }
 
@@ -380,7 +378,7 @@ void View::DrawTimeline()
         }
     }
 
-    m_tc.End( pxns, wpos, hover, yMin, yMax );
+    m_tc.End( pxns, wpos, hover, drawMouseLine && m_viewMode == ViewMode::Paused, yMin, yMax );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;

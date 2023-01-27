@@ -14,7 +14,7 @@ class Worker;
 class TimelineItem
 {
 public:
-    TimelineItem( View& view, Worker& worker );
+    TimelineItem( View& view, Worker& worker, const void* key );
     virtual ~TimelineItem() = default;
 
     // draws the timeilne item and also updates the next frame height value
@@ -28,6 +28,8 @@ public:
 
     // returns 0 instead of the correct value for the first frame
     int GetNextFrameHeight() const { return m_height; }
+
+    const void* GetKey() const { return m_key; }
 
 protected:
     virtual uint32_t HeaderColor() const = 0;
@@ -53,6 +55,8 @@ private:
     void AdjustThreadHeight( bool firstFrame, int yBegin, int yEnd );
 
     int m_height;
+
+    const void* m_key;
 
 protected:
     View& m_view;

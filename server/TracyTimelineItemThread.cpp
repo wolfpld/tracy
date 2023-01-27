@@ -12,7 +12,7 @@ namespace tracy
 {
 
 TimelineItemThread::TimelineItemThread( View& view, Worker& worker, const ThreadData* thread )
-    : TimelineItem( view, worker )
+    : TimelineItem( view, worker, thread )
     , m_thread( thread )
     , m_ghost( false )
 {

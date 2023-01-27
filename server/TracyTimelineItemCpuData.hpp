@@ -10,7 +10,7 @@ namespace tracy
 class TimelineItemCpuData final : public TimelineItem
 {
 public:
-    TimelineItemCpuData( View& view, Worker& worker, void* );
+    TimelineItemCpuData( View& view, Worker& worker, void* key );
 
     void SetVisible( bool visible ) override;
     bool IsVisible() const override;

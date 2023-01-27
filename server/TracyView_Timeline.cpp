@@ -341,7 +341,6 @@ void View::DrawTimeline()
     draw = ImGui::GetWindowDrawList();
 
     const auto ty = ImGui::GetTextLineHeight();
-    int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
@@ -381,7 +380,7 @@ void View::DrawTimeline()
         }
     }
 
-    m_tc.End( pxns, offset, wpos, hover, yMin, yMax );
+    m_tc.End( pxns, wpos, hover, yMin, yMax );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;

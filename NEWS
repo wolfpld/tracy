@@ -28,6 +28,8 @@ v0.x.x (xxxx-xx-xx)
 - Files containing assembly listings are now annotated with source line
   information.
 - Histogram tooltip will now also show left/right counts.
+- Tracy now actively manages timeline horizontal scroll offset in order to
+  keep the thread under the mouse cursor in the same place on screen.
 
 
 v0.9.0 (2022-10-26)

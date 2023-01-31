@@ -8,8 +8,8 @@
 namespace tracy
 {
 
-TimelineItemCpuData::TimelineItemCpuData( View& view, Worker& worker, void* )
-    : TimelineItem( view, worker )
+TimelineItemCpuData::TimelineItemCpuData( View& view, Worker& worker, void* key )
+    : TimelineItem( view, worker, key )
 {
 }
 

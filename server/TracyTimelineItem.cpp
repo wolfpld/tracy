@@ -8,20 +8,24 @@
 namespace tracy
 {
 
-TimelineItem::TimelineItem( View& view, Worker& worker )
+TimelineItem::TimelineItem( View& view, Worker& worker, const void* key )
     : m_visible( true )
     , m_showFull( true )
     , m_height( 0 )
+    , m_key( key )
     , m_view( view )
     , m_worker( worker )
 {
 }
 
-void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+void TimelineItem::Draw( bool firstFrame, double pxns, int yOffset, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
+    const auto yBegin = yOffset;
+    auto yEnd = yOffset;
+
     if( !IsVisible() )
     {
-        if( m_height != 0 ) AdjustThreadHeight( firstFrame, offset, offset );
+        if( m_height != 0 ) AdjustThreadHeight( firstFrame, yBegin, yEnd );
         return;
     }
     if( IsEmpty() ) return;
@@ -29,32 +33,31 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
     const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetTextLineHeight();
     const auto ostep = ty + 1;
-    const auto yPos = wpos.y + offset;
+    const auto yPos = wpos.y + yBegin;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    const auto oldOffset = offset;
     auto draw = ImGui::GetWindowDrawList();
 
     ImGui::PushID( this );
-    ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + m_height ), true );
+    ImGui::PushClipRect( wpos + ImVec2( 0, yBegin ), wpos + ImVec2( w, yBegin + m_height ), true );
 
-    offset += ostep;
+    yEnd += ostep;
     if( m_showFull )
     {
-        if( !DrawContents( pxns, offset, wpos, hover, yMin, yMax ) && !m_view.GetViewData().drawEmptyLabels )
+        if( !DrawContents( pxns, yEnd, wpos, hover, yMin, yMax ) && !m_view.GetViewData().drawEmptyLabels )
         {
-            offset = oldOffset;
-            AdjustThreadHeight( firstFrame, oldOffset, offset );
+            yEnd = yBegin;
+            AdjustThreadHeight( firstFrame, yBegin, yEnd );
             ImGui::PopClipRect();
             ImGui::PopID();
             return;
         }
     }
 
-    DrawOverlay( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ) );
+    DrawOverlay( wpos + ImVec2( 0, yBegin ), wpos + ImVec2( w, yEnd ) );
     ImGui::PopClipRect();
 
     float labelWidth;
-    const auto hdrOffset = oldOffset;
+    const auto hdrOffset = yBegin;
     const bool drawHeader = yPos + ty >= yMin && yPos <= yMax;
     if( drawHeader )
     {
@@ -112,39 +115,38 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int& offset, const ImVec2
         ImGui::EndPopup();
     }
 
-    offset += 0.2f * ostep;
-    AdjustThreadHeight( firstFrame, oldOffset, offset );
+    yEnd += 0.2f * ostep;
+    AdjustThreadHeight( firstFrame, yBegin, yEnd );
 
     ImGui::PopID();
 }
 
-void TimelineItem::AdjustThreadHeight( bool firstFrame, int oldOffset, int& offset )
+void TimelineItem::AdjustThreadHeight( bool firstFrame, int yBegin, int yEnd )
 {
     const auto speed = 4.0;
     const auto baseMove = 1.0;
 
-    const auto h = offset - oldOffset;
+    const auto newHeight = yEnd - yBegin;
     if( firstFrame )
     {
-        m_height = h;
+        m_height = newHeight;
     }
-    else if( m_height != h )
+    else if( m_height != newHeight )
     {
-        const auto diff = h - m_height;
+        const auto diff = newHeight - m_height;
         const auto preClampMove = diff * speed * ImGui::GetIO().DeltaTime;
         if( diff > 0 )
         {
             const auto move = preClampMove + baseMove;
-            m_height = int( std::min<double>( m_height + move, h ) );
+            m_height = int( std::min<double>( m_height + move, newHeight ) );
         }
         else
         {
             const auto move = preClampMove - baseMove;
-            m_height = int( std::max<double>( m_height + move, h ) );
+            m_height = int( std::max<double>( m_height + move, newHeight ) );
         }
         s_wasActive = true;
     }
-    offset = oldOffset + m_height;
 }
 
 void TimelineItem::VisibilityCheckbox()

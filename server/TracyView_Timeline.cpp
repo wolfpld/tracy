@@ -321,19 +321,24 @@ void View::DrawTimeline()
     const auto yMin = ImGui::GetCursorScreenPos().y;
     const auto yMax = linepos.y + lineh;
 
+    ImGui::SetNextWindowContentSize( ImVec2( 0, m_tc.GetHeight() ) );
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+
+    const auto verticallyCenterTimeline = true;
 
     if( m_yDelta != 0 )
     {
         auto& io = ImGui::GetIO();
-        auto y = ImGui::GetScrollY();
-        ImGui::SetScrollY( y - m_yDelta );
+        if( !verticallyCenterTimeline )
+        {
+            auto y = ImGui::GetScrollY();
+            ImGui::SetScrollY( y - m_yDelta );
+        }
         io.MouseClickedPos[1].y = io.MousePos.y;
     }
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-    // note that m_tc.GetHeight() returns the height from the previous draw
     const auto h = std::max<float>( m_tc.GetHeight(), ImGui::GetContentRegionAvail().y - 4 );    // magic border value
 
     ImGui::ItemSize( ImVec2( w, h ) );
@@ -341,7 +346,6 @@ void View::DrawTimeline()
     draw = ImGui::GetWindowDrawList();
 
     const auto ty = ImGui::GetTextLineHeight();
-    int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
@@ -381,7 +385,8 @@ void View::DrawTimeline()
         }
     }
 
-    m_tc.End( pxns, offset, wpos, hover, yMin, yMax );
+    const auto vcenter = verticallyCenterTimeline && drawMouseLine && m_viewMode == ViewMode::Paused;
+    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;

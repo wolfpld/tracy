@@ -89,10 +89,12 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
 void TimelineController::End( double pxns, const ImVec2& wpos, bool hover,  bool vcenter, float yMin, float yMax )
 {
     auto shouldUpdateCenterItem = [&] () {
+        const auto imguiChangedScroll = m_scroll != ImGui::GetScrollY();
         const auto& mouseDelta = ImGui::GetIO().MouseDelta;
         const auto mouseMoved = mouseDelta.x != 0.0f || mouseDelta.y != 0.0f;
-        const auto imguiChangedScroll = m_scroll != ImGui::GetScrollY();
-        return ( ( imguiChangedScroll || mouseMoved ) && !ImGui::IsMouseDown( 1 ) ) || !m_centerItemkey;
+        const auto& mousePos = ImGui::GetIO().MousePos;
+        const auto mouseVisible = ImGui::IsMousePosValid( &mousePos );
+        return ( ( imguiChangedScroll || mouseMoved || !mouseVisible ) && !ImGui::IsMouseDown( 1 ) ) || !m_centerItemkey;
     };
 
     if( !vcenter )

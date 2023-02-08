@@ -210,19 +210,14 @@ namespace details
 		}
 	};
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4554)
-#endif
 	template<typename T>
 	static inline bool circular_less_than(T a, T b)
 	{
 		static_assert(std::is_integral<T>::value && !std::numeric_limits<T>::is_signed, "circular_less_than is intended to be used only with unsigned integer types");
-		return static_cast<T>(a - b) > (static_cast<T>(static_cast<T>(1) << static_cast<T>(sizeof(T) * CHAR_BIT - 1)));
+		return static_cast<T>(a - b) > static_cast<T>(static_cast<T>(1) << (static_cast<T>(sizeof(T) * CHAR_BIT - 1)));
+		// Note: extra parens around rhs of operator<< is MSVC bug: https://developercommunity2.visualstudio.com/t/C4554-triggers-when-both-lhs-and-rhs-is/10034931
+		//       silencing the bug requires #pragma warning(disable: 4554) around the calling code and has no effect when done here.
 	}
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 	template<typename U>
 	static inline char* align_for(char* ptr)

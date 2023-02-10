@@ -257,7 +257,6 @@ SourceView::SourceView()
     , m_asmBytes( false )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
-    , m_atnt( false )
     , m_hwSamples( true )
     , m_hwSamplesRelative( true )
     , m_childCalls( false )
@@ -706,7 +705,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     }
     if( rval != CS_ERR_OK ) return false;
     cs_option( handle, CS_OPT_DETAIL, CS_OPT_ON );
-    cs_option( handle, CS_OPT_SYNTAX, m_atnt ? CS_OPT_SYNTAX_ATT : CS_OPT_SYNTAX_INTEL );
+    cs_option( handle, CS_OPT_SYNTAX, CS_OPT_SYNTAX_INTEL );
     cs_insn* insn;
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, len, symAddr, 0, &insn );
     if( cnt > 0 )
@@ -879,9 +878,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             if( ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) && op.id == X86_INS_LEA )
             {
                 assert( op.detail->x86.op_count == 2 );
-                const auto opidx = m_atnt ? 0 : 1;
-                assert( op.detail->x86.operands[opidx].type == X86_OP_MEM );
-                auto& mem = op.detail->x86.operands[opidx].mem;
+                assert( op.detail->x86.operands[1].type == X86_OP_MEM );
+                auto& mem = op.detail->x86.operands[1].mem;
                 if( mem.base == X86_REG_INVALID )
                 {
                     if( mem.index == X86_REG_INVALID )
@@ -2363,63 +2361,55 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( SmallCheckbox( "AT&T", &m_atnt ) ) Disassemble( m_baseAddr, worker );
-
-        if( !m_atnt )
+        float mw = 0;
+        for( auto& v : s_uArchUx )
         {
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-            float mw = 0;
+            const auto w = ImGui::CalcTextSize( v.uArch ).x;
+            if( w > mw ) mw = w;
+        }
+        if( m_selMicroArch == m_profileMicroArch )
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_MICROCHIP );
+            TooltipIfHovered( "Selected microarchitecture is the same as the profiled application was running on" );
+        }
+        else
+        {
+            TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), ICON_FA_MICROCHIP );
+            if( ImGui::IsItemHovered() )
+            {
+                const bool clicked = ImGui::IsItemClicked();
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Selected microarchitecture does not match the one profiled application was running on" );
+                if( m_profileMicroArch >= 0 )
+                {
+                    ImGui::Text( "Measurements were performed on the %s microarchitecture", s_uArchUx[m_profileMicroArch].uArch );
+                    if( clicked ) SelectMicroArchitecture( s_uArchUx[m_profileMicroArch].moniker );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( "Measurements were performed on an unknown microarchitecture" );
+                }
+                ImGui::EndTooltip();
+            }
+        }
+        ImGui::SameLine( 0, 0 );
+        ImGui::TextUnformatted( " \xce\xbc""arch:" );
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth( mw + ImGui::GetTextLineHeight() );
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        if( ImGui::BeginCombo( "##uarch", s_uArchUx[m_selMicroArch].uArch, ImGuiComboFlags_HeightLarge ) )
+        {
+            int idx = 0;
             for( auto& v : s_uArchUx )
             {
-                const auto w = ImGui::CalcTextSize( v.uArch ).x;
-                if( w > mw ) mw = w;
+                if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) SelectMicroArchitecture( v.moniker );
+                ImGui::SameLine();
+                TextDisabledUnformatted( v.cpuName );
+                idx++;
             }
-            if( m_selMicroArch == m_profileMicroArch )
-            {
-                TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_MICROCHIP );
-                TooltipIfHovered( "Selected microarchitecture is the same as the profiled application was running on" );
-            }
-            else
-            {
-                TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), ICON_FA_MICROCHIP );
-                if( ImGui::IsItemHovered() )
-                {
-                    const bool clicked = ImGui::IsItemClicked();
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Selected microarchitecture does not match the one profiled application was running on" );
-                    if( m_profileMicroArch >= 0 )
-                    {
-                        ImGui::Text( "Measurements were performed on the %s microarchitecture", s_uArchUx[m_profileMicroArch].uArch );
-                        if( clicked ) SelectMicroArchitecture( s_uArchUx[m_profileMicroArch].moniker );
-                    }
-                    else
-                    {
-                        ImGui::TextUnformatted( "Measurements were performed on an unknown microarchitecture" );
-                    }
-                    ImGui::EndTooltip();
-                }
-            }
-            ImGui::SameLine( 0, 0 );
-            ImGui::TextUnformatted( " \xce\xbc""arch:" );
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth( mw + ImGui::GetTextLineHeight() );
-            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-            if( ImGui::BeginCombo( "##uarch", s_uArchUx[m_selMicroArch].uArch, ImGuiComboFlags_HeightLarge ) )
-            {
-                int idx = 0;
-                for( auto& v : s_uArchUx )
-                {
-                    if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) SelectMicroArchitecture( v.moniker );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( v.cpuName );
-                    idx++;
-                }
-                ImGui::EndCombo();
-            }
-            ImGui::PopStyleVar();
+            ImGui::EndCombo();
         }
+        ImGui::PopStyleVar();
     }
 
     ImGui::SameLine();
@@ -3936,7 +3926,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
 
     int opdesc = 0;
     const AsmVar* asmVar = nullptr;
-    if( !m_atnt && ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) )
+    if( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 )
     {
         auto uarch = MicroArchitectureData[m_idxMicroArch];
         char tmp[32];
@@ -5569,7 +5559,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             symName = worker.GetString( sym->name );
         }
         fprintf( f, "# Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram().c_str() );
-        if( !m_atnt ) fprintf( f, ".intel_syntax\n\n" );
+        fprintf( f, ".intel_syntax\n\n" );
 
         const auto end = m_asm.size() < stop ? m_asm.size() : stop;
         for( size_t i=start; i<end; i++ )

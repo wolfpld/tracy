@@ -235,7 +235,6 @@ private:
     bool m_asmShowSourceLocation;
     bool m_calcInlineStats;
     uint8_t m_maxAsmBytes;
-    bool m_atnt;
     uint64_t m_jumpPopupAddr;
     const CallstackFrameData* m_localCallstackPopup;
     bool m_hwSamples, m_hwSamplesRelative;

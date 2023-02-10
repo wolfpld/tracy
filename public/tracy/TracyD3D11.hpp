@@ -42,6 +42,8 @@ using TracyD3D11Ctx = void*;
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 
+#include <d3d11.h>
+
 namespace tracy
 {
 

@@ -313,6 +313,11 @@ void ImGui_ImplGlfw_MouseButtonCallback(GLFWwindow* window, int button, int acti
 
 void ImGui_ImplGlfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
+#if defined(__EMSCRIPTEN__)
+    // Running under Emscripten, GLFW reports grossly mis-scaled scroll events and even flips the X axis.
+    xoffset /= -20.0f;
+#endif
+
     ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();
     if (bd->PrevUserCallbackScroll != nullptr && window == bd->Window)
         bd->PrevUserCallbackScroll(window, xoffset, yoffset);
@@ -765,6 +770,11 @@ static void ImGui_ImplGlfw_UpdateMonitors()
         int x, y;
         glfwGetMonitorPos(glfw_monitors[n], &x, &y);
         const GLFWvidmode* vid_mode = glfwGetVideoMode(glfw_monitors[n]);
+        if (vid_mode == NULL) { // Failed to get Video mode (e.g. Emscripten does not support this function)
+            bd->WantUpdateMonitors = false;
+            platform_io.Monitors.resize(0);
+            return;
+        }
         monitor.MainPos = monitor.WorkPos = ImVec2((float)x, (float)y);
         monitor.MainSize = monitor.WorkSize = ImVec2((float)vid_mode->width, (float)vid_mode->height);
 #if GLFW_HAS_MONITOR_WORK_AREA

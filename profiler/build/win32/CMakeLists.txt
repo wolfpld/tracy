@@ -312,4 +312,5 @@ target_link_libraries(
             ws2_32.lib 
             Dbghelp.lib 
             advapi32.lib 
+            tbb12      # https://packages.msys2.org/base/mingw-w64-tbb
             freetype)

@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10)
 project(TracyWin32 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON" FORCE)
+#set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL "ON" FORCE)
 
 
 # add Freetype
@@ -299,14 +299,12 @@ target_include_directories(Tracy PRIVATE "${capstone_dev_SOURCE_DIR}/include/cap
 
 
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  # using Clang
-  target_compile_definitions(Tracy PRIVATE TODO_CMAKE_WIN_BUILD  NO_PARALLEL_SORT)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # using GCC
-  target_compile_definitions(Tracy PRIVATE TODO_CMAKE_WIN_BUILD)
-endif()  
-
+target_compile_definitions(
+    Tracy
+    PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>: TODO_CMAKE_WIN_BUILD  NO_PARALLEL_SORT>
+    PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,GNU>: TODO_CMAKE_WIN_BUILD> 
+    PRIVATE $<$<COMPILE_LANG_AND_ID:CXX,MSVC>:> 
+)
 
 target_link_libraries(
     Tracy 

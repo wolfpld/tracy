@@ -19,6 +19,10 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/glfw/glfw.git
     GIT_TAG        3.3.8
     )
+# unnecessary       
+set(GLFW_BUILD_EXAMPLES FALSE) 
+set(GLFW_BUILD_DOCS FALSE) 
+set(GLFW_BUILD_TESTS FALSE) 
 FetchContent_MakeAvailable(glfw_dev)
 
 

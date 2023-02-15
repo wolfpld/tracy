@@ -294,11 +294,15 @@ target_include_directories(Tracy PRIVATE ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(Tracy PRIVATE "${capstone_dev_SOURCE_DIR}/include/capstone")
 
 
-# TODO_CMAKE_WIN_BUILD block wrong code 
-target_compile_definitions(Tracy PRIVATE TODO_CMAKE_WIN_BUILD)
 
-# NO_PARALLEL_SORT disable unsuported 
-target_compile_definitions(Tracy PRIVATE NO_PARALLEL_SORT)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  # using Clang
+  target_compile_definitions(Tracy PRIVATE TODO_CMAKE_WIN_BUILD  NO_PARALLEL_SORT)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # using GCC
+  target_compile_definitions(Tracy PRIVATE TODO_CMAKE_WIN_BUILD)
+endif()  
+
 
 target_link_libraries(
     Tracy 

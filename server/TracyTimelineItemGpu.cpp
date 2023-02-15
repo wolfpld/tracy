@@ -117,7 +117,9 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
     {
         ImGui::Separator();
         ImGui::TextUnformatted( "GPU timer overflow has been detected." );
+        #ifndef TODO_CMAKE_WIN_BUILD
         TextFocused( "Timer resolution:", RealToString( 63 - TracyLzcnt( m_gpu->overflow ) ) );
+        #endif
         ImGui::SameLine();
         TextDisabledUnformatted( "bits" );
     }

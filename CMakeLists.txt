@@ -145,3 +145,8 @@ install(EXPORT TracyConfig
         NAMESPACE Tracy::
         FILE TracyConfig.cmake
         DESTINATION share/Tracy)
+
+# sample CMakeLists.txt for Windows 
+if (WIN32)
+    add_subdirectory("profiler/build/win32")
+endif()

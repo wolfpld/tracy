@@ -5899,7 +5899,9 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     {
         if( ctx->overflow == 0 )
         {
+            #ifndef TODO_CMAKE_WIN_BUILD // TODO remove it 
             ctx->overflow = uint64_t( 1 ) << ( 64 - TracyLzcnt( ctx->lastGpuTime ) );
+            #endif
         }
         ctx->overflowMul++;
     }

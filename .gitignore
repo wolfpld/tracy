@@ -40,3 +40,6 @@ extra/vswhere.exe
 extra/tracy-build
 /.cache
 compile_commands.json
+/build
+/profiler/build/win32/tools
+/profiler/build/win32/build

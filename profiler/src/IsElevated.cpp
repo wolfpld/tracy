@@ -22,6 +22,13 @@ bool IsElevated()
     return ret;
 }
 
+#elif defined __EMSCRIPTEN__
+
+bool IsElevated()
+{
+    return false;
+}
+
 #else
 
 #include <unistd.h>

@@ -1835,7 +1835,7 @@ void View::DrawFindZone()
 
                 bool empty = true;
                 const auto firstTime = samplesBegin->time.Val();
-                const auto lastTime = samplesEnd->time.Val();
+                const auto lastTime = samplesEnd == samples->end() ? m_worker.GetLastTime() : samplesEnd->time.Val();
                 for( auto& g: selectedGroups )
                 {
                     const auto& zones = g.group->zones;

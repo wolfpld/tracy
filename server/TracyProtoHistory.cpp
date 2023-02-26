@@ -5,7 +5,7 @@ namespace tracy
 {
 
 constexpr ProtocolHistory_t ProtocolHistoryArr[] = {
-    { 63, FileVersion( 0, 9, 0 ) },
+    { 63, FileVersion( 0, 9, 0 ), FileVersion( 0, 9, 1 ) },
     { 57, FileVersion( 0, 8, 2 ) },
     { 56, FileVersion( 0, 8, 1 ) },
     { 55, FileVersion( 0, 8, 0 ) },

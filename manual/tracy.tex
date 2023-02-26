@@ -767,6 +767,20 @@ In addition to the beforementioned libraries, you might also have to install the
 
 Installation of the libraries on OSX can be facilitated using the \texttt{brew} package manager.
 
+\subparagraph{Wayland}
+
+Linux builds of Tracy use the Wayland protocol by default, which allows proper support for Hi-DPI scaling and high-precision input devices such as touchpads. As such, the \texttt{glfw} library is no longer needed, but you will have to install \texttt{libxkbcommon}, \texttt{wayland}, \texttt{libglvnd} (or \texttt{libegl} on some distributions).
+
+You can build the profiler the old way on Linux by enabling the \texttt{LEGACY} flag, e.g. by issuing the following build command \texttt{make LEGACY=1}.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Window decorations}
+Please don't ask about window decorations in Gnome. The current behavior is the intended behavior. Gnome does not want windows to have decorations, and Tracy respects that choice. If you find this problematic, use a desktop environment that actually listens to its users.
+\end{bclogo}
+
 \subsubsection{Build process}
 
 As mentioned earlier, each utility is contained in its own directory, for example \texttt{profiler} or \texttt{capture}\footnote{Other utilities are contained in the \texttt{csvexport}, \texttt{import-chrome} and \texttt{update} directories.}. Where do you go within these directories depends on the operating system you are using.
@@ -1708,7 +1722,7 @@ On Linux\footnote{And possibly other systems, if they decide to adapt the requir
 
 A modern alternative to installing static debug packages is to use the \emph{debuginfod} system, which performs on-demand delivery of debugging information across the internet. See \url{https://sourceware.org/elfutils/Debuginfod.html} for more details. Since this new method of symbol delivery is not yet universally supported, you will have to manually enable it, both in your system and in Tracy.
 
-First, make sure your distribution maintains a debuginfod server. Then, install the debuginfod library. You also need to ensure you have appropriately configured which server to access, but distribution maintainers usually provide this. Next, add the \texttt{TRACY\_DEBUGINFOD} define to the program you want to profile and link it with \texttt{libdebuginfod}. This will enable network delivery of symbols and source file contents. However, the first run may be slow to respond until the local debuginfod cache becomes filled.
+First, make sure your distribution maintains a debuginfod server. Then, install the \texttt{debuginfod} library. You also need to ensure you have appropriately configured which server to access, but distribution maintainers usually provide this. Next, add the \texttt{TRACY\_DEBUGINFOD} define to the program you want to profile and link it with \texttt{libdebuginfod}. This will enable network delivery of symbols and source file contents. However, the first run (including after a system update) may be slow to respond until the local debuginfod cache becomes filled.
 
 \paragraph{Using the dbghelp library on Windows}
 
@@ -2149,6 +2163,8 @@ couleur=black!5,
 logo=\bcbombe
 ]{Important}
 For proper program code retrieval, you can unload no module used by the application during the runtime. See section~\ref{datalifetime} for an explanation.
+
+On Linux, Tracy will override the \texttt{dlclose} function call to prevent shared objects from being unloaded. Note that in a well-behaved program this shouldn't have any effect, as calling \texttt{dlclose} does not guarantee that the shared object will be unloaded.
 \end{bclogo}
 
 \subsubsection{Vertical synchronization}

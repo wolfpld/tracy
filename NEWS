@@ -25,12 +25,21 @@ v0.x.x (xxxx-xx-xx)
   - Other platforms still use GLFW.
 - Compare traces menu can now display source code differences between two
   traces.
-- Files containing assembly listings are now annotated with source line
-  information.
+- Assembly listings saved to files have been improved.
+  - Listings are now annotated with source line information.
+  - To improve compatibility with external tools comments are now prefixed
+    with '#' instead of ';'.
 - Histogram tooltip will now also show left/right counts.
 - Tracy now actively manages timeline vertical scroll offset in order to keep
   the thread under the mouse cursor in the same place on screen.
 - Removed support for AT&T assembly syntax.
+- Tracy will not display notification if the file selector can't be used.
+  Possible reasons for failure include lack of xdg-desktop-portal.
+- Using the TRACY_NO_CRASH_HANDLER define will disable handling of
+  application crashes by the profiler.
+- Tracy will now query jump and call target addresses. This enables discovery
+  of target function names, even if such function has no samples and is not
+  present in any call stack.
 
 
 v0.9.0 (2022-10-26)

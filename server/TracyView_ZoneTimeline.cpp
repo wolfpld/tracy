@@ -636,7 +636,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     {
         auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
-        const auto zsz = std::max( (end - ev.Start()) * pxns, pxns * 0.5 );
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
@@ -653,13 +653,13 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( a(*it) );
-                if(nend - lastZoneInGroupStart >= MinVisNs * 2 ) break;
+                if( nend - lastZoneInGroupStart >= MinVisNs * 2 ) break;
                 lastZoneInGroupStart = a(*it).Start();
                 nextTime = nend + nspx;
             }
             auto lastZoneInGroupIt = it;
             lastZoneInGroupIt--;
-            auto rend = m_worker.GetZoneEnd(a(*lastZoneInGroupIt));
+            auto rend = m_worker.GetZoneEnd( a(*lastZoneInGroupIt) );
             auto px1ns = rend - m_vd.zvStart;
 
             const auto px1 = px1ns * pxns;

@@ -636,16 +636,15 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     {
         auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
-        const auto zsz = std::max( ( std::min( m_vd.zvEnd, end ) - std::max( m_vd.zvStart, ev.Start() ) ) * pxns, pxns * 0.5 );
+        const auto zsz = std::max( (end - ev.Start()) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
             const auto color = GetThreadColor( tid, depth );
             int num = 0;
             const auto px0 = ( ev.Start() - m_vd.zvStart ) * pxns;
-            auto px1ns = end - m_vd.zvStart;
-            auto rend = end;
             auto nextTime = end + MinVisNs;
+            auto lastZoneInGroupStart = ev.Start();
             for(;;)
             {
                 const auto prevIt = it;
@@ -654,12 +653,15 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( a(*it) );
-                const auto nsnext = nend - m_vd.zvStart;
-                if( nsnext - px1ns >= MinVisNs * 2 ) break;
-                px1ns = nsnext;
-                rend = nend;
+                if(nend - lastZoneInGroupStart >= MinVisNs * 2 ) break;
+                lastZoneInGroupStart = a(*it).Start();
                 nextTime = nend + nspx;
             }
+            auto lastZoneInGroupIt = it;
+            lastZoneInGroupIt--;
+            auto rend = m_worker.GetZoneEnd(a(*lastZoneInGroupIt));
+            auto px1ns = rend - m_vd.zvStart;
+
             const auto px1 = px1ns * pxns;
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );

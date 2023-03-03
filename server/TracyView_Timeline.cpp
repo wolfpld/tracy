@@ -291,7 +291,7 @@ void View::DrawTimeline()
     }
 
     {
-        const auto tbegin = 0;
+        const auto tbegin = m_worker.GetFirstTime();
         const auto tend = m_worker.GetLastTime();
         if( tbegin > m_vd.zvStart )
         {

@@ -526,7 +526,6 @@ public:
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const ThreadData* GetThreadData( uint64_t tid ) const;
     const MemData& GetMemoryNamed( uint64_t name ) const;
-    const MemData& GetMemoryDefault() const { return *m_data.memory; }
     const unordered_flat_map<uint64_t, MemData*>& GetMemNameMap() const { return m_data.memNameMap; }
     const Vector<short_ptr<FrameImage>>& GetFrameImages() const { return m_data.frameImage; }
     const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }

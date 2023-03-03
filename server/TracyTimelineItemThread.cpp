@@ -176,7 +176,7 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
     if( last >= 0 )
     {
         const auto lifetime = last - first;
-        const auto traceLen = m_worker.GetLastTime();
+        const auto traceLen = m_worker.GetLastTime() - m_worker.GetFirstTime();
 
         TextFocused( "Appeared at", TimeToString( first ) );
         TextFocused( "Last event at", TimeToString( last ) );

@@ -144,7 +144,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
                 if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { fbegin, fend, true };
 
                 ImGui::BeginTooltip();
-                ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
+                ImGui::TextUnformatted( GetFrameText( frames, i, ftime ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / ftime );
                 TextFocused( "Time from start of program:", TimeToStringExact( m_worker.GetFrameBegin( frames, i ) ) );
@@ -244,7 +244,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
             endPos = fend;
         }
 
-        auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
+        auto buf = GetFrameText( frames, i, ftime );
         auto tx = ImGui::CalcTextSize( buf ).x;
         uint32_t color = ( frames.name == 0 && i == 0 ) ? redColor : activeColor;
 

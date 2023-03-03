@@ -768,9 +768,9 @@ uint64_t View::GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) con
     }
 }
 
-const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const
+const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime ) const
 {
-    const auto fnum = GetFrameNumber( fd, i, offset );
+    const auto fnum = GetFrameNumber( fd, i, m_worker.GetFrameOffset() );
     static char buf[1024];
     if( fd.name == 0 )
     {

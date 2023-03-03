@@ -6983,7 +6983,7 @@ void Worker::CreateMemAllocPlot( MemData& memdata )
     memdata.plot->showSteps = true;
     memdata.plot->fill = true;
     memdata.plot->color = 0;
-    memdata.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
+    memdata.plot->data.push_back( { GetFirstTime(), 0. } );
     m_data.plots.Data().push_back( memdata.plot );
 }
 
@@ -7021,7 +7021,7 @@ void Worker::ReconstructMemAllocPlot( MemData& mem )
     double usage = 0;
 
     auto ptr = plot->data.data();
-    ptr->time = GetFrameBegin( *m_data.framesBase, 0 );
+    ptr->time = GetFirstTime();
     ptr->val = 0;
     ptr++;
 

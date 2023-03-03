@@ -909,16 +909,25 @@ bool View::DrawImpl()
         auto dx = ImGui::GetCursorPosX() - cx;
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
 
+        const auto firstTime = m_worker.GetFirstTime();
+        const auto lastTime = m_worker.GetLastTime();
         cx = ImGui::GetCursorPosX();
-        ImGui::Text( ICON_FA_DATABASE " %s", TimeToString( m_worker.GetLastTime() ) );
+        ImGui::Text( ICON_FA_DATABASE " %s", TimeToString( lastTime - firstTime ) );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "Time span" );
+            if( firstTime == 0 )
+            {
+                ImGui::Text( "Time span" );
+            }
+            else
+            {
+                TextFocused( "Total time span:", TimeToString( lastTime ) );
+            }
             ImGui::EndTooltip();
             if( ImGui::IsItemClicked( 2 ) )
             {
-                ZoomToRange( 0, m_worker.GetLastTime() );
+                ZoomToRange( firstTime, lastTime );
             }
         }
         ImGui::SameLine();

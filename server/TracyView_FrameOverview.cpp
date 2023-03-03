@@ -141,7 +141,7 @@ void View::DrawFrames()
                 }
                 else
                 {
-                    const auto fnum = GetFrameNumber( *m_frames, sel, m_worker.GetFrameOffset() );
+                    const auto fnum = GetFrameNumber( *m_frames, sel );
                     m_frameHover = sel;
                     if( m_frames->name == 0 )
                     {

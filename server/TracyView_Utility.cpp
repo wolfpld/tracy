@@ -749,10 +749,11 @@ int64_t View::AdjustGpuTime( int64_t time, int64_t begin, int drift )
     return time + t / 1000000000 * drift;
 }
 
-uint64_t View::GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) const
+uint64_t View::GetFrameNumber( const FrameData& fd, int i ) const
 {
     if( fd.name == 0 )
     {
+        const auto offset = m_worker.GetFrameOffset();
         if( offset == 0 )
         {
             return i;
@@ -770,7 +771,7 @@ uint64_t View::GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) con
 
 const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime ) const
 {
-    const auto fnum = GetFrameNumber( fd, i, m_worker.GetFrameOffset() );
+    const auto fnum = GetFrameNumber( fd, i );
     static char buf[1024];
     if( fd.name == 0 )
     {

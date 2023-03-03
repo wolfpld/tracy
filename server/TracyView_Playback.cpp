@@ -194,7 +194,7 @@ void View::DrawPlayback()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    TextFocused( "Frame:", RealToString( GetFrameNumber( *frameSet, fi->frameRef, m_worker.GetFrameOffset() ) ) );
+    TextFocused( "Frame:", RealToString( GetFrameNumber( *frameSet, fi->frameRef ) ) );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

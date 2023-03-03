@@ -222,12 +222,11 @@ void View::HandleTimelineKeyboard( int64_t timespan, const ImVec2& wpos, float w
         if( nextTimelineRangeStart > nextTimelineRangeEnd ) return;
 
         // We want to cap the zoom at the range of values that the timeline has data for
-        const auto lastKnownTime = m_worker.GetLastTime();
+        const auto firstTime = m_worker.GetFirstTime();
+        const auto lastTime = m_worker.GetLastTime();
 
-        // Bring into the range 0 -> lastKnownTime - 50 (must
-
-        nextTimelineRangeStart = std::max<int64_t>( std::min( nextTimelineRangeStart, lastKnownTime - 50 ), 0 );
-        nextTimelineRangeEnd = std::max<int64_t>( std::min( nextTimelineRangeEnd, lastKnownTime ), 1 );
+        nextTimelineRangeStart = std::max<int64_t>( std::min( nextTimelineRangeStart, lastTime - 50 ), firstTime );
+        nextTimelineRangeEnd = std::max<int64_t>( std::min( nextTimelineRangeEnd, lastTime ), firstTime+1 );
 
         if( nextTimelineRangeEnd - nextTimelineRangeStart <= 50 ) return;
         const auto shouldPause = m_viewMode == ViewMode::Paused || !m_worker.IsConnected();

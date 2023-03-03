@@ -760,10 +760,10 @@ bool View::DrawImpl()
         }
         else if( m_viewModeHeuristicTry )
         {
-            const auto lastTime = m_worker.GetLastTime();
+            const auto lastTime = m_worker.GetLastTime() - m_worker.GetFirstTime();
             if( lastTime > 5*1000*1000*1000ll )
             {
-                if( m_viewMode == ViewMode::LastFrames && m_worker.GetFrameCount( *m_worker.GetFramesBase() ) <= 2 )
+                if( m_viewMode == ViewMode::LastFrames && m_worker.GetFrameCount( *m_worker.GetFramesBase() ) <= ( m_worker.IsOnDemand() ? 3 : 2 ) )
                 {
                     m_viewMode = ViewMode::LastRange;
                     ZoomToRange( lastTime - 5*1000*1000*1000ll, lastTime, false );

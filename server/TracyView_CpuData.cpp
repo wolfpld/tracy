@@ -525,7 +525,7 @@ void View::DrawCpuDataWindow()
         }
 
         const auto thisPid = m_worker.GetPid();
-        const auto rtimespan = 1.0 / m_worker.GetLastTime();
+        const auto rtimespan = 1.0 / ( m_worker.GetLastTime() - m_worker.GetFirstTime() );
         const auto ty = ImGui::GetTextLineHeight();
 
         auto& style = ImGui::GetStyle();

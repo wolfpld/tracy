@@ -55,7 +55,7 @@ void TimelineItemPlot::HeaderTooltip( const char* label ) const
     const auto first = RangeBegin();
     const auto last = RangeEnd();
     const auto activity = last - first;
-    const auto traceLen = m_worker.GetLastTime();
+    const auto traceLen = m_worker.GetLastTime() - m_worker.GetFirstTime();
 
     TextFocused( "Appeared at", TimeToString( first ) );
     TextFocused( "Last event at", TimeToString( last ) );

@@ -624,6 +624,7 @@ public:
     bool IsConnected() const { return m_connected.load( std::memory_order_relaxed ); }
     bool IsDataStatic() const { return !m_thread.joinable(); }
     bool IsBackgroundDone() const { return m_backgroundDone.load( std::memory_order_relaxed ); }
+    bool IsOnDemand() const { return m_onDemand; }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
     void Disconnect();
     bool WasDisconnectIssued() const { return m_disconnect; }

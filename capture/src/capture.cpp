@@ -190,6 +190,7 @@ int main( int argc, char** argv )
     sigaction( SIGINT, &sigint, &oldsigint );
 #endif
 
+    const auto firstTime = worker.GetFirstTime();
     auto& lock = worker.GetMbpsDataLock();
 
     const auto t0 = std::chrono::high_resolution_clock::now();
@@ -235,7 +236,7 @@ int main( int argc, char** argv )
             printf( " | ");
             AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage ) );
             printf( " | ");
-            AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() ) );
+            AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() - firstTime ) );
             fflush( stdout );
         }
 
@@ -331,7 +332,7 @@ int main( int argc, char** argv )
     }
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
-        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount() ),
+        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - firstTime ), tracy::RealToString( worker.GetZoneCount() ),
         tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );

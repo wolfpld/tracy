@@ -312,6 +312,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_samplingPeriod( 0 )
     , m_stream( nullptr )
     , m_buffer( nullptr )
+    , m_onDemand( false )
     , m_inconsistentSamples( false )
     , m_traceVersion( CurrentVersion )
 {
@@ -588,6 +589,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     f.Read8( m_resolution, m_timerMul, m_data.lastTime, m_data.frameOffset, m_pid, m_samplingPeriod, m_data.cpuArch, m_data.cpuId );
     f.Read( m_data.cpuManufacturer, 12 );
     m_data.cpuManufacturer[12] = '\0';
+
+    if( fileVer >= FileVersion( 0, 9, 2 ) )
+    {
+        uint8_t flag;
+        f.Read( flag );
+        m_onDemand = flag;
+    }
+    else
+    {
+        m_onDemand = m_data.frameOffset != 0;
+    }
 
     uint64_t sz;
     {
@@ -7655,6 +7667,9 @@ void Worker::Write( FileWrite& f, bool fiDict )
     f.Write( &m_data.cpuArch, sizeof( m_data.cpuArch ) );
     f.Write( &m_data.cpuId, sizeof( m_data.cpuId ) );
     f.Write( m_data.cpuManufacturer, 12 );
+
+    uint8_t flag = m_onDemand;
+    f.Write( &flag, sizeof( flag ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

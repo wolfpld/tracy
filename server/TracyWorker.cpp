@@ -2187,7 +2187,7 @@ bool Worker::AreFramesUsed() const
 
 int64_t Worker::GetFirstTime() const
 {
-    if( m_data.frameOffset == 0 ) return 0;
+    if( !m_onDemand ) return 0;
     assert( m_data.framesBase->frames.size() >= 2 );
     return m_data.framesBase->frames[2].start;
 }

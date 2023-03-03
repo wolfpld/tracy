@@ -537,7 +537,7 @@ void View::DrawStatistics()
     }
     else
     {
-        timeRange = m_worker.GetLastTime();
+        timeRange = m_worker.GetLastTime() - m_worker.GetFirstTime();
     }
 
     if( m_statMode == 0 || m_statMode == 2 )

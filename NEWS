@@ -2,6 +2,16 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.x.x (xxxx-xx-xx)
+-------------------
+
+- Missed frames region of on-demand captures will be now ignored when
+  calculating trace time span, zone percentages, etc.
+  - Due to technicalities information about locks, frame statistics in trace
+    information window and csvexport utility still include the missed frames
+    time.
+
+
 v0.9.1 (2023-02-26)
 -------------------
 

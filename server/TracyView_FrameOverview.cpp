@@ -145,14 +145,13 @@ void View::DrawFrames()
                     m_frameHover = sel;
                     if( m_frames->name == 0 )
                     {
-                        const auto offset = m_worker.GetFrameOffset();
                         if( sel == 0 )
                         {
                             ImGui::TextUnformatted( "Tracy initialization" );
                             ImGui::Separator();
                             TextFocused( "Time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
                         }
-                        else if( offset == 0 )
+                        else if( !m_worker.IsOnDemand() )
                         {
                             TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();

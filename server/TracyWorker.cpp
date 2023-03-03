@@ -2173,6 +2173,13 @@ bool Worker::AreFramesUsed() const
     return m_data.framesBase->frames.size() > 2;
 }
 
+int64_t Worker::GetFirstTime() const
+{
+    if( m_data.frameOffset == 0 ) return 0;
+    assert( m_data.framesBase->frames.size() >= 2 );
+    return m_data.framesBase->frames[2].start;
+}
+
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
     if( fd.continuous )

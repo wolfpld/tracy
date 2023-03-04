@@ -10,6 +10,9 @@ v0.x.x (xxxx-xx-xx)
   - Due to technicalities information about locks, frame statistics in trace
     information window and csvexport utility still include the missed frames
     time.
+- When source location dynamic zone coloring mode is enabled, collapsed
+  zones will be now gray-colored. Previously such regions falled back to
+  showing thread colors, which may have been confusing to users.
 
 
 v0.9.1 (2023-02-26)

@@ -271,7 +271,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
-            const auto color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
+            const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
             const auto px0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             auto px1ns = ev.end.Val() - m_vd.zvStart;
             auto rend = end;
@@ -640,7 +640,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
-            const auto color = GetThreadColor( tid, depth );
+            const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : GetThreadColor( tid, depth );
             int num = 0;
             const auto px0 = ( ev.Start() - m_vd.zvStart ) * pxns;
             auto px1ns = end - m_vd.zvStart;

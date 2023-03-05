@@ -63,40 +63,10 @@ public:
 
         if( _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT && _vkGetCalibratedTimestampsEXT )
         {
-            uint32_t num;
-            _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physdev, &num, nullptr );
-            if( num > 4 ) num = 4;
-            VkTimeDomainEXT data[4];
-            _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physdev, &num, data );
-            VkTimeDomainEXT supportedDomain = (VkTimeDomainEXT)-1;
-#if defined _WIN32
-            supportedDomain = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT;
-#elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
-            supportedDomain = VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT;
-#endif
-            for( uint32_t i=0; i<num; i++ )
-            {
-                if( data[i] == supportedDomain )
-                {
-                    m_timeDomain = data[i];
-                    break;
-                }
-            }
+            FindAvailableTimeDomains( physdev, _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT );
         }
 
-        VkPhysicalDeviceProperties prop;
-        vkGetPhysicalDeviceProperties( physdev, &prop );
-        const float period = prop.limits.timestampPeriod;
-
-        VkQueryPoolCreateInfo poolInfo = {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-        poolInfo.queryCount = m_queryCount;
-        poolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-        while( vkCreateQueryPool( device, &poolInfo, nullptr, &m_query ) != VK_SUCCESS )
-        {
-            m_queryCount /= 2;
-            poolInfo.queryCount = m_queryCount;
-        }
+        CreateQueryPool();
 
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -133,56 +103,53 @@ public:
         }
         else
         {
-            enum { NumProbes = 32 };
-
-            VkCalibratedTimestampInfoEXT spec[2] = {
-                { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
-                { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
-            };
-            uint64_t ts[2];
-            uint64_t deviation[NumProbes];
-            for( int i=0; i<NumProbes; i++ )
-            {
-                _vkGetCalibratedTimestampsEXT( device, 2, spec, ts, deviation+i );
-            }
-            uint64_t minDeviation = deviation[0];
-            for( int i=1; i<NumProbes; i++ )
-            {
-                if( minDeviation > deviation[i] )
-                {
-                    minDeviation = deviation[i];
-                }
-            }
-            m_deviation = minDeviation * 3 / 2;
-
-#if defined _WIN32
-            m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
-#endif
-
+            FindCalibratedTimestampDeviation();
             Calibrate( device, m_prevCalibration, tgpu );
             tcpu = Profiler::GetTime();
         }
 
-        uint8_t flags = 0;
-        if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) flags |= GpuContextCalibration;
-
-        auto item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuNewContext );
-        MemWrite( &item->gpuNewContext.cpuTime, tcpu );
-        MemWrite( &item->gpuNewContext.gpuTime, tgpu );
-        memset( &item->gpuNewContext.thread, 0, sizeof( item->gpuNewContext.thread ) );
-        MemWrite( &item->gpuNewContext.period, period );
-        MemWrite( &item->gpuNewContext.context, m_context );
-        MemWrite( &item->gpuNewContext.flags, flags );
-        MemWrite( &item->gpuNewContext.type, GpuContextType::Vulkan );
-
-#ifdef TRACY_ON_DEMAND
-        GetProfiler().DeferItem( *item );
-#endif
-        Profiler::QueueSerialFinish();
+        WriteInitialItem( physdev, tcpu, tgpu );
 
         m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
     }
+
+#if defined VK_EXT_calibrated_timestamps && defined VK_EXT_host_query_reset
+    /**
+     * This alternative constructor does not use command buffers and instead uses functionality from
+     * VK_EXT_host_query_reset (core with 1.2 and non-optional) and VK_EXT_calibrated_timestamps. This requires
+     * the physical device to have another time domain apart from DEVICE to be calibrateable.
+     */
+    VkCtx( VkPhysicalDevice physdev, VkDevice device, PFN_vkResetQueryPoolEXT _vkResetQueryPool, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT _vkGetCalibratedTimestampsEXT )
+        : m_device( device )
+        , m_timeDomain( VK_TIME_DOMAIN_DEVICE_EXT )
+        , m_context( GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed) )
+        , m_head( 0 )
+        , m_tail( 0 )
+        , m_oldCnt( 0 )
+        , m_queryCount( QueryCount )
+        , m_vkGetCalibratedTimestampsEXT( _vkGetCalibratedTimestampsEXT )
+    {
+        assert( m_context != 255);
+        assert( _vkResetQueryPool != nullptr );
+        assert( _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT != nullptr );
+        assert( _vkGetCalibratedTimestampsEXT != nullptr );
+
+        FindAvailableTimeDomains( physdev, _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT );
+
+        // We require a host time domain to be available to properly calibrate.
+        FindCalibratedTimestampDeviation();
+        int64_t tgpu;
+        Calibrate( device, m_prevCalibration, tgpu );
+        int64_t tcpu = Profiler::GetTime();
+
+        CreateQueryPool();
+        _vkResetQueryPool( device, m_query, 0, m_queryCount );
+
+        WriteInitialItem( physdev, tcpu, tgpu );
+
+        m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
+    }
+#endif
 
     ~VkCtx()
     {
@@ -313,6 +280,91 @@ private:
 #else
         assert( false );
 #endif
+    }
+
+    tracy_force_inline void CreateQueryPool()
+    {
+        VkQueryPoolCreateInfo poolInfo = {};
+        poolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+        poolInfo.queryCount = m_queryCount;
+        poolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+        while ( vkCreateQueryPool( m_device, &poolInfo, nullptr, &m_query ) != VK_SUCCESS )
+        {
+            m_queryCount /= 2;
+            poolInfo.queryCount = m_queryCount;
+        }
+    }
+
+    tracy_force_inline void FindAvailableTimeDomains( VkPhysicalDevice physicalDevice, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT )
+    {
+        uint32_t num;
+        _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physicalDevice, &num, nullptr );
+        if(num > 4) num = 4;
+        VkTimeDomainEXT data[4];
+        _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physicalDevice, &num, data );
+        VkTimeDomainEXT supportedDomain = (VkTimeDomainEXT)-1;
+#if defined _WIN32
+        supportedDomain = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT;
+#elif defined __linux__ && defined CLOCK_MONOTONIC_RAW
+        supportedDomain = VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT;
+#endif
+        for( uint32_t i=0; i<num; i++ ) {
+            if(data[i] == supportedDomain) {
+                m_timeDomain = data[i];
+                break;
+            }
+        }
+    }
+
+    tracy_force_inline void FindCalibratedTimestampDeviation()
+    {
+        assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );
+        constexpr size_t NumProbes = 32;
+        VkCalibratedTimestampInfoEXT spec[2] = {
+            { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
+            { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
+        };
+        uint64_t ts[2];
+        uint64_t deviation[NumProbes];
+        for( int i=0; i<NumProbes; i++ ) {
+            m_vkGetCalibratedTimestampsEXT( m_device, 2, spec, ts, deviation + i );
+        }
+        uint64_t minDeviation = deviation[0];
+        for( int i=1; i<NumProbes; i++ ) {
+            if ( minDeviation > deviation[i] ) {
+                minDeviation = deviation[i];
+            }
+        }
+        m_deviation = minDeviation * 3 / 2;
+
+#if defined _WIN32
+        m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
+#endif
+    }
+
+    tracy_force_inline void WriteInitialItem( VkPhysicalDevice physdev, int64_t tcpu, int64_t tgpu )
+    {
+        uint8_t flags = 0;
+        if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) flags |= GpuContextCalibration;
+
+        VkPhysicalDeviceProperties prop;
+        vkGetPhysicalDeviceProperties( physdev, &prop );
+        const float period = prop.limits.timestampPeriod;
+
+        auto item = Profiler::QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::GpuNewContext );
+        MemWrite( &item->gpuNewContext.cpuTime, tcpu );
+        MemWrite( &item->gpuNewContext.gpuTime, tgpu );
+        memset( &item->gpuNewContext.thread, 0, sizeof( item->gpuNewContext.thread ) );
+        MemWrite( &item->gpuNewContext.period, period );
+        MemWrite( &item->gpuNewContext.context, m_context );
+        MemWrite( &item->gpuNewContext.flags, flags );
+        MemWrite( &item->gpuNewContext.type, GpuContextType::Vulkan );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+        Profiler::QueueSerialFinish();
     }
 
     VkDevice m_device;
@@ -464,6 +516,15 @@ static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device,
     return ctx;
 }
 
+#if defined VK_EXT_calibrated_timestamps && defined VK_EXT_host_query_reset
+static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, PFN_vkResetQueryPoolEXT qpreset, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT gpdctd, PFN_vkGetCalibratedTimestampsEXT gct )
+{
+    auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
+    new(ctx) VkCtx( physdev, device, qpreset, gpdctd, gct );
+    return ctx;
+}
+#endif
+
 static inline void DestroyVkContext( VkCtx* ctx )
 {
     ctx->~VkCtx();
@@ -476,6 +537,9 @@ using TracyVkCtx = tracy::VkCtx*;
 
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, nullptr, nullptr );
 #define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
+#if defined VK_EXT_calibrated_timestamps && defined VK_EXT_host_query_reset
+#define TracyVkContextHostCalibrated( physdev, device, qpreset, gpdctd, gct ) tracy::CreateVkContext( physdev, device, qpreset, gpdctd, gct );
+#endif
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );
 #define TracyVkContextName( ctx, name, size ) ctx->Name( name, size );
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK

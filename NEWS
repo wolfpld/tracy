@@ -13,6 +13,7 @@ v0.x.x (xxxx-xx-xx)
 - When source location dynamic zone coloring mode is enabled, collapsed
   zones will be now gray-colored. Previously such regions falled back to
   showing thread colors, which may have been confusing to users.
+- Vulkan contexts can now use VK_EXT_host_query_reset extension.
 
 
 v0.9.1 (2023-02-26)

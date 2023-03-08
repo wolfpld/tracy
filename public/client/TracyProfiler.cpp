@@ -4149,6 +4149,7 @@ TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_
 TRACY_API void ___tracy_emit_plot( const char* name, double val ) { tracy::Profiler::PlotData( name, val ); }
 TRACY_API void ___tracy_emit_plot_float( const char* name, float val ) { tracy::Profiler::PlotData( name, val ); }
 TRACY_API void ___tracy_emit_plot_int( const char* name, int64_t val ) { tracy::Profiler::PlotData( name, val ); }
+TRACY_API void ___tracy_emit_plot_config( const char* name, int type, int step, int fill, uint32_t color ) { tracy::Profiler::ConfigurePlot( name, tracy::PlotFormatType(type), step, fill, color ); }
 TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack ) { tracy::Profiler::Message( txt, size, callstack ); }
 TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack ) { tracy::Profiler::Message( txt, callstack ); }
 TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int callstack ) { tracy::Profiler::MessageColor( txt, size, color, callstack ); }

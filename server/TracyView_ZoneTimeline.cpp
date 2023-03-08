@@ -247,11 +247,12 @@ int View::DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double p
 
 int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - 2 * MinVisSize * nspx ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
     if( it == vec.end() ) return depth;
 
     const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.start.Val() < r; } );
     if( it == zitend ) return depth;
+    if( (zitend-1)->end.Val() < m_vd.zvStart ) return depth;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetTextLineHeight();
@@ -267,7 +268,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     {
         auto& ev = *it;
         const auto end = ev.end.Val();
-        const auto zsz = std::max( ( std::min( m_vd.zvEnd, end ) - std::max( m_vd.zvStart, ev.start.Val() ) ) * pxns, pxns * 0.5 );
+        const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
@@ -524,11 +525,12 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
 
 int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - 2 * MinVisSize * nspx ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
     if( it == vec.end() ) return depth;
 
     const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.start.Val() < r; } );
     if( it == zitend ) return depth;
+    if( (zitend-1)->end.Val() < m_vd.zvStart ) return depth;
 
     depth++;
     int maxdepth = depth;
@@ -537,7 +539,7 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     {
         auto& ev = *it;
         const auto end = ev.end.Val();
-        const auto zsz = std::max( ( std::min( m_vd.zvEnd, end ) - std::max( m_vd.zvStart, ev.start.Val() ) ) * pxns, pxns * 0.5 );
+        const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
@@ -608,13 +610,14 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - std::max<int64_t>( delay, 2 * MinVisSize * nspx ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
     const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
     if( it == zitend ) return depth;
     Adapter a;
     if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < m_vd.zvStart ) return depth;
+    if( m_worker.GetZoneEnd( a(*(zitend-1)) ) < m_vd.zvStart ) return depth;
 
     const auto w = ImGui::GetContentRegionAvail().x - 1;
     const auto ty = ImGui::GetTextLineHeight();
@@ -636,7 +639,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     {
         auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
-        const auto zsz = std::max( ( std::min( m_vd.zvEnd, end ) - std::max( m_vd.zvStart, ev.Start() ) ) * pxns, pxns * 0.5 );
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;
@@ -851,21 +854,23 @@ int View::SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - std::max<int64_t>( delay, 2 * MinVisSize * nspx ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
+
+    Adapter a;
 
     const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
     if( it == zitend ) return depth;
+    if( m_worker.GetZoneEnd( a(*(zitend-1)) ) < m_vd.zvStart ) return depth;
 
     depth++;
     int maxdepth = depth;
 
-    Adapter a;
     while( it < zitend )
     {
         auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
-        const auto zsz = std::max( ( std::min( m_vd.zvEnd, end ) - std::max( m_vd.zvStart, ev.Start() ) ) * pxns, pxns * 0.5 );
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             const auto MinVisNs = MinVisSize * nspx;

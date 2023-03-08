@@ -13,7 +13,8 @@ namespace tracy
 
 void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
 {
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    const auto MinVis = 6 * GetScale();
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - 2 * MinVis * nspx, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
     if( it == vec.end() ) return;
     const auto itend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
     if( it == itend ) return;
@@ -25,7 +26,6 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
     const auto y1 = ty0375 + ty02 - 1;
     auto draw = ImGui::GetWindowDrawList();
 
-    const auto MinVis = 6 * GetScale();
     bool tooltipDisplayed = false;
 
     while( it < itend )

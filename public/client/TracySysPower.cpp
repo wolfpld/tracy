@@ -4,11 +4,13 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include <chrono>
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "TracyDebug.hpp"
+#include "TracyProfiler.hpp"
 #include "../common/TracyAlloc.hpp"
 
 namespace tracy
@@ -16,6 +18,7 @@ namespace tracy
 
 SysPower::SysPower()
     : m_domains( 4 )
+    , m_lastTime( 0 )
 {
     ScanDirectory( "/sys/devices/virtual/powercap/intel-rapl", -1 );
 }
@@ -31,6 +34,36 @@ SysPower::~SysPower()
 
 void SysPower::Tick()
 {
+    auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    if( t - m_lastTime > 10000000 )    // 10 ms
+    {
+        m_lastTime = t;
+        for( auto& v : m_domains )
+        {
+            char tmp[32];
+            if( fread( tmp, 1, 32, v.handle ) > 0 )
+            {
+                rewind( v.handle );
+                auto p = (uint64_t)atoll( tmp );
+                uint64_t delta;
+                if( p >= v.value )
+                {
+                    delta = p - v.value;
+                }
+                else
+                {
+                    delta = v.overflow - v.value + p;
+                }
+                v.value = p;
+
+                TracyLfqPrepare( QueueType::SysPowerReport );
+                MemWrite( &item->sysPower.time, Profiler::GetTime() );
+                MemWrite( &item->sysPower.delta, delta );
+                MemWrite( &item->sysPower.name, (uint64_t)v.name );
+                TracyLfqCommit;
+            }
+        }
+    }
 }
 
 void SysPower::ScanDirectory( const char* path, int parent )

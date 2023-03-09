@@ -35,6 +35,7 @@ private:
     void ScanDirectory( const char* path, int parent );
 
     FastVector<Domain> m_domains;
+    uint64_t m_lastTime;
 };
 
 }

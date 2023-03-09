@@ -90,6 +90,7 @@ enum class QueueType : uint8_t
     GpuNewContext,
     CallstackFrame,
     SysTimeReport,
+    SysPowerReport,
     TidToPid,
     HwSampleCpuCycle,
     HwSampleInstructionRetired,
@@ -563,6 +564,13 @@ struct QueueSysTime
     float sysTime;
 };
 
+struct QueueSysPower
+{
+    int64_t time;
+    uint64_t delta;
+    uint64_t name;  // ptr
+};
+
 struct QueueContextSwitch
 {
     int64_t time;
@@ -729,6 +737,7 @@ struct QueueItem
         QueueCrashReport crashReport;
         QueueCrashReportThread crashReportThread;
         QueueSysTime sysTime;
+        QueueSysPower sysPower;
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
         QueueTidToPid tidToPid;
@@ -832,6 +841,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
+    sizeof( QueueHeader ) + sizeof( QueueSysPower ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // cpu cycle
     sizeof( QueueHeader ) + sizeof( QueueHwSample ),        // instruction retired

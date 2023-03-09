@@ -22,6 +22,7 @@
 #include "common/tracy_lz4.cpp"
 #include "client/TracyProfiler.cpp"
 #include "client/TracyCallstack.cpp"
+#include "client/TracySysPower.cpp"
 #include "client/TracySysTime.cpp"
 #include "client/TracySysTrace.cpp"
 #include "common/TracySocket.cpp"

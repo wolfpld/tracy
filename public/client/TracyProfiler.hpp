@@ -10,6 +10,7 @@
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
 #include "TracyCallstack.hpp"
+#include "TracySysPower.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/TracyQueue.hpp"
@@ -939,6 +940,10 @@ private:
     uint64_t m_sysTimeLast = 0;
 #else
     void ProcessSysTime() {}
+#endif
+
+#ifdef TRACY_HAS_SYSPOWER
+    SysPower m_sysPower;
 #endif
 
     ParameterCallback m_paramCallback;

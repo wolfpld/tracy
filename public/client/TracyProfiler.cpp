@@ -1711,6 +1711,9 @@ void Profiler::Worker()
             if( m_sock ) break;
 #ifndef TRACY_ON_DEMAND
             ProcessSysTime();
+#  ifdef TRACY_HAS_SYSPOWER
+            m_sysPower.Tick();
+#  endif
 #endif
 
             if( m_broadcast )
@@ -1828,6 +1831,9 @@ void Profiler::Worker()
         for(;;)
         {
             ProcessSysTime();
+#ifdef TRACY_HAS_SYSPOWER
+            m_sysPower.Tick();
+#endif
             const auto status = Dequeue( token );
             const auto serialStatus = DequeueSerial();
             if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )

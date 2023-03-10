@@ -14,6 +14,7 @@ v0.x.x (xxxx-xx-xx)
   zones will be now gray-colored. Previously such regions falled back to
   showing thread colors, which may have been confusing to users.
 - Vulkan contexts can now use VK_EXT_host_query_reset extension.
+- System power usage is now reported on x86 Linux.
 
 
 v0.9.1 (2023-02-26)

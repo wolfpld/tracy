@@ -158,6 +158,12 @@ public:
         uint8_t inlineFrame;
     };
 
+    struct PowerData
+    {
+        int64_t lastTime;
+        PlotData* plot;
+    };
+
 #pragma pack( push, 1 )
     struct GhostKey
     {
@@ -735,6 +741,7 @@ private:
     tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
+    tracy_force_inline void ProcessSysPower( const QueueSysPower& ev );
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
     tracy_force_inline void ProcessThreadWakeup( const QueueThreadWakeup& ev );
     tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
@@ -1066,6 +1073,8 @@ private:
     unordered_flat_map<uint64_t, uint32_t> m_nextCallstack;
     unordered_flat_map<uint32_t, const char*> m_sourceCodeQuery;
     uint32_t m_nextSourceCodeQuery = 0;
+
+    unordered_flat_map<uint64_t, PowerData> m_powerData;
 };
 
 }

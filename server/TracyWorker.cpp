@@ -4744,6 +4744,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::SysTimeReport:
         ProcessSysTime( ev.sysTime );
         break;
+    case QueueType::SysPowerReport:
+        ProcessSysPower( ev.sysPower );
+        break;
     case QueueType::ContextSwitch:
         ProcessContextSwitch( ev.contextSwitch );
         break;
@@ -6683,6 +6686,35 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
         m_sysTimePlot->sum += val;
         m_sysTimePlot->data.push_back( { time, val } );
+    }
+}
+
+void Worker::ProcessSysPower( const QueueSysPower& ev )
+{
+    const auto time = TscTime( ev.time );
+    auto it = m_powerData.find( ev.name );
+    if( it == m_powerData.end() )
+    {
+        CheckString( ev.name );
+        PlotData* plot = m_slab.AllocInit<PlotData>();
+        plot->name = ev.name;
+        plot->type = PlotType::User;
+        plot->format = PlotValueFormatting::Number;
+        plot->showSteps = false;
+        plot->fill = true;
+        plot->color = 0;
+        m_data.plots.Data().push_back( plot );
+        m_powerData.emplace( ev.name, PowerData { time, plot } );
+    }
+    else
+    {
+        const auto dt = time - it->second.lastTime;
+        it->second.lastTime = time;
+        if( m_data.lastTime < time ) m_data.lastTime = time;
+        // ev.delta is Microjoule, dt is nanoseconds
+        // power is Watt = J / s
+        const auto power = ev.delta * 1000. / dt;
+        InsertPlot( it->second.plot, time, power );
     }
 }
 

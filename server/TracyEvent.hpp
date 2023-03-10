@@ -729,6 +729,7 @@ enum class PlotType : uint8_t
     SysTime
 };
 
+// Keep this in sync with enum in TracyC.h
 enum class PlotValueFormatting : uint8_t
 {
     Number,

@@ -6698,8 +6698,8 @@ void Worker::ProcessSysPower( const QueueSysPower& ev )
         CheckString( ev.name );
         PlotData* plot = m_slab.AllocInit<PlotData>();
         plot->name = ev.name;
-        plot->type = PlotType::User;
-        plot->format = PlotValueFormatting::Number;
+        plot->type = PlotType::Power;
+        plot->format = PlotValueFormatting::Watt;
         plot->showSteps = false;
         plot->fill = true;
         plot->color = 0;

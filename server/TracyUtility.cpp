@@ -157,6 +157,8 @@ uint32_t GetPlotColor( const PlotData& plot, const Worker& worker )
         return 0xFF2266CC;
     case PlotType::SysTime:
         return 0xFFBAB220;
+    case PlotType::Power:
+        return 0xFF33CC33;
     default:
         assert( false );
         return 0;
@@ -176,6 +178,9 @@ const char* FormatPlotValue( double val, PlotValueFormatting format )
         break;
     case PlotValueFormatting::Percentage:
         sprintf( buf, "%.2f%%", val );
+        break;
+    case PlotValueFormatting::Watt:
+        sprintf( buf, "%s W", RealToString( val ) );
         break;
     default:
         assert( false );

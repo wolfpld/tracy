@@ -9,7 +9,7 @@ namespace tracy
 {
 
 TimelineItemPlot::TimelineItemPlot( View& view, Worker& worker, PlotData* plot )
-    : TimelineItem( view, worker, plot )
+    : TimelineItem( view, worker, plot, false )
     , m_plot( plot )
 {
 }

@@ -9,7 +9,7 @@ namespace tracy
 {
 
 TimelineItemCpuData::TimelineItemCpuData( View& view, Worker& worker, void* key )
-    : TimelineItem( view, worker, key )
+    : TimelineItem( view, worker, key, false )
 {
 }
 

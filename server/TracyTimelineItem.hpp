@@ -1,6 +1,7 @@
 #ifndef __TRACYTIMELINEITEM_HPP__
 #define __TRACYTIMELINEITEM_HPP__
 
+#include <assert.h>
 #include <stdint.h>
 
 #include "imgui.h"
@@ -14,11 +15,14 @@ class Worker;
 class TimelineItem
 {
 public:
-    TimelineItem( View& view, Worker& worker, const void* key );
+    TimelineItem( View& view, Worker& worker, const void* key, bool wantPreprocess );
     virtual ~TimelineItem() = default;
 
     // draws the timeline item and also updates the next frame height value
     void Draw( bool firstFrame, double pxns, int yOffset, const ImVec2& wpos, bool hover, float yMin, float yMax );
+
+    bool WantPreprocess() const { return m_wantPreprocess; }
+    virtual void Preprocess() { assert( false ); }
 
     void VisibilityCheckbox();
     virtual void SetVisible( bool visible ) { m_visible = visible; }
@@ -55,6 +59,7 @@ private:
     void AdjustThreadHeight( bool firstFrame, int yBegin, int yEnd );
 
     int m_height;
+    bool m_wantPreprocess;
 
     const void* m_key;
 

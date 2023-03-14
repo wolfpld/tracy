@@ -10,7 +10,7 @@ namespace tracy
 {
 
 TimelineItemGpu::TimelineItemGpu( View& view, Worker& worker, GpuCtxData* gpu )
-    : TimelineItem( view, worker, gpu )
+    : TimelineItem( view, worker, gpu, false )
     , m_gpu( gpu )
     , m_idx( view.GetNextGpuIdx() )
 {

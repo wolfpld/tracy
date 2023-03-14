@@ -17,7 +17,7 @@ public:
     TimelineItem( View& view, Worker& worker, const void* key );
     virtual ~TimelineItem() = default;
 
-    // draws the timeilne item and also updates the next frame height value
+    // draws the timeline item and also updates the next frame height value
     void Draw( bool firstFrame, double pxns, int yOffset, const ImVec2& wpos, bool hover, float yMin, float yMax );
 
     void VisibilityCheckbox();

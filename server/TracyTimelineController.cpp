@@ -107,6 +107,14 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover,  bool
         UpdateCenterItem();
     }
 
+    for( auto& item : m_items )
+    {
+        if( item->WantPreprocess() && item->IsVisible() )
+        {
+            item->Preprocess();
+        }
+    }
+
     int yOffset = 0;
 
     for( auto& item : m_items )

@@ -19,7 +19,7 @@ TimelineItem::TimelineItem( View& view, Worker& worker, const void* key, bool wa
 {
 }
 
-void TimelineItem::Draw( bool firstFrame, double pxns, int yOffset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover, float yMin, float yMax )
 {
     const auto yBegin = yOffset;
     auto yEnd = yOffset;
@@ -31,9 +31,10 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int yOffset, const ImVec2
     }
     if( IsEmpty() ) return;
 
-    const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetTextLineHeight();
+    const auto w = ctx.w;
+    const auto ty = ctx.ty;
     const auto ostep = ty + 1;
+    const auto& wpos = ctx.wpos;
     const auto yPos = wpos.y + yBegin;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     auto draw = ImGui::GetWindowDrawList();
@@ -44,7 +45,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int yOffset, const ImVec2
     yEnd += ostep;
     if( m_showFull )
     {
-        if( !DrawContents( pxns, yEnd, wpos, hover, yMin, yMax ) && !m_view.GetViewData().drawEmptyLabels )
+        if( !DrawContents( ctx, yEnd, hover, yMin, yMax ) && !m_view.GetViewData().drawEmptyLabels )
         {
             yEnd = yBegin;
             AdjustThreadHeight( firstFrame, yBegin, yEnd );
@@ -79,7 +80,7 @@ void TimelineItem::Draw( bool firstFrame, double pxns, int yOffset, const ImVec2
         if( m_showFull )
         {
             DrawLine( draw, dpos + ImVec2( 0, hdrOffset + ty - 1 ), dpos + ImVec2( w, hdrOffset + ty - 1 ), HeaderLineColor() );
-            HeaderExtraContents( hdrOffset, wpos, labelWidth, pxns, hover );
+            HeaderExtraContents( hdrOffset, wpos, labelWidth, ctx.pxns, hover );
         }
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, hdrOffset ), wpos + ImVec2( ty + labelWidth, hdrOffset + ty ) ) )

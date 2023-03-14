@@ -24,7 +24,7 @@ protected:
     void HeaderTooltip( const char* label ) const override;
     void HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover ) override;
 
-    bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) override;
+    bool DrawContents( const TimelineContext& ctx, int& offset, bool hover, float yMin, float yMax ) override;
 
     bool IsEmpty() const override;
 

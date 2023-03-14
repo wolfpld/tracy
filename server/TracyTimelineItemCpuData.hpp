@@ -24,7 +24,7 @@ protected:
     int64_t RangeBegin() const override;
     int64_t RangeEnd() const override;
 
-    bool DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax ) override;
+    bool DrawContents( const TimelineContext& ctx, int& offset, bool hover, float yMin, float yMax ) override;
 
     bool IsEmpty() const override;
 };

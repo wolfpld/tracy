@@ -127,7 +127,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover,  bool
     for( auto& item : m_items )
     {
         auto currentFrameItemHeight = item->GetNextFrameHeight();
-        item->Draw( m_firstFrame, pxns, yOffset, wpos, hover, yMin, yMax );
+        item->Draw( m_firstFrame, ctx, yOffset, hover, yMin, yMax );
         if( m_firstFrame ) currentFrameItemHeight = item->GetNextFrameHeight();
         yOffset += currentFrameItemHeight;
     }

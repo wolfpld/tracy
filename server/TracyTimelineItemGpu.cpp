@@ -188,9 +188,9 @@ int64_t TimelineItemGpu::RangeEnd() const
     return t;
 }
 
-bool TimelineItemGpu::DrawContents( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+bool TimelineItemGpu::DrawContents( const TimelineContext& ctx, int& offset, bool hover, float yMin, float yMax )
 {
-    return m_view.DrawGpu( *m_gpu, pxns, offset, wpos, hover, yMin, yMax );
+    return m_view.DrawGpu( *m_gpu, ctx.pxns, offset, ctx.wpos, hover, yMin, yMax );
 }
 
 }

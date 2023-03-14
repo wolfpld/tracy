@@ -12,6 +12,13 @@ namespace tracy
 class View;
 class Worker;
 
+struct TimelineContext
+{
+    float w, ty, scale;
+    double pxns, nspx;
+    ImVec2 wpos;
+};
+
 class TimelineItem
 {
 public:
@@ -22,7 +29,7 @@ public:
     void Draw( bool firstFrame, double pxns, int yOffset, const ImVec2& wpos, bool hover, float yMin, float yMax );
 
     bool WantPreprocess() const { return m_wantPreprocess; }
-    virtual void Preprocess() { assert( false ); }
+    virtual void Preprocess( const TimelineContext& ctx ) { assert( false ); }
 
     void VisibilityCheckbox();
     virtual void SetVisible( bool visible ) { m_visible = visible; }

@@ -1,7 +1,6 @@
 #include <algorithm>
 
-#include "imgui.h"
-
+#include "TracyImGui.hpp"
 #include "TracyTimelineController.hpp"
 
 namespace tracy
@@ -107,11 +106,19 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover,  bool
         UpdateCenterItem();
     }
 
+    TimelineContext ctx;
+    ctx.w = ImGui::GetContentRegionAvail().x - 1;
+    ctx.ty = ImGui::GetTextLineHeight();
+    ctx.scale = GetScale();
+    ctx.pxns = pxns;
+    ctx.nspx = 1.0 / pxns;
+    ctx.wpos = wpos;
+
     for( auto& item : m_items )
     {
         if( item->WantPreprocess() && item->IsVisible() )
         {
-            item->Preprocess();
+            item->Preprocess( ctx );
         }
     }
 

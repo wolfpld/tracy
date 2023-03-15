@@ -252,9 +252,9 @@ void TimelineItemThread::HeaderExtraContents( int offset, const ImVec2& wpos, fl
 #endif
 }
 
-bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset, bool hover, float yMin, float yMax )
+bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset, bool hover )
 {
-    const auto res = m_view.DrawThread( *m_thread, ctx.pxns, offset, ctx.wpos, hover, yMin, yMax, m_ghost );
+    const auto res = m_view.DrawThread( *m_thread, ctx.pxns, offset, ctx.wpos, hover, ctx.yMin, ctx.yMax, m_ghost );
     if( !res )
     {
         auto& crash = m_worker.GetCrashEvent();

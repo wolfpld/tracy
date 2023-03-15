@@ -15,6 +15,7 @@ class Worker;
 struct TimelineContext
 {
     float w, ty, scale;
+    float yMin, yMax;
     double pxns, nspx;
     ImVec2 wpos;
 };
@@ -26,7 +27,7 @@ public:
     virtual ~TimelineItem() = default;
 
     // draws the timeline item and also updates the next frame height value
-    void Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover, float yMin, float yMax );
+    void Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover );
 
     bool WantPreprocess() const { return m_wantPreprocess; }
     virtual void Preprocess( const TimelineContext& ctx ) { assert( false ); }
@@ -54,7 +55,7 @@ protected:
     virtual int64_t RangeBegin() const = 0;
     virtual int64_t RangeEnd() const = 0;
 
-    virtual bool DrawContents( const TimelineContext& ctx, int& offset, bool hover, float yMin, float yMax ) = 0;
+    virtual bool DrawContents( const TimelineContext& ctx, int& offset, bool hover ) = 0;
     virtual void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) {}
 
     virtual bool IsEmpty() const { return false; }

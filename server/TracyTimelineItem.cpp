@@ -19,7 +19,7 @@ TimelineItem::TimelineItem( View& view, Worker& worker, const void* key, bool wa
 {
 }
 
-void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover, float yMin, float yMax )
+void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover )
 {
     const auto yBegin = yOffset;
     auto yEnd = yOffset;
@@ -45,7 +45,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
     yEnd += ostep;
     if( m_showFull )
     {
-        if( !DrawContents( ctx, yEnd, hover, yMin, yMax ) && !m_view.GetViewData().drawEmptyLabels )
+        if( !DrawContents( ctx, yEnd, hover ) && !m_view.GetViewData().drawEmptyLabels )
         {
             yEnd = yBegin;
             AdjustThreadHeight( firstFrame, yBegin, yEnd );
@@ -60,7 +60,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
 
     float labelWidth;
     const auto hdrOffset = yBegin;
-    const bool drawHeader = yPos + ty >= yMin && yPos <= yMax;
+    const bool drawHeader = yPos + ty >= ctx.yMin && yPos <= ctx.yMax;
     if( drawHeader )
     {
         const auto color = HeaderColor();

@@ -38,9 +38,9 @@ int64_t TimelineItemCpuData::RangeEnd() const
     return -1;
 }
 
-bool TimelineItemCpuData::DrawContents( const TimelineContext& ctx, int& offset, bool hover, float yMin, float yMax )
+bool TimelineItemCpuData::DrawContents( const TimelineContext& ctx, int& offset, bool hover )
 {
-    return m_view.DrawCpuData( ctx.pxns, offset, ctx.wpos, hover, yMin, yMax );
+    return m_view.DrawCpuData( ctx.pxns, offset, ctx.wpos, hover, ctx.yMin, ctx.yMax );
 }
 
 }

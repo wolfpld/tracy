@@ -120,7 +120,7 @@ public:
 
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
-    bool DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax );
+    bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );
     bool DrawThread( const ThreadData& thread, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax, bool ghostMode );
     void DrawThreadMessages( const ThreadData& thread, double pxns, int offset, const ImVec2& wpos, bool hover );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );

@@ -107,7 +107,7 @@ int64_t TimelineItemPlot::RangeEnd() const
 
 bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawPlot( *m_plot, ctx.pxns, offset, ctx.wpos, ctx.hover, ctx.yMin, ctx.yMax );
+    return m_view.DrawPlot( ctx, *m_plot, offset );
 }
 
 }

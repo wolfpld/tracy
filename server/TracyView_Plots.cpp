@@ -4,31 +4,35 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
 {
 
-bool View::DrawPlot( PlotData& plot, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset )
 {
+    auto& vec = plot.data;
+    vec.ensure_sorted();
+    if( vec.front().time.Val() > m_vd.zvEnd || vec.back().time.Val() < m_vd.zvStart ) return false;
+
     const auto PlotHeight = 100 * GetScale();
 
     enum { MaxPoints = 128 };
     float tmpvec[MaxPoints*2];
 
-    const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetTextLineHeight();
     auto draw = ImGui::GetWindowDrawList();
-    const auto nspx = 1.0 / pxns;
+    const auto& wpos = ctx.wpos;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
-
-    auto& vec = plot.data;
-    vec.ensure_sorted();
-    if( vec.front().time.Val() > m_vd.zvEnd || vec.back().time.Val() < m_vd.zvStart ) return false;
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto w = ctx.w;
+    const auto hover = ctx.hover;
+    const auto ty = ctx.ty;
 
     auto yPos = wpos.y + offset;
-    if( yPos + PlotHeight >= yMin && yPos <= yMax )
+    if( yPos + PlotHeight >= ctx.yMin && yPos <= ctx.yMax )
     {
         const auto color = GetPlotColor( plot, m_worker );
         const auto bg = 0x22000000 | ( DarkenColorMore( color ) & 0xFFFFFF );

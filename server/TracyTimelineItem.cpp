@@ -2,6 +2,7 @@
 
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyTimelineItem.hpp"
 #include "TracyView.hpp"
 

@@ -9,18 +9,9 @@
 namespace tracy
 {
 
+struct TimelineContext;
 class View;
 class Worker;
-
-struct TimelineContext
-{
-    float w, ty, scale;
-    float yMin, yMax;
-    double pxns, nspx;
-    int64_t vStart, vEnd;
-    ImVec2 wpos;
-    bool hover;
-};
 
 class TimelineItem
 {

@@ -40,6 +40,7 @@ constexpr const char* GpuContextNames[] = {
 struct MemoryPage;
 class FileRead;
 class SourceView;
+struct TimelineContext;
 
 class View
 {

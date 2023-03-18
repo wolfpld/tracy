@@ -5,17 +5,22 @@
 #include <optional>
 #include <vector>
 
+#include "TracyImGui.hpp"
 #include "../public/common/TracyForceInline.hpp"
 #include "tracy_robin_hood.h"
-#include "TracyTimelineItem.hpp"
 
 namespace tracy
 {
+
+class TimelineItem;
+class View;
+class Worker;
 
 class TimelineController
 {
 public:
     TimelineController( View& view, Worker& worker );
+    ~TimelineController();
 
     void FirstFrameExpired();
     void Begin();

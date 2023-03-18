@@ -1,5 +1,6 @@
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyTimelineItemCpuData.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"

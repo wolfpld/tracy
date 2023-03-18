@@ -1,6 +1,7 @@
 #include <algorithm>
 
-#include "TracyImGui.hpp"
+#include "TracyTimelineItem.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyView.hpp"
 
@@ -15,6 +16,10 @@ TimelineController::TimelineController( View& view, Worker& worker )
     , m_firstFrame( true )
     , m_view( view )
     , m_worker( worker )
+{
+}
+
+TimelineController::~TimelineController()
 {
 }
 

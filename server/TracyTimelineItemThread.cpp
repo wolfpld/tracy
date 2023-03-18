@@ -4,6 +4,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyTimelineItemThread.hpp"
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"

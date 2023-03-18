@@ -191,7 +191,7 @@ int64_t TimelineItemGpu::RangeEnd() const
 
 bool TimelineItemGpu::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawGpu( *m_gpu, ctx.pxns, offset, ctx.wpos, ctx.hover, ctx.yMin, ctx.yMax );
+    return m_view.DrawGpu( ctx, *m_gpu, offset );
 }
 
 }

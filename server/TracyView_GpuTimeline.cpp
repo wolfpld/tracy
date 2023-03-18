@@ -2,6 +2,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -9,14 +10,20 @@ namespace tracy
 
 constexpr float MinVisSize = 3;
 
-bool View::DrawGpu( const GpuCtxData& gpu, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+bool View::DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset )
 {
-    const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetTextLineHeight();
+    const auto w = ctx.w;
+    const auto ty = ctx.ty;
     const auto ostep = ty + 1;
-    const auto nspx = 1.0 / pxns;
-    auto draw = ImGui::GetWindowDrawList();
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto& wpos = ctx.wpos;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+    const auto hover = ctx.hover;
+    const auto yMin = ctx.yMin;
+    const auto yMax = ctx.yMax;
+
+    auto draw = ImGui::GetWindowDrawList();
 
     ImGui::PushFont( m_smallFont );
     const auto sty = ImGui::GetTextLineHeight();

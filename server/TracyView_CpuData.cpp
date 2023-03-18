@@ -5,6 +5,7 @@
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyTimelineItem.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -12,18 +13,24 @@ namespace tracy
 
 constexpr float MinVisSize = 3;
 
-bool View::DrawCpuData( double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax )
+bool View::DrawCpuData( const TimelineContext& ctx, int& offset )
 {
     auto cpuData = m_worker.GetCpuData();
     const auto cpuCnt = m_worker.GetCpuDataCpuCount();
     assert( cpuCnt != 0 );
 
-    const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = ImGui::GetTextLineHeight();
-    const auto nspxdbl = 1.0 / pxns;
+    const auto& wpos = ctx.wpos;
+    const auto w = ctx.w;
+    const auto ty = ctx.ty;
+    const auto pxns = ctx.pxns;
+    const auto nspxdbl = ctx.nspx;
     const auto nspx = int64_t( nspxdbl );
-    auto draw = ImGui::GetWindowDrawList();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+    const auto yMin = ctx.yMin;
+    const auto yMax = ctx.yMax;
+    const auto hover = ctx.hover;
+
+    auto draw = ImGui::GetWindowDrawList();
 
 #ifdef TRACY_NO_STATISTICS
     if( m_vd.drawCpuUsageGraph )

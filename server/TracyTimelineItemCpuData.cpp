@@ -41,7 +41,7 @@ int64_t TimelineItemCpuData::RangeEnd() const
 
 bool TimelineItemCpuData::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawCpuData( ctx.pxns, offset, ctx.wpos, ctx.hover, ctx.yMin, ctx.yMax );
+    return m_view.DrawCpuData( ctx, offset );
 }
 
 }

@@ -226,9 +226,9 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
     ImGui::EndTooltip();
 }
 
-void TimelineItemThread::HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover )
+void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth )
 {
-    m_view.DrawThreadMessages( *m_thread, pxns, offset, wpos, hover );
+    m_view.DrawThreadMessages( *m_thread, ctx.pxns, offset, ctx.wpos, ctx.hover );
 
 #ifndef TRACY_NO_STATISTICS
     const bool hasGhostZones = m_worker.AreGhostZonesReady() && !m_thread->ghostZones.empty();
@@ -238,10 +238,10 @@ void TimelineItemThread::HeaderExtraContents( int offset, const ImVec2& wpos, fl
         const auto ty = ImGui::GetTextLineHeight();
 
         const auto color = m_ghost ? 0xFFAA9999 : 0x88AA7777;
-        draw->AddText( wpos + ImVec2( 1.5f * ty + labelWidth, offset ), color, ICON_FA_GHOST );
+        draw->AddText( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), color, ICON_FA_GHOST );
         float ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 1.5f * ty + labelWidth, offset ), wpos + ImVec2( 1.5f * ty + labelWidth + ghostSz, offset + ty ) ) )
+        if( ctx.hover && ImGui::IsMouseHoveringRect( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), ctx.wpos + ImVec2( 1.5f * ty + labelWidth + ghostSz, offset + ty ) ) )
         {
             if( IsMouseClicked( 0 ) )
             {
@@ -252,9 +252,9 @@ void TimelineItemThread::HeaderExtraContents( int offset, const ImVec2& wpos, fl
 #endif
 }
 
-bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset, bool hover )
+bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    const auto res = m_view.DrawThread( *m_thread, ctx.pxns, offset, ctx.wpos, hover, ctx.yMin, ctx.yMax, m_ghost );
+    const auto res = m_view.DrawThread( *m_thread, ctx.pxns, offset, ctx.wpos, ctx.hover, ctx.yMin, ctx.yMax, m_ghost );
     if( !res )
     {
         auto& crash = m_worker.GetCrashEvent();

@@ -84,14 +84,14 @@ void TimelineItemPlot::HeaderTooltip( const char* label ) const
     ImGui::EndTooltip();
 }
 
-void TimelineItemPlot::HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover )
+void TimelineItemPlot::HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetTextLineHeight();
 
     char tmp[128];
     sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( m_plot->rMax - m_plot->rMin, m_plot->format ), RealToString( m_plot->num ) );
-    draw->AddText( wpos + ImVec2( ty * 1.5f + labelWidth, offset ), 0xFF226E6E, tmp );
+    draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), 0xFF226E6E, tmp );
 }
 
 int64_t TimelineItemPlot::RangeBegin() const
@@ -104,9 +104,9 @@ int64_t TimelineItemPlot::RangeEnd() const
     return m_plot->data.back().time.Val();
 }
 
-bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset, bool hover )
+bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawPlot( *m_plot, ctx.pxns, offset, ctx.wpos, hover, ctx.yMin, ctx.yMax );
+    return m_view.DrawPlot( *m_plot, ctx.pxns, offset, ctx.wpos, ctx.hover, ctx.yMin, ctx.yMax );
 }
 
 }

@@ -22,9 +22,9 @@ protected:
     int64_t RangeEnd() const override;
 
     void HeaderTooltip( const char* label ) const override;
-    void HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover ) override;
+    void HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth ) override;
 
-    bool DrawContents( const TimelineContext& ctx, int& offset, bool hover ) override;
+    bool DrawContents( const TimelineContext& ctx, int& offset ) override;
     void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) override;
 
     bool IsEmpty() const override;

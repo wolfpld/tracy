@@ -18,6 +18,7 @@ struct TimelineContext
     float yMin, yMax;
     double pxns, nspx;
     ImVec2 wpos;
+    bool hover;
 };
 
 class TimelineItem
@@ -27,7 +28,7 @@ public:
     virtual ~TimelineItem() = default;
 
     // draws the timeline item and also updates the next frame height value
-    void Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover );
+    void Draw( bool firstFrame, const TimelineContext& ctx, int yOffset );
 
     bool WantPreprocess() const { return m_wantPreprocess; }
     virtual void Preprocess( const TimelineContext& ctx ) { assert( false ); }
@@ -50,12 +51,12 @@ protected:
     virtual const char* HeaderLabel() const = 0;
 
     virtual void HeaderTooltip( const char* label ) const {};
-    virtual void HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover ) {};
+    virtual void HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth ) {};
 
     virtual int64_t RangeBegin() const = 0;
     virtual int64_t RangeEnd() const = 0;
 
-    virtual bool DrawContents( const TimelineContext& ctx, int& offset, bool hover ) = 0;
+    virtual bool DrawContents( const TimelineContext& ctx, int& offset ) = 0;
     virtual void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) {}
 
     virtual bool IsEmpty() const { return false; }

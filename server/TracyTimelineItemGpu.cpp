@@ -124,7 +124,7 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
     ImGui::EndTooltip();
 }
 
-void TimelineItemGpu::HeaderExtraContents( int offset, const ImVec2& wpos, float labelWidth, double pxns, bool hover )
+void TimelineItemGpu::HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth )
 {
     if( m_gpu->name.Active() )
     {
@@ -133,7 +133,7 @@ void TimelineItemGpu::HeaderExtraContents( int offset, const ImVec2& wpos, float
 
         char buf[64];
         sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
-        draw->AddText( wpos + ImVec2( ty * 1.5f + labelWidth, offset ), HeaderColorInactive(), buf );
+        draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), HeaderColorInactive(), buf );
     }
 }
 
@@ -188,9 +188,9 @@ int64_t TimelineItemGpu::RangeEnd() const
     return t;
 }
 
-bool TimelineItemGpu::DrawContents( const TimelineContext& ctx, int& offset, bool hover )
+bool TimelineItemGpu::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawGpu( *m_gpu, ctx.pxns, offset, ctx.wpos, hover, ctx.yMin, ctx.yMax );
+    return m_view.DrawGpu( *m_gpu, ctx.pxns, offset, ctx.wpos, ctx.hover, ctx.yMin, ctx.yMax );
 }
 
 }

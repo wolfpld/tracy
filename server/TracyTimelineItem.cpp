@@ -19,7 +19,7 @@ TimelineItem::TimelineItem( View& view, Worker& worker, const void* key, bool wa
 {
 }
 
-void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffset, bool hover )
+void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffset )
 {
     const auto yBegin = yOffset;
     auto yEnd = yOffset;
@@ -45,7 +45,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
     yEnd += ostep;
     if( m_showFull )
     {
-        if( !DrawContents( ctx, yEnd, hover ) && !m_view.GetViewData().drawEmptyLabels )
+        if( !DrawContents( ctx, yEnd ) && !m_view.GetViewData().drawEmptyLabels )
         {
             yEnd = yBegin;
             AdjustThreadHeight( firstFrame, yBegin, yEnd );
@@ -80,10 +80,10 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
         if( m_showFull )
         {
             DrawLine( draw, dpos + ImVec2( 0, hdrOffset + ty - 1 ), dpos + ImVec2( w, hdrOffset + ty - 1 ), HeaderLineColor() );
-            HeaderExtraContents( hdrOffset, wpos, labelWidth, ctx.pxns, hover );
+            HeaderExtraContents( ctx, hdrOffset, labelWidth );
         }
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, hdrOffset ), wpos + ImVec2( ty + labelWidth, hdrOffset + ty ) ) )
+        if( ctx.hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, hdrOffset ), wpos + ImVec2( ty + labelWidth, hdrOffset + ty ) ) )
         {
             HeaderTooltip( label );
 

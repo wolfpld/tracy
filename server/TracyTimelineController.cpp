@@ -2,6 +2,7 @@
 
 #include "TracyImGui.hpp"
 #include "TracyTimelineController.hpp"
+#include "TracyView.hpp"
 
 namespace tracy
 {
@@ -106,6 +107,8 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         UpdateCenterItem();
     }
 
+    const auto& viewData = m_view.GetViewData();
+
     TimelineContext ctx;
     ctx.w = ImGui::GetContentRegionAvail().x - 1;
     ctx.ty = ImGui::GetTextLineHeight();
@@ -114,6 +117,8 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     ctx.yMax = yMax;
     ctx.pxns = pxns;
     ctx.nspx = 1.0 / pxns;
+    ctx.vStart = viewData.zvStart;
+    ctx.vEnd = viewData.zvEnd;
     ctx.wpos = wpos;
     ctx.hover = hover;
 

@@ -85,7 +85,7 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
     return std::nullopt;
 }
 
-void TimelineController::End( double pxns, const ImVec2& wpos, bool hover,  bool vcenter, float yMin, float yMax )
+void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax )
 {
     auto shouldUpdateCenterItem = [&] () {
         const auto imguiChangedScroll = m_scroll != ImGui::GetScrollY();

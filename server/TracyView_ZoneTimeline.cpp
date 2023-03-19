@@ -244,8 +244,8 @@ int View::DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double p
     const auto offset = _offset + ostep * depth;
 
     const auto yPos = wpos.y + offset;
-    // Inline frames have to be taken into account, hence the multiply by 16 (arbitrary limit for inline frames in client)
-    if( yPos + 16 * ostep >= yMin && yPos <= yMax )
+    // Inline frames have to be taken into account, hence the multiply by 64 (arbitrary limit for inline frames in client)
+    if( yPos + 64 * ostep >= yMin && yPos <= yMax )
     {
         return DrawGhostLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
     }

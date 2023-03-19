@@ -121,8 +121,8 @@ public:
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );
-    bool DrawThread( const ThreadData& thread, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax, bool ghostMode );
-    void DrawThreadMessages( const ThreadData& thread, double pxns, int offset, const ImVec2& wpos, bool hover );
+    bool DrawThread( const TimelineContext& ctx, const ThreadData& thread, int& offset, bool ghostMode );
+    void DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
     bool DrawCpuData( const TimelineContext& ctx, int& offset );

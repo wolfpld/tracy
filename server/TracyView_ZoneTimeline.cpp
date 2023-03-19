@@ -4,7 +4,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
-#include "TracyTimelineItem.hpp"
+#include "TracyTimelineContext.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -22,11 +22,16 @@ static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
         ( ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 )       );
 }
 
-bool View::DrawThread( const ThreadData& thread, double pxns, int& offset, const ImVec2& wpos, bool hover, float yMin, float yMax, bool ghostMode )
+bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, int& offset, bool ghostMode )
 {
-    const auto ty = ImGui::GetTextLineHeight();
+    const auto& wpos = ctx.wpos;
+    const auto ty = ctx.ty;
     const auto ostep = ty + 1;
-    const auto nspx = 1.0 / pxns;
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto hover = ctx.hover;
+    const auto yMin = ctx.yMin;
+    const auto yMax = ctx.yMax;
 
     ImGui::PushFont( m_smallFont );
     const auto sty = ImGui::GetTextLineHeight();
@@ -97,13 +102,17 @@ bool View::DrawThread( const ThreadData& thread, double pxns, int& offset, const
     return true;
 }
 
-void View::DrawThreadMessages( const ThreadData& thread, double pxns, int offset, const ImVec2& wpos, bool hover )
+void View::DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset )
 {
-    const auto nspx = 1.0 / pxns;
-    auto draw = ImGui::GetWindowDrawList();
-    const auto ty = ImGui::GetTextLineHeight();
+    const auto& wpos = ctx.wpos;
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto hover = ctx.hover;
+    const auto ty = ctx.ty;
     const auto to = 9.f * GetScale();
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
+
+    auto draw = ImGui::GetWindowDrawList();
 
     auto msgit = std::lower_bound( thread.messages.begin(), thread.messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
     auto msgend = std::lower_bound( msgit, thread.messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );

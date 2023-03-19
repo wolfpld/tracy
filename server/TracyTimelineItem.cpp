@@ -48,6 +48,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
     {
         if( !DrawContents( ctx, yEnd ) && !m_view.GetViewData().drawEmptyLabels )
         {
+            DrawFinished();
             yEnd = yBegin;
             AdjustThreadHeight( firstFrame, yBegin, yEnd );
             ImGui::PopClipRect();
@@ -57,6 +58,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
     }
 
     DrawOverlay( wpos + ImVec2( 0, yBegin ), wpos + ImVec2( w, yEnd ) );
+    DrawFinished();
     ImGui::PopClipRect();
 
     float labelWidth;

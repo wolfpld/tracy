@@ -3,6 +3,7 @@
 
 #include "TracyEvent.hpp"
 #include "TracyTimelineItem.hpp"
+#include "TracyTimelineDraw.hpp"
 
 namespace tracy
 {
@@ -26,12 +27,26 @@ protected:
 
     bool DrawContents( const TimelineContext& ctx, int& offset ) override;
     void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) override;
+    void DrawFinished() override;
 
     bool IsEmpty() const override;
 
+    void Preprocess( const TimelineContext& ctx ) override;
+
 private:
+#ifndef TRACY_NO_STATISTICS
+    int PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth );
+#endif
+    int PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth );
+
+    template<typename Adapter, typename V>
+    int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth );
+
     const ThreadData* m_thread;
     bool m_ghost;
+
+    std::vector<TimelineDraw> m_draw;
+    int m_depth;
 };
 
 }

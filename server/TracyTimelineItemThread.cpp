@@ -12,8 +12,11 @@
 namespace tracy
 {
 
+constexpr float MinVisSize = 3;
+
+
 TimelineItemThread::TimelineItemThread( View& view, Worker& worker, const ThreadData* thread )
-    : TimelineItem( view, worker, thread, false )
+    : TimelineItem( view, worker, thread, true )
     , m_thread( thread )
     , m_ghost( false )
 {
@@ -267,6 +270,163 @@ bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
 void TimelineItemThread::DrawOverlay( const ImVec2& ul, const ImVec2& dr )
 {
     m_view.DrawThreadOverlays( *m_thread, ul, dr );
+}
+
+void TimelineItemThread::DrawFinished()
+{
+    m_draw.clear();
+}
+
+void TimelineItemThread::Preprocess( const TimelineContext& ctx )
+{
+    assert( m_draw.empty() );
+
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
+    {
+        m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0 );
+    }
+    else
+#endif
+    {
+        m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0 );
+    }
+}
+
+#ifndef TRACY_NO_STATISTICS
+int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth )
+{
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - 2 * MinVisSize * nspx ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+    if( it == vec.end() ) return depth;
+
+    const auto zitend = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.start.Val() < r; } );
+    if( it == zitend ) return depth;
+    if( (zitend-1)->end.Val() < vStart ) return depth;
+
+    int maxdepth = depth + 1;
+
+    while( it < zitend )
+    {
+        auto& ev = *it;
+        const auto end = ev.end.Val();
+        const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
+        if( zsz < MinVisSize )
+        {
+            const auto MinVisNs = MinVisSize * nspx;
+            auto px1ns = ev.end.Val() - vStart;
+            auto rend = end;
+            auto nextTime = end + MinVisNs;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+                if( it == prevIt ) ++it;
+                if( it == zitend ) break;
+                const auto nend = it->end.Val();
+                const auto nsnext = nend - vStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            m_draw.emplace_back( TimelineDraw { TimelineDrawType::GhostFolded, uint16_t( depth ), (void**)&ev, rend } );
+        }
+        else
+        {
+            if( ev.child >= 0 )
+            {
+                const auto d = PreprocessGhostLevel( ctx, m_worker.GetGhostChildren( ev.child ), depth + 1 );
+                if( d > maxdepth ) maxdepth = d;
+            }
+            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Ghost, uint16_t( depth ), (void**)&ev } );
+            ++it;
+        }
+    }
+
+    return maxdepth;
+}
+#endif
+
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth )
+{
+    if( vec.is_magic() )
+    {
+        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth );
+    }
+    else
+    {
+        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth );
+    }
+}
+
+template<typename Adapter, typename V>
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth )
+{
+    const auto delay = m_worker.GetDelay();
+    const auto resolution = m_worker.GetResolution();
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+    const auto nspx = ctx.nspx;
+    const auto pxns = ctx.pxns;
+
+    // cast to uint64_t, so that unended zones (end = -1) are still drawn
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - std::max<int64_t>( delay, 2 * MinVisSize * nspx ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+    if( it == vec.end() ) return depth;
+
+    const auto zitend = std::lower_bound( it, vec.end(), vEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
+    if( it == zitend ) return depth;
+    Adapter a;
+    if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < vStart ) return depth;
+    if( m_worker.GetZoneEnd( a(*(zitend-1)) ) < vStart ) return depth;
+
+    int maxdepth = depth + 1;
+
+    while( it < zitend )
+    {
+        auto& ev = a(*it);
+        const auto end = m_worker.GetZoneEnd( ev );
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
+        if( zsz < MinVisSize )
+        {
+            const auto MinVisNs = MinVisSize * nspx;
+            int num = 0;
+            auto px1ns = end - vStart;
+            auto rend = end;
+            auto nextTime = end + MinVisNs;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
+                if( it == zitend ) break;
+                const auto nend = m_worker.GetZoneEnd( a(*it) );
+                const auto nsnext = nend - vStart;
+                if( nsnext - px1ns >= MinVisNs * 2 ) break;
+                px1ns = nsnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, rend, num } );
+        }
+        else
+        {
+            if( ev.HasChildren() )
+            {
+                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1 );
+                if( d > maxdepth ) maxdepth = d;
+            }
+            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev } );
+            ++it;
+        }
+    }
+
+    return maxdepth;
 }
 
 }

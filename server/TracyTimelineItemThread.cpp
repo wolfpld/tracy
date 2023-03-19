@@ -277,20 +277,22 @@ void TimelineItemThread::DrawFinished()
     m_draw.clear();
 }
 
-void TimelineItemThread::Preprocess( const TimelineContext& ctx )
+void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& td )
 {
     assert( m_draw.empty() );
 
+    td.Queue( [this, &ctx] {
 #ifndef TRACY_NO_STATISTICS
-    if( m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
-    {
-        m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0 );
-    }
-    else
+        if( m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
+        {
+            m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0 );
+        }
+        else
 #endif
-    {
-        m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0 );
-    }
+        {
+            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0 );
+        }
+    } );
 }
 
 #ifndef TRACY_NO_STATISTICS

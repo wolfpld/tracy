@@ -10,6 +10,7 @@ namespace tracy
 {
 
 struct TimelineContext;
+class TaskDispatch;
 class View;
 class Worker;
 
@@ -23,7 +24,7 @@ public:
     void Draw( bool firstFrame, const TimelineContext& ctx, int yOffset );
 
     bool WantPreprocess() const { return m_wantPreprocess; }
-    virtual void Preprocess( const TimelineContext& ctx ) { assert( false ); }
+    virtual void Preprocess( const TimelineContext& ctx, TaskDispatch& td ) { assert( false ); }
 
     void VisibilityCheckbox();
     virtual void SetVisible( bool visible ) { m_visible = visible; }

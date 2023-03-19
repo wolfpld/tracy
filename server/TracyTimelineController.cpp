@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <thread>
 
 #include "TracyTimelineItem.hpp"
 #include "TracyTimelineContext.hpp"
@@ -16,6 +17,11 @@ TimelineController::TimelineController( View& view, Worker& worker )
     , m_firstFrame( true )
     , m_view( view )
     , m_worker( worker )
+#ifdef __EMSCRIPTEN__
+    , m_td( 1 )
+#else
+    , m_td( std::max( 1u, std::thread::hardware_concurrency() - 2 ) )
+#endif
 {
 }
 
@@ -131,9 +137,10 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     {
         if( item->WantPreprocess() && item->IsVisible() )
         {
-            item->Preprocess( ctx );
+            item->Preprocess( ctx, m_td );
         }
     }
+    m_td.Sync();
 
     int yOffset = 0;
 

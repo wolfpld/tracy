@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "TracyImGui.hpp"
+#include "TracyTaskDispatch.hpp"
 #include "../public/common/TracyForceInline.hpp"
 #include "tracy_robin_hood.h"
 
@@ -61,6 +62,8 @@ private:
 
     View& m_view;
     Worker& m_worker;
+
+    TaskDispatch m_td;
 };
 
 }

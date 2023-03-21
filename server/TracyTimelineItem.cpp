@@ -27,10 +27,15 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
 
     if( !IsVisible() )
     {
+        DrawFinished();
         if( m_height != 0 ) AdjustThreadHeight( firstFrame, yBegin, yEnd );
         return;
     }
-    if( IsEmpty() ) return;
+    if( IsEmpty() )
+    {
+        DrawFinished();
+        return;
+    }
 
     const auto w = ctx.w;
     const auto ty = ctx.ty;

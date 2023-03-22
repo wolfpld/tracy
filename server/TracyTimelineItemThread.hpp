@@ -43,10 +43,12 @@ private:
     int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth );
 
     void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch );
+    void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec );
 
     const ThreadData* m_thread;
     bool m_ghost;
 
+    std::vector<SamplesDraw> m_samplesDraw;
     std::vector<ContextSwitchDraw> m_ctxDraw;
     std::vector<TimelineDraw> m_draw;
     int m_depth;

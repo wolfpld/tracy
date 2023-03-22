@@ -275,12 +275,14 @@ void TimelineItemThread::DrawOverlay( const ImVec2& ul, const ImVec2& dr )
 
 void TimelineItemThread::DrawFinished()
 {
+    m_samplesDraw.clear();
     m_ctxDraw.clear();
     m_draw.clear();
 }
 
 void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& td )
 {
+    assert( m_samplesDraw.empty() );
     assert( m_ctxDraw.empty() );
     assert( m_draw.empty() );
 
@@ -297,7 +299,9 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         }
     } );
 
-    if( m_view.GetViewData().drawContextSwitches )
+    const auto& vd = m_view.GetViewData();
+
+    if( vd.drawContextSwitches )
     {
         auto ctxSwitch = m_worker.GetContextSwitchData( m_thread->id );
         if( ctxSwitch )
@@ -306,6 +310,13 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
                 PreprocessContextSwitches( ctx, *ctxSwitch );
             } );
         }
+    }
+
+    if( vd.drawSamples && !m_thread->samples.empty() )
+    {
+        td.Queue( [this, &ctx] {
+            PreprocessSamples( ctx, m_thread->samples );
+        } );
     }
 }
 
@@ -535,6 +546,55 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
             pit = it;
             ++it;
         }
+    }
+}
+
+void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec )
+{
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+    const auto nspx = ctx.nspx;
+    const auto pxns = ctx.pxns;
+
+    const auto MinVis = 6 * GetScale();
+    auto it = std::lower_bound( vec.begin(), vec.end(), vStart - 2 * MinVis * nspx, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    if( it == vec.end() ) return;
+    const auto itend = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    if( it == itend ) return;
+
+    while( it < itend )
+    {
+        bool visible = true;
+        const auto px0 = ( it->time.Val() - vStart ) * pxns;
+        double px1;
+        auto next = it+1;
+        uint32_t num = 0;
+        if( next != itend )
+        {
+            auto px1ns = next->time.Val() - vStart;
+            px1 = px1ns * pxns;
+            if( px1 - px0 < MinVis )
+            {
+                const auto MinVisNs = MinVis * nspx;
+                visible = false;
+                auto nextTime = px0 + MinVisNs;
+                for(;;)
+                {
+                    const auto prev = next;
+                    next = std::lower_bound( next, itend, nextTime, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                    if( prev == next ) ++next;
+                    if( next == itend ) break;
+                    const auto nsnext = next->time.Val() - vStart;
+                    if( nsnext - px1ns >= MinVisNs ) break;
+                    px1ns = nsnext;
+                    nextTime = next->time.Val() + nspx;
+                }
+                num = next - it;
+                px1 = px1ns * pxns;
+            }
+        }
+        m_samplesDraw.emplace_back( SamplesDraw { !visible, uint32_t( it - vec.begin() ), num } );
+        it = next;
     }
 }
 

@@ -59,6 +59,13 @@ struct ContextSwitchDraw
     };
 };
 
+struct SamplesDraw
+{
+    bool folded;
+    uint32_t idx;
+    uint32_t num;
+};
+
 }
 
 #endif

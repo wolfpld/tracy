@@ -44,7 +44,7 @@ struct ContextSwitchDrawFolded
 struct ContextSwitchDrawWaiting
 {
     short_ptr<ContextSwitchData> prev;
-    Int24 waitStack;
+    uint32_t waitStack;
 };
 
 struct ContextSwitchDraw

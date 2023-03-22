@@ -237,7 +237,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                 }
                 if( tooltip )
                 {
-                    const auto waitStack = v.waiting.waitStack.Val();
+                    const auto waitStack = v.waiting.waitStack;
                     if( waitStack )
                     {
                             ImGui::Separator();

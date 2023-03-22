@@ -472,7 +472,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
         auto& ev = *it;
         if( pit != citend )
         {
-            Int24 waitStack;
+            uint32_t waitStack = 0;
             if( !sampleData.empty() )
             {
                 auto sdit = std::lower_bound( sampleData.begin(), sampleData.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
@@ -484,7 +484,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
                     sdit = std::lower_bound( sampleData.begin(), sampleData.end(), eit->End(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
                     found = sdit != sampleData.end() && sdit->time.Val() == eit->End();
                 }
-                if( found ) waitStack = sdit->callstack;
+                if( found ) waitStack = sdit->callstack.Val();
             }
 
             auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, &ev, float( minpx ) } );

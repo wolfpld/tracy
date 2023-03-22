@@ -327,7 +327,7 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
 
-    const auto MinVisNs = int64_t( round( MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - 2 * MinVisNs ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
     if( it == vec.end() ) return depth;
@@ -395,7 +395,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
 
-    const auto MinVisNs = int64_t( round( MinVisSize * nspx ) );
+    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
 
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - std::max<int64_t>( delay, 2 * MinVisNs ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );

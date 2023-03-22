@@ -565,7 +565,8 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     while( it < itend )
     {
         bool visible = true;
-        const auto px0 = ( it->time.Val() - vStart ) * pxns;
+        const auto t0 = it->time.Val();
+        const auto px0 = ( t0 - vStart ) * pxns;
         double px1;
         auto next = it+1;
         uint32_t num = 0;
@@ -577,7 +578,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
             {
                 const auto MinVisNs = MinVis * nspx;
                 visible = false;
-                auto nextTime = px0 + MinVisNs;
+                auto nextTime = t0 + MinVisNs;
                 for(;;)
                 {
                     const auto prev = next;

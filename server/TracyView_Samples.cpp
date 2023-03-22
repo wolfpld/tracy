@@ -6,60 +6,57 @@
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracySourceView.hpp"
+#include "TracyTimelineContext.hpp"
+#include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
 {
 
-void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
+void View::DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset )
 {
-    const auto MinVis = 6 * GetScale();
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - 2 * MinVis * nspx, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-    if( it == vec.end() ) return;
-    const auto itend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-    if( it == itend ) return;
+    const auto& wpos = ctx.wpos;
+    const auto ty = ctx.ty;
+    const auto vStart = ctx.vStart;
+    const auto pxns = ctx.pxns;
+    const auto hover = ctx.hover;
 
-    const auto ty0375 = offset + round( ImGui::GetTextLineHeight() * 0.375f );
-    const auto ty02 = round( ImGui::GetTextLineHeight() * 0.2f );
-    const auto ty01 = round( ImGui::GetTextLineHeight() * 0.1f );
+    const auto MinVis = 6 * GetScale();
+    const auto ty0375 = offset + round( ty * 0.375f );
+    const auto ty02 = round( ty * 0.2f );
+    const auto ty01 = round( ty * 0.1f );
     const auto y0 = ty0375 - ty02 - 3;
     const auto y1 = ty0375 + ty02 - 1;
+    auto begin = vec.begin();
     auto draw = ImGui::GetWindowDrawList();
-
     bool tooltipDisplayed = false;
 
-    while( it < itend )
+    for( auto& v : drawList )
     {
-        bool visible = true;
-        const auto px0 = ( it->time.Val() - m_vd.zvStart ) * pxns;
-        double px1;
-        auto next = it+1;
-        int num;
-        if( next != itend )
+        auto it = begin + v.idx;
+        const auto t0 = it->time.Val();
+        const auto px0 = ( t0 - vStart ) * pxns;
+        if( v.folded )
         {
-            auto px1ns = next->time.Val() - m_vd.zvStart;
-            px1 = px1ns * pxns;
-            if( px1 - px0 < MinVis )
+            const auto eit = it + v.num;
+            const auto t1 = eit->time.Val();
+            const auto px1 = ( t1 - vStart ) * pxns;
+
+            DrawZigZag( draw, wpos + ImVec2( 0, ty0375 ), px0, std::max( px1, px0+MinVis ), ty01, 0xFF997777 );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, y0 ), wpos + ImVec2( std::max( px1, px0+MinVis ), y1 ) ) )
             {
-                const auto MinVisNs = MinVis * nspx;
-                visible = false;
-                auto nextTime = px0 + MinVisNs;
-                for(;;)
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Multiple call stack samples" );
+                TextFocused( "Number of samples:", RealToString( v.num ) );
+                ImGui::EndTooltip();
+
+                if( IsMouseClicked( 2 ) )
                 {
-                    const auto prev = next;
-                    next = std::lower_bound( next, itend, nextTime, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-                    if( prev == next ) ++next;
-                    if( next == itend ) break;
-                    const auto nsnext = next->time.Val() - m_vd.zvStart;
-                    if( nsnext - px1ns >= MinVisNs ) break;
-                    px1ns = nsnext;
-                    nextTime = next->time.Val() + nspx;
+                    ZoomToRange( t0, t1 );
                 }
-                num = next - it;
-                px1 = px1ns * pxns;
             }
         }
-        if( visible )
+        else
         {
             draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888 );
             if( !tooltipDisplayed && hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0 - ty02 - 2, y0 ), wpos + ImVec2( px0 + ty02 + 1, y1 ) ) )
@@ -72,24 +69,6 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
                 }
             }
         }
-        else
-        {
-            DrawZigZag( draw, wpos + ImVec2( 0, ty0375 ), px0, std::max( px1, px0+MinVis ), ty01, 0xFF997777 );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, y0 ), wpos + ImVec2( std::max( px1, px0+MinVis ), y1 ) ) )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Multiple call stack samples" );
-                TextFocused( "Number of samples:", RealToString( num ) );
-                ImGui::EndTooltip();
-
-                if( IsMouseClicked( 2 ) )
-                {
-                    const auto prev = next-1;
-                    ZoomToRange( it->time.Val(), prev->time.Val() + 1 );
-                }
-            }
-        }
-        it = next;
     }
 }
 

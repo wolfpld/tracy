@@ -23,7 +23,7 @@ static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
         ( ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 )       );
 }
 
-bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, int& offset, int depth )
+bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth )
 {
     const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;
@@ -40,7 +40,7 @@ bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     ImGui::PopFont();
 
     const auto sampleOffset = offset;
-    const auto hasSamples = m_vd.drawSamples && !thread.samples.empty();
+    const auto hasSamples = m_vd.drawSamples && !samplesDraw.empty();
     const auto hasCtxSwitch = m_vd.drawContextSwitches && !ctxDraw.empty();
 
     if( hasSamples )
@@ -74,7 +74,7 @@ bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
     if( hasSamples )
     {
-        DrawSamples( thread.samples, hover, pxns, int64_t( nspx ), wpos, sampleOffset );
+        DrawSampleList( ctx, samplesDraw, thread.samples, sampleOffset );
     }
 
     if( m_vd.drawLocks )
@@ -446,7 +446,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : MixGhostColor( GetThreadColor( tid, v.depth ), 0x665555 );
             const auto rend = v.rend.Val();
             const auto px0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
-            const auto px1 = ( rend - m_vd.zvStart ) * pxns;
+            const auto px1 = ( rend - ev.end.Val() ) * pxns;
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )

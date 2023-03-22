@@ -23,7 +23,7 @@ struct TimelineDraw
     uint16_t depth;
     short_ptr<void*> ev;
     Int48 rend;
-    int num;
+    uint32_t num;
 };
 
 

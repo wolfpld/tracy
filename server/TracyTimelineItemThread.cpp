@@ -394,10 +394,11 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
-    const auto pxns = ctx.pxns;
+
+    const auto MinVisNs = int64_t( round( MinVisSize * nspx ) );
 
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - std::max<int64_t>( delay, 2 * MinVisSize * nspx ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - std::max<int64_t>( delay, 2 * MinVisNs ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
     const auto zitend = std::lower_bound( it, vec.end(), vEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
@@ -406,35 +407,27 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < vStart ) return depth;
     if( m_worker.GetZoneEnd( a(*(zitend-1)) ) < vStart ) return depth;
 
-    const auto MinVisNs = MinVisSize * nspx;
     int maxdepth = depth + 1;
 
     while( it < zitend )
     {
         auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
-        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
-        if( zsz < MinVisSize )
+        const auto zsz = end - ev.Start();
+        if( zsz < MinVisNs )
         {
-            int num = 0;
-            auto px1ns = end - vStart;
-            auto rend = end;
             auto nextTime = end + MinVisNs;
+            auto next = it + 1;
             for(;;)
             {
-                const auto prevIt = it;
-                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
-                if( it == prevIt ) ++it;
-                num += std::distance( prevIt, it );
-                if( it == zitend ) break;
-                const auto nend = m_worker.GetZoneEnd( a(*it) );
-                const auto nsnext = nend - vStart;
-                if( nsnext - px1ns >= MinVisNs * 2 ) break;
-                px1ns = nsnext;
-                rend = nend;
-                nextTime = nend + nspx;
+                next = std::lower_bound( next, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+                if( next == zitend ) break;
+                const auto nt = m_worker.GetZoneEnd( a(*next) );
+                if( nt - nextTime >= MinVisNs ) break;
+                nextTime = nt + MinVisNs;
             }
-            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, rend, num } );
+            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ) } );
+            it = next;
         }
         else
         {

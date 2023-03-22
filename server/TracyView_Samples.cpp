@@ -21,7 +21,7 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
     const auto pxns = ctx.pxns;
     const auto hover = ctx.hover;
 
-    const auto MinVis = 6 * GetScale();
+    const auto MinVis = 3 * GetScale();
     const auto ty0375 = offset + round( ty * 0.375f );
     const auto ty02 = round( ty * 0.2f );
     const auto ty01 = round( ty * 0.1f );
@@ -36,7 +36,7 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
         auto it = begin + v.idx;
         const auto t0 = it->time.Val();
         const auto px0 = ( t0 - vStart ) * pxns;
-        if( v.folded )
+        if( v.num > 0 )
         {
             const auto eit = it + v.num;
             const auto t1 = eit->time.Val();
@@ -47,7 +47,7 @@ void View::DrawSampleList( const TimelineContext& ctx, const std::vector<Samples
             {
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Multiple call stack samples" );
-                TextFocused( "Number of samples:", RealToString( v.num ) );
+                TextFocused( "Number of samples:", RealToString( v.num + 1 ) );
                 ImGui::EndTooltip();
 
                 if( IsMouseClicked( 2 ) )

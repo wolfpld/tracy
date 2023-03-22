@@ -351,8 +351,11 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
             {
                 next = std::lower_bound( next, zitend, nextTime, [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
                 if( next == zitend ) break;
+                auto prev = next - 1;
+                if( prev == it ) break;
+                const auto pt = prev->end.Val();
                 const auto nt = next->end.Val();
-                if( nt - nextTime >= MinVisNs ) break;
+                if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
             m_draw.emplace_back( TimelineDraw { TimelineDrawType::GhostFolded, uint16_t( depth ), (void**)&ev, (next-1)->end } );
@@ -422,8 +425,11 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
             {
                 next = std::lower_bound( next, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
                 if( next == zitend ) break;
+                auto prev = next - 1;
+                if( prev == it ) break;
+                const auto pt = m_worker.GetZoneEnd( a(*prev) );
                 const auto nt = m_worker.GetZoneEnd( a(*next) );
-                if( nt - nextTime >= MinVisNs ) break;
+                if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
             m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ) } );
@@ -543,7 +549,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
 
-    const auto MinVis = 3 * GetScale();
+    const auto MinVis = 5 * GetScale();
     const auto MinVisNs = int64_t( round( MinVis * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), vStart - MinVisNs, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
@@ -562,8 +568,11 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
             {
                 next = std::lower_bound( next, itend, nextTime, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
                 if( next == itend ) break;
+                auto prev = next - 1;
+                if( prev == it ) break;
+                const auto pt = prev->time.Val();
                 const auto nt = next->time.Val();
-                if( nt - nextTime >= MinVisNs ) break;
+                if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
         }

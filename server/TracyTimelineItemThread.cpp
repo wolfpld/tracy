@@ -259,7 +259,7 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
 
 bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    const auto res = m_view.DrawThread( ctx, *m_thread, m_draw, offset, m_depth );
+    const auto res = m_view.DrawThread( ctx, *m_thread, m_draw, m_ctxDraw, offset, m_depth );
     if( !res )
     {
         auto& crash = m_worker.GetCrashEvent();

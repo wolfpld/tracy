@@ -3,6 +3,8 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineContext.hpp"
+#include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -134,37 +136,33 @@ const char* View::DecodeContextSwitchState( uint8_t state )
     }
 }
 
-void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleData>& sampleData, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber )
+void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, int offset, int endOffset, bool isFiber )
 {
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+    const auto& wpos = ctx.wpos;
+    const auto pxns = ctx.pxns;
+    const auto hover = ctx.hover;
+    const auto w = ctx.w;
+    const auto ty = ctx.ty;
+
     const auto lineSize = 2 * GetScale();
-
-    auto& vec = ctx->v;
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-    if( it == vec.end() ) return;
-    if( it != vec.begin() ) --it;
-
-    auto citend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
-    if( it == citend ) return;
-    if( citend != vec.end() ) ++citend;
-
-    const auto w = ImGui::GetContentRegionAvail().x - 1;
-    const auto ty = round( ImGui::GetTextLineHeight() * 0.75f );
-    const auto ty05 = round( ty * 0.5f );
     auto draw = ImGui::GetWindowDrawList();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+    const auto ty05 = round( ty * 0.5f );
 
-    auto pit = citend;
-    double minpx = -10.0;
-
-    while( it < citend )
+    for( auto& v : drawList )
     {
-        auto& ev = *it;
-        if( pit != citend )
+        const auto& ev = *v.ev;
+        switch( v.type )
         {
-            const bool migration = pit->Cpu() != ev.Cpu();
-            const auto px0 = std::max( { ( pit->End() - m_vd.zvStart ) * pxns, -10.0, minpx } );
-            const auto pxw = ( ev.WakeupVal() - m_vd.zvStart ) * pxns;
-            const auto px1 = std::min( ( ev.Start() - m_vd.zvStart ) * pxns, w + 10.0 );
+        case ContextSwitchDrawType::Waiting:
+        {
+            const auto& prev = *v.waiting.prev;
+            const bool migration = prev.Cpu() != ev.Cpu();
+            const auto px0 = std::max( { ( prev.End() - vStart ) * pxns, -10.0, double( v.minpx ) } );
+            const auto pxw = ( ev.WakeupVal() - vStart ) * pxns;
+            const auto px1 = std::min( ( ev.Start() - vStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             if( m_vd.darkenContextSwitches )
             {
@@ -185,15 +183,15 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                     if( isFiber )
                     {
                         TextFocused( "Fiber is", "yielding" );
-                        TextFocused( "Yield time:", TimeToString( ev.Start() - pit->End() ) );
+                        TextFocused( "Yield time:", TimeToString( ev.Start() - prev.End() ) );
                     }
                     else
                     {
                         TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
-                        TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - pit->End() ) );
+                        TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - prev.End() ) );
                         if( migration )
                         {
-                            TextFocused( "CPU:", RealToString( pit->Cpu() ) );
+                            TextFocused( "CPU:", RealToString( prev.Cpu() ) );
                             ImGui::SameLine();
                             TextFocused( ICON_FA_RIGHT_LONG, RealToString( ev.Cpu() ) );
                         }
@@ -201,27 +199,27 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                         {
                             TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                         }
-                        if( pit->Reason() != 100 )
+                        if( prev.Reason() != 100 )
                         {
-                            TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
+                            TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
                             ImGui::SameLine();
                             ImGui::PushFont( m_smallFont );
                             ImGui::AlignTextToFramePadding();
-                            TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
+                            TextDisabledUnformatted( DecodeContextSwitchReason( prev.Reason() ) );
                             ImGui::PopFont();
                         }
-                        TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
+                        TextFocused( "Wait state:", DecodeContextSwitchStateCode( prev.State() ) );
                         ImGui::SameLine();
                         ImGui::PushFont( m_smallFont );
                         ImGui::AlignTextToFramePadding();
-                        TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
+                        TextDisabledUnformatted( DecodeContextSwitchState( prev.State() ) );
                         ImGui::PopFont();
                     }
                     tooltip = true;
 
                     if( IsMouseClicked( 2 ) )
                     {
-                        ZoomToRange( pit->End(), ev.WakeupVal() );
+                        ZoomToRange( prev.End(), ev.WakeupVal() );
                     }
                 }
                 else if( ev.WakeupVal() != ev.Start() && ImGui::IsMouseHoveringRect( wpos + ImVec2( pxw, offset ), wpos + ImVec2( px1, offset + ty ) ) )
@@ -233,115 +231,84 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                     TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                     if( IsMouseClicked( 2 ) )
                     {
-                        ZoomToRange( pit->End(), ev.WakeupVal() );
+                        ZoomToRange( prev.End(), ev.WakeupVal() );
                     }
                     tooltip = true;
                 }
                 if( tooltip )
                 {
-                    if( !sampleData.empty() )
+                    const auto waitStack = v.waiting.waitStack.Val();
+                    if( waitStack )
                     {
-                        auto sdit = std::lower_bound( sampleData.begin(), sampleData.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-                        bool found = sdit != sampleData.end() && sdit->time.Val() == ev.Start();
-                        if( !found && it != vec.begin() )
-                        {
-                            auto eit = it;
-                            --eit;
-                            sdit = std::lower_bound( sampleData.begin(), sampleData.end(), eit->End(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-                            found = sdit != sampleData.end() && sdit->time.Val() == eit->End();
-                        }
-                        if( found )
-                        {
                             ImGui::Separator();
                             TextDisabledUnformatted( ICON_FA_HOURGLASS_HALF " Wait stack:" );
-                            CallstackTooltipContents( sdit->callstack.Val() );
+                            CallstackTooltipContents( waitStack );
                             if( ImGui::IsMouseClicked( 0 ) )
                             {
-                                m_callstackInfoWindow = sdit->callstack.Val();
+                                m_callstackInfoWindow = waitStack;
                             }
-                        }
                     }
                     ImGui::EndTooltip();
                 }
             }
+            break;
         }
-
-        const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
-        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
-        if( zsz < MinCtxSize )
+        case ContextSwitchDrawType::FoldedOne:
         {
-            const auto MinCtxNs = MinCtxSize * nspx;
-            int num = 0;
-            const auto px0 = std::max( ( ev.Start() - m_vd.zvStart ) * pxns, -10.0 );
-            auto px1ns = end - m_vd.zvStart;
-            auto rend = end;
-            auto nextTime = end + MinCtxNs;
-            for(;;)
+            const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( v.minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( v.minpx, offset + ty + 1 ) ) )
             {
-                const auto prevIt = it;
-                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-                if( it == prevIt ) ++it;
-                num += std::distance( prevIt, it );
-                if( it == citend ) break;
-                const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
-                const auto nsnext = nend - m_vd.zvStart;
-                if( nsnext - px1ns >= MinCtxNs * 2 ) break;
-                px1ns = nsnext;
-                rend = nend;
-                nextTime = nend + nspx;
-            }
-            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
-            if( num == 1 )
-            {
-                DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
+                const auto end = v.folded.rend.Val();
+                ImGui::BeginTooltip();
+                if( isFiber )
                 {
-                    ImGui::BeginTooltip();
-                    if( isFiber )
-                    {
-                        const auto tid = m_worker.DecompressThread( ev.Thread() );
-                        TextFocused( "Fiber is", "running" );
-                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-                    }
-                    else
-                    {
-                        TextFocused( "Thread is", "running" );
-                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                        TextFocused( "CPU:", RealToString( ev.Cpu() ) );
-                    }
-                    ImGui::EndTooltip();
+                    const auto tid = m_worker.DecompressThread( ev.Thread() );
+                    TextFocused( "Fiber is", "running" );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                }
+                else
+                {
+                    TextFocused( "Thread is", "running" );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                }
+                ImGui::EndTooltip();
 
-                    if( IsMouseClicked( 2 ) )
-                    {
-                        ZoomToRange( ev.Start(), rend );
-                    }
+                if( IsMouseClicked( 2 ) )
+                {
+                    ZoomToRange( ev.Start(), end );
                 }
             }
-            else
-            {
-                DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, minpx, ty/4, 0xFF888888, 1.5 );
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
-                {
-                    ImGui::BeginTooltip();
-                    TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
-                    TextFocused( "Number of running regions:", RealToString( num ) );
-                    TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
-                    ImGui::EndTooltip();
-
-                    if( IsMouseClicked( 2 ) )
-                    {
-                        ZoomToRange( ev.Start(), rend );
-                    }
-                }
-            }
-            pit = it-1;
+            break;
         }
-        else
+        case ContextSwitchDrawType::FoldedMulti:
         {
-            const auto px0 = std::max( { ( ev.Start() - m_vd.zvStart ) * pxns, -10.0, minpx } );
+            const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, v.minpx, ty/4, 0xFF888888, 1.5 );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( v.minpx, offset + ty + 1 ) ) )
+            {
+                const auto end = v.folded.rend.Val();
+                ImGui::BeginTooltip();
+                TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
+                TextFocused( "Number of running regions:", RealToString( v.folded.num ) );
+                TextFocused( "Time:", TimeToString( end - ev.Start() ) );
+                ImGui::EndTooltip();
+
+                if( IsMouseClicked( 2 ) )
+                {
+                    ZoomToRange( ev.Start(), end );
+                }
+            }
+            break;
+        }
+        case ContextSwitchDrawType::Running:
+        {
+            const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
+            const auto px0 = std::max( { ( ev.Start() - m_vd.zvStart ) * pxns, -10.0, double( v.minpx ) } );
             const auto px1 = std::min( ( end - m_vd.zvStart ) * pxns, w + 10.0 );
             DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )
@@ -369,9 +336,12 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleDat
                     ZoomToRange( ev.Start(), end );
                 }
             }
-            pit = it;
-            ++it;
+            break;
         }
+        default:
+            assert( false );
+            break;
+        };
     }
 }
 

@@ -42,6 +42,7 @@ class FileRead;
 class SourceView;
 struct TimelineContext;
 struct TimelineDraw;
+struct ContextSwitchDraw;
 
 class View
 {
@@ -122,7 +123,7 @@ public:
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );
-    bool DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, int& offset, int depth );
+    bool DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, int& offset, int depth );
     void DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
@@ -205,9 +206,9 @@ private:
     void DrawTimelineFramesHeader();
     void DrawTimelineFrames( const FrameData& frames );
     void DrawTimeline();
-    void DrawContextSwitches( const ContextSwitch* ctx, const Vector<SampleData>& sampleData, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset, bool isFiber );
     void DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
     void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid );
+    void DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, int offset, int endOffset, bool isFiber );
     int DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
     template<typename Adapter, typename V>
     int DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );

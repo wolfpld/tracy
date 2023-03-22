@@ -23,7 +23,7 @@ static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
         ( ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 )       );
 }
 
-bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, int& offset, int depth )
+bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, int& offset, int depth )
 {
     const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;
@@ -41,7 +41,7 @@ bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
 
     const auto sampleOffset = offset;
     const auto hasSamples = m_vd.drawSamples && !thread.samples.empty();
-    const auto hasCtxSwitch = m_vd.drawContextSwitches && m_worker.GetContextSwitchData( thread.id );
+    const auto hasCtxSwitch = m_vd.drawContextSwitches && !ctxDraw.empty();
 
     if( hasSamples )
     {
@@ -70,11 +70,7 @@ bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
 
     if( hasCtxSwitch )
     {
-        auto ctxSwitch = m_worker.GetContextSwitchData( thread.id );
-        if( ctxSwitch )
-        {
-            DrawContextSwitches( ctxSwitch, thread.samples, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset, thread.isFiber );
-        }
+        DrawContextSwitchList( ctx, ctxDraw, ctxOffset, offset, thread.isFiber );
     }
     if( hasSamples )
     {

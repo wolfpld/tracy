@@ -10,8 +10,6 @@
 namespace tracy
 {
 
-constexpr float MinCtxSize = 4;
-
 const char* View::DecodeContextSwitchReasonCode( uint8_t reason )
 {
     switch( reason )
@@ -139,7 +137,6 @@ const char* View::DecodeContextSwitchState( uint8_t state )
 void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, int offset, int endOffset, bool isFiber )
 {
     const auto vStart = ctx.vStart;
-    const auto vEnd = ctx.vEnd;
     const auto& wpos = ctx.wpos;
     const auto pxns = ctx.pxns;
     const auto hover = ctx.hover;

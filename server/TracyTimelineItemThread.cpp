@@ -324,6 +324,7 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
     if( it == zitend ) return depth;
     if( (zitend-1)->end.Val() < vStart ) return depth;
 
+    const auto MinVisNs = MinVisSize * nspx;
     int maxdepth = depth + 1;
 
     while( it < zitend )
@@ -333,7 +334,6 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
         const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            const auto MinVisNs = MinVisSize * nspx;
             auto px1ns = ev.end.Val() - vStart;
             auto rend = end;
             auto nextTime = end + MinVisNs;
@@ -400,6 +400,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < vStart ) return depth;
     if( m_worker.GetZoneEnd( a(*(zitend-1)) ) < vStart ) return depth;
 
+    const auto MinVisNs = MinVisSize * nspx;
     int maxdepth = depth + 1;
 
     while( it < zitend )
@@ -409,7 +410,6 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            const auto MinVisNs = MinVisSize * nspx;
             int num = 0;
             auto px1ns = end - vStart;
             auto rend = end;

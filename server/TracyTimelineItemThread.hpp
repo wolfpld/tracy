@@ -42,9 +42,12 @@ private:
     template<typename Adapter, typename V>
     int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth );
 
+    void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch );
+
     const ThreadData* m_thread;
     bool m_ghost;
 
+    std::vector<ContextSwitchDraw> m_ctxDraw;
     std::vector<TimelineDraw> m_draw;
     int m_depth;
 };

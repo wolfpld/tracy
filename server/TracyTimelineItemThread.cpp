@@ -13,6 +13,7 @@ namespace tracy
 {
 
 constexpr float MinVisSize = 3;
+constexpr float MinCtxSize = 4;
 
 
 TimelineItemThread::TimelineItemThread( View& view, Worker& worker, const ThreadData* thread )
@@ -274,11 +275,13 @@ void TimelineItemThread::DrawOverlay( const ImVec2& ul, const ImVec2& dr )
 
 void TimelineItemThread::DrawFinished()
 {
+    m_ctxDraw.clear();
     m_draw.clear();
 }
 
 void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& td )
 {
+    assert( m_ctxDraw.empty() );
     assert( m_draw.empty() );
 
     td.Queue( [this, &ctx] {
@@ -293,6 +296,17 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
             m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0 );
         }
     } );
+
+    if( m_view.GetViewData().drawContextSwitches )
+    {
+        auto ctxSwitch = m_worker.GetContextSwitchData( m_thread->id );
+        if( ctxSwitch )
+        {
+            td.Queue( [this, &ctx, ctxSwitch] {
+                PreprocessContextSwitches( ctx, *ctxSwitch );
+            } );
+        }
+    }
 }
 
 #ifndef TRACY_NO_STATISTICS
@@ -429,6 +443,99 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     }
 
     return maxdepth;
+}
+
+void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch )
+{
+    const auto w = ctx.w;
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+
+    auto& vec = ctxSwitch.v;
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+    if( it == vec.end() ) return;
+    if( it != vec.begin() ) --it;
+
+    auto citend = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+    if( it == citend ) return;
+    if( citend != vec.end() ) ++citend;
+
+    const auto MinCtxNs = MinCtxSize * nspx;
+    const auto& sampleData = m_thread->samples;
+
+    auto pit = citend;
+    double minpx = -10.0;
+    while( it < citend )
+    {
+        auto& ev = *it;
+        if( pit != citend )
+        {
+            Int24 waitStack;
+            if( !sampleData.empty() )
+            {
+                auto sdit = std::lower_bound( sampleData.begin(), sampleData.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                bool found = sdit != sampleData.end() && sdit->time.Val() == ev.Start();
+                if( !found && it != vec.begin() )
+                {
+                    auto eit = it;
+                    --eit;
+                    sdit = std::lower_bound( sampleData.begin(), sampleData.end(), eit->End(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                    found = sdit != sampleData.end() && sdit->time.Val() == eit->End();
+                }
+                if( found ) waitStack = sdit->callstack;
+            }
+
+            auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, &ev, float( minpx ) } );
+            ref.waiting.prev = pit;
+            ref.waiting.waitStack = waitStack;
+        }
+
+        const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
+        if( zsz < MinCtxSize )
+        {
+            int num = 0;
+            const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
+            auto px1ns = end - vStart;
+            auto rend = end;
+            auto nextTime = end + MinCtxNs;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
+                if( it == citend ) break;
+                const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
+                const auto nsnext = nend - vStart;
+                if( nsnext - px1ns >= MinCtxNs * 2 ) break;
+                px1ns = nsnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
+            if( num == 1 )
+            {
+                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedOne, &ev, float( minpx ) } );
+                ref.folded.rend = rend;
+            }
+            else
+            {
+                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedMulti, &ev, float( minpx ) } );
+                ref.folded.rend = rend;
+                ref.folded.num = num;
+            }
+            pit = it-1;
+        }
+        else
+        {
+            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Running, &ev, float( minpx ) } );
+            pit = it;
+            ++it;
+        }
+    }
 }
 
 }

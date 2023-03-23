@@ -358,7 +358,6 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
                 next = std::lower_bound( next, zitend, nextTime, [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
                 if( next == zitend ) break;
                 auto prev = next - 1;
-                if( prev == it ) break;
                 const auto pt = prev->end.Val();
                 const auto nt = next->end.Val();
                 if( nt - pt >= MinVisNs ) break;
@@ -432,7 +431,6 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
                 next = std::lower_bound( next, zitend, nextTime, [this] ( const auto& l, const auto& r ) { Adapter a; return m_worker.GetZoneEnd( a(l) ) < r; } );
                 if( next == zitend ) break;
                 auto prev = next - 1;
-                if( prev == it ) break;
                 const auto pt = m_worker.GetZoneEnd( a(*prev) );
                 const auto nt = m_worker.GetZoneEnd( a(*next) );
                 if( nt - pt >= MinVisNs ) break;
@@ -575,7 +573,6 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
                 next = std::lower_bound( next, itend, nextTime, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
                 if( next == itend ) break;
                 auto prev = next - 1;
-                if( prev == it ) break;
                 const auto pt = prev->time.Val();
                 const auto nt = next->time.Val();
                 if( nt - pt >= MinVisNs ) break;

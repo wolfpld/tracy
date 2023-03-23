@@ -429,7 +429,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
             auto next = it + 1;
             for(;;)
             {
-                next = std::lower_bound( next, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+                next = std::lower_bound( next, zitend, nextTime, [this] ( const auto& l, const auto& r ) { Adapter a; return m_worker.GetZoneEnd( a(l) ) < r; } );
                 if( next == zitend ) break;
                 auto prev = next - 1;
                 if( prev == it ) break;

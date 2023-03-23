@@ -259,8 +259,8 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
 
 bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    const auto res = m_view.DrawThread( ctx, *m_thread, m_draw, m_ctxDraw, m_samplesDraw, offset, m_depth );
-    if( !res )
+    m_view.DrawThread( ctx, *m_thread, m_draw, m_ctxDraw, m_samplesDraw, offset, m_depth );
+    if( m_depth == 0 && m_msgDraw.empty() )
     {
         auto& crash = m_worker.GetCrashEvent();
         return crash.thread == m_thread->id;

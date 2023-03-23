@@ -23,7 +23,7 @@ static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
         ( ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 )       );
 }
 
-bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth )
+void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth )
 {
     const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;
@@ -82,14 +82,6 @@ bool View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
         offset += sstep * lockDepth;
         depth += lockDepth;
     }
-
-    if( depth == 0 )
-    {
-        auto msgit = std::lower_bound( thread.messages.begin(), thread.messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        auto msgend = std::lower_bound( msgit, thread.messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        return msgit != msgend;
-    }
-    return true;
 }
 
 void View::DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset )

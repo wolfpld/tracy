@@ -126,7 +126,7 @@ public:
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );
-    bool DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth );
+    void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth );
     void DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );

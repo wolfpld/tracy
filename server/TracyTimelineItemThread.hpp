@@ -44,6 +44,7 @@ private:
 
     void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch );
     void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec );
+    void PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid );
 
     const ThreadData* m_thread;
     bool m_ghost;
@@ -51,6 +52,7 @@ private:
     std::vector<SamplesDraw> m_samplesDraw;
     std::vector<ContextSwitchDraw> m_ctxDraw;
     std::vector<TimelineDraw> m_draw;
+    std::vector<MessagesDraw> m_msgDraw;
     int m_depth;
 };
 

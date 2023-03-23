@@ -278,6 +278,7 @@ void TimelineItemThread::DrawFinished()
     m_samplesDraw.clear();
     m_ctxDraw.clear();
     m_draw.clear();
+    m_msgDraw.clear();
 }
 
 void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& td )
@@ -285,6 +286,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     assert( m_samplesDraw.empty() );
     assert( m_ctxDraw.empty() );
     assert( m_draw.empty() );
+    assert( m_msgDraw.empty() );
 
     td.Queue( [this, &ctx] {
 #ifndef TRACY_NO_STATISTICS
@@ -318,6 +320,10 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
             PreprocessSamples( ctx, m_thread->samples );
         } );
     }
+
+    td.Queue( [this, &ctx] {
+        PreprocessMessages( ctx, m_thread->messages, m_thread->id );
+    } );
 }
 
 #ifndef TRACY_NO_STATISTICS
@@ -577,6 +583,50 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
             }
         }
         m_samplesDraw.emplace_back( SamplesDraw{ uint32_t( next - it - 1 ), uint32_t( it - vec.begin() ) } );
+        it = next;
+    }
+}
+
+void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid )
+{
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+    const auto nspx = ctx.nspx;
+
+    const auto MinVisNs = MinVisSize * nspx;
+
+    auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+    if( it == vec.end() ) return;
+    auto end = std::lower_bound( it, vec.end(), vEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+    if( it == end ) return;
+
+    const auto hMsg = m_view.GetMessageHighlight();
+    const auto hThread = hMsg ? m_worker.DecompressThread( hMsg->thread ) : 0;
+
+    while( it < end )
+    {
+        const auto msgTime = (*it)->time;
+        const auto nextTime = msgTime + MinVisNs;
+        const auto next = std::upper_bound( it, vec.end(), nextTime, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
+        const auto num = next - it;
+        bool hilite;
+        if( num == 1 )
+        {
+            hilite = hMsg == *it;
+        }
+        else
+        {
+            if( hMsg && hThread == tid )
+            {
+                const auto hTime = hMsg->time;
+                hilite = (*it)->time <= hTime && ( next == vec.end() || (*next)->time > hTime );
+            }
+            else
+            {
+                hilite = false;
+            }
+        }
+        m_msgDraw.emplace_back( MessagesDraw { *it, hilite, uint32_t( num ) } );
         it = next;
     }
 }

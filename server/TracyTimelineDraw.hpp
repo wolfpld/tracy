@@ -65,6 +65,13 @@ struct SamplesDraw
     uint32_t idx;
 };
 
+struct MessagesDraw
+{
+    short_ptr<MessageData> msg;
+    bool highlight;
+    uint32_t num;
+};
+
 }
 
 #endif

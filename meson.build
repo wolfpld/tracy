@@ -1,4 +1,4 @@
-project('tracy', ['cpp'])
+project('tracy', ['cpp'], version: '0.9.1')
 
 if get_option('tracy_enable')
   add_project_arguments('-DTRACY_ENABLE', language : 'cpp')

@@ -3,6 +3,8 @@
 rm -rf tracy-build
 mkdir tracy-build
 
+./update-meson-version.sh
+
 if [ ! -f vswhere.exe ]; then
     wget https://github.com/microsoft/vswhere/releases/download/2.8.4/vswhere.exe
 fi

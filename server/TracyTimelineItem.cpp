@@ -63,7 +63,6 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
     }
 
     DrawOverlay( wpos + ImVec2( 0, yBegin ), wpos + ImVec2( w, yEnd ) );
-    DrawFinished();
     ImGui::PopClipRect();
 
     float labelWidth;
@@ -127,6 +126,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
 
     yEnd += 0.2f * ostep;
     AdjustThreadHeight( firstFrame, yBegin, yEnd );
+    DrawFinished();
 
     ImGui::PopID();
 }

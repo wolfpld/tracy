@@ -121,6 +121,8 @@ public:
     ShortenName GetShortenName() const { return m_shortenName; }
     int GetNextGpuIdx() { return m_gpuIdx++; }
 
+    const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
+
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );

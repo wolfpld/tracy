@@ -84,96 +84,80 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
 }
 
-void View::DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset )
+void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid )
 {
-    const auto& wpos = ctx.wpos;
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
     const auto pxns = ctx.pxns;
-    const auto nspx = ctx.nspx;
     const auto hover = ctx.hover;
+    const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;
     const auto to = 9.f * GetScale();
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
     auto draw = ImGui::GetWindowDrawList();
 
-    auto msgit = std::lower_bound( thread.messages.begin(), thread.messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-    auto msgend = std::lower_bound( msgit, thread.messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-
-    while( msgit < msgend )
+    for( auto& v : drawList )
     {
-        const auto next = std::upper_bound( msgit, thread.messages.end(), (*msgit)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
-        const auto dist = std::distance( msgit, next );
-
-        const auto px = ( (*msgit)->time - m_vd.zvStart ) * pxns;
+        const auto& msg = *v.msg;
+        const auto px = ( msg.time - vStart ) * pxns;
         const bool isMsgHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) );
 
         unsigned int color = 0xFFDDDDDD;
         float animOff = 0;
-        if( dist > 1 )
+        if( v.highlight )
         {
-            if( m_msgHighlight && m_worker.DecompressThread( m_msgHighlight->thread ) == thread.id )
+            color = 0xFF4444FF;
+            if( !isMsgHovered )
             {
-                const auto hTime = m_msgHighlight->time;
-                if( (*msgit)->time <= hTime && ( next == thread.messages.end() || (*next)->time > hTime ) )
-                {
-                    color = 0xFF4444FF;
-                    if( !isMsgHovered )
-                    {
-                        animOff = -fabs( sin( s_time * 8 ) ) * th;
-                        m_wasActive = true;
-                    }
-                }
+                animOff = -fabs( sin( s_time * 8 ) ) * th;
+                m_wasActive = true;
             }
-            draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color );
+        }
+
+        if( v.num == 1 )
+        {
             draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color, 2.0f );
         }
         else
         {
-            if( m_msgHighlight == *msgit )
-            {
-                color = 0xFF4444FF;
-                if( !isMsgHovered )
-                {
-                    animOff = -fabs( sin( s_time * 8 ) ) * th;
-                    m_wasActive = true;
-                }
-            }
+            draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color );
             draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + offset + to ), wpos + ImVec2( px, animOff + offset + to + th ), color, 2.0f );
         }
+
         if( isMsgHovered )
         {
             ImGui::BeginTooltip();
-            if( dist > 1 )
+            if( v.num > 1 )
             {
-                ImGui::Text( "%i messages", (int)dist );
+                ImGui::Text( "%" PRIu32 " messages", v.num );
             }
             else
             {
-                TextFocused( "Message at", TimeToStringExact( (*msgit)->time ) );
-                ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
-                ImGui::TextUnformatted( m_worker.GetString( (*msgit)->ref ) );
+                TextFocused( "Message at", TimeToStringExact( msg.time ) );
+                ImGui::PushStyleColor( ImGuiCol_Text, msg.color );
+                ImGui::TextUnformatted( m_worker.GetString( msg.ref ) );
                 ImGui::PopStyleColor();
             }
             ImGui::EndTooltip();
-            m_msgHighlight = *msgit;
+            m_msgHighlight = &msg;
 
             if( IsMouseClicked( 0 ) )
             {
                 m_showMessages = true;
-                m_msgToFocus = *msgit;
+                m_msgToFocus = &msg;
             }
             if( IsMouseClicked( 2 ) )
             {
-                CenterAtTime( (*msgit)->time );
+                CenterAtTime( msg.time );
             }
         }
-        msgit = next;
     }
 
     auto& crash = m_worker.GetCrashEvent();
-    if( crash.thread == thread.id && crash.time >= m_vd.zvStart && crash.time <= m_vd.zvEnd )
+    if( crash.thread == tid && crash.time >= vStart && crash.time <= vEnd )
     {
-        const auto px = ( crash.time - m_vd.zvStart ) * pxns;
+        const auto px = ( crash.time - vStart ) * pxns;
 
         draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF );
         draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF, 2.0f );

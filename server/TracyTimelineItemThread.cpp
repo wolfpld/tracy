@@ -233,7 +233,7 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
 
 void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth )
 {
-    m_view.DrawThreadMessages( ctx, *m_thread, offset );
+    m_view.DrawThreadMessagesList( ctx, m_msgDraw, offset, m_thread->id );
 
 #ifndef TRACY_NO_STATISTICS
     const bool hasGhostZones = m_worker.AreGhostZonesReady() && !m_thread->ghostZones.empty();

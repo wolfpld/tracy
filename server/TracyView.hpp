@@ -44,6 +44,7 @@ struct TimelineContext;
 struct TimelineDraw;
 struct ContextSwitchDraw;
 struct SamplesDraw;
+struct MessagesDraw;
 
 class View
 {
@@ -127,7 +128,7 @@ public:
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );
     void DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth );
-    void DrawThreadMessages( const TimelineContext& ctx, const ThreadData& thread, int offset );
+    void DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
     bool DrawCpuData( const TimelineContext& ctx, int& offset );

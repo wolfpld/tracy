@@ -585,7 +585,7 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
 
-    const auto MinVisNs = MinVisSize * nspx;
+    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
 
     auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
     if( it == vec.end() ) return;

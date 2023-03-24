@@ -51,7 +51,6 @@ struct ContextSwitchDraw
 {
     ContextSwitchDrawType type;
     short_ptr<ContextSwitchData> ev;
-    float minpx;
     union
     {
         ContextSwitchDrawFolded folded;

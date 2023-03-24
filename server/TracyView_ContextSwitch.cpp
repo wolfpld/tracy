@@ -136,6 +136,8 @@ const char* View::DecodeContextSwitchState( uint8_t state )
 
 void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, int offset, int endOffset, bool isFiber )
 {
+    constexpr float MinCtxSize = 4;
+
     const auto vStart = ctx.vStart;
     const auto& wpos = ctx.wpos;
     const auto pxns = ctx.pxns;
@@ -148,6 +150,8 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto ty05 = round( ty * 0.5f );
 
+    double minpx = -10;
+
     for( auto& v : drawList )
     {
         const auto& ev = *v.ev;
@@ -157,7 +161,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
         {
             const auto& prev = *v.waiting.prev;
             const bool migration = prev.Cpu() != ev.Cpu();
-            const auto px0 = std::max( { ( prev.End() - vStart ) * pxns, -10.0, double( v.minpx ) } );
+            const auto px0 = std::max( { ( prev.End() - vStart ) * pxns, -10.0, double( minpx ) } );
             const auto pxw = ( ev.WakeupVal() - vStart ) * pxns;
             const auto px1 = std::min( ( ev.Start() - vStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
@@ -253,10 +257,12 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
         case ContextSwitchDrawType::FoldedOne:
         {
             const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
-            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( v.minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( v.minpx, offset + ty + 1 ) ) )
+            const auto end = v.folded.rend.Val();
+            const auto px1ns = end - vStart;
+            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
+            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
             {
-                const auto end = v.folded.rend.Val();
                 ImGui::BeginTooltip();
                 if( isFiber )
                 {
@@ -285,10 +291,12 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
         case ContextSwitchDrawType::FoldedMulti:
         {
             const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
-            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, v.minpx, ty/4, 0xFF888888, 1.5 );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( v.minpx, offset + ty + 1 ) ) )
+            const auto end = v.folded.rend.Val();
+            const auto px1ns = end - vStart;
+            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, minpx, ty/4, 0xFF888888, 1.5 );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
             {
-                const auto end = v.folded.rend.Val();
                 ImGui::BeginTooltip();
                 TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
                 TextFocused( "Number of running regions:", RealToString( v.folded.num ) );
@@ -305,7 +313,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
         case ContextSwitchDrawType::Running:
         {
             const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
-            const auto px0 = std::max( { ( ev.Start() - vStart ) * pxns, -10.0, double( v.minpx ) } );
+            const auto px0 = std::max( { ( ev.Start() - vStart ) * pxns, -10.0, double( minpx ) } );
             const auto px1 = std::min( ( end - vStart ) * pxns, w + 10.0 );
             DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty + 1 ) ) )

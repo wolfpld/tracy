@@ -456,8 +456,6 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
 
 void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch )
 {
-    const auto w = ctx.w;
-    const auto pxns = ctx.pxns;
     const auto nspx = ctx.nspx;
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -475,7 +473,6 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     const auto& sampleData = m_thread->samples;
 
     auto pit = citend;
-    double minpx = -10.0;
     while( it < citend )
     {
         auto& ev = *it;
@@ -496,17 +493,16 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
                 if( found ) waitStack = sdit->callstack.Val();
             }
 
-            auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, &ev, float( minpx ) } );
+            auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, &ev } );
             ref.waiting.prev = pit;
             ref.waiting.waitStack = waitStack;
         }
 
         const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
-        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
-        if( zsz < MinCtxSize )
+        const auto zsz = end - ev.Start();
+        if( zsz < MinCtxNs )
         {
             int num = 0;
-            const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
             auto px1ns = end - vStart;
             auto rend = end;
             auto nextTime = end + MinCtxNs;
@@ -524,15 +520,14 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
                 rend = nend;
                 nextTime = nend + nspx;
             }
-            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
             if( num == 1 )
             {
-                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedOne, &ev, float( minpx ) } );
+                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedOne, &ev } );
                 ref.folded.rend = rend;
             }
             else
             {
-                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedMulti, &ev, float( minpx ) } );
+                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedMulti, &ev } );
                 ref.folded.rend = rend;
                 ref.folded.num = num;
             }
@@ -540,7 +535,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
         }
         else
         {
-            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Running, &ev, float( minpx ) } );
+            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Running, &ev } );
             pit = it;
             ++it;
         }

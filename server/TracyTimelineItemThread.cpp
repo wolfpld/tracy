@@ -472,11 +472,15 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     const auto MinCtxNs = int64_t( round( GetScale() * MinCtxSize * nspx ) );
     const auto& sampleData = m_thread->samples;
 
-    auto pit = citend;
+    bool first = true;
     while( it < citend )
     {
         auto& ev = *it;
-        if( pit != citend )
+        if( first )
+        {
+            first = false;
+        }
+        else
         {
             uint32_t waitStack = 0;
             if( !sampleData.empty() )
@@ -513,12 +517,10 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
             }
             m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Folded, uint32_t( it - vec.begin() ), uint32_t( next - it ) } );
             it = next;
-            pit = it-1;
         }
         else
         {
             m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Running, uint32_t( it - vec.begin() ) } );
-            pit = it;
             ++it;
         }
     }

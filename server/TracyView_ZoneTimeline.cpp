@@ -69,7 +69,9 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
 
     if( hasCtxSwitch )
     {
-        DrawContextSwitchList( ctx, ctxDraw, ctxOffset, offset, thread.isFiber );
+        auto ctxSwitch = m_worker.GetContextSwitchData( thread.id );
+        assert( ctxSwitch );
+        DrawContextSwitchList( ctx, ctxDraw, ctxSwitch->v, ctxOffset, offset, thread.isFiber );
     }
     if( hasSamples )
     {

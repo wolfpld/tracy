@@ -30,39 +30,24 @@ struct TimelineDraw
 enum class ContextSwitchDrawType : uint8_t
 {
     Waiting,
-    FoldedOne,
-    FoldedMulti,
+    Folded,
     Running
-};
-
-struct ContextSwitchDrawFolded
-{
-    Int48 rend;
-    int num;
-};
-
-struct ContextSwitchDrawWaiting
-{
-    short_ptr<ContextSwitchData> prev;
-    uint32_t waitStack;
 };
 
 struct ContextSwitchDraw
 {
     ContextSwitchDrawType type;
-    short_ptr<ContextSwitchData> ev;
-    union
-    {
-        ContextSwitchDrawFolded folded;
-        ContextSwitchDrawWaiting waiting;
-    };
+    uint32_t idx;
+    uint32_t data;                  // Folded: number of items -OR- Waiting: wait stack
 };
+
 
 struct SamplesDraw
 {
     uint32_t num;
     uint32_t idx;
 };
+
 
 struct MessagesDraw
 {

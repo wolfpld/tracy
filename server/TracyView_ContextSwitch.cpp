@@ -134,7 +134,7 @@ const char* View::DecodeContextSwitchState( uint8_t state )
     }
 }
 
-void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, int offset, int endOffset, bool isFiber )
+void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber )
 {
     constexpr float MinCtxSize = 4;
 
@@ -154,12 +154,13 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
 
     for( auto& v : drawList )
     {
-        const auto& ev = *v.ev;
+        const auto it = ctxSwitch.begin() + v.idx;
+        const auto& ev = *it;
         switch( v.type )
         {
         case ContextSwitchDrawType::Waiting:
         {
-            const auto& prev = *v.waiting.prev;
+            const auto& prev = *(it-1);
             const bool migration = prev.Cpu() != ev.Cpu();
             const auto px0 = std::max( { ( prev.End() - vStart ) * pxns, -10.0, double( minpx ) } );
             const auto pxw = ( ev.WakeupVal() - vStart ) * pxns;
@@ -238,7 +239,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                 }
                 if( tooltip )
                 {
-                    const auto waitStack = v.waiting.waitStack;
+                    const auto waitStack = v.data;
                     if( waitStack )
                     {
                             ImGui::Separator();
@@ -254,58 +255,58 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
             }
             break;
         }
-        case ContextSwitchDrawType::FoldedOne:
+        case ContextSwitchDrawType::Folded:
         {
+            const auto num = v.data;
             const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
-            const auto end = v.folded.rend.Val();
+            const auto eit = it + num - 1;
+            const auto end = eit->IsEndValid() ? eit->End() : m_worker.GetLastTime();
             const auto px1ns = end - vStart;
             minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
-            DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
+            if( num == 1 )
             {
-                ImGui::BeginTooltip();
-                if( isFiber )
+                DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
                 {
-                    const auto tid = m_worker.DecompressThread( ev.Thread() );
-                    TextFocused( "Fiber is", "running" );
-                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-                }
-                else
-                {
-                    TextFocused( "Thread is", "running" );
-                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
-                }
-                ImGui::EndTooltip();
+                    ImGui::BeginTooltip();
+                    if( isFiber )
+                    {
+                        const auto tid = m_worker.DecompressThread( ev.Thread() );
+                        TextFocused( "Fiber is", "running" );
+                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    }
+                    else
+                    {
+                        TextFocused( "Thread is", "running" );
+                        TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        TextFocused( "CPU:", RealToString( ev.Cpu() ) );
+                    }
+                    ImGui::EndTooltip();
 
-                if( IsMouseClicked( 2 ) )
-                {
-                    ZoomToRange( ev.Start(), end );
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( ev.Start(), end );
+                    }
                 }
             }
-            break;
-        }
-        case ContextSwitchDrawType::FoldedMulti:
-        {
-            const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
-            const auto end = v.folded.rend.Val();
-            const auto px1ns = end - vStart;
-            minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
-            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, minpx, ty/4, 0xFF888888, 1.5 );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
+            else
             {
-                ImGui::BeginTooltip();
-                TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
-                TextFocused( "Number of running regions:", RealToString( v.folded.num ) );
-                TextFocused( "Time:", TimeToString( end - ev.Start() ) );
-                ImGui::EndTooltip();
-
-                if( IsMouseClicked( 2 ) )
+                DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, minpx, ty/4, 0xFF888888, 1.5 );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty + 1 ) ) )
                 {
-                    ZoomToRange( ev.Start(), end );
+                    ImGui::BeginTooltip();
+                    TextFocused( isFiber ? "Fiber is" : "Thread is", "changing activity multiple times" );
+                    TextFocused( "Number of running regions:", RealToString( num ) );
+                    TextFocused( "Time:", TimeToString( end - ev.Start() ) );
+                    ImGui::EndTooltip();
+
+                    if( IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( ev.Start(), end );
+                    }
                 }
             }
             break;

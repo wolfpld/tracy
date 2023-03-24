@@ -469,7 +469,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     if( it == citend ) return;
     if( citend != vec.end() ) ++citend;
 
-    const auto MinCtxNs = MinCtxSize * nspx;
+    const auto MinCtxNs = int64_t( round( GetScale() * MinCtxSize * nspx ) );
     const auto& sampleData = m_thread->samples;
 
     auto pit = citend;
@@ -492,50 +492,32 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
                 }
                 if( found ) waitStack = sdit->callstack.Val();
             }
-
-            auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, &ev } );
-            ref.waiting.prev = pit;
-            ref.waiting.waitStack = waitStack;
+            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, uint32_t( it - vec.begin() ), waitStack } );
         }
 
         const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
         const auto zsz = end - ev.Start();
         if( zsz < MinCtxNs )
         {
-            int num = 0;
-            auto px1ns = end - vStart;
-            auto rend = end;
             auto nextTime = end + MinCtxNs;
+            auto next = it + 1;
             for(;;)
             {
-                const auto prevIt = it;
-                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-                if( it == prevIt ) ++it;
-                num += std::distance( prevIt, it );
-                if( it == citend ) break;
-                const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
-                const auto nsnext = nend - vStart;
-                if( nsnext - px1ns >= MinCtxNs * 2 ) break;
-                px1ns = nsnext;
-                rend = nend;
-                nextTime = nend + nspx;
+                next = std::lower_bound( next, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                if( next == citend ) break;
+                auto prev = next - 1;
+                const auto pt = prev->IsEndValid() ? prev->End() : m_worker.GetLastTime();
+                const auto nt = next->IsEndValid() ? next->End() : m_worker.GetLastTime();
+                if( nt - pt >= MinCtxNs ) break;
+                nextTime = nt + MinCtxNs;
             }
-            if( num == 1 )
-            {
-                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedOne, &ev } );
-                ref.folded.rend = rend;
-            }
-            else
-            {
-                auto& ref = m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::FoldedMulti, &ev } );
-                ref.folded.rend = rend;
-                ref.folded.num = num;
-            }
+            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Folded, uint32_t( it - vec.begin() ), uint32_t( next - it ) } );
+            it = next;
             pit = it-1;
         }
         else
         {
-            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Running, &ev } );
+            m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Running, uint32_t( it - vec.begin() ) } );
             pit = it;
             ++it;
         }

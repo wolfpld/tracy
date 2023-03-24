@@ -507,7 +507,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
             auto next = it + 1;
             for(;;)
             {
-                next = std::lower_bound( next, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                next = std::lower_bound( next, citend, nextTime, [this] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : m_worker.GetLastTime() ) < r; } );
                 if( next == citend ) break;
                 auto prev = next - 1;
                 const auto pt = prev->IsEndValid() ? prev->End() : m_worker.GetLastTime();

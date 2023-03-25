@@ -1,9 +1,12 @@
 all: release
 
-debug:
+embed.tracy:
+	wget https://share.nereid.pl/i/embed.tracy
+
+debug: embed.tracy
 	@+make -f debug.mk all
 
-release:
+release: embed.tracy
 	@+make -f release.mk all
 
 clean:

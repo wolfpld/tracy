@@ -54,6 +54,9 @@ private:
     std::vector<TimelineDraw> m_draw;
     std::vector<MessagesDraw> m_msgDraw;
     int m_depth;
+    bool m_hasCtxSwitch;
+    bool m_hasSamples;
+    bool m_hasMessages;
 };
 
 }

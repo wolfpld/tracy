@@ -259,8 +259,8 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
 
 bool TimelineItemThread::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    m_view.DrawThread( ctx, *m_thread, m_draw, m_ctxDraw, m_samplesDraw, offset, m_depth );
-    if( m_depth == 0 && m_msgDraw.empty() )
+    m_view.DrawThread( ctx, *m_thread, m_draw, m_ctxDraw, m_samplesDraw, offset, m_depth, m_hasCtxSwitch, m_hasSamples );
+    if( m_depth == 0 && !m_hasMessages )
     {
         auto& crash = m_worker.GetCrashEvent();
         return crash.thread == m_thread->id;
@@ -303,6 +303,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
 
     const auto& vd = m_view.GetViewData();
 
+    m_hasCtxSwitch = false;
     if( vd.drawContextSwitches )
     {
         auto ctxSwitch = m_worker.GetContextSwitchData( m_thread->id );
@@ -314,6 +315,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         }
     }
 
+    m_hasSamples = false;
     if( vd.drawSamples && !m_thread->samples.empty() )
     {
         td.Queue( [this, &ctx] {
@@ -321,6 +323,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         } );
     }
 
+    m_hasMessages = false;
     td.Queue( [this, &ctx] {
         PreprocessMessages( ctx, m_thread->messages, m_thread->id );
     } );
@@ -469,6 +472,8 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     if( it == citend ) return;
     if( citend != vec.end() ) ++citend;
 
+    m_hasCtxSwitch = true;
+
     const auto MinCtxNs = int64_t( round( GetScale() * MinCtxSize * nspx ) );
     const auto& sampleData = m_thread->samples;
 
@@ -540,6 +545,8 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     const auto itend = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
     if( it == itend ) return;
 
+    m_hasSamples = true;
+
     while( it < itend )
     {
         auto next = it + 1;
@@ -575,6 +582,8 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
     if( it == vec.end() ) return;
     auto end = std::lower_bound( it, vec.end(), vEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
     if( it == end ) return;
+
+    m_hasMessages = true;
 
     const auto hMsg = m_view.GetMessageHighlight();
     const auto hThread = hMsg ? m_worker.DecompressThread( hMsg->thread ) : 0;

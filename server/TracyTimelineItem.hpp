@@ -33,7 +33,7 @@ public:
     void SetShowFull( bool showFull ) { m_showFull = showFull; }
 
     // returns 0 instead of the correct value for the first frame
-    int GetNextFrameHeight() const { return m_height; }
+    int GetHeight() const { return m_height; }
 
     const void* GetKey() const { return m_key; }
 

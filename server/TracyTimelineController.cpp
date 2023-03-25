@@ -57,7 +57,7 @@ void TimelineController::UpdateCenterItem()
     {
         m_centerItemkey = item->GetKey();
         yBegin = yEnd;
-        yEnd += item->GetNextFrameHeight();
+        yEnd += item->GetHeight();
 
         const auto inLowerBounds = m_centerItemkey == m_items.front()->GetKey() || yBegin <= centerY;
         const auto inUpperBounds = m_centerItemkey == m_items.back()->GetKey() || centerY < yEnd;
@@ -85,7 +85,7 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
     for( auto& item : m_items )
     {
         yBegin = yEnd;
-        yEnd += item->GetNextFrameHeight();
+        yEnd += item->GetHeight();
 
         if( item->GetKey() != m_centerItemkey ) continue;
 
@@ -139,19 +139,19 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         if( item->WantPreprocess() && item->IsVisible() )
         {
             const auto yPos = wpos.y + yOffset;
-            const bool visible = m_firstFrame || ( yPos < yMax && yPos + item->GetNextFrameHeight() >= yMin );
+            const bool visible = m_firstFrame || ( yPos < yMax && yPos + item->GetHeight() >= yMin );
             item->Preprocess( ctx, m_td, visible );
         }
-        yOffset += m_firstFrame ? 0 : item->GetNextFrameHeight();
+        yOffset += m_firstFrame ? 0 : item->GetHeight();
     }
     m_td.Sync();
 
     yOffset = 0;
     for( auto& item : m_items )
     {
-        auto currentFrameItemHeight = item->GetNextFrameHeight();
+        auto currentFrameItemHeight = item->GetHeight();
         item->Draw( m_firstFrame, ctx, yOffset );
-        if( m_firstFrame ) currentFrameItemHeight = item->GetNextFrameHeight();
+        if( m_firstFrame ) currentFrameItemHeight = item->GetHeight();
         yOffset += currentFrameItemHeight;
     }
 

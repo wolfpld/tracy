@@ -565,7 +565,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
                 nextTime = nt + MinVisNs;
             }
         }
-        m_samplesDraw.emplace_back( SamplesDraw{ uint32_t( next - it - 1 ), uint32_t( it - vec.begin() ) } );
+        m_samplesDraw.emplace_back( SamplesDraw { uint32_t( next - it - 1 ), uint32_t( it - vec.begin() ) } );
         it = next;
     }
 }

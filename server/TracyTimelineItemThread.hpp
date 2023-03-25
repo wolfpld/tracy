@@ -35,16 +35,16 @@ protected:
 
 private:
 #ifndef TRACY_NO_STATISTICS
-    int PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth );
+    int PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth, bool visible );
 #endif
-    int PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth );
+    int PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible );
 
     template<typename Adapter, typename V>
-    int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth );
+    int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible );
 
-    void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch );
-    void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec );
-    void PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid );
+    void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch, bool visible );
+    void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible );
+    void PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible );
 
     const ThreadData* m_thread;
     bool m_ghost;

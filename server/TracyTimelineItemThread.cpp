@@ -288,16 +288,16 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     assert( m_draw.empty() );
     assert( m_msgDraw.empty() );
 
-    td.Queue( [this, &ctx] {
+    td.Queue( [this, &ctx, visible] {
 #ifndef TRACY_NO_STATISTICS
         if( m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
         {
-            m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0 );
+            m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0, visible );
         }
         else
 #endif
         {
-            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0 );
+            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0, visible );
         }
     } );
 
@@ -309,8 +309,8 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         auto ctxSwitch = m_worker.GetContextSwitchData( m_thread->id );
         if( ctxSwitch )
         {
-            td.Queue( [this, &ctx, ctxSwitch] {
-                PreprocessContextSwitches( ctx, *ctxSwitch );
+            td.Queue( [this, &ctx, ctxSwitch, visible] {
+                PreprocessContextSwitches( ctx, *ctxSwitch, visible );
             } );
         }
     }
@@ -318,19 +318,19 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     m_hasSamples = false;
     if( vd.drawSamples && !m_thread->samples.empty() )
     {
-        td.Queue( [this, &ctx] {
-            PreprocessSamples( ctx, m_thread->samples );
+        td.Queue( [this, &ctx, visible] {
+            PreprocessSamples( ctx, m_thread->samples, visible );
         } );
     }
 
     m_hasMessages = false;
-    td.Queue( [this, &ctx] {
-        PreprocessMessages( ctx, m_thread->messages, m_thread->id );
+    td.Queue( [this, &ctx, visible] {
+        PreprocessMessages( ctx, m_thread->messages, m_thread->id, visible );
     } );
 }
 
 #ifndef TRACY_NO_STATISTICS
-int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth )
+int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth, bool visible )
 {
     const auto nspx = ctx.nspx;
     const auto vStart = ctx.vStart;
@@ -366,17 +366,17 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
                 if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
-            m_draw.emplace_back( TimelineDraw { TimelineDrawType::GhostFolded, uint16_t( depth ), (void**)&ev, (next-1)->end } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::GhostFolded, uint16_t( depth ), (void**)&ev, (next-1)->end } );
             it = next;
         }
         else
         {
             if( ev.child >= 0 )
             {
-                const auto d = PreprocessGhostLevel( ctx, m_worker.GetGhostChildren( ev.child ), depth + 1 );
+                const auto d = PreprocessGhostLevel( ctx, m_worker.GetGhostChildren( ev.child ), depth + 1, visible );
                 if( d > maxdepth ) maxdepth = d;
             }
-            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Ghost, uint16_t( depth ), (void**)&ev } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Ghost, uint16_t( depth ), (void**)&ev } );
             ++it;
         }
     }
@@ -385,20 +385,20 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
 }
 #endif
 
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible )
 {
     if( vec.is_magic() )
     {
-        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth );
+        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth, visible );
     }
     else
     {
-        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth );
+        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth, visible );
     }
 }
 
 template<typename Adapter, typename V>
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -439,17 +439,17 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
                 if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
-            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ) } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ) } );
             it = next;
         }
         else
         {
             if( ev.HasChildren() )
             {
-                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1 );
+                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible );
                 if( d > maxdepth ) maxdepth = d;
             }
-            m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev } );
             ++it;
         }
     }
@@ -457,7 +457,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     return maxdepth;
 }
 
-void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch )
+void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch, bool visible )
 {
     const auto nspx = ctx.nspx;
     const auto vStart = ctx.vStart;
@@ -473,6 +473,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     if( citend != vec.end() ) ++citend;
 
     m_hasCtxSwitch = true;
+    if( !visible ) return;
 
     const auto MinCtxNs = int64_t( round( GetScale() * MinCtxSize * nspx ) );
     const auto& sampleData = m_thread->samples;
@@ -531,7 +532,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     }
 }
 
-void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec )
+void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -546,6 +547,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     if( it == itend ) return;
 
     m_hasSamples = true;
+    if( !visible ) return;
 
     while( it < itend )
     {
@@ -570,7 +572,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     }
 }
 
-void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid )
+void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -584,6 +586,7 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
     if( it == end ) return;
 
     m_hasMessages = true;
+    if( !visible ) return;
 
     const auto hMsg = m_view.GetMessageHighlight();
     const auto hThread = hMsg ? m_worker.DecompressThread( hMsg->thread ) : 0;

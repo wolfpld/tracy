@@ -14,7 +14,7 @@ namespace tracy
 class TaskDispatch
 {
 public:
-    TaskDispatch( size_t workers );
+    TaskDispatch( size_t workers, const char* name );
     ~TaskDispatch();
 
     void Queue( const std::function<void(void)>& f );
@@ -24,6 +24,7 @@ public:
 
 private:
     void Worker();
+    void SetName( const char* name, size_t num );
 
     std::vector<std::function<void(void)>> m_queue;
     std::mutex m_queueLock;

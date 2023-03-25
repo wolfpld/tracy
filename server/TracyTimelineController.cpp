@@ -20,7 +20,7 @@ TimelineController::TimelineController( View& view, Worker& worker )
 #ifdef __EMSCRIPTEN__
     , m_td( 1 )
 #else
-    , m_td( std::max( 1u, std::thread::hardware_concurrency() - 2 ) )
+    , m_td( std::max( 1u, std::thread::hardware_concurrency() - 2 ), "Render" )
 #endif
 {
 }

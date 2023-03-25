@@ -1287,7 +1287,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             // Minimum 2 threads to have at least two buffers (one in use, second one filling up)
             const auto jobs = std::max<int>( std::thread::hardware_concurrency() - 2, 2 );
 #endif
-            auto td = std::make_unique<TaskDispatch>( jobs );
+            auto td = std::make_unique<TaskDispatch>( jobs, "FrImg Zstd" );
             auto data = std::make_unique<JobData[]>( jobs );
 
             for( uint64_t i=0; i<sz; i++ )

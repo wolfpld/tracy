@@ -1,12 +1,13 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "../public/common/TracySystem.hpp"
 #include "TracyTaskDispatch.hpp"
 
 namespace tracy
 {
 
-TaskDispatch::TaskDispatch( size_t workers )
+TaskDispatch::TaskDispatch( size_t workers, const char* name )
     : m_exit( false )
     , m_jobs( 0 )
 {
@@ -15,7 +16,7 @@ TaskDispatch::TaskDispatch( size_t workers )
     m_workers.reserve( workers );
     for( size_t i=0; i<workers; i++ )
     {
-        m_workers.emplace_back( std::thread( [this]{ Worker(); } ) );
+        m_workers.emplace_back( std::thread( [this, name, i]{ SetName( name, i ); Worker(); } ) );
     }
 }
 
@@ -77,6 +78,13 @@ void TaskDispatch::Worker()
         if( m_jobs == 0 && m_queue.empty() ) m_cvJobs.notify_one();
         lock.unlock();
     }
+}
+
+void TaskDispatch::SetName( const char* name, size_t num )
+{
+    char tmp[128];
+    snprintf( tmp, sizeof( tmp ), "%s #%zu", name, num );
+    SetThreadName( tmp );
 }
 
 }

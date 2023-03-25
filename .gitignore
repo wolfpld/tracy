@@ -40,3 +40,5 @@ extra/vswhere.exe
 extra/tracy-build
 /.cache
 compile_commands.json
+profiler/build/wasm/Tracy-release.*
+profiler/build/wasm/Tracy-debug.*

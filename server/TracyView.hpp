@@ -45,6 +45,7 @@ struct TimelineDraw;
 struct ContextSwitchDraw;
 struct SamplesDraw;
 struct MessagesDraw;
+struct CpuUsageDraw;
 
 class View
 {
@@ -131,7 +132,7 @@ public:
     void DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
-    bool DrawCpuData( const TimelineContext& ctx, int& offset );
+    bool DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>&, int& offset );
 
     bool m_showRanges = false;
     Range m_statRange;
@@ -840,8 +841,6 @@ private:
         bool monitor = false;
         int64_t time;
     } m_sendQueueWarning;
-
-    std::vector<std::pair<int, int>> m_cpuUsageBuf;
 
     bool m_attnProtoMismatch = false;
     bool m_attnNotAvailable = false;

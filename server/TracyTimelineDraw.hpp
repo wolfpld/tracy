@@ -56,6 +56,13 @@ struct MessagesDraw
     uint32_t num;
 };
 
+
+struct CpuUsageDraw
+{
+    int own;
+    int other;
+};
+
 }
 
 #endif

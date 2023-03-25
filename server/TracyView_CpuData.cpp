@@ -4,6 +4,7 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracyTimelineDraw.hpp"
 #include "TracyTimelineItem.hpp"
 #include "TracyTimelineContext.hpp"
 #include "TracyView.hpp"
@@ -13,7 +14,7 @@ namespace tracy
 
 constexpr float MinVisSize = 3;
 
-bool View::DrawCpuData( const TimelineContext& ctx, int& offset )
+bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, int& offset )
 {
     auto cpuData = m_worker.GetCpuData();
     const auto cpuCnt = m_worker.GetCpuDataCpuCount();
@@ -32,105 +33,105 @@ bool View::DrawCpuData( const TimelineContext& ctx, int& offset )
 
     auto draw = ImGui::GetWindowDrawList();
 
-#ifdef TRACY_NO_STATISTICS
-    if( m_vd.drawCpuUsageGraph )
-#else
-    if( m_vd.drawCpuUsageGraph && m_worker.IsCpuUsageReady() )
-#endif
+    if( m_vd.drawCpuUsageGraph && !cpuDraw.empty() )
     {
         const auto cpuUsageHeight = floor( 30.f * GetScale() );
         if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
         {
-            const auto iw = (size_t)w;
-            m_worker.GetCpuUsage( m_vd.zvStart, nspxdbl, iw, m_cpuUsageBuf );
-
             const float cpuCntRev = 1.f / cpuCnt;
-            float pos = 0;
-            auto usage = m_cpuUsageBuf.begin();
-            while( pos < w )
+            int pos = 0;
+            for( auto& v : cpuDraw )
             {
                 float base;
-                if( usage->first != 0 )
+                if( v.own != 0 )
                 {
-                    base = dpos.y + offset + ( 1.f - usage->first * cpuCntRev ) * cpuUsageHeight;
+                    base = dpos.y + offset + ( 1.f - v.own * cpuCntRev ) * cpuUsageHeight;
                     DrawLine( draw, ImVec2( dpos.x + pos, dpos.y + offset + cpuUsageHeight ), ImVec2( dpos.x + pos, base ), 0xFF55BB55 );
                 }
                 else
                 {
                     base = dpos.y + offset + cpuUsageHeight;
                 }
-                if( usage->second != 0 )
+                if( v.other != 0 )
                 {
-                    int usageTotal = usage->first + usage->second;
+                    int usageTotal = v.own + v.other;
                     DrawLine( draw, ImVec2( dpos.x + pos, base ), ImVec2( dpos.x + pos, dpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
                 }
                 pos++;
-                usage++;
             }
             DrawLine( draw, dpos + ImVec2( 0, offset+cpuUsageHeight+2 ), dpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
 
             if( hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
             {
-                const auto& usage = m_cpuUsageBuf[ImGui::GetIO().MousePos.x - wpos.x];
                 ImGui::BeginTooltip();
-                TextFocused( "Cores used by profiled program:", RealToString( usage.first ) );
-                ImGui::SameLine();
-                char buf[64];
-                PrintStringPercent( buf, usage.first * cpuCntRev * 100 );
-                TextDisabledUnformatted( buf );
-                TextFocused( "Cores used by other programs:", RealToString( usage.second ) );
-                ImGui::SameLine();
-                PrintStringPercent( buf, usage.second * cpuCntRev * 100 );
-                TextDisabledUnformatted( buf );
-                TextFocused( "Number of cores:", RealToString( cpuCnt ) );
-                if( usage.first + usage.second != 0 )
+                if( cpuDraw.size() > ( ImGui::GetIO().MousePos.x - wpos.x ) )
                 {
-                    const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl;
-                    ImGui::Separator();
-                    for( int i=0; i<cpuCnt; i++ )
+                    const auto& usage = cpuDraw[ImGui::GetIO().MousePos.x - wpos.x];
+                    TextFocused( "Cores used by profiled program:", RealToString( usage.own ) );
+                    ImGui::SameLine();
+                    char buf[64];
+                    PrintStringPercent( buf, usage.own * cpuCntRev * 100 );
+                    TextDisabledUnformatted( buf );
+                    TextFocused( "Cores used by other programs:", RealToString( usage.other ) );
+                    ImGui::SameLine();
+                    PrintStringPercent( buf, usage.other * cpuCntRev * 100 );
+                    TextDisabledUnformatted( buf );
+                    TextFocused( "Number of cores:", RealToString( cpuCnt ) );
+                    if( usage.own + usage.other != 0 )
                     {
-                        if( !cpuData[i].cs.empty() )
+                        const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl;
+                        ImGui::Separator();
+                        for( int i=0; i<cpuCnt; i++ )
                         {
-                            auto& cs = cpuData[i].cs;
-                            auto it = std::lower_bound( cs.begin(), cs.end(), mt, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-                            if( it != cs.end() && it->Start() <= mt && it->End() >= mt )
+                            if( !cpuData[i].cs.empty() )
                             {
-                                auto tt = m_worker.GetThreadTopology( i );
-                                if( tt )
+                                auto& cs = cpuData[i].cs;
+                                auto it = std::lower_bound( cs.begin(), cs.end(), mt, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                                if( it != cs.end() && it->Start() <= mt && it->End() >= mt )
                                 {
-                                    ImGui::TextDisabled( "[%i:%i] CPU %i:", tt->package, tt->core, i );
-                                }
-                                else
-                                {
-                                    ImGui::TextDisabled( "CPU %i:", i );
-                                }
-                                ImGui::SameLine();
-                                const auto thread = m_worker.DecompressThreadExternal( it->Thread() );
-                                bool local, untracked;
-                                const char* txt;
-                                auto label = GetThreadContextData( thread, local, untracked, txt );
-                                if( local || untracked )
-                                {
-                                    uint32_t color;
-                                    if( m_vd.dynamicColors != 0 )
+                                    auto tt = m_worker.GetThreadTopology( i );
+                                    if( tt )
                                     {
-                                        color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                        ImGui::TextDisabled( "[%i:%i] CPU %i:", tt->package, tt->core, i );
                                     }
                                     else
                                     {
-                                        color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                        ImGui::TextDisabled( "CPU %i:", i );
                                     }
-                                    TextColoredUnformatted( HighlightColor<75>( color ), label );
                                     ImGui::SameLine();
-                                    ImGui::TextDisabled( "(%s)", RealToString( thread ) );
-                                }
-                                else
-                                {
-                                    TextDisabledUnformatted( label );
+                                    const auto thread = m_worker.DecompressThreadExternal( it->Thread() );
+                                    bool local, untracked;
+                                    const char* txt;
+                                    auto label = GetThreadContextData( thread, local, untracked, txt );
+                                    if( local || untracked )
+                                    {
+                                        uint32_t color;
+                                        if( m_vd.dynamicColors != 0 )
+                                        {
+                                            color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                        }
+                                        else
+                                        {
+                                            color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                        }
+                                        TextColoredUnformatted( HighlightColor<75>( color ), label );
+                                        ImGui::SameLine();
+                                        ImGui::TextDisabled( "(%s)", RealToString( thread ) );
+                                    }
+                                    else
+                                    {
+                                        TextDisabledUnformatted( label );
+                                    }
                                 }
                             }
                         }
                     }
+                }
+                else
+                {
+                    TextFocused( "Cores used by profiled program:", "0" );
+                    TextFocused( "Cores used by other programs:", "0" );
+                    TextFocused( "Number of cores:", RealToString( cpuCnt ) );
                 }
                 ImGui::EndTooltip();
             }

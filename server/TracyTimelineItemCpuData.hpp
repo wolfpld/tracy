@@ -3,6 +3,7 @@
 
 #include "TracyEvent.hpp"
 #include "TracyTimelineItem.hpp"
+#include "TracyTimelineDraw.hpp"
 
 namespace tracy
 {
@@ -25,8 +26,16 @@ protected:
     int64_t RangeEnd() const override;
 
     bool DrawContents( const TimelineContext& ctx, int& offset ) override;
+    void DrawFinished() override;
 
     bool IsEmpty() const override;
+
+    void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible ) override;
+
+private:
+    void PreprocessCpuUsage( const TimelineContext& ctx );
+
+    std::vector<CpuUsageDraw> m_cpuDraw;
 };
 
 }

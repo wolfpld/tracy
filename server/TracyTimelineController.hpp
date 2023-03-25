@@ -25,7 +25,7 @@ public:
 
     void FirstFrameExpired();
     void Begin();
-    void End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax );
+    void End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax, ImFont* smallFont );
 
     template<class T, class U>
     void AddItem( U* data )

@@ -10,7 +10,7 @@ namespace tracy
 
 struct TimelineContext
 {
-    float w, ty, scale;
+    float w, ty, sty, scale;
     float yMin, yMax;
     double pxns, nspx;
     int64_t vStart, vEnd;

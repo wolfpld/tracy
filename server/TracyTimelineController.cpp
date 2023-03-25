@@ -133,17 +133,20 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     ctx.wpos = wpos;
     ctx.hover = hover;
 
+    int yOffset = 0;
     for( auto& item : m_items )
     {
         if( item->WantPreprocess() && item->IsVisible() )
         {
-            item->Preprocess( ctx, m_td );
+            const auto yPos = wpos.y + yOffset;
+            const bool visible = m_firstFrame || ( yPos < yMax && yPos + item->GetNextFrameHeight() >= yMin );
+            item->Preprocess( ctx, m_td, visible );
         }
+        yOffset += m_firstFrame ? 0 : item->GetNextFrameHeight();
     }
     m_td.Sync();
 
-    int yOffset = 0;
-
+    yOffset = 0;
     for( auto& item : m_items )
     {
         auto currentFrameItemHeight = item->GetNextFrameHeight();

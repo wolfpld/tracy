@@ -31,7 +31,7 @@ protected:
 
     bool IsEmpty() const override;
 
-    void Preprocess( const TimelineContext& ctx, TaskDispatch& td ) override;
+    void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible ) override;
 
 private:
 #ifndef TRACY_NO_STATISTICS

@@ -109,6 +109,7 @@
 #define TracyParameterRegister(x,y)
 #define TracyParameterSetup(x,y,z,w)
 #define TracyIsConnected false
+#define TracySetProgramName(x)
 
 #define TracyFiberEnter(x)
 #define TracyFiberLeave
@@ -270,6 +271,7 @@
 #define TracyParameterRegister( cb, data ) tracy::Profiler::ParameterRegister( cb, data )
 #define TracyParameterSetup( idx, name, isBool, val ) tracy::Profiler::ParameterSetup( idx, name, isBool, val )
 #define TracyIsConnected tracy::GetProfiler().IsConnected()
+#define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name );
 
 #ifdef TRACY_FIBERS
 #  define TracyFiberEnter( fiber ) tracy::Profiler::EnterFiber( fiber )

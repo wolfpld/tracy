@@ -1353,6 +1353,7 @@ Profiler::Profiler()
     , m_queryImage( nullptr )
     , m_queryData( nullptr )
     , m_crashHandlerInstalled( false )
+    , m_programName( nullptr )
 {
     assert( !s_instance );
     s_instance = this;
@@ -1721,6 +1722,14 @@ void Profiler::Worker()
                 const auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
                 if( t - lastBroadcast > 3000000000 )  // 3s
                 {
+                    m_programNameLock.lock();
+                    if( m_programName )
+                    {
+                        broadcastMsg = GetBroadcastMessage( m_programName, strlen( m_programName ), broadcastLen, dataPort );
+                        m_programName = nullptr;
+                    }
+                    m_programNameLock.unlock();
+
                     lastBroadcast = t;
                     const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
                     broadcastMsg.activeTime = int32_t( ts - m_epoch );

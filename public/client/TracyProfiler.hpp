@@ -677,6 +677,13 @@ public:
         return m_isConnected.load( std::memory_order_acquire );
     }
 
+    tracy_force_inline void SetProgramName( const char* name )
+    {
+        m_programNameLock.lock();
+        m_programName = name;
+        m_programNameLock.unlock();
+    }
+
 #ifdef TRACY_ON_DEMAND
     tracy_force_inline uint64_t ConnectionId() const
     {
@@ -964,6 +971,9 @@ private:
     } m_prevSignal;
 #endif
     bool m_crashHandlerInstalled;
+
+    const char* m_programName;
+    TracyMutex m_programNameLock;
 };
 
 }

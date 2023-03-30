@@ -8,6 +8,7 @@ release:
 
 clean:
 	@+make -f build.mk clean
+	rm -f libtracy-*.so
 
 db: clean
 	@bear -- $(MAKE) -f debug.mk all

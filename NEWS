@@ -15,6 +15,8 @@ v0.x.x (xxxx-xx-xx)
   showing thread colors, which may have been confusing to users.
 - Vulkan contexts can now use VK_EXT_host_query_reset extension.
 - System power usage is now reported on x86 Linux.
+- Program name displayed in broadcast messages can be now changed with the
+  TracySetProgramName() macro.
 
 
 v0.9.1 (2023-02-26)

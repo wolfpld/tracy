@@ -14,8 +14,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/random.h>  // for the random token string
-#include <unistd.h>      // for access()
+#include <unistd.h>  // for access()
+
+#if !defined(__has_include) || !defined(__linux__)
+#include <sys/random.h>  // for getrandom() - the random token string
+#elif __has_include(<sys/random.h>)
+#include <sys/random.h>
+#else  // for GLIBC < 2.25
+#include <sys/syscall.h>
+#define getrandom(buf, sz, flags) syscall(SYS_getrandom, buf, sz, flags)
+#endif
 
 #include "nfd.h"
 
@@ -705,7 +713,17 @@ nfdpathsetsize_t ReadResponseUrisUncheckedGetArraySize(DBusMessage* msg) {
     nfdpathsetsize_t sz = 0;  // Initialization will never be used, but we initialize it to prevent
                               // the uninitialized warning otherwise.
     ReadDict(iter, "uris", [&sz](DBusMessageIter& uris_iter) {
+        // `dbus_message_iter_get_element_count` is available as of [D-Bus 1.9.16](https://launchpad.net/debian/+source/dbus/1.9.16-1).
+#if DBUS_MAJOR_VERSION > 1 || DBUS_MINOR_VERSION > 9 || (DBUS_MINOR_VERSION == 9 && DBUS_MINOR_VERSION >= 16)
         sz = dbus_message_iter_get_element_count(&uris_iter);
+#else // Otherwise fallback on counting elements manually.
+        sz = 0;
+        DBusMessageIter uri_iter;
+        dbus_message_iter_recurse(&uris_iter, &uri_iter);
+        do {
+            ++sz;
+        } while (dbus_message_iter_next(&uri_iter));
+#endif
         return NFD_OKAY;
     });
     return sz;

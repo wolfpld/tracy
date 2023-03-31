@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Tracy LANGUAGES CXX)
+project(Tracy LANGUAGES C CXX)
 
 if(${BUILD_SHARED_LIBS})
 	set(DEFAULT_STATIC OFF)
@@ -130,7 +130,22 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyUwp.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyYield.hpp)
 
-install(TARGETS TracyClient
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+include(defaults)
+    
+add_subdirectory(capture)
+add_subdirectory(csvexport)
+add_subdirectory(getopt)
+# TODO: consider using external imgui package.
+add_subdirectory(imgui)
+add_subdirectory(nfd)
+add_subdirectory(profiler)
+add_subdirectory(public)
+add_subdirectory(server)
+add_subdirectory(update)
+add_subdirectory(zstd)
+
+install(TARGETS TracyClient Tracy update capture csvexport
         EXPORT TracyConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}

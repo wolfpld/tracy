@@ -63,6 +63,14 @@ struct CpuUsageDraw
     int other;
 };
 
+
+struct CpuCtxDraw
+{
+    uint32_t idx;
+    uint32_t num;
+};
+
+
 }
 
 #endif

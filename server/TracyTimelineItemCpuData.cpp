@@ -41,18 +41,20 @@ int64_t TimelineItemCpuData::RangeEnd() const
 
 bool TimelineItemCpuData::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    m_view.DrawCpuData( ctx, m_cpuDraw, offset );
+    m_view.DrawCpuData( ctx, m_cpuDraw, m_ctxDraw, offset );
     return true;
 }
 
 void TimelineItemCpuData::DrawFinished()
 {
     m_cpuDraw.clear();
+    for( auto& v : m_ctxDraw ) v.clear();
 }
 
 void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible )
 {
     assert( m_cpuDraw.empty() );
+    for( auto& v : m_ctxDraw ) assert( v.empty() );
 
     if( !visible ) return;
 
@@ -65,6 +67,65 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
         td.Queue( [this, &ctx] {
             PreprocessCpuUsage( ctx );
         } );
+    }
+
+    auto cpuData = m_worker.GetCpuData();
+    const auto cpuCnt = m_worker.GetCpuDataCpuCount();
+    if( m_ctxDraw.size() != cpuCnt ) m_ctxDraw.resize( cpuCnt );
+
+    for( int i=0; i<cpuCnt; i++ )
+    {
+        auto& cs = cpuData[i].cs;
+        if( !cs.empty() )
+        {
+            td.Queue( [this, &ctx, &cs, i] {
+                PreprocessCpuCtxSwitches( ctx, cs, m_ctxDraw[i] );
+            } );
+        }
+    }
+}
+
+constexpr float MinVisSize = 3;
+
+void TimelineItemCpuData::PreprocessCpuCtxSwitches( const TimelineContext& ctx, const Vector<ContextSwitchCpu>& cs, std::vector<CpuCtxDraw>& out )
+{
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+    const auto nspx = ctx.nspx;
+
+    auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, vStart ), [this] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : m_worker.GetLastTime() ) < r; } );
+    if( it == cs.end() ) return;
+    auto eit = std::lower_bound( it, cs.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+    if( it == eit ) return;
+
+    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+
+    while( it < eit )
+    {
+        const auto end = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
+        const auto zsz = end - it->Start();
+        if( zsz < MinVisNs )
+        {
+            auto nextTime = end + MinVisNs;
+            auto next = it + 1;
+            for(;;)
+            {
+                next = std::lower_bound( next, eit, nextTime, [this] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : m_worker.GetLastTime() ) < r; } );
+                if( next == eit ) break;
+                auto prev = next - 1;
+                const auto pt = prev->IsEndValid() ? prev->End() : m_worker.GetLastTime();
+                const auto nt = next->IsEndValid() ? next->End() : m_worker.GetLastTime();
+                if( nt - pt >= MinVisNs ) break;
+                nextTime = nt + MinVisNs;
+            }
+            out.emplace_back( CpuCtxDraw { uint32_t( it - cs.begin() ), uint32_t( next - it ) } );
+            it = next;
+        }
+        else
+        {
+            out.emplace_back( CpuCtxDraw { uint32_t( it - cs.begin() ), 0 } );
+            ++it;
+        }
     }
 }
 

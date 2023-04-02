@@ -34,8 +34,10 @@ protected:
 
 private:
     void PreprocessCpuUsage( const TimelineContext& ctx );
+    void PreprocessCpuCtxSwitches( const TimelineContext& ctx, const Vector<ContextSwitchCpu>& cs, std::vector<CpuCtxDraw>& out );
 
     std::vector<CpuUsageDraw> m_cpuDraw;
+    std::vector<std::vector<CpuCtxDraw>> m_ctxDraw;
 };
 
 }

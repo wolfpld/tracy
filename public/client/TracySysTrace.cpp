@@ -770,6 +770,13 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "sched_wakeup id: %i\n", wakeupId );
     TracyDebug( "drm_vblank_event id: %i\n", vsyncId );
 
+#ifdef TRACY_NO_SAMPLING
+    const bool noSoftwareSampling = true;
+#else
+    const char* noSoftwareSamplingEnv = GetEnvVar( "TRACY_NO_SAMPLING" );
+    const bool noSoftwareSampling = noSoftwareSamplingEnv && noSoftwareSamplingEnv[0] == '1';
+#endif
+
 #ifdef TRACY_NO_SAMPLE_RETIREMENT
     const bool noRetirement = true;
 #else
@@ -839,28 +846,31 @@ bool SysTraceStart( int64_t& samplingPeriod )
     pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
 
-    TracyDebug( "Setup software sampling\n" );
-    ProbePreciseIp( pe, currentPid );
-    for( int i=0; i<s_numCpus; i++ )
+    if( !noSoftwareSampling )
     {
-        int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
-        if( fd == -1 )
+        TracyDebug( "Setup software sampling\n" );
+        ProbePreciseIp( pe, currentPid );
+        for( int i=0; i<s_numCpus; i++ )
         {
-            pe.exclude_kernel = 1;
-            ProbePreciseIp( pe, currentPid );
-            fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
+            int fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
             if( fd == -1 )
             {
-                TracyDebug( "  Failed to setup!\n");
-                break;
+                pe.exclude_kernel = 1;
+                ProbePreciseIp( pe, currentPid );
+                fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
+                if( fd == -1 )
+                {
+                    TracyDebug( "  Failed to setup!\n");
+                    break;
+                }
+                TracyDebug( "  No access to kernel samples\n" );
             }
-            TracyDebug( "  No access to kernel samples\n" );
-        }
-        new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );
-        if( s_ring[s_numBuffers].IsValid() )
-        {
-            s_numBuffers++;
-            TracyDebug( "  Core %i ok\n", i );
+            new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );
+            if( s_ring[s_numBuffers].IsValid() )
+            {
+                s_numBuffers++;
+                TracyDebug( "  Core %i ok\n", i );
+            }
         }
     }
 

@@ -59,15 +59,29 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
 
     if( !visible ) return;
 
+    const auto yMin = ctx.yMin;
+    const auto yMax = ctx.yMax;
+    const auto ty = ctx.ty;
+    const auto sty = ctx.sty;
+    const auto ostep = ty + 1;
+    const auto sstep = sty + 1;
+
+    auto pos = yPos + ostep;
+
 #ifdef TRACY_NO_STATISTICS
     if( m_view.GetViewData().drawCpuUsageGraph )
 #else
     if( m_view.GetViewData().drawCpuUsageGraph && m_worker.IsCpuUsageReady() )
 #endif
     {
-        td.Queue( [this, &ctx] {
-            PreprocessCpuUsage( ctx );
-        } );
+        const auto cpuUsageHeight = floor( 30.f * GetScale() );
+        if( pos <= yMax && pos + cpuUsageHeight + 3 >= yMin )
+        {
+            td.Queue( [this, &ctx] {
+                PreprocessCpuUsage( ctx );
+            } );
+        }
+        pos += cpuUsageHeight + 3;
     }
 
     auto cpuData = m_worker.GetCpuData();
@@ -77,12 +91,13 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
     for( int i=0; i<cpuCnt; i++ )
     {
         auto& cs = cpuData[i].cs;
-        if( !cs.empty() )
+        if( !cs.empty() && pos <= yMax && pos + sty >= yMin )
         {
             td.Queue( [this, &ctx, &cs, i] {
                 PreprocessCpuCtxSwitches( ctx, cs, m_ctxDraw[i] );
             } );
         }
+        pos += sstep;
     }
 }
 

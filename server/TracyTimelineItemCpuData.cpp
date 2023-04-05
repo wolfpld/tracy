@@ -41,7 +41,8 @@ int64_t TimelineItemCpuData::RangeEnd() const
 
 bool TimelineItemCpuData::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    m_view.DrawCpuData( ctx, m_cpuDraw, m_ctxDraw, offset );
+    const bool hasCpuData = m_worker.IsCpuUsageReady() && !m_worker.GetCpuUsage().empty();
+    m_view.DrawCpuData( ctx, m_cpuDraw, m_ctxDraw, offset, hasCpuData );
     return true;
 }
 

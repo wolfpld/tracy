@@ -133,7 +133,7 @@ public:
     void DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid );
     void DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const ImVec2& dr );
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
-    bool DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, const std::vector<std::vector<CpuCtxDraw>>& ctxDraw, int& offset );
+    bool DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, const std::vector<std::vector<CpuCtxDraw>>& ctxDraw, int& offset, bool hasCpuData );
 
     bool m_showRanges = false;
     Range m_statRange;

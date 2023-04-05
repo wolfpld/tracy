@@ -14,7 +14,7 @@ constexpr float MinVisSize = 3;
 namespace tracy
 {
 
-bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, const std::vector<std::vector<CpuCtxDraw>>& ctxDraw, int& offset )
+bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, const std::vector<std::vector<CpuCtxDraw>>& ctxDraw, int& offset, bool hasCpuData )
 {
     auto cpuData = m_worker.GetCpuData();
     const auto cpuCnt = m_worker.GetCpuDataCpuCount();
@@ -34,7 +34,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
     auto draw = ImGui::GetWindowDrawList();
 
-    if( m_vd.drawCpuUsageGraph && !cpuDraw.empty() )
+    if( hasCpuData && m_vd.drawCpuUsageGraph )
     {
         const auto cpuUsageHeight = floor( 30.f * GetScale() );
         if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )

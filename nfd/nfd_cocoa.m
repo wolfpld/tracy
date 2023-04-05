@@ -180,6 +180,10 @@ const char* NFD_GetError(void) {
     return g_errorstr;
 }
 
+void NFD_ClearError(void) {
+    NFDi_SetError(NULL);
+}
+
 void NFD_FreePathN(nfdnchar_t* filePath) {
     NFDi_Free((void*)filePath);
 }

@@ -14,8 +14,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/random.h>  // for the random token string
-#include <unistd.h>      // for access()
+#include <unistd.h>  // for access()
+
+#if !defined(__has_include) || !defined(__linux__)
+#include <sys/random.h>  // for getrandom() - the random token string
+#elif __has_include(<sys/random.h>)
+#include <sys/random.h>
+#else  // for GLIBC < 2.25
+#include <sys/syscall.h>
+#define getrandom(buf, sz, flags) syscall(SYS_getrandom, buf, sz, flags)
+#endif
 
 #include "nfd.h"
 

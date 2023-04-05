@@ -44,7 +44,7 @@ private:
 
     void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch, bool visible );
     void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible );
-    void PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible );
+    void PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible, int yPos );
 
     const ThreadData* m_thread;
     bool m_ghost;

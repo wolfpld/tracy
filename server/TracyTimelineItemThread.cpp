@@ -324,8 +324,8 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     }
 
     m_hasMessages = false;
-    td.Queue( [this, &ctx, visible] {
-        PreprocessMessages( ctx, m_thread->messages, m_thread->id, visible );
+    td.Queue( [this, &ctx, visible, yPos] {
+        PreprocessMessages( ctx, m_thread->messages, m_thread->id, visible, yPos );
     } );
 }
 
@@ -572,7 +572,7 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
     }
 }
 
-void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible )
+void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible, int yPos )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -587,6 +587,7 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
 
     m_hasMessages = true;
     if( !visible ) return;
+    if( yPos > ctx.yMax || yPos + ctx.ty < ctx.yMin ) return;
 
     const auto hMsg = m_view.GetMessageHighlight();
     const auto hThread = hMsg ? m_worker.DecompressThread( hMsg->thread ) : 0;

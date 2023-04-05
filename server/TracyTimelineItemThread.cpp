@@ -309,6 +309,8 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         auto ctxSwitch = m_worker.GetContextSwitchData( m_thread->id );
         if( ctxSwitch )
         {
+            // There is no yPos passed here to enable more granular visibility check,
+            // as context switch shadows will usually be projected down onto zones.
             td.Queue( [this, &ctx, ctxSwitch, visible] {
                 PreprocessContextSwitches( ctx, *ctxSwitch, visible );
             } );

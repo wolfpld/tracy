@@ -43,7 +43,7 @@ private:
     int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible );
 
     void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch, bool visible );
-    void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible );
+    void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible, int yPos );
     void PreprocessMessages( const TimelineContext& ctx, const Vector<short_ptr<MessageData>>& vec, uint64_t tid, bool visible, int yPos );
 
     const ThreadData* m_thread;

@@ -318,8 +318,8 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
     m_hasSamples = false;
     if( vd.drawSamples && !m_thread->samples.empty() )
     {
-        td.Queue( [this, &ctx, visible] {
-            PreprocessSamples( ctx, m_thread->samples, visible );
+        td.Queue( [this, &ctx, visible, yPos] {
+            PreprocessSamples( ctx, m_thread->samples, visible, yPos );
         } );
     }
 
@@ -532,11 +532,14 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     }
 }
 
-void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible )
+void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible, int yPos )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
+    const auto ty = ctx.ty;
+    const auto ostep = ty + 1;
+    const auto pos = yPos + ostep;
 
     const auto MinVis = 5 * GetScale();
     const auto MinVisNs = int64_t( round( MinVis * nspx ) );
@@ -548,6 +551,12 @@ void TimelineItemThread::PreprocessSamples( const TimelineContext& ctx, const Ve
 
     m_hasSamples = true;
     if( !visible ) return;
+
+    const auto ty0375 = pos + round( ty * 0.375f );
+    const auto ty02 = round( ty * 0.2f );
+    const auto y0 = ty0375 - ty02 - 3;
+    const auto y1 = ty0375 + ty02 - 1;
+    if( y0 > ctx.yMax || y1 < ctx.yMin ) return;
 
     while( it < itend )
     {

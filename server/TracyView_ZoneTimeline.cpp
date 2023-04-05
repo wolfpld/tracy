@@ -32,11 +32,8 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     const auto hover = ctx.hover;
     const auto yMin = ctx.yMin;
     const auto yMax = ctx.yMax;
-
-    ImGui::PushFont( m_smallFont );
-    const auto sty = ImGui::GetTextLineHeight();
+    const auto sty = ctx.sty;
     const auto sstep = sty + 1;
-    ImGui::PopFont();
 
     const auto sampleOffset = offset;
     const auto hasSamples = m_vd.drawSamples && _hasSamples;

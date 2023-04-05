@@ -24,7 +24,7 @@ public:
     void Draw( bool firstFrame, const TimelineContext& ctx, int yOffset );
 
     bool WantPreprocess() const { return m_wantPreprocess; }
-    virtual void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible ) { assert( false ); }
+    virtual void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos ) { assert( false ); }
 
     void VisibilityCheckbox();
     virtual void SetVisible( bool visible ) { m_visible = visible; }

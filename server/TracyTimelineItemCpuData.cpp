@@ -51,7 +51,7 @@ void TimelineItemCpuData::DrawFinished()
     for( auto& v : m_ctxDraw ) v.clear();
 }
 
-void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible )
+void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos )
 {
     assert( m_cpuDraw.empty() );
     for( auto& v : m_ctxDraw ) assert( v.empty() );

@@ -30,7 +30,7 @@ protected:
 
     bool IsEmpty() const override;
 
-    void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible ) override;
+    void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos ) override;
 
 private:
     void PreprocessCpuUsage( const TimelineContext& ctx );

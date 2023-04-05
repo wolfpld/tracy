@@ -143,7 +143,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
         {
             const auto yPos = wpos.y + yOffset;
             const bool visible = m_firstFrame || ( yPos < yMax && yPos + item->GetHeight() >= yMin );
-            item->Preprocess( ctx, m_td, visible );
+            item->Preprocess( ctx, m_td, visible, yPos );
         }
         yOffset += m_firstFrame ? 0 : item->GetHeight();
     }

@@ -281,7 +281,7 @@ void TimelineItemThread::DrawFinished()
     m_msgDraw.clear();
 }
 
-void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible )
+void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos )
 {
     assert( m_samplesDraw.empty() );
     assert( m_ctxDraw.empty() );

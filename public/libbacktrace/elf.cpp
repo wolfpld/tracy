@@ -2823,18 +2823,18 @@ elf_zstd_read_fse (const unsigned char **ppin, const unsigned char *pinend,
 	  while ((val & 0xfff) == 0xfff)
 	    {
 	      zidx += 3 * 6;
-	      if  (!elf_fetch_bits (&pin, pinend, &val, &bits))
-		return 0;
 	      val >>= 12;
 	      bits -= 12;
+	      if  (!elf_fetch_bits (&pin, pinend, &val, &bits))
+		return 0;
 	    }
 	  while ((val & 3) == 3)
 	    {
 	      zidx += 3;
-	      if (!elf_fetch_bits (&pin, pinend, &val, &bits))
-		return 0;
 	      val >>= 2;
 	      bits -= 2;
+	      if (!elf_fetch_bits (&pin, pinend, &val, &bits))
+		return 0;
 	    }
 	  /* We have at least 13 bits here, don't need to fetch.  */
 	  zidx += val & 3;
@@ -2964,7 +2964,7 @@ elf_zstd_build_fse (const int16_t *norm, int idx, uint16_t *next,
 	    pos = (pos + step) & mask;
 	}
     }
-  if (pos != 0)
+  if (unlikely (pos != 0))
     {
       elf_uncompress_failed ();
       return 0;
@@ -3440,17 +3440,17 @@ static const struct elf_zstd_fse_baseline_entry elf_zstd_match_table[64] =
 
 static const struct elf_zstd_fse_baseline_entry elf_zstd_offset_table[32] =
 {
-  { 1, 0, 5, 0 }, { 64, 6, 4, 0 }, { 512, 9, 5, 0 },
-  { 32768, 15, 5, 0 }, { 2097152, 21, 5, 0 }, { 8, 3, 5, 0 },
-  { 128, 7, 4, 0 }, { 4096, 12, 5, 0 }, { 262144, 18, 5, 0 },
-  { 8388608, 23, 5, 0 }, { 32, 5, 5, 0 }, { 256, 8, 4, 0 },
-  { 16384, 14, 5, 0 }, { 1048576, 20, 5, 0 }, { 4, 2, 5, 0 },
-  { 128, 7, 4, 16 }, { 2048, 11, 5, 0 }, { 131072, 17, 5, 0 },
-  { 4194304, 22, 5, 0 }, { 16, 4, 5, 0 }, { 256, 8, 4, 16 },
-  { 8192, 13, 5, 0 }, { 524288, 19, 5, 0 }, { 2, 1, 5, 0 },
-  { 64, 6, 4, 16 }, { 1024, 10, 5, 0 }, { 65536, 16, 5, 0 },
-  { 268435456, 28, 5, 0 }, { 134217728, 27, 5, 0 }, { 67108864, 26, 5, 0 },
-  { 33554432, 25, 5, 0 }, { 16777216, 24, 5, 0 },
+  { 1, 0, 5, 0 }, { 61, 6, 4, 0 }, { 509, 9, 5, 0 },
+  { 32765, 15, 5, 0 }, { 2097149, 21, 5, 0 }, { 5, 3, 5, 0 },
+  { 125, 7, 4, 0 }, { 4093, 12, 5, 0 }, { 262141, 18, 5, 0 },
+  { 8388605, 23, 5, 0 }, { 29, 5, 5, 0 }, { 253, 8, 4, 0 },
+  { 16381, 14, 5, 0 }, { 1048573, 20, 5, 0 }, { 1, 2, 5, 0 },
+  { 125, 7, 4, 16 }, { 2045, 11, 5, 0 }, { 131069, 17, 5, 0 },
+  { 4194301, 22, 5, 0 }, { 13, 4, 5, 0 }, { 253, 8, 4, 16 },
+  { 8189, 13, 5, 0 }, { 524285, 19, 5, 0 }, { 2, 1, 5, 0 },
+  { 61, 6, 4, 16 }, { 1021, 10, 5, 0 }, { 65533, 16, 5, 0 },
+  { 268435453, 28, 5, 0 }, { 134217725, 27, 5, 0 }, { 67108861, 26, 5, 0 },
+  { 33554429, 25, 5, 0 }, { 16777213, 24, 5, 0 },
 };
 
 /* Read a zstd Huffman table and build the decoding table in *TABLE, reading
@@ -3635,7 +3635,7 @@ elf_zstd_read_huff (const unsigned char **ppin, const unsigned char *pinend,
     }
 
   weight_mark = (uint32_t *) (weights + 256);
-  memset (weight_mark, 0, 12 * sizeof (uint32_t));
+  memset (weight_mark, 0, 13 * sizeof (uint32_t));
   weight_mask = 0;
   for (i = 0; i < count; ++i)
     {
@@ -3702,7 +3702,7 @@ elf_zstd_read_huff (const unsigned char **ppin, const unsigned char *pinend,
 
   /* Change WEIGHT_MARK from a count of weights to the index of the first
      symbol for that weight.  We shift the indexes to also store how many we
-     hae seen so far, below.  */
+     have seen so far, below.  */
   {
     uint32_t next;
 
@@ -3783,7 +3783,7 @@ elf_zstd_read_literals (const unsigned char **ppin,
     {
       int raw;
 
-      /* Raw_literals_Block or RLE_Literals_Block */
+      /* Raw_Literals_Block or RLE_Literals_Block */
 
       raw = (hdr & 3) == 0;
 
@@ -3965,7 +3965,7 @@ elf_zstd_read_literals (const unsigned char **ppin,
       unsigned int bits;
       uint32_t i;
 
-      pback = pin + compressed_size - 1;
+      pback = pin + total_streams_size - 1;
       pbackend = pin;
       if (!elf_fetch_backward_init (&pback, pbackend, &val, &bits))
 	return 0;

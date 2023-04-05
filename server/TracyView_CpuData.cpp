@@ -23,6 +23,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
     const auto& wpos = ctx.wpos;
     const auto w = ctx.w;
     const auto ty = ctx.ty;
+    const auto sty = ctx.sty;
     const auto pxns = ctx.pxns;
     const auto nspxdbl = ctx.nspx;
     const auto nspx = int64_t( nspxdbl );
@@ -141,7 +142,6 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
     }
 
     ImGui::PushFont( m_smallFont );
-    const auto sty = round( ImGui::GetTextLineHeight() );
     const auto sstep = sty + 1;
 
     const auto origOffset = offset;

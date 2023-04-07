@@ -370,6 +370,9 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
             auto end = std::lower_bound( it, v.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
             if( end == v.end() ) --end;
 
+            const auto bgSize = GetScale() * 4.f;
+            const auto lnSize = GetScale() * 2.f;
+
             while( it < end )
             {
                 const auto t0 = it->End();
@@ -389,8 +392,8 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 }
                 else
                 {
-                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), 0xFF000000, 4.f );
-                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color, 2.f );
+                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), 0xFF000000, bgSize );
+                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color, lnSize );
                 }
             }
         }

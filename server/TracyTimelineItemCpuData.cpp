@@ -41,8 +41,7 @@ int64_t TimelineItemCpuData::RangeEnd() const
 
 bool TimelineItemCpuData::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    const bool hasCpuData = m_worker.IsCpuUsageReady() && !m_worker.GetCpuUsage().empty();
-    m_view.DrawCpuData( ctx, m_cpuDraw, m_ctxDraw, offset, hasCpuData );
+    m_view.DrawCpuData( ctx, m_cpuDraw, m_ctxDraw, offset, m_hasCpuData );
     return true;
 }
 
@@ -65,6 +64,8 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
     const auto sty = ctx.sty;
     const auto ostep = ty + 1;
     const auto sstep = sty + 1;
+
+    m_hasCpuData = false;
 
     auto pos = yPos + ostep;
 
@@ -160,6 +161,7 @@ void TimelineItemCpuData::PreprocessCpuUsage( const TimelineContext& ctx )
     auto& ctxUsage = m_worker.GetCpuUsage();
     if( !ctxUsage.empty() )
     {
+        m_hasCpuData = true;
         auto itBegin = ctxUsage.begin();
         for( size_t i=0; i<num; i++ )
         {
@@ -202,6 +204,7 @@ void TimelineItemCpuData::PreprocessCpuUsage( const TimelineContext& ctx )
             auto& cs = cpuData[i].cs;
             if( !cs.empty() )
             {
+                m_hasCpuData = true;
                 auto itBegin = cs.begin();
                 auto ptr = m_cpuDraw.data();
                 for( size_t i=0; i<num; i++ )

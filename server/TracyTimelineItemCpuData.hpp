@@ -38,6 +38,8 @@ private:
 
     std::vector<CpuUsageDraw> m_cpuDraw;
     std::vector<std::vector<CpuCtxDraw>> m_ctxDraw;
+
+    bool m_hasCpuData;
 };
 
 }

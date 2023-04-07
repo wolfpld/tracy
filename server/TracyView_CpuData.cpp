@@ -25,8 +25,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
     const auto ty = ctx.ty;
     const auto sty = ctx.sty;
     const auto pxns = ctx.pxns;
-    const auto nspxdbl = ctx.nspx;
-    const auto nspx = int64_t( nspxdbl );
+    const auto nspx = ctx.nspx;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto yMin = ctx.yMin;
     const auto yMax = ctx.yMax;
@@ -81,7 +80,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                     TextFocused( "Number of cores:", RealToString( cpuCnt ) );
                     if( usage.own + usage.other != 0 )
                     {
-                        const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl;
+                        const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx;
                         ImGui::Separator();
                         for( int i=0; i<cpuCnt; i++ )
                         {
@@ -384,7 +383,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 const auto px0 = ( t0 - m_vd.zvStart ) * pxns;
                 const auto px1 = ( t1 - m_vd.zvStart ) * pxns;
 
-                if( t1 - t0 < 2 * nspx )
+                if( px1 - px0 < 2 )
                 {
                     DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color );
                 }

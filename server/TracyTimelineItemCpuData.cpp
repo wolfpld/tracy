@@ -109,7 +109,7 @@ void TimelineItemCpuData::PreprocessCpuCtxSwitches( const TimelineContext& ctx, 
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
 
-    auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, vStart ), [this] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : m_worker.GetLastTime() ) < r; } );
+    auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, vStart ), [] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : l.Start() ) < r; } );
     if( it == cs.end() ) return;
     auto eit = std::lower_bound( it, cs.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
     if( it == eit ) return;
@@ -118,7 +118,7 @@ void TimelineItemCpuData::PreprocessCpuCtxSwitches( const TimelineContext& ctx, 
 
     while( it < eit )
     {
-        const auto end = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
+        const auto end = it->IsEndValid() ? it->End() : it->Start();
         const auto zsz = end - it->Start();
         if( zsz < MinVisNs )
         {
@@ -126,11 +126,11 @@ void TimelineItemCpuData::PreprocessCpuCtxSwitches( const TimelineContext& ctx, 
             auto next = it + 1;
             for(;;)
             {
-                next = std::lower_bound( next, eit, nextTime, [this] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : m_worker.GetLastTime() ) < r; } );
+                next = std::lower_bound( next, eit, nextTime, [] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : l.Start() ) < r; } );
                 if( next == eit ) break;
                 auto prev = next - 1;
-                const auto pt = prev->IsEndValid() ? prev->End() : m_worker.GetLastTime();
-                const auto nt = next->IsEndValid() ? next->End() : m_worker.GetLastTime();
+                const auto pt = prev->IsEndValid() ? prev->End() : prev->Start();
+                const auto nt = next->IsEndValid() ? next->End() : next->Start();
                 if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }

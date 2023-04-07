@@ -160,7 +160,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 if( v.num > 0 )
                 {
                     const auto& eev = cs[v.idx + v.num - 1];
-                    const auto t1 = eev.IsEndValid() ? eev.End() : m_worker.GetLastTime();
+                    const auto t1 = eev.IsEndValid() ? eev.End() : eev.Start();
                     const auto px1 = ( t1 - vStart ) * pxns;
                     DrawZigZag( draw, wpos + ImVec2( 0, offset + sty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), sty/4, 0xFF888888 );
 
@@ -194,7 +194,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 }
                 else
                 {
-                    const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
+                    const auto end = ev.IsEndValid() ? ev.End() : ev.Start();
                     const auto px1 = ( end - vStart ) * pxns;
 
                     const auto thread = m_worker.DecompressThreadExternal( ev.Thread() );

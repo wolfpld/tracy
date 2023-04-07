@@ -260,7 +260,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
             const auto num = v.data;
             const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, -10.0 );
             const auto eit = it + num - 1;
-            const auto end = eit->IsEndValid() ? eit->End() : m_worker.GetLastTime();
+            const auto end = eit->IsEndValid() ? eit->End() : eit->Start();
             const auto px1ns = end - vStart;
             minpx = std::min( std::max( px1ns * pxns, px0+MinCtxSize ), double( w + 10 ) );
             if( num == 1 )
@@ -313,7 +313,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
         }
         case ContextSwitchDrawType::Running:
         {
-            const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
+            const auto end = ev.IsEndValid() ? ev.End() : ev.Start();
             const auto px0 = std::max( { ( ev.Start() - vStart ) * pxns, -10.0, double( minpx ) } );
             const auto px1 = std::min( ( end - vStart ) * pxns, w + 10.0 );
             DrawLine( draw, dpos + ImVec2( px0, offset + ty05 - 0.5f ), dpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, lineSize );

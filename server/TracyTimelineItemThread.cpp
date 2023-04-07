@@ -507,7 +507,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
             m_ctxDraw.emplace_back( ContextSwitchDraw { ContextSwitchDrawType::Waiting, uint32_t( it - vec.begin() ), waitStack } );
         }
 
-        const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
+        const auto end = ev.IsEndValid() ? ev.End() : ev.Start();
         const auto zsz = end - ev.Start();
         if( zsz < MinCtxNs )
         {
@@ -515,11 +515,11 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
             auto next = it + 1;
             for(;;)
             {
-                next = std::lower_bound( next, citend, nextTime, [this] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : m_worker.GetLastTime() ) < r; } );
+                next = std::lower_bound( next, citend, nextTime, [] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : l.Start() ) < r; } );
                 if( next == citend ) break;
                 auto prev = next - 1;
-                const auto pt = prev->IsEndValid() ? prev->End() : m_worker.GetLastTime();
-                const auto nt = next->IsEndValid() ? next->End() : m_worker.GetLastTime();
+                const auto pt = prev->IsEndValid() ? prev->End() : prev->Start();
+                const auto nt = next->IsEndValid() ? next->End() : next->Start();
                 if( nt - pt >= MinCtxNs ) break;
                 nextTime = nt + MinCtxNs;
             }

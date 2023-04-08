@@ -126,6 +126,13 @@ public:
 
     const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
 
+    tracy_force_inline bool& Vis( const void* ptr )
+    {
+        auto it = m_visMap.find( ptr );
+        if( it == m_visMap.end() ) it = m_visMap.emplace( ptr, true ).first;
+        return it->second;
+    }
+
     void HighlightThread( uint64_t thread );
     void ZoomToRange( int64_t start, int64_t end, bool pause = true );
     bool DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset );
@@ -395,13 +402,6 @@ private:
     static const char* DecodeContextSwitchStateCode( uint8_t state );
     static const char* DecodeContextSwitchReason( uint8_t reason );
     static const char* DecodeContextSwitchReasonCode( uint8_t reason );
-
-    tracy_force_inline bool& Vis( const void* ptr )
-    {
-        auto it = m_visMap.find( ptr );
-        if( it == m_visMap.end() ) it = m_visMap.emplace( ptr, true ).first;
-        return it->second;
-    }
 
     Worker m_worker;
     std::string m_filename, m_filenameStaging;

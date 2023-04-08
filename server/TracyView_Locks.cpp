@@ -3,6 +3,7 @@
 #include "TracyColor.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
+#include "TracyLockHelpers.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
@@ -11,21 +12,6 @@ namespace tracy
 {
 
 constexpr float MinVisSize = 3;
-
-static tracy_force_inline uint64_t GetThreadBit( uint8_t thread )
-{
-    return uint64_t( 1 ) << thread;
-}
-
-static tracy_force_inline bool IsThreadWaiting( uint64_t bitlist, uint64_t threadBit )
-{
-    return ( bitlist & threadBit ) != 0;
-}
-
-static tracy_force_inline bool AreOtherWaiting( uint64_t bitlist, uint64_t threadBit )
-{
-    return ( bitlist & ~threadBit ) != 0;
-}
 
 enum class LockState
 {

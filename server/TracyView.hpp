@@ -125,6 +125,7 @@ public:
     int GetNextGpuIdx() { return m_gpuIdx++; }
 
     const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
+    uint32_t GetLockInfoWindow() const { return m_lockInfoWindow; }
 
     tracy_force_inline bool& Vis( const void* ptr )
     {

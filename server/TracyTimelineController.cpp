@@ -160,7 +160,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
 
     if( const auto scrollY = CalculateScrollPosition() )
     {
-        int clampedScrollY = std::min<int>( *scrollY, yOffset );
+        int clampedScrollY = std::min<int>( *scrollY, std::max<int>( yOffset - ImGui::GetWindowHeight(), 0 ) );
         ImGui::SetScrollY( clampedScrollY );
         int minHeight = ImGui::GetWindowHeight() + clampedScrollY;
         yOffset = std::max( yOffset, minHeight );

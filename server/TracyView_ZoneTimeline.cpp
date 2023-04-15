@@ -28,8 +28,6 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;
     const auto ostep = ty + 1;
-    const auto pxns = ctx.pxns;
-    const auto hover = ctx.hover;
     const auto yMin = ctx.yMin;
     const auto yMax = ctx.yMax;
     const auto sty = ctx.sty;
@@ -77,7 +75,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
 
     if( m_vd.drawLocks )
     {
-        const auto lockDepth = DrawLocks( thread.id, hover, pxns, wpos, offset, m_nextLockHighlight, yMin, yMax );
+        const auto lockDepth = DrawLocks( ctx, lockDraw, thread.id, offset, m_nextLockHighlight );
         offset += sstep * lockDepth;
         depth += lockDepth;
     }

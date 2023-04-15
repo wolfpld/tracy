@@ -970,7 +970,8 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
                 LockState::Type drawState = state;
                 auto next = GetNextLockFunc( vbegin, vend, state, threadBit );
 
-                auto t0 = vbegin->ptr->Time();
+                const auto tStart = vbegin->ptr->Time();
+                int64_t t0 = tStart;
                 int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : next->ptr->Time();
                 uint32_t condensed = 0;
 
@@ -992,7 +993,7 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
                     condensed++;
                     const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
                     if( t2 - t1 > MinVisNs ) break;
-                    if( drawState != ns && t2 - t0 > MinVisNs && ( ns & mask ) == 0 ) break;
+                    if( drawState != ns && t2 - tStart > MinVisNs && ( ns & mask ) == 0 ) break;
                     t0 = t1;
                     t1 = t2;
                     next = n;

@@ -643,7 +643,7 @@ void TimelineItemThread::PreprocessMessages( const TimelineContext& ctx, const V
     }
 }
 
-static Vector<LockEventPtr>::const_iterator GetNextLockEvent( const Vector<LockEventPtr>::const_iterator& it, const Vector<LockEventPtr>::const_iterator& end, LockState& nextState, uint64_t threadBit )
+static Vector<LockEventPtr>::const_iterator GetNextLockEvent( const Vector<LockEventPtr>::const_iterator& it, const Vector<LockEventPtr>::const_iterator& end, LockState::Type& nextState, uint64_t threadBit )
 {
     auto next = it;
     next++;
@@ -734,12 +734,12 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEvent( const Vector<LockE
     return next;
 }
 
-static LockState CombineLockState( LockState state, LockState next )
+static LockState::Type CombineLockState( LockState::Type state, LockState::Type next )
 {
-    return (LockState)std::max( (int)state, (int)next );
+    return std::max( state, next );
 }
 
-static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector<LockEventPtr>::const_iterator& it, const Vector<LockEventPtr>::const_iterator& end, LockState& nextState, uint64_t threadBit )
+static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector<LockEventPtr>::const_iterator& it, const Vector<LockEventPtr>::const_iterator& end, LockState::Type& nextState, uint64_t threadBit )
 {
     const auto itptr = (const LockEventShared*)(const LockEvent*)it->ptr;
     auto next = it;
@@ -907,7 +907,7 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
 
             if( vbegin > tl.begin() ) vbegin--;
 
-            LockState state = LockState::Nothing;
+            LockState::Type state = LockState::Nothing;
             if( lockmap.type == LockType::Lockable )
             {
                 if( vbegin->lockCount != 0 )
@@ -946,9 +946,10 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
                 }
             }
 
+            const uint8_t mask = vd.onlyContendedLocks ? ( LockState::Nothing | LockState::HasLock ) : LockState::Nothing;
             if( !visible )
             {
-                while( vbegin < vend && ( state == LockState::Nothing || ( vd.onlyContendedLocks && state == LockState::HasLock ) ) )
+                while( vbegin < vend && ( state & mask ) != 0 )
                 {
                     vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
                 }
@@ -959,84 +960,43 @@ void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unor
             auto& dst = drawPtr->data;
             for(;;)
             {
-                if( vd.onlyContendedLocks )
+                while( vbegin < vend && ( state & mask ) != 0 )
                 {
-                    while( vbegin < vend && ( state == LockState::Nothing || state == LockState::HasLock ) )
-                    {
-                        vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
-                    }
+                    vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
                 }
-                else
-                {
-                    while( vbegin < vend && state == LockState::Nothing )
-                    {
-                        vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
-                    }
-                }
-
                 if( vbegin >= vend ) break;
-                assert( state != LockState::Nothing && ( !vd.onlyContendedLocks || state != LockState::HasLock ) );
+                assert( ( state & mask ) == 0 );
 
-                LockState drawState = state;
+                LockState::Type drawState = state;
                 auto next = GetNextLockFunc( vbegin, vend, state, threadBit );
 
                 auto t0 = vbegin->ptr->Time();
                 int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : next->ptr->Time();
                 uint32_t condensed = 0;
 
-                if( vd.onlyContendedLocks )
+                for(;;)
                 {
-                    for(;;)
+                    if( next >= vend || t1 - t0 > MinVisNs ) break;
+                    auto n = next;
+                    auto ns = state;
+                    while( n < vend && ( ns & mask ) != 0 )
                     {
-                        if( next >= vend || t1 - t0 > MinVisNs ) break;
-                        auto n = next;
-                        auto ns = state;
-                        while( n < vend && ( ns == LockState::Nothing || ns == LockState::HasLock ) )
-                        {
-                            n = GetNextLockFunc( n, vend, ns, threadBit );
-                        }
-                        if( n >= vend ) break;
-                        if( n == next )
-                        {
-                            n = GetNextLockFunc( n, vend, ns, threadBit );
-                        }
-                        drawState = CombineLockState( drawState, state );
-                        condensed++;
-                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
-                        if( t2 - t1 > MinVisNs ) break;
-                        if( drawState != ns && t2 - t0 > MinVisNs && !( ns == LockState::Nothing || ns == LockState::HasLock ) ) break;
-                        t0 = t1;
-                        t1 = t2;
-                        next = n;
-                        state = ns;
+                        n = GetNextLockFunc( n, vend, ns, threadBit );
                     }
-                }
-                else
-                {
-                    for(;;)
+                    if( n >= vend ) break;
+                    if( n == next )
                     {
-                        if( next >= vend || t1 - t0 > MinVisNs ) break;
-                        auto n = next;
-                        auto ns = state;
-                        while( n < vend && ns == LockState::Nothing )
-                        {
-                            n = GetNextLockFunc( n, vend, ns, threadBit );
-                        }
-                        if( n >= vend ) break;
-                        if( n == next )
-                        {
-                            n = GetNextLockFunc( n, vend, ns, threadBit );
-                        }
-                        drawState = CombineLockState( drawState, state );
-                        condensed++;
-                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
-                        if( t2 - t1 > MinVisNs ) break;
-                        if( drawState != ns && t2 - t0 > MinVisNs && ns != LockState::Nothing ) break;
-                        t0 = t1;
-                        t1 = t2;
-                        next = n;
-                        state = ns;
+                        n = GetNextLockFunc( n, vend, ns, threadBit );
                     }
+                    drawState = CombineLockState( drawState, state );
+                    condensed++;
+                    const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
+                    if( t2 - t1 > MinVisNs ) break;
+                    if( drawState != ns && t2 - t0 > MinVisNs && ( ns & mask ) == 0 ) break;
+                    t0 = t1;
+                    t1 = t2;
+                    next = n;
+                    state = ns;
                 }
 
                 dst.emplace_back( LockDrawItem { t1, drawState, condensed, vbegin, next } );

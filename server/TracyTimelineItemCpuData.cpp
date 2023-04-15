@@ -65,8 +65,7 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
     const auto ostep = ty + 1;
     const auto sstep = sty + 1;
 
-    m_hasCpuData = false;
-
+    bool hasCpuData = false;
     auto pos = yPos + ostep;
 
 #ifdef TRACY_NO_STATISTICS
@@ -75,15 +74,39 @@ void TimelineItemCpuData::Preprocess( const TimelineContext& ctx, TaskDispatch& 
     if( m_view.GetViewData().drawCpuUsageGraph && m_worker.IsCpuUsageReady() )
 #endif
     {
-        const auto cpuUsageHeight = floor( 30.f * GetScale() );
-        if( pos <= yMax && pos + cpuUsageHeight + 3 >= yMin )
+#ifndef TRACY_NO_STATISTICS
+        auto& ctxUsage = m_worker.GetCpuUsage();
+        if( !ctxUsage.empty() )
         {
-            td.Queue( [this, &ctx] {
-                PreprocessCpuUsage( ctx );
-            } );
+            hasCpuData = true;
         }
-        pos += cpuUsageHeight + 3;
+        else
+#endif
+        {
+            const auto cpuDataCount = m_worker.GetCpuDataCpuCount();
+            const auto cpuData = m_worker.GetCpuData();
+            for( int i=0; i<cpuDataCount; i++ )
+            {
+                if( !cpuData[i].cs.empty() )
+                {
+                    hasCpuData = true;
+                    break;
+                }
+            }
+        }
+        if( hasCpuData )
+        {
+            const auto cpuUsageHeight = floor( 30.f * GetScale() );
+            if( pos <= yMax && pos + cpuUsageHeight + 3 >= yMin )
+            {
+                td.Queue( [this, &ctx] {
+                    PreprocessCpuUsage( ctx );
+                } );
+            }
+            pos += cpuUsageHeight + 3;
+        }
     }
+    m_hasCpuData = hasCpuData;
 
     auto cpuData = m_worker.GetCpuData();
     const auto cpuCnt = m_worker.GetCpuDataCpuCount();
@@ -161,7 +184,6 @@ void TimelineItemCpuData::PreprocessCpuUsage( const TimelineContext& ctx )
     auto& ctxUsage = m_worker.GetCpuUsage();
     if( !ctxUsage.empty() )
     {
-        m_hasCpuData = true;
         auto itBegin = ctxUsage.begin();
         for( size_t i=0; i<num; i++ )
         {
@@ -204,7 +226,6 @@ void TimelineItemCpuData::PreprocessCpuUsage( const TimelineContext& ctx )
             auto& cs = cpuData[i].cs;
             if( !cs.empty() )
             {
-                m_hasCpuData = true;
                 auto itBegin = cs.begin();
                 auto ptr = m_cpuDraw.data();
                 for( size_t i=0; i<num; i++ )

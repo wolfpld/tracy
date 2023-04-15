@@ -23,7 +23,7 @@ static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
         ( ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 )       );
 }
 
-void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, int& offset, int depth, bool _hasCtxSwitches, bool _hasSamples )
+void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, const std::vector<TimelineDraw>& draw, const std::vector<ContextSwitchDraw>& ctxDraw, const std::vector<SamplesDraw>& samplesDraw, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, int& offset, int depth, bool _hasCtxSwitches, bool _hasSamples )
 {
     const auto& wpos = ctx.wpos;
     const auto ty = ctx.ty;

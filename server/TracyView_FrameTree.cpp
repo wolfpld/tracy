@@ -6,7 +6,7 @@ namespace tracy
 {
 
 template<class T>
-static tracy_force_inline T* GetFrameTreeItemNoGroup( unordered_flat_map<uint64_t, T>& tree, CallstackFrameId idx, const Worker& worker )
+static tracy_force_inline T* GetFrameTreeItemNoGroup( unordered_flat_map<uint64_t, T>& tree, CallstackFrameId idx )
 {
     auto it = tree.find( idx.data );
     if( it == tree.end() )
@@ -177,13 +177,13 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeB
         {
             auto& cs = m_worker.GetCallstack( path.first );
             auto base = cs.back();
-            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second.cnt;
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
             for( int i = int( cs.size() ) - 2; i >= 0; i-- )
             {
-                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i] );
                 treePtr->count += path.second.cnt;
                 treePtr->alloc += path.second.mem;
                 treePtr->callstacks.emplace( path.first );
@@ -221,11 +221,11 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBott
         {
             auto& cs = m_worker.GetCallstack( path.first );
             auto base = cs.back();
-            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
             for( int i = int( cs.size() ) - 2; i >= 0; i-- )
             {
-                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i] );
                 treePtr->count += path.second;
             }
         }
@@ -261,11 +261,11 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
         {
             auto& cs = m_worker.GetParentCallstack( path.first );
             auto base = cs.back();
-            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
             for( int i = int( cs.size() ) - 2; i >= 0; i-- )
             {
-                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i] );
                 treePtr->count += path.second;
             }
         }
@@ -307,13 +307,13 @@ unordered_flat_map<uint64_t, MemCallstackFrameTree> View::GetCallstackFrameTreeT
         {
             auto& cs = m_worker.GetCallstack( path.first );
             auto base = cs.front();
-            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second.cnt;
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
             for( uint16_t i = 1; i < cs.size(); i++ )
             {
-                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i] );
                 treePtr->count += path.second.cnt;
                 treePtr->alloc += path.second.mem;
                 treePtr->callstacks.emplace( path.first );
@@ -351,11 +351,11 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
         {
             auto& cs = m_worker.GetCallstack( path.first );
             auto base = cs.front();
-            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
             for( uint16_t i = 1; i < cs.size(); i++ )
             {
-                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i] );
                 treePtr->count += path.second;
             }
         }
@@ -391,11 +391,11 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetParentsCallstackFrameT
         {
             auto& cs = m_worker.GetParentCallstack( path.first );
             auto base = cs.front();
-            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            auto treePtr = GetFrameTreeItemNoGroup( root, base );
             treePtr->count += path.second;
             for( uint16_t i = 1; i < cs.size(); i++ )
             {
-                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i] );
                 treePtr->count += path.second;
             }
         }

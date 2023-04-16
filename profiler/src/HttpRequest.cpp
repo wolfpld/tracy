@@ -80,7 +80,7 @@ void HttpRequest( const char* server, const char* resource, int port, std::funct
     const auto len = sprintf( request, "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Tracy Profiler %i.%i.%i (%s)\r\nConnection: close\r\nCache-Control: no-cache, no-store, must-revalidate\r\n\r\n", resource, server, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, GetOsInfo() );
     sock.Send( request, len );
     char response[4096];
-    const auto sz = sock.ReadUpTo( response, 4096, 15 );
+    const auto sz = sock.ReadUpTo( response, 4096 );
     if( sz < 13 ) return;
     if( memcmp( response, "HTTP/1.1 200", 12 ) != 0 ) return;
     auto hdr = response + 13;

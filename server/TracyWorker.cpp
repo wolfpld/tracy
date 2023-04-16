@@ -2926,7 +2926,7 @@ void Worker::UpdateMbps( int64_t td )
     m_mbpsData.transferred += bytes;
 }
 
-bool Worker::IsThreadStringRetrieved( uint64_t id )
+bool Worker::IsFailureThreadStringRetrieved()
 {
     const auto name = GetThreadName( m_failureData.thread );
     return strcmp( name, "???" ) != 0;
@@ -2953,7 +2953,7 @@ bool Worker::IsSourceLocationRetrieved( int16_t srcloc )
 
 bool Worker::HasAllFailureData()
 {
-    if( m_failureData.thread != 0 && !IsThreadStringRetrieved( m_failureData.thread ) ) return false;
+    if( m_failureData.thread != 0 && !IsFailureThreadStringRetrieved() ) return false;
     if( m_failureData.srcloc != 0 && !IsSourceLocationRetrieved( m_failureData.srcloc ) ) return false;
     if( m_failureData.callstack != 0 && !IsCallstackRetrieved( m_failureData.callstack ) ) return false;
     return true;

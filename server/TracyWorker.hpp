@@ -882,7 +882,7 @@ private:
     void HandlePostponedSamples();
     void HandlePostponedGhostZones();
 
-    bool IsThreadStringRetrieved( uint64_t id );
+    bool IsFailureThreadStringRetrieved();
     bool IsSourceLocationRetrieved( int16_t srcloc );
     bool IsCallstackRetrieved( uint32_t callstack );
     bool HasAllFailureData();

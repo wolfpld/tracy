@@ -6529,7 +6529,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     sd.callLine = it->second.line;
     sd.isInline = it->second.isInline;
     sd.size.SetVal( it->second.size );
-    m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
+    m_data.symbolMap.emplace( ev.symAddr, sd );
 
     if( m_codeTransfer && it->second.size > 0 && it->second.size <= 128*1024 )
     {

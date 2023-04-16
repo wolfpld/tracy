@@ -212,7 +212,7 @@ private:
     };
 
     void InitMemory();
-    void InitTextEditor( ImFont* font );
+    void InitTextEditor();
 
     bool DrawImpl();
     void DrawNotificationArea();

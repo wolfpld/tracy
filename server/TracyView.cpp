@@ -65,7 +65,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_cbMainThread( cbMainThread )
 {
     InitMemory();
-    InitTextEditor( fixedWidth );
+    InitTextEditor();
 }
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb )
@@ -89,7 +89,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
     InitMemory();
-    InitTextEditor( fixedWidth );
+    InitTextEditor();
     m_vd.zvStart = m_worker.GetFirstTime();
     m_vd.zvEnd = m_worker.GetLastTime();
     m_userData.StateShouldBePreserved();
@@ -142,7 +142,7 @@ void View::InitMemory()
 #endif
 }
 
-void View::InitTextEditor( ImFont* font )
+void View::InitTextEditor()
 {
     m_sourceView = std::make_unique<SourceView>();
     m_sourceViewFile = nullptr;

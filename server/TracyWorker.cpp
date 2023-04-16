@@ -5926,7 +5926,7 @@ void Worker::ProcessGpuContextName( const QueueGpuContextName& ev )
     ctx->name = StringIdx( idx );
 }
 
-MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const QueueMemAlloc& ev )
+MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
 {
     if( memdata.active.find( ev.ptr ) != memdata.active.end() )
     {
@@ -5965,11 +5965,11 @@ MemEvent* Worker::ProcessMemAllocImpl( uint64_t memname, MemData& memdata, const
     memdata.high = std::max( high, ptrend );
     memdata.usage += size;
 
-    MemAllocChanged( memname, memdata, time );
+    MemAllocChanged( memdata, time );
     return &mem;
 }
 
-MemEvent* Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const QueueMemFree& ev )
+MemEvent* Worker::ProcessMemFreeImpl( MemData& memdata, const QueueMemFree& ev )
 {
     const auto refTime = RefTime( m_refTimeSerial, ev.time );
 
@@ -5996,14 +5996,14 @@ MemEvent* Worker::ProcessMemFreeImpl( uint64_t memname, MemData& memdata, const 
     memdata.usage -= mem.Size();
     memdata.active.erase( it );
 
-    MemAllocChanged( memname, memdata, time );
+    MemAllocChanged( memdata, time );
     return &mem;
 }
 
 MemEvent* Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
     assert( m_memNamePayload == 0 );
-    return ProcessMemAllocImpl( 0, *m_data.memory, ev );
+    return ProcessMemAllocImpl( *m_data.memory, ev );
 }
 
 MemEvent* Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
@@ -6018,13 +6018,13 @@ MemEvent* Worker::ProcessMemAllocNamed( const QueueMemAlloc& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    return ProcessMemAllocImpl( memname, *it->second, ev );
+    return ProcessMemAllocImpl( *it->second, ev );
 }
 
 MemEvent* Worker::ProcessMemFree( const QueueMemFree& ev )
 {
     assert( m_memNamePayload == 0 );
-    return ProcessMemFreeImpl( 0, *m_data.memory, ev );
+    return ProcessMemFreeImpl( *m_data.memory, ev );
 }
 
 MemEvent* Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
@@ -6039,7 +6039,7 @@ MemEvent* Worker::ProcessMemFreeNamed( const QueueMemFree& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    return ProcessMemFreeImpl( memname, *it->second, ev );
+    return ProcessMemFreeImpl( *it->second, ev );
 }
 
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
@@ -6062,7 +6062,7 @@ void Worker::ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    auto mem = ProcessMemAllocImpl( memname, *it->second, ev );
+    auto mem = ProcessMemAllocImpl( *it->second, ev );
     assert( m_serialNextCallstack != 0 );
     if( mem ) mem->SetCsAlloc( m_serialNextCallstack );
     m_serialNextCallstack = 0;
@@ -6088,7 +6088,7 @@ void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
         it = m_data.memNameMap.emplace( memname, m_slab.AllocInit<MemData>() ).first;
         it->second->name = memname;
     }
-    auto mem = ProcessMemFreeImpl( memname, *it->second, ev );
+    auto mem = ProcessMemFreeImpl( *it->second, ev );
     assert( m_serialNextCallstack != 0 );
     if( mem ) mem->csFree.SetVal( m_serialNextCallstack );
     m_serialNextCallstack = 0;
@@ -6901,7 +6901,7 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
     td->fiber = nullptr;
 }
 
-void Worker::MemAllocChanged( uint64_t memname, MemData& memdata, int64_t time )
+void Worker::MemAllocChanged( MemData& memdata, int64_t time )
 {
     const auto val = (double)memdata.usage;
     if( !memdata.plot )

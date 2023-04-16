@@ -5,7 +5,7 @@ RunQueue::RunQueue()
 {
 }
 
-void RunQueue::Queue( std::function<void()> cb, bool forceDelay )
+void RunQueue::Queue( const std::function<void()>& cb, bool forceDelay )
 {
     if( !forceDelay && std::this_thread::get_id() == m_mainThread )
     {

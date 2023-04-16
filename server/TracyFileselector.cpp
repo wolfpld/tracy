@@ -50,7 +50,7 @@ extern "C" int nativeOpenFile()
 }
 #endif
 
-static bool OpenFileImpl( const char* ext, const char* desc, std::function<void(const char*)> callback )
+static bool OpenFileImpl( const char* ext, const char* desc, const std::function<void(const char*)>& callback )
 {
 #ifndef TRACY_NO_FILESELECTOR
 #  ifdef __EMSCRIPTEN__
@@ -93,7 +93,7 @@ static bool OpenFileImpl( const char* ext, const char* desc, std::function<void(
     return false;
 }
 
-static bool SaveFileImpl( const char* ext, const char* desc, std::function<void(const char*)> callback )
+static bool SaveFileImpl( const char* ext, const char* desc, const std::function<void(const char*)>& callback )
 {
 #if !defined TRACY_NO_FILESELECTOR && !defined __EMSCRIPTEN__
     nfdu8filteritem_t filter = { desc, ext };
@@ -113,12 +113,12 @@ static bool SaveFileImpl( const char* ext, const char* desc, std::function<void(
     return false;
 }
 
-void OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+void OpenFile( const char* ext, const char* desc, const std::function<void(const char*)>& callback )
 {
     if( !OpenFileImpl( ext, desc, callback ) ) s_hasFailed = true;
 }
 
-void SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback )
+void SaveFile( const char* ext, const char* desc, const std::function<void(const char*)>& callback )
 {
     if( !SaveFileImpl( ext, desc, callback ) ) s_hasFailed = true;
 }

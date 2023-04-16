@@ -114,7 +114,7 @@ static void AttentionCallback()
 
 static void DrawContents();
 
-void RunOnMainThread( std::function<void()> cb, bool forceDelay = false )
+static void RunOnMainThread( const std::function<void()>& cb, bool forceDelay = false )
 {
     mainThreadTasks.Queue( cb, forceDelay );
 }

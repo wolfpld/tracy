@@ -11,7 +11,7 @@ class RunQueue;
 class Backend
 {
 public:
-    Backend( const char* title, std::function<void()> redraw, RunQueue* mainThreadTasks );
+    Backend( const char* title, const std::function<void()>& redraw, RunQueue* mainThreadTasks );
     ~Backend();
 
     void Show();

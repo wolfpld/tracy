@@ -72,7 +72,7 @@ static const char* GetOsInfo()
     return buf;
 }
 
-void HttpRequest( const char* server, const char* resource, int port, std::function<void(int, char*)> cb )
+void HttpRequest( const char* server, const char* resource, int port, const std::function<void(int, char*)>& cb )
 {
     tracy::Socket sock;
     if( !sock.ConnectBlocking( server, port ) ) return;

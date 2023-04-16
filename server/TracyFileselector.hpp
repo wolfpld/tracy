@@ -10,8 +10,8 @@ void Init();
 void Shutdown();
 bool HasFailed();
 
-void OpenFile( const char* ext, const char* desc, std::function<void(const char*)> callback );
-void SaveFile( const char* ext, const char* desc, std::function<void(const char*)> callback );
+void OpenFile( const char* ext, const char* desc, const std::function<void(const char*)>& callback );
+void SaveFile( const char* ext, const char* desc, const std::function<void(const char*)>& callback );
 
 }
 

@@ -60,7 +60,7 @@ static void glfw_window_iconify_callback( GLFWwindow*, int iconified )
 }
 
 
-Backend::Backend( const char* title, std::function<void()> redraw, RunQueue* mainThreadTasks )
+Backend::Backend( const char* title, const std::function<void()>& redraw, RunQueue* mainThreadTasks )
 {
     glfwSetErrorCallback( glfw_error_callback );
     if( !glfwInit() ) exit( 1 );

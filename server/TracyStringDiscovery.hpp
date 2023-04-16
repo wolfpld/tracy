@@ -44,7 +44,7 @@ public:
         m_pending.erase( pit );
     }
 
-    tracy_force_inline T Retrieve( uint64_t name, std::function<T(uint64_t)> Create, std::function<void(uint64_t)> Query )
+    tracy_force_inline T Retrieve( uint64_t name, const std::function<T(uint64_t)>& Create, const std::function<void(uint64_t)>& Query )
     {
         auto it = m_map.find( name );
         if( it == m_map.end() )

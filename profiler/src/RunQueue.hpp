@@ -11,7 +11,7 @@ class RunQueue
 public:
     RunQueue();
 
-    void Queue( std::function<void()> cb, bool forceDelay = false );
+    void Queue( const std::function<void()>& cb, bool forceDelay = false );
     void Run();
 
 private:

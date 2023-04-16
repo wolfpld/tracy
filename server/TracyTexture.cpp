@@ -51,7 +51,7 @@ void* MakeTexture()
     return (void*)(intptr_t)tex;
 }
 
-void FreeTexture( void* _tex, void(*runOnMainThread)(std::function<void()>, bool) )
+void FreeTexture( void* _tex, void(*runOnMainThread)(const std::function<void()>&, bool) )
 {
     auto tex = (GLuint)(intptr_t)_tex;
     runOnMainThread( [tex] { glDeleteTextures( 1, &tex ); }, false );

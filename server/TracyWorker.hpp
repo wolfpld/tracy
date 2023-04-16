@@ -581,7 +581,6 @@ public:
     const char* GetZoneName( const ZoneEvent& ev ) const;
     const char* GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const;
     const char* GetZoneName( const GpuEvent& ev ) const;
-    const char* GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const;
 
     tracy_force_inline const Vector<short_ptr<ZoneEvent>>& GetZoneChildren( int32_t idx ) const { return m_data.zoneChildren[idx]; }
     tracy_force_inline const Vector<short_ptr<GpuEvent>>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }

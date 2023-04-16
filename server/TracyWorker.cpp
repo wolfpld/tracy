@@ -2527,19 +2527,7 @@ const char* Worker::GetZoneName( const ZoneEvent& ev, const SourceLocation& srcl
 const char* Worker::GetZoneName( const GpuEvent& ev ) const
 {
     auto& srcloc = GetSourceLocation( ev.SrcLoc() );
-    return GetZoneName( ev, srcloc );
-}
-
-const char* Worker::GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const
-{
-    if( srcloc.name.active )
-    {
-        return GetString( srcloc.name );
-    }
-    else
-    {
-        return GetString( srcloc.function );
-    }
+    return GetZoneName( srcloc );
 }
 
 static bool strstr_nocase( const char* l, const char* r )

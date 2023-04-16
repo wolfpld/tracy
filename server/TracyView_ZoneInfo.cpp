@@ -1506,7 +1506,7 @@ void View::DrawGpuInfoWindow()
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
-            const auto txt = m_worker.GetZoneName( *v, srcloc );
+            const auto txt = m_worker.GetZoneName( srcloc );
             ImGui::PushID( idx++ );
             auto sel = ImGui::Selectable( txt, false );
             auto hover = ImGui::IsItemHovered();

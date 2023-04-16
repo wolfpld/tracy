@@ -857,7 +857,7 @@ private:
     void CheckExternalName( uint64_t id );
 
     void AddSourceLocation( const QueueSourceLocation& srcloc );
-    void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
+    void AddSourceLocationPayload( const char* data, size_t sz );
 
     void AddString( uint64_t ptr, const char* str, size_t sz );
     void AddThreadString( uint64_t id, const char* str, size_t sz );
@@ -867,12 +867,12 @@ private:
     void AddSecondString( const char* str, size_t sz );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
-    void AddFrameImageData( uint64_t ptr, const char* data, size_t sz );
+    void AddFrameImageData( const char* data, size_t sz );
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
     void AddSourceCode( uint32_t id, const char* data, size_t sz );
 
-    tracy_force_inline void AddCallstackPayload( uint64_t ptr, const char* data, size_t sz );
-    tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t sz );
+    tracy_force_inline void AddCallstackPayload( const char* data, size_t sz );
+    tracy_force_inline void AddCallstackAllocPayload( const char* data );
     uint32_t MergeCallstacks( uint32_t first, uint32_t second );
 
     void InsertPlot( PlotData* plot, int64_t time, double val );

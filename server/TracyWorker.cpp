@@ -3197,7 +3197,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             switch( ev.hdr.type )
             {
             case QueueType::FrameImageData:
-                AddFrameImageData( ev.stringTransfer.ptr, ptr, sz );
+                AddFrameImageData( ptr, sz );
                 break;
             case QueueType::SymbolCode:
                 AddSymbolCode( ev.stringTransfer.ptr, ptr, sz );
@@ -3237,17 +3237,17 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
                 m_serverQuerySpaceLeft++;
                 break;
             case QueueType::SourceLocationPayload:
-                AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
+                AddSourceLocationPayload( ptr, sz );
                 break;
             case QueueType::CallstackPayload:
-                AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
+                AddCallstackPayload( ptr, sz );
                 break;
             case QueueType::FrameName:
                 HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
             case QueueType::CallstackAllocPayload:
-                AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
+                AddCallstackAllocPayload( ptr );
                 break;
             case QueueType::ExternalName:
                 AddExternalName( ev.stringTransfer.ptr, ptr, sz );
@@ -3654,7 +3654,7 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
     it->second = SourceLocation {{ srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color }};
 }
 
-void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
+void Worker::AddSourceLocationPayload( const char* data, size_t sz )
 {
     const auto start = data;
 
@@ -3791,7 +3791,7 @@ void Worker::AddExternalThreadName( uint64_t ptr, const char* str, size_t sz )
     it->second.second = sl.ptr;
 }
 
-void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
+void Worker::AddFrameImageData( const char* data, size_t sz )
 {
     assert( m_pendingFrameImageData.image == nullptr );
     assert( sz % 8 == 0 );
@@ -3931,7 +3931,7 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
-void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
+void Worker::AddCallstackPayload( const char* _data, size_t _sz )
 {
     assert( m_pendingCallstackId == 0 );
 
@@ -3977,7 +3977,7 @@ void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
     m_pendingCallstackId = idx;
 }
 
-void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _sz )
+void Worker::AddCallstackAllocPayload( const char* data )
 {
     CallstackFrameId stack[64];
     uint8_t sz;

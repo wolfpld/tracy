@@ -259,7 +259,7 @@ private:
     void DrawSourceTooltip( const char* filename, uint32_t line, int before = 3, int after = 3, bool separateTooltip = true );
     void DrawWaitStacks();
 
-    void ListMemData( std::vector<const MemEvent*>& vec, const std::function<void(const MemEvent*)>& DrawAddress, const char* id = nullptr, int64_t startTime = -1, uint64_t pool = 0 );
+    void ListMemData( std::vector<const MemEvent*>& vec, const std::function<void(const MemEvent*)>& DrawAddress, int64_t startTime = -1, uint64_t pool = 0 );
 
     unordered_flat_map<uint32_t, MemPathData> GetCallstackPaths( const MemData& mem, MemRange memRange ) const;
     unordered_flat_map<uint64_t, MemCallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;

@@ -313,7 +313,7 @@ void View::DrawMemory()
                     {
                         ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->Ptr(), m_memInfo.ptrFind - v->Ptr() );
                     }
-                    }, "##allocations", -1, m_memInfo.pool );
+                    }, -1, m_memInfo.pool );
             }
         }
         ImGui::TreePop();
@@ -362,7 +362,7 @@ void View::DrawMemory()
         {
             ListMemData( items, []( auto v ) {
                 ImGui::Text( "0x%" PRIx64, v->Ptr() );
-                }, "##activeMem", -1, m_memInfo.pool );
+                }, -1, m_memInfo.pool );
         }
         else
         {
@@ -650,7 +650,7 @@ void View::DrawMemoryAllocWindow()
     if( !show ) m_memoryAllocInfoWindow = -1;
 }
 
-void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<void(const MemEvent*)>& DrawAddress, const char* id, int64_t startTime, uint64_t pool )
+void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<void(const MemEvent*)>& DrawAddress, int64_t startTime, uint64_t pool )
 {
     if( startTime == -1 ) startTime = 0;
     if( ImGui::BeginTable( "##mem", 8, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( 1+vec.size(), 15 ) ) ) )
@@ -918,7 +918,7 @@ void View::DrawAllocList()
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
     ListMemData( data, []( auto v ) {
         ImGui::Text( "0x%" PRIx64, v->Ptr() );
-        }, "##allocations", -1, m_memInfo.pool );
+        }, -1, m_memInfo.pool );
     ImGui::End();
 }
 

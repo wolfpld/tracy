@@ -848,7 +848,7 @@ void View::DrawZoneInfoWindow()
 
                             ListMemData( v, []( auto v ) {
                                 ImGui::Text( "0x%" PRIx64, v->Ptr() );
-                                }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1, m_zoneInfoMemPool );
+                                }, m_allocTimeRelativeToZone ? ev.Start() : -1, m_zoneInfoMemPool );
                             ImGui::TreePop();
                         }
                     }

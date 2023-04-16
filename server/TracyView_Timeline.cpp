@@ -15,7 +15,7 @@ namespace tracy
 
 extern double s_time;
 
-void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
+void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
 {
     assert( timespan > 0 );
     auto& io = ImGui::GetIO();
@@ -283,7 +283,7 @@ void View::DrawTimeline()
             v->range.StartFrame();
             HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
         }
-        HandleTimelineMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
+        HandleTimelineMouse( timespan, ImGui::GetCursorScreenPos(), w );
     }
     if( ImGui::IsWindowFocused( ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem ) )
     {

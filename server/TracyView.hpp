@@ -285,7 +285,7 @@ private:
     void DrawGpuInfoChildren( const V& children, int64_t ztime );
 
     void HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w );
-    void HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
+    void HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w );
     void HandleTimelineKeyboard( int64_t timespan, const ImVec2& wpos, float w );
 
     void AddAnnotation( int64_t start, int64_t end );

@@ -755,8 +755,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
-    m_data.localThreadCompress.Load( f, fileVer );
-    m_data.externalThreadCompress.Load( f, fileVer );
+    m_data.localThreadCompress.Load( f );
+    m_data.externalThreadCompress.Load( f );
 
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )

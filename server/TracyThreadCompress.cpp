@@ -18,7 +18,7 @@ void ThreadCompress::InitZero()
     m_threadExpand.push_back( 0 );
 }
 
-void ThreadCompress::Load( FileRead& f, int fileVer )
+void ThreadCompress::Load( FileRead& f )
 {
     assert( m_threadExpand.empty() );
     assert( m_threadMap.empty() );

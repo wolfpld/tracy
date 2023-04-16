@@ -20,7 +20,7 @@ public:
     ThreadCompress();
 
     void InitZero();
-    void Load( FileRead& f, int fileVer );
+    void Load( FileRead& f );
     void Save( FileWrite& f ) const;
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread )

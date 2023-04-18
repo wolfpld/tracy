@@ -2,8 +2,8 @@
 #define __TRACYTIMELINEITEMTHREAD_HPP__
 
 #include "TracyEvent.hpp"
-#include "TracyTimelineItem.hpp"
 #include "TracyTimelineDraw.hpp"
+#include "TracyTimelineItem.hpp"
 
 namespace tracy
 {

@@ -9,8 +9,12 @@
 namespace tracy
 {
 
+constexpr int PlotHeightPx = 100;
+constexpr int MinVisSize = 3;
+
+
 TimelineItemPlot::TimelineItemPlot( View& view, Worker& worker, PlotData* plot )
-    : TimelineItem( view, worker, plot, false )
+    : TimelineItem( view, worker, plot, true )
     , m_plot( plot )
 {
 }
@@ -108,6 +112,119 @@ int64_t TimelineItemPlot::RangeEnd() const
 bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset )
 {
     return m_view.DrawPlot( ctx, *m_plot, offset );
+}
+
+void TimelineItemPlot::DrawFinished()
+{
+    m_draw.clear();
+}
+
+void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos )
+{
+    assert( m_draw.empty() );
+
+    if( !visible ) return;
+    if( yPos > ctx.yMax ) return;
+    const auto PlotHeight = int( round( PlotHeightPx * GetScale() ) );
+    if( yPos + PlotHeight < ctx.yMin ) return;
+
+    td.Queue( [this, &ctx] {
+        const auto vStart = ctx.vStart;
+        const auto vEnd = ctx.vEnd;
+        const auto nspx = ctx.nspx;
+        const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+
+        auto& vec = m_plot->data;
+        vec.ensure_sorted();
+        if( vec.front().time.Val() > vEnd || vec.back().time.Val() < vStart ) return;
+
+        auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+        auto end = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+
+        if( end != vec.end() ) end++;
+        if( it != vec.begin() ) it--;
+
+        double min = it->val;
+        double max = it->val;
+        const auto num = end - it;
+        if( num > 1000000 )
+        {
+            min = m_plot->min;
+            max = m_plot->max;
+        }
+        else
+        {
+            auto tmp = it;
+            while( ++tmp < end )
+            {
+                if( tmp->val < min ) min = tmp->val;
+                else if( tmp->val > max ) max = tmp->val;
+            }
+        }
+        if( min == max )
+        {
+            min--;
+            max++;
+        }
+
+        m_plot->rMin = min;
+        m_plot->rMax = max;
+        m_plot->num = num;
+
+        if( it == vec.begin() )
+        {
+            m_draw.emplace_back( 0 );
+            m_draw.emplace_back( it - vec.begin() );
+        }
+
+        ++it;
+        while( it < end )
+        {
+            auto next = std::upper_bound( it, end, int64_t( it->time.Val() + MinVisNs ), [] ( const auto& l, const auto& r ) { return l < r.time.Val(); } );
+            assert( next > it );
+            const auto rsz = uint32_t( next - it );
+            if( rsz == 1 )
+            {
+                m_draw.emplace_back( 0 );
+                m_draw.emplace_back( it - vec.begin() );
+                ++it;
+            }
+            else
+            {
+                constexpr int NumSamples = 1024;
+                uint32_t samples[NumSamples];
+                uint32_t cnt = 0;
+                uint32_t offset = it - vec.begin();
+                if( rsz < NumSamples )
+                {
+                    for( cnt=0; cnt<rsz; cnt++ )
+                    {
+                        samples[cnt] = offset + cnt;
+                    }
+                }
+                else
+                {
+                    const auto skip = ( rsz + NumSamples - 1 ) / NumSamples;
+                    const auto limit = rsz / skip;
+                    for( cnt=0; cnt<limit; cnt++ )
+                    {
+                        samples[cnt] = offset + cnt * skip;
+                    }
+                    if( cnt == limit ) cnt--;
+                    samples[cnt++] = offset + rsz - 1;
+                }
+                it = next;
+
+                pdqsort_branchless( samples, samples+cnt, [&vec] ( const auto& l, const auto& r ) { return vec[l].val < vec[r].val; } );
+
+                assert( rsz > 0 );
+                m_draw.emplace_back( rsz );
+                m_draw.emplace_back( offset );
+                m_draw.emplace_back( samples[0] );
+                m_draw.emplace_back( samples[cnt-1] );
+            }
+        }
+    } );
 }
 
 }

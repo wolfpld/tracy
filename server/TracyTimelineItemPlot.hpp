@@ -2,6 +2,7 @@
 #define __TRACYTIMELINEITEMPLOT_HPP__
 
 #include "TracyEvent.hpp"
+#include "TracyTimelineDraw.hpp"
 #include "TracyTimelineItem.hpp"
 
 namespace tracy
@@ -25,11 +26,16 @@ protected:
     void HeaderExtraContents( const TimelineContext& ctx, int offset, float labelWidth ) override;
 
     bool DrawContents( const TimelineContext& ctx, int& offset ) override;
+    void DrawFinished() override;
 
     bool IsEmpty() const override;
 
+    void Preprocess( const TimelineContext& ctx, TaskDispatch& td, bool visible, int yPos ) override;
+
 private:
     PlotData* m_plot;
+
+    std::vector<PlotDraw> m_draw;
 };
 
 }

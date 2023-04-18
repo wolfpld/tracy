@@ -11,7 +11,7 @@
 namespace tracy
 {
 
-bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, int& offset )
+bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset )
 {
     auto& vec = plot.data;
     vec.ensure_sorted();

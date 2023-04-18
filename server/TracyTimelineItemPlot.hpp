@@ -35,7 +35,7 @@ protected:
 private:
     PlotData* m_plot;
 
-    std::vector<PlotDraw> m_draw;
+    std::vector<uint32_t> m_draw;
 };
 
 }

@@ -23,13 +23,13 @@ void print_usage_exit(int e)
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  extract [OPTION...] <trace file>\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -h, --help                       Print usage\n");
-    fprintf(stderr, "  -f, --filter arg                 Filter zone names (default: "")\n");
-    fprintf(stderr, "  -s, --sep arg                    CSV separator (default: ,)\n");
-    fprintf(stderr, "  -c, --case                       Case sensitive filtering\n");
-    fprintf(stderr, "  -e, --self                       Get self times\n");
-    fprintf(stderr, "  -u, --unwrap                     Report each zone event\n");
-    fprintf(stderr, "  -m, --unwrap only messages       Report only messages\n");
+    fprintf(stderr, "  -h, --help        Print usage\n");
+    fprintf(stderr, "  -f, --filter arg  Filter zone names (default: "")\n");
+    fprintf(stderr, "  -s, --sep arg     CSV separator (default: ,)\n");
+    fprintf(stderr, "  -c, --case        Case sensitive filtering\n");
+    fprintf(stderr, "  -e, --self        Get self times\n");
+    fprintf(stderr, "  -u, --unwrap      Report each zone event\n");
+    fprintf(stderr, "  -m, --messages    Report only messages\n");
 
     exit(e);
 }

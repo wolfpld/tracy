@@ -29,6 +29,7 @@ void print_usage_exit(int e)
     fprintf(stderr, "  -c, --case        Case sensitive filtering\n");
     fprintf(stderr, "  -e, --self        Get self times\n");
     fprintf(stderr, "  -u, --unwrap      Report each zone event\n");
+    fprintf(stderr, "  -m, --messages    Report only messages\n");
 
     exit(e);
 }
@@ -40,6 +41,7 @@ struct Args {
     bool case_sensitive;
     bool self_time;
     bool unwrap;
+    bool unwrapMessages;
 };
 
 Args parse_args(int argc, char** argv)
@@ -49,7 +51,7 @@ Args parse_args(int argc, char** argv)
         print_usage_exit(1);
     }
 
-    Args args = { "", ",", "", false, false, false };
+    Args args = { "", ",", "", false, false, false, false };
 
     struct option long_opts[] = {
         { "help", no_argument, NULL, 'h' },
@@ -58,11 +60,12 @@ Args parse_args(int argc, char** argv)
         { "case", no_argument, NULL, 'c' },
         { "self", no_argument, NULL, 'e' },
         { "unwrap", no_argument, NULL, 'u' },
+        { "messages", no_argument, NULL, 'm' },
         { NULL, 0, NULL, 0 }
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "hf:s:ceu", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "hf:s:ceum", long_opts, NULL)) != -1)
     {
         switch (c)
         {
@@ -83,6 +86,9 @@ Args parse_args(int argc, char** argv)
             break;
         case 'u':
             args.unwrap = true;
+            break;
+        case 'm':
+            args.unwrapMessages = true;
             break;
         default:
             print_usage_exit(1);
@@ -197,6 +203,38 @@ int main(int argc, char** argv)
     }
 
     auto worker = tracy::Worker(*f);
+
+    if (args.unwrapMessages) 
+    {
+        const auto& msgs = worker.GetMessages();
+    
+        if (msgs.size() > 0)
+        {
+            std::vector<const char*> columnsForMessages;
+            columnsForMessages = {
+                    "MessageName", "total_ns"
+                };
+            std::string headerForMessages = join(columnsForMessages, args.separator);
+            printf("%s\n", headerForMessages.data());
+
+            for(auto& it : msgs)
+            {
+                std::vector<std::string> values(columnsForMessages.size());
+
+                values[0] = worker.GetString(it->ref);
+                values[1] = std::to_string(it->time);
+
+                std::string row = join(values, args.separator);
+                printf("%s\n", row.data());
+            }
+        }
+        else
+        {
+            printf("There are currently no messages!\n");
+        }
+    
+        return 0;
+    }
 
     while (!worker.AreSourceLocationZonesReady())
     {

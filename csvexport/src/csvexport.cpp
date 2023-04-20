@@ -233,7 +233,7 @@ int main(int argc, char** argv)
             printf("There are currently no messages!\n");
         }
     
-    return 0;
+        return 0;
     }
 
     while (!worker.AreSourceLocationZonesReady())

@@ -7107,7 +7107,7 @@ void Worker::ReconstructContextSwitchUsage()
                     if( !cpus[i].it->IsEndValid() )
                     {
                         cpus[i].it++;
-                        assert( cpus[i].it = cpus[i].end );
+                        assert( cpus[i].it == cpus[i].end );
                     }
                     else
                     {

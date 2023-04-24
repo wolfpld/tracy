@@ -132,7 +132,7 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
         const auto vStart = ctx.vStart;
         const auto vEnd = ctx.vEnd;
         const auto nspx = ctx.nspx;
-        const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+        const auto MinVisNs = int64_t( round( MinVisSize * nspx ) );
 
         auto& vec = m_plot->data;
         vec.ensure_sorted();

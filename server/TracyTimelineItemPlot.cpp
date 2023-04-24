@@ -192,7 +192,7 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
             else
             {
                 // Sync with View::DrawPlot()!
-                constexpr int NumSamples = 1024;
+                constexpr int NumSamples = 256;
                 uint32_t samples[NumSamples];
                 uint32_t cnt = 0;
                 uint32_t offset = it - vec.begin();

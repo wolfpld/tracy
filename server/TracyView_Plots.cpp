@@ -158,7 +158,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
                     {
-                        constexpr int NumSamples = 1024;
+                        constexpr int NumSamples = 256;
                         ImGui::BeginTooltip();
                         TextFocused( "Number of values:", RealToString( cnt ) );
                         if( cnt < NumSamples )

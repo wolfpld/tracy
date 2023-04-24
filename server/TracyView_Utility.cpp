@@ -779,17 +779,13 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime ) con
         {
             sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
         }
-        else if( !m_worker.IsOnDemand() )
+        else if( i != 1 || !m_worker.IsOnDemand() )
         {
             sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
-        }
-        else if( i == 1 )
-        {
-            sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
         }
         else
         {
-            sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
+            sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
         }
     }
     else

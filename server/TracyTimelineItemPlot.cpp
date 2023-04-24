@@ -125,6 +125,7 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
 
     if( !visible ) return;
     if( yPos > ctx.yMax ) return;
+    if( m_plot->data.empty() ) return;
     const auto PlotHeight = int( round( PlotHeightPx * GetScale() ) );
     if( yPos + PlotHeight < ctx.yMin ) return;
 

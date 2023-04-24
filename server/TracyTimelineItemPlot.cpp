@@ -180,11 +180,14 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
             auto next = std::upper_bound( it, end, int64_t( it->time.Val() + MinVisNs ), [] ( const auto& l, const auto& r ) { return l < r.time.Val(); } );
             assert( next > it );
             const auto rsz = uint32_t( next - it );
-            if( rsz == 1 )
+            if( rsz < 4 )
             {
-                m_draw.emplace_back( 0 );
-                m_draw.emplace_back( it - vec.begin() );
-                ++it;
+                for( int i=0; i<rsz; i++ )
+                {
+                    m_draw.emplace_back( 0 );
+                    m_draw.emplace_back( it - vec.begin() );
+                    ++it;
+                }
             }
             else
             {

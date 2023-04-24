@@ -570,7 +570,7 @@ static void DrawContents()
         {
             tracy::OpenWebpage( "https://github.com/sponsors/wolfpld/" );
         }
-        if( updateVersion != 0 && updateVersion > tracy::FileVersion( tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch ) )
+        if( updateVersion > tracy::FileVersion( tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch ) )
         {
             ImGui::Separator();
             ImGui::TextColored( ImVec4( 1, 1, 0, 1 ), ICON_FA_EXCLAMATION " Update to %i.%i.%i is available!", ( updateVersion >> 16 ) & 0xFF, ( updateVersion >> 8 ) & 0xFF, updateVersion & 0xFF );

@@ -171,11 +171,8 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
         m_plot->rMax = max;
         m_plot->num = num;
 
-        if( it == vec.begin() )
-        {
-            m_draw.emplace_back( 0 );
-            m_draw.emplace_back( it - vec.begin() );
-        }
+        m_draw.emplace_back( 0 );
+        m_draw.emplace_back( it - vec.begin() );
 
         ++it;
         while( it < end )

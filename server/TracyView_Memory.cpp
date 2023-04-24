@@ -638,7 +638,7 @@ void View::DrawMemoryAllocWindow()
                     }
                     ZoneTooltip( *zoneFree );
                 }
-                if( zoneAlloc != 0 && zoneAlloc == zoneFree )
+                if( zoneAlloc == zoneFree )
                 {
                     ImGui::SameLine();
                     TextDisabledUnformatted( "(same zone)" );

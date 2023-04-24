@@ -77,7 +77,6 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     {
         const auto lockDepth = DrawLocks( ctx, lockDraw, thread.id, offset, m_nextLockHighlight );
         offset += sstep * lockDepth;
-        depth += lockDepth;
     }
 }
 

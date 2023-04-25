@@ -338,7 +338,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         const auto& locks = m_worker.GetLockMap();
         if( !locks.empty() )
         {
-            PreprocessLocks( ctx, locks, m_thread->id, td, visible, yPos );
+            PreprocessLocks( ctx, locks, m_thread->id, td, visible );
         }
     }
 }
@@ -855,7 +855,7 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector
     return next;
 }
 
-void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unordered_flat_map<uint32_t, LockMap*>& locks, uint32_t tid, TaskDispatch& td, bool visible, int yPos )
+void TimelineItemThread::PreprocessLocks( const TimelineContext& ctx, const unordered_flat_map<uint32_t, LockMap*>& locks, uint32_t tid, TaskDispatch& td, bool visible )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;

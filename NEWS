@@ -17,6 +17,21 @@ v0.x.x (xxxx-xx-xx)
 - System power usage is now reported on x86 Linux.
 - Program name displayed in broadcast messages can be now changed with the
   TracySetProgramName() macro.
+- Zone error markers (red regions and error bars) have been removed for
+  consistency with how all other profiling events are displayed.
+- It is now possible to export messages in the csvexport utility.
+- Major overhaul of how timeline items are processed in GUI.
+  - The process of figuring out what needs to be drawn on the timeline has
+    been heavily parallelized.
+  - The impact is especially visible with traces containing large amounts
+    of data. The framerate improvement in such cases can be ~10x.
+  - Consequently, the profiler GUI will now produce all-core spikes when
+    rendering frames. This may have impact on the profiled application's
+    performance, if both the application and the profiler GUI are running
+    on the same machine. If this is a problem, you may consider the capture
+    utility instead, which is not affected by these changes.
+  - Most of the timeline item logic has been written from scratch, which
+    may have taken care of some elusive bugs. 
 
 
 v0.9.1 (2023-02-26)

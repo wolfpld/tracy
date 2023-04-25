@@ -2839,26 +2839,6 @@ In an example in figure~\ref{zoneslocks} you can see that there are two threads:
 
 Meanwhile, the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}). In addition to being listed in the message log, it is indicated by a triangle over the thread separator. When multiple messages are in one place, the triangle outline shape changes to a filled triangle.
 
-At high zoom levels, the zones will be displayed with additional markers, as presented in figure~\ref{inaccuracy}. The red regions at the start and end of a zone indicate the cost associated with recording an event (\emph{Queue delay}). The error bars show the timer inaccuracy (\emph{Timer resolution}). Note that these markers are only \emph{approximations}, as many factors can impact the actual cost of capturing a zone, for example, cache effects or CPU frequency scaling, which is unaccounted for (see section~\ref{checkenvironmentcpu}).
-
-\begin{figure}[h]
-\centering\begin{tikzpicture}
-\draw(0, 0) rectangle+(5, 0.5) node [midway] {Zone};
-\draw[pattern=crosshatch dots] (0, 0) rectangle+(1, 0.5);
-\draw[pattern=crosshatch dots] (5, 0) rectangle+(1, 0.5);
-\draw(-0.5, 0.35) -- (-0.5, 0.15);
-\draw(0.5, 0.35) -- (0.5, 0.15);
-\draw(-0.5, 0.25) -- (0.5, 0.25);
-\draw(4.5, 0.35) -- (4.5, 0.15);
-\draw(5.5, 0.35) -- (5.5, 0.15);
-\draw(4.5, 0.25) -- (5.5, 0.25);
-\draw(0, -0.2) -- (0, -0.3) -- (5, -0.3) -- (5, -0.2);
-\draw(2.5, -0.3) node[anchor=north] {Zone extent};
-\end{tikzpicture}
-\caption{Approximation of timer inaccuracies and zone collection cost.}
-\label{inaccuracy}
-\end{figure}
-
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/OpenCL context in place of a thread name.
 
 Hovering the \faMousePointer{} mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the \LMB{}~left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Holding the \keys{\ctrl} key and clicking the \LMB{}~left mouse button on a zone will open the zone statistics window (section~\ref{findzone}). Clicking the \MMB{}~middle mouse button on a zone will zoom the view to the extent of the zone.

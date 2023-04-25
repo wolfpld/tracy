@@ -211,12 +211,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
     const auto pxns = ctx.pxns;
     const auto hover = ctx.hover;
     const auto vStart = ctx.vStart;
-    const auto dsz = m_worker.GetDelay() * pxns;
-    const auto rsz = m_worker.GetResolution() * pxns;
-
-    const auto ty025 = round( ty * 0.25f );
-    const auto ty05  = round( ty * 0.5f );
-    const auto ty075 = round( ty * 0.75f );
 
     for( auto& v : drawList )
     {
@@ -320,43 +314,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 const auto darkColor = DarkenColor( zoneColor.color );
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), zoneColor.accentColor, zoneColor.thickness );
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, zoneColor.thickness );
-            }
-            if( dsz > MinVisSize )
-            {
-                const auto diff = dsz - MinVisSize;
-                uint32_t color;
-                if( diff < 1 )
-                {
-                    color = ( uint32_t( diff * 0x88 ) << 24 ) | 0x2222DD;
-                }
-                else
-                {
-                    color = 0x882222DD;
-                }
-
-                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz, pr1 ), offset + tsz.y ), color );
-                draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), color );
-            }
-            if( rsz > MinVisSize )
-            {
-                const auto diff = rsz - MinVisSize;
-                uint32_t color;
-                if( diff < 1 )
-                {
-                    color = ( uint32_t( diff * 0xAA ) << 24 ) | 0xFFFFFF;
-                }
-                else
-                {
-                    color = 0xAAFFFFFF;
-                }
-
-                DrawLine( draw, dpos + ImVec2( pr0 + rsz, offset + ty05  ), dpos + ImVec2( pr0 - rsz, offset + ty05  ), color );
-                DrawLine( draw, dpos + ImVec2( pr0 + rsz, offset + ty025 ), dpos + ImVec2( pr0 + rsz, offset + ty075 ), color );
-                DrawLine( draw, dpos + ImVec2( pr0 - rsz, offset + ty025 ), dpos + ImVec2( pr0 - rsz, offset + ty075 ), color );
-
-                DrawLine( draw, dpos + ImVec2( pr1 + rsz, offset + ty05  ), dpos + ImVec2( pr1 - rsz, offset + ty05  ), color );
-                DrawLine( draw, dpos + ImVec2( pr1 + rsz, offset + ty025 ), dpos + ImVec2( pr1 + rsz, offset + ty075 ), color );
-                DrawLine( draw, dpos + ImVec2( pr1 - rsz, offset + ty025 ), dpos + ImVec2( pr1 - rsz, offset + ty075 ), color );
             }
             if( tsz.x < zsz )
             {

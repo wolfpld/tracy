@@ -414,8 +414,6 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
 template<typename Adapter, typename V>
 int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible )
 {
-    const auto delay = m_worker.GetDelay();
-    const auto resolution = m_worker.GetResolution();
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
     const auto nspx = ctx.nspx;
@@ -423,10 +421,10 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
     const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
 
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart - std::max<int64_t>( delay, 2 * MinVisNs ) ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), vEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
     if( it == zitend ) return depth;
     Adapter a;
     if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < vStart ) return depth;

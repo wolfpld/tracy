@@ -45,6 +45,7 @@
 #include "../../server/IconsFontAwesome6.h"
 
 #include "icon.hpp"
+#include "zigzag.hpp"
 
 #include "Backend.hpp"
 #include "ConnectionHistory.hpp"
@@ -95,6 +96,9 @@ static uint8_t* iconPx;
 static int iconX, iconY;
 static void* iconTex;
 static int iconTexSz;
+static uint8_t* zigzagPx;
+static int zigzagX, zigzagY;
+static void* zigzagTex;
 static Backend* bptr;
 static bool s_customTitle = false;
 static bool s_isElevated = false;
@@ -219,12 +223,14 @@ int main( int argc, char** argv )
 
     auto iconThread = std::thread( [] {
         iconPx = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &iconX, &iconY, nullptr, 4 );
+        zigzagPx = stbi_load_from_memory( (const stbi_uc*)ZigZag_data, ZigZag_size, &zigzagX, &zigzagY, nullptr, 4 );
     } );
 
     ImGuiTracyContext imguiContext;
     Backend backend( title, DrawContents, &mainThreadTasks );
     tracy::InitTexture();
     iconTex = tracy::MakeTexture();
+    zigzagTex = tracy::MakeTexture( true );
     iconThread.join();
     backend.SetIcon( iconPx, iconX, iconY );
     bptr = &backend;
@@ -238,6 +244,10 @@ int main( int argc, char** argv )
     }
 
     SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
+
+    tracy::UpdateTextureRGBA( zigzagTex, zigzagPx, zigzagX, zigzagY );
+    tracy::MakeMipMaps( zigzagTex );
+    free( zigzagPx );
 
     if( initFileOpen )
     {
@@ -260,6 +270,7 @@ int main( int argc, char** argv )
     if( updateNotesThread.joinable() ) updateNotesThread.join();
     view.reset();
 
+    tracy::FreeTexture( zigzagTex, RunOnMainThread );
     tracy::FreeTexture( iconTex, RunOnMainThread );
     free( iconPx );
 

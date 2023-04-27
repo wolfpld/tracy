@@ -420,8 +420,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
 
     const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
 
-    // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [this] ( const auto& l, const auto& r ) { Adapter a; return m_worker.GetZoneEnd( a(l) ) < r; } );
     if( it == vec.end() ) return depth;
 
     const auto zitend = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
@@ -476,7 +475,7 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     const auto vEnd = ctx.vEnd;
 
     auto& vec = ctxSwitch.v;
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, vStart ), [] ( const auto& l, const auto& r ) { return ( l.IsEndValid() ? l.End() : l.Start() ) < r; } );
     if( it == vec.end() ) return;
     if( it != vec.begin() ) --it;
 

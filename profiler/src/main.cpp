@@ -98,7 +98,7 @@ static void* iconTex;
 static int iconTexSz;
 static uint8_t* zigzagPx;
 static int zigzagX, zigzagY;
-static void* zigzagTex;
+void* zigzagTex;
 static Backend* bptr;
 static bool s_customTitle = false;
 static bool s_isElevated = false;

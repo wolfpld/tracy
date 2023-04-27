@@ -174,4 +174,11 @@ void UpdateTextureRGBA( void* _tex, void* data, int w, int h )
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 }
 
+void MakeMipMaps( void* _tex )
+{
+    auto tex = (GLuint)(intptr_t)_tex;
+    glBindTexture( GL_TEXTURE_2D, tex );
+    glGenerateMipmap( GL_TEXTURE_2D );
+}
+
 }

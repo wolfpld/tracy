@@ -16,10 +16,6 @@ constexpr int PlotHeightPx = 100;
 
 bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset )
 {
-    auto& vec = plot.data;
-    vec.ensure_sorted();
-    if( vec.front().time.Val() > m_vd.zvEnd || vec.back().time.Val() < m_vd.zvStart ) return false;
-
     auto draw = ImGui::GetWindowDrawList();
     const auto& wpos = ctx.wpos;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
@@ -75,6 +71,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
         bool first = true;
         while( it < end )
         {
+            auto& vec = plot.data;
             const auto cnt = *it++;
             const auto i0 = *it++;
             const auto& v0 = vec[i0];

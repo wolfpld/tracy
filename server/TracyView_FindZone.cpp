@@ -1362,6 +1362,23 @@ void View::DrawFindZone()
         SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
         ImGui::Separator();
 
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( "Filter user text:" );
+        ImGui::SameLine();
+        bool filterChanged = m_userTextFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
+
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
+        {
+            m_userTextFilter.Clear();
+            filterChanged = true;
+        }
+        ImGui::Separator();
+        if( filterChanged )
+        {
+            m_findZone.ResetGroups();
+        }
+
         ImGui::TextUnformatted( "Found zones:" );
         ImGui::SameLine();
         DrawHelpMarker( "Left click to highlight entry." );
@@ -1429,6 +1446,25 @@ void View::DrawFindZone()
                 zptr++;
                 continue;
             }
+
+            if( m_userTextFilter.IsActive() )
+            {
+                bool keep = false;
+                if ( m_worker.HasZoneExtra( *ev.Zone() ) && m_worker.GetZoneExtra( *ev.Zone() ).text.Active() )
+                {
+                    auto text = m_worker.GetString( m_worker.GetZoneExtra( *ev.Zone() ).text );
+                    if( m_userTextFilter.PassFilter( text ) )
+                    {
+                        keep = true;
+                    }
+                }
+                if( !keep )
+                {
+                    zptr++;
+                    continue;
+                }
+            }
+
             auto timespan = end - start;
             assert( timespan != 0 );
             if( m_findZone.selfTime )

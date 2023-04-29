@@ -174,11 +174,14 @@ void UpdateTextureRGBA( void* _tex, void* data, int w, int h )
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 }
 
-void MakeMipMaps( void* _tex )
+void UpdateTextureRGBAMips( void* _tex, void** data, int* w, int* h, size_t mips )
 {
     auto tex = (GLuint)(intptr_t)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
-    glGenerateMipmap( GL_TEXTURE_2D );
+    for( size_t i=0; i<mips; i++ )
+    {
+        glTexImage2D( GL_TEXTURE_2D, i, GL_RGBA, w[i], h[i], 0, GL_RGBA, GL_UNSIGNED_BYTE, data[i] );
+    }
 }
 
 }

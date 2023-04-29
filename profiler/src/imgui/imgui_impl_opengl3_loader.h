@@ -357,13 +357,11 @@ typedef khronos_uint16_t GLhalf;
 typedef void (APIENTRYP PFNGLGETBOOLEANI_VPROC) (GLenum target, GLuint index, GLboolean *data);
 typedef void (APIENTRYP PFNGLGETINTEGERI_VPROC) (GLenum target, GLuint index, GLint *data);
 typedef const GLubyte *(APIENTRYP PFNGLGETSTRINGIPROC) (GLenum name, GLuint index);
-typedef void (APIENTRYP PFNGLGENERATEMIPMAPPROC) (GLenum target);
 typedef void (APIENTRYP PFNGLBINDVERTEXARRAYPROC) (GLuint array);
 typedef void (APIENTRYP PFNGLDELETEVERTEXARRAYSPROC) (GLsizei n, const GLuint *arrays);
 typedef void (APIENTRYP PFNGLGENVERTEXARRAYSPROC) (GLsizei n, GLuint *arrays);
 #ifdef GL_GLEXT_PROTOTYPES
 GLAPI const GLubyte *APIENTRY glGetStringi (GLenum name, GLuint index);
-GLAPI void APIENTRY glGenerateMipmap (GLenum target);
 GLAPI void APIENTRY glBindVertexArray (GLuint array);
 GLAPI void APIENTRY glDeleteVertexArrays (GLsizei n, const GLuint *arrays);
 GLAPI void APIENTRY glGenVertexArrays (GLsizei n, GLuint *arrays);
@@ -469,7 +467,7 @@ GL3W_API GL3WglProc imgl3wGetProcAddress(const char *proc);
 
 /* gl3w internal state */
 union GL3WProcs {
-    GL3WglProc ptr[59];
+    GL3WglProc ptr[58];
     struct {
         PFNGLACTIVETEXTUREPROC            ActiveTexture;
         PFNGLATTACHSHADERPROC             AttachShader;
@@ -503,7 +501,6 @@ union GL3WProcs {
         PFNGLGENBUFFERSPROC               GenBuffers;
         PFNGLGENTEXTURESPROC              GenTextures;
         PFNGLGENVERTEXARRAYSPROC          GenVertexArrays;
-        PFNGLGENERATEMIPMAPPROC           GenerateMipmap;
         PFNGLGETATTRIBLOCATIONPROC        GetAttribLocation;
         PFNGLGETERRORPROC                 GetError;
         PFNGLGETINTEGERVPROC              GetIntegerv;
@@ -568,7 +565,6 @@ GL3W_API extern union GL3WProcs imgl3wProcs;
 #define glGenBuffers                      imgl3wProcs.gl.GenBuffers
 #define glGenTextures                     imgl3wProcs.gl.GenTextures
 #define glGenVertexArrays                 imgl3wProcs.gl.GenVertexArrays
-#define glGenerateMipmap                  imgl3wProcs.gl.GenerateMipmap
 #define glGetAttribLocation               imgl3wProcs.gl.GetAttribLocation
 #define glGetError                        imgl3wProcs.gl.GetError
 #define glGetIntegerv                     imgl3wProcs.gl.GetIntegerv
@@ -766,7 +762,6 @@ static const char *proc_names[] = {
     "glGenBuffers",
     "glGenTextures",
     "glGenVertexArrays",
-    "glGenerateMipmap",
     "glGetAttribLocation",
     "glGetError",
     "glGetIntegerv",

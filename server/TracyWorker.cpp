@@ -7091,7 +7091,8 @@ void Worker::ReconstructContextSwitchUsage()
             {
                 const auto ct = !cpus[i].startDone ? cpus[i].it->Start() : cpus[i].it->End();
                 if( nextTime != ct ) break;
-                const auto isOwn = GetPidFromTid( DecompressThreadExternal( cpus[i].it->Thread() ) ) == m_pid;
+                const auto tid = DecompressThreadExternal( cpus[i].it->Thread() );
+                const auto isOwn = IsThreadLocal( tid ) || GetPidFromTid( tid ) == m_pid;
                 if( !cpus[i].startDone )
                 {
                     if( isOwn )

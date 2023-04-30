@@ -2313,12 +2313,12 @@ const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len )
     return it;
 }
 
-int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
+int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev )
 {
+    assert( !ev.IsEndValid() );
     auto ptr = &ev;
     for(;;)
     {
-        if( ptr->IsEndValid() ) return ptr->End();
         if( !ptr->HasChildren() ) return ptr->Start();
         auto& children = GetZoneChildren( ptr->Child() );
         if( children.is_magic() )
@@ -2330,15 +2330,16 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
         {
             ptr = children.back();
         }
+        if( ptr->IsEndValid() ) return ptr->End();
     }
 }
 
-int64_t Worker::GetZoneEnd( const GpuEvent& ev )
+int64_t Worker::GetZoneEndImpl( const GpuEvent& ev )
 {
+    assert( ev.GpuEnd() < 0 );
     auto ptr = &ev;
     for(;;)
     {
-        if( ptr->GpuEnd() >= 0 ) return ptr->GpuEnd();
         if( ptr->Child() < 0 ) return ptr->GpuStart() >= 0 ? ptr->GpuStart() : m_data.lastTime;
         auto& children = GetGpuChildren( ptr->Child() );
         if( children.is_magic() )
@@ -2350,6 +2351,7 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
         {
             ptr = children.back();
         }
+        if( ptr->GpuEnd() >= 0 ) return ptr->GpuEnd();
     }
 }
 

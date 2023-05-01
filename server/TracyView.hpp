@@ -13,6 +13,7 @@
 
 #include "TracyBadVersion.hpp"
 #include "TracyBuzzAnim.hpp"
+#include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyShortPtr.hpp"
@@ -101,8 +102,8 @@ public:
     using SetScaleCallback = void(*)( float, ImFont*&, ImFont*&, ImFont*& );
     using AttentionCallback = void(*)();
 
-    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb );
-    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config );
     ~View();
 
     bool Draw();

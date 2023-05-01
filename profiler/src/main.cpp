@@ -169,6 +169,7 @@ static void LoadConfig()
 
     int v;
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
+    if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
 
     ini_free( ini );
 }
@@ -181,6 +182,9 @@ static bool SaveConfig()
 
     fprintf( f, "[core]\n" );
     fprintf( f, "threadedRendering = %i\n", (int)s_config.threadedRendering );
+
+    fprintf( f, "\n[timeline]\n" );
+    fprintf( f, "targetFps = %i\n", s_config.targetFps );
 
     fclose( f );
     return true;
@@ -553,17 +557,24 @@ static void DrawContents()
             ImGui::Separator();
             if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
             {
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                 ImGui::TextUnformatted( "Threaded rendering" );
                 ImGui::Indent();
-                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                 if( ImGui::RadioButton( "Enabled", s_config.threadedRendering ) ) { s_config.threadedRendering = true; SaveConfig(); }
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "Uses all available CPU cores for rendering. May affect performance of the profiled application when running on the same machine." );
                 if( ImGui::RadioButton( "Disabled", !s_config.threadedRendering ) ) { s_config.threadedRendering = false; SaveConfig(); }
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "Restricts rendering to a single CPU core. Can reduce profiler frame rate." );
-                ImGui::PopStyleVar();
                 ImGui::Unindent();
+
+                ImGui::Spacing();
+                ImGui::TextUnformatted( "Target FPS" );
+                ImGui::SameLine();
+                int tmp = s_config.targetFps;
+                ImGui::SetNextItemWidth( 90 * dpiScale );
+                if( ImGui::InputInt( "##targetfps", &tmp ) ) { s_config.targetFps = std::clamp( tmp, 1, 9999 ); SaveConfig(); }
+                ImGui::PopStyleVar();
                 ImGui::TreePop();
             }
             ImGui::Separator();

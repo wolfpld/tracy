@@ -66,6 +66,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
 {
     InitMemory();
     InitTextEditor();
+
+    m_vd.frameTarget = config.targetFps;
 }
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config )
@@ -99,6 +101,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
 
     if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
+
+    m_vd.frameTarget = config.targetFps;
 }
 
 View::~View()

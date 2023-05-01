@@ -32,6 +32,8 @@ v0.x.x (xxxx-xx-xx)
     utility instead, which is not affected by these changes.
   - Most of the timeline item logic has been written from scratch, which
     may have taken care of some elusive bugs. 
+- Added global configuration settings dialog. You can find it in the
+  profiler's about menu (the wrench icon in the welcome dialog).
 
 
 v0.9.1 (2023-02-26)

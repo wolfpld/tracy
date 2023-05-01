@@ -143,7 +143,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
     const auto pxns = ctx.pxns;
     const auto hover = ctx.hover;
     const auto w = ctx.w;
-    const auto ty = ctx.ty;
+    const auto ty = round( ctx.ty * 0.75f );
 
     const auto lineSize = 2 * GetScale();
     auto draw = ImGui::GetWindowDrawList();

@@ -561,7 +561,7 @@ static void DrawContents()
                 tracy::DrawHelpMarker( "Uses all available CPU cores for rendering. May affect performance of the profiled application when running on the same machine." );
                 if( ImGui::RadioButton( "Disabled", !s_config.threadedRendering ) ) { s_config.threadedRendering = false; SaveConfig(); }
                 ImGui::SameLine();
-                tracy::DrawHelpMarker( "Restricts rendering to a single CPU core. Can significantly reduce profiler frame rate." );
+                tracy::DrawHelpMarker( "Restricts rendering to a single CPU core. Can reduce profiler frame rate." );
                 ImGui::PopStyleVar();
                 ImGui::Unindent();
                 ImGui::TreePop();

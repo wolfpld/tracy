@@ -24,7 +24,7 @@ v0.x.x (xxxx-xx-xx)
   - The process of figuring out what needs to be drawn on the timeline has
     been heavily parallelized.
   - The impact is especially visible with traces containing large amounts
-    of data. The framerate improvement in such cases can be ~10x.
+    of data. The framerate improvement in such cases can be ~30x.
   - Consequently, the profiler GUI will now produce all-core spikes when
     rendering frames. This may have impact on the profiled application's
     performance, if both the application and the profiler GUI are running

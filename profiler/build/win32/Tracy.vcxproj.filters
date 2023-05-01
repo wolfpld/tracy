@@ -51,6 +51,9 @@
     <ClCompile Include="..\..\src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ini.c">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\server\TracyMemory.cpp">
       <Filter>server</Filter>
     </ClCompile>
@@ -462,6 +465,9 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\icon.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ini.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\stb_image.h">

@@ -214,6 +214,7 @@
     <ClCompile Include="..\..\src\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\..\src\IsElevated.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
+    <ClCompile Include="..\..\src\ini.c" />
     <ClCompile Include="..\..\src\ResolvService.cpp" />
     <ClCompile Include="..\..\src\RunQueue.cpp" />
     <ClCompile Include="..\..\src\WindowPosition.cpp" />
@@ -344,6 +345,7 @@
     <ClInclude Include="..\..\src\font\FontAwesomeSolid.hpp" />
     <ClInclude Include="..\..\src\HttpRequest.hpp" />
     <ClInclude Include="..\..\src\icon.hpp" />
+    <ClInclude Include="..\..\src\ini.h" />
     <ClInclude Include="..\..\src\ImGuiContext.hpp" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui\imgui_impl_opengl3.h" />

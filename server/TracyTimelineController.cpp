@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-TimelineController::TimelineController( View& view, Worker& worker )
+TimelineController::TimelineController( View& view, Worker& worker, bool threading )
     : m_height( 0 )
     , m_scroll( 0 )
     , m_centerItemkey( nullptr )
@@ -20,7 +20,7 @@ TimelineController::TimelineController( View& view, Worker& worker )
 #ifdef __EMSCRIPTEN__
     , m_td( 1 )
 #else
-    , m_td( std::max( 1u, std::thread::hardware_concurrency() - 2 ), "Render" )
+    , m_td( threading ? std::max( 1u, std::thread::hardware_concurrency() - 2 ) : 1, "Render" )
 #endif
 {
 }

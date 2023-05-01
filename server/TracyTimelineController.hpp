@@ -20,7 +20,7 @@ class Worker;
 class TimelineController
 {
 public:
-    TimelineController( View& view, Worker& worker );
+    TimelineController( View& view, Worker& worker, bool threading );
     ~TimelineController();
 
     void FirstFrameExpired();

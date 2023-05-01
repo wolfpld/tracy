@@ -25,6 +25,8 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
 
+#include "ini.h"
+
 #include "../../public/common/TracyProtocol.hpp"
 #include "../../public/common/TracyVersion.hpp"
 #include "../../server/tracy_pdqsort.h"
@@ -159,6 +161,31 @@ static void SetupScaleCallback( float scale, ImFont*& cb_fixedWidth, ImFont*& cb
     RunOnMainThread( [scale, &cb_fixedWidth, &cb_bigFont, &cb_smallFont] { SetupDPIScale( scale * dpiScale, cb_fixedWidth, cb_bigFont, cb_smallFont ); }, true );
 }
 
+static void LoadConfig()
+{
+    const auto fn = tracy::GetSavePath( "tracy.ini" );
+    auto ini = ini_load( fn );
+    if( !ini ) return;
+
+    int v;
+    if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
+
+    ini_free( ini );
+}
+
+static bool SaveConfig()
+{
+    const auto fn = tracy::GetSavePath( "tracy.ini" );
+    FILE* f = fopen( fn, "wb" );
+    if( !f ) return false;
+
+    fprintf( f, "[core]\n" );
+    fprintf( f, "threadedRendering = %i\n", (int)s_config.threadedRendering );
+
+    fclose( f );
+    return true;
+}
+
 int main( int argc, char** argv )
 {
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
@@ -237,6 +264,8 @@ int main( int argc, char** argv )
         zigzagPx[4] = stbi_load_from_memory( (const stbi_uc*)ZigZag02_data, ZigZag02_size, &zigzagX[4], &zigzagY[4], nullptr, 4 );
         zigzagPx[5] = stbi_load_from_memory( (const stbi_uc*)ZigZag01_data, ZigZag01_size, &zigzagX[5], &zigzagY[5], nullptr, 4 );
     } );
+
+    LoadConfig();
 
     ImGuiTracyContext imguiContext;
     Backend backend( title, DrawContents, &mainThreadTasks );

@@ -29,9 +29,10 @@ v0.x.x (xxxx-xx-xx)
     rendering frames. This may have impact on the profiled application's
     performance, if both the application and the profiler GUI are running
     on the same machine. If this is a problem, you may consider the capture
-    utility instead, which is not affected by these changes.
+    utility instead, which is not affected by these changes. Alternatively,
+    you may disable parallelization in the options menu.
   - Most of the timeline item logic has been written from scratch, which
-    may have taken care of some elusive bugs. 
+    may have taken care of some elusive bugs.
 - Added global configuration settings dialog. You can find it in the
   profiler's about menu (the wrench icon in the welcome dialog).
 

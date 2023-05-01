@@ -11,8 +11,6 @@ TaskDispatch::TaskDispatch( size_t workers, const char* name )
     : m_exit( false )
     , m_jobs( 0 )
 {
-    assert( workers >= 1 );
-
     m_workers.reserve( workers );
     for( size_t i=0; i<workers; i++ )
     {

@@ -18,9 +18,9 @@ TimelineController::TimelineController( View& view, Worker& worker, bool threadi
     , m_view( view )
     , m_worker( worker )
 #ifdef __EMSCRIPTEN__
-    , m_td( 1 )
+    , m_td( 0 )
 #else
-    , m_td( threading ? std::max( 1u, std::thread::hardware_concurrency() - 2 ) : 1, "Render" )
+    , m_td( threading ? (size_t)std::max( 0, (int)std::thread::hardware_concurrency() - 2 ) : 0, "Render" )
 #endif
 {
 }

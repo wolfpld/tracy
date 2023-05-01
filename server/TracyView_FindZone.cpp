@@ -543,6 +543,7 @@ void View::DrawFindZone()
                             {
                                 auto& ev = zones[i];
                                 if( ev.Zone()->End() > rangeMax || ev.Zone()->Start() < rangeMin ) continue;
+                                if( m_filteredZones.contains(&ev) ) continue;
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
@@ -560,6 +561,7 @@ void View::DrawFindZone()
                             for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
                                 auto& ev = zones[i];
+                                if( m_filteredZones.contains(&ev) ) continue;
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
@@ -581,6 +583,7 @@ void View::DrawFindZone()
                             {
                                 auto& ev = zones[i];
                                 if( ev.Zone()->End() > rangeMax || ev.Zone()->Start() < rangeMin ) continue;
+                                if( m_filteredZones.contains(&ev) ) continue;
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
@@ -595,6 +598,7 @@ void View::DrawFindZone()
                             for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
                                 auto& ev = zones[i];
+                                if( m_filteredZones.contains(&ev) ) continue;
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
@@ -613,6 +617,7 @@ void View::DrawFindZone()
                             {
                                 auto& ev = zones[i];
                                 if( ev.Zone()->End() > rangeMax || ev.Zone()->Start() < rangeMin ) continue;
+                                if( m_filteredZones.contains(&ev) ) continue;
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start();
@@ -627,6 +632,7 @@ void View::DrawFindZone()
                             for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
                                 auto& ev = zones[i];
+                                if( m_filteredZones.contains(&ev) ) continue;
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start();
@@ -1376,6 +1382,7 @@ void View::DrawFindZone()
         ImGui::Separator();
         if( filterChanged )
         {
+            m_filteredZones.clear();
             m_findZone.ResetGroups();
         }
 
@@ -1460,6 +1467,7 @@ void View::DrawFindZone()
                 }
                 if( !keep )
                 {
+                    m_filteredZones.insert(&ev);
                     zptr++;
                     continue;
                 }

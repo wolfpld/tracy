@@ -1368,7 +1368,7 @@ void View::DrawFindZone()
         bool filterChanged = m_userTextFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
 
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
+        if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear###userText" ) )
         {
             m_userTextFilter.Clear();
             filterChanged = true;

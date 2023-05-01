@@ -551,6 +551,22 @@ static void DrawContents()
             tracy::TextDisabledUnformatted( "<wolf@nereid.pl>" );
             tracy::TextDisabledUnformatted( "Additional authors listed in AUTHORS file and in git history." );
             ImGui::Separator();
+            if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
+            {
+                ImGui::TextUnformatted( "Threaded rendering" );
+                ImGui::Indent();
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+                if( ImGui::RadioButton( "Enabled", s_config.threadedRendering ) ) { s_config.threadedRendering = true; SaveConfig(); }
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "Uses all available CPU cores for rendering. May affect performance of the profiled application when running on the same machine." );
+                if( ImGui::RadioButton( "Disabled", !s_config.threadedRendering ) ) { s_config.threadedRendering = false; SaveConfig(); }
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "Restricts rendering to a single CPU core. Can significantly reduce profiler frame rate." );
+                ImGui::PopStyleVar();
+                ImGui::Unindent();
+                ImGui::TreePop();
+            }
+            ImGui::Separator();
             ImGui::PushFont( s_smallFont );
             tracy::TextFocused( "Protocol version", tracy::RealToString( tracy::ProtocolVersion ) );
             ImGui::SameLine();

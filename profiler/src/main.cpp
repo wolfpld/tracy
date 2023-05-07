@@ -323,14 +323,8 @@ int main( int argc, char** argv )
     return 0;
 }
 
-static void DrawContents()
+static void UpdateBroadcastClients()
 {
-    static bool reconnect = false;
-    static std::string reconnectAddr;
-    static uint16_t reconnectPort;
-    static bool showFilter = false;
-
-#ifndef __EMSCRIPTEN__
     if( !view )
     {
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
@@ -473,6 +467,17 @@ static void DrawContents()
     {
         clients.clear();
     }
+}
+
+static void DrawContents()
+{
+    static bool reconnect = false;
+    static std::string reconnectAddr;
+    static uint16_t reconnectPort;
+    static bool showFilter = false;
+
+#ifndef __EMSCRIPTEN__
+    UpdateBroadcastClients();
 #endif
 
     int display_w, display_h;

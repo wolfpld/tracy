@@ -337,7 +337,9 @@ int main(int argc, char** argv)
             const auto ss = zone_data.sumSq
                 - 2. * zone_data.total * avg
                 + avg * avg * sz;
-            const auto std = sqrt(ss / (sz - 1));
+            double std = 0;
+            if( sz > 1 )
+                std = sqrt(ss / (sz - 1));
             values[9] = std::to_string(std);
 
             std::string row = join(values, args.separator);

@@ -143,5 +143,11 @@ install(FILES ${common_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/common)
 install(EXPORT TracyConfig
         NAMESPACE Tracy::
-        FILE TracyConfig.cmake
+        FILE TracyTargets.cmake
+        DESTINATION share/Tracy)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake"
+        INSTALL_DESTINATION share/Tracy)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake
         DESTINATION share/Tracy)

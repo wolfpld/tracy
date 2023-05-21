@@ -5,6 +5,9 @@
 
 #define TracyVkContext(x,y,z,w) nullptr
 #define TracyVkContextCalibrated(x,y,z,w,a,b) nullptr
+#if defined VK_EXT_host_query_reset
+#define TracyVkContextHostCalibrated(x,y,z,w,a) nullptr
+#endif
 #define TracyVkDestroy(x)
 #define TracyVkContextName(c,x,y)
 #define TracyVkNamedZone(c,x,y,z,w)
@@ -113,7 +116,7 @@ public:
         m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
     }
 
-#if defined VK_EXT_calibrated_timestamps && defined VK_EXT_host_query_reset
+#if defined VK_EXT_host_query_reset
     /**
      * This alternative constructor does not use command buffers and instead uses functionality from
      * VK_EXT_host_query_reset (core with 1.2 and non-optional) and VK_EXT_calibrated_timestamps. This requires
@@ -516,7 +519,7 @@ static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device,
     return ctx;
 }
 
-#if defined VK_EXT_calibrated_timestamps && defined VK_EXT_host_query_reset
+#if defined VK_EXT_host_query_reset
 static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, PFN_vkResetQueryPoolEXT qpreset, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT gpdctd, PFN_vkGetCalibratedTimestampsEXT gct )
 {
     auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
@@ -537,7 +540,7 @@ using TracyVkCtx = tracy::VkCtx*;
 
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, nullptr, nullptr );
 #define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
-#if defined VK_EXT_calibrated_timestamps && defined VK_EXT_host_query_reset
+#if defined VK_EXT_host_query_reset
 #define TracyVkContextHostCalibrated( physdev, device, qpreset, gpdctd, gct ) tracy::CreateVkContext( physdev, device, qpreset, gpdctd, gct );
 #endif
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );

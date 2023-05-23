@@ -5,13 +5,13 @@ endif
 all: release
 
 debug:
-	@+make -f debug.mk all
+	@$(MAKE) -f debug.mk all
 
 release:
-	@+make -f release.mk all
+	@$(MAKE) -f release.mk all
 
 clean:
-	@+make -f build.mk clean
+	@$(MAKE) -f build.mk clean
 
 db: clean
 	@bear -- $(MAKE) -f debug.mk all

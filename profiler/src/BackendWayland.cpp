@@ -519,7 +519,7 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
     }
     else if( strcmp( interface, wl_seat_interface.name ) == 0 )
     {
-        s_seat = (wl_seat*)wl_registry_bind( reg, name, &wl_seat_interface, 7 );
+        s_seat = (wl_seat*)wl_registry_bind( reg, name, &wl_seat_interface, 5 );
         wl_seat_add_listener( s_seat, &seatListener, nullptr );
     }
     else if( strcmp( interface, xdg_activation_v1_interface.name ) == 0 )

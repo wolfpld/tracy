@@ -644,13 +644,13 @@ using TracyVkCtx = tracy::VkCtx*;
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, nullptr, nullptr );
 #endif
 #if defined TRACY_VK_USE_SYMBOL_TABLE
-#define TracyVkContext( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr, true );
+#define TracyVkContextCalibrated( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr, true );
 #else
 #define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
 #endif
 #if defined VK_EXT_host_query_reset
 #if defined TRACY_VK_USE_SYMBOL_TABLE
-#define TracyVkContext( instance, physdev, device, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, instanceProcAddr, deviceProcAddr );
+#define TracyVkContextHostCalibrated( instance, physdev, device, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, instanceProcAddr, deviceProcAddr, true );
 #else
 #define TracyVkContextHostCalibrated( physdev, device, qpreset, gpdctd, gct ) tracy::CreateVkContext( physdev, device, qpreset, gpdctd, gct );
 #endif

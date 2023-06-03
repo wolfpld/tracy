@@ -650,7 +650,11 @@ using TracyVkCtx = tracy::VkCtx*;
 #endif
 #if defined VK_EXT_host_query_reset
 #if defined TRACY_VK_USE_SYMBOL_TABLE
+<<<<<<< HEAD
 #define TracyVkContextHostCalibrated( instance, physdev, device, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, instanceProcAddr, deviceProcAddr );
+=======
+#define TracyVkContextHostCalibrated( instance, physdev, device, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, instanceProcAddr, deviceProcAddr, true );
+>>>>>>> 788dd397f85df585dbd5c21ee7dd26f510dbe3c2
 #else
 #define TracyVkContextHostCalibrated( physdev, device, qpreset, gpdctd, gct ) tracy::CreateVkContext( physdev, device, qpreset, gpdctd, gct );
 #endif

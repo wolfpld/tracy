@@ -137,7 +137,13 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
 
         auto& vec = m_plot->data;
         vec.ensure_sorted();
-        if( vec.front().time.Val() > vEnd || vec.back().time.Val() < vStart ) return;
+        if( vec.front().time.Val() > vEnd || vec.back().time.Val() < vStart )
+        {
+            m_plot->rMin = 0;
+            m_plot->rMax = 0;
+            m_plot->num = 0;
+            return;
+        }
 
         auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
         auto end = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );

@@ -1519,8 +1519,6 @@ To mark a GPU zone use the \texttt{TracyVkZone(ctx, cmdbuf, name)} macro, where 
 
 You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(ctx, cmdbuf)} macro\footnote{It is considerably faster than the OpenGL's \texttt{TracyGpuCollect}.}. The provided command buffer must be in the recording state and outside a render pass instance.
 
-For cases where you are not static linking the Vulkan loader, you can use TRACY_VK_USE_SYMBOL_TABLE to have the underlying implementation dynamically load the Vulkan symbols needed for sampling.
-
 \subparagraph{Calibrated context}
 
 In order to maintain synchronization between CPU and GPU time domains, you will need to enable the \texttt{VK\_EXT\_calibrated\_timestamps} device extension and retrieve the following function pointers: \texttt{vkGetPhysicalDeviceCalibrateableTimeDomainsEXT} and \texttt{vkGetCalibratedTimestampsEXT}.

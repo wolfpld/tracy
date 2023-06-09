@@ -45,6 +45,41 @@ using TracyVkCtx = void*;
 namespace tracy
 {
 
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+#define LoadVkDeviceCoreSymbols(Operation) \
+    Operation(vkBeginCommandBuffer) \
+    Operation(vkCmdResetQueryPool) \
+    Operation(vkCmdWriteTimestamp) \
+    Operation(vkCreateQueryPool) \
+    Operation(vkDestroyQueryPool) \
+    Operation(vkEndCommandBuffer) \
+    Operation(vkGetQueryPoolResults) \
+    Operation(vkQueueSubmit) \
+    Operation(vkQueueWaitIdle)
+
+#define LoadVkDeviceExtensionSymbols(Operation) \
+    Operation(vkGetCalibratedTimestampsEXT) \
+    Operation(vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)
+
+#define LoadVkInstanceCoreSymbols(Operation) \
+    Operation(vkGetPhysicalDeviceProperties)
+
+struct VkSymbolTable
+{
+#define MAKE_PFN(name) PFN_##name name;
+    LoadVkDeviceCoreSymbols(MAKE_PFN)
+    LoadVkDeviceExtensionSymbols(MAKE_PFN)
+    LoadVkInstanceCoreSymbols(MAKE_PFN)
+#undef MAKE_PFN
+};
+
+#define VK_FUNCTION_WRAPPER(callSignature) m_symbols.callSignature
+#define CONTEXT_VK_FUNCTION_WRAPPER(callSignature) m_ctx->m_symbols.callSignature
+#else
+#define VK_FUNCTION_WRAPPER(callSignature) callSignature
+#define CONTEXT_VK_FUNCTION_WRAPPER(callSignature) callSignature
+#endif
+
 class VkCtx
 {
     friend class VkCtxScope;
@@ -52,7 +87,11 @@ class VkCtx
     enum { QueryCount = 64 * 1024 };
 
 public:
-    VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT _vkGetCalibratedTimestampsEXT )
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+    VkCtx( VkInstance instance, VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetInstanceProcAddr instanceProcAddr, PFN_vkGetDeviceProcAddr deviceProcAddr, bool calibrated )
+#else
+    VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT vkGetCalibratedTimestampsEXT)
+#endif
         : m_device( device )
         , m_timeDomain( VK_TIME_DOMAIN_DEVICE_EXT )
         , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
@@ -60,13 +99,24 @@ public:
         , m_tail( 0 )
         , m_oldCnt( 0 )
         , m_queryCount( QueryCount )
-        , m_vkGetCalibratedTimestampsEXT( _vkGetCalibratedTimestampsEXT )
+#if !defined TRACY_VK_USE_SYMBOL_TABLE
+        , m_vkGetCalibratedTimestampsEXT( vkGetCalibratedTimestampsEXT )
+#endif
     {
         assert( m_context != 255 );
 
-        if( _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT && _vkGetCalibratedTimestampsEXT )
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+        PopulateSymbolTable(instance, instanceProcAddr, deviceProcAddr);
+        if ( calibrated )
         {
-            FindAvailableTimeDomains( physdev, _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT );
+            m_vkGetCalibratedTimestampsEXT = m_symbols.vkGetCalibratedTimestampsEXT;
+        }
+
+#endif
+
+        if( VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) && m_vkGetCalibratedTimestampsEXT )
+        {
+            FindAvailableTimeDomains( physdev, VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) );
         }
 
         CreateQueryPool();
@@ -80,29 +130,29 @@ public:
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &cmdbuf;
 
-        vkBeginCommandBuffer( cmdbuf, &beginInfo );
-        vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount );
-        vkEndCommandBuffer( cmdbuf );
-        vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
-        vkQueueWaitIdle( queue );
+        VK_FUNCTION_WRAPPER( vkBeginCommandBuffer( cmdbuf, &beginInfo ) );
+        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount ) );
+        VK_FUNCTION_WRAPPER( vkEndCommandBuffer( cmdbuf ) );
+        VK_FUNCTION_WRAPPER( vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE ) );
+        VK_FUNCTION_WRAPPER( vkQueueWaitIdle( queue ) );
 
         int64_t tcpu, tgpu;
         if( m_timeDomain == VK_TIME_DOMAIN_DEVICE_EXT )
         {
-            vkBeginCommandBuffer( cmdbuf, &beginInfo );
-            vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_query, 0 );
-            vkEndCommandBuffer( cmdbuf );
-            vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
-            vkQueueWaitIdle( queue );
+            VK_FUNCTION_WRAPPER( vkBeginCommandBuffer( cmdbuf, &beginInfo ) );
+            VK_FUNCTION_WRAPPER( vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_query, 0 ) );
+            VK_FUNCTION_WRAPPER( vkEndCommandBuffer( cmdbuf ) );
+            VK_FUNCTION_WRAPPER( vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE ) );
+            VK_FUNCTION_WRAPPER( vkQueueWaitIdle( queue ) );
 
             tcpu = Profiler::GetTime();
-            vkGetQueryPoolResults( device, m_query, 0, 1, sizeof( tgpu ), &tgpu, sizeof( tgpu ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT );
+            VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( device, m_query, 0, 1, sizeof( tgpu ), &tgpu, sizeof( tgpu ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT ) );
 
-            vkBeginCommandBuffer( cmdbuf, &beginInfo );
-            vkCmdResetQueryPool( cmdbuf, m_query, 0, 1 );
-            vkEndCommandBuffer( cmdbuf );
-            vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
-            vkQueueWaitIdle( queue );
+            VK_FUNCTION_WRAPPER( vkBeginCommandBuffer( cmdbuf, &beginInfo ) );
+            VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, 0, 1 ) );
+            VK_FUNCTION_WRAPPER( vkEndCommandBuffer( cmdbuf ) );
+            VK_FUNCTION_WRAPPER( vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE ) );
+            VK_FUNCTION_WRAPPER( vkQueueWaitIdle( queue ) );
         }
         else
         {
@@ -122,7 +172,11 @@ public:
      * VK_EXT_host_query_reset (core with 1.2 and non-optional) and VK_EXT_calibrated_timestamps. This requires
      * the physical device to have another time domain apart from DEVICE to be calibrateable.
      */
-    VkCtx( VkPhysicalDevice physdev, VkDevice device, PFN_vkResetQueryPoolEXT _vkResetQueryPool, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT _vkGetCalibratedTimestampsEXT )
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+    VkCtx( VkInstance instance, VkPhysicalDevice physdev, VkDevice device, PFN_vkGetInstanceProcAddr instanceProcAddr, PFN_vkGetDeviceProcAddr deviceProcAddr )
+#else
+    VkCtx( VkPhysicalDevice physdev, VkDevice device, PFN_vkResetQueryPoolEXT vkResetQueryPool, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT vkGetCalibratedTimestampsEXT )
+#endif
         : m_device( device )
         , m_timeDomain( VK_TIME_DOMAIN_DEVICE_EXT )
         , m_context( GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed) )
@@ -130,14 +184,22 @@ public:
         , m_tail( 0 )
         , m_oldCnt( 0 )
         , m_queryCount( QueryCount )
-        , m_vkGetCalibratedTimestampsEXT( _vkGetCalibratedTimestampsEXT )
+#if !defined TRACY_VK_USE_SYMBOL_TABLE
+        , m_vkGetCalibratedTimestampsEXT( vkGetCalibratedTimestampsEXT )
+#endif
     {
         assert( m_context != 255);
-        assert( _vkResetQueryPool != nullptr );
-        assert( _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT != nullptr );
-        assert( _vkGetCalibratedTimestampsEXT != nullptr );
 
-        FindAvailableTimeDomains( physdev, _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT );
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+        PopulateSymbolTable(instance, instanceProcAddr, deviceProcAddr);
+        m_vkGetCalibratedTimestampsEXT = m_symbols.vkGetCalibratedTimestampsEXT;
+#endif
+
+        assert( VK_FUNCTION_WRAPPER( vkResetQueryPool ) != nullptr );
+        assert( VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) != nullptr );
+        assert( VK_FUNCTION_WRAPPER( vkGetCalibratedTimestampsEXT ) != nullptr );
+
+        FindAvailableTimeDomains( physdev, VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceCalibrateableTimeDomainsEXT ) );
 
         // We require a host time domain to be available to properly calibrate.
         FindCalibratedTimestampDeviation();
@@ -146,7 +208,7 @@ public:
         int64_t tcpu = Profiler::GetTime();
 
         CreateQueryPool();
-        _vkResetQueryPool( device, m_query, 0, m_queryCount );
+        VK_FUNCTION_WRAPPER( vkResetQueryPool( device, m_query, 0, m_queryCount ) );
 
         WriteInitialItem( physdev, tcpu, tgpu );
 
@@ -157,7 +219,7 @@ public:
     ~VkCtx()
     {
         tracy_free( m_res );
-        vkDestroyQueryPool( m_device, m_query, nullptr );
+        VK_FUNCTION_WRAPPER( vkDestroyQueryPool( m_device, m_query, nullptr ) );
     }
 
     void Name( const char* name, uint16_t len )
@@ -185,7 +247,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
-            vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount );
+            VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount ) );
             m_head = m_tail = m_oldCnt = 0;
             int64_t tgpu;
             if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) Calibrate( m_device, m_prevCalibration, tgpu );
@@ -204,7 +266,7 @@ public:
             cnt = m_head < m_tail ? m_queryCount - m_tail : m_head - m_tail;
         }
 
-        if( vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY )
+        if( VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY ) )
         {
             m_oldCnt = cnt;
             return;
@@ -239,7 +301,7 @@ public:
             }
         }
 
-        vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt );
+        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt ) );
 
         m_tail += cnt;
         if( m_tail == m_queryCount ) m_tail = 0;
@@ -291,7 +353,7 @@ private:
         poolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
         poolInfo.queryCount = m_queryCount;
         poolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-        while ( vkCreateQueryPool( m_device, &poolInfo, nullptr, &m_query ) != VK_SUCCESS )
+        while ( VK_FUNCTION_WRAPPER( vkCreateQueryPool( m_device, &poolInfo, nullptr, &m_query ) != VK_SUCCESS ) )
         {
             m_queryCount /= 2;
             poolInfo.queryCount = m_queryCount;
@@ -351,7 +413,7 @@ private:
         if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) flags |= GpuContextCalibration;
 
         VkPhysicalDeviceProperties prop;
-        vkGetPhysicalDeviceProperties( physdev, &prop );
+        VK_FUNCTION_WRAPPER( vkGetPhysicalDeviceProperties( physdev, &prop ) );
         const float period = prop.limits.timestampPeriod;
 
         auto item = Profiler::QueueSerial();
@@ -370,9 +432,31 @@ private:
         Profiler::QueueSerialFinish();
     }
 
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+    void PopulateSymbolTable( VkInstance instance, PFN_vkGetInstanceProcAddr instanceProcAddr, PFN_vkGetDeviceProcAddr deviceProcAddr )
+    {
+#define VK_GET_DEVICE_SYMBOL( name ) \
+        (PFN_##name)deviceProcAddr( m_device, #name );
+#define VK_LOAD_DEVICE_SYMBOL( name ) \
+        m_symbols.name = VK_GET_DEVICE_SYMBOL( name );
+#define VK_GET_INSTANCE_SYMBOL( name ) \
+        (PFN_##name)instanceProcAddr( instance, #name );
+#define VK_LOAD_INSTANCE_SYMBOL( name ) \
+        m_symbols.name = VK_GET_INSTANCE_SYMBOL( name );
+
+        LoadVkDeviceCoreSymbols( VK_LOAD_DEVICE_SYMBOL )
+        LoadVkDeviceExtensionSymbols( VK_LOAD_DEVICE_SYMBOL )
+        LoadVkInstanceCoreSymbols( VK_LOAD_INSTANCE_SYMBOL )
+#undef VK_LOAD_DEVICE_SYMBOL
+#undef VK_LOAD_INSTANCE_SYMBOL
+    }
+
     VkDevice m_device;
     VkQueryPool m_query;
     VkTimeDomainEXT m_timeDomain;
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+    VkSymbolTable m_symbols;
+#endif
     uint64_t m_deviation;
     int64_t m_qpcToNs;
     int64_t m_prevCalibration;
@@ -403,7 +487,7 @@ public:
         m_ctx = ctx;
 
         const auto queryId = ctx->NextQueryId();
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId );
+        CONTEXT_VK_FUNCTION_WRAPPER( vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId ) );
 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
@@ -427,7 +511,7 @@ public:
         m_ctx = ctx;
 
         const auto queryId = ctx->NextQueryId();
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId );
+        CONTEXT_VK_FUNCTION_WRAPPER( vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId ) );
 
         auto item = Profiler::QueueSerialCallstack( Callstack( depth ) );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstackSerial );
@@ -451,7 +535,7 @@ public:
         m_ctx = ctx;
 
         const auto queryId = ctx->NextQueryId();
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId );
+        CONTEXT_VK_FUNCTION_WRAPPER( vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId ) );
 
         const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
         auto item = Profiler::QueueSerial();
@@ -476,7 +560,7 @@ public:
         m_ctx = ctx;
 
         const auto queryId = ctx->NextQueryId();
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId );
+        CONTEXT_VK_FUNCTION_WRAPPER( vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, ctx->m_query, queryId ) );
 
         const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
         auto item = Profiler::QueueSerialCallstack( Callstack( depth ) );
@@ -494,7 +578,7 @@ public:
         if( !m_active ) return;
 
         const auto queryId = m_ctx->NextQueryId();
-        vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_ctx->m_query, queryId );
+        CONTEXT_VK_FUNCTION_WRAPPER( vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_ctx->m_query, queryId ) );
 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneEndSerial );
@@ -512,18 +596,34 @@ private:
     VkCtx* m_ctx;
 };
 
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+static inline VkCtx* CreateVkContext( VkInstance instance, VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetInstanceProcAddr instanceProcAddr, PFN_vkGetDeviceProcAddr getDeviceProcAddr, bool calibrated = false )
+#else
 static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT gpdctd, PFN_vkGetCalibratedTimestampsEXT gct )
+#endif
 {
     auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+    new(ctx) VkCtx( instance, physdev, device, queue, cmdbuf, instanceProcAddr, getDeviceProcAddr, calibrated );
+#else
     new(ctx) VkCtx( physdev, device, queue, cmdbuf, gpdctd, gct );
+#endif
     return ctx;
 }
 
 #if defined VK_EXT_host_query_reset
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+static inline VkCtx* CreateVkContext( VkInstance instance, VkPhysicalDevice physdev, VkDevice device, PFN_vkGetInstanceProcAddr instanceProcAddr, PFN_vkGetDeviceProcAddr getDeviceProcAddr )
+#else
 static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, PFN_vkResetQueryPoolEXT qpreset, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT gpdctd, PFN_vkGetCalibratedTimestampsEXT gct )
+#endif
 {
     auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+    new(ctx) VkCtx( instance, physdev, device, instanceProcAddr, getDeviceProcAddr );
+#else
     new(ctx) VkCtx( physdev, device, qpreset, gpdctd, gct );
+#endif
     return ctx;
 }
 #endif
@@ -538,10 +638,22 @@ static inline void DestroyVkContext( VkCtx* ctx )
 
 using TracyVkCtx = tracy::VkCtx*;
 
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+#define TracyVkContext( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr );
+#else
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, nullptr, nullptr );
+#endif
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+#define TracyVkContextCalibrated( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, queue, cmdbuf, instanceProcAddr, deviceProcAddr, true );
+#else
 #define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
+#endif
 #if defined VK_EXT_host_query_reset
+#if defined TRACY_VK_USE_SYMBOL_TABLE
+#define TracyVkContextHostCalibrated( instance, physdev, device, instanceProcAddr, deviceProcAddr ) tracy::CreateVkContext( instance, physdev, device, instanceProcAddr, deviceProcAddr );
+#else
 #define TracyVkContextHostCalibrated( physdev, device, qpreset, gpdctd, gct ) tracy::CreateVkContext( physdev, device, qpreset, gpdctd, gct );
+#endif
 #endif
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );
 #define TracyVkContextName( ctx, name, size ) ctx->Name( name, size );

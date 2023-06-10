@@ -35,6 +35,11 @@ v0.x.x (xxxx-xx-xx)
     may have taken care of some elusive bugs.
 - Added global configuration settings dialog. You can find it in the
   profiler's about menu (the wrench icon in the welcome dialog).
+- List of found zones in the Find zone menu can be filtered by user text.
+- Fixed div-by-zero in cvsexport utility when there was only one zone of
+  a kind.
+- Fixed compatibility problems with FreeBSD.
+- Added support for dynamically loaded Vulkan symbols.
 
 
 v0.9.1 (2023-02-26)

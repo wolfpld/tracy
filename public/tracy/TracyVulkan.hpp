@@ -450,6 +450,7 @@ private:
 #undef VK_LOAD_DEVICE_SYMBOL
 #undef VK_LOAD_INSTANCE_SYMBOL
     }
+#endif
 
     VkDevice m_device;
     VkQueryPool m_query;

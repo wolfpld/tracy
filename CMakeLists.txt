@@ -101,6 +101,7 @@ set(client_includes
     ${TRACY_PUBLIC_DIR}/client/TracyArmCpuTable.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyCallstack.h
     ${TRACY_PUBLIC_DIR}/client/TracyCallstack.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracyCpuid.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyDebug.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyDxt1.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyFastVector.hpp
@@ -109,6 +110,7 @@ set(client_includes
     ${TRACY_PUBLIC_DIR}/client/TracyRingBuffer.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyScoped.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyStringHelpers.hpp
+    ${TRACY_PUBLIC_DIR}/client/TracySysPower.hpp
     ${TRACY_PUBLIC_DIR}/client/TracySysTime.hpp
     ${TRACY_PUBLIC_DIR}/client/TracySysTrace.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyThread.hpp)

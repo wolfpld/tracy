@@ -55,7 +55,8 @@ namespace tracy
     Operation(vkEndCommandBuffer) \
     Operation(vkGetQueryPoolResults) \
     Operation(vkQueueSubmit) \
-    Operation(vkQueueWaitIdle)
+    Operation(vkQueueWaitIdle) \
+    Operation(vkResetQueryPool)
 
 #define LoadVkDeviceExtensionSymbols(Operation) \
     Operation(vkGetCalibratedTimestampsEXT) \
@@ -447,7 +448,9 @@ private:
         LoadVkDeviceCoreSymbols( VK_LOAD_DEVICE_SYMBOL )
         LoadVkDeviceExtensionSymbols( VK_LOAD_DEVICE_SYMBOL )
         LoadVkInstanceCoreSymbols( VK_LOAD_INSTANCE_SYMBOL )
+#undef VK_GET_DEVICE_SYMBOL
 #undef VK_LOAD_DEVICE_SYMBOL
+#undef VK_GET_INSTANCE_SYMBOL
 #undef VK_LOAD_INSTANCE_SYMBOL
     }
 #endif

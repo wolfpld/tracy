@@ -61,6 +61,7 @@ void View::DrawInfo()
         if( ImGui::InputTextWithHint( "##traceDesc", "Enter description of the trace", buf, 256 ) )
         {
             m_userData.SetDescription( buf );
+            if( m_stcb ) UpdateTitle();
         }
     }
 

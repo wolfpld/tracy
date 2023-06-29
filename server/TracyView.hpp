@@ -363,6 +363,7 @@ private:
     bool Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict );
 
     void Attention( bool& alreadyDone );
+    void UpdateTitle();
 
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;

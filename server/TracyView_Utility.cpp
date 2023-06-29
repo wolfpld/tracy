@@ -870,4 +870,30 @@ void View::Attention( bool& alreadyDone )
     }
 }
 
+void View::UpdateTitle()
+{
+    auto captureName = m_worker.GetCaptureName().c_str();
+    const auto& desc = m_userData.GetDescription();
+    if( !desc.empty() )
+    {
+        char buf[1024];
+        snprintf( buf, 1024, "%s (%s)", captureName, desc.c_str() );
+        m_stcb( buf );
+    }
+    else if( !m_filename.empty() )
+    {
+        auto fptr = m_filename.c_str() + m_filename.size() - 1;
+        while( fptr > m_filename.c_str() && *fptr != '/' && *fptr != '\\' ) fptr--;
+        if( *fptr == '/' || *fptr == '\\' ) fptr++;
+
+        char buf[1024];
+        snprintf( buf, 1024, "%s (%s)", captureName, fptr );
+        m_stcb( buf );
+    }
+    else
+    {
+        m_stcb( captureName );
+    }
+}
+
 }

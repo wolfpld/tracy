@@ -40,6 +40,7 @@ v0.x.x (xxxx-xx-xx)
   a kind.
 - Fixed compatibility problems with FreeBSD.
 - Added support for dynamically loaded Vulkan symbols.
+- Trace description or filename is now displayed on the window title bar.
 
 
 v0.9.1 (2023-02-26)

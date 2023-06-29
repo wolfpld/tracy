@@ -671,7 +671,7 @@ bool View::DrawImpl()
     if( !m_titleSet && m_stcb )
     {
         m_titleSet = true;
-        m_stcb( m_worker.GetCaptureName().c_str() );
+        UpdateTitle();
     }
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();

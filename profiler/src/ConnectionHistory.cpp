@@ -15,20 +15,25 @@ ConnectionHistory::ConnectionHistory()
     if( !f ) return;
 
     uint64_t sz;
-    fread( &sz, 1, sizeof( sz ), f );
+    if( fread( &sz, 1, sizeof( sz ), f ) != sizeof( sz ) ) goto err;
     for( uint64_t i=0; i<sz; i++ )
     {
         uint64_t ssz, cnt;
-        fread( &ssz, 1, sizeof( ssz ), f );
-        assert( ssz < 1024 );
+        if( fread( &ssz, 1, sizeof( ssz ), f ) != sizeof( ssz ) ) goto err;
+        if( ssz >= 1024 ) goto err;
         char tmp[1024];
-        fread( tmp, 1, ssz, f );
-        fread( &cnt, 1, sizeof( cnt ), f );
+        if( fread( tmp, 1, ssz, f ) != ssz ) goto err;
+        if( fread( &cnt, 1, sizeof( cnt ), f ) != sizeof( cnt ) ) goto err;
         m_connHistMap.emplace( std::string( tmp, tmp+ssz ), cnt );
     }
     fclose( f );
 
     Rebuild();
+    return;
+
+err:
+    fclose( f );
+    m_connHistMap.clear();
 }
 
 ConnectionHistory::~ConnectionHistory()

@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Tracy LANGUAGES CXX)
+# Run version helper script
+include(version.cmake)
+
+set(TRACY_VERSION_MAJOR ${major})
+set(TRACY_VERSION_MINOR ${minor})
+set(TRACY_VERSION_PATCH ${patch})
+set(TRACY_VERSION_STRING "${TRACY_VERSION_MAJOR}.${TRACY_VERSION_MINOR}.${TRACY_VERSION_PATCH}")
+
+project(Tracy LANGUAGES CXX VERSION ${TRACY_VERSION_STRING})
 
 if(${BUILD_SHARED_LIBS})
 	set(DEFAULT_STATIC OFF)
@@ -84,6 +92,8 @@ endif()
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+set_target_properties(TracyClient PROPERTIES VERSION ${PROJECT_VERSION})
+
 set(tracy_includes
     ${TRACY_PUBLIC_DIR}/tracy/TracyC.h
     ${TRACY_PUBLIC_DIR}/tracy/Tracy.hpp
@@ -146,10 +156,10 @@ install(FILES ${common_includes}
 install(EXPORT TracyConfig
         NAMESPACE Tracy::
         FILE TracyTargets.cmake
-        DESTINATION share/Tracy)
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
 include(CMakePackageConfigHelpers)
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake"
-        INSTALL_DESTINATION share/Tracy)
+        INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake
-        DESTINATION share/Tracy)
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)

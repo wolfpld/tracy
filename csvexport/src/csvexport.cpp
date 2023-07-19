@@ -270,7 +270,7 @@ int main(int argc, char** argv)
     if (args.unwrap)
     {
         columns = {
-            "name", "src_file", "src_line", "ns_since_start", "exec_time_ns"
+            "name", "src_file", "src_line", "ns_since_start", "exec_time_ns", "thread"
         };
     }
     else
@@ -301,6 +301,7 @@ int main(int argc, char** argv)
             int i = 0;
             for (const auto& zone_thread_data : zone_data.zones) {
                 const auto zone_event = zone_thread_data.Zone();
+                const auto tId = zone_thread_data.Thread();
                 const auto start = zone_event->Start();
                 const auto end = zone_event->End();
 
@@ -311,6 +312,7 @@ int main(int argc, char** argv)
                     timespan -= GetZoneChildTimeFast(worker, *zone_event);
                 }
                 values[4] = std::to_string(timespan);
+                values[5] = std::to_string(tId);
 
                 std::string row = join(values, args.separator);
                 printf("%s\n", row.data());

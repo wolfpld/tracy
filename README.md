@@ -4,7 +4,7 @@
 
 ### A real time, nanosecond resolution, remote telemetry, hybrid frame and sampling profiler for games and other applications.
 
-Tracy supports profiling CPU (Direct support is provided for C, C++, and Lua integration. At the same time, third-party bindings to many other languages exist on the internet, such as Rust, Zig, C#, OCaml, Odin, etc.), GPU (All major graphic APIs: OpenGL, Vulkan, Direct3D 11/12, OpenCL.), memory allocations, locks, context switches, automatically attribute screenshots to captured frames, and much more.
+Tracy supports profiling CPU (Direct support is provided for C, C++, and Lua integration. At the same time, third-party bindings to many other languages exist on the internet, such as [Rust](https://github.com/nagisa/rust_tracy_client), [Zig](https://github.com/nektro/zig-tracy), [C#](https://github.com/clibequilibrium/Tracy-CSharp), [OCaml](https://github.com/imandra-ai/ocaml-tracy), [Odin](https://github.com/oskarnp/odin-tracy), etc.), GPU (All major graphic APIs: OpenGL, Vulkan, Direct3D 11/12, OpenCL.), memory allocations, locks, context switches, automatically attribute screenshots to captured frames, and much more.
 
 - [Documentation](https://github.com/wolfpld/tracy/releases/latest/download/tracy.pdf) for usage and build process instructions
 - [Releases](https://github.com/wolfpld/tracy/releases) containing the documentation (`tracy.pdf`) and compiled Windows x64 binaries (`Tracy-<version>.7z`) as assets

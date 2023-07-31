@@ -1072,7 +1072,9 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     }
     closedir( dp );
 
+#ifdef TRACY_HAS_CALLSTACK
     if( selfTid == s_symbolTid ) s_symbolThreadGone.store( true, std::memory_order_release );
+#endif
 
     TracyLfqPrepare( QueueType::Crash );
     TracyLfqCommit;

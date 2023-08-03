@@ -11,9 +11,6 @@ namespace tracy
     {
     public:
         Result(BaseResultType&& result);
-#if DEBUG_TEMP
-        ~Result();
-#endif
         auto operator co_await();
     };
 
@@ -21,35 +18,11 @@ namespace tracy
     Result<BaseResultType>::Result(BaseResultType&& result)
         : BaseResultType(std::forward<BaseResultType>(result))
     {
-#if DEBUG_TEMP
-        std::osyncstream(std::cout) << "Result: constructor"
-            << ", thread id: " << std::this_thread::get_id()
-            << ", frame: " << GetProfiler().GetFrame()
-            << std::endl;
-#endif
     }
-
-#if DEBUG_TEMP
-    template <class BaseResultType>
-    Result<BaseResultType>::~Result()
-    {
-        std::osyncstream(std::cout) << "Result: destructor"
-            << ", thread id: " << std::this_thread::get_id()
-            << ", frame: " << GetProfiler().GetFrame()
-            << std::endl;
-    }
-#endif
 
     template<class BaseResultType>
     auto Result<BaseResultType>::operator co_await()
     {
-#if DEBUG_TEMP
-        std::osyncstream(std::cout) << "Result: operator co_await"
-            << ", thread id: " << std::this_thread::get_id()
-            << ", frame: " << GetProfiler().GetFrame()
-            << std::endl;
-#endif
-
         return Awaitable(BaseResultType::operator co_await());
     }
 }

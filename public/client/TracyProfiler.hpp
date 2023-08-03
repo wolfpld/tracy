@@ -237,11 +237,6 @@ public:
         return m_zoneId.fetch_add( 1, std::memory_order_relaxed );
     }
 
-    tracy_force_inline uint64_t GetFrame() const
-    {
-        return m_frameCount.load( std::memory_order_relaxed );
-    }
-
     static tracy_force_inline QueueItem* QueueSerial()
     {
         auto& p = GetProfiler();

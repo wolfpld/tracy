@@ -25,7 +25,7 @@ v0.x.x (xxxx-xx-xx)
     been heavily parallelized.
   - The impact is especially visible with traces containing large amounts
     of data. The framerate improvement in such cases can be ~30x.
-  - Consequently, the profiler GUI will now produce all-core spikes when
+  - Consequently, the profiler GUI will now produce multi-core spikes when
     rendering frames. This may have impact on the profiled application's
     performance, if both the application and the profiler GUI are running
     on the same machine. If this is a problem, you may consider the capture

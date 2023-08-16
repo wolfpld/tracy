@@ -147,7 +147,7 @@
 #  if defined(__APPLE__)
 #    include <TargetConditionals.h>
 #    if !TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
-#    include <mach/mach_vm.h>
+#    include <mach/mach.h>
 #    include <mach/vm_statistics.h>
 #    endif
 #    include <pthread.h>

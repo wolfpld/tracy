@@ -16,7 +16,7 @@ using lz4sz_t = uint32_t;
 
 enum { TargetFrameSize = 256 * 1024 };
 enum { LZ4Size = Lz4CompressBound( TargetFrameSize ) };
-static_assert( LZ4Size <= std::numeric_limits<lz4sz_t>::max(), "LZ4Size greater than lz4sz_t" );
+static_assert( LZ4Size <= (std::numeric_limits<lz4sz_t>::max)(), "LZ4Size greater than lz4sz_t" );
 static_assert( TargetFrameSize * 2 >= 64 * 1024, "Not enough space for LZ4 stream buffer" );
 
 enum { HandshakeShibbolethSize = 8 };

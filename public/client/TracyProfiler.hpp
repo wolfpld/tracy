@@ -289,7 +289,7 @@ public:
     {
 #ifndef TRACY_NO_FRAME_IMAGE
         auto& profiler = GetProfiler();
-        assert( profiler.m_frameCount.load( std::memory_order_relaxed ) < std::numeric_limits<uint32_t>::max() );
+        assert( profiler.m_frameCount.load( std::memory_order_relaxed ) < (std::numeric_limits<uint32_t>::max)() );
 #  ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #  endif
@@ -363,7 +363,7 @@ public:
 
     static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
     {
-        assert( size < std::numeric_limits<uint16_t>::max() );
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -400,7 +400,7 @@ public:
 
     static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
     {
-        assert( size < std::numeric_limits<uint16_t>::max() );
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -443,7 +443,7 @@ public:
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
     {
-        assert( size < std::numeric_limits<uint16_t>::max() );
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
         TracyLfqPrepare( QueueType::MessageAppInfo );
@@ -738,7 +738,7 @@ public:
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz )
     {
         const auto sz32 = uint32_t( 2 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
-        assert( sz32 <= std::numeric_limits<uint16_t>::max() );
+        assert( sz32 <= (std::numeric_limits<uint16_t>::max)() );
         const auto sz = uint16_t( sz32 );
         auto ptr = (char*)tracy_malloc( sz );
         memcpy( ptr, &sz, 2 );

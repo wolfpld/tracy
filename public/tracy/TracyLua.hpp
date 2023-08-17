@@ -173,10 +173,10 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     {
         const uint32_t line = dbg[i].currentline;
         memcpy( dst, &line, 4 ); dst += 4;
-        assert( fsz[i] <= std::numeric_limits<uint16_t>::max() );
+        assert( fsz[i] <= (std::numeric_limits<uint16_t>::max)() );
         memcpy( dst, fsz+i, 2 ); dst += 2;
         memcpy( dst, func[i], fsz[i] ); dst += fsz[i];
-        assert( ssz[i] <= std::numeric_limits<uint16_t>::max() );
+        assert( ssz[i] <= (std::numeric_limits<uint16_t>::max)() );
         memcpy( dst, ssz+i, 2 ); dst += 2;
         memcpy( dst, dbg[i].source, ssz[i] ), dst += ssz[i];
     }
@@ -333,7 +333,7 @@ static inline int LuaZoneText( lua_State* L )
 
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
-    assert( size < std::numeric_limits<uint16_t>::max() );
+    assert( size < (std::numeric_limits<uint16_t>::max)() );
 
     auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
@@ -358,7 +358,7 @@ static inline int LuaZoneName( lua_State* L )
 
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
-    assert( size < std::numeric_limits<uint16_t>::max() );
+    assert( size < (std::numeric_limits<uint16_t>::max)() );
 
     auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
@@ -378,7 +378,7 @@ static inline int LuaMessage( lua_State* L )
 
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
-    assert( size < std::numeric_limits<uint16_t>::max() );
+    assert( size < (std::numeric_limits<uint16_t>::max)() );
 
     auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );

@@ -64,6 +64,10 @@ if get_option('tracy_no_system_tracing')
   add_project_arguments('-DTRACY_NO_SYSTEM_TRACING', language : 'cpp')
 endif
 
+if get_option('tracy_no_extra_nopsleds')
+  add_project_arguments('-DTRACY_PATCHABLE_NOPSLEDS', language : 'cpp')
+endif
+
 if get_option('tracy_delayed_init')
   add_project_arguments('-DTRACY_DELAYED_INIT', language : 'cpp')
 endif

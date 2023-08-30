@@ -406,25 +406,29 @@ using TracyD3D11Ctx = tracy::D3D11Ctx*;
 #define TracyD3D11Destroy(ctx) tracy::DestroyD3D11Context(ctx);
 #define TracyD3D11ContextName(ctx, name, size) ctx->Name(name, size);
 
+#define TracyD3D11UnnamedZone ___tracy_gpu_d3d11_zone
+#define TracyD3D11SrcLocSymbol TracyConcat(__tracy_gpu_d3d11_source_location,TracyLine)
+#define TracyD3D11SrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyD3D11SrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color };
+
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZoneS( ctx, ___tracy_gpu_zone, name, TRACY_CALLSTACK, true )
-#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneCS( ctx, ___tracy_gpu_zone, name, color, TRACY_CALLSTACK, true )
-#  define TracyD3D11NamedZone( ctx, varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
-#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
+#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZoneS( ctx, TracyD3D11UnnamedZone, name, TRACY_CALLSTACK, true )
+#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneCS( ctx, TracyD3D11UnnamedZone, name, color, TRACY_CALLSTACK, true )
+#  define TracyD3D11NamedZone( ctx, varname, name, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, TRACY_CALLSTACK, active );
+#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) TracyD3D11SrcLocObject(name, color); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, TRACY_CALLSTACK, active );
 #  define TracyD3D11ZoneTransient(ctx, varname, name, active) TracyD3D11ZoneTransientS(ctx, varname, cmdList, name, TRACY_CALLSTACK, active)
 #else
-#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZone( ctx, ___tracy_gpu_zone, name, true )
-#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneC( ctx, ___tracy_gpu_zone, name, color, true )
-#  define TracyD3D11NamedZone( ctx, varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
-#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
+#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZone( ctx, TracyD3D11UnnamedZone, name, true )
+#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneC( ctx, TracyD3D11UnnamedZone, name, color, true )
+#  define TracyD3D11NamedZone( ctx, varname, name, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, active );
+#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) TracyD3D11SrcLocObject(name, color); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, active );
 #  define TracyD3D11ZoneTransient(ctx, varname, name, active) tracy::D3D11ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), active };
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyD3D11ZoneS( ctx, name, depth ) TracyD3D11NamedZoneS( ctx, ___tracy_gpu_zone, name, depth, true )
-#  define TracyD3D11ZoneCS( ctx, name, color, depth ) TracyD3D11NamedZoneCS( ctx, ___tracy_gpu_zone, name, color, depth, true )
-#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
-#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
+#  define TracyD3D11ZoneS( ctx, name, depth ) TracyD3D11NamedZoneS( ctx, TracyD3D11UnnamedZone, name, depth, true )
+#  define TracyD3D11ZoneCS( ctx, name, color, depth ) TracyD3D11NamedZoneCS( ctx, TracyD3D11UnnamedZone, name, color, depth, true )
+#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, depth, active );
+#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) TracyD3D11SrcLocObject(name, color); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, depth, active );
 #  define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active) tracy::D3D11ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), depth, active };
 #else
 #  define TracyD3D11ZoneS( ctx, name, depth, active ) TracyD3D11Zone( ctx, name )

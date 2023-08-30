@@ -39,6 +39,7 @@ using TracyD3D11Ctx = void*;
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
+#include "../common/TracyYield.hpp"
 
 #include <d3d11.h>
 
@@ -272,7 +273,7 @@ private:
     {
         m_immediateDevCtx->Flush();
         while (m_immediateDevCtx->GetData(query, nullptr, 0, 0) != S_OK)
-            continue;   // nothing; busy-wait... :-(
+            YieldThread();  // busy-wait :-( attempt to reduce power usage with _mm_pause() & friends...
     }
 
     tracy_force_inline uint8_t GetContextId() const

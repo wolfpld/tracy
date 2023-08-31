@@ -13,13 +13,13 @@
 #define TracyD3D11ZoneC(ctx, name, color)
 #define TracyD3D11NamedZone(ctx, varname, name, active)
 #define TracyD3D11NamedZoneC(ctx, varname, name, color, active)
-#define TracyD3D12ZoneTransient(ctx, varname, name, active)
+#define TracyD3D11ZoneTransient(ctx, varname, name, active)
 
 #define TracyD3D11ZoneS(ctx, name, depth)
 #define TracyD3D11ZoneCS(ctx, name, color, depth)
 #define TracyD3D11NamedZoneS(ctx, varname, name, depth, active)
 #define TracyD3D11NamedZoneCS(ctx, varname, name, color, depth, active)
-#define TracyD3D12ZoneTransientS(ctx, varname, name, depth, active)
+#define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active)
 
 #define TracyD3D11Collect(ctx)
 
@@ -436,7 +436,7 @@ using TracyD3D11Ctx = tracy::D3D11Ctx*;
 #  define TracyD3D11ZoneCS( ctx, name, color, depth, active ) TracyD3D11ZoneC( name, color )
 #  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) TracyD3D11NamedZone( ctx, varname, name, active )
 #  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) TracyD3D11NamedZoneC( ctx, varname, name, color, active )
-#  define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active) TracyD3D12ZoneTransient(ctx, varname, name, active)
+#  define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active) TracyD3D11ZoneTransient(ctx, varname, name, active)
 #endif
 
 #define TracyD3D11Collect( ctx ) ctx->Collect();

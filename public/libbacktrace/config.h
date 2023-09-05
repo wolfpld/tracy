@@ -1,4 +1,8 @@
 #include <limits.h>
+#if defined(__linux__) && !defined(__GLIBC__) && !defined(__WORDSIZE)
+// include __WORDSIZE headers for musl
+#  include <bits/reg.h>
+#endif
 #if __WORDSIZE == 64
 #  define BACKTRACE_ELF_SIZE 64
 #else

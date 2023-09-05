@@ -686,7 +686,9 @@ void InitCallstackCritical()
 void InitCallstack()
 {
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
+#ifndef TRACY_DEMANGLE
     ___tracy_init_demangle_buffer();
+#endif
 
 #ifdef __linux
     InitKernelSymbols();
@@ -761,7 +763,9 @@ debuginfod_client* GetDebuginfodClient()
 
 void EndCallstack()
 {
+#ifndef TRACY_DEMANGLE
     ___tracy_free_demangle_buffer();
+#endif
 #ifdef TRACY_DEBUGINFOD
     ClearDebugInfoVector( s_di_known );
     debuginfod_end( s_debuginfod );

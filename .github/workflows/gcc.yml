@@ -42,3 +42,4 @@ jobs:
         make -j`nproc` -C test TRACYFLAGS=-DTRACY_ON_DEMAND
         make -j`nproc` -C test clean
         make -j`nproc` -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"
+        make           -C test -B ../public/TracyClient.o DEFINES='-DTRACY_DEMANGLE'

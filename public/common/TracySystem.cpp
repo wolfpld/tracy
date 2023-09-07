@@ -219,12 +219,15 @@ TRACY_API const char* GetThreadName( uint32_t id )
       if( hnd != 0 )
       {
           PWSTR tmp;
-          _GetThreadDescription( hnd, &tmp );
-          auto ret = wcstombs( buf, tmp, 256 );
-          CloseHandle( hnd );
-          if( ret != static_cast<std::size_t>(-1) )
+          if ( SUCCEEDED( _GetThreadDescription( hnd, &tmp ) ) )
           {
-              return buf;
+            auto ret = wcstombs( buf, tmp, 256 );
+            CloseHandle( hnd );
+            LocalFree( tmp );
+            if( ret != static_cast<std::size_t>(-1) )
+            {
+                return buf;
+            }
           }
       }
   }

@@ -219,7 +219,7 @@ TRACY_API const char* GetThreadName( uint32_t id )
         if( hnd != 0 )
         {
             PWSTR tmp;
-            if ( SUCCEEDED( _GetThreadDescription( hnd, &tmp ) ) )
+            if( SUCCEEDED( _GetThreadDescription( hnd, &tmp ) ) )
             {
                 auto ret = wcstombs( buf, tmp, 256 );
                 CloseHandle( hnd );

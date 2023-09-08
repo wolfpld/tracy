@@ -213,21 +213,24 @@ TRACY_API const char* GetThreadName( uint32_t id )
 # else
    static auto _GetThreadDescription = (t_GetThreadDescription)GetProcAddress( GetModuleHandleA( "kernel32.dll" ), "GetThreadDescription" );
 # endif
-  if( _GetThreadDescription )
-  {
-      auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
-      if( hnd != 0 )
-      {
-          PWSTR tmp;
-          _GetThreadDescription( hnd, &tmp );
-          auto ret = wcstombs( buf, tmp, 256 );
-          CloseHandle( hnd );
-          if( ret != 0 )
-          {
-              return buf;
-          }
-      }
-  }
+    if( _GetThreadDescription )
+    {
+        auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
+        if( hnd != 0 )
+        {
+            PWSTR tmp;
+            if( SUCCEEDED( _GetThreadDescription( hnd, &tmp ) ) )
+            {
+                auto ret = wcstombs( buf, tmp, 256 );
+                CloseHandle( hnd );
+                LocalFree( tmp );
+                if( ret != static_cast<std::size_t>( -1 ) )
+                {
+                    return buf;
+                }
+            }
+        }
+    }
 #elif defined __linux__
   int cs, fd;
   char path[32];

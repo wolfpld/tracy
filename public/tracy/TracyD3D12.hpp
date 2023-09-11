@@ -59,11 +59,9 @@ namespace tracy
 
         static constexpr uint32_t MaxQueries = 64 * 1024;  // Queries are begin and end markers, so we can store half as many total time durations. Must be even!
 
-        bool m_initialized = false;
-
         ID3D12Device* m_device = nullptr;
         ID3D12CommandQueue* m_queue = nullptr;
-        uint8_t m_context;
+        uint8_t m_contextId = 255;  // TODO: apparently, 255 means "invalid id"; is this documented somewhere?
         Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_queryHeap;
         Microsoft::WRL::ComPtr<ID3D12Resource> m_readbackBuffer;
 
@@ -91,7 +89,6 @@ namespace tracy
         D3D12QueueCtx(ID3D12Device* device, ID3D12CommandQueue* queue)
             : m_device(device)
             , m_queue(queue)
-            , m_context(GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed))
         {
             // Verify we support timestamp queries on this queue.
 
@@ -166,18 +163,19 @@ namespace tracy
                 assert(false && "Failed to create payload fence.");
             }
 
+            // all checked: ready to roll
+            m_contextId = GetGpuCtxCounter().fetch_add(1);
+
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
             MemWrite(&item->gpuNewContext.cpuTime, cpuTimestamp);
             MemWrite(&item->gpuNewContext.gpuTime, gpuTimestamp);
             memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
             MemWrite(&item->gpuNewContext.period, 1E+09f / static_cast<float>(timestampFrequency));
-            MemWrite(&item->gpuNewContext.context, m_context);
+            MemWrite(&item->gpuNewContext.context, GetId());
             MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
             MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
             SubmitQueueItem(item);
-
-            m_initialized = true;
         }
 
         void NewFrame()
@@ -201,7 +199,7 @@ namespace tracy
 
             auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuContextName );
-            MemWrite( &item->gpuContextNameFat.context, m_context );
+            MemWrite( &item->gpuContextNameFat.context, GetId());
             MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
             MemWrite( &item->gpuContextNameFat.size, len );
             SubmitQueueItem(item);
@@ -255,7 +253,7 @@ namespace tracy
                     MemWrite(&item->hdr.type, QueueType::GpuTime);
                     MemWrite(&item->gpuTime.gpuTime, timestamp);
                     MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
-                    MemWrite(&item->gpuTime.context, m_context);
+                    MemWrite(&item->gpuTime.context, GetId());
 
                     Profiler::QueueSerialFinish();
                 }
@@ -288,7 +286,7 @@ namespace tracy
                 MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
                 MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
                 MemWrite(&item->gpuCalibration.cpuDelta, cpuDelta);
-                MemWrite(&item->gpuCalibration.context, m_context);
+                MemWrite(&item->gpuCalibration.context, GetId());
 
                 Profiler::QueueSerialFinish();
             }
@@ -307,7 +305,7 @@ namespace tracy
 
         tracy_force_inline uint8_t GetId() const
         {
-            return m_context;
+            return m_contextId;
         }
     };
 

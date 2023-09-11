@@ -58,8 +58,6 @@ namespace tracy
     {
         friend class D3D12ZoneScope;
 
-        static constexpr uint32_t MaxQueries = 64 * 1024;  // Queries are begin and end markers, so we can store half as many total time durations. Must be even!
-
         ID3D12Device* m_device = nullptr;
         ID3D12CommandQueue* m_queue = nullptr;
         uint8_t m_contextId = 255;  // TODO: apparently, 255 means "invalid id"; is this documented somewhere?
@@ -67,7 +65,7 @@ namespace tracy
         ID3D12Resource* m_readbackBuffer = nullptr;
 
         // In-progress payload.
-        uint32_t m_queryLimit = MaxQueries;
+        uint32_t m_queryLimit = 0;
         std::atomic<uint32_t> m_queryCounter = 0;
         uint32_t m_previousQueryCounter = 0;
 
@@ -131,6 +129,9 @@ namespace tracy
                     TracyD3D12Panic("Platform does not support profiling of copy queues.", return);
                 }
             }
+
+            static constexpr uint32_t MaxQueries = 64 * 1024;  // Must be even, because queries are (begin, end) pairs
+            m_queryLimit = MaxQueries;
 
             D3D12_QUERY_HEAP_DESC heapDesc{};
             heapDesc.Type = queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY ? D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP : D3D12_QUERY_HEAP_TYPE_TIMESTAMP;

@@ -42,6 +42,8 @@ using TracyVkCtx = void*;
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
 
+#include <atomic>
+
 namespace tracy
 {
 
@@ -243,18 +245,21 @@ public:
     {
         ZoneScopedC( Color::Red4 );
 
-        if( m_tail == m_head ) return;
+        const uint64_t head = m_head.load(std::memory_order_relaxed);
+        if( m_tail == head ) return;
 
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
             VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount ) );
-            m_head = m_tail = m_oldCnt = 0;
+            m_tail = head;
+            m_oldCnt = 0;
             int64_t tgpu;
             if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) Calibrate( m_device, m_prevCalibration, tgpu );
             return;
         }
 #endif
+        assert(head > m_tail);
 
         unsigned int cnt;
         if( m_oldCnt != 0 )
@@ -264,10 +269,13 @@ public:
         }
         else
         {
-            cnt = m_head < m_tail ? m_queryCount - m_tail : m_head - m_tail;
+            cnt = (unsigned int)(head - m_tail);
+            assert(cnt <= m_queryCount);
         }
 
-        if( VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY ) )
+
+        const unsigned int tail = (unsigned int)(m_tail % m_queryCount);
+        if( VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, tail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY ) )
         {
             m_oldCnt = cnt;
             return;
@@ -278,7 +286,7 @@ public:
             auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, m_res[idx] );
-            MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
+            MemWrite( &item->gpuTime.queryId, uint16_t( tail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
             Profiler::QueueSerialFinish();
         }
@@ -302,19 +310,16 @@ public:
             }
         }
 
-        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt ) );
+        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, tail, cnt ) );
 
         m_tail += cnt;
-        if( m_tail == m_queryCount ) m_tail = 0;
     }
 
 private:
     tracy_force_inline unsigned int NextQueryId()
     {
-        const auto id = m_head;
-        m_head = ( m_head + 1 ) % m_queryCount;
-        assert( m_head != m_tail );
-        return id;
+        const uint64_t id = m_head.fetch_add(1, std::memory_order_relaxed);
+        return id % m_queryCount;
     }
 
     tracy_force_inline uint8_t GetId() const
@@ -466,8 +471,8 @@ private:
     int64_t m_prevCalibration;
     uint8_t m_context;
 
-    unsigned int m_head;
-    unsigned int m_tail;
+    std::atomic<uint64_t> m_head;
+    uint64_t m_tail;
     unsigned int m_oldCnt;
     unsigned int m_queryCount;
 

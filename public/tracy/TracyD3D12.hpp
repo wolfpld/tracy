@@ -73,8 +73,37 @@ namespace tracy
         ID3D12Fence* m_payloadFence = nullptr;
         std::queue<D3D12QueryPayload> m_payloadQueue;
 
-        int64_t m_prevCalibration = 0;
-        int64_t m_qpcToNs = int64_t{ 1000000000 / GetFrequencyQpc() };
+        UINT64 m_prevCalibrationTicksCPU = 0;
+
+        void RecalibrateClocks()
+        {
+            UINT64 cpuTimestamp;
+            UINT64 gpuTimestamp;
+            if (FAILED(m_queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
+            {
+                assert(false && "failed to obtain queue clock calibration counters.");
+                return;
+            }
+
+            int64_t cpuDeltaTicks = cpuTimestamp - m_prevCalibrationTicksCPU;
+            if (cpuDeltaTicks > 0)
+            {
+                static const int64_t nanosecodsPerTick = int64_t(1000000000) / GetFrequencyQpc();
+                int64_t cpuDeltaNS = cpuDeltaTicks * nanosecodsPerTick;
+                // Save the device cpu timestamp, not the Tracy profiler timestamp:
+                m_prevCalibrationTicksCPU = cpuTimestamp;
+
+                cpuTimestamp = Profiler::GetTime();
+
+                auto* item = Profiler::QueueSerial();
+                MemWrite(&item->hdr.type, QueueType::GpuCalibration);
+                MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
+                MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
+                MemWrite(&item->gpuCalibration.cpuDelta, cpuDeltaNS);
+                MemWrite(&item->gpuCalibration.context, GetId());
+                SubmitQueueItem(item);
+            }
+        }
 
         tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
         {
@@ -98,26 +127,6 @@ namespace tracy
                 bool Success = SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData)));
                 assert(Success && featureData.CopyQueueTimestampQueriesSupported && "Platform does not support profiling of copy queues.");
             }
-
-            uint64_t timestampFrequency;
-
-            if (FAILED(queue->GetTimestampFrequency(&timestampFrequency)))
-            {
-                assert(false && "Failed to get timestamp frequency.");
-            }
-
-            uint64_t cpuTimestamp;
-            uint64_t gpuTimestamp;
-
-            if (FAILED(queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
-            {
-                assert(false && "Failed to get queue clock calibration.");
-            }
-
-            // Save the device cpu timestamp, not the profiler's timestamp.
-            m_prevCalibration = cpuTimestamp * m_qpcToNs;
-
-            cpuTimestamp = Profiler::GetTime();
 
             D3D12_QUERY_HEAP_DESC heapDesc{};
             heapDesc.Type = queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY ? D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP : D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
@@ -162,6 +171,33 @@ namespace tracy
                 assert(false && "Failed to create payload fence.");
             }
 
+            float period = [queue]()
+            {
+                uint64_t timestampFrequency;
+                if (FAILED(queue->GetTimestampFrequency(&timestampFrequency)))
+                {
+                    return 0.0f;
+                }
+                return static_cast<float>( 1E+09 / static_cast<double>(timestampFrequency) );
+            }();
+
+            if (period == 0.0f)
+            {
+                assert(false && "Failed to get timestamp frequency.");
+            }
+
+            uint64_t cpuTimestamp;
+            uint64_t gpuTimestamp;
+            if (FAILED(queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
+            {
+                assert(false && "Failed to get queue clock calibration.");
+            }
+
+            // Save the device cpu timestamp, not the profiler's timestamp.
+            m_prevCalibrationTicksCPU = cpuTimestamp;
+
+            cpuTimestamp = Profiler::GetTime();
+
             // all checked: ready to roll
             m_contextId = GetGpuCtxCounter().fetch_add(1);
 
@@ -169,8 +205,8 @@ namespace tracy
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
             MemWrite(&item->gpuNewContext.cpuTime, cpuTimestamp);
             MemWrite(&item->gpuNewContext.gpuTime, gpuTimestamp);
-            memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
-            MemWrite(&item->gpuNewContext.period, 1E+09f / static_cast<float>(timestampFrequency));
+            MemWrite(&item->gpuNewContext.thread, decltype(item->gpuNewContext.thread)(0)); // #TODO: why 0 instead of GetThreadHandle()?
+            MemWrite(&item->gpuNewContext.period, period);
             MemWrite(&item->gpuNewContext.context, GetId());
             MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
             MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
@@ -271,32 +307,7 @@ namespace tracy
             m_readbackBuffer->Unmap(0, nullptr);
 
             // Recalibrate to account for drift.
-
-            uint64_t cpuTimestamp;
-            uint64_t gpuTimestamp;
-
-            if (FAILED(m_queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
-            {
-                assert(false && "Failed to get queue clock calibration.");
-            }
-
-            cpuTimestamp *= m_qpcToNs;
-
-            const auto cpuDelta = cpuTimestamp - m_prevCalibration;
-            if (cpuDelta > 0)
-            {
-                m_prevCalibration = cpuTimestamp;
-                cpuTimestamp = Profiler::GetTime();
-
-                auto* item = Profiler::QueueSerial();
-                MemWrite(&item->hdr.type, QueueType::GpuCalibration);
-                MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
-                MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
-                MemWrite(&item->gpuCalibration.cpuDelta, cpuDelta);
-                MemWrite(&item->gpuCalibration.context, GetId());
-
-                Profiler::QueueSerialFinish();
-            }
+            RecalibrateClocks();
         }
 
     private:

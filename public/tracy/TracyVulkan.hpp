@@ -259,7 +259,9 @@ public:
             return;
         }
 #endif
-        assert(head > m_tail);
+        assert( head > m_tail );
+        
+        const unsigned int wrappedTail = (unsigned int)( m_tail % m_queryCount );
 
         unsigned int cnt;
         if( m_oldCnt != 0 )
@@ -269,13 +271,16 @@ public:
         }
         else
         {
-            cnt = (unsigned int)(head - m_tail);
-            assert(cnt <= m_queryCount);
+            cnt = (unsigned int)( head - m_tail );
+            assert( cnt <= m_queryCount );
+            if( wrappedTail + cnt > m_queryCount )
+            {
+                cnt = m_queryCount - wrappedTail;
+            }
         }
 
 
-        const unsigned int tail = (unsigned int)(m_tail % m_queryCount);
-        if( VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, tail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY ) )
+        if( VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, wrappedTail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY ) )
         {
             m_oldCnt = cnt;
             return;
@@ -286,7 +291,7 @@ public:
             auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, m_res[idx] );
-            MemWrite( &item->gpuTime.queryId, uint16_t( tail + idx ) );
+            MemWrite( &item->gpuTime.queryId, uint16_t( wrappedTail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
             Profiler::QueueSerialFinish();
         }
@@ -310,7 +315,7 @@ public:
             }
         }
 
-        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, tail, cnt ) );
+        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, wrappedTail, cnt ) );
 
         m_tail += cnt;
     }

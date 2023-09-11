@@ -42,6 +42,8 @@ using TracyD3D12Ctx = void*;
 #include <dxgi.h>
 #include <queue>
 
+#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); TracyMessageLC("TracyD3D12: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
+
 namespace tracy
 {
 
@@ -81,8 +83,7 @@ namespace tracy
             UINT64 gpuTimestamp;
             if (FAILED(m_queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
             {
-                assert(false && "failed to obtain queue clock calibration counters.");
-                return;
+                TracyD3D12Panic("failed to obtain queue clock calibration counters.", return);
             }
 
             int64_t cpuDeltaTicks = cpuTimestamp - m_prevCalibrationTicksCPU;
@@ -124,8 +125,11 @@ namespace tracy
             {
                 D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureData{};
 
-                bool Success = SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData)));
-                assert(Success && featureData.CopyQueueTimestampQueriesSupported && "Platform does not support profiling of copy queues.");
+                HRESULT hr = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData));
+                if (FAILED(hr) || (featureData.CopyQueueTimestampQueriesSupported == FALSE))
+                {
+                    TracyD3D12Panic("Platform does not support profiling of copy queues.", return);
+                }
             }
 
             D3D12_QUERY_HEAP_DESC heapDesc{};
@@ -163,12 +167,12 @@ namespace tracy
 
             if (FAILED(device->CreateCommittedResource(&readbackHeapProps, D3D12_HEAP_FLAG_NONE, &readbackBufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_readbackBuffer))))
             {
-                assert(false && "Failed to create query readback buffer.");
+                TracyD3D12Panic("Failed to create query readback buffer.", return);
             }
 
             if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_payloadFence))))
             {
-                assert(false && "Failed to create payload fence.");
+                TracyD3D12Panic("Failed to create payload fence.", return);
             }
 
             float period = [queue]()
@@ -183,14 +187,14 @@ namespace tracy
 
             if (period == 0.0f)
             {
-                assert(false && "Failed to get timestamp frequency.");
+                TracyD3D12Panic("Failed to get timestamp frequency.", return);
             }
 
             uint64_t cpuTimestamp;
             uint64_t gpuTimestamp;
             if (FAILED(queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
             {
-                assert(false && "Failed to get queue clock calibration.");
+                TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
 
             // Save the device cpu timestamp, not the profiler's timestamp.
@@ -282,7 +286,7 @@ namespace tracy
 
             if (FAILED(m_readbackBuffer->Map(0, &mapRange, &readbackBufferMapping)))
             {
-                assert(false && "Failed to map readback buffer.");
+                TracyD3D12Panic("Failed to map readback buffer.", return);
             }
 
             auto* timestampData = static_cast<uint64_t*>(readbackBufferMapping);
@@ -319,7 +323,11 @@ namespace tracy
         tracy_force_inline uint32_t NextQueryId()
         {
             uint32_t queryCounter = m_queryCounter.fetch_add(2);
-            assert(queryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
+            if (queryCounter >= m_queryLimit)
+            {
+                TracyD3D12Panic("Submitted too many GPU queries! Consider increasing MaxQueries.");
+                // #TODO: consider returning an invalid id or sentinel value here
+            }
 
             const uint32_t id = (m_previousQueryCounter + queryCounter) % m_queryLimit;
 
@@ -441,6 +449,8 @@ namespace tracy
     }
 
 }
+
+#undef TracyD3D12Panic
 
 using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 

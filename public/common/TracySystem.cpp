@@ -224,7 +224,7 @@ TRACY_API const char* GetThreadName( uint32_t id )
                 auto ret = wcstombs( buf, tmp, 256 );
                 CloseHandle( hnd );
                 LocalFree( tmp );
-                if( ret != static_cast<std::size_t>( -1 ) )
+                if( ret != static_cast<size_t>( -1 ) )
                 {
                     return buf;
                 }

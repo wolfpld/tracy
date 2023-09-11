@@ -215,6 +215,11 @@ namespace tracy
 
         ~D3D12QueueCtx()
         {
+            ZoneScopedC(Color::Red4);
+            // collect all pending timestamps
+            while (m_payloadFence->GetCompletedValue() != m_activePayload)
+                /* busy-wait ... */;
+            Collect();
             m_payloadFence->Release();
             m_readbackBuffer->Release();
             m_queryHeap->Release();

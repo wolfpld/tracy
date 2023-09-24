@@ -40,8 +40,9 @@ using TracyD3D12Ctx = void*;
 #include <cassert>
 #include <d3d12.h>
 #include <dxgi.h>
-#include <wrl/client.h>
 #include <queue>
+
+#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); TracyMessageLC("TracyD3D12: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
 
 namespace tracy
 {
@@ -57,33 +58,64 @@ namespace tracy
     {
         friend class D3D12ZoneScope;
 
-        static constexpr uint32_t MaxQueries = 64 * 1024;  // Queries are begin and end markers, so we can store half as many total time durations. Must be even!
-
-        bool m_initialized = false;
-
         ID3D12Device* m_device = nullptr;
         ID3D12CommandQueue* m_queue = nullptr;
-        uint8_t m_context;
-        Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_queryHeap;
-        Microsoft::WRL::ComPtr<ID3D12Resource> m_readbackBuffer;
+        uint8_t m_contextId = 255;  // TODO: apparently, 255 means "invalid id"; is this documented somewhere?
+        ID3D12QueryHeap* m_queryHeap = nullptr;
+        ID3D12Resource* m_readbackBuffer = nullptr;
 
         // In-progress payload.
-        uint32_t m_queryLimit = MaxQueries;
+        uint32_t m_queryLimit = 0;
         std::atomic<uint32_t> m_queryCounter = 0;
         uint32_t m_previousQueryCounter = 0;
 
         uint32_t m_activePayload = 0;
-        Microsoft::WRL::ComPtr<ID3D12Fence> m_payloadFence;
+        ID3D12Fence* m_payloadFence = nullptr;
         std::queue<D3D12QueryPayload> m_payloadQueue;
 
-        int64_t m_prevCalibration = 0;
-        int64_t m_qpcToNs = int64_t{ 1000000000 / GetFrequencyQpc() };
+        UINT64 m_prevCalibrationTicksCPU = 0;
+
+        void RecalibrateClocks()
+        {
+            UINT64 cpuTimestamp;
+            UINT64 gpuTimestamp;
+            if (FAILED(m_queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
+            {
+                TracyD3D12Panic("failed to obtain queue clock calibration counters.", return);
+            }
+
+            int64_t cpuDeltaTicks = cpuTimestamp - m_prevCalibrationTicksCPU;
+            if (cpuDeltaTicks > 0)
+            {
+                static const int64_t nanosecodsPerTick = int64_t(1000000000) / GetFrequencyQpc();
+                int64_t cpuDeltaNS = cpuDeltaTicks * nanosecodsPerTick;
+                // Save the device cpu timestamp, not the Tracy profiler timestamp:
+                m_prevCalibrationTicksCPU = cpuTimestamp;
+
+                cpuTimestamp = Profiler::GetTime();
+
+                auto* item = Profiler::QueueSerial();
+                MemWrite(&item->hdr.type, QueueType::GpuCalibration);
+                MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
+                MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
+                MemWrite(&item->gpuCalibration.cpuDelta, cpuDeltaNS);
+                MemWrite(&item->gpuCalibration.context, GetId());
+                SubmitQueueItem(item);
+            }
+        }
+
+        tracy_force_inline void SubmitQueueItem(tracy::QueueItem* item)
+        {
+#ifdef TRACY_ON_DEMAND
+            GetProfiler().DeferItem(*item);
+#endif
+            Profiler::QueueSerialFinish();
+        }
 
     public:
         D3D12QueueCtx(ID3D12Device* device, ID3D12CommandQueue* queue)
             : m_device(device)
             , m_queue(queue)
-            , m_context(GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed))
         {
             // Verify we support timestamp queries on this queue.
 
@@ -91,29 +123,15 @@ namespace tracy
             {
                 D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureData{};
 
-                bool Success = SUCCEEDED(device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData)));
-                assert(Success && featureData.CopyQueueTimestampQueriesSupported && "Platform does not support profiling of copy queues.");
+                HRESULT hr = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData));
+                if (FAILED(hr) || (featureData.CopyQueueTimestampQueriesSupported == FALSE))
+                {
+                    TracyD3D12Panic("Platform does not support profiling of copy queues.", return);
+                }
             }
 
-            uint64_t timestampFrequency;
-
-            if (FAILED(queue->GetTimestampFrequency(&timestampFrequency)))
-            {
-                assert(false && "Failed to get timestamp frequency.");
-            }
-
-            uint64_t cpuTimestamp;
-            uint64_t gpuTimestamp;
-
-            if (FAILED(queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
-            {
-                assert(false && "Failed to get queue clock calibration.");
-            }
-
-            // Save the device cpu timestamp, not the profiler's timestamp.
-            m_prevCalibration = cpuTimestamp * m_qpcToNs;
-
-            cpuTimestamp = Profiler::GetTime();
+            static constexpr uint32_t MaxQueries = 64 * 1024;  // Must be even, because queries are (begin, end) pairs
+            m_queryLimit = MaxQueries;
 
             D3D12_QUERY_HEAP_DESC heapDesc{};
             heapDesc.Type = queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY ? D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP : D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
@@ -150,32 +168,68 @@ namespace tracy
 
             if (FAILED(device->CreateCommittedResource(&readbackHeapProps, D3D12_HEAP_FLAG_NONE, &readbackBufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m_readbackBuffer))))
             {
-                assert(false && "Failed to create query readback buffer.");
+                TracyD3D12Panic("Failed to create query readback buffer.", return);
             }
 
             if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_payloadFence))))
             {
-                assert(false && "Failed to create payload fence.");
+                TracyD3D12Panic("Failed to create payload fence.", return);
             }
+
+            float period = [queue]()
+            {
+                uint64_t timestampFrequency;
+                if (FAILED(queue->GetTimestampFrequency(&timestampFrequency)))
+                {
+                    return 0.0f;
+                }
+                return static_cast<float>( 1E+09 / static_cast<double>(timestampFrequency) );
+            }();
+
+            if (period == 0.0f)
+            {
+                TracyD3D12Panic("Failed to get timestamp frequency.", return);
+            }
+
+            uint64_t cpuTimestamp;
+            uint64_t gpuTimestamp;
+            if (FAILED(queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
+            {
+                TracyD3D12Panic("Failed to get queue clock calibration.", return);
+            }
+
+            // Save the device cpu timestamp, not the profiler's timestamp.
+            m_prevCalibrationTicksCPU = cpuTimestamp;
+
+            cpuTimestamp = Profiler::GetTime();
+
+            // all checked: ready to roll
+            m_contextId = GetGpuCtxCounter().fetch_add(1);
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
             MemWrite(&item->gpuNewContext.cpuTime, cpuTimestamp);
             MemWrite(&item->gpuNewContext.gpuTime, gpuTimestamp);
-            memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
-            MemWrite(&item->gpuNewContext.period, 1E+09f / static_cast<float>(timestampFrequency));
-            MemWrite(&item->gpuNewContext.context, m_context);
+            MemWrite(&item->gpuNewContext.thread, decltype(item->gpuNewContext.thread)(0)); // #TODO: why 0 instead of GetThreadHandle()?
+            MemWrite(&item->gpuNewContext.period, period);
+            MemWrite(&item->gpuNewContext.context, GetId());
             MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
             MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
-
-#ifdef TRACY_ON_DEMAND
-            GetProfiler().DeferItem(*item);
-#endif
-
-            Profiler::QueueSerialFinish();
-
-            m_initialized = true;
+            SubmitQueueItem(item);
         }
+
+        ~D3D12QueueCtx()
+        {
+            ZoneScopedC(Color::Red4);
+            // collect all pending timestamps
+            while (m_payloadFence->GetCompletedValue() != m_activePayload)
+                /* busy-wait ... */;
+            Collect();
+            m_payloadFence->Release();
+            m_readbackBuffer->Release();
+            m_queryHeap->Release();
+        }
+
 
         void NewFrame()
         {
@@ -188,7 +242,7 @@ namespace tracy
                 m_previousQueryCounter -= m_queryLimit;
             }
 
-            m_queue->Signal(m_payloadFence.Get(), ++m_activePayload);
+            m_queue->Signal(m_payloadFence, ++m_activePayload);
         }
 
         void Name( const char* name, uint16_t len )
@@ -198,13 +252,10 @@ namespace tracy
 
             auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuContextName );
-            MemWrite( &item->gpuContextNameFat.context, m_context );
+            MemWrite( &item->gpuContextNameFat.context, GetId());
             MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
             MemWrite( &item->gpuContextNameFat.size, len );
-#ifdef TRACY_ON_DEMAND
-            GetProfiler().DeferItem( *item );
-#endif
-            Profiler::QueueSerialFinish();
+            SubmitQueueItem(item);
         }
 
         void Collect()
@@ -236,7 +287,7 @@ namespace tracy
 
             if (FAILED(m_readbackBuffer->Map(0, &mapRange, &readbackBufferMapping)))
             {
-                assert(false && "Failed to map readback buffer.");
+                TracyD3D12Panic("Failed to map readback buffer.", return);
             }
 
             auto* timestampData = static_cast<uint64_t*>(readbackBufferMapping);
@@ -255,7 +306,7 @@ namespace tracy
                     MemWrite(&item->hdr.type, QueueType::GpuTime);
                     MemWrite(&item->gpuTime.gpuTime, timestamp);
                     MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
-                    MemWrite(&item->gpuTime.context, m_context);
+                    MemWrite(&item->gpuTime.context, GetId());
 
                     Profiler::QueueSerialFinish();
                 }
@@ -266,39 +317,18 @@ namespace tracy
             m_readbackBuffer->Unmap(0, nullptr);
 
             // Recalibrate to account for drift.
-
-            uint64_t cpuTimestamp;
-            uint64_t gpuTimestamp;
-
-            if (FAILED(m_queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
-            {
-                assert(false && "Failed to get queue clock calibration.");
-            }
-
-            cpuTimestamp *= m_qpcToNs;
-
-            const auto cpuDelta = cpuTimestamp - m_prevCalibration;
-            if (cpuDelta > 0)
-            {
-                m_prevCalibration = cpuTimestamp;
-                cpuTimestamp = Profiler::GetTime();
-
-                auto* item = Profiler::QueueSerial();
-                MemWrite(&item->hdr.type, QueueType::GpuCalibration);
-                MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
-                MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
-                MemWrite(&item->gpuCalibration.cpuDelta, cpuDelta);
-                MemWrite(&item->gpuCalibration.context, m_context);
-
-                Profiler::QueueSerialFinish();
-            }
+            RecalibrateClocks();
         }
 
     private:
         tracy_force_inline uint32_t NextQueryId()
         {
             uint32_t queryCounter = m_queryCounter.fetch_add(2);
-            assert(queryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
+            if (queryCounter >= m_queryLimit)
+            {
+                TracyD3D12Panic("Submitted too many GPU queries! Consider increasing MaxQueries.");
+                // #TODO: consider returning an invalid id or sentinel value here
+            }
 
             const uint32_t id = (m_previousQueryCounter + queryCounter) % m_queryLimit;
 
@@ -307,7 +337,7 @@ namespace tracy
 
         tracy_force_inline uint8_t GetId() const
         {
-            return m_context;
+            return m_contextId;
         }
     };
 
@@ -318,10 +348,20 @@ namespace tracy
         ID3D12GraphicsCommandList* m_cmdList = nullptr;
         uint32_t m_queryId = 0;  // Used for tracking in nested zones.
 
-    public:
-        tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, bool active)
+        tracy_force_inline void WriteQueueItem(QueueItem* item, QueueType type, uint64_t srcLocation)
+        {
+            MemWrite(&item->hdr.type, type);
+            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
+            MemWrite(&item->gpuZoneBegin.srcloc, srcLocation);
+            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
+            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
+            MemWrite(&item->gpuZoneBegin.context, m_ctx->GetId());
+            Profiler::QueueSerialFinish();
+        }
+
+        tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, bool active)
 #ifdef TRACY_ON_DEMAND
-            : m_active(active && GetProfiler().IsConnected())
+            : m_active(active&& GetProfiler().IsConnected())
 #else
             : m_active(active)
 #endif
@@ -331,100 +371,49 @@ namespace tracy
             m_ctx = ctx;
             m_cmdList = cmdList;
 
-            m_queryId = ctx->NextQueryId();
-            cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
+            m_queryId = m_ctx->NextQueryId();
+            m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
+        }
+
+    public:
+        tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, bool active)
+            : D3D12ZoneScope(ctx, cmdList, active)
+        {
+            if (!m_active) return;
 
             auto* item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuZoneBeginSerial);
-            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneBegin.srcloc, reinterpret_cast<uint64_t>(srcLocation));
-            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
-            MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
-
-            Profiler::QueueSerialFinish();
+            WriteQueueItem(item, QueueType::GpuZoneBeginSerial, reinterpret_cast<uint64_t>(srcLocation));
         }
 
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, int depth, bool active)
-#ifdef TRACY_ON_DEMAND
-            : m_active(active&& GetProfiler().IsConnected())
-#else
-            : m_active(active)
-#endif
+            : D3D12ZoneScope(ctx, cmdList, active)
         {
             if (!m_active) return;
 
-            m_ctx = ctx;
-            m_cmdList = cmdList;
-
-            m_queryId = ctx->NextQueryId();
-            cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
-
             auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-            MemWrite(&item->hdr.type, QueueType::GpuZoneBeginCallstackSerial);
-            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneBegin.srcloc, reinterpret_cast<uint64_t>(srcLocation));
-            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
-            MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
-
-            Profiler::QueueSerialFinish();
+            WriteQueueItem(item, QueueType::GpuZoneBeginCallstackSerial, reinterpret_cast<uint64_t>(srcLocation));
         }
 
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, ID3D12GraphicsCommandList* cmdList, bool active)
-#ifdef TRACY_ON_DEMAND
-            : m_active(active&& GetProfiler().IsConnected())
-#else
-            : m_active(active)
-#endif
+            : D3D12ZoneScope(ctx, cmdList, active)
         {
             if (!m_active) return;
-
-            m_ctx = ctx;
-            m_cmdList = cmdList;
-
-            m_queryId = ctx->NextQueryId();
-            cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
 
             const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
 
             auto* item = Profiler::QueueSerial();
-            MemWrite(&item->hdr.type, QueueType::GpuZoneBeginAllocSrcLocSerial);
-            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneBegin.srcloc, sourceLocation);
-            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
-            MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
-
-            Profiler::QueueSerialFinish();
+            WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocSerial, sourceLocation);
         }
 
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, ID3D12GraphicsCommandList* cmdList, int depth, bool active)
-#ifdef TRACY_ON_DEMAND
-            : m_active(active&& GetProfiler().IsConnected())
-#else
-            : m_active(active)
-#endif
+            : D3D12ZoneScope(ctx, cmdList, active)
         {
             if (!m_active) return;
-
-            m_ctx = ctx;
-            m_cmdList = cmdList;
-
-            m_queryId = ctx->NextQueryId();
-            cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
 
             const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
 
             auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-            MemWrite(&item->hdr.type, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial);
-            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneBegin.srcloc, sourceLocation);
-            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
-            MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
-
-            Profiler::QueueSerialFinish();
+            WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial, sourceLocation);
         }
 
         tracy_force_inline ~D3D12ZoneScope()
@@ -432,7 +421,7 @@ namespace tracy
             if (!m_active) return;
 
             const auto queryId = m_queryId + 1;  // Our end query slot is immediately after the begin slot.
-            m_cmdList->EndQuery(m_ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, queryId);
+            m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
@@ -440,10 +429,9 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.thread, GetThreadHandle());
             MemWrite(&item->gpuZoneEnd.queryId, static_cast<uint16_t>(queryId));
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
-
             Profiler::QueueSerialFinish();
 
-            m_cmdList->ResolveQueryData(m_ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId, 2, m_ctx->m_readbackBuffer.Get(), m_queryId * sizeof(uint64_t));
+            m_cmdList->ResolveQueryData(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId, 2, m_ctx->m_readbackBuffer, m_queryId * sizeof(uint64_t));
         }
     };
 
@@ -463,6 +451,8 @@ namespace tracy
 
 }
 
+#undef TracyD3D12Panic
+
 using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 
 #define TracyD3D12Context(device, queue) tracy::CreateD3D12Context(device, queue);
@@ -471,25 +461,29 @@ using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 
 #define TracyD3D12NewFrame(ctx) ctx->NewFrame();
 
+#define TracyD3D12UnnamedZone ___tracy_gpu_d3d12_zone
+#define TracyD3D12SrcLocSymbol TracyConcat(__tracy_d3d12_source_location,TracyLine)
+#define TracyD3D12SrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyD3D12SrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color };
+
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZoneS(ctx, ___tracy_gpu_zone, cmdList, name, TRACY_CALLSTACK, true)
-#  define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneCS(ctx, ___tracy_gpu_zone, cmdList, name, color, TRACY_CALLSTACK, true)
-#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), TRACY_CALLSTACK, active };
-#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), TRACY_CALLSTACK, active };
+#  define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZoneS(ctx, TracyD3D12UnnamedZone, cmdList, name, TRACY_CALLSTACK, true)
+#  define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneCS(ctx, TracyD3D12UnnamedZone, cmdList, name, color, TRACY_CALLSTACK, true)
+#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) TracyD3D12SrcLocObject(name, 0); tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyD3D12SrcLocSymbol, TRACY_CALLSTACK, active };
+#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) TracyD3D12SrcLocObject(name, color); tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyD3D12SrcLocSymbol, TRACY_CALLSTACK, active };
 #  define TracyD3D12ZoneTransient(ctx, varname, cmdList, name, active) TracyD3D12ZoneTransientS(ctx, varname, cmdList, name, TRACY_CALLSTACK, active)
 #else
-#  define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZone(ctx, ___tracy_gpu_zone, cmdList, name, true)
-#  define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneC(ctx, ___tracy_gpu_zone, cmdList, name, color, true)
-#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), active };
-#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), active };
+#  define TracyD3D12Zone(ctx, cmdList, name) TracyD3D12NamedZone(ctx, TracyD3D12UnnamedZone, cmdList, name, true)
+#  define TracyD3D12ZoneC(ctx, cmdList, name, color) TracyD3D12NamedZoneC(ctx, TracyD3D12UnnamedZone, cmdList, name, color, true)
+#  define TracyD3D12NamedZone(ctx, varname, cmdList, name, active) TracyD3D12SrcLocObject(name, 0); tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyD3D12SrcLocSymbol, active };
+#  define TracyD3D12NamedZoneC(ctx, varname, cmdList, name, color, active) TracyD3D12SrcLocObject(name, color); tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyD3D12SrcLocSymbol, active };
 #  define TracyD3D12ZoneTransient(ctx, varname, cmdList, name, active) tracy::D3D12ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), cmdList, active };
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyD3D12ZoneS(ctx, cmdList, name, depth) TracyD3D12NamedZoneS(ctx, ___tracy_gpu_zone, cmdList, name, depth, true)
-#  define TracyD3D12ZoneCS(ctx, cmdList, name, color, depth) TracyD3D12NamedZoneCS(ctx, ___tracy_gpu_zone, cmdList, name, color, depth, true)
-#  define TracyD3D12NamedZoneS(ctx, varname, cmdList, name, depth, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), depth, active };
-#  define TracyD3D12NamedZoneCS(ctx, varname, cmdList, name, color, depth, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location, TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyConcat(__tracy_gpu_source_location, TracyLine), depth, active };
+#  define TracyD3D12ZoneS(ctx, cmdList, name, depth) TracyD3D12NamedZoneS(ctx, TracyD3D12UnnamedZone, cmdList, name, depth, true)
+#  define TracyD3D12ZoneCS(ctx, cmdList, name, color, depth) TracyD3D12NamedZoneCS(ctx, TracyD3D12UnnamedZone, cmdList, name, color, depth, true)
+#  define TracyD3D12NamedZoneS(ctx, varname, cmdList, name, depth, active) TracyD3D12SrcLocObject(name, 0); tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyD3D12SrcLocSymbol, depth, active };
+#  define TracyD3D12NamedZoneCS(ctx, varname, cmdList, name, color, depth, active) TracyD3D12SrcLocObject(name, color); tracy::D3D12ZoneScope varname{ ctx, cmdList, &TracyD3D12SrcLocSymbol, depth, active };
 #  define TracyD3D12ZoneTransientS(ctx, varname, cmdList, name, depth, active) tracy::D3D12ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), cmdList, depth, active };
 #else
 #  define TracyD3D12ZoneS(ctx, cmdList, name, depth) TracyD3D12Zone(ctx, cmdList, name)

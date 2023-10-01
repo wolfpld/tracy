@@ -16,6 +16,10 @@
 #  define TracyLine __LINE__
 #endif
 
+#ifndef TracyConstExpr
+#  define TracyConstExpr constexpr
+#endif
+
 #ifndef TRACY_ENABLE
 
 #define ZoneNamed(x,y)
@@ -123,18 +127,18 @@
 #include "../client/TracyScoped.hpp"
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define ZoneNamed( varname, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
-#  define ZoneNamedN( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
-#  define ZoneNamedC( varname, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
-#  define ZoneNamedNC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
+#  define ZoneNamed( varname, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
+#  define ZoneNamedN( varname, name, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
+#  define ZoneNamedC( varname, color, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
+#  define ZoneNamedNC( varname, name, color, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
 
 #  define ZoneTransient( varname, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), nullptr, 0, TRACY_CALLSTACK, active )
 #  define ZoneTransientN( varname, name, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), TRACY_CALLSTACK, active )
 #else
-#  define ZoneNamed( varname, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
-#  define ZoneNamedN( varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
-#  define ZoneNamedC( varname, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
-#  define ZoneNamedNC( varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
+#  define ZoneNamed( varname, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
+#  define ZoneNamedN( varname, name, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
+#  define ZoneNamedC( varname, color, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
+#  define ZoneNamedNC( varname, name, color, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), active )
 
 #  define ZoneTransient( varname, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), nullptr, 0, active )
 #  define ZoneTransientN( varname, name, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), active )
@@ -163,13 +167,13 @@
 
 #define FrameImage( image, width, height, offset, flip ) tracy::Profiler::SendFrameImage( image, width, height, offset, flip )
 
-#define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static constexpr tracy::SourceLocationData srcloc { nullptr, #type " " #varname, TracyFile, TracyLine, 0 }; return &srcloc; }() }
-#define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static constexpr tracy::SourceLocationData srcloc { nullptr, desc, TracyFile, TracyLine, 0 }; return &srcloc; }() }
-#define TracySharedLockable( type, varname ) tracy::SharedLockable<type> varname { [] () -> const tracy::SourceLocationData* { static constexpr tracy::SourceLocationData srcloc { nullptr, #type " " #varname, TracyFile, TracyLine, 0 }; return &srcloc; }() }
-#define TracySharedLockableN( type, varname, desc ) tracy::SharedLockable<type> varname { [] () -> const tracy::SourceLocationData* { static constexpr tracy::SourceLocationData srcloc { nullptr, desc, TracyFile, TracyLine, 0 }; return &srcloc; }() }
+#define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static TracyConstExpr tracy::SourceLocationData srcloc { nullptr, #type " " #varname, TracyFile, TracyLine, 0 }; return &srcloc; }() }
+#define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static TracyConstExpr tracy::SourceLocationData srcloc { nullptr, desc, TracyFile, TracyLine, 0 }; return &srcloc; }() }
+#define TracySharedLockable( type, varname ) tracy::SharedLockable<type> varname { [] () -> const tracy::SourceLocationData* { static TracyConstExpr tracy::SourceLocationData srcloc { nullptr, #type " " #varname, TracyFile, TracyLine, 0 }; return &srcloc; }() }
+#define TracySharedLockableN( type, varname, desc ) tracy::SharedLockable<type> varname { [] () -> const tracy::SourceLocationData* { static TracyConstExpr tracy::SourceLocationData srcloc { nullptr, desc, TracyFile, TracyLine, 0 }; return &srcloc; }() }
 #define LockableBase( type ) tracy::Lockable<type>
 #define SharedLockableBase( type ) tracy::SharedLockable<type>
-#define LockMark( varname ) static constexpr tracy::SourceLocationData __tracy_lock_location_##varname { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; varname.Mark( &__tracy_lock_location_##varname )
+#define LockMark( varname ) static TracyConstExpr tracy::SourceLocationData __tracy_lock_location_##varname { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; varname.Mark( &__tracy_lock_location_##varname )
 #define LockableName( varname, txt, size ) varname.CustomName( txt, size )
 
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val )
@@ -210,10 +214,10 @@
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define ZoneNamedS( varname, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
-#  define ZoneNamedNS( varname, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
-#  define ZoneNamedCS( varname, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
-#  define ZoneNamedNCS( varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
+#  define ZoneNamedS( varname, depth, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
+#  define ZoneNamedNS( varname, name, depth, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
+#  define ZoneNamedCS( varname, color, depth, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
+#  define ZoneNamedNCS( varname, name, color, depth, active ) static TracyConstExpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )
 
 #  define ZoneTransientS( varname, depth, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), nullptr, 0, depth, active )
 #  define ZoneTransientNS( varname, name, depth, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), depth, active )

@@ -606,7 +606,7 @@ void SourceView::OpenSource( const char* fileName, int line, const View& view, c
     assert( !m_source.empty() );
 }
 
-void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view )
+void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view, bool updateHistory )
 {
     m_targetLine = line;
     m_targetAddr = symAddr;
@@ -623,6 +623,19 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     SelectViewMode();
 
     if( !worker.GetInlineSymbolList( baseAddr, m_codeLen ) ) m_calcInlineStats = false;
+
+    if( updateHistory )
+    {
+        m_history.erase( m_history.begin() + m_historyCursor, m_history.end() );
+
+        History entry = { fileName, line, baseAddr, symAddr };
+        if( m_history.empty() || memcmp( &m_history.back(), &entry, sizeof( History ) ) != 0 )
+        {
+            m_history.emplace_back( entry );
+            if( m_history.size() > 100 ) m_history.erase( m_history.begin() );
+            m_historyCursor = m_history.size();
+        }
+    }
 }
 
 void SourceView::SelectViewMode()

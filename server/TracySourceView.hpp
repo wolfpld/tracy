@@ -153,6 +153,14 @@ private:
         unordered_flat_map<uint64_t, AddrStat> hwCountSrc, hwCountAsm;
     };
 
+    struct History
+    {
+        const char* fileName;
+        int64_t line;
+        uint64_t baseAddr;
+        uint64_t symAddr;
+    };
+
 public:
     SourceView();
 
@@ -160,7 +168,7 @@ public:
     void SetCpuId( uint32_t cpuid );
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
-    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view );
+    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, Worker& worker, const View& view, bool updateHistory = true );
     void Render( Worker& worker, View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
@@ -287,6 +295,9 @@ private:
         size_t sel;
         std::vector<uint64_t> target;
     } m_asmTarget;
+
+    std::vector<History> m_history;
+    size_t m_historyCursor = 0;
 };
 
 }

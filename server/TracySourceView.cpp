@@ -1146,6 +1146,22 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     auto sym = worker.GetSymbolData( m_symAddr );
     assert( sym );
     ImGui::PushFont( m_bigFont );
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    if( ButtonDisablable( " " ICON_FA_CARET_LEFT " ", m_historyCursor <= 1 ) )
+    {
+        m_historyCursor--;
+        const auto& entry = m_history[m_historyCursor-1];
+        OpenSymbol( entry.fileName, entry.line, entry.baseAddr, entry.symAddr, worker, view, false );
+    }
+    ImGui::SameLine( 0, 0 );
+    if( ButtonDisablable( " " ICON_FA_CARET_RIGHT " ", m_historyCursor == m_history.size() ) )
+    {
+        m_historyCursor++;
+        const auto& entry = m_history[m_historyCursor-1];
+        OpenSymbol( entry.fileName, entry.line, entry.baseAddr, entry.symAddr, worker, view, false );
+    }
+    ImGui::PopStyleVar();
+    ImGui::SameLine();
     if( sym->isInline )
     {
         auto parent = worker.GetSymbolData( m_baseAddr );

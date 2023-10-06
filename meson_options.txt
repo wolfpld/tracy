@@ -14,6 +14,7 @@ option('tracy_no_verify', type : 'boolean', value : false, description : 'Disabl
 option('tracy_no_vsync_capture', type : 'boolean', value : false, description : 'Disable capture of hardware Vsync events')
 option('tracy_no_frame_image', type : 'boolean', value : false, description : 'Disable the frame image support and its thread')
 option('tracy_no_system_tracing', type : 'boolean', value : false, description : 'Disable systrace sampling')
+option('tracy_patchable_nopsleds', type : 'boolean', value : false, description : 'Enable nopsleds for efficient patching by system-level tools (e.g. rr)')
 option('tracy_timer_fallback', type : 'boolean', value : false, description : 'Use lower resolution timers')
 option('tracy_delayed_init', type : 'boolean', value : false, description : 'Enable delayed initialization of the library (init on first call)')
 option('tracy_manual_lifetime', type : 'boolean', value : false, description : 'Enable the manual lifetime management of the profile')

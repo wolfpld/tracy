@@ -13,13 +13,13 @@
 #define TracyD3D11ZoneC(ctx, name, color)
 #define TracyD3D11NamedZone(ctx, varname, name, active)
 #define TracyD3D11NamedZoneC(ctx, varname, name, color, active)
-#define TracyD3D12ZoneTransient(ctx, varname, name, active)
+#define TracyD3D11ZoneTransient(ctx, varname, name, active)
 
 #define TracyD3D11ZoneS(ctx, name, depth)
 #define TracyD3D11ZoneCS(ctx, name, color, depth)
 #define TracyD3D11NamedZoneS(ctx, varname, name, depth, active)
 #define TracyD3D11NamedZoneCS(ctx, varname, name, color, depth, active)
-#define TracyD3D12ZoneTransientS(ctx, varname, name, depth, active)
+#define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active)
 
 #define TracyD3D11Collect(ctx)
 
@@ -39,10 +39,11 @@ using TracyD3D11Ctx = void*;
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
-#include "../common/TracyAlign.hpp"
-#include "../common/TracyAlloc.hpp"
+#include "../common/TracyYield.hpp"
 
 #include <d3d11.h>
+
+#define TracyD3D11Panic(msg, ...) do { assert(false && "TracyD3D11: " msg); TracyMessageLC("TracyD3D11: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
 
 namespace tracy
 {
@@ -51,71 +52,83 @@ class D3D11Ctx
 {
     friend class D3D11ZoneScope;
 
-    enum { QueryCount = 64 * 1024 };
+    static constexpr uint32_t MaxQueries = 64 * 1024;
+
+    enum CollectMode { POLL, BLOCK };
 
 public:
     D3D11Ctx( ID3D11Device* device, ID3D11DeviceContext* devicectx )
-        : m_device( device )
-        , m_devicectx( devicectx )
-        , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
-        , m_head( 0 )
-        , m_tail( 0 )
     {
-        assert( m_context != 255 );
+        // TODO: consider calling ID3D11Device::GetImmediateContext() instead of passing it as an argument
+        m_device = device;
+        device->AddRef();
+        m_immediateDevCtx = devicectx;
+        devicectx->AddRef();
 
-        for (int i = 0; i < QueryCount; i++)
         {
-            HRESULT hr = S_OK;
-            D3D11_QUERY_DESC desc;
-            desc.MiscFlags = 0;
-
-            desc.Query = D3D11_QUERY_TIMESTAMP;
-            hr |= device->CreateQuery(&desc, &m_queries[i]);
-
+            D3D11_QUERY_DESC desc = { };
             desc.Query = D3D11_QUERY_TIMESTAMP_DISJOINT;
-            hr |= device->CreateQuery(&desc, &m_disjoints[i]);
-
-            m_disjointMap[i] = nullptr;
-
-            assert(SUCCEEDED(hr));
+            if (FAILED(m_device->CreateQuery(&desc, &m_disjointQuery)))
+            {
+                TracyD3D11Panic("unable to create disjoint timestamp query.", return);
+            }
         }
 
-        // Force query the initial GPU timestamp (pipeline stall)
-        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint;
-        UINT64 timestamp;
+        for (ID3D11Query*& query : m_queries)
+        {
+            D3D11_QUERY_DESC desc = { };
+            desc.Query = D3D11_QUERY_TIMESTAMP;
+            if (FAILED(m_device->CreateQuery(&desc, &query)))
+            {
+                TracyD3D11Panic("unable to create timestamp query.", return);
+            }
+        }
+
+        // Calibrate CPU and GPU timestamps
+        int64_t tcpu = 0;
+        int64_t tgpu = 0;
         for (int attempts = 0; attempts < 50; attempts++)
         {
-            devicectx->Begin(m_disjoints[0]);
-            devicectx->End(m_queries[0]);
-            devicectx->End(m_disjoints[0]);
-            devicectx->Flush();
+            m_immediateDevCtx->Begin(m_disjointQuery);
+            m_immediateDevCtx->End(m_queries[0]);
+            m_immediateDevCtx->End(m_disjointQuery);
 
-            while (devicectx->GetData(m_disjoints[0], &disjoint, sizeof(disjoint), 0) == S_FALSE)
-                /* Nothing */;
+            int64_t tcpu0 = Profiler::GetTime();
+            WaitForQuery(m_disjointQuery);
+            int64_t tcpu1 = Profiler::GetTime();
+
+            D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint = { };
+            if (m_immediateDevCtx->GetData(m_disjointQuery, &disjoint, sizeof(disjoint), 0) != S_OK)
+            {
+                TracyMessageLC("TracyD3D11: unable to query GPU timestamp; retrying...", tracy::Color::Tomato);
+                continue;
+            }
 
             if (disjoint.Disjoint)
                 continue;
 
-            while (devicectx->GetData(m_queries[0], &timestamp, sizeof(timestamp), 0) == S_FALSE)
-                /* Nothing */;
+            UINT64 timestamp = 0;
+            if (m_immediateDevCtx->GetData(m_queries[0], &timestamp, sizeof(timestamp), 0) != S_OK)
+                continue;   // this should never happen, since the enclosing disjoint query succeeded
 
+            tcpu = tcpu0 + (tcpu1 - tcpu0) * 1 / 2;
+            tgpu = timestamp * (1000000000 / disjoint.Frequency);
             break;
         }
 
-        int64_t tgpu = timestamp * (1000000000ull / disjoint.Frequency);
-        int64_t tcpu = Profiler::GetTime();
+        // ready to roll
+        m_contextId = GetGpuCtxCounter().fetch_add(1);
+        m_immediateDevCtx->Begin(m_disjointQuery);
+        m_previousCheckpoint = m_nextCheckpoint = 0;
 
-        uint8_t flags = 0;
-
-        const float period = 1.f;
         auto* item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
-        memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
-        MemWrite( &item->gpuNewContext.period, period );
-        MemWrite( &item->gpuNewContext.context, m_context );
-        MemWrite( &item->gpuNewContext.flags, flags );
+        MemWrite( &item->gpuNewContext.thread, uint32_t(0) );   // #TODO: why not GetThreadHandle()?
+        MemWrite( &item->gpuNewContext.period, 1.0f );
+        MemWrite( &item->gpuNewContext.context, m_contextId);
+        MemWrite( &item->gpuNewContext.flags, uint8_t(0) );
         MemWrite( &item->gpuNewContext.type, GpuContextType::Direct3D11 );
 
 #ifdef TRACY_ON_DEMAND
@@ -127,12 +140,20 @@ public:
 
     ~D3D11Ctx()
     {
-        for (int i = 0; i < QueryCount; i++)
+        // collect all pending timestamps before destroying everything
+        do
         {
-            m_queries[i]->Release();
-            m_disjoints[i]->Release();
-            m_disjointMap[i] = nullptr;
+            Collect(BLOCK);
+        } while (m_previousCheckpoint != m_queryCounter);
+
+        for (ID3D11Query* query : m_queries)
+        {
+            query->Release();
         }
+        m_immediateDevCtx->End(m_disjointQuery);
+        m_disjointQuery->Release();
+        m_immediateDevCtx->Release();
+        m_device->Release();
     }
 
     void Name( const char* name, uint16_t len )
@@ -142,7 +163,7 @@ public:
 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuContextName );
-        MemWrite( &item->gpuContextNameFat.context, m_context );
+        MemWrite( &item->gpuContextNameFat.context, m_contextId );
         MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
         MemWrite( &item->gpuContextNameFat.size, len );
 #ifdef TRACY_ON_DEMAND
@@ -151,217 +172,170 @@ public:
         Profiler::QueueSerialFinish();
     }
 
-    void Collect()
+    void Collect(CollectMode mode = POLL)
     {
         ZoneScopedC( Color::Red4 );
-
-        if( m_tail == m_head ) return;
 
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
-            m_head = m_tail = 0;
+            m_previousCheckpoint = m_nextCheckpoint = m_queryCounter;
             return;
         }
 #endif
 
-        auto start = m_tail;
-        auto end = m_head + QueryCount;
-        auto cnt = (end - start) % QueryCount;
-        while (cnt > 1)
+        if (m_previousCheckpoint == m_nextCheckpoint)
         {
-            auto mid = start + cnt / 2;
-
-            bool available =
-                m_devicectx->GetData(m_disjointMap[mid % QueryCount], nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_OK &&
-                m_devicectx->GetData(m_queries[mid % QueryCount], nullptr, 0, D3D11_ASYNC_GETDATA_DONOTFLUSH) == S_OK;
-
-            if (available)
+            uintptr_t nextCheckpoint = m_queryCounter;
+            if (nextCheckpoint == m_nextCheckpoint)
             {
-                start = mid;
+                return;
             }
-            else
-            {
-                end = mid;
-            }
-            cnt = (end - start) % QueryCount;
+            m_nextCheckpoint = nextCheckpoint;
+            m_immediateDevCtx->End(m_disjointQuery);
         }
 
-        start %= QueryCount;
-
-        while (m_tail != start)
+        if (mode == CollectMode::BLOCK)
         {
-            D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint;
-            UINT64 time;
+            WaitForQuery(m_disjointQuery);
+        }
 
-            m_devicectx->GetData(m_disjointMap[m_tail], &disjoint, sizeof(disjoint), 0);
-            m_devicectx->GetData(m_queries[m_tail], &time, sizeof(time), 0);
+        D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint = { };
+        if (m_immediateDevCtx->GetData(m_disjointQuery, &disjoint, sizeof(disjoint), D3D11_ASYNC_GETDATA_DONOTFLUSH) != S_OK)
+        {
+            return;
+        }
 
-            time *= (1000000000ull / disjoint.Frequency);
+        if (disjoint.Disjoint == TRUE)
+        {
+            m_previousCheckpoint = m_nextCheckpoint;
+            TracyD3D11Panic("disjoint timestamps detected; dropping.");
+            return;
+        }
 
+        auto begin = m_previousCheckpoint;
+        auto end = m_nextCheckpoint;
+        for (auto i = begin; i != end; ++i)
+        {
+            uint32_t k = RingIndex(i);
+            UINT64 timestamp = 0;
+            if (m_immediateDevCtx->GetData(m_queries[k], &timestamp, sizeof(timestamp), 0) != S_OK)
+            {
+                TracyD3D11Panic("timestamp expected to be ready, but it was not!");
+                break;
+            }
+            timestamp *= (1000000000ull / disjoint.Frequency);
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, (int64_t)time);
-            MemWrite(&item->gpuTime.queryId, (uint16_t)m_tail);
-            MemWrite(&item->gpuTime.context, m_context);
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(timestamp));
+            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k));
+            MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
-
-            m_tail = (m_tail + 1) % QueryCount;
         }
+
+        // disjoint timestamp queries should only be invoked once per frame or less
+        // https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_query
+        m_immediateDevCtx->Begin(m_disjointQuery);
+        m_previousCheckpoint = m_nextCheckpoint;
     }
 
 private:
-    tracy_force_inline unsigned int NextQueryId()
+    tracy_force_inline uint32_t RingIndex(uintptr_t index)
     {
-        const auto id = m_head;
-        m_head = ( m_head + 1 ) % QueryCount;
-        assert( m_head != m_tail );
-        return id;
+        index %= MaxQueries;
+        return static_cast<uint32_t>(index);
     }
 
-    tracy_force_inline ID3D11Query* TranslateQueryId( unsigned int id )
+    tracy_force_inline uint32_t RingCount(uintptr_t begin, uintptr_t end)
+    {
+        // wrap-around safe: all unsigned
+        uintptr_t count = end - begin;
+        return static_cast<uint32_t>(count);
+    }
+
+    tracy_force_inline uint32_t NextQueryId()
+    {
+        auto id = m_queryCounter++;
+        if (RingCount(m_previousCheckpoint, id) >= MaxQueries)
+        {
+            TracyD3D11Panic("too many pending timestamp queries.");
+            // #TODO: return some sentinel value; ideally a "hidden" query index
+        }
+        return RingIndex(id);
+    }
+
+    tracy_force_inline ID3D11Query* GetQueryObjectFromId(uint32_t id)
     {
         return m_queries[id];
     }
 
-    tracy_force_inline ID3D11Query* MapDisjointQueryId( unsigned int id, unsigned int disjointId )
+    tracy_force_inline void WaitForQuery(ID3D11Query* query)
     {
-        m_disjointMap[id] = m_disjoints[disjointId];
-        return m_disjoints[disjointId];
+        m_immediateDevCtx->Flush();
+        while (m_immediateDevCtx->GetData(query, nullptr, 0, 0) != S_OK)
+            YieldThread();  // busy-wait :-( attempt to reduce power usage with _mm_pause() & friends...
     }
 
-    tracy_force_inline uint8_t GetId() const
+    tracy_force_inline uint8_t GetContextId() const
     {
-        return m_context;
+        return m_contextId;
     }
 
-    ID3D11Device* m_device;
-    ID3D11DeviceContext* m_devicectx;
+    ID3D11Device* m_device = nullptr;
+    ID3D11DeviceContext* m_immediateDevCtx = nullptr;
 
-    ID3D11Query* m_queries[QueryCount];
-    ID3D11Query* m_disjoints[QueryCount];
-    ID3D11Query* m_disjointMap[QueryCount]; // Multiple time queries can have one disjoint query
-    uint8_t m_context;
+    ID3D11Query* m_queries[MaxQueries];
+    ID3D11Query* m_disjointQuery = nullptr;
 
-    unsigned int m_head;
-    unsigned int m_tail;
+    uint8_t m_contextId = 255;  // NOTE: apparently, 255 means invalid id; is this documented anywhere?
+
+    uintptr_t m_queryCounter = 0;
+
+    uintptr_t m_previousCheckpoint = 0;
+    uintptr_t m_nextCheckpoint = 0;
 };
 
 class D3D11ZoneScope
 {
 public:
-    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, const SourceLocationData* srcloc, bool is_active )
-#ifdef TRACY_ON_DEMAND
-        : m_active( is_active && GetProfiler().IsConnected() )
-#else
-        : m_active( is_active )
-#endif
+    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, const SourceLocationData* srcloc, bool active )
+        : D3D11ZoneScope(ctx, active)
     {
         if( !m_active ) return;
-        m_ctx = ctx;
-
-        const auto queryId = ctx->NextQueryId();
-        ctx->m_devicectx->Begin(ctx->MapDisjointQueryId(queryId, queryId));
-        ctx->m_devicectx->End(ctx->TranslateQueryId(queryId));
-
-        m_disjointId = queryId;
 
         auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
-        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
-
-        Profiler::QueueSerialFinish();
+        WriteQueueItem(item, QueueType::GpuZoneBeginSerial, reinterpret_cast<uint64_t>(srcloc));
     }
 
-    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, const SourceLocationData* srcloc, int depth, bool is_active )
-#ifdef TRACY_ON_DEMAND
-        : m_active( is_active && GetProfiler().IsConnected() )
-#else
-        : m_active( is_active )
-#endif
+    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, const SourceLocationData* srcloc, int depth, bool active )
+        : D3D11ZoneScope(ctx, active)
     {
         if( !m_active ) return;
-        m_ctx = ctx;
 
-        const auto queryId = ctx->NextQueryId();
-        ctx->m_devicectx->Begin(ctx->MapDisjointQueryId(queryId, queryId));
-        ctx->m_devicectx->End(ctx->TranslateQueryId(queryId));
-
-        m_disjointId = queryId;
-
-        auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstackSerial );
-        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
-
-        Profiler::QueueSerialFinish();
-
-        GetProfiler().SendCallstack( depth );
+        auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
+        WriteQueueItem(item, QueueType::GpuZoneBeginCallstackSerial, reinterpret_cast<uint64_t>(srcloc));
     }
 
     tracy_force_inline D3D11ZoneScope(D3D11Ctx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool active)
-#ifdef TRACY_ON_DEMAND
-        : m_active(active&& GetProfiler().IsConnected())
-#else
-        : m_active(active)
-#endif
+        : D3D11ZoneScope(ctx, active)
     {
         if( !m_active ) return;
-        m_ctx = ctx;
-
-        const auto queryId = ctx->NextQueryId();
-        ctx->m_devicectx->Begin(ctx->MapDisjointQueryId(queryId, queryId));
-        ctx->m_devicectx->End(ctx->TranslateQueryId(queryId));
-
-        m_disjointId = queryId;
 
         const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
 
         auto* item = Profiler::QueueSerial();
-        MemWrite(&item->hdr.type, QueueType::GpuZoneBeginAllocSrcLocSerial);
-        MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-        MemWrite(&item->gpuZoneBegin.srcloc, sourceLocation);
-        MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-        MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(queryId));
-        MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
-
-        Profiler::QueueSerialFinish();
+        WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocSerial, sourceLocation);
     }
 
     tracy_force_inline D3D11ZoneScope(D3D11Ctx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool active)
-#ifdef TRACY_ON_DEMAND
-        : m_active(active&& GetProfiler().IsConnected())
-#else
-        : m_active(active)
-#endif
+        : D3D11ZoneScope(ctx, active)
     {
         if( !m_active ) return;
-        m_ctx = ctx;
-
-        const auto queryId = ctx->NextQueryId();
-        ctx->m_devicectx->Begin(ctx->MapDisjointQueryId(queryId, queryId));
-        ctx->m_devicectx->End(ctx->TranslateQueryId(queryId));
-
-        m_disjointId = queryId;
 
         const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
 
         auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-        MemWrite(&item->hdr.type, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial);
-        MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-        MemWrite(&item->gpuZoneBegin.srcloc, sourceLocation);
-        MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-        MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(queryId));
-        MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
-
-        Profiler::QueueSerialFinish();
+        WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial, sourceLocation);
     }
 
     tracy_force_inline ~D3D11ZoneScope()
@@ -369,24 +343,46 @@ public:
         if( !m_active ) return;
 
         const auto queryId = m_ctx->NextQueryId();
-        m_ctx->m_devicectx->End(m_ctx->TranslateQueryId(queryId));
-        m_ctx->m_devicectx->End(m_ctx->MapDisjointQueryId(queryId, m_disjointId));
+        m_ctx->m_immediateDevCtx->End(m_ctx->GetQueryObjectFromId(queryId));
 
         auto* item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneEndSerial );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneEnd.context, m_ctx->GetId() );
-
+        MemWrite( &item->gpuZoneEnd.context, m_ctx->GetContextId() );
         Profiler::QueueSerialFinish();
     }
 
 private:
+    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, bool active )
+#ifdef TRACY_ON_DEMAND
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( active )
+#endif
+    {
+        if( !m_active ) return;
+        m_ctx = ctx;
+    }
+
+    void WriteQueueItem(tracy::QueueItem* item, tracy::QueueType queueItemType, uint64_t sourceLocation)
+    {
+        const auto queryId = m_ctx->NextQueryId();
+        m_ctx->m_immediateDevCtx->End(m_ctx->GetQueryObjectFromId(queryId));
+
+        MemWrite( &item->hdr.type, queueItemType);
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, sourceLocation );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
+        MemWrite( &item->gpuZoneBegin.context, m_ctx->GetContextId() );
+        Profiler::QueueSerialFinish();
+    }
+
     const bool m_active;
 
     D3D11Ctx* m_ctx;
-    unsigned int m_disjointId;
 };
 
 static inline D3D11Ctx* CreateD3D11Context( ID3D11Device* device, ID3D11DeviceContext* devicectx )
@@ -403,38 +399,44 @@ static inline void DestroyD3D11Context( D3D11Ctx* ctx )
 }
 }
 
+#undef TracyD3D11Panic
+
 using TracyD3D11Ctx = tracy::D3D11Ctx*;
 
 #define TracyD3D11Context( device, devicectx ) tracy::CreateD3D11Context( device, devicectx );
 #define TracyD3D11Destroy(ctx) tracy::DestroyD3D11Context(ctx);
 #define TracyD3D11ContextName(ctx, name, size) ctx->Name(name, size);
 
+#define TracyD3D11UnnamedZone ___tracy_gpu_d3d11_zone
+#define TracyD3D11SrcLocSymbol TracyConcat(__tracy_gpu_d3d11_source_location,TracyLine)
+#define TracyD3D11SrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyD3D11SrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color };
+
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZoneS( ctx, ___tracy_gpu_zone, name, TRACY_CALLSTACK, true )
-#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneCS( ctx, ___tracy_gpu_zone, name, color, TRACY_CALLSTACK, true )
-#  define TracyD3D11NamedZone( ctx, varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
-#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
+#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZoneS( ctx, TracyD3D11UnnamedZone, name, TRACY_CALLSTACK, true )
+#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneCS( ctx, TracyD3D11UnnamedZone, name, color, TRACY_CALLSTACK, true )
+#  define TracyD3D11NamedZone( ctx, varname, name, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, TRACY_CALLSTACK, active );
+#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) TracyD3D11SrcLocObject(name, color); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, TRACY_CALLSTACK, active );
 #  define TracyD3D11ZoneTransient(ctx, varname, name, active) TracyD3D11ZoneTransientS(ctx, varname, cmdList, name, TRACY_CALLSTACK, active)
 #else
-#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZone( ctx, ___tracy_gpu_zone, name, true )
-#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneC( ctx, ___tracy_gpu_zone, name, color, true )
-#  define TracyD3D11NamedZone( ctx, varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
-#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
+#  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZone( ctx, TracyD3D11UnnamedZone, name, true )
+#  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneC( ctx, TracyD3D11UnnamedZone, name, color, true )
+#  define TracyD3D11NamedZone( ctx, varname, name, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, active );
+#  define TracyD3D11NamedZoneC( ctx, varname, name, color, active ) TracyD3D11SrcLocObject(name, color); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, active );
 #  define TracyD3D11ZoneTransient(ctx, varname, name, active) tracy::D3D11ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), active };
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyD3D11ZoneS( ctx, name, depth ) TracyD3D11NamedZoneS( ctx, ___tracy_gpu_zone, name, depth, true )
-#  define TracyD3D11ZoneCS( ctx, name, color, depth ) TracyD3D11NamedZoneCS( ctx, ___tracy_gpu_zone, name, color, depth, true )
-#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
-#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::D3D11ZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
+#  define TracyD3D11ZoneS( ctx, name, depth ) TracyD3D11NamedZoneS( ctx, TracyD3D11UnnamedZone, name, depth, true )
+#  define TracyD3D11ZoneCS( ctx, name, color, depth ) TracyD3D11NamedZoneCS( ctx, TracyD3D11UnnamedZone, name, color, depth, true )
+#  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, depth, active );
+#  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) TracyD3D11SrcLocObject(name, color); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, depth, active );
 #  define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active) tracy::D3D11ZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), depth, active };
 #else
 #  define TracyD3D11ZoneS( ctx, name, depth, active ) TracyD3D11Zone( ctx, name )
 #  define TracyD3D11ZoneCS( ctx, name, color, depth, active ) TracyD3D11ZoneC( name, color )
 #  define TracyD3D11NamedZoneS( ctx, varname, name, depth, active ) TracyD3D11NamedZone( ctx, varname, name, active )
 #  define TracyD3D11NamedZoneCS( ctx, varname, name, color, depth, active ) TracyD3D11NamedZoneC( ctx, varname, name, color, active )
-#  define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active) TracyD3D12ZoneTransient(ctx, varname, name, active)
+#  define TracyD3D11ZoneTransientS(ctx, varname, name, depth, active) TracyD3D11ZoneTransient(ctx, varname, name, active)
 #endif
 
 #define TracyD3D11Collect( ctx ) ctx->Collect();

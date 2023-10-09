@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012-2017, Kim Grasman <kim.grasman@gmail.com>
+ * Copyright (c) 2012-2023, Kim Grasman <kim.grasman@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

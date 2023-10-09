@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012-2017, Kim Grasman <kim.grasman@gmail.com>
+ * Copyright (c) 2012-2023, Kim Grasman <kim.grasman@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -159,6 +159,7 @@ int getopt_long(int argc, char* const argv[], const char* optstring,
   const struct option* match = NULL;
   int num_matches = 0;
   size_t argument_name_length = 0;
+  size_t option_length = 0;
   const char* current_argument = NULL;
   int retval = -1;
 
@@ -175,6 +176,16 @@ int getopt_long(int argc, char* const argv[], const char* optstring,
   current_argument = argv[optind] + 2;
   argument_name_length = strcspn(current_argument, "=");
   for (; o->name; ++o) {
+    /* Check for exact match first. */
+    option_length = strlen(o->name);
+    if (option_length == argument_name_length &&
+        strncmp(o->name, current_argument, option_length) == 0) {
+      match = o;
+      num_matches = 1;
+      break;
+    }
+
+    /* If not exact, count the number of abbreviated matches. */
     if (strncmp(o->name, current_argument, argument_name_length) == 0) {
       match = o;
       ++num_matches;

@@ -83,7 +83,9 @@
 #endif
 
 #ifdef __APPLE__
-#  define TRACY_DELAYED_INIT
+#  ifndef TRACY_DELAYED_INIT
+#    define TRACY_DELAYED_INIT
+#  endif
 #else
 #  ifdef __GNUC__
 #    define init_order( val ) __attribute__ ((init_priority(val)))

@@ -190,6 +190,9 @@ if tracy_shared_libs
   tracy_dep_compile_args += [ '-DTRACY_IMPORTS' ]
 endif
 
+pkg = import('pkgconfig')
+pkg.generate(tracy, extra_cflags: tracy_dep_compile_args)
+
 tracy_dep = declare_dependency(
     compile_args        : tracy_dep_compile_args,
     link_with           : tracy,

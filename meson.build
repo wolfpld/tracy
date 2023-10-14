@@ -180,7 +180,7 @@ else
     install             : true)
 endif
 
-install_headers(includes)
+install_headers(includes, subdir : 'tracy')
 install_headers(common_includes, subdir : 'common')
 install_headers(client_includes, subdir : 'client')
 

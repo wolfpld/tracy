@@ -134,7 +134,6 @@ common_includes = [
     'public/common/tracy_lz4.hpp',
     'public/common/tracy_lz4hc.hpp',
     'public/common/TracyAlign.hpp',
-    'public/common/TracyAlign.hpp',
     'public/common/TracyAlloc.hpp',
     'public/common/TracyApi.h',
     'public/common/TracyColor.hpp',

@@ -191,7 +191,4 @@ tracy_dep = declare_dependency(
     link_with           : tracy,
     include_directories : tracy_public_include_dirs)
 
-tracy_dep_dynamic = declare_dependency(
-    include_directories : tracy_public_include_dirs)
-
 meson.override_dependency('tracy', tracy_dep)

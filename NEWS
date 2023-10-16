@@ -2,8 +2,8 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-v0.x.x (xxxx-xx-xx)
--------------------
+v0.10.0 (2023-10-16)
+--------------------
 
 - Missed frames region of on-demand captures will be now ignored when
   calculating trace time span, zone percentages, etc.
@@ -45,7 +45,7 @@ v0.x.x (xxxx-xx-xx)
 - Improved compatibility with MSVC projects not defining NOMINMAX.
 - Improved compatibility with Linux setups targeting musl as libc.
 - Thread safety of Vulkan instrumentation has been reviewed.
-- D3D12 instrumentation was rewritten.
+- D3D11 and D3D12 instrumentation was rewritten.
 - Added support for efficient profiling when running under rr, the record-
   replaying debugger. This is enabled with TRACY_PATCHABLE_NOPSLEDS define.
 - History of viewed symbols is now preserved and you can go back to

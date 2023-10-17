@@ -95,6 +95,10 @@ endif
 
 threads_dep = dependency('threads')
 
+if host_machine.system() == 'windows'
+  add_project_arguments('-DWINVER=0x0601', '-D_WIN32_WINNT=0x0601',  language: 'cpp')
+endif
+
 includes = [
     'public/tracy/TracyC.h',
     'public/tracy/Tracy.hpp',

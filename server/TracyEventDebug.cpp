@@ -195,6 +195,9 @@ void EventDebug( const QueueItem& ev )
     case QueueType::GpuCalibration:
         fprintf( f, "ev %i (GpuCalibration)\n", ev.hdr.idx );
         break;
+    case QueueType::GpuTimeSync:
+        fprintf( f, "ev %i (GpuTimeSync)\n", ev.hdr.idx );
+        break;
     case QueueType::Crash:
         fprintf( f, "ev %i (Crash)\n", ev.hdr.idx );
         break;

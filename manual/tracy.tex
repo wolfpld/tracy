@@ -1975,6 +1975,8 @@ GPU zones are ended via \texttt{\_\_\_tracy\_emit\_gpu\_zone\_end}.
 
 When the timestamps are fetched from the GPU, they must then be emitted via the \texttt{\_\_\_tracy\_emit\_gpu\_time} function. After all timestamps for a frame are emitted, \texttt{queryIds} may be re-used.
 
+CPU and GPU timestamps may be periodically resynchronized via the \texttt{\_\_\_tracy\_emit\_gpu\_time\_sync} function, which takes the GPU timestamp closest to the moment of the call. This can help with timestamp drift and work around compounding GPU timestamp overflowing.
+
 To see how you should use this API, you should look at the reference implementation contained in API-specific C++ headers provided by Tracy. For example, to see how to write your instrumentation of OpenGL, you should closely follow the contents of the \texttt{TracyOpenGL.hpp} implementation.
 
 \subsubsection{Fibers}

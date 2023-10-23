@@ -70,6 +70,7 @@ enum class QueueType : uint8_t
     KeepAlive,
     ThreadContext,
     GpuCalibration,
+    GpuTimeSync,
     Crash,
     CrashReport,
     ZoneValidation,
@@ -453,6 +454,13 @@ struct QueueGpuCalibration
     uint8_t context;
 };
 
+struct QueueGpuTimeSync
+{
+    int64_t gpuTime;
+    int64_t cpuTime;
+    uint8_t context;
+};
+    
 struct QueueGpuContextName
 {
     uint8_t context;
@@ -718,6 +726,7 @@ struct QueueItem
         QueueGpuZoneEnd gpuZoneEnd;
         QueueGpuTime gpuTime;
         QueueGpuCalibration gpuCalibration;
+        QueueGpuTimeSync gpuTimeSync;
         QueueGpuContextName gpuContextName;
         QueueGpuContextNameFat gpuContextNameFat;
         QueueMemAlloc memAlloc;
@@ -821,6 +830,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // keep alive
     sizeof( QueueHeader ) + sizeof( QueueThreadContext ),
     sizeof( QueueHeader ) + sizeof( QueueGpuCalibration ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuTimeSync ),
     sizeof( QueueHeader ),                                  // crash
     sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
     sizeof( QueueHeader ) + sizeof( QueueZoneValidation ),

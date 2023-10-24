@@ -129,6 +129,7 @@ client_includes = [
     'public/client/TracyRingBuffer.hpp',
     'public/client/TracyScoped.hpp',
     'public/client/TracyStringHelpers.hpp',
+    'public/client/TracySysPower.hpp',
     'public/client/TracySysTime.hpp',
     'public/client/TracySysTrace.hpp',
     'public/client/TracyThread.hpp'

@@ -51,6 +51,10 @@ namespace tracy
 #if defined(TRACY_DELAYED_INIT) && defined(TRACY_MANUAL_LIFETIME)
 TRACY_API void StartupProfiler();
 TRACY_API void ShutdownProfiler();
+TRACY_API bool IsProfilerStarted();
+#  define TracyIsStarted tracy::IsProfilerStarted()
+#else
+#  define TracyIsStarted true
 #endif
 
 class GpuCtx;

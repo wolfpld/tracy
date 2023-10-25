@@ -1142,12 +1142,14 @@ thread_local bool RpThreadShutdown = false;
 #  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
 static ProfilerThreadData& GetProfilerThreadData();
+static std::atomic<bool> s_isProfilerStarted { false };
 TRACY_API void StartupProfiler()
 {
     s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
     new (s_profilerData) ProfilerData();
     s_profilerData->profiler.SpawnWorkerThreads();
     GetProfilerThreadData().token = ProducerWrapper( *s_profilerData );
+    s_isProfilerStarted.store( true, std::memory_order_seq_cst );
 }
 static ProfilerData& GetProfilerData()
 {
@@ -1156,12 +1158,17 @@ static ProfilerData& GetProfilerData()
 }
 TRACY_API void ShutdownProfiler()
 {
+    s_isProfilerStarted.store( false, std::memory_order_seq_cst );
     s_profilerData->~ProfilerData();
     tracy_free( s_profilerData );
     s_profilerData = nullptr;
     rpmalloc_finalize();
     RpThreadInitDone = false;
     RpInitDone.store( 0, std::memory_order_release );
+}
+TRACY_API bool IsProfilerStarted()
+{
+    return s_isProfilerStarted.load( std::memory_order_seq_cst );
 }
 #  else
 static std::atomic<int> profilerDataLock { 0 };
@@ -4438,6 +4445,11 @@ TRACY_API void ___tracy_startup_profiler( void )
 TRACY_API void ___tracy_shutdown_profiler( void )
 {
     tracy::ShutdownProfiler();
+}
+
+TRACY_API int ___tracy_profiler_started( void )
+{
+    return tracy::s_isProfilerStarted.load( std::memory_order_seq_cst );
 }
 #  endif
 

@@ -97,6 +97,7 @@ typedef const void* TracyCZoneCtx;
 #define TracyCMessageLCS(x,y,z)
 
 #define TracyCIsConnected 0
+#define TracyCIsStarted 0
 
 #ifdef TRACY_FIBERS
 #  define TracyCFiberEnter(fiber)
@@ -185,6 +186,11 @@ typedef /*const*/ struct ___tracy_c_zone_context TracyCZoneCtx;
 #ifdef TRACY_MANUAL_LIFETIME
 TRACY_API void ___tracy_startup_profiler(void);
 TRACY_API void ___tracy_shutdown_profiler(void);
+TRACY_API int ___tracy_profiler_started(void);
+
+#  define TracyCIsStarted ___tracy_profiler_started()
+#else
+#  define TracyCIsStarted 1
 #endif
 
 TRACY_API uint64_t ___tracy_alloc_srcloc( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz );

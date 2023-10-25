@@ -109,6 +109,7 @@
 #define TracyParameterRegister(x,y)
 #define TracyParameterSetup(x,y,z,w)
 #define TracyIsConnected false
+#define TracyIsStarted false
 #define TracySetProgramName(x)
 
 #define TracyFiberEnter(x)

@@ -66,6 +66,8 @@ static const char* GetOsInfo()
     sprintf( buf, "BSD (NetBSD)" );
 #elif defined __OpenBSD__
     sprintf( buf, "BSD (OpenBSD)" );
+#elif defined __QNX__
+    sprintf( buf, "QNX" );
 #else
     sprintf( buf, "unknown" );
 #endif

@@ -373,6 +373,7 @@ Tracy Profiler supports  MSVC, GCC, and clang. You will need to use a reasonably
 \item WSL (x64)
 \item OSX (x64)
 \item iOS (ARM, ARM64)
+\item QNX (x64)
 \end{itemize}
 
 Moreover, the following platforms are not supported due to how secretive their owners are but were reported to be working after extending the system integration layer:
@@ -864,26 +865,27 @@ Some features of the profiler are only available on selected platforms. Please r
 
 \begin{table}[h]
 \centering
-\begin{tabular}[h]{c|c|c|c|c|c|c}
-\textbf{Feature} & \textbf{Windows} & \textbf{Linux} & \textbf{Android} & \textbf{OSX} & \textbf{iOS} & \textbf{BSD} \\ \hline
-Profiling program init & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \faCheck \\
-CPU zones & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Locks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Plots & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Messages & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Memory & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-GPU zones (OpenGL) & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \\
-GPU zones (Vulkan) & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \\
-Call stacks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Symbol resolution & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Crash handling & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
-CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-Wait stacks & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
-Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-Hardware sampling & \faCheck{}\textsuperscript{\emph{a}} & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
-VSync capture & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes \\
+\begin{tabular}[h]{c|c|c|c|c|c|c|c}
+\textbf{Feature} & \textbf{Windows} & \textbf{Linux} & \textbf{Android} & \textbf{OSX} & \textbf{iOS} & \textbf{BSD} & \textbf{QNX} \\ \hline
+Profiling program init & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \faCheck & \faCheck \\
+CPU zones & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Locks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Plots & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Messages & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Memory & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faTimes \\
+% GPU zones fields intentionally left blank for BSDs
+GPU zones (OpenGL) & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & & \faTimes \\
+GPU zones (Vulkan) & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & & \faTimes \\
+Call stacks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faTimes \\
+Symbol resolution & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Crash handling & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes \\
+CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faTimes \\
+Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes & \faTimes \\
+Wait stacks & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes & \faTimes \\
+CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes \\
+Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes & \faTimes \\
+Hardware sampling & \faCheck{}\textsuperscript{\emph{a}} & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes & \faTimes \\
+VSync capture & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes & \faTimes & \faTimes \\
 \end{tabular}
 
 \vspace{1em}

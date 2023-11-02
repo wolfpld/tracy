@@ -1,4 +1,4 @@
-option('tracy_enable', type : 'boolean', value : true, description : 'Enable profiling')
+option('tracy_enable', type : 'boolean', value : true, description : 'Enable profiling', yield: true)
 option('tracy_on_demand', type : 'boolean', value : false, description : 'On-demand profiling')
 option('tracy_callstack', type : 'boolean', value : false, description : 'Enfore callstack collection for tracy regions')
 option('tracy_no_callstack', type : 'boolean', value : false, description : 'Disable all callstack related functionality')

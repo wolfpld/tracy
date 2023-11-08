@@ -121,7 +121,7 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
 static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetAsmSizeDirectives()
 {
     unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
-    for( auto& v : { "byte", "word", "dword", "qword", "xmmword", "ymmword" } )
+    for( auto& v : { "byte", "word", "dword", "qword", "xmmword", "ymmword", "zmmword" } )
     {
         ret.insert( v );
     }

@@ -3,7 +3,7 @@ project('tracy', ['cpp'], version: '0.10.0', meson_version: '>=0.54.0')
 # internal compiler flags
 tracy_compile_args = []
 
-# compiler flags shared between client and server
+# compiler flags shared between the capture library itself and the code using it
 tracy_common_args = []
 
 if get_option('tracy_enable')

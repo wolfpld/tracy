@@ -8,14 +8,13 @@
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 #  include <unwind.h>
 #elif TRACY_HAS_CALLSTACK >= 3
- #ifdef TRACE_CLIENT_LIBUNWIND_BACKTRACE
-    // libunwind is in general significantly faster than execinfo based backtraces
-    #define UNW_LOCAL_ONLY
-    #  include <libunwind.h>
- #else
-    #  include <execinfo.h>
- #endif
-
+#  ifdef TRACE_CLIENT_LIBUNWIND_BACKTRACE
+     // libunwind is, in general, significantly faster than execinfo based backtraces
+#    define UNW_LOCAL_ONLY
+#    include <libunwind.h>
+#  else
+#    include <execinfo.h>
+#  endif
 #endif
 
 #ifndef TRACY_HAS_CALLSTACK

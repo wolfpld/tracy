@@ -1439,14 +1439,13 @@ Profiler::Profiler()
 void Profiler::SpawnWorkerThreads()
 {
 #ifdef TRACY_HAS_SYSTEM_TRACING
-    // use TRACY_NO_SYS_TRACE=1 to force disabling sys tracing 
-    // (even if available in the underlying system)
+    // use TRACY_NO_SYS_TRACE=1 to force disabling sys tracing (even if available in the underlying system)
     // as it can have significant impact on the size of the traces
     const char* noSysTrace = GetEnvVar( "TRACY_NO_SYS_TRACE" );
     const bool disableSystrace = (noSysTrace && noSysTrace[0] == '1');
-    if(disableSystrace)
+    if( disableSystrace )
     {
-        printf("TRACY: systrace was disabled by 'TRACY_NO_SYS_TRACE=1'\n");
+        TracyDebug("TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n");
     }
     else if( SysTraceStart( m_samplingPeriod ) )
     {

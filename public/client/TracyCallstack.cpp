@@ -161,16 +161,16 @@ void InitCallstack()
     // and process module symbol loading at startup time - they will be loaded on demand later
     // Sometimes this process can take a very long time and prevent resolving callstack frames
     // symbols during that time.
-    const char* noInitLoadEnv = GetEnvVar("TRACY_NO_DBHELP_INIT_LOAD");
-    const bool initTimeLoadModules = !(noInitLoadEnv && noInitLoadEnv[0] == '1');
-    if (!initTimeLoadModules)
+    const char* noInitLoadEnv = GetEnvVar( "TRACY_NO_DBHELP_INIT_LOAD" );
+    const bool initTimeModuleLoad = !( noInitLoadEnv && noInitLoadEnv[0] == '1' );
+    if ( !initTimeModuleLoad )
     {
-        printf("TRACY: skipping init dbhelper module load\n");
+        TracyDebug("TRACY: skipping init time dbghelper module load\n");
     }
 
     DWORD needed;
     LPVOID dev[4096];
-    if( initTimeLoadModules && (EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0) )
+    if( initTimeModuleLoad && EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
     {
         char windir[MAX_PATH];
         if( !GetWindowsDirectoryA( windir, sizeof( windir ) ) ) memcpy( windir, "c:\\windows", 11 );
@@ -225,7 +225,7 @@ void InitCallstack()
 
     HANDLE proc = GetCurrentProcess();
     HMODULE mod[1024];
-    if( initTimeLoadModules && (EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0) )
+    if( initTimeModuleLoad && EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );
         for( size_t i=0; i<sz; i++ )

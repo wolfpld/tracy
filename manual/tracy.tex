@@ -1776,6 +1776,8 @@ void DbgHelpUnlock() { ReleaseMutex(dbgHelpLock); }
 }
 \end{lstlisting}
 
+At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
+
 \paragraph{Disabling resolution of inline frames}
 
 Inline frames retrieval on Windows can be multiple orders of magnitude slower than just performing essential symbol resolution. This manifests as profiler seemingly being stuck for a long time, having hundreds of thousands of query backlog entries queued, which are slowly trickling down. If your use case requires speed of operation rather than having call stacks with inline frames included, you may define the \texttt{TRACY\_NO\_CALLSTACK\_INLINES} macro, which will make the profiler stick to the basic but fast frame resolution mode.

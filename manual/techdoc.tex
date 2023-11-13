@@ -258,7 +258,7 @@ This is a very OS-specific task. It is split into two parts: getting the call st
 
 On some platforms a bit of setup work is required. This is done in the \texttt{InitCallstack()} function.
 
-On windows, tracy will attempt to preload symbols at \texttt{InitCallstack()} time. It does this for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
+On Windows, tracy will attempt to preload symbols at \texttt{InitCallstack()} time. It does this for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
 
 \subsubsection{Getting the frames}
 

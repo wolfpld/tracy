@@ -258,11 +258,15 @@ This is a very OS-specific task. It is split into two parts: getting the call st
 
 On some platforms a bit of setup work is required. This is done in the \texttt{InitCallstack()} function.
 
+On Windows, tracy will attempt to preload symbols at \texttt{InitCallstack()} time. It does this for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
+
 \subsubsection{Getting the frames}
 
 Call stack collection is initiated by calling the \texttt{Callstack()} procedure, with maximum stack depth to be collected passed as a parameter. Stack unwinding must be performed in the place in which call stack was queried, as further execution of the application will change the stack contents. The unfortunate part is that the stack unwinding on platforms other than x86 is not a fast operation.
 
 To perform unwinding various OS functions are used: \texttt{RtlWalkFrameChain()}, \texttt{\_Unwind\_Backtrace()}, \texttt{backtrace()}. A list of returned frame pointers is saved in a buffer, which will be later sent to the server. The maximum unwinding depth limit (63 entries) is due to the specifics of the underlying OS functionality.
+
+On some platforms you can define \texttt{TRACE\_CLIENT\_LIBUNWIND\_BACKTRACE} to use libunwind to perform callstack captures, as it might be a faster alternative than the default implementation. If you do, you must compile/link you client against libunwind. See \url{https://github.com/libunwind/libunwind} for more details.
 
 \subsubsection{Decoding stack frames}
 

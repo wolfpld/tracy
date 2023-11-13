@@ -1698,6 +1698,14 @@ logo=\bclampe
 Tracy will prepare for call stack collection regardless of whether you use the functionality or not. In some cases, this may be unwanted or otherwise troublesome for the user. To disable support for collecting call stacks, define the \texttt{TRACY\_NO\_CALLSTACK} macro.
 \end{bclogo}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{libunwind}
+On some platforms you can define \texttt{TRACE\_CLIENT\_LIBUNWIND\_BACKTRACE} to use libunwind to perform callstack captures as it might be a faster alternative than the default implementation. If you do, you must compile/link you client against libunwind. See \url{https://github.com/libunwind/libunwind} for more details.
+\end{bclogo}
+
 \subsubsection{Debugging symbols}
 
 You must compile the profiled application with debugging symbols enabled to have correct call stack information. You can achieve that in the following way:
@@ -1767,6 +1775,8 @@ void DbgHelpLock() { WaitForSingleObject(dbgHelpLock, INFINITE); }
 void DbgHelpUnlock() { ReleaseMutex(dbgHelpLock); }
 }
 \end{lstlisting}
+
+At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
 
 \paragraph{Disabling resolution of inline frames}
 
@@ -2049,7 +2059,7 @@ Tracy will perform an automatic collection of system data without user intervent
 
 Some profiling data can only be retrieved using the kernel facilities, which are not available to users with normal privilege level. To collect such data, you will need to elevate your rights to the administrator level. You can do so either by running the profiled program from the \texttt{root} account on Unix or through the \emph{Run as administrator} option on Windows\footnote{To make this easier, you can run MSVC with admin privileges, which will be inherited by your program when you start it from within the IDE.}. On Android, you will need to have a rooted device (see section~\ref{androidlunacy} for additional information).
 
-As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define.
+As this system-level tracing functionality is part of the automated collection process, no user intervention is necessary to enable it (assuming that the program was granted the rights needed). However, if, for some reason, you would want to prevent your application from trying to access kernel data, you may recompile your program with the \texttt{TRACY\_NO\_SYSTEM\_TRACING} define. If you want to disable this functionality dynamically at runtime instead, you can set the \texttt{TRACY\_NO\_SYSTEM\_TRACING} environment variable to "1".
 
 \begin{bclogo}[
 noborder=true,

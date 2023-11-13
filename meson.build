@@ -1,4 +1,4 @@
-project('tracy', ['cpp'], version: '0.10.0', meson_version: '>=0.54.0')
+project('tracy', ['cpp'], version: '0.10.0', meson_version: '>=0.63.0')
 
 # internal compiler flags
 tracy_compile_args = []
@@ -94,7 +94,11 @@ if get_option('tracy_no_crash_handler')
   tracy_common_args += ['-DTRACY_NO_CRASH_HANDLER']
 endif
 
-tracy_shared_libs = get_option('default_library') == 'shared' or get_option('tracy_shared_libs')
+tracy_shared_libs = get_option('default_library') == 'shared'
+if tracy_shared_libs and not get_option('tracy_shared_libs')
+  warning('tracy_shared_libs is set to false, but default_library is set to shared. Building shared library.')
+endif
+
 if tracy_shared_libs
   tracy_compile_args += ['-DTRACY_EXPORTS']
 endif

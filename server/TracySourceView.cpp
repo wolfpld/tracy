@@ -696,6 +696,13 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     uint32_t len;
     auto code = worker.GetSymbolCode( symAddr, len );
     if( !code ) return false;
+    cs_opt_mem setup;
+    setup.malloc = &malloc;
+    setup.calloc = &calloc;
+    setup.realloc = &realloc;
+    setup.free = &free;
+    setup.vsnprintf = &vsnprintf;
+    cs_option(0, CS_OPT_MEM, reinterpret_cast<size_t>(&setup));
     m_disasmFail = -1;
     csh handle;
     cs_err rval = CS_ERR_ARCH;

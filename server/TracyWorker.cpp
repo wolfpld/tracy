@@ -3825,6 +3825,14 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
     m_data.symbolCodeSize += sz;
 
     if( m_data.cpuArch == CpuArchUnknown ) return;
+    cs_opt_mem setup;
+    setup.malloc = &malloc;
+    setup.calloc = &calloc;
+    setup.realloc = &realloc;
+    setup.free = &free;
+    setup.vsnprintf = &vsnprintf;
+    cs_option(0, CS_OPT_MEM, reinterpret_cast<size_t>(&setup));
+
     csh handle;
     cs_err rval = CS_ERR_ARCH;
     switch( m_data.cpuArch )

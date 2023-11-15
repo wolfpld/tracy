@@ -18,7 +18,7 @@
 // WILL NOT BE USING OUR LOADER, AND INSTEAD EXPECT ANOTHER/YOUR LOADER TO BE AVAILABLE IN THE COMPILATION UNIT.
 //
 // Regenerate with:
-//   python gl3w_gen.py --output ../imgui/backends/imgui_impl_opengl3_loader.h --ref ../imgui/backends/imgui_impl_opengl3.cpp ./extra_symbols.txt
+//   python3 gl3w_gen.py --output ../imgui/backends/imgui_impl_opengl3_loader.h --ref ../imgui/backends/imgui_impl_opengl3.cpp ./extra_symbols.txt
 //
 // More info:
 //   https://github.com/dearimgui/gl3w_stripped
@@ -154,6 +154,8 @@ typedef khronos_uint8_t GLubyte;
 #define GL_ONE                            1
 #define GL_SRC_ALPHA                      0x0302
 #define GL_ONE_MINUS_SRC_ALPHA            0x0303
+#define GL_FRONT                          0x0404
+#define GL_BACK                           0x0405
 #define GL_FRONT_AND_BACK                 0x0408
 #define GL_POLYGON_MODE                   0x0B40
 #define GL_CULL_FACE                      0x0B44
@@ -376,6 +378,8 @@ GLAPI void APIENTRY glGenVertexArrays (GLsizei n, GLuint *arrays);
 typedef struct __GLsync *GLsync;
 typedef khronos_uint64_t GLuint64;
 typedef khronos_int64_t GLint64;
+#define GL_CONTEXT_COMPATIBILITY_PROFILE_BIT 0x00000002
+#define GL_CONTEXT_PROFILE_MASK           0x9126
 typedef void (APIENTRYP PFNGLDRAWELEMENTSBASEVERTEXPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLint basevertex);
 typedef void (APIENTRYP PFNGLGETINTEGER64I_VPROC) (GLenum target, GLuint index, GLint64 *data);
 #ifdef GL_GLEXT_PROTOTYPES
@@ -466,7 +470,7 @@ GL3W_API int imgl3wIsSupported(int major, int minor);
 GL3W_API GL3WglProc imgl3wGetProcAddress(const char *proc);
 
 /* gl3w internal state */
-union GL3WProcs {
+union ImGL3WProcs {
     GL3WglProc ptr[58];
     struct {
         PFNGLACTIVETEXTUREPROC            ActiveTexture;
@@ -530,7 +534,7 @@ union GL3WProcs {
     } gl;
 };
 
-GL3W_API extern union GL3WProcs imgl3wProcs;
+GL3W_API extern union ImGL3WProcs imgl3wProcs;
 
 /* OpenGL functions */
 #define glActiveTexture                   imgl3wProcs.gl.ActiveTexture
@@ -663,7 +667,8 @@ static GL3WglProc (*glx_get_proc_address)(const GLubyte *);
 
 static int open_libgl(void)
 {
-    libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_LOCAL);
+    // While most systems use libGL.so.1, NetBSD seems to use that libGL.so.3. See https://github.com/ocornut/imgui/issues/6983
+    libgl = dlopen("libGL.so", RTLD_LAZY | RTLD_LOCAL);
     if (!libgl)
         return GL3W_ERROR_LIBRARY_OPEN;
     *(void **)(&glx_get_proc_address) = dlsym(libgl, "glXGetProcAddressARB");
@@ -790,7 +795,7 @@ static const char *proc_names[] = {
     "glViewport",
 };
 
-GL3W_API union GL3WProcs imgl3wProcs;
+GL3W_API union ImGL3WProcs imgl3wProcs;
 
 static void load_procs(GL3WGetProcAddressProc proc)
 {

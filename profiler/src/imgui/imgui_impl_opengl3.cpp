@@ -15,12 +15,17 @@
 
 // You can use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
 // Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
+// Learn about Dear ImGui:
+// - FAQ                  https://dearimgui.com/faq
+// - Getting Started      https://dearimgui.com/getting-started
+// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
+// - Introduction, links and more at the top of imgui.cpp
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
 //  2023-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2023-11-08: OpenGL: Update GL3W based imgui_impl_opengl3_loader.h to load "libGL.so" instead of "libGL.so.1", accomodating for NetBSD systems having only "libGL.so.3" available. (#6983)
+//  2023-10-05: OpenGL: Rename symbols in our internal loader so that LTO compilation with another copy of gl3w is possible. (#6875, #6668, #4445)
 //  2023-06-20: OpenGL: Fixed erroneous use glGetIntegerv(GL_CONTEXT_PROFILE_MASK) on contexts lower than 3.2. (#6539, #6333)
 //  2023-05-09: OpenGL: Support for glBindSampler() backup/restore on ES3. (#6375)
 //  2023-04-18: OpenGL: Restore front and back polygon mode separately when supported by context. (#6333)
@@ -468,9 +473,9 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
     GL_CALL(glEnableVertexAttribArray(bd->AttribLocationVtxPos));
     GL_CALL(glEnableVertexAttribArray(bd->AttribLocationVtxUV));
     GL_CALL(glEnableVertexAttribArray(bd->AttribLocationVtxColor));
-    GL_CALL(glVertexAttribPointer(bd->AttribLocationVtxPos,   2, GL_FLOAT,         GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos)));
-    GL_CALL(glVertexAttribPointer(bd->AttribLocationVtxUV,    2, GL_FLOAT,         GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, uv)));
-    GL_CALL(glVertexAttribPointer(bd->AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col)));
+    GL_CALL(glVertexAttribPointer(bd->AttribLocationVtxPos,   2, GL_FLOAT,         GL_FALSE, sizeof(ImDrawVert), (GLvoid*)offsetof(ImDrawVert, pos)));
+    GL_CALL(glVertexAttribPointer(bd->AttribLocationVtxUV,    2, GL_FLOAT,         GL_FALSE, sizeof(ImDrawVert), (GLvoid*)offsetof(ImDrawVert, uv)));
+    GL_CALL(glVertexAttribPointer(bd->AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)offsetof(ImDrawVert, col)));
 }
 
 // OpenGL3 Render function.
@@ -648,10 +653,8 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     // Desktop OpenGL 3.0 and OpenGL 3.1 had separate polygon draw modes for front-facing and back-facing faces of polygons
     if (bd->GlVersion <= 310 || bd->GlProfileIsCompat)
     {
-        // Yeah, not doing GL headers regen for this shit
-
-        //glPolygonMode(GL_FRONT, (GLenum)last_polygon_mode[0]);
-        //glPolygonMode(GL_BACK, (GLenum)last_polygon_mode[1]);
+        glPolygonMode(GL_FRONT, (GLenum)last_polygon_mode[0]);
+        glPolygonMode(GL_BACK, (GLenum)last_polygon_mode[1]);
     }
     else
     {

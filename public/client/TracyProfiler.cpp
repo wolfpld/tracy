@@ -169,7 +169,11 @@ static std::vector<MappingInfo> ParseMappings()
     {
         uintptr_t start_addr;
         uintptr_t end_addr;
+#if defined(__LP64__)
         if( sscanf( line, "%lx-%lx", &start_addr, &end_addr ) != 2 ) continue;
+#else
+        if (sscanf( line, "%dx-%dx", &start_addr, &end_addr ) != 2 ) continue;
+#endif
         char* first_space = strchr( line, ' ' );
         if( !first_space ) continue;
         char* perm = first_space + 1;

@@ -1,9 +1,8 @@
 CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES += -DTRACY_NO_STATISTICS
-INCLUDES := -I../../../capstone/include/capstone
-LIBS += -lcapstone -lpthread
-LDFLAGS := -L../../../capstone
+INCLUDES := $(shell pkg-config --cflags capstone)
+LIBS += $(shell pkg-config --libs capstone) -lpthread
 PROJECT := tracy-edit
 IMAGE := $(PROJECT)-$(BUILD)
 

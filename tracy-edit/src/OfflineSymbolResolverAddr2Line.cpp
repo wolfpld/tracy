@@ -1,4 +1,4 @@
-#ifdef __linux
+#ifndef _WIN32
 
 #include "OfflineSymbolResolver.h"
 
@@ -121,4 +121,4 @@ bool ResolveSymbols(SymbolResolver* resolver, const char* imageName,
     return false;
 }
 
-#endif // #ifdef __linux
+#endif // #ifndef _WIN32

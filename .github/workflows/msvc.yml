@@ -36,6 +36,8 @@ jobs:
       run: msbuild .\import-chrome\build\win32\import-chrome.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: Import-chrome utility Release
       run: msbuild .\import-chrome\build\win32\import-chrome.vcxproj /property:Configuration=Release /property:Platform=x64
+    - name: tracy-edit utility Debug
+      run: msbuild .\tracy-edit\build\win32\tracy-edit.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: tracy-edit utility Release
       run: msbuild .\tracy-edit\build\win32\tracy-edit.vcxproj /property:Configuration=Release /property:Platform=x64
     - name: Library

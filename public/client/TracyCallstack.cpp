@@ -93,6 +93,14 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 namespace tracy
 {
 
+// when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set to "1", instead of fully resolving symbols at runtime,
+// simply resolve the offset and image name (which will be enough the resolving to be done offline)
+bool getDoOfflineSymbolResolve()
+{
+    const char* symbolOfflineResolve = GetEnvVar( "TRACY_SYMBOL_OFFLINE_RESOLVE" );
+    return (symbolOfflineResolve && symbolOfflineResolve[0] == '1');
+}
+
 #if TRACY_HAS_CALLSTACK == 1
 
 enum { MaxCbTrace = 64 };
@@ -135,19 +143,24 @@ struct KernelDriver
 
 KernelDriver* s_krnlCache = nullptr;
 size_t s_krnlCacheCnt;
-
+bool s_doOfflineSymbolResolve = false;
 
 void InitCallstackCritical()
 {
     ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
 }
 
-void InitCallstack()
+void dbgHelpInit()
 {
-    _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymAddrIncludeInlineTrace" );
-    _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymQueryInlineTrace" );
-    _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymFromInlineContext" );
-    _SymGetLineFromInlineContext = (t_SymGetLineFromInlineContext)GetProcAddress( GetModuleHandleA( "dbghelp.dll" ), "SymGetLineFromInlineContext" );
+    if( s_doOfflineSymbolResolve )
+    {
+        return;
+    }
+
+    _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymAddrIncludeInlineTrace");
+    _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymQueryInlineTrace");
+    _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymFromInlineContext");
+    _SymGetLineFromInlineContext = (t_SymGetLineFromInlineContext)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymGetLineFromInlineContext");
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_INIT;
@@ -156,6 +169,65 @@ void InitCallstack()
 
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
+
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_UNLOCK;
+#endif
+}
+
+DWORD64 dbgHelpLoadSymbolsForModule(PCSTR imageName, DWORD64 baseOfDll, DWORD bllSize)
+{
+    if( !s_doOfflineSymbolResolve )
+    {
+        return SymLoadModuleEx( GetCurrentProcess(), nullptr, imageName, nullptr, baseOfDll, bllSize, nullptr, 0 );
+    }
+    return 0x0;
+}
+
+ModuleCache* dbgHelpLoadSymbolsForModuleAndCache(PCSTR imageName, DWORD imageNameLength, DWORD64 baseOfDll, DWORD dllSize)
+{
+    dbgHelpLoadSymbolsForModule( imageName, baseOfDll, dllSize );
+
+    ModuleCache* cachedModule = s_modCache->push_next();
+    cachedModule->start = baseOfDll;
+    cachedModule->end = baseOfDll + dllSize;
+
+    // when doing offline symbol resolution, we must store the full path of the dll for the resolving to work 
+    if( s_doOfflineSymbolResolve )
+    {
+        cachedModule->name = (char*)tracy_malloc_fast(imageNameLength + 2);
+        memcpy(cachedModule->name, imageName, imageNameLength);
+        cachedModule->name[imageNameLength + 1] = '\0';
+    }
+    else
+    {
+        auto ptr = imageName + imageNameLength;
+        while (ptr > imageName && *ptr != '\\' && *ptr != '/') ptr--;
+        if (ptr > imageName) ptr++;
+        const auto namelen = imageName + imageNameLength - ptr;
+        cachedModule->name = (char*)tracy_malloc_fast(namelen + 3);
+        cachedModule->name[0] = '[';
+        memcpy(cachedModule->name + 1, ptr, namelen);
+        cachedModule->name[namelen + 1] = ']';
+        cachedModule->name[namelen + 2] = '\0';
+    }
+
+    return cachedModule;
+}
+
+void InitCallstack()
+{
+    s_doOfflineSymbolResolve = getDoOfflineSymbolResolve();
+    if( s_doOfflineSymbolResolve )
+    {
+        TracyDebug("TRACY: enabling offline symbol resolving!\n");
+    }
+
+    dbgHelpInit();
+
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
 
     // use TRACY_NO_DBHELP_INIT_LOAD=1 to disable preloading of driver 
     // and process module symbol loading at startup time - they will be loaded on demand later
@@ -204,7 +276,7 @@ void InitCallstack()
                         path = full;
                     }
 
-                    SymLoadModuleEx( GetCurrentProcess(), nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0 );
+                    dbgHelpLoadSymbolsForModule( path, (DWORD64)dev[i], 0 );
 
                     const auto psz = strlen( path );
                     auto pptr = (char*)tracy_malloc_fast( psz+1 );
@@ -235,25 +307,12 @@ void InitCallstack()
             {
                 const auto base = uint64_t( info.lpBaseOfDll );
                 char name[1024];
-                const auto res = GetModuleFileNameA( mod[i], name, 1021 );
-                if( res > 0 )
+                const auto nameLength = GetModuleFileNameA( mod[i], name, 1021 );
+                if( nameLength > 0 )
                 {
                     // This may be a new module loaded since our call to SymInitialize.
                     // Just in case, force DbgHelp to load its pdb !
-                    SymLoadModuleEx(proc, NULL, name, NULL, (DWORD64)info.lpBaseOfDll, info.SizeOfImage, NULL, 0);
-
-                    auto ptr = name + res;
-                    while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
-                    if( ptr > name ) ptr++;
-                    const auto namelen = name + res - ptr;
-                    auto cache = s_modCache->push_next();
-                    cache->start = base;
-                    cache->end = base + info.SizeOfImage;
-                    cache->name = (char*)tracy_malloc_fast( namelen+3 );
-                    cache->name[0] = '[';
-                    memcpy( cache->name+1, ptr, namelen );
-                    cache->name[namelen+1] = ']';
-                    cache->name[namelen+2] = '\0';
+                    dbgHelpLoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
                 }
             }
         }
@@ -270,6 +329,11 @@ void EndCallstack()
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
+    if( s_doOfflineSymbolResolve )
+    {
+        return "[unresolved]";
+    }
+
     static char ret[MaxNameSize];
     const auto proc = GetCurrentProcess();
 
@@ -305,7 +369,13 @@ const char* GetKernelModulePath( uint64_t addr )
     return it->path;
 }
 
-static const char* GetModuleNameAndPrepareSymbols( uint64_t addr )
+struct ModuleNameAndBaseAddress
+{
+    const char* name;
+    uint64_t baseAddr;
+};
+
+ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
 {
     if( ( addr >> 63 ) != 0 )
     {
@@ -314,17 +384,17 @@ static const char* GetModuleNameAndPrepareSymbols( uint64_t addr )
             auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
             if( it != s_krnlCache + s_krnlCacheCnt )
             {
-                return it->mod;
+                return ModuleNameAndBaseAddress{ it->mod, it->addr };
             }
         }
-        return "<kernel>";
+        return ModuleNameAndBaseAddress{ "<kernel>", addr };
     }
 
     for( auto& v : *s_modCache )
     {
         if( addr >= v.start && addr < v.end )
         {
-            return v.name;
+            return ModuleNameAndBaseAddress{ v.name, v.start };
         }
     }
 
@@ -345,35 +415,33 @@ static const char* GetModuleNameAndPrepareSymbols( uint64_t addr )
                 if( addr >= base && addr < base + info.SizeOfImage )
                 {
                     char name[1024];
-                    const auto res = GetModuleFileNameA( mod[i], name, 1021 );
-                    if( res > 0 )
+                    const auto nameLength = GetModuleFileNameA( mod[i], name, 1021 );
+                    if( nameLength > 0 )
                     {
                         // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
-                        SymLoadModuleEx(proc, NULL, name, NULL, (DWORD64)info.lpBaseOfDll, info.SizeOfImage, NULL, 0);
-                        auto ptr = name + res;
-                        while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
-                        if( ptr > name ) ptr++;
-                        const auto namelen = name + res - ptr;
-                        auto cache = s_modCache->push_next();
-                        cache->start = base;
-                        cache->end = base + info.SizeOfImage;
-                        cache->name = (char*)tracy_malloc_fast( namelen+3 );
-                        cache->name[0] = '[';
-                        memcpy( cache->name+1, ptr, namelen );
-                        cache->name[namelen+1] = ']';
-                        cache->name[namelen+2] = '\0';
-                        return cache->name;
+                        ModuleCache* cachedModule = dbgHelpLoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
+                        return ModuleNameAndBaseAddress{ cachedModule->name, cachedModule->start };
                     }
                 }
             }
         }
     }
-    return "[unknown]";
+
+    return ModuleNameAndBaseAddress{ "[unknown]", 0x0 };
 }
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     CallstackSymbolData sym;
+
+    if( s_doOfflineSymbolResolve )
+    {
+        sym.file = "[unknown]";
+        sym.line = 0;
+        sym.needFree = false;
+        return sym;
+    }
+
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
@@ -401,15 +469,28 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
+    InitRpmalloc();
+
+    const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
+
+    if( s_doOfflineSymbolResolve )
+    {
+        cb_data[0].symAddr = ptr - moduleNameAndAddress.baseAddr;
+        cb_data[0].symLen = 0;
+
+        cb_data[0].name = CopyStringFast("[unresolved]");
+        cb_data[0].file = CopyStringFast("[unknown]");
+        cb_data[0].line = 0;
+
+        return { cb_data, 1, moduleNameAndAddress.name };
+    }
+
     int write;
     const auto proc = GetCurrentProcess();
-    InitRpmalloc();
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-
-    const auto moduleName = GetModuleNameAndPrepareSymbols(ptr);
 
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
@@ -459,7 +540,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb_data[write].line = line.LineNumber;
         }
 
-        cb_data[write].name = symValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleName );
+        cb_data[write].name = symValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleNameAndAddress.name );
         cb_data[write].file = CopyStringFast( filename );
         if( symValid )
         {
@@ -492,7 +573,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
                 cb.line = line.LineNumber;
             }
 
-            cb.name = symInlineValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleName );
+            cb.name = symInlineValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleNameAndAddress.name );
             cb.file = CopyStringFast( filename );
             if( symInlineValid )
             {
@@ -513,7 +594,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     DBGHELP_UNLOCK;
 #endif
 
-    return { cb_data, uint8_t( cb_num ), moduleName };
+    return { cb_data, uint8_t( cb_num ), moduleNameAndAddress.name };
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
@@ -696,7 +777,16 @@ void InitCallstackCritical()
 
 void InitCallstack()
 {
-    cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
+    if( getDoOfflineSymbolResolve() )
+    {
+        cb_bts = nullptr; // disable use of libbacktrace calls
+        TracyDebug("TRACY: enabling offline symbol resolving!\n");
+    }
+    else
+    {
+        cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
+    }
+
 #ifndef TRACY_DEMANGLE
     ___tracy_init_demangle_buffer();
 #endif
@@ -835,7 +925,15 @@ static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     CallstackSymbolData sym;
-    backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
+    if( cb_bts )
+    {
+        backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
+    }
+    else
+    {
+        SymbolAddressErrorCb(&sym, nullptr, 0);
+    }
+
     return sym;
 }
 
@@ -938,20 +1036,42 @@ void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
     cb_data[cb_num-1].symAddr = 0;
 }
 
+void getSymbolForOfflineResolve(void* address, Dl_info& dlinfo, CallstackEntry& cbEntry)
+{
+    // tagged with a string that we can identify as an unresolved symbol
+    cbEntry.name = CopyStringFast( "[unresolved]" );
+    // set .so relative offset so it can be resolved offline
+    cbEntry.symAddr = (uint64_t)address - (uint64_t)(dlinfo.dli_fbase);
+    cbEntry.symLen = 0x0;
+    cbEntry.file = CopyStringFast( "[unknown]" );
+    cbEntry.line = 0;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     InitRpmalloc();
     if( ptr >> 63 == 0 )
     {
-        cb_num = 0;
-        backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
-        assert( cb_num > 0 );
-
-        backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
-
         const char* symloc = nullptr;
         Dl_info dlinfo;
-        if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
+        if( dladdr( (void*)ptr, &dlinfo ) )
+        {
+            symloc = dlinfo.dli_fname;
+        }
+
+        if(cb_bts)
+        {
+            cb_num = 0;
+            backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
+            assert( cb_num > 0 );
+
+            backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
+        }
+        else
+        {
+            cb_num = 1;
+            getSymbolForOfflineResolve( (void*)ptr, dlinfo, cb_data[0] );
+        }
 
         return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };
     }

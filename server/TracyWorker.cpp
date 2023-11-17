@@ -553,11 +553,12 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     }
 }
 
-Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
+Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allowStringModification)
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_inconsistentSamples( false )
+    , m_allowStringModification(allowStringModification)
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
@@ -707,7 +708,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
     f.Read( sz );
     m_data.stringMap.reserve( sz );
-    m_data.stringData.reserve_exact( sz, m_slab );
+
+    if( !m_allowStringModification )
+    {
+        m_data.stringData.reserve_exact( sz, m_slab );
+    }
+    
     for( uint64_t i=0; i<sz; i++ )
     {
         uint64_t ptr, ssz;
@@ -716,7 +722,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         f.Read( dst, ssz );
         dst[ssz] = '\0';
         m_data.stringMap.emplace( charutil::StringKey { dst, size_t( ssz ) }, i );
-        m_data.stringData[i] = ( dst );
+
+        if( m_allowStringModification )
+        {
+            m_data.stringData.push_back( dst );
+        }
+        else
+        {
+            m_data.stringData[i] = ( dst );
+        }
+
         pointerMap.emplace( ptr, dst );
     }
 
@@ -2409,6 +2424,19 @@ const char* Worker::GetString( const StringIdx& idx ) const
 {
     assert( idx.Active() );
     return m_data.stringData[idx.Idx()];
+}
+
+uint32_t Worker::AddNewString(const char* newString)
+{
+    assert(m_allowStringModification);
+    uint64_t sz = strlen(newString);
+    auto ptr = m_slab.Alloc<char>( sz+1 );
+    memcpy( ptr, newString, sz );
+    ptr[sz] = '\0';
+    uint32_t idx = m_data.stringData.size();
+    m_data.stringMap.emplace( charutil::StringKey { ptr, sz }, idx );
+    m_data.stringData.push_back( ptr );
+    return idx;
 }
 
 static const char* BadExternalThreadNames[] = {

@@ -19,5 +19,5 @@ option('tracy_timer_fallback', type : 'boolean', value : false, description : 'U
 option('tracy_delayed_init', type : 'boolean', value : false, description : 'Enable delayed initialization of the library (init on first call)')
 option('tracy_manual_lifetime', type : 'boolean', value : false, description : 'Enable the manual lifetime management of the profile')
 option('tracy_fibers', type : 'boolean', value : false, description : 'Enable fibers support')
-option('tracy_shared_libs', type : 'boolean', value : false, description : 'Builds Tracy as a shared object', deprecated : 'default_library')
+option('tracy_shared_libs', type : 'boolean', value : false, description : 'Builds Tracy as a shared object (deprecated in favour of default_library=shared)', deprecated : true)
 option('tracy_no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')

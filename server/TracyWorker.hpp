@@ -667,7 +667,7 @@ public:
 
     void CacheSourceFiles();
 
-    uint32_t AddNewString(const char* newString);
+    StringLocation StoreString(const char* str, size_t sz);
 
 private:
     void Network();
@@ -896,7 +896,6 @@ private:
 
     uint32_t GetSingleStringIdx();
     uint32_t GetSecondStringIdx();
-    StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
     void CacheSource( const StringRef& str, const StringIdx& image = StringIdx() );

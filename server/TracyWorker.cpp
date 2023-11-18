@@ -2426,19 +2426,6 @@ const char* Worker::GetString( const StringIdx& idx ) const
     return m_data.stringData[idx.Idx()];
 }
 
-uint32_t Worker::AddNewString(const char* newString)
-{
-    assert(m_allowStringModification);
-    uint64_t sz = strlen(newString);
-    auto ptr = m_slab.Alloc<char>( sz+1 );
-    memcpy( ptr, newString, sz );
-    ptr[sz] = '\0';
-    uint32_t idx = m_data.stringData.size();
-    m_data.stringMap.emplace( charutil::StringKey { ptr, sz }, idx );
-    m_data.stringData.push_back( ptr );
-    return idx;
-}
-
 static const char* BadExternalThreadNames[] = {
     "ntdll.dll",
     "???",

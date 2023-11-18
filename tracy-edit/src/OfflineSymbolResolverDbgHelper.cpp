@@ -23,14 +23,15 @@ public:
     {
         m_procHandle = GetCurrentProcess();
 
-        if (!SymInitialize(m_procHandle, NULL, FALSE))
+        if( !SymInitialize(m_procHandle, NULL, FALSE) )
         {
             std::cerr << "SymInitialize() failed with: " << GetLastErrorString() << std::endl;
         }
         else
         {
-            const DWORD symopts = SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_DEBUG | SYMOPT_LOAD_LINES;
+            const DWORD symopts = SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES;
             SymSetOptions( symopts );
+            m_dbgHelpInitialized = true;
         }
     }
 
@@ -39,18 +40,20 @@ public:
         SymCleanup( m_procHandle );
     }
 
-    bool ResolveSymbolsForModule(const std::string& imagePath, const FrameEntryList& inputEntryList,
-                                 SymbolEntryList& resolvedEntries)
+    bool ResolveSymbolsForModule( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                                  SymbolEntryList& resolvedEntries )
     {
-        ULONG64 moduleBase = SymLoadModuleEx( m_procHandle, NULL, imagePath.c_str(), NULL, 0, 0, NULL, 0);
-        if (!moduleBase)
+        if( !m_dbgHelpInitialized ) return false;
+
+        ULONG64 moduleBase = SymLoadModuleEx( m_procHandle, NULL, imagePath.c_str(), NULL, 0, 0, NULL, 0 );
+        if( !moduleBase )
         {
             std::cerr << "SymLoadModuleEx() failed for module " << imagePath
                       << ": " << GetLastErrorString() << std::endl;
             return false;
         }
 
-        for (size_t i = 0; i < inputEntryList.size(); ++i)
+        for( size_t i = 0; i < inputEntryList.size(); ++i )
         {
             uint64_t offset = inputEntryList[i].symbolOffset;
             DWORD64 address = moduleBase + offset;
@@ -61,7 +64,7 @@ public:
 
             SymbolEntry newEntry;
 
-            if ( SymFromAddr( m_procHandle, address, NULL, symbolInfo ) )
+            if( SymFromAddr( m_procHandle, address, NULL, symbolInfo ) )
             {
                 newEntry.name = symbolInfo->Name;
                 //std::cout << "Resolved symbol to: '" << newEntry.name << "'" << std::endl;
@@ -84,7 +87,7 @@ public:
             resolvedEntries.push_back(std::move(newEntry));
         }
 
-        SymUnloadModule64(m_procHandle, moduleBase);
+        SymUnloadModule64( m_procHandle, moduleBase );
         return true;
     }
 
@@ -111,32 +114,17 @@ private:
         return message;
     }
 
+    bool m_dbgHelpInitialized = false;
     HANDLE m_procHandle = nullptr;
 };
 
 char SymbolResolver::s_symbolResolutionBuffer[symbolResolutionBufferSize];
 
-
-SymbolResolver* CreateResolver()
+bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                    SymbolEntryList& resolvedEntries )
 {
-    SymbolResolver* resolver = new SymbolResolver();
-    return resolver;
-}
-
-void DestroySymbolResolver(SymbolResolver* resolver)
-{
-    delete resolver;
-}
-
-bool ResolveSymbols(SymbolResolver* resolver, const std::string& imagePath,
-                    const FrameEntryList& inputEntryList,
-                    SymbolEntryList& resolvedEntries)
-{
-    if( resolver )
-    {
-        return resolver->ResolveSymbolsForModule( imagePath, inputEntryList, resolvedEntries );
-    }
-    return false;
+    static SymbolResolver resolver;
+    return resolver.ResolveSymbolsForModule( imagePath, inputEntryList, resolvedEntries );
 }
 
 #endif // #ifdef _WIN32

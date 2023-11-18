@@ -11,7 +11,7 @@
 
 #include "OfflineSymbolResolver.h"
 
-bool ApplyPathSubstitutions(std::string& path, const PathSubstitutionList& pathSubstituionlist)
+bool ApplyPathSubstitutions( std::string& path, const PathSubstitutionList& pathSubstituionlist )
 {
     for( const auto& substituion : pathSubstituionlist )
     {
@@ -24,21 +24,15 @@ bool ApplyPathSubstitutions(std::string& path, const PathSubstitutionList& pathS
     return false;
 }
 
-// TODO: use string hash map to reduce duplication or use some worker string internal hashing
-tracy::StringIdx AddSymbolString(tracy::Worker& worker, const char* str)
+tracy::StringIdx AddSymbolString( tracy::Worker& worker, const std::string& str )
 {
-    uint32_t newStringIdx = worker.AddNewString( str );
-    return tracy::StringIdx( newStringIdx );
+    // TODO: use string hash map to reduce potential string duplication?
+    tracy::StringLocation location = worker.StoreString( str.c_str(), str.length() );
+    return tracy::StringIdx( location.idx );
 }
 
-bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
-                  const PathSubstitutionList& pathSubstituionlist, bool verbose)
+bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubstituionlist, bool verbose )
 {
-    if( !resolver )
-    {
-        return false;
-    }
-
     uint64_t callstackFrameCount = worker.GetCallstackFrameCount();
     std::string relativeSoNameMatch = "[unresolved]";
 
@@ -89,21 +83,19 @@ bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
         std::string imagePath = worker.GetString( imageIdx );
 
         FrameEntryList& entries = imageIt->second;
-        if (!entries.size())
-        {
-            continue;
-        }
+
+        if( !entries.size() ) continue;
 
         std::cout << "Resolving " << entries.size() << " symbols for image: '" 
                   << imagePath << "'" << std::endl;
-        const bool substituted = ApplyPathSubstitutions(imagePath, pathSubstituionlist);
-        if (substituted)
+        const bool substituted = ApplyPathSubstitutions( imagePath, pathSubstituionlist );
+        if( substituted )
         {
             std::cout << "\tPath substituted to: '" << imagePath << "'" << std::endl;
         }
 
         SymbolEntryList resolvedEntries;
-        ResolveSymbols( resolver, imagePath, entries, resolvedEntries );
+        ResolveSymbols( imagePath, entries, resolvedEntries );
 
         if( resolvedEntries.size() != entries.size() )
         {
@@ -119,10 +111,8 @@ bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
             const SymbolEntry& symbolEntry = resolvedEntries[i];
 
             tracy::CallstackFrame& frame = *frameEntry.frame;
-            if (!symbolEntry.name.length())
-            {
-                continue;
-            }
+
+            if( !symbolEntry.name.length() ) continue;
 
             if( verbose )
             {
@@ -131,12 +121,12 @@ bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
                           << "' -> '" << symbolEntry.name << "'" << std::endl;
             }
 
-            frame.name = AddSymbolString( worker, symbolEntry.name.c_str() );
-            const char* newName = worker.GetString(frame.name);
+            frame.name = AddSymbolString( worker, symbolEntry.name );
+            const char* newName = worker.GetString( frame.name );
 
             if( symbolEntry.file.length() )
             {
-                frame.file = AddSymbolString( worker, symbolEntry.file.c_str() );
+                frame.file = AddSymbolString( worker, symbolEntry.file );
                 frame.line = symbolEntry.line;
             }
         }

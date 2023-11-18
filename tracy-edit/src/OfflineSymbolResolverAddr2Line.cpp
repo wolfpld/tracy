@@ -10,16 +10,16 @@
 #include <memory>
 #include <stdio.h>
 
-std::string ExecShellCommand(const char* cmd)
+std::string ExecShellCommand( const char* cmd )
 {
     std::array<char, 128> buffer;
     std::string result;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe)
+    if( !pipe )
     {
         return "";
     }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+    while( fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr )
     {
         result += buffer.data();
     }
@@ -29,13 +29,26 @@ std::string ExecShellCommand(const char* cmd)
 class SymbolResolver
 {
 public:
-    SymbolResolver(const std::string& addr2linePath)
-    : m_addr2LinePath(addr2linePath)
-    {}
-
-    bool ResolveSymbols(const std::string& imagePath, const FrameEntryList& inputEntryList,
-                        SymbolEntryList& resolvedEntries)
+    SymbolResolver( const std::string& addr2linePath )
     {
+        std::stringstream result(ExecShellCommand("which addr2line"));
+        std::getline(result, m_addr2LinePath);
+
+        if( !m_addr2LinePath.length() )
+        {
+            std::cerr << "'addr2line' was not found in the system, please installed it" << std::endl;
+        }
+        else
+        {
+            std::cout << "Using 'addr2line' found at: '" << m_addr2LinePath.c_str() << "'" << std::endl;
+        }
+    }
+
+    bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                         SymbolEntryList& resolvedEntries )
+    {
+        if (!m_addr2LinePath.length()) return false;
+
         // generate a single addr2line cmd line for all addresses in one invocation
         std::stringstream ss;
         ss << m_addr2LinePath << " -C -f -e " << imagePath << " -a ";
@@ -91,34 +104,11 @@ private:
     std::string m_addr2LinePath;
 };
 
-SymbolResolver* CreateResolver()
+bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                     SymbolEntryList& resolvedEntries )
 {
-    std::stringstream result( ExecShellCommand("which addr2line") );
-    std::string addr2LinePath;
-    std::getline( result, addr2LinePath );
-
-    if(!addr2LinePath.length())
-    {
-        std::cerr << "'addr2line' was not found in the system, please installed it" << std::endl;
-        return nullptr;
-    }
-    std::cout << "Using 'addr2line' found at: '" << addr2LinePath.c_str() << "'" << std::endl;
-    return new SymbolResolver{addr2LinePath};
-}
-
-void DestroySymbolResolver(SymbolResolver* resolver)
-{
-    delete resolver;
-}
-
-bool ResolveSymbols(SymbolResolver* resolver, const std::string& imagePath,
-                    const FrameEntryList& inputEntryList, SymbolEntryList& resolvedEntries)
-{
-    if (resolver)
-    {
-        return resolver->ResolveSymbols( imagePath, inputEntryList, resolvedEntries );
-    }
-    return false;
+    static SymbolResolver symbolResolver;
+    return symbolResolver.ResolveSymbols( imagePath, inputEntryList, resolvedEntries );
 }
 
 #endif // #ifndef _WIN32

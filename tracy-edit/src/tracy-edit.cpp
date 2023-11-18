@@ -177,15 +177,15 @@ int main( int argc, char** argv )
     return 0;
 }
 
-void PatchSymbols(tracy::Worker& worker, const Args& args)
+void PatchSymbols( tracy::Worker& worker, const Args& args )
 {
     std::cout << "Resolving and patching symbols..." << std::endl;
 
     PathSubstitutionList pathSubstitutionList;
-    for (const std::string& pathSubst : args.pathSubstitutions)
+    for( const std::string& pathSubst : args.pathSubstitutions )
     {
         std::size_t pos = pathSubst.find(';');
-        if (pos == std::string::npos)
+        if( pos == std::string::npos )
         {
             std::cerr << "Ignoring invalid path substitution: '" << pathSubst
                 << " '(please separate the regex of the string to replace with a ';')" << std::endl;
@@ -194,11 +194,11 @@ void PatchSymbols(tracy::Worker& worker, const Args& args)
 
         try
         {
-            std::regex reg(pathSubst.substr(0, pos));
-            std::string replacementStr(pathSubst.substr(pos + 1));
-            pathSubstitutionList.push_back(std::pair(reg, replacementStr));
+            std::regex reg( pathSubst.substr(0, pos) );
+            std::string replacementStr( pathSubst.substr(pos + 1) );
+            pathSubstitutionList.push_back( std::pair(reg, replacementStr) );
         }
-        catch (std::exception& e)
+        catch( std::exception& e )
         {
             std::cerr << "Ignoring invalid path substitution: '" << pathSubst
                 << "' (" << e.what() << ")" << std::endl;
@@ -206,15 +206,8 @@ void PatchSymbols(tracy::Worker& worker, const Args& args)
         }
     }
 
-    SymbolResolver* resolver = CreateResolver();
-    if (resolver)
+    if( !PatchSymbols( worker, pathSubstitutionList, args.verbose ) )
     {
-        PatchSymbols(resolver, worker, pathSubstitutionList, args.verbose);
-
-        DestroySymbolResolver(resolver);
-    }
-    else
-    {
-        std::cerr << "Failed to create symbol resolver - skipping resolving" << std::endl;
+        std::cerr << "Failed to patch symbols" << std::endl;
     }
 }

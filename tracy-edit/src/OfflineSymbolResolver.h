@@ -11,11 +11,6 @@ namespace tracy
     class Worker;
 }
 
-class SymbolResolver;
-
-SymbolResolver* CreateResolver();
-void DestroySymbolResolver(SymbolResolver* resolver);
-
 struct FrameEntry
 {
     tracy::CallstackFrame* frame = nullptr;
@@ -33,13 +28,11 @@ struct SymbolEntry
 
 using SymbolEntryList = std::vector<SymbolEntry>;
 
-bool ResolveSymbols(SymbolResolver* resolver, const std::string& imagePath,
-                    const FrameEntryList& inputEntryList,
-                    SymbolEntryList& resolvedEntries);
+bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                     SymbolEntryList& resolvedEntries );
 
 using PathSubstitutionList = std::vector<std::pair<std::regex, std::string> >;
 
-bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
-                  const PathSubstitutionList& pathSubstituionlist, bool verbose = false);
+bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubstituionlist, bool verbose = false );
 
 #endif // __SYMBOLRESOLVER_HPP__

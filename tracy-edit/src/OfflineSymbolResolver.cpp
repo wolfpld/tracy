@@ -11,6 +11,19 @@
 
 #include "OfflineSymbolResolver.h"
 
+bool ApplyPathSubstitutions(std::string& path, const PathSubstitutionList& pathSubstituionlist)
+{
+    for( const auto& substituion : pathSubstituionlist )
+    {
+        if( std::regex_match(path, substituion.first) )
+        {
+            path = std::regex_replace( path, substituion.first, substituion.second );
+            return true;
+        }
+    }
+    return false;
+}
+
 // TODO: use string hash map to reduce duplication or use some worker string internal hashing
 tracy::StringIdx AddSymbolString(tracy::Worker& worker, const char* str)
 {
@@ -18,7 +31,8 @@ tracy::StringIdx AddSymbolString(tracy::Worker& worker, const char* str)
     return tracy::StringIdx( newStringIdx );
 }
 
-bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker, bool verbose)
+bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
+                  const PathSubstitutionList& pathSubstituionlist, bool verbose)
 {
     if( !resolver )
     {
@@ -72,48 +86,57 @@ bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker, bool verbose)
          imageItEnd = entriesPerImageIdx.end(); imageIt != imageItEnd; ++imageIt )
     {
         tracy::StringIdx imageIdx( imageIt->first );
-        const char* imageName = worker.GetString( imageIdx );
+        std::string imagePath = worker.GetString( imageIdx );
 
         FrameEntryList& entries = imageIt->second;
-
-        std::cout << "Resolving " << entries.size() << " symbols for image: '" << imageName << "'" << std::endl;
-
-        if(!entries.size())
+        if (!entries.size())
         {
             continue;
         }
 
+        std::cout << "Resolving " << entries.size() << " symbols for image: '" 
+                  << imagePath << "'" << std::endl;
+        const bool substituted = ApplyPathSubstitutions(imagePath, pathSubstituionlist);
+        if (substituted)
+        {
+            std::cout << "\tPath substituted to: '" << imagePath << "'" << std::endl;
+        }
+
         SymbolEntryList resolvedEntries;
-        ResolveSymbols( resolver, imageName, entries, resolvedEntries );
+        ResolveSymbols( resolver, imagePath, entries, resolvedEntries );
 
         if( resolvedEntries.size() != entries.size() )
         {
-            std::cerr << "ERROR: failed to resolve all entries! (got: " << resolvedEntries.size() << ")" << std::endl;
+            std::cerr << " failed to resolve all entries! (got: " 
+                      << resolvedEntries.size() << ")" << std::endl;
             continue;
         }
 
         // finally patch the string with the resolved symbol data
-        for (size_t i = 0; i < resolvedEntries.size(); ++i)
+        for ( size_t i = 0; i < resolvedEntries.size(); ++i )
         {
             FrameEntry& frameEntry = entries[i];
             const SymbolEntry& symbolEntry = resolvedEntries[i];
 
             tracy::CallstackFrame& frame = *frameEntry.frame;
-            if(!symbolEntry.name.length())
-                continue;
-
-            if(verbose)
+            if (!symbolEntry.name.length())
             {
-                const char* nameStr = worker.GetString(frame.name);
-                std::cout << "patching '" << nameStr << "' of '" << imageName << "' -> '" << symbolEntry.name << "'" << std::endl;
+                continue;
             }
 
-            frame.name = AddSymbolString(worker, symbolEntry.name.c_str());
+            if( verbose )
+            {
+                const char* nameStr = worker.GetString( frame.name );
+                std::cout << "patching '" << nameStr << "' of '" << imagePath 
+                          << "' -> '" << symbolEntry.name << "'" << std::endl;
+            }
+
+            frame.name = AddSymbolString( worker, symbolEntry.name.c_str() );
             const char* newName = worker.GetString(frame.name);
 
-            if(symbolEntry.file.length())
+            if( symbolEntry.file.length() )
             {
-                frame.file = AddSymbolString(worker, symbolEntry.file.c_str());
+                frame.file = AddSymbolString( worker, symbolEntry.file.c_str() );
                 frame.line = symbolEntry.line;
             }
         }

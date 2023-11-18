@@ -33,18 +33,18 @@ public:
     : m_addr2LinePath(addr2linePath)
     {}
 
-    bool ResolveSymbols(const char* imageName, const FrameEntryList& inputEntryList,
+    bool ResolveSymbols(const std::string& imagePath, const FrameEntryList& inputEntryList,
                         SymbolEntryList& resolvedEntries)
     {
         // generate a single addr2line cmd line for all addresses in one invocation
         std::stringstream ss;
-        ss << m_addr2LinePath << " -C -f -e " << imageName << " -a ";
-        for (const FrameEntry& entry : inputEntryList)
+        ss << m_addr2LinePath << " -C -f -e " << imagePath << " -a ";
+        for ( const FrameEntry& entry : inputEntryList )
         {
             ss << " 0x" << std::hex << entry.symbolOffset;
         }
 
-        std::string resultStr = ExecShellCommand(ss.str().c_str());
+        std::string resultStr = ExecShellCommand( ss.str().c_str() );
         std::stringstream result(resultStr);
         //printf("executing: '%s' got '%s'\n", ss.str().c_str(), result.str().c_str());
 
@@ -53,15 +53,15 @@ public:
         // symbol_name
         // file:line
 
-        for (size_t i = 0; i < inputEntryList.size(); ++i)
+        for( size_t i = 0; i < inputEntryList.size(); ++i )
         {
             const FrameEntry& inputEntry = inputEntryList[i];
 
             SymbolEntry newEntry;
 
             std::string addr;
-            std::getline(result, addr);
-            std::getline(result, newEntry.name);
+            std::getline( result, addr );
+            std::getline( result, newEntry.name );
             if (newEntry.name == "??")
             {
                 newEntry.name = "[unknown] + " + std::to_string(inputEntry.symbolOffset);
@@ -69,19 +69,19 @@ public:
 
             std::string fileLine;
             std::getline(result, fileLine);
-            if (fileLine != "??:?")
+            if ( fileLine != "??:?" )
             {
                 size_t pos = fileLine.find_last_of(':');
-                if (pos != std::string::npos)
+                if ( pos != std::string::npos )
                 {
-                    newEntry.file = fileLine.substr(0, pos);
-                    std::string lineStr = fileLine.substr(pos + 1);
+                    newEntry.file = fileLine.substr( 0, pos );
+                    std::string lineStr = fileLine.substr( pos + 1 );
                     char* after = nullptr;
-                    newEntry.line = strtol(lineStr.c_str(), &after, 10);
+                    newEntry.line = strtol( lineStr.c_str(), &after, 10 );
                 }
             }
 
-            resolvedEntries.push_back(std::move(newEntry));
+            resolvedEntries.push_back( std::move(newEntry) );
         }
 
         return true;
@@ -93,9 +93,9 @@ private:
 
 SymbolResolver* CreateResolver()
 {
-    std::stringstream result(ExecShellCommand("which addr2line"));
+    std::stringstream result( ExecShellCommand("which addr2line") );
     std::string addr2LinePath;
-    std::getline(result, addr2LinePath);
+    std::getline( result, addr2LinePath );
 
     if(!addr2LinePath.length())
     {
@@ -111,12 +111,12 @@ void DestroySymbolResolver(SymbolResolver* resolver)
     delete resolver;
 }
 
-bool ResolveSymbols(SymbolResolver* resolver, const char* imageName,
+bool ResolveSymbols(SymbolResolver* resolver, const std::string& imagePath,
                     const FrameEntryList& inputEntryList, SymbolEntryList& resolvedEntries)
 {
     if (resolver)
     {
-        return resolver->ResolveSymbols(imageName, inputEntryList, resolvedEntries);
+        return resolver->ResolveSymbols( imagePath, inputEntryList, resolvedEntries );
     }
     return false;
 }

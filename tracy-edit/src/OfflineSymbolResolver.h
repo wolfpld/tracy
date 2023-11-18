@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <regex>
 
 namespace tracy
 {
@@ -32,10 +33,13 @@ struct SymbolEntry
 
 using SymbolEntryList = std::vector<SymbolEntry>;
 
-bool ResolveSymbols(SymbolResolver* resolver, const char* imageName,
+bool ResolveSymbols(SymbolResolver* resolver, const std::string& imagePath,
                     const FrameEntryList& inputEntryList,
                     SymbolEntryList& resolvedEntries);
 
-bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker, bool verbose = false);
+using PathSubstitutionList = std::vector<std::pair<std::regex, std::string> >;
+
+bool PatchSymbols(SymbolResolver* resolver, tracy::Worker& worker,
+                  const PathSubstitutionList& pathSubstituionlist, bool verbose = false);
 
 #endif // __SYMBOLRESOLVER_HPP__

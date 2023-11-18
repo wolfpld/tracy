@@ -39,13 +39,13 @@ public:
         SymCleanup( m_procHandle );
     }
 
-    bool ResolveSymbolsForModule(const char* fileName, const FrameEntryList& inputEntryList,
+    bool ResolveSymbolsForModule(const std::string& imagePath, const FrameEntryList& inputEntryList,
                                  SymbolEntryList& resolvedEntries)
     {
-        ULONG64 moduleBase = SymLoadModuleEx( m_procHandle, NULL, fileName, NULL, 0, 0, NULL, 0 );
+        ULONG64 moduleBase = SymLoadModuleEx( m_procHandle, NULL, imagePath.c_str(), NULL, 0, 0, NULL, 0);
         if (!moduleBase)
         {
-            std::cerr << "SymLoadModuleEx() failed for module " << fileName 
+            std::cerr << "SymLoadModuleEx() failed for module " << imagePath
                       << ": " << GetLastErrorString() << std::endl;
             return false;
         }
@@ -128,13 +128,13 @@ void DestroySymbolResolver(SymbolResolver* resolver)
     delete resolver;
 }
 
-bool ResolveSymbols(SymbolResolver* resolver, const char* imageName,
+bool ResolveSymbols(SymbolResolver* resolver, const std::string& imagePath,
                     const FrameEntryList& inputEntryList,
                     SymbolEntryList& resolvedEntries)
 {
     if( resolver )
     {
-        return resolver->ResolveSymbolsForModule( imageName, inputEntryList, resolvedEntries );
+        return resolver->ResolveSymbolsForModule( imagePath, inputEntryList, resolvedEntries );
     }
     return false;
 }

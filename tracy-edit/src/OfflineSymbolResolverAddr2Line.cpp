@@ -29,9 +29,9 @@ std::string ExecShellCommand( const char* cmd )
 class SymbolResolver
 {
 public:
-    SymbolResolver( const std::string& addr2linePath )
+    SymbolResolver()
     {
-        std::stringstream result(ExecShellCommand("which addr2line"));
+        std::stringstream result( ExecShellCommand("which addr2line") );
         std::getline(result, m_addr2LinePath);
 
         if( !m_addr2LinePath.length() )

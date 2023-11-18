@@ -1,106 +1,112 @@
-project('tracy', ['cpp'], version: '0.10.0')
+project('tracy', ['cpp'], version: '0.10.0', meson_version: '>=0.63.0')
 
+# internal compiler flags
 tracy_compile_args = []
 
+# compiler flags shared between the capture library itself and the code using it
+tracy_common_args = []
+
 if get_option('tracy_enable')
-  tracy_compile_args += ['-DTRACY_ENABLE']
+  tracy_common_args += ['-DTRACY_ENABLE']
 endif
 
 if get_option('tracy_on_demand')
-  tracy_compile_args += ['-DTRACY_ON_DEMAND']
+  tracy_common_args += ['-DTRACY_ON_DEMAND']
 endif
 
 if get_option('tracy_callstack')
-  tracy_compile_args += ['-DTRACY_CALLSTACK']
+  tracy_common_args += ['-DTRACY_CALLSTACK']
 endif
 
 if get_option('tracy_no_callstack')
-  tracy_compile_args += ['-DTRACY_NO_CALLSTACK']
+  tracy_common_args += ['-DTRACY_NO_CALLSTACK']
 endif
 
 if get_option('tracy_no_callstack_inlines')
-  tracy_compile_args += ['-DTRACY_NO_CALLSTACK_INLINES']
+  tracy_common_args += ['-DTRACY_NO_CALLSTACK_INLINES']
 endif
 
 if get_option('tracy_only_localhost')
-  tracy_compile_args += ['-DTRACY_ONLY_LOCALHOST']
+  tracy_common_args += ['-DTRACY_ONLY_LOCALHOST']
 endif
 
 if get_option('tracy_no_broadcast')
-  tracy_compile_args += ['-DTRACY_NO_BROADCAST']
+  tracy_common_args += ['-DTRACY_NO_BROADCAST']
 endif
 
 if get_option('tracy_only_ipv4')
-  tracy_compile_args += ['-DTRACY_ONLY_IPV4']
+  tracy_common_args += ['-DTRACY_ONLY_IPV4']
 endif
 
 if get_option('tracy_no_code_transfer')
-  tracy_compile_args += ['-DTRACY_NO_CODE_TRANSFER']
+  tracy_common_args += ['-DTRACY_NO_CODE_TRANSFER']
 endif
 
 if get_option('tracy_no_context_switch')
-  tracy_compile_args += ['-DTRACY_NO_CONTEXT_SWITCH']
+  tracy_common_args += ['-DTRACY_NO_CONTEXT_SWITCH']
 endif
 
 if get_option('tracy_no_exit')
-  tracy_compile_args += ['-DTRACY_NO_EXIT']
+  tracy_common_args += ['-DTRACY_NO_EXIT']
 endif
 
 if get_option('tracy_no_sampling')
-  tracy_compile_args += ['-DTRACY_NO_SAMPLING']
+  tracy_common_args += ['-DTRACY_NO_SAMPLING']
 endif
 
 if get_option('tracy_no_verify')
-  tracy_compile_args += ['-DTRACY_NO_VERIFY']
+  tracy_common_args += ['-DTRACY_NO_VERIFY']
 endif
 
 if get_option('tracy_no_vsync_capture')
-  tracy_compile_args += ['-DTRACY_NO_VSYNC_CAPTURE']
+  tracy_common_args += ['-DTRACY_NO_VSYNC_CAPTURE']
 endif
 
 if get_option('tracy_no_frame_image')
-  tracy_compile_args += ['-DTRACY_NO_FRAME_IMAGE']
+  tracy_common_args += ['-DTRACY_NO_FRAME_IMAGE']
 endif
 
 if get_option('tracy_no_system_tracing')
-  tracy_compile_args += ['-DTRACY_NO_SYSTEM_TRACING']
+  tracy_common_args += ['-DTRACY_NO_SYSTEM_TRACING']
 endif
 
 if get_option('tracy_patchable_nopsleds')
-  tracy_compile_args += ['-DTRACY_PATCHABLE_NOPSLEDS']
+  tracy_common_args += ['-DTRACY_PATCHABLE_NOPSLEDS']
 endif
 
 if get_option('tracy_delayed_init')
-  tracy_compile_args += ['-DTRACY_DELAYED_INIT']
+  tracy_common_args += ['-DTRACY_DELAYED_INIT']
 endif
 
 if get_option('tracy_manual_lifetime')
-  tracy_compile_args += ['-DTRACY_MANUAL_LIFETIME']
+  tracy_common_args += ['-DTRACY_MANUAL_LIFETIME']
 endif
 
 if get_option('tracy_fibers')
-  tracy_compile_args += ['-DTRACY_FIBERS']
+  tracy_common_args += ['-DTRACY_FIBERS']
 endif
 
 if get_option('tracy_timer_fallback')
-  tracy_compile_args += ['-DTRACY_TIMER_FALLBACK']
-endif
-
-tracy_shared_libs = get_option('tracy_shared_libs')
-if tracy_shared_libs
-  add_project_arguments('-DTRACY_EXPORTS', language : 'cpp')
+  tracy_common_args += ['-DTRACY_TIMER_FALLBACK']
 endif
 
 if get_option('tracy_no_crash_handler')
-  tracy_compile_args += ['-DTRACY_NO_CRASH_HANDLER']
+  tracy_common_args += ['-DTRACY_NO_CRASH_HANDLER']
 endif
 
-add_project_arguments(tracy_compile_args, language : 'cpp')
+tracy_shared_libs = get_option('default_library') == 'shared'
+if not tracy_shared_libs and get_option('tracy_shared_libs')
+  warning('tracy_shared_libs is set to true, but default_library is set to static. Building static library.')
+endif
+
+if tracy_shared_libs
+  tracy_compile_args += ['-DTRACY_EXPORTS']
+endif
 
 threads_dep = dependency('threads')
 
 if host_machine.system() == 'windows'
-  add_project_arguments('-DWINVER=0x0601', '-D_WIN32_WINNT=0x0601',  language: 'cpp')
+  tracy_compile_args += ['-DWINVER=0x0601', '-D_WIN32_WINNT=0x0601']
 endif
 
 includes = [
@@ -167,25 +173,20 @@ if compiler.get_id() != 'msvc'
   override_options += 'cpp_std=c++11'
 endif
 
-if tracy_shared_libs
-  tracy = shared_library('tracy', tracy_src, tracy_header_files,
+tracy_compile_args += tracy_common_args
+
+tracy = library('tracy', tracy_src, tracy_header_files,
     dependencies        : [ threads_dep ],
     include_directories : tracy_public_include_dirs,
+    cpp_args            : tracy_compile_args,
     override_options    : override_options,
     install             : true)
-else
-  tracy = static_library('tracy', tracy_src, tracy_header_files,
-    dependencies        : [ threads_dep ],
-    include_directories : tracy_public_include_dirs,
-    override_options    : override_options,
-    install             : true)
-endif
 
 install_headers(includes, subdir : 'tracy')
 install_headers(common_includes, subdir : 'common')
 install_headers(client_includes, subdir : 'client')
 
-tracy_dep_compile_args = tracy_compile_args
+tracy_dep_compile_args = tracy_common_args
 
 if tracy_shared_libs
   tracy_dep_compile_args += [ '-DTRACY_IMPORTS' ]

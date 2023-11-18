@@ -93,9 +93,11 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 namespace tracy
 {
 
+// TODO: use TRACY_SYMBOL_OFFLINE_RESOLVE to this at compilation time
+
 // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set to "1", instead of fully resolving symbols at runtime,
 // simply resolve the offset and image name (which will be enough the resolving to be done offline)
-bool getDoOfflineSymbolResolve()
+bool ShouldResolveSymbolsOffline()
 {
     const char* symbolOfflineResolve = GetEnvVar( "TRACY_SYMBOL_OFFLINE_RESOLVE" );
     return (symbolOfflineResolve && symbolOfflineResolve[0] == '1');
@@ -150,12 +152,9 @@ void InitCallstackCritical()
     ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
 }
 
-void dbgHelpInit()
+void DbgHelpInit()
 {
-    if( s_doOfflineSymbolResolve )
-    {
-        return;
-    }
+    if( s_doOfflineSymbolResolve ) return;
 
     _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymAddrIncludeInlineTrace");
     _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymQueryInlineTrace");
@@ -175,18 +174,16 @@ void dbgHelpInit()
 #endif
 }
 
-DWORD64 dbgHelpLoadSymbolsForModule(PCSTR imageName, DWORD64 baseOfDll, DWORD bllSize)
+DWORD64 DbgHelpLoadSymbolsForModule( const char* imageName, uint64_t baseOfDll, uint32_t bllSize )
 {
-    if( !s_doOfflineSymbolResolve )
-    {
-        return SymLoadModuleEx( GetCurrentProcess(), nullptr, imageName, nullptr, baseOfDll, bllSize, nullptr, 0 );
-    }
-    return 0x0;
+    if( s_doOfflineSymbolResolve ) return 0;
+
+    return SymLoadModuleEx( GetCurrentProcess(), nullptr, imageName, nullptr, baseOfDll, bllSize, nullptr, 0 );
 }
 
-ModuleCache* dbgHelpLoadSymbolsForModuleAndCache(PCSTR imageName, DWORD imageNameLength, DWORD64 baseOfDll, DWORD dllSize)
+ModuleCache* DbgHelpLoadSymbolsForModuleAndCache( const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
 {
-    dbgHelpLoadSymbolsForModule( imageName, baseOfDll, dllSize );
+    DbgHelpLoadSymbolsForModule( imageName, baseOfDll, dllSize );
 
     ModuleCache* cachedModule = s_modCache->push_next();
     cachedModule->start = baseOfDll;
@@ -195,9 +192,9 @@ ModuleCache* dbgHelpLoadSymbolsForModuleAndCache(PCSTR imageName, DWORD imageNam
     // when doing offline symbol resolution, we must store the full path of the dll for the resolving to work 
     if( s_doOfflineSymbolResolve )
     {
-        cachedModule->name = (char*)tracy_malloc_fast(imageNameLength + 2);
+        cachedModule->name = (char*)tracy_malloc_fast(imageNameLength + 1);
         memcpy(cachedModule->name, imageName, imageNameLength);
-        cachedModule->name[imageNameLength + 1] = '\0';
+        cachedModule->name[imageNameLength] = '\0';
     }
     else
     {
@@ -217,13 +214,13 @@ ModuleCache* dbgHelpLoadSymbolsForModuleAndCache(PCSTR imageName, DWORD imageNam
 
 void InitCallstack()
 {
-    s_doOfflineSymbolResolve = getDoOfflineSymbolResolve();
+    s_doOfflineSymbolResolve = ShouldResolveSymbolsOffline();
     if( s_doOfflineSymbolResolve )
     {
         TracyDebug("TRACY: enabling offline symbol resolving!\n");
     }
 
-    dbgHelpInit();
+    DbgHelpInit();
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
@@ -276,7 +273,7 @@ void InitCallstack()
                         path = full;
                     }
 
-                    dbgHelpLoadSymbolsForModule( path, (DWORD64)dev[i], 0 );
+                    DbgHelpLoadSymbolsForModule( path, (DWORD64)dev[i], 0 );
 
                     const auto psz = strlen( path );
                     auto pptr = (char*)tracy_malloc_fast( psz+1 );
@@ -312,7 +309,7 @@ void InitCallstack()
                 {
                     // This may be a new module loaded since our call to SymInitialize.
                     // Just in case, force DbgHelp to load its pdb !
-                    dbgHelpLoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
+                    DbgHelpLoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
                 }
             }
         }
@@ -329,10 +326,7 @@ void EndCallstack()
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
-    if( s_doOfflineSymbolResolve )
-    {
-        return "[unresolved]";
-    }
+    if( s_doOfflineSymbolResolve ) return "[unresolved]";
 
     static char ret[MaxNameSize];
     const auto proc = GetCurrentProcess();
@@ -419,7 +413,7 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
                     if( nameLength > 0 )
                     {
                         // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
-                        ModuleCache* cachedModule = dbgHelpLoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
+                        ModuleCache* cachedModule = DbgHelpLoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
                         return ModuleNameAndBaseAddress{ cachedModule->name, cachedModule->start };
                     }
                 }
@@ -777,7 +771,7 @@ void InitCallstackCritical()
 
 void InitCallstack()
 {
-    if( getDoOfflineSymbolResolve() )
+    if( ShouldResolveSymbolsOffline() )
     {
         cb_bts = nullptr; // disable use of libbacktrace calls
         TracyDebug("TRACY: enabling offline symbol resolving!\n");

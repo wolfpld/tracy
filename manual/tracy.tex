@@ -1782,6 +1782,32 @@ At initilization time, tracy will attempt to preload symbols for device drivers 
 
 Inline frames retrieval on Windows can be multiple orders of magnitude slower than just performing essential symbol resolution. This manifests as profiler seemingly being stuck for a long time, having hundreds of thousands of query backlog entries queued, which are slowly trickling down. If your use case requires speed of operation rather than having call stacks with inline frames included, you may define the \texttt{TRACY\_NO\_CALLSTACK\_INLINES} macro, which will make the profiler stick to the basic but fast frame resolution mode.
 
+\paragraph{Offline symbol resolution}
+
+By default, tracy client resolves callstack symbols in a background thread at runtime.
+This process requires that tracy client load symbols for the shared libraries 
+involved, which requires additial memory allocations, and potential impact runtime performance if a lot of symbol queries are involved.
+As an alternative to to runtime symbol resolution, we can set the environment variable
+ \texttt{TRACY\_SYMBOL\_OFFLINE\_RESOLVE} to 1 and instead have tracy client only resolve
+ the minimal set of info required for offline resolution (a shared library path and an offset into that shared library).
+ 
+The generated tracy capture will have callstack frames symbols showing \texttt{[unresolved]}.
+The \texttt{tracy-edit} tool can be used to load that capture, perforce symbol resolution offline
+(by passing \texttt{-r}) and writing out a new capture with symbols resolved.
+By default \texttt{tracy-edit} will use the original shared libraries paths that were recorded 
+in the capture (which assumes running in the same machine or a machine with identical 
+filesystem setup as the one used to run the tracy instrumented application).
+ You can do path substitution with the \texttt{-s} option to perform any number of path
+substitions in order to use symbols located elsewhere.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Beware that \texttt{tracy-edit} will use any matching symbol file to the path it resolved to (no symbol version checking is done), so if the symbol file doesn't match the code that was used when doing the callstack capturing you will get incorrect results.
+\end{bclogo}
+
 \subsection{Lua support}
 
 To profile Lua code using Tracy, include the \texttt{public/tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.

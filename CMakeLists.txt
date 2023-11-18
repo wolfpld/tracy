@@ -85,6 +85,7 @@ set_option(TRACY_FIBERS "Enable fibers support" OFF)
 set_option(TRACY_NO_CRASH_HANDLER "Disable crash handling" OFF)
 set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 set_option(TRACE_CLIENT_LIBUNWIND_BACKTRACE "Use libunwind backtracing where supported" OFF)
+set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of runtime symbol resolving, sore offset and sharedlib path for offline symbol resolution" OFF)
 
 if(NOT TRACY_STATIC)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)

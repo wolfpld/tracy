@@ -25,6 +25,8 @@ jobs:
       run: make -j`nproc` -C csvexport/build/unix debug release
     - name: Import-chrome utility
       run: make -j`nproc` -C import-chrome/build/unix debug release
+    - name: tracy-edit utility
+      run: make -j`nproc` -C tracy-edit/build/unix debug release
     - name: Library
       run: make -j`nproc` -C library/unix debug release
     - name: Library (meson)

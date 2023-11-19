@@ -5077,13 +5077,12 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     } );
 
     assert( fd->continuous == 0 );
-    const auto time = TscTime( ev.time );
     if( fd->frames.empty() )
     {
-        if ( !m_ignoreFrameEndFaults )
-            FrameEndFailure();
+        if( !m_ignoreFrameEndFaults ) FrameEndFailure();
         return;
     }
+    const auto time = TscTime( ev.time );
     assert( fd->frames.back().end == -1 );
     fd->frames.back().end = time;
     if( m_data.lastTime < time ) m_data.lastTime = time;

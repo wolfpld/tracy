@@ -1,0 +1,39 @@
+name: linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-22.04
+    container: archlinux:base-devel
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install linux libraries
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 capstone tbb debuginfod wayland dbus libxkbcommon libglvnd meson
+    - name: Profiler GUI
+      run: make -j`nproc` -C profiler/build/unix debug release
+    - name: Update utility
+      run: make -j`nproc` -C update/build/unix debug release
+    - name: Capture utility
+      run: make -j`nproc` -C capture/build/unix debug release
+    - name: Csvexport utility
+      run: make -j`nproc` -C csvexport/build/unix debug release
+    - name: Import-chrome utility
+      run: make -j`nproc` -C import-chrome/build/unix debug release
+    - name: Library
+      run: make -j`nproc` -C library/unix debug release
+    - name: Library (meson)
+      run: meson setup -Dprefix=$PWD/install build && meson compile -C build && meson install -C build
+    - name: Test application
+      run: |
+        make -j`nproc` -C test
+        make -j`nproc` -C test clean
+        make -j`nproc` -C test TRACYFLAGS=-DTRACY_ON_DEMAND
+        make -j`nproc` -C test clean
+        make -j`nproc` -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"
+        make           -C test -B ../public/TracyClient.o DEFINES='-DTRACY_DEMANGLE'

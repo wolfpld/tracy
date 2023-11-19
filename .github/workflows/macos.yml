@@ -1,4 +1,4 @@
-name: gcc
+name: macos
 
 on:
   push:
@@ -9,19 +9,10 @@ on:
 jobs:
   build:
 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, macOS-latest]
-
+    runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install linux libraries
-      if: ${{ matrix.os == 'ubuntu-22.04' }}
-      run: sudo apt-get update && sudo apt-get -y install libdbus-1-dev libcapstone-dev libtbb-dev libdebuginfod-dev libxkbcommon-dev libegl-dev libwayland-dev meson
     - name: Install macos libraries
-      if: ${{ matrix.os == 'macOS-latest' }}
       run: brew install capstone tbb pkg-config glfw meson
     - name: Profiler GUI
       run: make -j`nproc` -C profiler/build/unix debug release

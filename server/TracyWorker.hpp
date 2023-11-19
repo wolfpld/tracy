@@ -980,6 +980,7 @@ private:
     int m_bufferOffset;
     bool m_onDemand;
     bool m_ignoreMemFreeFaults;
+    bool m_ignoreFrameEndFaults;
     bool m_codeTransfer;
     bool m_combineSamples;
     bool m_identifySamples = false;

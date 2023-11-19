@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <cstdint>
 
 namespace tracy
 {

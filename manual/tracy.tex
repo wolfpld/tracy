@@ -584,6 +584,16 @@ The best way to run Tracy is on bare metal. Avoid profiling applications in virt
 \item Call stack sampling might lack time stamps. While you can use such a reduced data set to perform statistical analysis, you won't be able to limit the time range or see the sampling zones on the timeline.
 \end{itemize}
 
+\paragraph{Docker on Linux}
+
+Although the basic features will work without them, you'll have to grant elevated access rights to the container running your client. Here is a sample configuration that \textit{may} enable the CPU sampling features\footnote{Tested on Ubuntu 22.04.3, docker 24.0.4}.
+\begin{itemize}
+    \item \texttt{-{}-privileged}
+    \item \texttt{-{}-mount "type=bind,source=/sys/kernel/debug,target=/sys/kernel/debug,readonly"}
+    \item \texttt{-{}-user 0:0}
+    \item \texttt{-{}-pid=host}
+\end{itemize}
+
 \subsubsection{Changing network port}
 
 By default, the client and server communicate on the network using port 8086. The profiling session utilizes the TCP protocol, and the client sends presence announcement broadcasts over UDP.

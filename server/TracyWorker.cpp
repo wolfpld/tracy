@@ -3840,7 +3840,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         rval = cs_open( CS_ARCH_ARM, CS_MODE_ARM, &handle );
         break;
     case CpuArchArm64:
-        rval = cs_open( CS_ARCH_ARM64, CS_MODE_ARM, &handle );
+        rval = cs_open( CS_AARCH64pre(CS_ARCH_), CS_MODE_ARM, &handle );
         break;
     default:
         assert( false );
@@ -3884,9 +3884,9 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
                         }
                         break;
                     case CpuArchArm64:
-                        if( detail.arm64.op_count == 1 && detail.arm64.operands[0].type == ARM64_OP_IMM )
+                        if( detail.CS_aarch64().op_count == 1 && detail.CS_aarch64().operands[0].type == CS_AARCH64(_OP_IMM) )
                         {
-                            callAddr = (uint64_t)detail.arm64.operands[0].imm;
+                            callAddr = (uint64_t)detail.CS_aarch64().operands[0].imm;
                         }
                         break;
                     default:

@@ -116,7 +116,6 @@ CallstackEntry cb_data[MaxCbTrace];
 
 extern "C"
 {
-#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     typedef DWORD (__stdcall *t_SymAddrIncludeInlineTrace)( HANDLE hProcess, DWORD64 Address );
     typedef BOOL (__stdcall *t_SymQueryInlineTrace)( HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress, DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex );
     typedef BOOL (__stdcall *t_SymFromInlineContext)( HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement, PSYMBOL_INFO Symbol );
@@ -126,7 +125,6 @@ extern "C"
     t_SymQueryInlineTrace _SymQueryInlineTrace = 0;
     t_SymFromInlineContext _SymFromInlineContext = 0;
     t_SymGetLineFromInlineContext _SymGetLineFromInlineContext = 0;
-#endif // #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
 
     TRACY_API ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain = 0;
 }
@@ -468,12 +466,20 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
+
     InitRpmalloc();
 
     const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
 
     if( s_shouldResolveSymbolsOffline )
     {
+#ifdef TRACY_DBGHELP_LOCK
+        DBGHELP_UNLOCK;
+#endif
+
         cb_data[0].symAddr = ptr - moduleNameAndAddress.baseAddr;
         cb_data[0].symLen = 0;
 
@@ -486,10 +492,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     int write;
     const auto proc = GetCurrentProcess();
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
 
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
@@ -1039,7 +1041,7 @@ void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
     cb_data[cb_num-1].symAddr = 0;
 }
 
-void getSymbolForOfflineResolve(void* address, Dl_info& dlinfo, CallstackEntry& cbEntry)
+void GetSymbolForOfflineResolve(void* address, Dl_info& dlinfo, CallstackEntry& cbEntry)
 {
     // tagged with a string that we can identify as an unresolved symbol
     cbEntry.name = CopyStringFast( "[unresolved]" );
@@ -1062,18 +1064,18 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             symloc = dlinfo.dli_fname;
         }
 
-        if(cb_bts && !s_shouldResolveSymbolsOffline)
+        if( s_shouldResolveSymbolsOffline )
+        {
+            cb_num = 1;
+            GetSymbolForOfflineResolve( (void*)ptr, dlinfo, cb_data[0] );
+        }
+        else
         {
             cb_num = 0;
             backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
             assert( cb_num > 0 );
 
             backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
-        }
-        else
-        {
-            cb_num = 1;
-            getSymbolForOfflineResolve( (void*)ptr, dlinfo, cb_data[0] );
         }
 
         return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };

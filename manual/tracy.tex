@@ -1792,12 +1792,12 @@ As an alternative to to runtime symbol resolution, we can set the environment va
  the minimal set of info required for offline resolution (a shared library path and an offset into that shared library).
  
 The generated tracy capture will have callstack frames symbols showing \texttt{[unresolved]}.
-The \texttt{tracy-edit} tool can be used to load that capture, perform symbol resolution offline
+The \texttt{update} tool can be used to load that capture, perform symbol resolution offline
 (by passing \texttt{-r}) and writing out a new capture with symbols resolved.
-By default \texttt{tracy-edit} will use the original shared libraries paths that were recorded 
+By default \texttt{update} will use the original shared libraries paths that were recorded 
 in the capture (which assumes running in the same machine or a machine with identical 
 filesystem setup as the one used to run the tracy instrumented application).
- You can do path substitution with the \texttt{-s} option to perform any number of path
+ You can do path substitution with the \texttt{-p} option to perform any number of path
 substitions in order to use symbols located elsewhere.
 
 \begin{bclogo}[
@@ -1805,7 +1805,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcbombe
 ]{Important}
-Beware that \texttt{tracy-edit} will use any matching symbol file to the path it resolved to (no symbol version checking is done), so if the symbol file doesn't match the code that was used when doing the callstack capturing you will get incorrect results.
+Beware that \texttt{update} will use any matching symbol file to the path it resolved to (no symbol version checking is done), so if the symbol file doesn't match the code that was used when doing the callstack capturing you will get incorrect results.
 \end{bclogo}
 
 \subsection{Lua support}

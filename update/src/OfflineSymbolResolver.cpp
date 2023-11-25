@@ -11,13 +11,13 @@
 
 #include "OfflineSymbolResolver.h"
 
-bool ApplyPathSubstitutions( std::string& path, const PathSubstitutionList& pathSubstituionlist )
+bool ApplyPathSubstitutions( std::string& path, const PathSubstitutionList& pathSubstitutionlist )
 {
-    for( const auto& substituion : pathSubstituionlist )
+    for( const auto& substitution : pathSubstitutionlist )
     {
-        if( std::regex_match(path, substituion.first) )
+        if( std::regex_match(path, substitution.first) )
         {
-            path = std::regex_replace( path, substituion.first, substituion.second );
+            path = std::regex_replace( path, substitution.first, substitution.second );
             return true;
         }
     }
@@ -31,12 +31,12 @@ tracy::StringIdx AddSymbolString( tracy::Worker& worker, const std::string& str 
     return tracy::StringIdx( location.idx );
 }
 
-bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubstituionlist, bool verbose )
+bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& pathSubstitutionlist, bool verbose )
 {
     uint64_t callstackFrameCount = worker.GetCallstackFrameCount();
     std::string relativeSoNameMatch = "[unresolved]";
 
-    std::cout << "Found '" << callstackFrameCount << "' callstack frames. Batching into image groups..." << std::endl;
+    std::cout << "Found " << callstackFrameCount << " callstack frames. Batching into image groups..." << std::endl;
 
     // batch the symbol queries by .so so we issue the least amount of requests
     using FrameEntriesPerImageIdx = std::unordered_map<uint32_t, FrameEntryList>;
@@ -72,7 +72,7 @@ bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubsti
         }
     }
 
-    std::cout << "Batched into '" << entriesPerImageIdx.size() << "' unique image groups" << std::endl;
+    std::cout << "Batched into " << entriesPerImageIdx.size() << " unique image groups" << std::endl;
 
     // FIXME: the resolving of symbols here can be slow and could be done in parallel per "image"
     // - be careful with string allocation though as that would be not safe to do in parallel
@@ -88,7 +88,7 @@ bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubsti
 
         std::cout << "Resolving " << entries.size() << " symbols for image: '" 
                   << imagePath << "'" << std::endl;
-        const bool substituted = ApplyPathSubstitutions( imagePath, pathSubstituionlist );
+        const bool substituted = ApplyPathSubstitutions( imagePath, pathSubstitutionlist );
         if( substituted )
         {
             std::cout << "\tPath substituted to: '" << imagePath << "'" << std::endl;
@@ -133,4 +133,39 @@ bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubsti
     }
 
     return true;
+}
+
+void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSubstitutionsStrings, bool verbose )
+{
+    std::cout << "Resolving and patching symbols..." << std::endl;
+
+    PathSubstitutionList pathSubstitutionList;
+    for ( const std::string& pathSubst : pathSubstitutionsStrings )
+    {
+        std::size_t pos = pathSubst.find(';');
+        if ( pos == std::string::npos )
+        {
+            std::cerr << "Ignoring invalid path substitution: '" << pathSubst
+                      << " '(please separate the regex of the string to replace with a ';')" << std::endl;
+            continue;
+        }
+
+        try
+        {
+            std::regex reg(pathSubst.substr(0, pos));
+            std::string replacementStr(pathSubst.substr(pos + 1));
+            pathSubstitutionList.push_back(std::pair(reg, replacementStr));
+        }
+        catch ( std::exception& e )
+        {
+            std::cerr << "Ignoring invalid path substitution: '" << pathSubst
+                      << "' (" << e.what() << ")" << std::endl;
+            continue;
+        }
+    }
+
+    if ( !PatchSymbolsWithRegex(worker, pathSubstitutionList, verbose) )
+    {
+        std::cerr << "Failed to patch symbols" << std::endl;
+    }
 }

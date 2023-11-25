@@ -15,6 +15,8 @@
 #include "../../zstd/zstd.h"
 #include "../../getopt/getopt.h"
 
+#include "OfflineSymbolResolver.h"
+
 #ifdef __APPLE__
 #  define ftello64(x) ftello(x)
 #elif defined _WIN32
@@ -32,6 +34,9 @@ void Usage()
     printf( "      l: locks, m: messages, p: plots, M: memory, i: frame images\n" );
     printf( "      c: context switches, s: sampling data, C: symbol code, S: source cache\n" );
     printf( "  -c: scan for source files missing in cache and add if found\n" );
+    printf( "  -r resolve symbols and patch callstack frames\n");
+    printf( "  -p: substitute symbol resolution path with an alternative: \"REGEX_MATCH;REPLACEMENT\"\n");
+
     exit( 1 );
 }
 
@@ -50,8 +55,11 @@ int main( int argc, char** argv )
     int zstdLevel = 1;
     bool buildDict = false;
     bool cacheSource = false;
+    bool resolveSymbols = false;
+    std::vector<std::string> pathSubstitutions;
+
     int c;
-    while( ( c = getopt( argc, argv, "hez:ds:c" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "hez:ds:crp:" ) ) != -1 )
     {
         switch( c )
         {
@@ -118,12 +126,19 @@ int main( int argc, char** argv )
         case 'c':
             cacheSource = true;
             break;
+        case 'r':
+            resolveSymbols = true;
+            break;
+        case 'p':
+            pathSubstitutions.push_back(optarg);
+            break;
         default:
             Usage();
             break;
         }
     }
-    if( argc - optind != 2 ) Usage();
+
+    if (argc != optind + 2) Usage();
 
     const char* input = argv[optind];
     const char* output = argv[optind+1];
@@ -144,13 +159,17 @@ int main( int argc, char** argv )
         int inVer;
         {
             const auto t0 = std::chrono::high_resolution_clock::now();
-            tracy::Worker worker( *f, (tracy::EventType::Type)events, false );
+            const bool allowBgThreads = false;
+            const bool allowStringModification = resolveSymbols;
+            tracy::Worker worker( *f, (tracy::EventType::Type)events, allowBgThreads, allowStringModification);
 
 #ifndef TRACY_NO_STATISTICS
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 #endif
 
             if( cacheSource ) worker.CacheSourceFiles();
+
+            if ( resolveSymbols ) PatchSymbols( worker, pathSubstitutions );
 
             auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel ) );
             if( !w )

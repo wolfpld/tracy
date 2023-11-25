@@ -159,6 +159,15 @@
     <ClCompile Include="..\..\..\public\common\TracySystem.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\OfflineSymbolResolver.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\OfflineSymbolResolverAddr2Line.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\OfflineSymbolResolverDbgHelper.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp">
@@ -361,6 +370,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\public\common\TracyYield.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\OfflineSymbolResolver.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

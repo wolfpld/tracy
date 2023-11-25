@@ -32,8 +32,9 @@ using SymbolEntryList = std::vector<SymbolEntry>;
 bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
                      SymbolEntryList& resolvedEntries );
 
-using PathSubstitutionList = std::vector<std::pair<std::regex, std::string> >;
+void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSubstitutionsStrings, bool verbose = false );
 
-bool PatchSymbols( tracy::Worker& worker, const PathSubstitutionList& pathSubstituionlist, bool verbose = false );
+using PathSubstitutionList = std::vector<std::pair<std::regex, std::string> >;
+bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& pathSubstituionlist, bool verbose = false );
 
 #endif // __SYMBOLRESOLVER_HPP__

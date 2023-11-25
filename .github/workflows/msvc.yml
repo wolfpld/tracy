@@ -36,10 +36,6 @@ jobs:
       run: msbuild .\import-chrome\build\win32\import-chrome.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: Import-chrome utility Release
       run: msbuild .\import-chrome\build\win32\import-chrome.vcxproj /property:Configuration=Release /property:Platform=x64
-    - name: tracy-edit utility Debug
-      run: msbuild .\tracy-edit\build\win32\tracy-edit.vcxproj /property:Configuration=Debug /property:Platform=x64
-    - name: tracy-edit utility Release
-      run: msbuild .\tracy-edit\build\win32\tracy-edit.vcxproj /property:Configuration=Release /property:Platform=x64
     - name: Library
       run: msbuild .\library\win32\TracyProfiler.vcxproj /property:Configuration=Release /property:Platform=x64
     - name: Package binaries
@@ -50,7 +46,6 @@ jobs:
         copy update\build\win32\x64\Release\update.exe bin
         copy capture\build\win32\x64\Release\capture.exe bin
         copy import-chrome\build\win32\x64\Release\import-chrome.exe bin
-        copy tracy-edit\build\win32\x64\Release\tracy-edit.exe bin
         copy csvexport\build\win32\x64\Release\csvexport.exe bin
         copy library\win32\x64\Release\TracyProfiler.dll bin\dev
         copy library\win32\x64\Release\TracyProfiler.lib bin\dev

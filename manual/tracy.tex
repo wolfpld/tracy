@@ -1806,6 +1806,8 @@ couleur=black!5,
 logo=\bcbombe
 ]{Important}
 Beware that \texttt{update} will use any matching symbol file to the path it resolved to (no symbol version checking is done), so if the symbol file doesn't match the code that was used when doing the callstack capturing you will get incorrect results.
+
+Also note that in the case of using offline symbol resolving, even after running the \texttt{update} tool to resolve symbols, the symbols statistics are not updated and will still report the unresolved symbols.
 \end{bclogo}
 
 \subsection{Lua support}

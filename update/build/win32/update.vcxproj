@@ -60,7 +60,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\vcpkg_installed\$(VcpkgTriplet)\include;$(ProjectDir)..\..\..\vcpkg_installed\$(VcpkgTriplet)\include\capstone;$(VcpkgManifestRoot)\vcpkg_installed\$(VcpkgTriplet)\$(VcpkgTriplet)\include\capstone;$(VcpkgRoot)\installed\$(VcpkgTriplet)\include\capstone</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;capstone.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\vcpkg_installed\$(VcpkgTriplet)\debug\lib</AdditionalLibraryDirectories>
     </Link>
@@ -82,7 +82,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;capstone.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\vcpkg_installed\$(VcpkgTriplet)\lib</AdditionalLibraryDirectories>
     </Link>
@@ -130,6 +130,9 @@
     <ClCompile Include="..\..\..\zstd\dictBuilder\divsufsort.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\fastcover.c" />
     <ClCompile Include="..\..\..\zstd\dictBuilder\zdict.c" />
+    <ClCompile Include="..\..\src\OfflineSymbolResolver.cpp" />
+    <ClCompile Include="..\..\src\OfflineSymbolResolverAddr2Line.cpp" />
+    <ClCompile Include="..\..\src\OfflineSymbolResolverDbgHelper.cpp" />
     <ClCompile Include="..\..\src\update.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -200,6 +203,7 @@
     <ClInclude Include="..\..\..\zstd\zdict.h" />
     <ClInclude Include="..\..\..\zstd\zstd.h" />
     <ClInclude Include="..\..\..\zstd\zstd_errors.h" />
+    <ClInclude Include="..\..\src\OfflineSymbolResolver.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\zstd\decompress\huf_decompress_amd64.S" />

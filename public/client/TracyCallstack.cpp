@@ -196,7 +196,7 @@ private:
 
         if( it != m_images->end() && address < it->m_endAddress )
         {
-            return &(*it);
+            return it;
         }
         return nullptr;
     }

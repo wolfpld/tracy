@@ -95,6 +95,9 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #   include <link.h>
 #endif
 
+namespace tracy
+{
+
 #ifdef TRACY_USE_IMAGE_CACHE
 // when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
 // so we can quickly determine which image an address falls into.
@@ -124,8 +127,6 @@ public:
         const ImageEntry* entry = GetImageEntryForAddress( address );
         if( !entry )
         {
-            //printf("* addr not found: %p (%d entries) refreshing (m_numberOfRefreshes: %d)\n",
-            //       address, m_images->size(), m_numberOfRefreshes);
             Refresh();
             return GetImageEntryForAddress( address );
         }
@@ -142,7 +143,6 @@ private:
     tracy::FastVector<ImageEntry>* m_images;
     const char* m_imageName = nullptr;
     RefreshCallback m_onRefreshCallback;
-    uint32_t m_numberOfRefreshes = 0;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data ) 
     {
@@ -174,9 +174,6 @@ private:
             image->m_name = cache->m_imageName;
         }
 
-        //printf("\tdl_iterate_phdr:'%s', start:%p, end:%p (headerCount: %d)'\n",
-        //       image->m_name, image->m_startAddress, image->m_endAddress, headerCount);
-
         return 0;
     }
 
@@ -190,8 +187,6 @@ private:
             []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
 
         if( m_onRefreshCallback ) m_onRefreshCallback();
-
-        m_numberOfRefreshes++;
     }
 
     const ImageEntry* GetImageEntryForAddress( void* address ) const 
@@ -207,9 +202,6 @@ private:
     }
 };
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
-
-namespace tracy
-{
 
 // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
 // simply resolve the offset and image name (which will be enough the resolving to be done offline)

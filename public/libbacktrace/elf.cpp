@@ -7384,6 +7384,7 @@ phdr_callback_mock (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
 	return 0;
   }
 
+  auto ptr = s_phdrData.push_next();
   if (info->dlpi_name)
   {
     size_t sz = strlen (info->dlpi_name) + 1;

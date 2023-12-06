@@ -4284,8 +4284,8 @@ dwarf_fileline (struct backtrace_state *state, uintptr_t pc,
        return ret;
     }
 
-    // if we failed to obtain an entry in range, it can mean that the address map has been cahnges and new entries
-    //  have been loaded in the meantime. Request a refresh and try again
+    // if we failed to obtain an entry in range, it can mean that the address map has been changed and new entries
+    //  have been loaded in the meantime. Request a refresh and try again.
     if (state->request_known_address_ranges_refresh_fn)
     {
         int new_range_count = state->request_known_address_ranges_refresh_fn(state, pc);

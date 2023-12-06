@@ -90,7 +90,7 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #endif
 #endif
 
-#if defined( TRACY_ENABLE_IMAGE_CACHE) && (TRACY_HAS_CALLSTACK == 3)
+#if TRACY_HAS_CALLSTACK == 3
 #   define TRACY_USE_IMAGE_CACHE
 #   include <link.h>
 #endif
@@ -133,16 +133,10 @@ public:
         return entry;
     }
 
-    typedef void (*RefreshCallback)();
-    void SetOnRefreshCallback( RefreshCallback callback )
-    {
-        m_onRefreshCallback = callback;
-    }
 
 private:
     tracy::FastVector<ImageEntry>* m_images;
     const char* m_imageName = nullptr;
-    RefreshCallback m_onRefreshCallback;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data ) 
     {
@@ -185,8 +179,6 @@ private:
         
         std::sort( m_images->begin(), m_images->end(), 
             []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
-
-        if( m_onRefreshCallback ) m_onRefreshCallback();
     }
 
     const ImageEntry* GetImageEntryForAddress( void* address ) const 
@@ -909,15 +901,7 @@ void InitCallstack()
     }
     else
     {
-#ifdef TRACY_USE_IMAGE_CACHE
-        s_imageCache->SetOnRefreshCallback([]()
-        {
-            // FIXME: there is no backtrace_destroy_state(), so we are forced to leak...
-            cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
-        });
-#else
         cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
-#endif // #ifdef TRACY_USE_IMAGE_CACHE
     }
 
 #ifndef TRACY_DEMANGLE

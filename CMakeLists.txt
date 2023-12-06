@@ -86,7 +86,6 @@ set_option(TRACY_NO_CRASH_HANDLER "Disable crash handling" OFF)
 set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 set_option(TRACE_CLIENT_LIBUNWIND_BACKTRACE "Use libunwind backtracing where supported" OFF)
 set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resolution, only resolve the image path and offset to enable offline symbol resolution" OFF)
-set_option(TRACY_ENABLE_IMAGE_CACHE "On glibc platforms, when doing offline symbol resolution, use an cache to determine the image path and offset instead of dladdr()" OFF)
 
 if(NOT TRACY_STATIC)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)

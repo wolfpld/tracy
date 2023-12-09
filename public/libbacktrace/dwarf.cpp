@@ -4275,7 +4275,7 @@ dwarf_fileline (struct backtrace_state *state, uintptr_t pc,
 {
   struct dwarf_data *ddata;
   int found;
-  int ret;
+  int ret = 0;
 
   if (!state->threaded)
   {

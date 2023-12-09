@@ -7364,8 +7364,6 @@ FastVector<ElfAddrRange> s_sortedKnownElfRanges(16);
 
 static int address_in_known_elf_ranges(uintptr_t pc)
 {
-	size_t range_count = s_sortedKnownElfRanges.size();
-
     auto it = std::lower_bound( s_sortedKnownElfRanges.begin(), s_sortedKnownElfRanges.end(), pc, 
             []( const ElfAddrRange& lhs, const uintptr_t rhs ) { return uintptr_t(lhs.dlpi_addr) > rhs; } );
 	if( it != s_sortedKnownElfRanges.end() && pc <= it->dlpi_end_addr )
@@ -7394,10 +7392,10 @@ phdr_callback_mock (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
   else ptr->dlpi_name = nullptr;
   ptr->dlpi_addr = info->dlpi_addr;
 
-  // calculate the address range so we can quickly determine is a PC is within the range of this image
-  ptr->dlpi_end_addr = info->dlpi_phnum ? uintptr_t( info->dlpi_addr + 
-            				info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + 
-							info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz ) : 0x0;
+  // calculate the end address as well, so we can quickly determine if a PC is within the range of this image
+  ptr->dlpi_end_addr = uintptr_t(info->dlpi_addr) + (info->dlpi_phnum ? uintptr_t(
+                            info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + 
+                            info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz) : 0);
 
   return 0;
 }

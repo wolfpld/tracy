@@ -117,18 +117,27 @@ public:
 
     ImageCache()
     {
-        m_images = (tracy::FastVector<ImageEntry>*)tracy::tracy_malloc( sizeof( tracy::FastVector<ImageEntry> ) );
-        new(m_images) tracy::FastVector<ImageEntry>( 512 );
+        m_images = (FastVector<ImageEntry>*)tracy_malloc( sizeof( FastVector<ImageEntry> ) );
+        new(m_images) FastVector<ImageEntry>( 512 );
 
         Refresh();
     }
-    const ImageEntry* GetImageForAddress( void* address ) 
+
+    ~ImageCache()
     {
-        const ImageEntry* entry = GetImageEntryForAddress( address );
+        m_images->~FastVector<ImageEntry>();
+        tracy_free( m_images );
+
+        tracy_free( m_imageName );
+    }
+
+    const ImageEntry* GetImageForAddress( void* address )
+    {
+        const ImageEntry* entry = GetImageForAddressImpl( address );
         if( !entry )
         {
             Refresh();
-            return GetImageEntryForAddress( address );
+            return GetImageForAddressImpl( address );
         }
         return entry;
     }
@@ -136,7 +145,7 @@ public:
 
 private:
     tracy::FastVector<ImageEntry>* m_images;
-    const char* m_imageName = nullptr;
+    char* m_imageName = nullptr;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data ) 
     {
@@ -162,7 +171,9 @@ private:
                 Dl_info dlInfo;
                 if( dladdr( (void *)info->dlpi_addr, &dlInfo ) )
                 {
-                    cache->m_imageName = dlInfo.dli_fname;
+                    size_t sz = strlen( dlInfo.dli_fname ) + 1;
+                    cache->m_imageName = (char*)tracy_malloc( sz );
+                    memcpy( (void*)cache->m_imageName, dlInfo.dli_fname, sz );
                 }
             }
             image->m_name = cache->m_imageName;
@@ -181,7 +192,7 @@ private:
             []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
     }
 
-    const ImageEntry* GetImageEntryForAddress( void* address ) const 
+    const ImageEntry* GetImageForAddressImpl( void* address ) const 
     {
         auto it = std::lower_bound( m_images->begin(), m_images->end(), address, 
             []( const ImageEntry& lhs, const void* rhs ) { return lhs.m_startAddress > rhs; } );
@@ -887,7 +898,7 @@ void InitCallstack()
     InitRpmalloc();
 
 #ifdef TRACY_USE_IMAGE_CACHE
-    s_imageCache = (ImageCache*)tracy::tracy_malloc( sizeof( ImageCache ) );
+    s_imageCache = (ImageCache*)tracy_malloc( sizeof( ImageCache ) );
     new(s_imageCache) ImageCache();
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
     
@@ -982,7 +993,11 @@ debuginfod_client* GetDebuginfodClient()
 void EndCallstack()
 {
 #ifdef TRACY_USE_IMAGE_CACHE
-    tracy::tracy_free(s_imageCache);
+    if( s_imageCache )
+    {
+        s_imageCache->~ImageCache();
+        tracy_free( s_imageCache );
+    }
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 #ifndef TRACY_DEMANGLE
     ___tracy_free_demangle_buffer();

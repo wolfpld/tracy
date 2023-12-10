@@ -107,12 +107,9 @@ class ImageCache
 public:
     struct ImageEntry
     {
-        ImageEntry( void* startAddress, void* endAddress, const char* name )
-        : m_startAddress( startAddress ), m_endAddress( endAddress ), m_name( name ) {}
-
-        void* m_startAddress;
-        void* m_endAddress;
-        const char* m_name;
+        void* m_startAddress = nullptr;
+        void* m_endAddress = nullptr;
+        char* m_name = nullptr;
     };
 
     ImageCache()
@@ -125,10 +122,10 @@ public:
 
     ~ImageCache()
     {
+        Clear();
+
         m_images->~FastVector<ImageEntry>();
         tracy_free( m_images );
-
-        tracy_free( m_imageName );
     }
 
     const ImageEntry* GetImageForAddress( void* address )
@@ -145,7 +142,6 @@ public:
 
 private:
     tracy::FastVector<ImageEntry>* m_images;
-    char* m_imageName = nullptr;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data ) 
     {
@@ -158,25 +154,30 @@ private:
         image->m_endAddress = reinterpret_cast<void*>( info->dlpi_addr + 
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
 
-        // the base executable name isn't provided when iterating with dl_iterate_phdr,
-        // so we must get it in an alternative way and cache it
+        const char* imageName = nullptr;
+        // the base executable name isn't provided when iterating with dl_iterate_phdr, get it with dladdr()
         if( info->dlpi_name && info->dlpi_name[0] != '\0' )
         {
-            image->m_name = info->dlpi_name;
+            imageName = info->dlpi_name;
         }
         else
         {
-            if( !cache->m_imageName )
+            Dl_info dlInfo;
+            if( dladdr( (void *)info->dlpi_addr, &dlInfo ) )
             {
-                Dl_info dlInfo;
-                if( dladdr( (void *)info->dlpi_addr, &dlInfo ) )
-                {
-                    size_t sz = strlen( dlInfo.dli_fname ) + 1;
-                    cache->m_imageName = (char*)tracy_malloc( sz );
-                    memcpy( (void*)cache->m_imageName, dlInfo.dli_fname, sz );
-                }
+                imageName = dlInfo.dli_fname;
             }
-            image->m_name = cache->m_imageName;
+        }
+
+        if(imageName != nullptr)
+        {
+            size_t sz = strlen( imageName ) + 1;
+            image->m_name = (char*)tracy_malloc( sz );
+            memcpy( (void*)image->m_name, imageName, sz );
+        }
+        else
+        {
+            image->m_name = nullptr;
         }
 
         return 0;
@@ -184,7 +185,7 @@ private:
 
     void Refresh()
     {
-        m_images->clear();
+        Clear();
 
         dl_iterate_phdr( Callback, this );
         
@@ -202,6 +203,16 @@ private:
             return it;
         }
         return nullptr;
+    }
+
+    void Clear()
+    {
+        for( ImageEntry& entry : *m_images )
+        {
+            tracy_free( entry.m_name );
+        }
+
+        m_images->clear();
     }
 };
 #endif //#ifdef TRACY_USE_IMAGE_CACHE

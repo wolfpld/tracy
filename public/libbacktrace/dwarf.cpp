@@ -4251,6 +4251,19 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
   }
 }
 
+bool dwarf_fileline_dwarf_lookup_pc_in_all_entries(struct backtrace_state *state, uintptr_t pc,
+      backtrace_full_callback callback, backtrace_error_callback error_callback, void *data,
+      int& found, int ret)
+{
+    for (struct dwarf_data* ddata = (struct dwarf_data *)state->fileline_data;
+         ddata != NULL;
+         ddata = ddata->next)
+    {
+      ret = dwarf_lookup_pc(state, ddata, pc, callback, error_callback, data, &found);
+      if (ret != 0 || found) return true;
+    }
+    return false;
+}
 
 /* Return the file/line information for a PC using the DWARF mapping
    we built earlier.  */
@@ -4262,20 +4275,30 @@ dwarf_fileline (struct backtrace_state *state, uintptr_t pc,
 {
   struct dwarf_data *ddata;
   int found;
-  int ret;
+  int ret = 0;
 
   if (!state->threaded)
+  {
+    if (dwarf_fileline_dwarf_lookup_pc_in_all_entries(state, pc, callback, error_callback, data, found, ret))
     {
-      for (ddata = (struct dwarf_data *) state->fileline_data;
-	   ddata != NULL;
-	   ddata = ddata->next)
-	{
-	  ret = dwarf_lookup_pc (state, ddata, pc, callback, error_callback,
-				 data, &found);
-	  if (ret != 0 || found)
-	    return ret;
-	}
+       return ret;
     }
+
+    // if we failed to obtain an entry in range, it can mean that the address map has been changed and new entries
+    //  have been loaded in the meantime. Request a refresh and try again.
+    if (state->request_known_address_ranges_refresh_fn)
+    {
+        int new_range_count = state->request_known_address_ranges_refresh_fn(state, pc);
+        if (new_range_count > 0)
+        {
+          if (dwarf_fileline_dwarf_lookup_pc_in_all_entries(state, pc, callback, error_callback, data, found, ret))
+          {
+            return ret;
+          }
+        }
+    }
+
+  }
   else
     {
       struct dwarf_data **pp;

@@ -133,6 +133,11 @@ typedef void (*syminfo) (struct backtrace_state *state, uintptr_t pc,
 			 backtrace_syminfo_callback callback,
 			 backtrace_error_callback error_callback, void *data);
 
+/* The type of the function that will trigger an known address range refresh
+ (if pc passed in is for an address whichs lies ourtisde of known ranges) */
+typedef int (*request_known_address_ranges_refresh)(struct backtrace_state *state,
+             uintptr_t pc);
+
 /* What the backtrace state pointer points to.  */
 
 struct backtrace_state
@@ -159,6 +164,8 @@ struct backtrace_state
   int lock_alloc;
   /* The freelist when using mmap.  */
   struct backtrace_freelist_struct *freelist;
+  /* Trigger an known address range refresh */
+  request_known_address_ranges_refresh request_known_address_ranges_refresh_fn;
 };
 
 /* Open a file for reading.  Returns -1 on error.  If DOES_NOT_EXIST

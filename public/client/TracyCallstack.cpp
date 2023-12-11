@@ -90,8 +90,132 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #endif
 #endif
 
+#if TRACY_HAS_CALLSTACK == 3
+#   define TRACY_USE_IMAGE_CACHE
+#   include <link.h>
+#endif
+
 namespace tracy
 {
+
+#ifdef TRACY_USE_IMAGE_CACHE
+// when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
+// so we can quickly determine which image an address falls into.
+// We refresh this cache only when we hit an address that doesn't fall into any known range.
+class ImageCache
+{
+public:
+    struct ImageEntry
+    {
+        void* m_startAddress = nullptr;
+        void* m_endAddress = nullptr;
+        char* m_name = nullptr;
+    };
+
+    ImageCache()
+    {
+        m_images = (FastVector<ImageEntry>*)tracy_malloc( sizeof( FastVector<ImageEntry> ) );
+        new(m_images) FastVector<ImageEntry>( 512 );
+
+        Refresh();
+    }
+
+    ~ImageCache()
+    {
+        Clear();
+
+        m_images->~FastVector<ImageEntry>();
+        tracy_free( m_images );
+    }
+
+    const ImageEntry* GetImageForAddress( void* address )
+    {
+        const ImageEntry* entry = GetImageForAddressImpl( address );
+        if( !entry )
+        {
+            Refresh();
+            return GetImageForAddressImpl( address );
+        }
+        return entry;
+    }
+
+
+private:
+    tracy::FastVector<ImageEntry>* m_images;
+
+    static int Callback( struct dl_phdr_info* info, size_t size, void* data ) 
+    {
+        ImageCache* cache = reinterpret_cast<ImageCache*>( data );
+
+        ImageEntry* image = cache->m_images->push_next();
+        image->m_startAddress = reinterpret_cast<void*>( info->dlpi_addr );
+        const uint32_t headerCount = info->dlpi_phnum;
+        assert( headerCount > 0);
+        image->m_endAddress = reinterpret_cast<void*>( info->dlpi_addr + 
+            info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
+
+        const char* imageName = nullptr;
+        // the base executable name isn't provided when iterating with dl_iterate_phdr, get it with dladdr()
+        if( info->dlpi_name && info->dlpi_name[0] != '\0' )
+        {
+            imageName = info->dlpi_name;
+        }
+        else
+        {
+            Dl_info dlInfo;
+            if( dladdr( (void *)info->dlpi_addr, &dlInfo ) )
+            {
+                imageName = dlInfo.dli_fname;
+            }
+        }
+
+        if(imageName != nullptr)
+        {
+            size_t sz = strlen( imageName ) + 1;
+            image->m_name = (char*)tracy_malloc( sz );
+            memcpy( (void*)image->m_name, imageName, sz );
+        }
+        else
+        {
+            image->m_name = nullptr;
+        }
+
+        return 0;
+    }
+
+    void Refresh()
+    {
+        Clear();
+
+        dl_iterate_phdr( Callback, this );
+        
+        std::sort( m_images->begin(), m_images->end(), 
+            []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
+    }
+
+    const ImageEntry* GetImageForAddressImpl( void* address ) const 
+    {
+        auto it = std::lower_bound( m_images->begin(), m_images->end(), address, 
+            []( const ImageEntry& lhs, const void* rhs ) { return lhs.m_startAddress > rhs; } );
+
+        if( it != m_images->end() && address < it->m_endAddress )
+        {
+            return it;
+        }
+        return nullptr;
+    }
+
+    void Clear()
+    {
+        for( ImageEntry& entry : *m_images )
+        {
+            tracy_free( entry.m_name );
+        }
+
+        m_images->clear();
+    }
+};
+#endif //#ifdef TRACY_USE_IMAGE_CACHE
 
 // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
 // simply resolve the offset and image name (which will be enough the resolving to be done offline)
@@ -607,6 +731,9 @@ struct backtrace_state* cb_bts = nullptr;
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
+#ifdef TRACY_USE_IMAGE_CACHE
+static ImageCache* s_imageCache = nullptr;
+#endif //#ifdef TRACY_USE_IMAGE_CACHE
 
 #ifdef TRACY_DEBUGINFOD
 debuginfod_client* s_debuginfod;
@@ -779,6 +906,13 @@ void InitCallstackCritical()
 
 void InitCallstack()
 {
+    InitRpmalloc();
+
+#ifdef TRACY_USE_IMAGE_CACHE
+    s_imageCache = (ImageCache*)tracy_malloc( sizeof( ImageCache ) );
+    new(s_imageCache) ImageCache();
+#endif //#ifdef TRACY_USE_IMAGE_CACHE
+    
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
 #endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
@@ -869,6 +1003,13 @@ debuginfod_client* GetDebuginfodClient()
 
 void EndCallstack()
 {
+#ifdef TRACY_USE_IMAGE_CACHE
+    if( s_imageCache )
+    {
+        s_imageCache->~ImageCache();
+        tracy_free( s_imageCache );
+    }
+#endif //#ifdef TRACY_USE_IMAGE_CACHE
 #ifndef TRACY_DEMANGLE
     ___tracy_free_demangle_buffer();
 #endif
@@ -1041,12 +1182,12 @@ void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
     cb_data[cb_num-1].symAddr = 0;
 }
 
-void GetSymbolForOfflineResolve(void* address, Dl_info& dlinfo, CallstackEntry& cbEntry)
+void GetSymbolForOfflineResolve(void* address, uint64_t imageBaseAddress, CallstackEntry& cbEntry)
 {
     // tagged with a string that we can identify as an unresolved symbol
     cbEntry.name = CopyStringFast( "[unresolved]" );
     // set .so relative offset so it can be resolved offline
-    cbEntry.symAddr = (uint64_t)address - (uint64_t)(dlinfo.dli_fbase);
+    cbEntry.symAddr = (uint64_t)address - imageBaseAddress;
     cbEntry.symLen = 0x0;
     cbEntry.file = CopyStringFast( "[unknown]" );
     cbEntry.line = 0;
@@ -1057,17 +1198,29 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     InitRpmalloc();
     if( ptr >> 63 == 0 )
     {
-        const char* symloc = nullptr;
+        const char* imageName = nullptr;
+        uint64_t imageBaseAddress = 0x0;
+
+#ifdef TRACY_USE_IMAGE_CACHE
+        const auto* image = s_imageCache->GetImageForAddress((void*)ptr);
+        if( image )
+        {
+            imageName = image->m_name;
+            imageBaseAddress = uint64_t(image->m_startAddress);
+        }
+#else
         Dl_info dlinfo;
         if( dladdr( (void*)ptr, &dlinfo ) )
         {
-            symloc = dlinfo.dli_fname;
+            imageName = dlinfo.dli_fname;
+            imageBaseAddress = uint64_t( dlinfo.dli_fbase );
         }
+#endif
 
         if( s_shouldResolveSymbolsOffline )
         {
             cb_num = 1;
-            GetSymbolForOfflineResolve( (void*)ptr, dlinfo, cb_data[0] );
+            GetSymbolForOfflineResolve( (void*)ptr, imageBaseAddress, cb_data[0] );
         }
         else
         {
@@ -1078,7 +1231,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
         }
 
-        return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };
+        return { cb_data, uint8_t( cb_num ), imageName ? imageName : "[unknown]" };
     }
 #ifdef __linux
     else if( s_kernelSym )

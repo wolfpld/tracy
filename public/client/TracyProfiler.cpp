@@ -1731,6 +1731,8 @@ void Profiler::Worker()
     new(m_broadcast) UdpBroadcast();
 #  ifdef TRACY_ONLY_LOCALHOST
     const char* addr = "127.255.255.255";
+#  elif defined TRACY_CLIENT_ADDRESS
+    const char* addr = TRACY_CLIENT_ADDRESS;
 #  elif defined __QNX__
      // global broadcast address of 255.255.255.255 is not well-supported by QNX,
      // use the interface broadcast address instead, e.g. "const char* addr = 192.168.1.255;"

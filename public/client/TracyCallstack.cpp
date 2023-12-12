@@ -31,7 +31,6 @@
 #  include <dlfcn.h>
 #  include <cxxabi.h>
 #  include <stdlib.h>
-#  include "TracyFastVector.hpp"
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>

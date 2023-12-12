@@ -65,7 +65,7 @@ extern "C"
 extern "C" const char* ___tracy_demangle( const char* mangled );
 
 #ifndef TRACY_DEMANGLE
-constexpr size_t ___tracy_demangle_buffer_len = 1024*1024; 
+constexpr size_t ___tracy_demangle_buffer_len = 1024*1024;
 char* ___tracy_demangle_buffer;
 
 void ___tracy_init_demangle_buffer()
@@ -138,11 +138,10 @@ public:
         return entry;
     }
 
-
 private:
     tracy::FastVector<ImageEntry>* m_images;
 
-    static int Callback( struct dl_phdr_info* info, size_t size, void* data ) 
+    static int Callback( struct dl_phdr_info* info, size_t size, void* data )
     {
         ImageCache* cache = reinterpret_cast<ImageCache*>( data );
 
@@ -150,7 +149,7 @@ private:
         image->m_startAddress = reinterpret_cast<void*>( info->dlpi_addr );
         const uint32_t headerCount = info->dlpi_phnum;
         assert( headerCount > 0);
-        image->m_endAddress = reinterpret_cast<void*>( info->dlpi_addr + 
+        image->m_endAddress = reinterpret_cast<void*>( info->dlpi_addr +
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
 
         const char* imageName = nullptr;
@@ -187,14 +186,14 @@ private:
         Clear();
 
         dl_iterate_phdr( Callback, this );
-        
-        std::sort( m_images->begin(), m_images->end(), 
+
+        std::sort( m_images->begin(), m_images->end(),
             []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
     }
 
-    const ImageEntry* GetImageForAddressImpl( void* address ) const 
+    const ImageEntry* GetImageForAddressImpl( void* address ) const
     {
-        auto it = std::lower_bound( m_images->begin(), m_images->end(), address, 
+        auto it = std::lower_bound( m_images->begin(), m_images->end(), address,
             []( const ImageEntry& lhs, const void* rhs ) { return lhs.m_startAddress > rhs; } );
 
         if( it != m_images->end() && address < it->m_endAddress )
@@ -313,7 +312,7 @@ ModuleCache* LoadSymbolsForModuleAndCache( const char* imageName, uint32_t image
     cachedModule->start = baseOfDll;
     cachedModule->end = baseOfDll + dllSize;
 
-    // when doing offline symbol resolution, we must store the full path of the dll for the resolving to work 
+    // when doing offline symbol resolution, we must store the full path of the dll for the resolving to work
     if( s_shouldResolveSymbolsOffline )
     {
         cachedModule->name = (char*)tracy_malloc_fast(imageNameLength + 1);
@@ -352,7 +351,7 @@ void InitCallstack()
     DBGHELP_LOCK;
 #endif
 
-    // use TRACY_NO_DBHELP_INIT_LOAD=1 to disable preloading of driver 
+    // use TRACY_NO_DBHELP_INIT_LOAD=1 to disable preloading of driver
     // and process module symbol loading at startup time - they will be loaded on demand later
     // Sometimes this process can take a very long time and prevent resolving callstack frames
     // symbols during that time.
@@ -911,7 +910,7 @@ void InitCallstack()
     s_imageCache = (ImageCache*)tracy_malloc( sizeof( ImageCache ) );
     new(s_imageCache) ImageCache();
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
-    
+
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
 #endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE

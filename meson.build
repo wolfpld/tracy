@@ -106,6 +106,10 @@ if get_option('tracy_symbol_offline_resolve')
   tracy_compile_args += ['-DTRACY_SYMBOL_OFFLINE_RESOLVE']
 endif
 
+if get_option('tracy_libbacktrace_elf_dynload_support')
+  tracy_compile_args += ['-DTRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT']
+endif
+
 tracy_shared_libs = get_option('default_library') == 'shared'
 if not tracy_shared_libs and get_option('tracy_shared_libs')
   warning('tracy_shared_libs is set to true, but default_library is set to static. Building static library.')

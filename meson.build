@@ -6,6 +6,9 @@ tracy_compile_args = []
 # compiler flags shared between the capture library itself and the code using it
 tracy_common_args = []
 
+# dependencies that will be propagated to the users of the capture library
+tracy_public_deps = []
+
 if get_option('tracy_enable')
   tracy_common_args += ['-DTRACY_ENABLE']
 endif
@@ -94,6 +97,19 @@ if get_option('tracy_no_crash_handler')
   tracy_common_args += ['-DTRACY_NO_CRASH_HANDLER']
 endif
 
+if get_option('tracy_libunwind_backtrace')
+  tracy_common_args += ['-DTRACE_CLIENT_LIBUNWIND_BACKTRACE']
+  tracy_public_deps += dependency('libunwind')
+endif
+
+if get_option('tracy_symbol_offline_resolve')
+  tracy_compile_args += ['-DTRACY_SYMBOL_OFFLINE_RESOLVE']
+endif
+
+if get_option('tracy_libbacktrace_elf_dynload_support')
+  tracy_compile_args += ['-DTRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT']
+endif
+
 tracy_shared_libs = get_option('default_library') == 'shared'
 if not tracy_shared_libs and get_option('tracy_shared_libs')
   warning('tracy_shared_libs is set to true, but default_library is set to static. Building static library.')
@@ -102,8 +118,6 @@ endif
 if tracy_shared_libs
   tracy_compile_args += ['-DTRACY_EXPORTS']
 endif
-
-threads_dep = dependency('threads')
 
 if host_machine.system() == 'windows'
   tracy_compile_args += ['-DWINVER=0x0601', '-D_WIN32_WINNT=0x0601']
@@ -175,8 +189,10 @@ endif
 
 tracy_compile_args += tracy_common_args
 
+tracy_deps = [dependency('threads')] + tracy_public_deps
+
 tracy = library('tracy', tracy_src, tracy_header_files,
-    dependencies        : [ threads_dep ],
+    dependencies        : tracy_deps,
     include_directories : tracy_public_include_dirs,
     cpp_args            : tracy_compile_args,
     override_options    : override_options,
@@ -193,7 +209,9 @@ if tracy_shared_libs
 endif
 
 pkg = import('pkgconfig')
-pkg.generate(tracy, extra_cflags: tracy_dep_compile_args)
+pkg.generate(tracy,
+  extra_cflags : tracy_dep_compile_args,
+  requires     : tracy_public_deps)
 
 tracy_dep = declare_dependency(
     compile_args        : tracy_dep_compile_args,

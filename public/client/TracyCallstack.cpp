@@ -112,19 +112,14 @@ public:
     };
 
     ImageCache()
+        : m_images( 512 )
     {
-        m_images = (FastVector<ImageEntry>*)tracy_malloc( sizeof( FastVector<ImageEntry> ) );
-        new(m_images) FastVector<ImageEntry>( 512 );
-
         Refresh();
     }
 
     ~ImageCache()
     {
         Clear();
-
-        m_images->~FastVector<ImageEntry>();
-        tracy_free( m_images );
     }
 
     const ImageEntry* GetImageForAddress( void* address )
@@ -139,7 +134,7 @@ public:
     }
 
 private:
-    tracy::FastVector<ImageEntry>* m_images;
+    tracy::FastVector<ImageEntry> m_images;
     bool m_updated;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data )
@@ -154,7 +149,7 @@ private:
         const auto endAddress = reinterpret_cast<void*>( info->dlpi_addr +
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
 
-        ImageEntry* image = cache->m_images->push_next();
+        ImageEntry* image = cache->m_images.push_next();
         image->m_startAddress = startAddress;
         image->m_endAddress = endAddress;
 
@@ -191,7 +186,7 @@ private:
 
     bool Contains( void* startAddress ) const
     {
-        return std::any_of( m_images->begin(), m_images->end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
+        return std::any_of( m_images.begin(), m_images.end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
     }
 
     void Refresh()
@@ -201,17 +196,17 @@ private:
 
         if( m_updated )
         {
-            std::sort( m_images->begin(), m_images->end(),
+            std::sort( m_images.begin(), m_images.end(),
                 []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
         }
     }
 
     const ImageEntry* GetImageForAddressImpl( void* address ) const
     {
-        auto it = std::lower_bound( m_images->begin(), m_images->end(), address,
+        auto it = std::lower_bound( m_images.begin(), m_images.end(), address,
             []( const ImageEntry& lhs, const void* rhs ) { return lhs.m_startAddress > rhs; } );
 
-        if( it != m_images->end() && address < it->m_endAddress )
+        if( it != m_images.end() && address < it->m_endAddress )
         {
             return it;
         }
@@ -220,12 +215,12 @@ private:
 
     void Clear()
     {
-        for( ImageEntry& entry : *m_images )
+        for( ImageEntry& entry : m_images )
         {
             tracy_free( entry.m_name );
         }
 
-        m_images->clear();
+        m_images.clear();
     }
 };
 #endif //#ifdef TRACY_USE_IMAGE_CACHE

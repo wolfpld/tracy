@@ -503,7 +503,7 @@ The program name that is sent out in the broadcast messages can be customized by
 
 By default, the Tracy client will listen on all network interfaces. If you want to restrict it to only listening on the localhost interface, define the \texttt{TRACY\_ONLY\_LOCALHOST} macro at compile-time, or set the \texttt{TRACY\_ONLY\_LOCALHOST} environment variable to $1$ at runtime.
 
-If you need to use a specific Tracy client address, such as QNX requires, define the \texttt{TRACY\_CLIENT\_ADDRESS} macro at compile-time as the desired string address, or set the \texttt{TRACY\_ONLY\_LOCALHOST} environment variable to the desired string address at runtime.
+If you need to use a specific Tracy client address, such as QNX requires, define the \texttt{TRACY\_CLIENT\_ADDRESS} macro at compile-time as the desired string address.
 
 By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv4 only if IPv6 is unavailable. If you want to restrict it to only listening on IPv4 interfaces, define the \texttt{TRACY\_ONLY\_IPV4} macro at compile-time, or set the \texttt{TRACY\_ONLY\_IPV4} environment variable to $1$ at runtime.
 

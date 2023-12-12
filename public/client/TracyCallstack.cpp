@@ -140,17 +140,23 @@ public:
 
 private:
     tracy::FastVector<ImageEntry>* m_images;
+    bool m_updated;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data )
     {
         ImageCache* cache = reinterpret_cast<ImageCache*>( data );
 
-        ImageEntry* image = cache->m_images->push_next();
-        image->m_startAddress = reinterpret_cast<void*>( info->dlpi_addr );
+        const auto startAddress = reinterpret_cast<void*>( info->dlpi_addr );
+        if( cache->Contains( startAddress ) ) return 0;
+
         const uint32_t headerCount = info->dlpi_phnum;
         assert( headerCount > 0);
-        image->m_endAddress = reinterpret_cast<void*>( info->dlpi_addr +
+        const auto endAddress = reinterpret_cast<void*>( info->dlpi_addr +
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
+
+        ImageEntry* image = cache->m_images->push_next();
+        image->m_startAddress = startAddress;
+        image->m_endAddress = endAddress;
 
         const char* imageName = nullptr;
         // the base executable name isn't provided when iterating with dl_iterate_phdr, get it with dladdr()
@@ -167,28 +173,37 @@ private:
             }
         }
 
-        if(imageName != nullptr)
+        if( imageName )
         {
             size_t sz = strlen( imageName ) + 1;
             image->m_name = (char*)tracy_malloc( sz );
-            memcpy( (void*)image->m_name, imageName, sz );
+            memcpy( image->m_name, imageName, sz );
         }
         else
         {
             image->m_name = nullptr;
         }
 
+        cache->m_updated = true;
+
         return 0;
+    }
+
+    bool Contains( void* startAddress ) const
+    {
+        return std::any_of( m_images->begin(), m_images->end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
     }
 
     void Refresh()
     {
-        Clear();
-
+        m_updated = false;
         dl_iterate_phdr( Callback, this );
 
-        std::sort( m_images->begin(), m_images->end(),
-            []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
+        if( m_updated )
+        {
+            std::sort( m_images->begin(), m_images->end(),
+                []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
+        }
     }
 
     const ImageEntry* GetImageForAddressImpl( void* address ) const

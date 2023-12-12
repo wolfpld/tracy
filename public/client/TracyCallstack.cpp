@@ -90,7 +90,7 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #endif
 #endif
 
-#if TRACY_HAS_CALLSTACK == 3
+#if defined(TRACY_IMAGE_CACHE) && (TRACY_HAS_CALLSTACK == 3)
 #   define TRACY_USE_IMAGE_CACHE
 #   include <link.h>
 #endif

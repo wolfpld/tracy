@@ -10,6 +10,9 @@ debug:
 release:
 	@$(MAKE) -f release.mk all
 
+relwithdebug:
+	@$(MAKE) -f relwithdebug.mk all
+
 clean:
 	@$(MAKE) -f build.mk clean
 

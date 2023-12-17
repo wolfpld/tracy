@@ -22,7 +22,7 @@ public:
         m_active(TracyIsStarted)
 #endif
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
         if (!m_active) return;
 #endif 
 

@@ -47,7 +47,7 @@ public:
 
     tracy_force_inline ~LockableCtx()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif 
         auto item = Profiler::QueueSerial();
@@ -62,7 +62,7 @@ public:
 
     tracy_force_inline bool BeforeLock()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return false;
 #endif 
 #ifdef TRACY_ON_DEMAND
@@ -89,7 +89,7 @@ public:
 
     tracy_force_inline void AfterLock()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif 
         auto item = Profiler::QueueSerial();
@@ -102,7 +102,7 @@ public:
 
     tracy_force_inline void AfterUnlock()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif 
 #ifdef TRACY_ON_DEMAND
@@ -124,7 +124,7 @@ public:
 
     tracy_force_inline void AfterTryLock( bool acquired )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif 
 #ifdef TRACY_ON_DEMAND
@@ -155,7 +155,7 @@ public:
 
     tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif 
 #ifdef TRACY_ON_DEMAND
@@ -179,7 +179,7 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif 
         assert( size < (std::numeric_limits<uint16_t>::max)() );
@@ -266,7 +266,7 @@ public:
         m_active(TracyIsStarted)
 #endif
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
         if (!m_active) return;
 #endif
         m_id = GetLockCounter().fetch_add(1, std::memory_order_relaxed);
@@ -289,7 +289,7 @@ public:
 
     tracy_force_inline ~SharedLockableCtx()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
         auto item = Profiler::QueueSerial();
@@ -304,7 +304,7 @@ public:
 
     tracy_force_inline bool BeforeLock()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
         if (!m_active) return false;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -331,7 +331,7 @@ public:
 
     tracy_force_inline void AfterLock()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
         auto item = Profiler::QueueSerial();
@@ -344,7 +344,7 @@ public:
 
     tracy_force_inline void AfterUnlock()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -366,7 +366,7 @@ public:
 
     tracy_force_inline void AfterTryLock( bool acquired )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -397,7 +397,7 @@ public:
 
     tracy_force_inline bool BeforeLockShared()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
         if (!m_active) return false;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -424,7 +424,7 @@ public:
 
     tracy_force_inline void AfterLockShared()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
         auto item = Profiler::QueueSerial();
@@ -437,7 +437,7 @@ public:
 
     tracy_force_inline void AfterUnlockShared()
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -460,7 +460,7 @@ public:
 
     tracy_force_inline void AfterTryLockShared( bool acquired )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -491,7 +491,7 @@ public:
 
     tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
 #ifdef TRACY_ON_DEMAND
@@ -515,7 +515,7 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
-#if !TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
 		if (!m_active) return;
 #endif
         assert( size < (std::numeric_limits<uint16_t>::max)() );

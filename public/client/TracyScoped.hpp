@@ -28,6 +28,7 @@ public:
         : m_active( is_active )
 #endif
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
@@ -45,6 +46,7 @@ public:
         : m_active( is_active )
 #endif
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
@@ -64,6 +66,7 @@ public:
         : m_active( is_active )
 #endif
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
@@ -82,6 +85,7 @@ public:
         : m_active( is_active )
 #endif
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
@@ -97,6 +101,7 @@ public:
 
     tracy_force_inline ~ScopedZone()
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
@@ -109,6 +114,7 @@ public:
     tracy_force_inline void Text( const char* txt, size_t size )
     {
         assert( size < (std::numeric_limits<uint16_t>::max)() );
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
@@ -124,6 +130,7 @@ public:
     tracy_force_inline void Name( const char* txt, size_t size )
     {
         assert( size < (std::numeric_limits<uint16_t>::max)() );
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
@@ -138,6 +145,7 @@ public:
 
     tracy_force_inline void Color( uint32_t color )
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
@@ -151,6 +159,7 @@ public:
 
     tracy_force_inline void Value( uint64_t value )
     {
+        if (!TracyIsStarted) return;
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;

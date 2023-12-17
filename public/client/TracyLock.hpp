@@ -14,13 +14,20 @@ namespace tracy
 class LockableCtx
 {
 public:
-    tracy_force_inline LockableCtx( const SourceLocationData* srcloc )
-        : m_id( GetLockCounter().fetch_add( 1, std::memory_order_relaxed ) )
+    tracy_force_inline LockableCtx( const SourceLocationData* srcloc ) :
 #ifdef TRACY_ON_DEMAND
         , m_lockCount( 0 )
         , m_active( false )
+#else
+        m_active(TracyIsStarted)
 #endif
     {
+#if !TRACY_ON_DEMAND
+        if (!m_active) return;
+#endif 
+
+        m_id = GetLockCounter().fetch_add(1, std::memory_order_relaxed);
+
         assert( m_id != (std::numeric_limits<uint32_t>::max)() );
 
         auto item = Profiler::QueueSerial();
@@ -40,6 +47,9 @@ public:
 
     tracy_force_inline ~LockableCtx()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
@@ -52,6 +62,9 @@ public:
 
     tracy_force_inline bool BeforeLock()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return false;
+#endif 
 #ifdef TRACY_ON_DEMAND
         bool queue = false;
         const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
@@ -76,6 +89,9 @@ public:
 
     tracy_force_inline void AfterLock()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockObtain );
         MemWrite( &item->lockObtain.thread, GetThreadHandle() );
@@ -86,6 +102,9 @@ public:
 
     tracy_force_inline void AfterUnlock()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif 
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
         if( !m_active.load( std::memory_order_relaxed ) ) return;
@@ -105,6 +124,9 @@ public:
 
     tracy_force_inline void AfterTryLock( bool acquired )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif 
 #ifdef TRACY_ON_DEMAND
         if( !acquired ) return;
 
@@ -133,6 +155,9 @@ public:
 
     tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif 
 #ifdef TRACY_ON_DEMAND
         const auto active = m_active.load( std::memory_order_relaxed );
         if( !active ) return;
@@ -154,6 +179,9 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif 
         assert( size < (std::numeric_limits<uint16_t>::max)() );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, name, size );
@@ -173,8 +201,9 @@ private:
 
 #ifdef TRACY_ON_DEMAND
     std::atomic<uint32_t> m_lockCount;
-    std::atomic<bool> m_active;
 #endif
+
+    std::atomic<bool> m_active;
 };
 
 template<class T>
@@ -229,22 +258,28 @@ class SharedLockableCtx
 {
 public:
     tracy_force_inline SharedLockableCtx( const SourceLocationData* srcloc )
-        : m_id( GetLockCounter().fetch_add( 1, std::memory_order_relaxed ) )
+        :
 #ifdef TRACY_ON_DEMAND
         , m_lockCount( 0 )
         , m_active( false )
+#else
+        m_active(TracyIsStarted)
 #endif
     {
-        assert( m_id != (std::numeric_limits<uint32_t>::max)() );
+#if !TRACY_ON_DEMAND
+        if (!m_active) return;
+#endif
+        m_id = GetLockCounter().fetch_add(1, std::memory_order_relaxed);
+        assert(m_id != (std::numeric_limits<uint32_t>::max)());
 
         auto item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::LockAnnounce );
-        MemWrite( &item->lockAnnounce.id, m_id );
-        MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
-        MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
-        MemWrite( &item->lockAnnounce.type, LockType::SharedLockable );
+        MemWrite(&item->hdr.type, QueueType::LockAnnounce);
+        MemWrite(&item->lockAnnounce.id, m_id);
+        MemWrite(&item->lockAnnounce.time, Profiler::GetTime());
+        MemWrite(&item->lockAnnounce.lckloc, (uint64_t)srcloc);
+        MemWrite(&item->lockAnnounce.type, LockType::SharedLockable);
 #ifdef TRACY_ON_DEMAND
-        GetProfiler().DeferItem( *item );
+        GetProfiler().DeferItem(*item);
 #endif
         Profiler::QueueSerialFinish();
     }
@@ -254,6 +289,9 @@ public:
 
     tracy_force_inline ~SharedLockableCtx()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
@@ -266,6 +304,9 @@ public:
 
     tracy_force_inline bool BeforeLock()
     {
+#if !TRACY_ON_DEMAND
+        if (!m_active) return false;
+#endif
 #ifdef TRACY_ON_DEMAND
         bool queue = false;
         const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
@@ -290,6 +331,9 @@ public:
 
     tracy_force_inline void AfterLock()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockObtain );
         MemWrite( &item->lockObtain.thread, GetThreadHandle() );
@@ -300,6 +344,9 @@ public:
 
     tracy_force_inline void AfterUnlock()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
         if( !m_active.load( std::memory_order_relaxed ) ) return;
@@ -319,6 +366,9 @@ public:
 
     tracy_force_inline void AfterTryLock( bool acquired )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
 #ifdef TRACY_ON_DEMAND
         if( !acquired ) return;
 
@@ -347,6 +397,9 @@ public:
 
     tracy_force_inline bool BeforeLockShared()
     {
+#if !TRACY_ON_DEMAND
+        if (!m_active) return false;
+#endif
 #ifdef TRACY_ON_DEMAND
         bool queue = false;
         const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
@@ -371,6 +424,9 @@ public:
 
     tracy_force_inline void AfterLockShared()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
         MemWrite( &item->lockObtain.thread, GetThreadHandle() );
@@ -381,6 +437,9 @@ public:
 
     tracy_force_inline void AfterUnlockShared()
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
         if( !m_active.load( std::memory_order_relaxed ) ) return;
@@ -401,6 +460,9 @@ public:
 
     tracy_force_inline void AfterTryLockShared( bool acquired )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
 #ifdef TRACY_ON_DEMAND
         if( !acquired ) return;
 
@@ -429,6 +491,9 @@ public:
 
     tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
 #ifdef TRACY_ON_DEMAND
         const auto active = m_active.load( std::memory_order_relaxed );
         if( !active ) return;
@@ -450,6 +515,9 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
+#if !TRACY_ON_DEMAND
+		if (!m_active) return;
+#endif
         assert( size < (std::numeric_limits<uint16_t>::max)() );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, name, size );
@@ -469,8 +537,8 @@ private:
 
 #ifdef TRACY_ON_DEMAND
     std::atomic<uint32_t> m_lockCount;
-    std::atomic<bool> m_active;
 #endif
+    std::atomic<bool> m_active;
 };
 
 template<class T>

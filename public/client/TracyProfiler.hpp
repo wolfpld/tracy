@@ -273,6 +273,7 @@ public:
 
     static tracy_force_inline void QueueSerialFinish()
     {
+        if (!TracyIsStarted) return;
         auto& p = GetProfiler();
         p.m_serialQueue.commit_next();
         p.m_serialLock.unlock();
@@ -280,6 +281,7 @@ public:
 
     static tracy_force_inline void SendFrameMark( const char* name )
     {
+        if (!TracyIsStarted) return;
         if( !name ) GetProfiler().m_frameCount.fetch_add( 1, std::memory_order_relaxed );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -293,6 +295,7 @@ public:
 
     static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
     {
+        if (!TracyIsStarted) return;
         assert( type == QueueType::FrameMarkMsgStart || type == QueueType::FrameMarkMsgEnd );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -306,6 +309,7 @@ public:
 
     static tracy_force_inline void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
     {
+        if (!TracyIsStarted) return;
 #ifndef TRACY_NO_FRAME_IMAGE
         auto& profiler = GetProfiler();
         assert( profiler.m_frameCount.load( std::memory_order_relaxed ) < (std::numeric_limits<uint32_t>::max)() );
@@ -336,6 +340,7 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )
     {
+        if (!TracyIsStarted) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -348,6 +353,7 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, float val )
     {
+        if (!TracyIsStarted) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -360,6 +366,7 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, double val )
     {
+        if (!TracyIsStarted) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -372,6 +379,7 @@ public:
 
     static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type, bool step, bool fill, uint32_t color )
     {
+        if (!TracyIsStarted) return;
         TracyLfqPrepare( QueueType::PlotConfig );
         MemWrite( &item->plotConfig.name, (uint64_t)name );
         MemWrite( &item->plotConfig.type, (uint8_t)type );
@@ -388,6 +396,7 @@ public:
 
     static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
     {
+        if (!TracyIsStarted) return;
         assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -409,6 +418,7 @@ public:
 
     static tracy_force_inline void Message( const char* txt, int callstack )
     {
+        if (!TracyIsStarted) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -425,6 +435,7 @@ public:
 
     static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
     {
+        if (!TracyIsStarted) return;
         assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -449,6 +460,7 @@ public:
 
     static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int callstack )
     {
+        if (!TracyIsStarted) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -468,6 +480,7 @@ public:
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
     {
+        if (!TracyIsStarted) return;
         assert( size < (std::numeric_limits<uint16_t>::max)() );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
@@ -485,6 +498,7 @@ public:
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size, bool secure )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -498,6 +512,7 @@ public:
 
     static tracy_force_inline void MemFree( const void* ptr, bool secure )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -511,6 +526,7 @@ public:
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth, bool secure )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_HAS_CALLSTACK
         auto& profiler = GetProfiler();
@@ -533,6 +549,7 @@ public:
 
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth, bool secure )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
         if( !ProfilerAllocatorAvailable() )
         {
@@ -560,6 +577,7 @@ public:
 
     static tracy_force_inline void MemAllocNamed( const void* ptr, size_t size, bool secure, const char* name )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -574,6 +592,7 @@ public:
 
     static tracy_force_inline void MemFreeNamed( const void* ptr, bool secure, const char* name )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -588,6 +607,7 @@ public:
 
     static tracy_force_inline void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_HAS_CALLSTACK
         auto& profiler = GetProfiler();
@@ -612,6 +632,7 @@ public:
 
     static tracy_force_inline void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name )
     {
+        if (!TracyIsStarted) return;
         if( secure && !ProfilerAvailable() ) return;
 #ifdef TRACY_HAS_CALLSTACK
         auto& profiler = GetProfiler();
@@ -636,6 +657,7 @@ public:
 
     static tracy_force_inline void SendCallstack( int depth )
     {
+        if (!TracyIsStarted) return;
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         TracyQueuePrepare( QueueType::Callstack );
@@ -648,6 +670,7 @@ public:
 
     static tracy_force_inline void ParameterRegister( ParameterCallback cb, void* data )
     {
+        if (!TracyIsStarted) return;
         auto& profiler = GetProfiler();
         profiler.m_paramCallback = cb;
         profiler.m_paramCallbackData = data;
@@ -655,6 +678,7 @@ public:
 
     static tracy_force_inline void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
     {
+        if (!TracyIsStarted) return;
         TracyLfqPrepare( QueueType::ParamSetup );
         tracy::MemWrite( &item->paramSetup.idx, idx );
         tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
@@ -670,6 +694,7 @@ public:
 
     static tracy_force_inline void SourceCallbackRegister( SourceContentsCallback cb, void* data )
     {
+        if (!TracyIsStarted) return;
         auto& profiler = GetProfiler();
         profiler.m_sourceCallback = cb;
         profiler.m_sourceCallbackData = data;
@@ -678,6 +703,7 @@ public:
 #ifdef TRACY_FIBERS
     static tracy_force_inline void EnterFiber( const char* fiber )
     {
+        if (!TracyIsStarted) return;
         TracyQueuePrepare( QueueType::FiberEnter );
         MemWrite( &item->fiberEnter.time, GetTime() );
         MemWrite( &item->fiberEnter.fiber, (uint64_t)fiber );
@@ -686,6 +712,7 @@ public:
 
     static tracy_force_inline void LeaveFiber()
     {
+        if (!TracyIsStarted) return;
         TracyQueuePrepare( QueueType::FiberLeave );
         MemWrite( &item->fiberLeave.time, GetTime() );
         TracyQueueCommit( fiberLeave );

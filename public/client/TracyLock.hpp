@@ -16,7 +16,7 @@ class LockableCtx
 public:
     tracy_force_inline LockableCtx( const SourceLocationData* srcloc ) :
 #ifdef TRACY_ON_DEMAND
-        , m_lockCount( 0 )
+        m_lockCount( 0 )
         , m_active( false )
 #else
         m_active(TracyIsStarted)
@@ -260,7 +260,7 @@ public:
     tracy_force_inline SharedLockableCtx( const SourceLocationData* srcloc )
         :
 #ifdef TRACY_ON_DEMAND
-        , m_lockCount( 0 )
+        m_lockCount( 0 )
         , m_active( false )
 #else
         m_active(TracyIsStarted)

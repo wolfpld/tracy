@@ -1,58 +1,13 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Profiler GUI",
+            "name": "Launch",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/profiler/build/unix/Tracy-debug",
+            "program": "${command:cmake.launchTargetPath}",
             "args": [],
-            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "Build Profiler GUI",
-            "console": "internalConsole",
-            "internalConsoleOptions": "neverOpen"
-        },
-        {
-            "name": "Launch capture tool",
-            "type": "lldb",
-            "request": "launch",
-            "program": "${workspaceFolder}/capture/build/unix/capture-debug",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "Build capture tool"
-        },
-        {
-            "name": "Launch update tool",
-            "type": "lldb",
-            "request": "launch",
-            "program": "${workspaceFolder}/update/build/unix/update-debug",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "Build update tool"
-        },
-        {
-            "name": "Launch test application",
-            "type": "lldb",
-            "request": "launch",
-            "program": "${workspaceFolder}/test/tracy_test",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/test",
-            "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "Build test application"
-        },
+        }
     ]
 }

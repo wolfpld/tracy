@@ -1,6 +1,6 @@
-﻿Tracy Profiler
+﻿# Tracy Profiler
 
-The user manual
+## The user manual
 
 ![](Aspose.Words.1acaf9d8-b063-4ac8-9d19-7893039db694.001.png)
 
@@ -8,38 +8,38 @@ The user manual
 
 <https://github.com/wolfpld/tracy>
 
-Tracy Profiler The user manual![ref1]
+## Tracy Profiler The user manual![ref1]
 
 **Quick overview**
 
-Hello and welcome to the Tracy Profileruser manual! Here you will findall the information you need to start using the profiler. This manual has the following layout:
+Hello and welcome to the Tracy Profiler user manual! Here you will find all the information you need to start using the profiler. This manual has the following layout:
 
 - Chapter [1, *A quick look at Tracy Profiler*,](#_page6_x63.64_y90.71) gives a short description of what Tracy is and how it works.
 - Chapter [2, *First steps*,](#_page10_x63.64_y533.87) shows how you can integrate the profilerinto your application and how to build the graphical user interface (section [2.3). A](#_page19_x63.64_y255.32)t this point, you will be able to establish a connection from the profilerto your application.
 - Chapter [3, *Client markup*,](#_page22_x63.64_y725.77) provides information on how to instrument your application, in order to retrieve useful profilingdata. This includes a description of the C API (section 3.13), [which ](#_page42_x63.64_y636.27)enables usage of Tracy in any programming language.
-- Chapter [4, *Capturing the data*,](#_page52_x63.64_y589.65) goes into more detail on how the profilinginformation can be captured and stored on disk.
+- Chapter [4, *Capturing the data*,](#_page52_x63.64_y589.65) goes into more detail on how the profiling information can be captured and stored on disk.
 - Chapter [5, *Analyzing captured data*,](#_page58_x63.64_y346.67) guides you through the graphical user interface of the profiler.
 - Chapter [6, *Exporting zone statistics to CSV* ,](#_page87_x63.64_y583.51) explains how to export some zone timing statistics into a CSV format.
 - Chapter [7, *Importing external profilingdata*,](#_page88_x63.64_y388.34) documents how to import data from other profilers.
-- Chapter [8, *Configuration files*,](#_page89_x63.64_y118.43) gives information on the profilersettings.
+- Chapter [8, *Configuration files*,](#_page89_x63.64_y118.43) gives information on the profiler settings.
 
 **Quick-start guide**
 
-For Tracy to profileyour application, you will need to integrate the profilerinto your application and run an independent executable that will act both as a server with which your application will communicate and as a profilingviewer. The most basic integration looks like this:
+For Tracy to profile your application, you will need to integrate the profiler into your application and run an independent executable that will act both as a server with which your application will communicate and as a profiling viewer. The most basic integration looks like this:
 
 - Add the Tracy repository to your project directory.
 - Tracy source filesin the project/tracy/public directory.
 - Add TracyClient.cpp as a source file.
 - Add tracy/Tracy.hpp as an include file.
 - Include Tracy.hpp in every fileyou are interested in profiling.
-- Define TRACY\_ENABLEfor the **WHOLE** project.
+- Define TRACY\_ENABLE for the **WHOLE** project.
 - Add the macro FrameMark at the end of each frame loop.
-- Add the macro ZoneScoped as the first line of your function definitionsto include them in the profile.
-- Compile and run both your application and the profilerserver.
-- Hit *Connect* on the profilerserver.
-- Tada! You’re profilingyour program!
+- Add the macro ZoneScoped as the first line of your function definitions to include them in the profile.
+- Compile and run both your application and the profiler server.
+- Hit *Connect* on the profiler server.
+- Tada! You’re profiling your program!
 
-There’s much more Tracy can do, which can be explored by carefully reading this manual. In case any problems should surface, refer to section 2.1 t[o ensure](#_page11_x63.64_y255.91) you’ve correctly included Tracy in your project. Additionally, you should refer to section 3 to[ mak](#_page22_x63.64_y725.77)e sure you are using FrameMark, ZoneScoped, and any other Tracy constructs correctly.
+There’s much more Tracy can do, which can be explored by carefully reading this manual. In case any problems should surface, refer to section 2.1 [to ensure](#_page11_x63.64_y255.91) you’ve correctly included Tracy in your project. Additionally, you should refer to section 3 to[ make](#_page22_x63.64_y725.77) sure you are using FrameMark, ZoneScoped, and any other Tracy constructs correctly.
 
 **Contents**
 
@@ -163,7 +163,10 @@ There’s much more Tracy can do, which can be explored by carefully reading thi
 5. [GPU zones .](#_page45_x63.64_y659.97) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
 5. [Fibers ](#_page46_x63.64_y462.99). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
 8. [Connection Status ](#_page46_x63.64_y521.03). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
-8. [Call stacks ](#_page46_x63.64_y566.51). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46 [3.13.10Using the C API to implement bindings . . ](#_page46_x63.64_y635.95). . . . . . . . . . . . . . . . . . . . . . . . . 46
+8. [Call stacks ](#_page46_x63.64_y566.51). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+
+    [3.13.10Using the C API to implement bindings . . ](#_page46_x63.64_y635.95). . . . . . . . . . . . . . . . . . . . . . . . . 46
+
 14. [Automated data collection . ](#_page47_x63.64_y486.91). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
 1. [Privilege elevation ](#_page47_x63.64_y549.84). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
 1. [CPU usage .](#_page48_x63.64_y188.87) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 48
@@ -267,9 +270,9 @@ There’s much more Tracy can do, which can be explored by carefully reading thi
 
 <a name="_page6_x63.64_y90.71"></a>**1 A quick look at Tracy Profiler**
 
-Tracy is a real-time, nanosecond resolution *hybrid frame and sampling profiler*that can you can use for remote
+Tracy is a real-time, nanosecond resolution *hybrid frame and sampling profiler* that can you can use for remote
 
-or embedded telemetry of games and other applications. It can profileCPU , GPU [, ](#_page6_x77.98_y658.89)[memory](#_page6_x77.98_y678.43) allocations, locks, context switches, automatically attribute screenshots to captured frames, and much more.
+or embedded telemetry of games and other applications. It can profile CPU , GPU [, ](#_page6_x77.98_y658.89)[memory](#_page6_x77.98_y678.43) allocations, locks, context switches, automatically attribute screenshots to captured frames, and much more.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other *statistical profilers* (such as VTune, perf, or Very Sleepy), it mainly focuses on manual markup of the source code. Such markup allows frame-by-frame inspection of the program execution. For example, you will be able to see exactly which functions are called, how much time they require, and how they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it cannot accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
@@ -281,9 +284,9 @@ You may think of Tracy as the RAD Telemetry plus Intel VTune, on overdrive.
 
 <a name="_page6_x63.64_y293.68"></a>The concept of Tracy being a real-time profilermay be explained in a couple of different ways:
 
-1. The profiledapplication is not slowed down by profiling . The[ act](#_page6_x77.98_y688.04) of recording a profilingevent has virtually zero cost – it only takes a few nanoseconds. Even on low-power mobile devices, execution speed has no noticeable impact.
-1. The profiler itself works in real-time, without the need to process collected data in a complex way. Actually, it is pretty inefficientin how it works because it recalculates the data it presents each frame anew. And yet, it can run at 60 frames per second.
-1. The profilerhas full functionality when the profiledapplication runs and the data is still collected. You may interact with your application and immediately switch to the profilerwhen a performance drop occurs.
+1. The profiled application is not slowed down by profiling . The[ act](#_page6_x77.98_y688.04) of recording a profiling event has virtually zero cost – it only takes a few nanoseconds. Even on low-power mobile devices, execution speed has no noticeable impact.
+1. The profiler itself works in real-time, without the need to process collected data in a complex way. Actually, it is pretty inefficient in how it works because it recalculates the data it presents each frame anew. And yet, it can run at 60 frames per second.
+1. The profiler has full functionality when the profiled application runs and the data is still collected. You may interact with your application and immediately switch to the profilerwhen a performance drop occurs.
 2. **Nanosecond<a name="_page6_x63.64_y487.50"></a> resolution**
 
 It is hard to imagine how long a nanosecond is. One good analogy is to compare it with a measure of length. Let’s say that one second is one meter (the average doorknob is at the height of one meter).

@@ -558,7 +558,8 @@ void View::DrawStatistics()
         else
         {
             ImGui::BeginChild( "##statistics" );
-            if( ImGui::BeginTable( "##statistics", 5, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
+            if( ImGui::BeginTable( "##statistics", m_statMode == 0 ? 6 : 5,
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
             {
                 ImGui::TableSetupScrollFreeze( 0, 1 );
                 ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
@@ -566,6 +567,7 @@ void View::DrawStatistics()
                 ImGui::TableSetupColumn( "Total time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableSetupColumn( "Counts", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                if( m_statMode == 0 ) ImGui::TableSetupColumn( "Threads", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableHeadersRow();
 
                 const auto& sortspec = *ImGui::TableGetSortSpecs()->Specs;
@@ -609,6 +611,16 @@ void View::DrawStatistics()
                     else
                     {
                         pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones > rhs.total / rhs.numZones; } );
+                    }
+                    break;
+                case 5:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                    {
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.numThreads < rhs.numThreads; } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.numThreads > rhs.numThreads; } );
                     }
                     break;
                 default:
@@ -678,6 +690,11 @@ void View::DrawStatistics()
                     ImGui::TextUnformatted( RealToString( v.numZones ) );
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted( TimeToString( time / v.numZones ) );
+                    if( m_statMode == 0 )
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted( RealToString( v.numThreads ) );
+                    }
                     ImGui::PopID();
                 }
                 ImGui::EndTable();

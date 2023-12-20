@@ -4898,9 +4898,11 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     const auto timeSpan = timeEnd - zone->Start();
     if( timeSpan > 0 )
     {
+        const auto ctid = CompressThread( td->id );
         ZoneThreadData ztd;
         ztd.SetZone( zone );
-        ztd.SetThread( CompressThread( td->id ) );
+        ztd.SetThread( ctid );
+
         auto slz = GetSourceLocationZones( zone->SrcLoc() );
         slz->zones.push_back( ztd );
         if( slz->min > timeSpan ) slz->min = timeSpan;
@@ -4911,6 +4913,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         if( slz->selfMin > selfSpan ) slz->selfMin = selfSpan;
         if( slz->selfMax < selfSpan ) slz->selfMax = selfSpan;
         slz->selfTotal += selfSpan;
+
         if( !isReentry )
         {
             slz->nonReentrantCount++;
@@ -4921,6 +4924,16 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         if( !td->childTimeStack.empty() )
         {
             td->childTimeStack.back() += timeSpan;
+        }
+
+        auto it = slz->threadCnt.find( ctid );
+        if( it == slz->threadCnt.end() )
+        {
+            slz->threadCnt.emplace( ctid, 1 );
+        }
+        else
+        {
+            it->second++;
         }
     }
     else
@@ -7465,15 +7478,18 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
     {
         auto it = m_data.sourceLocationZones.find( zone.SrcLoc() );
         assert( it != m_data.sourceLocationZones.end() );
+
         ZoneThreadData ztd;
         ztd.SetZone( &zone );
         ztd.SetThread( thread );
+
         auto& slz = it->second;
         slz.zones.push_back( ztd );
         if( slz.min > timeSpan ) slz.min = timeSpan;
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
+
         if( countMap[uint16_t(zone.SrcLoc())] == 0 )
         {
             slz.nonReentrantCount++;
@@ -7481,6 +7497,7 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
             if( slz.nonReentrantMax < timeSpan ) slz.nonReentrantMax = timeSpan;
             slz.nonReentrantTotal += timeSpan;
         }
+
         if( zone.HasChildren() )
         {
             auto& children = GetZoneChildren( zone.Child() );
@@ -7492,9 +7509,20 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
                 timeSpan -= childSpan;
             }
         }
+
         if( slz.selfMin > timeSpan ) slz.selfMin = timeSpan;
         if( slz.selfMax < timeSpan ) slz.selfMax = timeSpan;
         slz.selfTotal += timeSpan;
+
+        auto tit = slz.threadCnt.find( thread );
+        if( tit == slz.threadCnt.end() )
+        {
+            slz.threadCnt.emplace( thread, 1 );
+        }
+        else
+        {
+            tit->second++;
+        }
     }
 }
 

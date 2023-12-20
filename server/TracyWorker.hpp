@@ -205,6 +205,7 @@ private:
         int64_t nonReentrantMin = std::numeric_limits<int64_t>::max();
         int64_t nonReentrantMax = std::numeric_limits<int64_t>::min();
         int64_t nonReentrantTotal = 0;
+        unordered_flat_map<uint16_t, uint64_t> threadCnt;
     };
 
     struct GpuSourceLocationZones

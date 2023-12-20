@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 #include "TracyCallstack.hpp"
+#include "TracyDebug.hpp"
 #include "TracyFastVector.hpp"
 #include "TracyStringHelpers.hpp"
 #include "../common/TracyAlloc.hpp"
-#include "TracyDebug.hpp"
+#include "../common/TracySystem.hpp"
+
 
 #ifdef TRACY_HAS_CALLSTACK
 

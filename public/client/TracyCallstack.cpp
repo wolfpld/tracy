@@ -361,11 +361,11 @@ void InitCallstack()
     DBGHELP_LOCK;
 #endif
 
-    // use TRACY_NO_DBHELP_INIT_LOAD=1 to disable preloading of driver
+    // use TRACY_NO_DBGHELP_INIT_LOAD=1 to disable preloading of driver
     // and process module symbol loading at startup time - they will be loaded on demand later
     // Sometimes this process can take a very long time and prevent resolving callstack frames
     // symbols during that time.
-    const char* noInitLoadEnv = GetEnvVar( "TRACY_NO_DBHELP_INIT_LOAD" );
+    const char* noInitLoadEnv = GetEnvVar( "TRACY_NO_DBGHELP_INIT_LOAD" );
     const bool initTimeModuleLoad = !( noInitLoadEnv && noInitLoadEnv[0] == '1' );
     if ( !initTimeModuleLoad )
     {

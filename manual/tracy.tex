@@ -1788,7 +1788,7 @@ void DbgHelpUnlock() { ReleaseMutex(dbgHelpLock); }
 }
 \end{lstlisting}
 
-At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
+At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBGHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
 
 \paragraph{Disabling resolution of inline frames}
 

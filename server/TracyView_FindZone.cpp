@@ -1731,6 +1731,7 @@ void View::DrawFindZone()
         }
         else
         {
+            TextFocused( "Number of groups:", RealToString( groups.size() ) );
             for( auto& v : groups )
             {
                 bool isFiber = false;

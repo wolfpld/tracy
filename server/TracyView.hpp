@@ -89,6 +89,7 @@ class View
         size_t sourceCount;
         size_t count;
         int64_t total;
+        uint16_t threadNum;
     };
 
 public:

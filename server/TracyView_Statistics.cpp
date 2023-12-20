@@ -11,6 +11,7 @@ extern double s_time;
 struct SrcLocZonesSlim
 {
     int16_t srcloc;
+    uint16_t numThreads;
     size_t numZones;
     int64_t total;
 };
@@ -118,11 +119,12 @@ void View::DrawStatistics()
                             if( cit->second.count != 0 )
                             {
                                 slzcnt++;
-                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.threadNum, cit->second.count, cit->second.total } );
                             }
                         }
                         else
                         {
+                            unordered_flat_set<uint16_t> threads;
                             size_t cnt = 0;
                             int64_t total = 0;
                             for( auto& v : it->second.zones )
@@ -137,20 +139,23 @@ void View::DrawStatistics()
                                     {
                                         total += zt - GetZoneChildTimeFast( z );
                                         cnt++;
+                                        threads.emplace( v.Thread() );
                                     }
                                     else if( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry( z ) )
                                     {
                                         total += zt;
                                         cnt++;
+                                        threads.emplace( v.Thread() );
                                     }
                                 }
                             }
+                            const auto threadNum = (uint16_t)threads.size();
                             if( cnt != 0 )
                             {
                                 slzcnt++;
-                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, threadNum, cnt, total } );
                             }
-                            m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
+                            m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total, threadNum };
                         }
                     }
                     else
@@ -165,11 +170,12 @@ void View::DrawStatistics()
                             {
                                 if( cit->second.count != 0 )
                                 {
-                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.threadNum, cit->second.count, cit->second.total } );
                                 }
                             }
                             else
                             {
+                                unordered_flat_set<uint16_t> threads;
                                 size_t cnt = 0;
                                 int64_t total = 0;
                                 for( auto& v : it->second.zones )
@@ -184,19 +190,22 @@ void View::DrawStatistics()
                                         {
                                             total += zt - GetZoneChildTimeFast( z );
                                             cnt++;
+                                            threads.emplace( v.Thread() );
                                         }
                                         else if( m_statAccumulationMode == AccumulationMode::AllChildren || !IsZoneReentry( z ) )
                                         {
                                             total += zt;
                                             cnt++;
+                                            threads.emplace( v.Thread() );
                                         }
                                     }
                                 }
+                                const auto threadNum = (uint16_t)threads.size();
                                 if( cnt != 0 )
                                 {
-                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, threadNum, cnt, total } );
                                 }
-                                m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
+                                m_statCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total, threadNum };
                             }
                         }
                     }
@@ -229,7 +238,7 @@ void View::DrawStatistics()
                     }
                     if( !filterActive )
                     {
-                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
+                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
                     }
                     else
                     {
@@ -237,7 +246,7 @@ void View::DrawStatistics()
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
                         if( m_statisticsFilter.PassFilter( name ) )
                         {
-                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, (uint16_t)it->second.threadCnt.size(), count, total } );
                         }
                     }
                 }
@@ -331,7 +340,7 @@ void View::DrawStatistics()
                             if( cit->second.count != 0 )
                             {
                                 slzcnt++;
-                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, cit->second.count, cit->second.total } );
                             }
                         }
                         else
@@ -353,7 +362,7 @@ void View::DrawStatistics()
                             if( cnt != 0 )
                             {
                                 slzcnt++;
-                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, cnt, total } );
                             }
                             m_gpuStatCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
                         }
@@ -370,7 +379,7 @@ void View::DrawStatistics()
                             {
                                 if( cit->second.count != 0 )
                                 {
-                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cit->second.count, cit->second.total } );
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, cit->second.count, cit->second.total } );
                                 }
                             }
                             else
@@ -391,7 +400,7 @@ void View::DrawStatistics()
                                 }
                                 if( cnt != 0 )
                                 {
-                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total } );
+                                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, cnt, total } );
                                 }
                                 m_gpuStatCache[it->first] = StatisticsCache { RangeSlim { m_statRange.min, m_statRange.max, m_statRange.active }, m_statAccumulationMode, it->second.zones.size(), cnt, total };
                             }
@@ -411,7 +420,7 @@ void View::DrawStatistics()
                     int64_t total = it->second.total;
                     if( !filterActive )
                     {
-                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
+                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, count, total } );
                     }
                     else
                     {
@@ -419,7 +428,7 @@ void View::DrawStatistics()
                         auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
                         if( m_statisticsFilter.PassFilter( name ) )
                         {
-                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, count, total } );
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, 0, count, total } );
                         }
                     }
                 }

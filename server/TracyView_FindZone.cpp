@@ -1439,7 +1439,7 @@ void View::DrawFindZone()
         const auto highlightActive = m_findZone.highlight.active;
         const auto limitRange = m_findZone.range.active;
         FindZone::Group* group = nullptr;
-        const uint64_t invalidGid = std::numeric_limits<uint64_t>::max() - 1;
+        constexpr uint64_t invalidGid = std::numeric_limits<uint64_t>::max() - 1;
         uint64_t lastGid = invalidGid;
         auto zptr = zones.data() + m_findZone.processed;
         const auto zend = zones.data() + zones.size();

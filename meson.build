@@ -98,7 +98,7 @@ if get_option('tracy_no_crash_handler')
 endif
 
 if get_option('tracy_libunwind_backtrace')
-  tracy_common_args += ['-DTRACE_CLIENT_LIBUNWIND_BACKTRACE']
+  tracy_common_args += ['-DTRACY_LIBUNWIND_BACKTRACE']
   tracy_public_deps += dependency('libunwind')
 endif
 

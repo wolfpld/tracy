@@ -8,7 +8,7 @@
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 #  include <unwind.h>
 #elif TRACY_HAS_CALLSTACK >= 3
-#  ifdef TRACE_CLIENT_LIBUNWIND_BACKTRACE
+#  ifdef TRACY_LIBUNWIND_BACKTRACE
      // libunwind is, in general, significantly faster than execinfo based backtraces
 #    define UNW_LOCAL_ONLY
 #    include <libunwind.h>
@@ -133,7 +133,7 @@ static tracy_force_inline void* Callstack( int depth )
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + (size_t)depth ) * sizeof( uintptr_t ) );
 
-#ifdef TRACE_CLIENT_LIBUNWIND_BACKTRACE
+#ifdef TRACY_LIBUNWIND_BACKTRACE
     size_t num =  unw_backtrace( (void**)(trace+1), depth );
 #else
     const auto num = (size_t)backtrace( (void**)(trace+1), depth );

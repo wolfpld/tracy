@@ -106,6 +106,10 @@
 // Read about ImGuiBackendFlags_RendererHasVtxOffset for details.
 //#define ImDrawIdx unsigned int
 
+#ifdef __EMSCRIPTEN__
+#define ImDrawIdx unsigned int
+#endif
+
 //---- Override ImDrawCallback signature (will need to modify renderer backends accordingly)
 //struct ImDrawList;
 //struct ImDrawCmd;

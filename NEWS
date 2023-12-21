@@ -2,6 +2,50 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+vx.xx.x (xxxx-xx-xx)
+--------------------
+
+- Various Meson fixes.
+- Proper way of loading Vulkan calibrated timestamps extension.
+- Fixed C API support for GPU tracing when on demand mode is enabled.
+- Added a way to resynchronize CPU and GPU timestamps.
+  - Using calibrated contexts should always be preferred.
+  - Each synchronization event requires a sync of CPU and GPU, which is
+    something you always want to avoid.
+  - This is not exposed as an easy-to-use API available through the GPU
+    wrappers.
+- Added TracyIsStarted macro to check if the profiler has been started.
+  Using this functionality only makes sense in the manual lifetime mode,
+  and will always return true in any other mode of operation.
+- Added basic QNX support.
+- Zmmword is now recognized as an assemble size directive.
+- Libunwind can be used for call stack capture on Linux if you build with
+  the TRACY_LIBUNWIND_BACKTRACE define.
+- Preloading symbols for all modules on Windows, which is always performed
+  on program init, and which can be quite slow, may now be omitted through
+  the TRACY_NO_DBGHELP_INIT_LOAD define. In this mode, symbols will be
+  loaded as needed.
+- Validation of discontinuous frames has been disabled in on-demand mode.
+  It's quite likely to connect in the middle of a discontinuous frame,
+  which resulted in frame end event for a frame that hasn't been started.
+- Symbols can be now resolved offline on Windows and Linux.
+  - Enabled with the TRACY_SYMBOL_OFFLINE_RESOLVE define or env variable.
+  - The update utility has two additional options:
+    - -r, which enables resolving symbol and patching stack frames in the
+      trace.
+    - -p, which you can use to modify the paths used for symbol resolution.
+  - Some functionality will be missing if this mode is used. For example,
+    symbol statistics are unavailable.
+- Resolving symbol names on Linux will now use image cache to reduce the
+  number of dladdr() calls.
+- Compiling with the TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT define will
+  enable support for run-time updating of known elf ranges in libbacktrace
+  on Linux. Previously, shared objects dlopened() after libbacktrace init
+  would not be visible during symbol resolution.
+- Zone group count in the Find zone window is now explicitly displayed.
+- Instrumentation statistics now display in how many threads each source
+  location has appeared in.
+
 v0.10.0 (2023-10-16)
 --------------------
 

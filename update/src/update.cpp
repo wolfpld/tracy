@@ -34,7 +34,7 @@ void Usage()
     printf( "      l: locks, m: messages, p: plots, M: memory, i: frame images\n" );
     printf( "      c: context switches, s: sampling data, C: symbol code, S: source cache\n" );
     printf( "  -c: scan for source files missing in cache and add if found\n" );
-    printf( "  -r resolve symbols and patch callstack frames\n");
+    printf( "  -r: resolve symbols and patch callstack frames\n");
     printf( "  -p: substitute symbol resolution path with an alternative: \"REGEX_MATCH;REPLACEMENT\"\n");
 
     exit( 1 );

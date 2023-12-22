@@ -323,7 +323,6 @@ public:
         m_tail += cnt;
     }
 
-private:
     tracy_force_inline unsigned int NextQueryId()
     {
         const uint64_t id = m_head.fetch_add(1, std::memory_order_relaxed);
@@ -335,6 +334,12 @@ private:
         return m_context;
     }
 
+    tracy_force_inline VkQueryPool GetQueryPool() const
+    {
+         return m_query;
+    }
+
+private:
     tracy_force_inline void Calibrate( VkDevice device, int64_t& tCpu, int64_t& tGpu )
     {
         assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );

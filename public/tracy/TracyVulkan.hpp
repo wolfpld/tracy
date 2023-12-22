@@ -340,7 +340,6 @@ public:
     }
 
 private:
-
     tracy_force_inline void Calibrate( VkDevice device, int64_t& tCpu, int64_t& tGpu )
     {
         assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );

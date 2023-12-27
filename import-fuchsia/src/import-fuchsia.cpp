@@ -85,20 +85,18 @@ struct DecodeState {
 
 // Append a string representation of `val` to `res`
 void appendArgumentValue(std::string &res, ArgumentValue &val) {
+  char buf[32]; buf[31]=0;
   if (std::holds_alternative<std::string>(val)) {
     res += std::get<std::string>(val);
   } else if (std::holds_alternative<uint64_t>(val)) {
-    char buf[32];
     snprintf(buf, 31, "%" PRIu64, std::get<uint64_t>(val));
-    res += buf;
+    res.append(buf);
   } else if (std::holds_alternative<int64_t>(val)) {
-    char buf[32];
     snprintf(buf, 31, "%" PRId64, std::get<int64_t>(val));
-    res += buf;
+    res.append(buf);
   } else if (std::holds_alternative<bool>(val)) {
     res += std::get<bool>(val) ? "true" : "false";
   } else if (std::holds_alternative<double>(val)) {
-    char buf[32];
     snprintf(buf, 31, "%.5f", std::get<double>(val));
     res += buf;
   }
@@ -284,14 +282,12 @@ void readArgument(std::vector<Argument> &args, DecodeState &dec,
   } break;
   case 7:
     // pointer
-  case 8:
+  case 8: {
     // koid
-    {
-      uint64_t i = r.p[offset];
-      offset += 1;
-      value = i;
-    }
-    break;
+    uint64_t i = r.p[offset];
+    offset += 1;
+    value = i;
+  } break;
   case 9: {
     // bool
     bool b = (bool)((header >> 32) & 1);
@@ -309,7 +305,6 @@ void readArgument(std::vector<Argument> &args, DecodeState &dec,
 void readArguments(std::vector<Argument> &args, DecodeState &dec, Record r,
                    size_t &offset, const int n_args) {
   args.clear();
-
   for (int i = 0; i < n_args; ++i)
     readArgument(args, dec, r, offset);
 }
@@ -317,7 +312,7 @@ void readArguments(std::vector<Argument> &args, DecodeState &dec, Record r,
 // text made of arguments
 void printArgumentsToString(std::string &res, std::vector<Argument> &args) {
   for (auto &kv : args) {
-    res += kv.name;
+    res += kv.name.data();
     res += ": ";
     appendArgumentValue(res, kv.value);
     res += "\n";

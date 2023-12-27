@@ -171,7 +171,7 @@ std::vector<uint8_t> read_input(const char *input) {
   return buf;
 }
 
-// read next span starting at `offset`
+// read next record starting at `offset`
 Record read_next_record(std::vector<uint8_t> const &input, size_t &offset) {
   uint64_t header = *((uint64_t *)&input[offset]);
   uint16_t len_word = (header >> 4) & 0xfff;
@@ -197,7 +197,7 @@ uint64_t getPseudoTid(DecodeState &dec, ThreadRef th) {
   return pseudo_tid;
 }
 
-// decode thread info
+// decode thread info from a ref
 ThreadRef readThread(DecodeState &dec, Record const &r, size_t &offset,
                      uint8_t ref) {
   ThreadRef th;
@@ -230,8 +230,8 @@ void readString(DecodeState &dec, std::string &res, Record const &r,
 
 // Skip string reference (just modify offset)
 void skipString(size_t &offset, uint16_t ref) {
-  if (ref != 0 && (ref & 0x80) != 0) {
-    size_t size = ref & 0x7f;
+  if (ref != 0 && (ref & 0x8000) != 0) {
+    size_t size = ref & 0x7fff;
     offset += ROUND_TO_WORD(size) >> 3;
   }
 }

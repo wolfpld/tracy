@@ -85,7 +85,8 @@ struct DecodeState {
 
 // Append a string representation of `val` to `res`
 void appendArgumentValue(std::string &res, ArgumentValue &val) {
-  char buf[32]; buf[31]=0;
+  char buf[32];
+  buf[31] = 0;
   if (std::holds_alternative<std::string>(val)) {
     res += std::get<std::string>(val);
   } else if (std::holds_alternative<uint64_t>(val)) {
@@ -270,7 +271,7 @@ void readArgument(std::vector<Argument> &args, DecodeState &dec,
     value = i;
   } break;
   case 5: {
-    double i = r.p[offset];
+    double i = *((double*) &r.p[offset]);
     offset += 1;
     value = i;
   } break;
@@ -307,6 +308,24 @@ void readArguments(std::vector<Argument> &args, DecodeState &dec, Record r,
   args.clear();
   for (int i = 0; i < n_args; ++i)
     readArgument(args, dec, r, offset);
+}
+
+bool argumentIsNumber(Argument const &arg) {
+  return std::holds_alternative<double>(arg.value) ||
+         std::holds_alternative<int64_t>(arg.value) ||
+         std::holds_alternative<uint64_t>(arg.value);
+}
+
+double argumentToNumber(Argument const &arg) {
+  if (std::holds_alternative<double>(arg.value)) {
+    return std::get<double>(arg.value);
+  } else if (std::holds_alternative<int64_t>(arg.value)) {
+    return static_cast<double>(std::get<int64_t>(arg.value));
+  } else if (std::holds_alternative<uint64_t>(arg.value)) {
+    return static_cast<double>(std::get<uint64_t>(arg.value));
+  } else {
+    assert(false);
+  }
 }
 
 // text made of arguments
@@ -402,39 +421,71 @@ int main(int argc, char **argv) {
         break;
       }
 
-      case 4: {
-        // complete duration
-        const auto tid = getPseudoTid(dec, th);
-        const auto ts0 = timestamp;
-        const auto ts1 = r.p[offset]; // end timestamp
+      case 1: {
+        // counter
+        for (auto &kv : arguments) {
+          bool plotFound = false;
+          auto &metricName = kv.name;
+
+          if (!argumentIsNumber(kv))
+            continue;
+
+          auto dataPoint = std::make_pair(timestamp, argumentToNumber(kv));
+
+          // The input file is assumed to have only very few metrics,
+          // so iterating through plots is not a problem.
+          for (auto &plot : plots) {
+            if (plot.name == metricName) {
+              plot.data.emplace_back(dataPoint);
+              plotFound = true;
+              break;
+            }
+          }
+          if (!plotFound) {
+            auto formatting = tracy::PlotValueFormatting::Number;
+            plots.emplace_back(tracy::Worker::ImportEventPlots{
+                std::move(metricName), formatting, {dataPoint}});
+          }
+        }
+        break;
+      }
+
+      case 2: {
+        // duration begin
         std::string zoneText;
         printArgumentsToString(zoneText, arguments);
         timeline.emplace_back(tracy::Worker::ImportEventTimeline{
-            tid, ts0, name, std::move(zoneText), false, std::move(locFile),
-            locLine});
+            getPseudoTid(dec, th), timestamp, name, std::move(zoneText), false,
+            std::move(locFile), locLine});
+        break;
+      }
+
+      case 3: {
+        // duration end
+        std::string zoneText;
+        printArgumentsToString(zoneText, arguments);
+        timeline.emplace_back(tracy::Worker::ImportEventTimeline{
+            getPseudoTid(dec, th), timestamp, "", std::move(zoneText), true});
+        break;
+      }
+
+      case 4: {
+        // complete duration
+        const auto ts_end = r.p[offset]; // end timestamp
+        const auto tid = getPseudoTid(dec, th);
+        std::string zoneText;
+        printArgumentsToString(zoneText, arguments);
+        timeline.emplace_back(tracy::Worker::ImportEventTimeline{
+            tid, timestamp, name, std::move(zoneText), false,
+            std::move(locFile), locLine});
         timeline.emplace_back(
-            tracy::Worker::ImportEventTimeline{tid, ts1, "", "", true});
+            tracy::Worker::ImportEventTimeline{tid, ts_end, "", "", true});
         break;
       }
 
       default: {
       }
       }
-
-      /*
-      if( type == "b" || type == "B" )
-      {
-          timeline.emplace_back( tracy::Worker::ImportEventTimeline {
-              getPseudoTid(v),
-              uint64_t( v["ts"].get<double>() * 1000. ),
-              v["name"].get<std::string>(),
-              std::move(zoneText),
-              false,
-              std::move(locFile),
-              locLine
-          } );
-      }
-      */
 
       break;
     }
@@ -469,8 +520,8 @@ int main(int argc, char **argv) {
             for( auto& kv : v["args"].items() )
             {
                 const auto val = kv.value();
-                const std::string s = val.is_string() ? val.get<std::string>() :
-    val.dump(); zoneText += kv.key() + ": " + s + "\n";
+                const std::string s = val.is_string() ? val.get<std::string>()
+    : val.dump(); zoneText += kv.key() + ": " + s + "\n";
             }
         }
 
@@ -559,8 +610,8 @@ int main(int argc, char **argv) {
 
                     // NOTE: With C++20 one could say metricName.ends_with(
     "_bytes" ) instead of rfind auto metricNameLen = metricName.size(); if (
-    metricNameLen >= 6 && metricName.rfind( "_bytes" ) == metricNameLen - 6 ) {
-                        formatting = tracy::PlotValueFormatting::Memory;
+    metricNameLen >= 6 && metricName.rfind( "_bytes" ) == metricNameLen - 6 )
+    { formatting = tracy::PlotValueFormatting::Memory;
                     }
 
                     plots.emplace_back( tracy::Worker::ImportEventPlots {

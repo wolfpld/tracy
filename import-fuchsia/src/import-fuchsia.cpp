@@ -271,7 +271,7 @@ void readArgument(std::vector<Argument> &args, DecodeState &dec,
     value = i;
   } break;
   case 5: {
-    double i = *((double*) &r.p[offset]);
+    double i = *((double *)&r.p[offset]);
     offset += 1;
     value = i;
   } break;
@@ -488,6 +488,59 @@ int main(int argc, char **argv) {
       }
 
       break;
+    }
+
+    case 7: {
+      // kernel object
+
+      uint8_t ty = (r.header >> 16) & 0xff;
+      uint16_t name_ref = (r.header >> 24) & 0xffff;
+      uint8_t n_args = (r.header >> 40) & 0xf;
+      size_t offset = 1;
+
+      uint64_t koid = r.p[offset];
+      offset++;
+
+      readString(dec, name, r, offset, name_ref);
+
+      readArguments(arguments, dec, r, offset, n_args);
+
+      switch (ty) {
+      case 1: {
+        // process
+        break;
+      }
+
+      case 2: {
+        // thread
+        auto real_tid = koid;
+
+        // we need the pid as well
+        uint64_t pid;
+        bool foundPid = false;
+        for (auto &kv : arguments) {
+          if (strcmp(kv.name.data(), "process") == 0 &&
+              std::holds_alternative<uint64_t>(kv.value)) {
+            // koid (argument type 8) are decoded as uint64
+            pid = std::get<uint64_t>(kv.value);
+            foundPid = true;
+            break;
+          }
+        }
+
+        if (!foundPid)
+          continue;
+
+        ThreadRef th{pid, real_tid};
+        const auto tid = getPseudoTid(dec, th);
+        dec.threadNames[tid] = name;
+
+        break;
+      }
+
+      default: {
+      }
+      }
     }
 
     default: {

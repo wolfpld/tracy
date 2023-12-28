@@ -338,6 +338,25 @@ void printArgumentsToString(std::string &res, std::vector<Argument> &args) {
   }
 }
 
+// Read location for a given span
+void readLoc(std::string &locFile, uint32_t &locLine,
+             std::vector<Argument> const &args) {
+  for (auto &kv : args) {
+    if (strcmp(kv.name.data(), "loc") == 0 &&
+        std::holds_alternative<std::string>(kv.value)) {
+      auto loc = std::get<std::string>(kv.value);
+      const auto lpos = loc.find_last_of(':');
+      if (lpos == std::string::npos) {
+        std::swap(loc, locFile);
+      } else {
+        locFile = loc.substr(0, lpos);
+        locLine = atoi(loc.c_str() + lpos + 1);
+      }
+      break;
+    }
+  }
+}
+
 int main(int argc, char **argv) {
 #ifdef _WIN32
   if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
@@ -412,6 +431,7 @@ int main(int argc, char **argv) {
 
       std::string locFile;
       uint32_t locLine = 0;
+      readLoc(locFile, locLine, arguments);
 
       switch (ev_ty) {
       case 0: {

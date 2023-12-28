@@ -25,6 +25,8 @@ jobs:
       run: make -j`nproc` -C csvexport/build/unix debug release
     - name: Import-chrome utility
       run: make -j`nproc` -C import-chrome/build/unix debug release
+    - name: Import-fuchsia utility
+      run: make -j`nproc` -C import-fuchsia/build/unix debug release
     - name: Library
       run: make -j`nproc` -C library/unix debug release
     - name: Library (meson)

@@ -250,7 +250,7 @@ void readArgument(std::vector<Argument> &args, DecodeState &dec,
   ArgumentValue value;
   switch (ty) {
   case 0:
-    value = (Unit){};
+    value = Unit{};
     break;
   case 1: {
     int32_t i = header >> 32;
@@ -324,7 +324,7 @@ double argumentToNumber(Argument const &arg) {
   } else if (std::holds_alternative<uint64_t>(arg.value)) {
     return static_cast<double>(std::get<uint64_t>(arg.value));
   } else {
-    assert(false);
+    abort();
   }
 }
 

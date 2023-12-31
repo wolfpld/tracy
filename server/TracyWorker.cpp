@@ -5029,6 +5029,11 @@ void Worker::FiberLeaveFailure()
     m_failure = Failure::FiberLeave;
 }
 
+void Worker::SourceLocationOverflowFailure()
+{
+    m_failure = Failure::SourceLocationOverflow;
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = GetCurrentThreadData();
@@ -8370,6 +8375,7 @@ static const char* s_failureReasons[] = {
     "Frame image offset is invalid.",
     "Multiple frame images were sent for a single frame.",
     "Fiber execution stopped on a thread which is not executing a fiber.",
+    "Too many source locations. You cannot have more than 32K static or dynamic source locations.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

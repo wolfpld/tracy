@@ -441,6 +441,7 @@ public:
         FrameImageIndex,
         FrameImageTwice,
         FiberLeave,
+        SourceLocationOverflow,
 
         NUM_FAILURES
     };
@@ -790,6 +791,7 @@ private:
     void FrameImageIndexFailure();
     void FrameImageTwiceFailure();
     void FiberLeaveFailure();
+    void SourceLocationOverflowFailure();
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );

@@ -766,6 +766,11 @@ static void DrawContents()
                                 badVer.state = tracy::BadVersionState::LegacyVersion;
                                 badVer.version = e.version;
                             }
+                            catch( const tracy::LoadFailure& e )
+                            {
+                                badVer.state = tracy::BadVersionState::LoadFailure;
+                                badVer.msg = e.msg;
+                            }
                         } );
                     }
                 }

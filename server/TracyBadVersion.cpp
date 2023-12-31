@@ -31,6 +31,9 @@ void BadVersionImpl( BadVersionState& badVer, ImFont* big )
     case BadVersionState::LegacyVersion:
         ImGui::OpenPopup( "Legacy file version" );
         break;
+    case BadVersionState::LoadFailure:
+        ImGui::OpenPopup( "Trace load failure" );
+        break;
     default:
         assert( false );
         break;
@@ -92,6 +95,22 @@ void BadVersionImpl( BadVersionState& badVer, ImFont* big )
         ImGui::Text( "You are trying to open a file which was created by legacy version %i.%i.%i.\nUse the update utility from an older version of the profiler to convert the file to a supported version.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
         ImGui::Separator();
         if( ImGui::Button( "Maybe I don't need it" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            badVer.state = BadVersionState::Ok;
+        }
+        ImGui::EndPopup();
+    }
+    if( ImGui::BeginPopupModal( "Trace load failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        ImGui::PushFont( big );
+        TextCentered( ICON_FA_BOMB );
+        ImGui::PopFont();
+        ImGui::TextUnformatted( "The file you are trying to open is corrupted." );
+        ImGui::Spacing();
+        ImGui::TextUnformatted( badVer.msg.c_str() );
+        ImGui::Separator();
+        if( ImGui::Button( "OK" ) )
         {
             ImGui::CloseCurrentPopup();
             badVer.state = BadVersionState::Ok;

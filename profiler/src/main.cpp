@@ -779,13 +779,13 @@ static void DrawContents()
                 }
             } );
         }
+#endif
 
         if( badVer.state != tracy::BadVersionState::Ok )
         {
             if( loadThread.joinable() ) { loadThread.join(); }
             tracy::BadVersion( badVer, s_bigFont );
         }
-#endif
 
         if( !clients.empty() )
         {

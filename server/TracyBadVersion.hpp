@@ -1,6 +1,8 @@
 #ifndef __TRACYBADVERSION_HPP__
 #define __TRACYBADVERSION_HPP__
 
+#include <string>
+
 #include "../public/common/TracyForceInline.hpp"
 
 struct ImFont;
@@ -16,11 +18,13 @@ struct BadVersionState
         BadFile,
         ReadError,
         UnsupportedVersion,
-        LegacyVersion
+        LegacyVersion,
+        LoadFailure
     };
 
     State state = Ok;
     int version = 0;
+    std::string msg;
 };
 
 namespace detail

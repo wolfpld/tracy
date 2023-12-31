@@ -64,6 +64,12 @@ struct LegacyVersion : public std::exception
     int version;
 };
 
+struct LoadFailure : public std::exception
+{
+    LoadFailure( const char* msg ) : msg( msg ) {}
+    std::string msg;
+};
+
 struct LoadProgress
 {
     enum Stage

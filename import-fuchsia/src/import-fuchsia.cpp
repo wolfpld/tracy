@@ -398,6 +398,20 @@ int main(int argc, char **argv) {
     uint8_t ty = r.header & 0xf;
 
     switch (ty) {
+    case 1: {
+      break; // init record, ignore
+    }
+    case 2: {
+      // string
+      uint16_t str_ref = (r.header >> 16) & 0xffff;
+      assert((str_ref & 0x8000) == 0);
+      uint16_t str_len = (r.header >> 32) & 0x7fff;
+
+      name.resize(str_len + 1);
+      memcpy(name.data(), (uint8_t *)&r.p[1], str_len);
+      dec.stringRefs[str_ref] = name;
+      break;
+    }
     case 3: {
       // thread record
       uint8_t th_ref = (r.header >> 16) & 0xff;

@@ -1,6 +1,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <ostream>
 #include <vector>
 #ifdef _WIN32
@@ -357,6 +358,8 @@ void readLoc(std::string &locFile, uint32_t &locLine,
   }
 }
 
+struct TraceNotInitialized : std::exception {};
+
 int main(int argc, char **argv) {
 #ifdef _WIN32
   if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
@@ -390,6 +393,9 @@ int main(int argc, char **argv) {
   int n_records = 0;
   std::string name;
   std::vector<Argument> arguments;
+  bool initialized = false;
+
+#define CHECK_INIT() if (!initialized) throw TraceNotInitialized{}
 
   while (offset < buf.size()) {
     Record r = read_next_record(buf, offset);
@@ -398,8 +404,37 @@ int main(int argc, char **argv) {
     uint8_t ty = r.header & 0xf;
 
     switch (ty) {
+    case 0: {
+      // metadata record
+        if (!initialized) {
+          if (r.header == 0x0016547846040010) {
+            // magic string "FxT"
+            // https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format#magic-number-record
+            initialized = true;
+          }
+
+        }
+        break;
+    }
+    case 1: {
+      CHECK_INIT();
+      break; // initialization record
+    }
+    case 2: {
+      // string
+      CHECK_INIT();
+      uint16_t str_ref = (r.header >> 16) & 0xffff;
+      assert((str_ref & 0x8000) == 0);
+      uint16_t str_len = (r.header >> 32) & 0x7fff;
+
+      name.resize(str_len + 1);
+      memcpy(name.data(), (uint8_t *)&r.p[1], str_len);
+      dec.stringRefs[str_ref] = name;
+      break;
+    }
     case 3: {
       // thread record
+      CHECK_INIT();
       uint8_t th_ref = (r.header >> 16) & 0xff;
       uint64_t pid = r.p[1];
       uint64_t tid = r.p[2];
@@ -409,6 +444,7 @@ int main(int argc, char **argv) {
     }
     case 4: {
       // event
+      CHECK_INIT();
       uint8_t ev_ty = (r.header >> 16) & 0xf;
       uint8_t n_args = (r.header >> 20) & 0xf;
 
@@ -512,6 +548,7 @@ int main(int argc, char **argv) {
 
     case 7: {
       // kernel object
+      CHECK_INIT();
 
       uint8_t ty = (r.header >> 16) & 0xff;
       uint16_t name_ref = (r.header >> 24) & 0xffff;

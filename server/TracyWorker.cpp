@@ -61,7 +61,7 @@ static bool SourceFileValid( const char* fn, uint64_t olderThan )
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );
-static const int MinSupportedVersion = FileVersion( 0, 8, 0 );
+static const int MinSupportedVersion = FileVersion( 0, 9, 0 );
 
 
 static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
@@ -1096,76 +1096,34 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         m_data.plots.Data().reserve( sz );
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
-        if( fileVer >= FileVersion( 0, 8, 3 ) )
+        for( uint64_t i=0; i<sz; i++ )
         {
-            for( uint64_t i=0; i<sz; i++ )
+            s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+            auto pd = m_slab.AllocInit<PlotData>();
+            uint64_t psz;
+            f.Read10( pd->type, pd->format, pd->showSteps, pd->fill, pd->color, pd->name, pd->min, pd->max, pd->sum, psz );
+            pd->data.reserve_exact( psz, m_slab );
+            auto ptr = pd->data.data();
+            int64_t refTime = 0;
+            for( uint64_t j=0; j<psz; j++ )
             {
-                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-                auto pd = m_slab.AllocInit<PlotData>();
-                uint64_t psz;
-                f.Read10( pd->type, pd->format, pd->showSteps, pd->fill, pd->color, pd->name, pd->min, pd->max, pd->sum, psz );
-                pd->data.reserve_exact( psz, m_slab );
-                auto ptr = pd->data.data();
-                int64_t refTime = 0;
-                for( uint64_t j=0; j<psz; j++ )
-                {
-                    int64_t t;
-                    f.Read2( t, ptr->val );
-                    refTime += t;
-                    ptr->time = refTime;
-                    ptr++;
-                }
-                m_data.plots.Data().push_back_no_space_check( pd );
+                int64_t t;
+                f.Read2( t, ptr->val );
+                refTime += t;
+                ptr->time = refTime;
+                ptr++;
             }
-        }
-        else
-        {
-            for( uint64_t i=0; i<sz; i++ )
-            {
-                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-                auto pd = m_slab.AllocInit<PlotData>();
-                uint64_t psz;
-                f.Read7( pd->type, pd->format, pd->name, pd->min, pd->max, pd->sum, psz );
-                pd->showSteps = false;
-                pd->fill = true;
-                pd->color = 0;
-                pd->data.reserve_exact( psz, m_slab );
-                auto ptr = pd->data.data();
-                int64_t refTime = 0;
-                for( uint64_t j=0; j<psz; j++ )
-                {
-                    int64_t t;
-                    f.Read2( t, ptr->val );
-                    refTime += t;
-                    ptr->time = refTime;
-                    ptr++;
-                }
-                m_data.plots.Data().push_back_no_space_check( pd );
-            }
+            m_data.plots.Data().push_back_no_space_check( pd );
         }
     }
     else
     {
-        if( fileVer >= FileVersion( 0, 8, 3 ) )
+        for( uint64_t i=0; i<sz; i++ )
         {
-            for( uint64_t i=0; i<sz; i++ )
-            {
-                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::sum ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) + sizeof( PlotData::showSteps ) + sizeof( PlotData::fill ) + sizeof( PlotData::color ) );
-                uint64_t psz;
-                f.Read( psz );
-                f.Skip( psz * ( sizeof( uint64_t ) + sizeof( double ) ) );
-            }
-
-        }
-        else
-        {
-            for( uint64_t i=0; i<sz; i++ )
-            {
-                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::sum ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) );
-                uint64_t psz;
-                f.Read( psz );
-                f.Skip( psz * ( sizeof( uint64_t ) + sizeof( double ) ) );
-            }
+            f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::sum ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) + sizeof( PlotData::showSteps ) + sizeof( PlotData::fill ) + sizeof( PlotData::color ) );
+            uint64_t psz;
+            f.Read( psz );
+            f.Skip( psz * ( sizeof( uint64_t ) + sizeof( double ) ) );
         }
     }
 
@@ -1594,37 +1552,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             uint32_t len;
             f.Read2( symAddr, len );
             f.Skip( len );
-        }
-    }
-
-    if( fileVer <= FileVersion( 0, 8, 4 ) )
-    {
-        f.Read( sz );
-        for( uint64_t i=0; i<sz; i++ )
-        {
-            uint64_t packed;
-            uint16_t lsz;
-            f.Read2( packed, lsz );
-            uint32_t line;
-            const auto fidx = UnpackFileLine( packed, line );
-            uint64_t ref = 0;
-            for( uint16_t j=0; j<lsz; j++ )
-            {
-                uint64_t diff;
-                f.Read( diff );
-                ref += diff;
-                auto frameId = PackPointer( ref );
-                if( m_data.callstackFrameMap.find( frameId ) == m_data.callstackFrameMap.end() )
-                {
-                    auto cs = m_slab.AllocInit<CallstackFrameData>();
-                    cs->size = 1;
-                    cs->data = m_slab.AllocInit<CallstackFrame>( 1 );
-                    cs->data->file = StringIdx( fidx );
-                    cs->data->line = line;
-                    cs->data->symAddr = 0;
-                    m_data.callstackFrameMap.emplace( frameId, cs );
-                }
-            }
         }
     }
 

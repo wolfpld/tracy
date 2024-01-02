@@ -589,7 +589,7 @@ void SourceView::SetCpuId( uint32_t cpuId )
         }
         ptr++;
     }
-    SelectMicroArchitecture( "ZEN2" );
+    SelectMicroArchitecture( "ZEN4" );
     m_profileMicroArch = -1;
 }
 

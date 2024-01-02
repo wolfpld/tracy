@@ -5,6 +5,7 @@ here.
 vx.xx.x (xxxx-xx-xx)
 --------------------
 
+- Support for pre-0.9 traces has been dropped.
 - Various Meson fixes.
 - Proper way of loading Vulkan calibrated timestamps extension.
 - Fixed C API support for GPU tracing when on demand mode is enabled.

@@ -367,7 +367,7 @@ void View::DrawFindZone()
                     {
                         if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
                         {
-                            ViewSource( fileName, srcloc.line );
+                            ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
                         }
                         else
                         {

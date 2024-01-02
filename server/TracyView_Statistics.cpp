@@ -667,7 +667,7 @@ void View::DrawStatistics()
                         {
                             if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
                             {
-                                ViewSource( file, srcloc.line );
+                                ViewSourceCheckKeyMod( file, srcloc.line, m_worker.GetString( srcloc.function ) );
                             }
                             else
                             {

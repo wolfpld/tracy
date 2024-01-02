@@ -35,8 +35,6 @@ vcpkg/*
 /vcpkg_installed
 .deps/
 .dirstamp
-.vscode/
-
 /_*/**
 /**/__pycache__/**
 extra/vswhere.exe

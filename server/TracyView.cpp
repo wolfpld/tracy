@@ -209,6 +209,18 @@ void View::ViewSource( const char* fileName, int line, const char* functionName 
     }
 }
 
+void View::ViewSourceCheckKeyMod( const char* fileName, int line, const char* functionName )
+{
+    if( ImGui::GetIO().KeyCtrl )
+    {
+        ViewSource( fileName, line );
+    }
+    else
+    {
+        ViewSource( fileName, line, functionName );
+    }
+}
+
 void View::ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
 {
     assert( fileName || symAddr );

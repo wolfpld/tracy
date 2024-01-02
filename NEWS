@@ -45,6 +45,28 @@ vx.xx.x (xxxx-xx-xx)
 - Zone group count in the Find zone window is now explicitly displayed.
 - Instrumentation statistics now display in how many threads each source
   location has appeared in.
+- Added import tool for fuchsia traces.
+  - https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format
+- Added checks for overflow of source locations.
+  - As a reminder, Tracy only allows to have 64K unique source locations,
+    split in half between static and dynamic locations.
+  - Runtime checks are active during capture and will stop a trace that
+    goes beyond the limit.
+  - Load-time checks will stop any broken trace file from loading.
+- Opening the source code view that has no associated address in code
+  (i.e., from the list of instrumented zones, or from the find zone
+  window) will now search the list of symbols for a function name match.
+  - In many cases this will result in displaying the full disassembly view
+    where previously you would only see the source code.
+  - Matching is performed by string comparisons, which in rare cases may
+    result in showing false data.
+  - Press ctrl key while opening source view to keep the old behavior.
+  - If more than one matching symbol is found (e.g., if two classes have
+    methods with the same name, or if a template is instantiated in multiple
+    places in code), it is not possible to tell which of the code locations
+    the source location corresponds to and only the source code will be
+    displayed.
+
 
 v0.10.0 (2023-10-16)
 --------------------

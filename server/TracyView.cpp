@@ -159,6 +159,56 @@ void View::ViewSource( const char* fileName, int line )
     m_sourceView->OpenSource( fileName, line, *this, m_worker );
 }
 
+void View::ViewSource( const char* fileName, int line, const char* functionName )
+{
+    assert( functionName );
+
+    uint64_t addr = 0;
+    uint64_t base = 0;
+    const auto fnsz = strlen( functionName );
+    auto& symMap = m_worker.GetSymbolMap();
+    for( auto& sym : symMap )
+    {
+        const auto name = m_worker.GetString( sym.second.name );
+        const auto ptr = strstr( name, functionName );
+        if( ptr &&
+            ( ptr[fnsz] == 0 || ptr[fnsz] == '(' || ptr[fnsz] == '<' ) &&
+            ( ptr == name || ( ptr[-1] == ' ' || ptr[-1] == ':' ) ) )
+        {
+            if( addr != 0 )
+            {
+                // Ambiguous function name. Bail out.
+                ViewSource( fileName, line );
+                return;
+            }
+            else
+            {
+                addr = sym.first;
+                if( sym.second.isInline )
+                {
+                    base = m_worker.GetSymbolForAddress( addr );
+                    if( base == 0 )
+                    {
+                        addr = 0;
+                    }
+                }
+                else
+                {
+                    base = addr;
+                }
+            }
+        }
+    }
+    if( addr != 0 && base != 0 )
+    {
+        ViewSymbol( fileName, line, base, addr );
+    }
+    else
+    {
+        ViewSource( fileName, line );
+    }
+}
+
 void View::ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
 {
     assert( fileName || symAddr );

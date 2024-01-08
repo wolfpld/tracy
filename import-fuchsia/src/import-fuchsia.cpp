@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <exception>
 #include <ostream>
+#include <utility>
 #include <vector>
 #ifdef _WIN32
 #include <windows.h>
@@ -70,7 +71,6 @@ struct PidTidEncoder {
 // A span into the main buffer
 struct Record {
   const uint64_t *p;
-  ;
   uint16_t len_word;
   uint64_t header;
 };
@@ -171,13 +171,26 @@ std::vector<uint8_t> read_input(const char *input) {
   return buf;
 }
 
-// read next record starting at `offset`
-Record read_next_record(std::vector<uint8_t> const &input, size_t &offset) {
+// read next record starting at `offset`. Returns
+// either `(ok, r)` for an in-bound record, or `(false, …)` otherwise.
+std::pair<bool, Record> read_next_record(std::vector<uint8_t> const &input, size_t &offset) {
+
+  // bound check
+#define CHECK_BOUND(n) if ((n) > input.size()) { \
+  fprintf(stderr, "warning: invalid record at offset %" PRIu64 "\n", offset); \
+  return std::make_pair(false,Record{}); \
+}
+
+  CHECK_BOUND(offset+8);
+
   uint64_t header = *((uint64_t *)&input[offset]);
   uint16_t len_word = (header >> 4) & 0xfff;
-  Record sp{(uint64_t *)&input[offset], len_word, header};
+
+  CHECK_BOUND(offset + 8*len_word);
+
+  Record r{(uint64_t *)&input[offset], len_word, header};
   offset += 8 * len_word;
-  return sp;
+  return std::make_pair(true, r);
 }
 
 // there might be multiple processes so we allocate a pseudo-tid
@@ -398,7 +411,8 @@ int main(int argc, char **argv) {
 #define CHECK_INIT() if (!initialized) throw TraceNotInitialized{}
 
   while (offset < buf.size()) {
-    Record r = read_next_record(buf, offset);
+    auto [ok, r] = read_next_record(buf, offset);
+    if (!ok) break;
     n_records++;
 
     uint8_t ty = r.header & 0xf;

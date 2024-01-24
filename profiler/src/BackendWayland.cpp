@@ -165,6 +165,7 @@ static RunQueue* s_mainThreadTasks;
 
 static struct wl_display* s_dpy;
 static struct wl_compositor* s_comp;
+static uint32_t s_comp_version;
 static struct wl_surface* s_surf;
 static struct wl_egl_window* s_eglWin;
 static struct wl_shm* s_shm;
@@ -211,6 +212,9 @@ static bool s_wheel;
 
 static void RecomputeScale()
 {
+    // On wl_compositor >= 6 the scale is sent explicitly via wl_surface.preferred_buffer_scale.
+    if ( s_comp_version >= 6 ) return;
+
     int max = 1;
     for( auto& out : s_output )
     {
@@ -513,7 +517,8 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
     {
-        s_comp = (wl_compositor*)wl_registry_bind( reg, name, &wl_compositor_interface, 4 );
+        s_comp_version = version;
+        s_comp = (wl_compositor*)wl_registry_bind( reg, name, &wl_compositor_interface, version >= 6 ? 6 : 4 );
     }
     else if( strcmp( interface, wl_shm_interface.name ) == 0 )
     {
@@ -637,9 +642,15 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
     }
 }
 
+static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
+{
+    s_maxScale = scale;
+}
+
 constexpr struct wl_surface_listener surfaceListener = {
     .enter = SurfaceEnter,
     .leave = SurfaceLeave,
+    .preferred_buffer_scale = SurfacePreferredBufferScale,
 };
 
 static void SetupCursor()

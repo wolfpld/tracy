@@ -1459,6 +1459,10 @@ void Profiler::InstallCrashHandler()
     sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
 #endif
 
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
+    m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
+#endif
+
 #ifndef TRACY_NO_CRASH_HANDLER
     m_crashHandlerInstalled = true;
 #endif
@@ -1523,7 +1527,6 @@ void Profiler::SpawnWorkerThreads()
 #  ifdef TRACY_HAS_CALLSTACK
     s_symbolThreadId = GetThreadId( s_symbolThread->Handle() );
 #  endif
-    m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK

@@ -160,6 +160,7 @@ constexpr ImGuiKey s_keyTable[] = {
 };
 
 static std::function<void()> s_redraw;
+static std::function<void(float)> s_scaleChanged;
 static RunQueue* s_mainThreadTasks;
 
 static struct wl_display* s_dpy;
@@ -662,9 +663,10 @@ static void SetupCursor()
     s_cursorY = cursor->images[0]->hotspot_y / s_maxScale;
 }
 
-Backend::Backend( const char* title, const std::function<void()>& redraw, RunQueue* mainThreadTasks )
+Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, RunQueue* mainThreadTasks )
 {
     s_redraw = redraw;
+    s_scaleChanged = scaleChanged;
     s_mainThreadTasks = mainThreadTasks;
     s_w = m_winPos.w;
     s_h = m_winPos.h;
@@ -820,6 +822,7 @@ void Backend::NewFrame( int& w, int& h )
 {
     if( s_prevScale != s_maxScale )
     {
+        s_scaleChanged( s_maxScale );
         SetupCursor();
         wl_surface_set_buffer_scale( s_surf, s_maxScale );
         s_prevScale = s_maxScale;

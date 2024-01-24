@@ -95,6 +95,7 @@ static ConnectionHistory* connHist;
 static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
+static bool dpiScaleOverriddenFromEnv = false;
 static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
@@ -197,6 +198,15 @@ static bool SaveConfig()
     return true;
 }
 
+static void ScaleChanged( float scale )
+{
+    if ( dpiScaleOverriddenFromEnv ) return;
+    if ( dpiScale == scale ) return;
+
+    dpiScale = scale;
+    SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
+}
+
 int main( int argc, char** argv )
 {
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
@@ -279,7 +289,7 @@ int main( int argc, char** argv )
     LoadConfig();
 
     ImGuiTracyContext imguiContext;
-    Backend backend( title, DrawContents, &mainThreadTasks );
+    Backend backend( title, DrawContents, ScaleChanged, &mainThreadTasks );
     tracy::InitTexture();
     iconTex = tracy::MakeTexture();
     zigzagTex = tracy::MakeTexture( true );
@@ -292,7 +302,11 @@ int main( int argc, char** argv )
     if( envDpiScale )
     {
         const auto cnv = atof( envDpiScale );
-        if( cnv != 0 ) dpiScale = cnv;
+        if( cnv != 0 )
+        {
+            dpiScale = cnv;
+            dpiScaleOverriddenFromEnv = true;
+        }
     }
 
     SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );

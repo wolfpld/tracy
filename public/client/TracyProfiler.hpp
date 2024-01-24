@@ -798,6 +798,9 @@ private:
     void HandleSymbolQueueItem( const SymbolQueueItem& si );
 #endif
 
+    void InstallCrashHandler();
+    void RemoveCrashHandler();
+    
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );
     void ClearSerial();
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );

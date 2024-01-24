@@ -1440,6 +1440,52 @@ Profiler::Profiler()
 #endif
 }
 
+void Profiler::InstallCrashHandler()
+{
+
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
+    struct sigaction threadFreezer = {};
+    threadFreezer.sa_handler = ThreadFreezer;
+    sigaction( TRACY_CRASH_SIGNAL, &threadFreezer, &m_prevSignal.pwr );
+
+    struct sigaction crashHandler = {};
+    crashHandler.sa_sigaction = CrashHandler;
+    crashHandler.sa_flags = SA_SIGINFO;
+    sigaction( SIGILL, &crashHandler, &m_prevSignal.ill );
+    sigaction( SIGFPE, &crashHandler, &m_prevSignal.fpe );
+    sigaction( SIGSEGV, &crashHandler, &m_prevSignal.segv );
+    sigaction( SIGPIPE, &crashHandler, &m_prevSignal.pipe );
+    sigaction( SIGBUS, &crashHandler, &m_prevSignal.bus );
+    sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
+#endif
+
+#ifndef TRACY_NO_CRASH_HANDLER
+    m_crashHandlerInstalled = true;
+#endif
+
+}
+
+void Profiler::RemoveCrashHandler()
+{
+#if defined _WIN32 && !defined TRACY_UWP
+    if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
+#endif
+
+#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
+    if( m_crashHandlerInstalled )
+    {
+        sigaction( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr, nullptr );
+        sigaction( SIGILL, &m_prevSignal.ill, nullptr );
+        sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
+        sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
+        sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
+        sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
+        sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
+    }
+#endif
+    m_crashHandlerInstalled = false;
+}
+
 void Profiler::SpawnWorkerThreads()
 {
 #ifdef TRACY_HAS_SYSTEM_TRACING
@@ -1480,26 +1526,6 @@ void Profiler::SpawnWorkerThreads()
     m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
-#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
-    struct sigaction threadFreezer = {};
-    threadFreezer.sa_handler = ThreadFreezer;
-    sigaction( TRACY_CRASH_SIGNAL, &threadFreezer, &m_prevSignal.pwr );
-
-    struct sigaction crashHandler = {};
-    crashHandler.sa_sigaction = CrashHandler;
-    crashHandler.sa_flags = SA_SIGINFO;
-    sigaction( SIGILL, &crashHandler, &m_prevSignal.ill );
-    sigaction( SIGFPE, &crashHandler, &m_prevSignal.fpe );
-    sigaction( SIGSEGV, &crashHandler, &m_prevSignal.segv );
-    sigaction( SIGPIPE, &crashHandler, &m_prevSignal.pipe );
-    sigaction( SIGBUS, &crashHandler, &m_prevSignal.bus );
-    sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
-#endif
-
-#ifndef TRACY_NO_CRASH_HANDLER
-    m_crashHandlerInstalled = true;
-#endif
-
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstackCritical();
 #endif
@@ -1511,22 +1537,7 @@ Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
 
-#if defined _WIN32 && !defined TRACY_UWP
-    if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
-#endif
-
-#if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
-    if( m_crashHandlerInstalled )
-    {
-        sigaction( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr, nullptr );
-        sigaction( SIGILL, &m_prevSignal.ill, nullptr );
-        sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
-        sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
-        sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
-        sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
-        sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
-    }
-#endif
+    RemoveCrashHandler();
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( s_sysTraceThread )
@@ -1849,6 +1860,7 @@ void Profiler::Worker()
         m_connectionId.fetch_add( 1, std::memory_order_release );
 #endif
         m_isConnected.store( true, std::memory_order_release );
+        InstallCrashHandler();
 
         HandshakeStatus handshake = HandshakeWelcome;
         m_sock->Send( &handshake, sizeof( handshake ) );
@@ -1951,6 +1963,8 @@ void Profiler::Worker()
         if( ShouldExit() ) break;
 
         m_isConnected.store( false, std::memory_order_release );
+        RemoveCrashHandler();
+
 #ifdef TRACY_ON_DEMAND
         m_bufferOffset = 0;
         m_bufferStart = 0;

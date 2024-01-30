@@ -10,7 +10,7 @@ IMAGE := $(PROJECT)-$(BUILD)
 FILTER := ../../../nfd/nfd_win.cpp ../../src/BackendGlfw.cpp ../../src/imgui/imgui_impl_glfw.cpp
 include ../../../common/src-from-vcxproj.mk
 
-SRC += ../../src/BackendWayland.cpp
+SRC += ../../src/BackendWayland.cpp ../../src/WaylandDisplay.cpp ../../src/WaylandPointer.cpp ../../src/WaylandKeyboard.cpp ../../src/WaylandWindow.cpp ../../src/WaylandOutput.cpp
 SRC2 += ../../src/wayland/xdg-shell.c ../../src/wayland/xdg-activation.c ../../src/wayland/xdg-decoration.c
 
 ifdef TRACY_NO_FILESELECTOR

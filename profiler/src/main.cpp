@@ -95,6 +95,8 @@ static ConnectionHistory* connHist;
 static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
+static float userScale = 1.f;
+static bool dynamicDpi = true;
 static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
@@ -165,7 +167,10 @@ static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigF
 
 static void SetupScaleCallback( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
 {
-    RunOnMainThread( [scale, &cb_fixedWidth, &cb_bigFont, &cb_smallFont] { SetupDPIScale( scale * dpiScale, cb_fixedWidth, cb_bigFont, cb_smallFont ); }, true );
+    userScale = scale;
+    RunOnMainThread( [&cb_fixedWidth, &cb_bigFont, &cb_smallFont] {
+        SetupDPIScale( userScale * dpiScale, cb_fixedWidth, cb_bigFont, cb_smallFont );
+    }, true );
 }
 
 static void LoadConfig()
@@ -292,7 +297,11 @@ int main( int argc, char** argv )
     if( envDpiScale )
     {
         const auto cnv = atof( envDpiScale );
-        if( cnv != 0 ) dpiScale = cnv;
+        if( cnv != 0 )
+        {
+            dpiScale = cnv;
+            dynamicDpi = false;
+        }
     }
 
     SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
@@ -486,6 +495,16 @@ static void DrawContents()
 #ifndef __EMSCRIPTEN__
     UpdateBroadcastClients();
 #endif
+
+    if( dynamicDpi )
+    {
+        const auto newDpiScale = bptr->GetDpiScale();
+        if( newDpiScale != dpiScale )
+        {
+            dpiScale = newDpiScale;
+            SetupDPIScale( userScale * dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
+        }
+    }
 
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );

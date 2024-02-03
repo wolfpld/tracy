@@ -217,7 +217,25 @@ int main( int argc, char** argv )
             printf( "      %s -a address [-p port]\n", argv[0] );
             exit( 0 );
         }
-        initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
+        try
+        {
+            initFileOpen = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
+        }
+        catch( const tracy::UnsupportedVersion& e )
+        {
+            fprintf( stderr, "The file you are trying to open is from the future version.\n" );
+            exit( 1 );
+        }
+        catch( const tracy::NotTracyDump& e )
+        {
+            fprintf( stderr, "The file you are trying to open is not a tracy dump.\n" );
+            exit( 1 );
+        }
+        catch( const tracy::LegacyVersion& e )
+        {
+            fprintf( stderr, "The file you are trying to open is from a legacy version.\n" );
+            exit( 1 );
+        }
         if( !initFileOpen )
         {
             fprintf( stderr, "Cannot open trace file: %s\n", argv[1] );

@@ -24,3 +24,5 @@ option('tracy_manual_lifetime', type : 'boolean', value : false, description : '
 option('tracy_fibers', type : 'boolean', value : false, description : 'Enable fibers support')
 option('tracy_shared_libs', type : 'boolean', value : false, description : 'Builds Tracy as a shared object (deprecated in favour of default_library=shared)', deprecated : true)
 option('tracy_no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')
+option('tracy_verbose', type : 'boolean', value : false, description : 'Enable verbose logging')
+option('tracy_debuginfod', type : 'boolean', value : false, description : 'Enable debuginfod support')

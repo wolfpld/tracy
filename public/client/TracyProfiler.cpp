@@ -3928,6 +3928,10 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
                     TracyLfqCommit;
                     ok = true;
                 }
+                else
+                {
+                    tracy_free_fast( ptr );
+                }
             }
         }
     }
@@ -3959,6 +3963,10 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
                         TracyLfqCommit;
                         ok = true;
                     }
+                    else
+                    {
+                        tracy_free_fast( ptr );
+                    }
                 }
                 close( d );
             }
@@ -3984,6 +3992,10 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
                 MemWrite( &item->sourceCodeMetadata.id, id );
                 TracyLfqCommit;
                 ok = true;
+            }
+            else
+            {
+                tracy_free_fast( ptr );
             }
         }
     }

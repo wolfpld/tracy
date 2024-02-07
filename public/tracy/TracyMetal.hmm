@@ -117,6 +117,8 @@ public:
         MTLTimestamp gpuTimestamp = 0;
         float period = 1.0f;
         [m_device sampleTimestamps:&cpuTimestamp gpuTimestamp:&gpuTimestamp];
+        fprintf(stdout, "TracyMetal: Calibration: CPU timestamp: %llu\n", cpuTimestamp);
+        fprintf(stdout, "TracyMetal: Calibration: GPU timestamp: %llu\n", gpuTimestamp);
         
         m_contextId = GetGpuCtxCounter().fetch_add(1);
         
@@ -205,31 +207,38 @@ public:
 
         if (count >= MaxQueries)
         {
-            TracyMetalPanic("too many pending timestamp queries.", return false;);
+            TracyMetalPanic("Collect: too many pending timestamp queries.", return false;);
         }
 
-        NSRange range = { begin, latestCheckpoint };
+        NSRange range = NSMakeRange(begin, count);
         NSData* data = [m_counterSampleBuffer resolveCounterRange:range];
         NSUInteger numResolvedTimestamps = data.length / sizeof(MTLCounterResultTimestamp);
         MTLCounterResultTimestamp* timestamps = (MTLCounterResultTimestamp *)(data.bytes);
         if (timestamps == nil)
         {
-            TracyMetalPanic("unable to resolve timestamps.", return false;);
+            TracyMetalPanic("Collect: unable to resolve timestamps.", return false;);
         }
 
         for (auto i = 0; i < numResolvedTimestamps; ++i)
         {
-            uint32_t k = RingIndex(i);
-            MTLTimestamp& timestamp = timestamps[k].timestamp;
+            MTLTimestamp& timestamp = timestamps[i].timestamp;
             // TODO: check the value of timestamp: MTLCounterErrorValue, zero, or valid
             if (timestamp == MTLCounterErrorValue)
             {
+                TracyMetalPanic("Collect: invalid timestamp: MTLCounterErrorValue (0xFF..FF).");
+                break;
+            }
+            if (timestamp == 0)
+            {
+                TracyMetalPanic("Collect: invalid timestamp: zero.");
                 break;
             }
             m_previousCheckpoint += 1;
+            uint32_t k = RingIndex(begin + i);
+            fprintf(stdout, "TracyMetal: timestamp[%d]: %llu\n", k, timestamp);
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, timestamp);
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(timestamp));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k));
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
@@ -260,7 +269,7 @@ private:
         auto id = m_queryCounter.fetch_add(n);
         if (RingCount(m_previousCheckpoint, id) >= MaxQueries)
         {
-            TracyMetalPanic("too many pending timestamp queries.");
+            TracyMetalPanic("NextQueryId: too many pending timestamp queries.");
             // #TODO: return some sentinel value; ideally a "hidden" query index
         }
         return RingIndex(id);

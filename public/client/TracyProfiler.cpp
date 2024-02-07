@@ -3908,32 +3908,29 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
 {
     bool ok = false;
-    struct stat st;
-    if( stat( data, &st ) == 0 && (uint64_t)st.st_mtime < m_exectime )
+    FILE* f = fopen( data, "rb" );
+    if( f )
     {
-        if( st.st_size < ( TargetFrameSize - 16 ) )
+        struct stat st;
+        if( fstat( fileno( f ), &st ) == 0 && (uint64_t)st.st_mtime < m_exectime && st.st_size < ( TargetFrameSize - 16 ) )
         {
-            FILE* f = fopen( data, "rb" );
-            if( f )
+            auto ptr = (char*)tracy_malloc_fast( st.st_size );
+            auto rd = fread( ptr, 1, st.st_size, f );
+            if( rd == (size_t)st.st_size )
             {
-                auto ptr = (char*)tracy_malloc_fast( st.st_size );
-                auto rd = fread( ptr, 1, st.st_size, f );
-                fclose( f );
-                if( rd == (size_t)st.st_size )
-                {
-                    TracyLfqPrepare( QueueType::SourceCodeMetadata );
-                    MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
-                    MemWrite( &item->sourceCodeMetadata.size, (uint32_t)rd );
-                    MemWrite( &item->sourceCodeMetadata.id, id );
-                    TracyLfqCommit;
-                    ok = true;
-                }
-                else
-                {
-                    tracy_free_fast( ptr );
-                }
+                TracyLfqPrepare( QueueType::SourceCodeMetadata );
+                MemWrite( &item->sourceCodeMetadata.ptr, (uint64_t)ptr );
+                MemWrite( &item->sourceCodeMetadata.size, (uint32_t)rd );
+                MemWrite( &item->sourceCodeMetadata.id, id );
+                TracyLfqCommit;
+                ok = true;
+            }
+            else
+            {
+                tracy_free_fast( ptr );
             }
         }
+        fclose( f );
     }
 
 #ifdef TRACY_DEBUGINFOD

@@ -115,10 +115,12 @@ public:
 
         MTLTimestamp cpuTimestamp = 0;
         MTLTimestamp gpuTimestamp = 0;
-        float period = 1.0f;
         [m_device sampleTimestamps:&cpuTimestamp gpuTimestamp:&gpuTimestamp];
         fprintf(stdout, "TracyMetal: Calibration: CPU timestamp: %llu\n", cpuTimestamp);
         fprintf(stdout, "TracyMetal: Calibration: GPU timestamp: %llu\n", gpuTimestamp);
+        cpuTimestamp = Profiler::GetTime();
+        fprintf(stdout, "TracyMetal: Calibration: CPU timestamp (profiler): %llu\n", cpuTimestamp);
+        float period = 1.08f;
         
         m_contextId = GetGpuCtxCounter().fetch_add(1);
         

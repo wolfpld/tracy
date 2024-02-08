@@ -352,6 +352,60 @@ public:
         Profiler::QueueSerialFinish();
     }
 
+    tracy_force_inline MetalZoneScope( MetalCtx* ctx, MTLBlitPassDescriptor* desc, const SourceLocationData* srcloc, bool is_active )
+#ifdef TRACY_ON_DEMAND
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( is_active )
+#endif
+    {
+        if ( !m_active ) return;
+        if (desc == nil) TracyMetalPanic("pass descriptor is nil.");
+        m_ctx = ctx;
+
+        auto queryId = m_queryId = ctx->NextQueryId(2);
+        desc.sampleBufferAttachments[0].sampleBuffer = ctx->m_counterSampleBuffer;
+        desc.sampleBufferAttachments[0].startOfEncoderSampleIndex = queryId;
+        desc.sampleBufferAttachments[0].endOfEncoderSampleIndex = queryId+1;
+
+        auto* item = Profiler::QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
+        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
+        Profiler::QueueSerialFinish();
+    }
+
+    tracy_force_inline MetalZoneScope( MetalCtx* ctx, MTLRenderPassDescriptor* desc, const SourceLocationData* srcloc, bool is_active )
+#ifdef TRACY_ON_DEMAND
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( is_active )
+#endif
+    {
+        if ( !m_active ) return;
+        if (desc == nil) TracyMetalPanic("pass descriptor is nil.");
+        m_ctx = ctx;
+
+        auto queryId = m_queryId = ctx->NextQueryId(2);
+        desc.sampleBufferAttachments[0].sampleBuffer = ctx->m_counterSampleBuffer;
+        desc.sampleBufferAttachments[0].startOfVertexSampleIndex = queryId;
+        desc.sampleBufferAttachments[0].endOfVertexSampleIndex = MTLCounterDontSample;
+        desc.sampleBufferAttachments[0].startOfFragmentSampleIndex = MTLCounterDontSample;
+        desc.sampleBufferAttachments[0].endOfFragmentSampleIndex = queryId+1;
+
+        auto* item = Profiler::QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
+        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
+        Profiler::QueueSerialFinish();
+    }
+
 #if 0
     tracy_force_inline MetalZoneScope( MetalCtx* ctx, id<MTLComputeCommandEncoder> cmdEncoder, const SourceLocationData* srcloc, bool is_active )
 #ifdef TRACY_ON_DEMAND

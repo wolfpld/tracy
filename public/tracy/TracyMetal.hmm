@@ -295,8 +295,10 @@ private:
     tracy_force_inline unsigned int NextQueryId(int n=1)
     {
         auto id = m_queryCounter.fetch_add(n);
-        if (RingCount(m_previousCheckpoint, id) >= MaxQueries)
+        auto count = RingCount(m_previousCheckpoint, id);
+        if (count >= MaxQueries)
         {
+            fprintf(stdout, "TracyMetal: NextQueryId: FULL [%llu, %llu] (%d)\n", m_previousCheckpoint.load(), id, count);
             TracyMetalPanic("NextQueryId: too many pending timestamp queries.");
             // #TODO: return some sentinel value; ideally a "hidden" query index
         }

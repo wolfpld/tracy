@@ -213,7 +213,7 @@ public:
             TracyMetalPanic("Collect: too many pending timestamp queries.", return false;);
         }
 
-        NSRange range = NSMakeRange(begin, count);
+        NSRange range = NSMakeRange(RingIndex(begin), count);
         NSData* data = [m_counterSampleBuffer resolveCounterRange:range];
         NSUInteger numResolvedTimestamps = data.length / sizeof(MTLCounterResultTimestamp);
         MTLCounterResultTimestamp* timestamps = (MTLCounterResultTimestamp *)(data.bytes);

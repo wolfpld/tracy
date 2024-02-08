@@ -225,13 +225,12 @@ public:
         for (auto i = 0; i < numResolvedTimestamps; ++i)
         {
             MTLTimestamp& timestamp = timestamps[i].timestamp;
-            // TODO: check the value of timestamp: MTLCounterErrorValue, zero, or valid
             if (timestamp == MTLCounterErrorValue)
             {
                 TracyMetalPanic("Collect: invalid timestamp: MTLCounterErrorValue (0xFF..FF).");
                 break;
             }
-            if (timestamp == 0)
+            if (timestamp == 0) // zero is apparently also considered "invalid"...
             {
                 TracyMetalPanic("Collect: invalid timestamp: zero.");
                 break;

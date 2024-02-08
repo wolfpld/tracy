@@ -210,6 +210,7 @@ public:
 
         if (count >= MaxQueries)
         {
+            fprintf(stdout, "TracyMetal: Collect: FULL [%llu, %llu] (%d)\n", begin, latestCheckpoint, count);
             TracyMetalPanic("Collect: too many pending timestamp queries.", return false;);
         }
 
@@ -222,29 +223,54 @@ public:
             TracyMetalPanic("Collect: unable to resolve timestamps.", return false;);
         }
 
-        for (auto i = 0; i < numResolvedTimestamps; ++i)
+        if (numResolvedTimestamps != count)
         {
-            MTLTimestamp& timestamp = timestamps[i].timestamp;
-            if (timestamp == MTLCounterErrorValue)
+            fprintf(stdout, "TracyMetal: Collect: numResolvedTimestamps != count : %d != %d\n", numResolvedTimestamps, count);
+        }
+
+        for (auto i = 0; i < numResolvedTimestamps; i += 2)
+        {
+            static MTLTimestamp lastValidTimestamp = 0;
+            MTLTimestamp& t_start = timestamps[i+0].timestamp;
+            MTLTimestamp& t_end = timestamps[i+1].timestamp;
+            uint32_t k = RingIndex(begin + i);
+            fprintf(stdout, "TracyMetal: Collect: timestamp[%d] = %llu | timestamp[%d] = %llu | diff = %llu\n", k, t_start, k+1, t_end, (t_end - t_start));
+            if (t_start == MTLCounterErrorValue)
             {
                 TracyMetalPanic("Collect: invalid timestamp: MTLCounterErrorValue (0xFF..FF).");
                 break;
             }
-            if (timestamp == 0) // zero is apparently also considered "invalid"...
+            if (t_start == 0) // zero is apparently also considered "invalid"...
             {
-                TracyMetalPanic("Collect: invalid timestamp: zero.");
-                break;
+                static int HACK_retries = 0;
+                if (++HACK_retries > 8) {
+                    fprintf(stdout, "TracyMetal: Collect: giving up...\n", k, t_start, k+1, t_end);
+                    t_start = t_end = lastValidTimestamp + 10;
+                    HACK_retries = 0;
+                } else {
+                    TracyMetalPanic("Collect: invalid timestamp: zero.");
+                    break;
+                }
             }
-            m_previousCheckpoint += 1;
-            uint32_t k = RingIndex(begin + i);
-            fprintf(stdout, "TracyMetal: timestamp[%d]: %llu\n", k, timestamp);
+            m_previousCheckpoint += 2;
+            {
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(timestamp));
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_start));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k));
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
-            timestamp = MTLCounterErrorValue;  // "reset" timestamp
+            }
+            {
+            auto* item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuTime);
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_end));
+            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k+1));
+            MemWrite(&item->gpuTime.context, m_contextId);
+            Profiler::QueueSerialFinish();
+            }
+            lastValidTimestamp = t_end;
+            t_start = t_end = MTLCounterErrorValue;  // "reset" timestamps
         }
 
         //RecalibrateClocks();    // to account for drift

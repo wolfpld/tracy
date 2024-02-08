@@ -120,7 +120,7 @@ public:
         fprintf(stdout, "TracyMetal: Calibration: GPU timestamp: %llu\n", gpuTimestamp);
         cpuTimestamp = Profiler::GetTime();
         fprintf(stdout, "TracyMetal: Calibration: CPU timestamp (profiler): %llu\n", cpuTimestamp);
-        float period = 1.08f;
+        float period = 1.0f;
         
         m_contextId = GetGpuCtxCounter().fetch_add(1);
         
@@ -131,7 +131,8 @@ public:
         MemWrite(&item->gpuNewContext.thread, uint32_t(0)); // #TODO: why not GetThreadHandle()?
         MemWrite(&item->gpuNewContext.period, period);
         MemWrite(&item->gpuNewContext.context, m_contextId);
-        MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
+        //MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
+        MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));
         MemWrite(&item->gpuNewContext.type, GpuContextType::Metal);
         Profiler::QueueSerialFinish();  // TODO: DeferItem() for TRACY_ON_DEMAND
     }

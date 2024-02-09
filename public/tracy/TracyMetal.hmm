@@ -208,6 +208,11 @@ public:
             return true;
         }
 
+        if (RingIndex(begin) + count > RingSize())
+        {
+            count = RingSize() - RingIndex(begin);
+        }
+
         if (count >= MaxQueries)
         {
             fprintf(stdout, "TracyMetal: Collect: FULL [%llu, %llu] (%d)\n", begin, latestCheckpoint, count);
@@ -290,6 +295,11 @@ private:
         // wrap-around safe: all unsigned
         uintptr_t count = end - begin;
         return static_cast<uint32_t>(count);
+    }
+
+    tracy_force_inline uint32_t RingSize() const
+    {
+        return MaxQueries;
     }
 
     tracy_force_inline unsigned int NextQueryId(int n=1)

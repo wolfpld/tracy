@@ -176,7 +176,7 @@ public:
 
     bool Collect()
     {
-        ZoneScopedC(Color::Red4);
+        ZoneScopedNC("TracyMetal::Collect", Color::Red4);
 
 #ifdef TRACY_ON_DEMAND
         if (!GetProfiler().IsConnected())
@@ -197,14 +197,16 @@ public:
         uintptr_t begin = m_previousCheckpoint.load();
         uintptr_t latestCheckpoint = m_queryCounter.load(); // TODO: MTLEvent? MTLFence?;
         uint32_t count = RingCount(begin, latestCheckpoint);
+        ZoneValue(begin);
+        ZoneValue(latestCheckpoint);
 
         if (count == 0)   // no pending timestamp queries
         {
-            uintptr_t nextCheckpoint = m_queryCounter.load();
-            if (nextCheckpoint != latestCheckpoint)
-            {
-                // TODO: signal event / fence now?
-            }
+            //uintptr_t nextCheckpoint = m_queryCounter.load();
+            //if (nextCheckpoint != latestCheckpoint)
+            //{
+            //    // TODO: signal event / fence now?
+            //}
             return true;
         }
 
@@ -212,10 +214,11 @@ public:
         {
             count = RingSize() - RingIndex(begin);
         }
+        ZoneValue(count);
 
         if (count >= MaxQueries)
         {
-            fprintf(stdout, "TracyMetal: Collect: FULL [%llu, %llu] (%d)\n", begin, latestCheckpoint, count);
+            fprintf(stdout, "TracyMetal: Collect: FULL [%llu, %llu] (%u)\n", begin, latestCheckpoint, count);
             TracyMetalPanic("Collect: too many pending timestamp queries.", return false;);
         }
 
@@ -230,7 +233,7 @@ public:
 
         if (numResolvedTimestamps != count)
         {
-            fprintf(stdout, "TracyMetal: Collect: numResolvedTimestamps != count : %d != %d\n", numResolvedTimestamps, count);
+            fprintf(stdout, "TracyMetal: Collect: numResolvedTimestamps != count : %u != %u\n", numResolvedTimestamps, count);
         }
 
         for (auto i = 0; i < numResolvedTimestamps; i += 2)
@@ -239,7 +242,7 @@ public:
             MTLTimestamp& t_start = timestamps[i+0].timestamp;
             MTLTimestamp& t_end = timestamps[i+1].timestamp;
             uint32_t k = RingIndex(begin + i);
-            fprintf(stdout, "TracyMetal: Collect: timestamp[%d] = %llu | timestamp[%d] = %llu | diff = %llu\n", k, t_start, k+1, t_end, (t_end - t_start));
+            fprintf(stdout, "TracyMetal: Collect: timestamp[%u] = %llu | timestamp[%u] = %llu | diff = %llu\n", k, t_start, k+1, t_end, (t_end - t_start));
             if (t_start == MTLCounterErrorValue)
             {
                 TracyMetalPanic("Collect: invalid timestamp: MTLCounterErrorValue (0xFF..FF).");
@@ -250,7 +253,7 @@ public:
                 static int HACK_retries = 0;
                 if (++HACK_retries > 8) {
                     fprintf(stdout, "TracyMetal: Collect: giving up...\n", k, t_start, k+1, t_end);
-                    t_start = t_end = lastValidTimestamp + 10;
+                    t_start = t_end = lastValidTimestamp + 100;
                     HACK_retries = 0;
                 } else {
                     TracyMetalPanic("Collect: invalid timestamp: zero.");
@@ -304,11 +307,13 @@ private:
 
     tracy_force_inline unsigned int NextQueryId(int n=1)
     {
+        ZoneScopedNC("TracyMetal::NextQueryId", tracy::Color::LightCoral);
         auto id = m_queryCounter.fetch_add(n);
+        ZoneValue(id);
         auto count = RingCount(m_previousCheckpoint, id);
         if (count >= MaxQueries)
         {
-            fprintf(stdout, "TracyMetal: NextQueryId: FULL [%llu, %llu] (%d)\n", m_previousCheckpoint.load(), id, count);
+            fprintf(stdout, "TracyMetal: NextQueryId: FULL [%llu, %llu] (%u)\n", m_previousCheckpoint.load(), id, count);
             TracyMetalPanic("NextQueryId: too many pending timestamp queries.");
             // #TODO: return some sentinel value; ideally a "hidden" query index
         }

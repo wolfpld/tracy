@@ -14,7 +14,7 @@ TaskDispatch::TaskDispatch( size_t workers, const char* name )
     m_workers.reserve( workers );
     for( size_t i=0; i<workers; i++ )
     {
-        m_workers.emplace_back( std::thread( [this, name, i]{ SetName( name, i ); Worker(); } ) );
+        m_workers.emplace_back( [this, name, i]{ SetName( name, i ); Worker(); } );
     }
 }
 

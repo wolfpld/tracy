@@ -18,6 +18,8 @@
 
 #ifndef TRACY_ENABLE
 
+#define TracyNoop
+
 #define ZoneNamed(x,y)
 #define ZoneNamedN(x,y,z)
 #define ZoneNamedC(x,y,z)
@@ -122,6 +124,8 @@
 #include "../client/TracyLock.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyScoped.hpp"
+
+#define TracyNoop tracy::ProfilerAvailable()
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define ZoneNamed( varname, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )

@@ -120,9 +120,6 @@ if get_option('debuginfod')
 endif
 
 tracy_shared_libs = get_option('default_library') == 'shared'
-if not tracy_shared_libs and get_option('shared_libs')
-  warning('tracy_shared_libs is set to true, but default_library is set to static. Building static library.')
-endif
 
 if tracy_shared_libs
   tracy_compile_args += ['-DTRACY_EXPORTS']

@@ -22,7 +22,6 @@ option('libbacktrace_elf_dynload_support', type : 'boolean', value : false, desc
 option('delayed_init', type : 'boolean', value : false, description : 'Enable delayed initialization of the library (init on first call)')
 option('manual_lifetime', type : 'boolean', value : false, description : 'Enable the manual lifetime management of the profile')
 option('fibers', type : 'boolean', value : false, description : 'Enable fibers support')
-option('shared_libs', type : 'boolean', value : false, description : 'Builds Tracy as a shared object (deprecated in favour of default_library=shared)', deprecated : true)
 option('no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')
 option('verbose', type : 'boolean', value : false, description : 'Enable verbose logging')
 option('debuginfod', type : 'boolean', value : false, description : 'Enable debuginfod support')

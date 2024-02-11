@@ -426,11 +426,16 @@ You should compile the application you want to profile with all the usual optimi
 
 Finally, on Unix, make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}. BSD systems will also need to be linked with \texttt{libexecinfo}.
 
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bclampe
-]{CMake integration}
+\subsubsection{Static library}
+
+If you are compiling Tracy as a static library to link with your application, you may encounter some unexpected problems.
+
+When you link a library into your executable, the linker checks if the library provides symbols needed by the program. The library is only used if this is the case. This can be an issue because one of the use cases of Tracy is to simply add it to the application, without any manual instrumentation, and let it profile the execution by sampling. If you use any kind of Tracy macros in your program, this won't be a problem.
+
+However, if you find yourself in a situation where this is a consideration, you can simply add the \texttt{TracyNoop} macro somewhere in your code, for example in the \texttt{main} function. The macro doesn't do anything useful, but it inserts a reference that is satisfied by the static library, which results in the Tracy code being linked in and the profiler being able to work as intended.
+
+\subsubsection{CMake integration}
+
 You can integrate Tracy with CMake by adding the git submodule folder as a subdirectory.
 
 \begin{lstlisting}
@@ -446,7 +451,6 @@ Link \texttt{Tracy::TracyClient} to any target where you use Tracy for profiling
 \begin{lstlisting}
 target_link_libraries(<TARGET> PUBLIC Tracy::TracyClient)
 \end{lstlisting}
-\end{bclogo}
 
 \begin{bclogo}[
 noborder=true,
@@ -473,6 +477,43 @@ Then add this to any target where you use tracy for profiling:
 target_link_libraries(<TARGET> PUBLIC TracyClient)
 \end{lstlisting}
 \end{bclogo}
+
+\subsubsection{Meson integration}
+
+If you are using the Meson build system, you can add Tracy using the Wrap dependency system. To do this, place the \texttt{tracy.wrap} file in the \texttt{subprojects} directory of your project, with the following content. The \texttt{head} \texttt{revision} field tracks Tracy's \texttt{master} branch. If you want to lock to a specific version of Tracy instead, you can just set the \texttt{revision} field to an appropriate git tag.
+
+\begin{lstlisting}
+[wrap-git]
+url = https://github.com/wolfpld/tracy.git
+revision = head
+depth = 1
+\end{lstlisting}
+
+Then, add the following option entry to the \texttt{meson.options} file. Use the name \texttt{tracy\_enable} as shown, because the Tracy subproject options inherit it.
+
+\begin{lstlisting}
+option('tracy_enable', type: 'boolean', value: false, description: 'Enable profiling')
+\end{lstlisting}
+
+Next, add the Tracy dependency to the \texttt{meson.build} project definition file. Don't forget to include this dependency in the appropriate executable or library definitions. This dependency will set all the appropriate definitions (such as \texttt{TRACY\_ENABLE}) in your program, so you don't have to do it manually.
+
+\begin{lstlisting}
+tracy = dependency('tracy', static: true)
+\end{lstlisting}
+
+Finally, let's check if the \texttt{debugoptimized} build type is enabled, and print a little reminder message if it is not. For profiling we want the debug annotations to be present, but we also want to have the code to be optimized.
+
+\begin{lstlisting}
+if get_option('tracy_enable') and get_option('buildtype') != 'debugoptimized'
+    message('Profiling builds should set --buildtype=debugoptimized')
+endif
+\end{lstlisting}
+
+Here's a sample command to set up a build directory with profiling enabled. The last option, \texttt{tracy:on\_demand}, is used to demonstrate how to set options in the Tracy subproject.
+
+\begin{lstlisting}
+meson setup build --buildtype=debugoptimized -Dtracy_enable=true -Dtracy:on_demand=true
+\end{lstlisting}
 
 \subsubsection{Short-lived applications}
 
@@ -1192,6 +1233,8 @@ To record a zone's\footnote{A \texttt{zone} represents the lifetime of a special
 Use the \texttt{ZoneText(text, size)} macro to add a custom text string that the profiler will display along with the zone information (for example, name of the file you are opening). Multiple text strings can be attached to any single zone. The dynamic color of a zone can be specified with the \texttt{ZoneColor(uint32\_t)} macro to override the source location color. If you want to send a numeric value and don't want to pay the cost of converting it to a string, you may use the \texttt{ZoneValue(uint64\_t)} macro. Finally, you can check if the current zone is active with the \texttt{ZoneIsActive} macro.
 
 If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro. However, this name won't be used in the process of grouping the zones for statistical purposes (sections~\ref{statistics} and~\ref{findzone}).
+
+To use printf-like formatting, you can use the \texttt{ZoneTextF(fmt, ...)} and \texttt{ZoneNameF(fmt, ...)} macros.
 
 \begin{bclogo}[
 noborder=true,

@@ -67,6 +67,14 @@ vx.xx.x (xxxx-xx-xx)
     places in code), it is not possible to tell which of the code locations
     the source location corresponds to and only the source code will be
     displayed.
+- Added TracyNoop macro, which inserts a reference to Tracy's object file
+  into your application. Use it if you want to use Tracy in sampling mode,
+  without any manual instrumentation (so no references of your own exist)
+  and link Tracy as a static library. Linkers will only include library code
+  if code references it, and this doesn't work as intended with Tracy, as it
+  ignores global constructors that have side effects.
+- ZoneText and ZoneName macros now have a printf-like variant, denoted with
+  a 'F' postfix.
 
 
 v0.10.0 (2023-10-16)

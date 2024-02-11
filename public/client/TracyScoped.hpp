@@ -2,6 +2,7 @@
 #define __TRACYSCOPED_HPP__
 
 #include <limits>
+#include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -121,6 +122,30 @@ public:
         TracyQueueCommit( zoneTextFatThread );
     }
 
+    tracy_force_inline void TextFmt( const char* fmt, ... )
+    {
+        if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
+        va_list args;
+        va_start( args, fmt );
+        auto size = vsnprintf( nullptr, 0, fmt, args );
+        va_end( args );
+        if( size < 0 ) return;
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+        char* ptr = (char*)tracy_malloc( size_t( size ) + 1 );
+        va_start( args, fmt );
+        vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+        va_end( args );
+
+        TracyQueuePrepare( QueueType::ZoneText );
+        MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+        MemWrite( &item->zoneTextFat.size, (uint16_t)size );
+        TracyQueueCommit( zoneTextFatThread );
+    }
+
     tracy_force_inline void Name( const char* txt, size_t size )
     {
         assert( size < (std::numeric_limits<uint16_t>::max)() );
@@ -130,6 +155,30 @@ public:
 #endif
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
+        TracyQueuePrepare( QueueType::ZoneName );
+        MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+        MemWrite( &item->zoneTextFat.size, (uint16_t)size );
+        TracyQueueCommit( zoneTextFatThread );
+    }
+
+    tracy_force_inline void NameFmt( const char* fmt, ... )
+    {
+        if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
+        va_list args;
+        va_start( args, fmt );
+        auto size = vsnprintf( nullptr, 0, fmt, args );
+        va_end( args );
+        if( size < 0 ) return;
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
+
+        char* ptr = (char*)tracy_malloc( size_t( size ) + 1 );
+        va_start( args, fmt );
+        vsnprintf( ptr, size_t( size ) + 1, fmt, args );
+        va_end( args );
+
         TracyQueuePrepare( QueueType::ZoneName );
         MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
         MemWrite( &item->zoneTextFat.size, (uint16_t)size );

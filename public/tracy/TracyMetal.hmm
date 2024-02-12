@@ -248,11 +248,11 @@ public:
                 TracyMetalPanic("Collect: invalid timestamp: MTLCounterErrorValue (0xFF..FF).");
                 break;
             }
-            if (t_start == 0) // zero is apparently also considered "invalid"...
+            if (t_start == 0 || t_end == 0) // zero is apparently also considered "invalid"...
             {
                 static int HACK_retries = 0;
                 if (++HACK_retries > 8) {
-                    fprintf(stdout, "TracyMetal: Collect: giving up...\n", k, t_start, k+1, t_end);
+                    fprintf(stdout, "TracyMetal: Collect: giving up...\n");
                     t_start = t_end = lastValidTimestamp + 100;
                     HACK_retries = 0;
                 } else {
@@ -280,6 +280,7 @@ public:
             lastValidTimestamp = t_end;
             t_start = t_end = MTLCounterErrorValue;  // "reset" timestamps
         }
+        ZoneValue(RingCount(begin, m_previousCheckpoint.load()));
 
         //RecalibrateClocks();    // to account for drift
 

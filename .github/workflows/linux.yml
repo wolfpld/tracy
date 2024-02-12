@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-22.04
     container: archlinux:base-devel
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install linux libraries
       run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 capstone tbb debuginfod wayland dbus libxkbcommon libglvnd meson
     - name: Profiler GUI

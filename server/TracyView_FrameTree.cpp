@@ -58,6 +58,8 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
     unordered_flat_map<uint32_t, MemPathData> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
+    const bool hide_inactive = memRange == MemRange::Active;
+
     if( m_memInfo.range.active )
     {
         auto it = std::lower_bound( mem.data.begin(), mem.data.end(), m_memInfo.range.min, []( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
@@ -70,7 +72,8 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
                 {
                     auto& ev = *it++;
                     if( ev.CsAlloc() == 0 ) continue;
-                    if( ( memRange == MemRange::Inactive ) == ( ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max ) ) continue;
+                    const bool is_inactive =  ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max;
+                    if( hide_inactive == is_inactive ) continue;
                     auto pit = pathSum.find( ev.CsAlloc() );
                     if( pit == pathSum.end() )
                     {
@@ -110,7 +113,8 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
             for( auto& ev : mem.data )
             {
                 if( ev.CsAlloc() == 0 ) continue;
-                if( ( memRange == MemRange::Inactive ) == ( ev.TimeFree() >= 0 ) ) continue;
+                const bool is_inactive =  ev.TimeFree() >= 0;
+                if( hide_inactive == is_inactive ) continue;
                 auto it = pathSum.find( ev.CsAlloc() );
                 if( it == pathSum.end() )
                 {

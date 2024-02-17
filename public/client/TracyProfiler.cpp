@@ -3442,7 +3442,7 @@ bool Profiler::HandleServerQuery()
         }
         else
         {
-            SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
+            SendString( ptr, GetThreadName( (uint32_t)ptr ), QueueType::ThreadName );
         }
         break;
     case ServerQuerySourceLocation:

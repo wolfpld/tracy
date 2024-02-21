@@ -110,7 +110,7 @@ struct ThreadNameData
 std::atomic<ThreadNameData*>& GetThreadNameData();
 #endif
 
-#ifdef _MSC_VER
+#if defined _MSC_VER && !defined __clang__
 #  pragma pack( push, 8 )
 struct THREADNAME_INFO
 {
@@ -149,7 +149,7 @@ TRACY_API void SetThreadName( const char* name )
     }
     else
     {
-#  if defined _MSC_VER
+#  if defined _MSC_VER && !defined __clang__
         THREADNAME_INFO info;
         info.dwType = 0x1000;
         info.szName = name;

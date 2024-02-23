@@ -31,6 +31,8 @@
 #elif defined __APPLE__ || defined BSD
 #  include <sys/types.h>
 #  include <sys/sysctl.h>
+#elif defined __HAIKU__
+#  include <kernel/OS.h>
 #endif
 
 #include "IconsFontAwesome6.h"
@@ -141,6 +143,10 @@ void View::InitMemory()
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
     m_totalMemory = memSize;
+#elif defined __HAIKU__
+	system_info sysInfo;
+	get_system_info(&sysInfo);
+	m_totalMemory = sysInfo.max_pages * PAGESIZE;
 #else
     m_totalMemory = 0;
 #endif

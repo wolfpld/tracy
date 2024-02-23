@@ -37,6 +37,10 @@
 #  define MSG_NOSIGNAL 0
 #endif
 
+#if defined __HAIKU__
+#define TRACY_ONLY_IPV4
+#endif
+
 namespace tracy
 {
 
@@ -492,7 +496,7 @@ bool ListenSocket::Listen( uint16_t port, int backlog )
 #if defined _WIN32
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
-#elif defined BSD
+#elif defined BSD || defined __HAIKU__
     int val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
     val = 1;

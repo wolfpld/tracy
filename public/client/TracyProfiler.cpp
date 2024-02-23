@@ -90,7 +90,7 @@
 #  endif
 #endif
 
-#ifdef __APPLE__
+#if defined __APPLE__ || defined __HAIKU__
 #  ifndef TRACY_DELAYED_INIT
 #    define TRACY_DELAYED_INIT
 #  endif
@@ -422,6 +422,21 @@ static const char* GetProcessName()
     return processName;
 }
 
+
+#if defined __HAIKU__
+#include <image.h>
+static char executable_path[MAXPATHLEN];
+
+extern "C" void
+initialize_before(image_id our_image)
+{
+  image_info ii;
+  get_image_info(our_image, &ii);
+  snprintf(executable_path, sizeof(executable_path), "%s", ii.name);
+}
+#endif
+
+
 static const char* GetProcessExecutablePath()
 {
 #ifdef _WIN32
@@ -459,6 +474,8 @@ static const char* GetProcessExecutablePath()
     static char buf[_PC_PATH_MAX + 1];
     _cmdname(buf);
     return buf;
+#elif defined __HAIKU__
+	return executable_path;
 #else
     return nullptr;
 #endif
@@ -539,6 +556,8 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
 #elif defined __QNX__
     ptr += sprintf( ptr, "OS: QNX\n" );
+#elif defined __HAIKU__
+    ptr += sprintf( ptr, "OS: Haiku (Haiku)\n" );
 #else
     ptr += sprintf( ptr, "OS: unknown\n" );
 #endif

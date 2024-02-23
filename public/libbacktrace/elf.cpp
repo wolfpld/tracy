@@ -71,6 +71,11 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #endif
 #endif
 
+#if defined __HAIKU__
+#undef HAVE_DL_ITERATE_PHDR
+#define ElfW(x) Elf_##x
+#endif
+
 namespace tracy
 {
 

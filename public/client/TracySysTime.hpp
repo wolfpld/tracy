@@ -1,7 +1,7 @@
 #ifndef __TRACYSYSTIME_HPP__
 #define __TRACYSYSTIME_HPP__
 
-#if defined _WIN32 || defined __linux__ || defined __APPLE__
+#if defined _WIN32 || defined __linux__ || defined __APPLE__ || defined __HAIKU__
 #  define TRACY_HAS_SYSTIME
 #else
 #  include <sys/param.h>

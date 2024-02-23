@@ -1,4 +1,10 @@
+ifeq ($(shell uname -o),Haiku)
+CFLAGS := -gdwarf-3 -Wall
+LDFLAGS := -gdwarf-3
+else
 CFLAGS := -g3 -Wall
+LDFLAGS := -g3
+endif
 DEFINES := -DDEBUG
 BUILD := debug
 

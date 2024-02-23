@@ -31,6 +31,8 @@
 #elif defined __QNX__
 #  include <process.h>
 #  include <sys/neutrino.h>
+#elif defined __HAIKU__
+#  include <kernel/OS.h>
 #endif
 
 #ifdef __MINGW32__
@@ -86,6 +88,8 @@ TRACY_API uint32_t GetThreadHandleImpl()
 #elif defined __EMSCRIPTEN__
     // Not supported, but let it compile.
     return 0;
+#elif defined __HAIKU__
+	return find_thread(0);
 #else
     // To add support for a platform, retrieve and return the kernel thread identifier here.
     //

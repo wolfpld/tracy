@@ -78,6 +78,25 @@ void SysTime::ReadTimes()
     idle = data[4];
 }
 
+#  elif defined __HAIKU__
+
+void SysTime::ReadTimes()
+{
+	bigtime_t now = system_time();
+	system_info	si;
+	get_system_info(&si);
+	cpu_info ci[256];
+	get_cpu_info(0, si.cpu_count, ci);
+	bigtime_t tot = 0;
+	for (uint32 i = 0; i < si.cpu_count; i++)
+		tot += ci[i].active_time;
+	used = tot / si.cpu_count;
+	static bigtime_t prev;
+	bigtime_t interval = now - prev;
+	idle = interval - used;
+	prev = now;
+}
+
 #endif
 
 SysTime::SysTime()
@@ -97,7 +116,7 @@ float SysTime::Get()
 
 #if defined _WIN32
     return diffUsed == 0 ? -1 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
-#elif defined __linux__ || defined __APPLE__ || defined BSD
+#elif defined __linux__ || defined __APPLE__ || defined BSD || defined __HAIKU__
     const auto total = diffUsed + diffIdle;
     return total == 0 ? -1 : diffUsed * 100.f / total;
 #endif

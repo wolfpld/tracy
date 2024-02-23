@@ -16,6 +16,14 @@ else ifeq (0,$(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?))
 endif
 endif
 
+
+ifeq ($(shell uname -o),Haiku)
+	LIBS += -lroot -lnetwork -luuid
+else
+	LIBS += -ldl
+endif
+
+
 OBJDIRBASE := obj/$(BUILD)
 OBJDIR := $(OBJDIRBASE)/o/o/o
 

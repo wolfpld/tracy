@@ -160,10 +160,12 @@ constexpr ImGuiKey s_keyTable[] = {
 };
 
 static std::function<void()> s_redraw;
+static std::function<void(float)> s_scaleChanged;
 static RunQueue* s_mainThreadTasks;
 
 static struct wl_display* s_dpy;
 static struct wl_compositor* s_comp;
+static uint32_t s_comp_version;
 static struct wl_surface* s_surf;
 static struct wl_egl_window* s_eglWin;
 static struct wl_shm* s_shm;
@@ -194,6 +196,7 @@ struct Output
 {
     int32_t scale;
     wl_output* obj;
+    bool entered;
 };
 static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
 static int s_maxScale = 1;
@@ -206,6 +209,19 @@ static uint64_t s_time;
 
 static wl_fixed_t s_wheelAxisX, s_wheelAxisY;
 static bool s_wheel;
+
+static void RecomputeScale()
+{
+    // On wl_compositor >= 6 the scale is sent explicitly via wl_surface.preferred_buffer_scale.
+    if ( s_comp_version >= 6 ) return;
+
+    int max = 1;
+    for( auto& out : s_output )
+    {
+        if( out.second->entered && out.second->scale > max ) max = out.second->scale;
+    }
+    s_maxScale = max;
+}
 
 static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
 {
@@ -471,12 +487,7 @@ static void OutputMode( void*, struct wl_output* output, uint32_t flags, int32_t
 
 static void OutputDone( void*, struct wl_output* output )
 {
-    int max = 1;
-    for( auto& out : s_output )
-    {
-        if( out.second->scale > max ) max = out.second->scale;
-    }
-    s_maxScale = max;
+    RecomputeScale();
 }
 
 static void OutputScale( void* data, struct wl_output* output, int32_t scale )
@@ -506,7 +517,8 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
     {
-        s_comp = (wl_compositor*)wl_registry_bind( reg, name, &wl_compositor_interface, 4 );
+        s_comp_version = version;
+        s_comp = (wl_compositor*)wl_registry_bind( reg, name, &wl_compositor_interface, version >= 6 ? 6 : 4 );
     }
     else if( strcmp( interface, wl_shm_interface.name ) == 0 )
     {
@@ -529,7 +541,7 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
     else if( strcmp( interface, wl_output_interface.name ) == 0 )
     {
         auto output = (wl_output*)wl_registry_bind( reg, name, &wl_output_interface, 2 );
-        auto ptr = std::make_unique<Output>( Output { 1, output } );
+        auto ptr = std::make_unique<Output>( Output { 1, output, false } );
         wl_output_add_listener( output, &outputListener, ptr.get() );
         s_output.emplace( name, std::move( ptr ) );
     }
@@ -545,6 +557,7 @@ static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name 
     if( it == s_output.end() ) return;
     wl_output_destroy( it->second->obj );
     s_output.erase( it );
+    RecomputeScale();
 }
 
 constexpr struct wl_registry_listener registryListener = {
@@ -603,6 +616,43 @@ constexpr struct xdg_toplevel_listener toplevelListener = {
     .close = XdgToplevelClose
 };
 
+static void SurfaceEnter( void*, struct wl_surface* surface, struct wl_output* output )
+{
+    for ( auto& out : s_output )
+    {
+        if ( out.second->obj == output )
+        {
+            out.second->entered = true;
+            RecomputeScale();
+            break;
+        }
+    }
+}
+
+static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* output )
+{
+    for ( auto& out : s_output )
+    {
+        if ( out.second->obj == output )
+        {
+            out.second->entered = false;
+            RecomputeScale();
+            break;
+        }
+    }
+}
+
+static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
+{
+    s_maxScale = scale;
+}
+
+constexpr struct wl_surface_listener surfaceListener = {
+    .enter = SurfaceEnter,
+    .leave = SurfaceLeave,
+    .preferred_buffer_scale = SurfacePreferredBufferScale,
+};
+
 static void SetupCursor()
 {
     auto env_xcursor_theme = getenv( "XCURSOR_THEME" );
@@ -624,9 +674,10 @@ static void SetupCursor()
     s_cursorY = cursor->images[0]->hotspot_y / s_maxScale;
 }
 
-Backend::Backend( const char* title, const std::function<void()>& redraw, RunQueue* mainThreadTasks )
+Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, RunQueue* mainThreadTasks )
 {
     s_redraw = redraw;
+    s_scaleChanged = scaleChanged;
     s_mainThreadTasks = mainThreadTasks;
     s_w = m_winPos.w;
     s_h = m_winPos.h;
@@ -645,6 +696,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, RunQue
     if( !s_seat ) { fprintf( stderr, "No wayland seat!\n" ); exit( 1 ); }
 
     s_surf = wl_compositor_create_surface( s_comp );
+    wl_surface_add_listener( s_surf, &surfaceListener, nullptr );
     s_eglWin = wl_egl_window_create( s_surf, m_winPos.w, m_winPos.h );
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
     xdg_surface_add_listener( s_xdgSurf, &xdgSurfaceListener, nullptr );
@@ -781,6 +833,7 @@ void Backend::NewFrame( int& w, int& h )
 {
     if( s_prevScale != s_maxScale )
     {
+        s_scaleChanged( s_maxScale );
         SetupCursor();
         wl_surface_set_buffer_scale( s_surf, s_maxScale );
         s_prevScale = s_maxScale;

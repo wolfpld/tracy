@@ -745,6 +745,10 @@ static const char* GetHostInfo()
     }
     memSize = memSize / 1024 / 1024;
     ptr += sprintf( ptr, "RAM: %llu MB\n", memSize);
+#elif defined __HAIKU__
+    system_info si;
+    get_system_info(&si);
+    ptr += sprintf( ptr, "RAM: %llu MB\n", si.max_pages * PAGESIZE / 1024 / 1024);
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );
 #endif

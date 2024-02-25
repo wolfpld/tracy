@@ -418,6 +418,12 @@ static const char* GetProcessName()
     if( buf ) processName = buf;
 #elif defined __QNX__
     processName = __progname;
+#elif defined __HAIKU__
+	team_info ti;
+	get_team_info(B_CURRENT_TEAM, &ti);
+	static char name[B_OS_NAME_LENGTH];
+	memcpy(name, ti.name, sizeof(name));
+	processName = name;
 #endif
     return processName;
 }
@@ -557,7 +563,7 @@ static const char* GetHostInfo()
 #elif defined __QNX__
     ptr += sprintf( ptr, "OS: QNX\n" );
 #elif defined __HAIKU__
-    ptr += sprintf( ptr, "OS: Haiku (Haiku)\n" );
+    ptr += sprintf( ptr, "OS: Haiku\n" );
 #else
     ptr += sprintf( ptr, "OS: unknown\n" );
 #endif
@@ -748,7 +754,8 @@ static const char* GetHostInfo()
 #elif defined __HAIKU__
     system_info si;
     get_system_info(&si);
-    ptr += sprintf( ptr, "RAM: %llu MB\n", si.max_pages * PAGESIZE / 1024 / 1024);
+    size_t memSize = si.max_pages * PAGESIZE;
+    ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024);
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );
 #endif

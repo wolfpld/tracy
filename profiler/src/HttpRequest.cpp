@@ -68,6 +68,8 @@ static const char* GetOsInfo()
     sprintf( buf, "BSD (OpenBSD)" );
 #elif defined __QNX__
     sprintf( buf, "QNX" );
+#elif defined __HAIKU__
+    sprintf( buf, "Haiku" );
 #else
     sprintf( buf, "unknown" );
 #endif

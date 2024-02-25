@@ -200,6 +200,8 @@ TRACY_API void SetThreadName( const char* name )
             pthread_setname_np( pthread_self(), buf );
         }
     };
+#elif defined __HAIKU__
+	rename_thread(find_thread(0), name);
 #endif
 #ifdef TRACY_ENABLE
     {
@@ -284,6 +286,10 @@ TRACY_API const char* GetThreadName( uint32_t id )
     if (pthread_getname_np(static_cast<int>(id), qnxNameBuf, _NTO_THREAD_NAME_MAX) == 0) {
         return qnxNameBuf;
     };
+#elif defined __HAIKU__
+	thread_info ti;
+	get_thread_info(find_thread(NULL), &ti);
+	snprintf(buf, sizeof(buf), "%s", ti.name);
 #endif
 
   sprintf( buf, "%" PRIu32, id );

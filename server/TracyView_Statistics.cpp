@@ -563,7 +563,7 @@ void View::DrawStatistics()
             {
                 ImGui::TableSetupScrollFreeze( 0, 1 );
                 ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_NoHide );
-                ImGui::TableSetupColumn( "Location", ImGuiTableColumnFlags_NoSort );
+                ImGui::TableSetupColumn( "Location" );
                 ImGui::TableSetupColumn( "Total time", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableSetupColumn( "Counts", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                 ImGui::TableSetupColumn( "MTPC", ImGuiTableColumnFlags_PreferSortDescending | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
@@ -581,6 +581,28 @@ void View::DrawStatistics()
                     else
                     {
                         pdqsort_branchless( srcloc.begin(), srcloc.end(), [this]( const auto& lhs, const auto& rhs ) { return strcmp( m_worker.GetZoneName( m_worker.GetSourceLocation( lhs.srcloc ) ), m_worker.GetZoneName( m_worker.GetSourceLocation( rhs.srcloc ) ) ) > 0; } );
+                    }
+                    break;
+                case 1:
+                    if( sortspec.SortDirection == ImGuiSortDirection_Ascending )
+                    {
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), [this]( const auto& lhs, const auto& rhs ) {
+                            const auto& sll = m_worker.GetSourceLocation( lhs.srcloc );
+                            const auto& slr = m_worker.GetSourceLocation( rhs.srcloc );
+                            const auto cmp = strcmp( m_worker.GetString( sll.file ), m_worker.GetString( slr.file ) );
+                            if( cmp == 0 ) return sll.line < slr.line;
+                            return cmp < 0;
+                        } );
+                    }
+                    else
+                    {
+                        pdqsort_branchless( srcloc.begin(), srcloc.end(), [this]( const auto& lhs, const auto& rhs ) {
+                            const auto& sll = m_worker.GetSourceLocation( lhs.srcloc );
+                            const auto& slr = m_worker.GetSourceLocation( rhs.srcloc );
+                            const auto cmp = strcmp( m_worker.GetString( sll.file ), m_worker.GetString( slr.file ) );
+                            if( cmp == 0 ) return sll.line > slr.line;
+                            return cmp > 0;
+                        } );
                     }
                     break;
                 case 2:

@@ -756,7 +756,7 @@ struct DebugInfo
     int fd;
 };
 
-FastVector<DebugInfo> s_di_known( 16 );
+static FastVector<DebugInfo>* s_di_known;
 #endif
 
 #ifdef __linux
@@ -945,6 +945,8 @@ void InitCallstack()
 #endif
 #ifdef TRACY_DEBUGINFOD
     s_debuginfod = debuginfod_begin();
+    s_di_known = (FastVector<DebugInfo>*)tracy_malloc( sizeof( FastVector<DebugInfo> ) );
+    new (s_di_known) FastVector<DebugInfo>( 16 );
 #endif
 }
 
@@ -975,11 +977,11 @@ DebugInfo* FindDebugInfo( FastVector<DebugInfo>& vec, const uint8_t* buildid_dat
 int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const char* filename )
 {
     auto buildid = (uint8_t*)buildid_data;
-    auto it = FindDebugInfo( s_di_known, buildid, buildid_size );
+    auto it = FindDebugInfo( *s_di_known, buildid, buildid_size );
     if( it ) return it->fd >= 0 ? dup( it->fd ) : -1;
 
     int fd = debuginfod_find_debuginfo( s_debuginfod, buildid, buildid_size, nullptr );
-    it = s_di_known.push_next();
+    it = s_di_known->push_next();
     it->buildid_size = buildid_size;
     it->buildid = (uint8_t*)tracy_malloc( buildid_size );
     memcpy( it->buildid, buildid, buildid_size );
@@ -994,7 +996,7 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const
 const uint8_t* GetBuildIdForImage( const char* image, size_t& size )
 {
     assert( image );
-    for( auto& v : s_di_known )
+    for( auto& v : *s_di_known )
     {
         if( strcmp( image, v.filename ) == 0 )
         {
@@ -1024,7 +1026,10 @@ void EndCallstack()
     ___tracy_free_demangle_buffer();
 #endif
 #ifdef TRACY_DEBUGINFOD
-    ClearDebugInfoVector( s_di_known );
+    ClearDebugInfoVector( *s_di_known );
+    s_di_known->~FastVector<DebugInfo>();
+    tracy_free( s_di_known );
+
     debuginfod_end( s_debuginfod );
 #endif
 }

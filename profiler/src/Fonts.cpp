@@ -21,6 +21,7 @@ void LoadFonts( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont
         0x03BC, 0x03BC, // micro
         0x03C3, 0x03C3, // small sigma
         0x2013, 0x2013, // en dash
+        0x2026, 0x2026, // ellipsis
         0x2264, 0x2264, // less-than or equal to
         0,
     };

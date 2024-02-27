@@ -5,7 +5,7 @@ DEFINES +=
 INCLUDES := -I../public/tracy
 LIBS := -lpthread
 ifeq ($(shell uname -o),Haiku)
-LIBS += -lroot -lnetwork
+LIBS += -lroot -lnetwork -lbsd
 else
 LIBS += -ldl
 endif

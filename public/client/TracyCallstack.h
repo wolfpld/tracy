@@ -29,7 +29,7 @@
 #  elif defined BSD
 #    define TRACY_HAS_CALLSTACK 6
 #  elif defined __HAIKU__
-#    define TRACY_HAS_CALLSTACK 5
+#    define TRACY_HAS_CALLSTACK 2
 #  endif
 
 #endif

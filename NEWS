@@ -81,6 +81,7 @@ vx.xx.x (xxxx-xx-xx)
   remains as it was, as it can be inherited from parent projects.
 - Fixed display of active / inactive allocations in memory call tree.
 - Instrumentation statistics can be now sorted by source location.
+- Added option to hide external code frames in call stack view.
 
 
 v0.10.0 (2023-10-16)

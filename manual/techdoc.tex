@@ -519,4 +519,10 @@ To reduce memory impact, frame images are compressed on a dedicated thread (\tex
 
 The DXT1 compression used to reduce size of the images is a from-scratch implementation of the Extreme DXT Compression\footnote{\url{http://www.cauldron.sk/files/extreme_dxt_compression.pdf}} algorithm. The conversion of natural color index order to DXT1 order is performed on the server side, as it is an invariant operation, without dependencies on the input data.
 
+\subsection{Thread naming}
+
+Most operating systems don't have adequate support for giving threads arbitrary names. Tracy supplements this by providing an alternative way via an internal lock-free list. On subsequent thread name queries this list is used, instead of the system facilities.
+
+When `setThreadName()` is called, Tracy will also set the thread name using the OS functionality when possible. These names can be then used by debuggers and other external tools.
+
 \end{document}

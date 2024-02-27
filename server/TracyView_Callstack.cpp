@@ -10,6 +10,14 @@
 namespace tracy
 {
 
+static bool IsFrameExternal( const char* filename, const char* image )
+{
+    if( strncmp( filename, "/usr/", 5 ) == 0 || strncmp( filename, "/lib/", 5 ) == 0 || strcmp( filename, "[unknown]" ) == 0 ) return true;
+    if( strncmp( filename, "C:\\Program Files\\", 17 ) == 0 || strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0 ) return true;
+    if( !image ) return false;
+    return strncmp( image, "/usr/", 5 ) == 0 || strncmp( image, "/lib/", 5 ) == 0 || strncmp( image, "/lib64/", 7 ) == 0 || strcmp( image, "<kernel>" ) == 0;
+}
+
 void View::DrawCallstackWindow()
 {
     bool show = true;
@@ -97,6 +105,12 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         ImGui::SetClipboardText( s.str().c_str() );
     }
     ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    SmallCheckbox( "External frames", &m_showExternalFrames );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -138,6 +152,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         ImGui::TableSetupColumn( "Image" );
         ImGui::TableHeadersRow();
 
+        bool external = false;
         int fidx = 0;
         int bidx = 0;
         for( auto& entry : cs )
@@ -145,6 +160,11 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
             auto frameData = m_worker.GetCallstackFrame( entry );
             if( !frameData )
             {
+                if( !m_showExternalFrames )
+                {
+                    external = true;
+                    continue;
+                }
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::Text( "%i", fidx++ );
@@ -179,6 +199,33 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         }
                         while( *++test );
                         if( match ) continue;
+                    }
+
+                    auto filename = m_worker.GetString( frame.file );
+                    auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+
+                    if( IsFrameExternal( filename, image ) )
+                    {
+                        if( !m_showExternalFrames )
+                        {
+                            if( f == fsz-1 ) fidx++;
+                            external = true;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        if( external )
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::PushFont( m_smallFont );
+                            TextDisabledUnformatted( "external" );
+                            ImGui::PopFont();
+                            ImGui::TableNextColumn();
+                            TextDisabledUnformatted( "\xe2\x80\xa6" );
+                            external = false;
+                        }
                     }
 
                     ImGui::TableNextRow();
@@ -230,14 +277,13 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         indentVal = sin( time * 60.f ) * 10.f * time;
                         ImGui::Indent( indentVal );
                     }
-                    txt = m_worker.GetString( frame.file );
                     switch( m_showCallstackFrameAddress )
                     {
                     case 0:
-                        TextDisabledUnformatted( LocationToString( txt, frame.line ) );
+                        TextDisabledUnformatted( LocationToString( filename, frame.line ) );
                         if( ImGui::IsItemClicked() )
                         {
-                            ImGui::SetClipboardText( LocationToString( txt, frame.line ) );
+                            ImGui::SetClipboardText( LocationToString( filename, frame.line ) );
                         }
                         break;
                     case 1:
@@ -308,7 +354,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         }
                         else
                         {
-                            DrawSourceTooltip( txt, frame.line );
+                            DrawSourceTooltip( filename, frame.line );
                         }
                         if( ImGui::IsItemClicked( 1 ) )
                         {
@@ -330,7 +376,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                             }
                             else
                             {
-                                if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
+                                if( !ViewDispatch( filename, frame.line, frame.symAddr ) )
                                 {
                                     m_callstackBuzzAnim.Enable( bidx, 0.5f );
                                 }
@@ -343,12 +389,19 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                     ImGui::PopTextWrapPos();
                     ImGui::TableNextColumn();
-                    if( frameData->imageName.Active() )
-                    {
-                        TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
-                    }
+                    if( image ) TextDisabledUnformatted( image );
                 }
             }
+        }
+        if( external )
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::PushFont( m_smallFont );
+            TextDisabledUnformatted( "external" );
+            ImGui::PopFont();
+            ImGui::TableNextColumn();
+            TextDisabledUnformatted( "\xe2\x80\xa6" );
         }
         ImGui::EndTable();
     }

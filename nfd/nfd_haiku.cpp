@@ -30,12 +30,22 @@ static nfdresult_t dialog(BFilePanel &p, nfdnchar_t **outPath,
 }
 
 class NFDFilter : public BRefFilter {
+	const nfdnfilteritem_t * _filter;
+	nfdfiltersize_t _count;
 public:
-	NFDFilter(const nfdnfilteritem_t *filterList, nfdfiltersize_t filterCount) {}
+	NFDFilter(const nfdnfilteritem_t *filterList, nfdfiltersize_t filterCount)
+		: _filter(filterList)
+		, _count(filterCount) {}
 
 	bool Filter(const entry_ref *ref, BNode *node, struct stat_beos *stat,
 				const char *mimeType) override {
-		return true;
+		BString name(ref->name);
+		if (node->IsDirectory())
+			return true;
+		for (auto i = 0; i < _count; i++)
+			if (name.EndsWith(_filter[0].spec))
+				return true;
+		return false;
 	}
 };
 

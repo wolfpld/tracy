@@ -17,7 +17,7 @@
 
 #include "OfflineSymbolResolver.h"
 
-#ifdef __APPLE__
+#if defined __APPLE__ || defined __HAIKU__
 #  define ftello64(x) ftello(x)
 #elif defined _WIN32
 #  define ftello64(x) _ftelli64(x)

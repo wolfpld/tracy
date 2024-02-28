@@ -96,7 +96,7 @@ This is the technical documentation of the Tracy Profiler. It is meant as a guid
 
 This document assumes that you have basic knowledge of how the Tracy Profiler works, as the concepts which are already described in the user manual won't be covered here.
 
-The information found in this documentation is intended to give you only a brief overview of the algorithms and data structures used in the profiler. It may be incomplete, cursory, or even plainly wrong. This is not a requirements specification. As usual, the source code is the ultimate place to gain knowledge and insight. You are expected to do your homework.
+The information found in this documentation is intended to give you only a brief overview of the algorithms and data structures used in the profiler. It may be obsolete, incomplete, cursory, or even plainly wrong. This is not a requirements specification. As usual, the source code is the ultimate place to gain knowledge and insight. You are expected to do your homework.
 \end{abstract}
 
 \tableofcontents
@@ -266,7 +266,7 @@ Call stack collection is initiated by calling the \texttt{Callstack()} procedure
 
 To perform unwinding various OS functions are used: \texttt{RtlWalkFrameChain()}, \texttt{\_Unwind\_Backtrace()}, \texttt{backtrace()}. A list of returned frame pointers is saved in a buffer, which will be later sent to the server. The maximum unwinding depth limit (63 entries) is due to the specifics of the underlying OS functionality.
 
-On some platforms you can define \texttt{TRACE\_CLIENT\_LIBUNWIND\_BACKTRACE} to use libunwind to perform callstack captures, as it might be a faster alternative than the default implementation. If you do, you must compile/link you client against libunwind. See \url{https://github.com/libunwind/libunwind} for more details.
+On some platforms you can define \texttt{TRACY\_LIBUNWIND\_BACKTRACE} to use libunwind to perform callstack captures, as it might be a faster alternative than the default implementation. If you do, you must compile/link you client against libunwind. See \url{https://github.com/libunwind/libunwind} for more details.
 
 \subsubsection{Decoding stack frames}
 
@@ -521,8 +521,8 @@ The DXT1 compression used to reduce size of the images is a from-scratch impleme
 
 \subsection{Thread naming}
 
-Most operating systems don't have adequate support for giving threads arbitrary names. On such systems the \texttt{TRACY\_COLLECT\_THREAD\_NAMES} macro will be defined, which enables storage of thread names in a lock-free list. On subsequent thread name queries this list is used, instead of the system facilities.
+Most operating systems don't have adequate support for giving threads arbitrary names. Tracy supplements this by providing an alternative way via an internal lock-free list. On subsequent thread name queries this list is used, instead of the system facilities.
 
-Even if the lock-free list is used, Tracy will also set the thread name using the OS functionality. These names can be then used by debuggers and other external tools.
+When `setThreadName()` is called, Tracy will also set the thread name using the OS functionality when possible. These names can be then used by debuggers and other external tools.
 
 \end{document}

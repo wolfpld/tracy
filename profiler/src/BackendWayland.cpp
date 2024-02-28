@@ -647,10 +647,15 @@ static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int3
     s_maxScale = scale;
 }
 
+static void SurfacePreferredBufferTransform( void*, struct wl_surface* surface, uint32_t transform )
+{
+}
+
 constexpr struct wl_surface_listener surfaceListener = {
     .enter = SurfaceEnter,
     .leave = SurfaceLeave,
     .preferred_buffer_scale = SurfacePreferredBufferScale,
+    .preferred_buffer_transform = SurfacePreferredBufferTransform
 };
 
 static void SetupCursor()

@@ -767,6 +767,8 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 
 Backend::~Backend()
 {
+    ImGui_ImplOpenGL3_Shutdown();
+
     if( s_tldec ) zxdg_toplevel_decoration_v1_destroy( s_tldec );
     if( s_decoration ) zxdg_decoration_manager_v1_destroy( s_decoration );
     if( s_actToken ) xdg_activation_token_v1_destroy( s_actToken );

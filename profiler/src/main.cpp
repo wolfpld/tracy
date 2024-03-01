@@ -96,6 +96,7 @@ static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = 1.f;
 static bool dpiScaleOverriddenFromEnv = false;
+static float userScale = 1.f;
 static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
@@ -133,8 +134,10 @@ static void RunOnMainThread( const std::function<void()>& cb, bool forceDelay = 
     mainThreadTasks.Queue( cb, forceDelay );
 }
 
-static void SetupDPIScale( float scale )
+static void SetupDPIScale()
 {
+    const auto scale = dpiScale * userScale;
+
     LoadFonts( scale );
     if( view ) view->UpdateFont( s_fixedWidth, s_smallFont, s_bigFont );
 
@@ -167,7 +170,8 @@ static void SetupDPIScale( float scale )
 
 static void SetupScaleCallback( float scale )
 {
-    RunOnMainThread( [scale] { SetupDPIScale( scale * dpiScale ); }, true );
+    userScale = scale;
+    RunOnMainThread( []{ SetupDPIScale(); }, true );
 }
 
 static void LoadConfig()
@@ -205,7 +209,7 @@ static void ScaleChanged( float scale )
     if ( dpiScale == scale ) return;
 
     dpiScale = scale;
-    SetupDPIScale( dpiScale );
+    SetupDPIScale();
 }
 
 int main( int argc, char** argv )
@@ -328,7 +332,7 @@ int main( int argc, char** argv )
         }
     }
 
-    SetupDPIScale( dpiScale );
+    SetupDPIScale();
 
     tracy::UpdateTextureRGBAMips( zigzagTex, (void**)zigzagPx, zigzagX, zigzagY, 6 );
     for( auto& v : zigzagPx ) free( v );

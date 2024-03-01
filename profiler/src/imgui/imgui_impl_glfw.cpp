@@ -24,7 +24,7 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2023-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2024-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
 //  2023-12-19: Emscripten: Added ImGui_ImplGlfw_InstallEmscriptenCanvasResizeCallback() to register canvas selector and auto-resize GLFW window.
 //  2023-10-05: Inputs: Added support for extra ImGuiKey values: F13 to F24 function keys.
 //  2023-07-18: Inputs: Revert ignoring mouse data on GLFW_CURSOR_DISABLED as it can be used differently. User may set ImGuiConfigFLags_NoMouse if desired. (#5625, #6609)
@@ -138,7 +138,7 @@ enum GlfwClientApi
 {
     GlfwClientApi_Unknown,
     GlfwClientApi_OpenGL,
-    GlfwClientApi_Vulkan
+    GlfwClientApi_Vulkan,
 };
 
 struct ImGui_ImplGlfw_Data
@@ -581,7 +581,7 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
 #ifndef __EMSCRIPTEN__
     io.BackendFlags |= ImGuiBackendFlags_PlatformHasViewports;    // We can create multi-viewports on the Platform side (optional)
 #endif
-#if GLFW_HAS_MOUSE_PASSTHROUGH || (GLFW_HAS_WINDOW_HOVERED && defined(_WIN32))
+#if GLFW_HAS_MOUSE_PASSTHROUGH || GLFW_HAS_WINDOW_HOVERED
     io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport; // We can call io.AddMouseViewportEvent() with correct data (optional)
 #endif
 
@@ -708,7 +708,6 @@ static void ImGui_ImplGlfw_UpdateMouseData()
     ImGuiIO& io = ImGui::GetIO();
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
 
-
     ImGuiID mouse_viewport_id = 0;
     const ImVec2 mouse_pos_prev = io.MousePos;
     for (int n = 0; n < platform_io.Viewports.Size; n++)
@@ -749,7 +748,8 @@ static void ImGui_ImplGlfw_UpdateMouseData()
 
         // (Optional) When using multiple viewports: call io.AddMouseViewportEvent() with the viewport the OS mouse cursor is hovering.
         // If ImGuiBackendFlags_HasMouseHoveredViewport is not set by the backend, Dear imGui will ignore this field and infer the information using its flawed heuristic.
-        // - [X] GLFW >= 3.3 backend ON WINDOWS ONLY does correctly ignore viewports with the _NoInputs flag.
+        // - [X] GLFW >= 3.3 backend ON WINDOWS ONLY does correctly ignore viewports with the _NoInputs flag (since we implement hit via our WndProc hook)
+        //       On other platforms we rely on the library fallbacking to its own search when reporting a viewport with _NoInputs flag.
         // - [!] GLFW <= 3.2 backend CANNOT correctly ignore viewports with the _NoInputs flag, and CANNOT reported Hovered Viewport because of mouse capture.
         //       Some backend are not able to handle that correctly. If a backend report an hovered viewport that has the _NoInputs flag (e.g. when dragging a window
         //       for docking, the viewport has the _NoInputs flag in order to allow us to find the viewport under), then Dear ImGui is forced to ignore the value reported
@@ -757,12 +757,12 @@ static void ImGui_ImplGlfw_UpdateMouseData()
         // - [X] GLFW backend correctly reports this regardless of another viewport behind focused and dragged from (we need this to find a useful drag and drop target).
         // FIXME: This is currently only correct on Win32. See what we do below with the WM_NCHITTEST, missing an equivalent for other systems.
         // See https://github.com/glfw/glfw/issues/1236 if you want to help in making this a GLFW feature.
-#if GLFW_HAS_MOUSE_PASSTHROUGH || (GLFW_HAS_WINDOW_HOVERED && defined(_WIN32))
-        const bool window_no_input = (viewport->Flags & ImGuiViewportFlags_NoInputs) != 0;
 #if GLFW_HAS_MOUSE_PASSTHROUGH
+        const bool window_no_input = (viewport->Flags & ImGuiViewportFlags_NoInputs) != 0;
         glfwSetWindowAttrib(window, GLFW_MOUSE_PASSTHROUGH, window_no_input);
 #endif
-        if (glfwGetWindowAttrib(window, GLFW_HOVERED) && !window_no_input)
+#if GLFW_HAS_MOUSE_PASSTHROUGH || GLFW_HAS_WINDOW_HOVERED
+        if (glfwGetWindowAttrib(window, GLFW_HOVERED))
             mouse_viewport_id = viewport->ID;
 #else
         // We cannot use bd->MouseWindow maintained from CursorEnter/Leave callbacks, because it is locked to the window capturing mouse.

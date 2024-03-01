@@ -1,4 +1,4 @@
-// dear imgui, v1.90.1
+// dear imgui, v1.90.4
 // (demo code)
 
 // Help:
@@ -418,6 +418,12 @@ void ImGui::ShowDemoWindow(bool* p_open)
             ImGui::MenuItem("Debug Log", NULL, &show_tool_debug_log, has_debug_tools);
             ImGui::MenuItem("ID Stack Tool", NULL, &show_tool_id_stack_tool, has_debug_tools);
             ImGui::MenuItem("Style Editor", NULL, &show_tool_style_editor);
+            bool is_debugger_present = ImGui::GetIO().ConfigDebugIsDebuggerPresent;
+            if (ImGui::MenuItem("Item Picker", NULL, false, has_debug_tools && is_debugger_present))
+                ImGui::DebugStartItemPicker();
+            if (!is_debugger_present)
+                ImGui::SetItemTooltip("Requires io.ConfigDebugIsDebuggerPresent=true to be set.\n\nWe otherwise disable the menu option to avoid casual users crashing the application.\n\nYou can however always access the Item Picker in Metrics->Tools.");
+            ImGui::Separator();
             ImGui::MenuItem("About Dear ImGui", NULL, &show_tool_about);
             ImGui::EndMenu();
         }
@@ -477,6 +483,12 @@ void ImGui::ShowDemoWindow(bool* p_open)
             ImGui::CheckboxFlags("io.ConfigFlags: NoMouseCursorChange", &io.ConfigFlags, ImGuiConfigFlags_NoMouseCursorChange);
             ImGui::SameLine(); HelpMarker("Instruct backend to not alter mouse cursor shape and visibility.");
 
+            ImGui::Checkbox("io.ConfigInputTrickleEventQueue", &io.ConfigInputTrickleEventQueue);
+            ImGui::SameLine(); HelpMarker("Enable input queue trickling: some types of events submitted during the same frame (e.g. button down + up) will be spread over multiple frames, improving interactions with low framerates.");
+            ImGui::Checkbox("io.MouseDrawCursor", &io.MouseDrawCursor);
+            ImGui::SameLine(); HelpMarker("Instruct Dear ImGui to render a mouse cursor itself. Note that a mouse cursor rendered via your application GPU rendering path will feel more laggy than hardware cursor, but will be more in sync with your other visuals.\n\nSome desktop applications may use both kinds of cursors (e.g. enable software cursor only when resizing/dragging something).");
+
+            ImGui::SeparatorText("Docking");
             ImGui::CheckboxFlags("io.ConfigFlags: DockingEnable", &io.ConfigFlags, ImGuiConfigFlags_DockingEnable);
             ImGui::SameLine();
             if (io.ConfigDockingWithShift)
@@ -497,6 +509,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 ImGui::Unindent();
             }
 
+            ImGui::SeparatorText("Multi-viewports");
             ImGui::CheckboxFlags("io.ConfigFlags: ViewportsEnable", &io.ConfigFlags, ImGuiConfigFlags_ViewportsEnable);
             ImGui::SameLine(); HelpMarker("[beta] Enable beta multi-viewports support. See ImGuiPlatformIO for details.");
             if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -512,11 +525,6 @@ void ImGui::ShowDemoWindow(bool* p_open)
                 ImGui::SameLine(); HelpMarker("Toggling this at runtime is normally unsupported (most platform backends won't refresh the parenting right away).");
                 ImGui::Unindent();
             }
-
-            ImGui::Checkbox("io.ConfigInputTrickleEventQueue", &io.ConfigInputTrickleEventQueue);
-            ImGui::SameLine(); HelpMarker("Enable input queue trickling: some types of events submitted during the same frame (e.g. button down + up) will be spread over multiple frames, improving interactions with low framerates.");
-            ImGui::Checkbox("io.MouseDrawCursor", &io.MouseDrawCursor);
-            ImGui::SameLine(); HelpMarker("Instruct Dear ImGui to render a mouse cursor itself. Note that a mouse cursor rendered via your application GPU rendering path will feel more laggy than hardware cursor, but will be more in sync with your other visuals.\n\nSome desktop applications may use both kinds of cursors (e.g. enable software cursor only when resizing/dragging something).");
 
             ImGui::SeparatorText("Widgets");
             ImGui::Checkbox("io.ConfigInputTextCursorBlink", &io.ConfigInputTextCursorBlink);
@@ -5381,23 +5389,26 @@ static void ShowDemoWindowTables()
         const int rows_count = 12;
 
         static ImGuiTableFlags table_flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_Hideable | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_HighlightHoveredColumn;
+        static ImGuiTableColumnFlags column_flags = ImGuiTableColumnFlags_AngledHeader | ImGuiTableColumnFlags_WidthFixed;
         static bool bools[columns_count * rows_count] = {}; // Dummy storage selection storage
         static int frozen_cols = 1;
         static int frozen_rows = 2;
         ImGui::CheckboxFlags("_ScrollX", &table_flags, ImGuiTableFlags_ScrollX);
         ImGui::CheckboxFlags("_ScrollY", &table_flags, ImGuiTableFlags_ScrollY);
+        ImGui::CheckboxFlags("_Resizable", &table_flags, ImGuiTableFlags_Resizable);
         ImGui::CheckboxFlags("_NoBordersInBody", &table_flags, ImGuiTableFlags_NoBordersInBody);
         ImGui::CheckboxFlags("_HighlightHoveredColumn", &table_flags, ImGuiTableFlags_HighlightHoveredColumn);
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
         ImGui::SliderInt("Frozen columns", &frozen_cols, 0, 2);
         ImGui::SetNextItemWidth(ImGui::GetFontSize() * 8);
         ImGui::SliderInt("Frozen rows", &frozen_rows, 0, 2);
+        ImGui::CheckboxFlags("Disable header contributing to column width", &column_flags, ImGuiTableColumnFlags_NoHeaderWidth);
 
         if (ImGui::BeginTable("table_angled_headers", columns_count, table_flags, ImVec2(0.0f, TEXT_BASE_HEIGHT * 12)))
         {
             ImGui::TableSetupColumn(column_names[0], ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoReorder);
             for (int n = 1; n < columns_count; n++)
-                ImGui::TableSetupColumn(column_names[n], ImGuiTableColumnFlags_AngledHeader | ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn(column_names[n], column_flags);
             ImGui::TableSetupScrollFreeze(frozen_cols, frozen_rows);
 
             ImGui::TableAngledHeadersRow(); // Draw angled headers for all columns with the ImGuiTableColumnFlags_AngledHeader flag.
@@ -7095,19 +7106,19 @@ struct ExampleAppConsole
     {
         ClearLog();
         for (int i = 0; i < History.Size; i++)
-            free(History[i]);
+            ImGui::MemFree(History[i]);
     }
 
     // Portable helpers
     static int   Stricmp(const char* s1, const char* s2)         { int d; while ((d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; } return d; }
     static int   Strnicmp(const char* s1, const char* s2, int n) { int d = 0; while (n > 0 && (d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; n--; } return d; }
-    static char* Strdup(const char* s)                           { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = malloc(len); IM_ASSERT(buf); return (char*)memcpy(buf, (const void*)s, len); }
+    static char* Strdup(const char* s)                           { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = ImGui::MemAlloc(len); IM_ASSERT(buf); return (char*)memcpy(buf, (const void*)s, len); }
     static void  Strtrim(char* s)                                { char* str_end = s + strlen(s); while (str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
 
     void    ClearLog()
     {
         for (int i = 0; i < Items.Size; i++)
-            free(Items[i]);
+            ImGui::MemFree(Items[i]);
         Items.clear();
     }
 
@@ -7273,7 +7284,7 @@ struct ExampleAppConsole
         for (int i = History.Size - 1; i >= 0; i--)
             if (Stricmp(History[i], command_line) == 0)
             {
-                free(History[i]);
+                ImGui::MemFree(History[i]);
                 History.erase(History.begin() + i);
                 break;
             }
@@ -8128,6 +8139,9 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             const float rounding = sz / 5.0f;
             const int circle_segments = circle_segments_override ? circle_segments_override_v : 0;
             const int curve_segments = curve_segments_override ? curve_segments_override_v : 0;
+            const ImVec2 cp3[3] = { ImVec2(0.0f, sz * 0.6f), ImVec2(sz * 0.5f, -sz * 0.4f), ImVec2(sz, sz) }; // Control points for curves
+            const ImVec2 cp4[4] = { ImVec2(0.0f, 0.0f), ImVec2(sz * 1.3f, sz * 0.3f), ImVec2(sz - sz * 1.3f, sz - sz * 0.3f), ImVec2(sz, sz) };
+
             float x = p.x + 4.0f;
             float y = p.y + 4.0f;
             for (int n = 0; n < 2; n++)
@@ -8146,17 +8160,23 @@ static void ShowExampleAppCustomRendering(bool* p_open)
                 draw_list->AddLine(ImVec2(x, y), ImVec2(x, y + sz), col, th);                                       x += spacing;       // Vertical line (note: drawing a filled rectangle will be faster!)
                 draw_list->AddLine(ImVec2(x, y), ImVec2(x + sz, y + sz), col, th);                                  x += sz + spacing;  // Diagonal line
 
+                // Path
+                draw_list->PathArcTo(ImVec2(x + sz*0.5f, y + sz*0.5f), sz*0.5f, 3.141592f, 3.141592f * -0.5f);
+                draw_list->PathStroke(col, ImDrawFlags_None, th);
+                x += sz + spacing;
+
                 // Quadratic Bezier Curve (3 control points)
-                ImVec2 cp3[3] = { ImVec2(x, y + sz * 0.6f), ImVec2(x + sz * 0.5f, y - sz * 0.4f), ImVec2(x + sz, y + sz) };
-                draw_list->AddBezierQuadratic(cp3[0], cp3[1], cp3[2], col, th, curve_segments); x += sz + spacing;
+                draw_list->AddBezierQuadratic(ImVec2(x + cp3[0].x, y + cp3[0].y), ImVec2(x + cp3[1].x, y + cp3[1].y), ImVec2(x + cp3[2].x, y + cp3[2].y), col, th, curve_segments);
+                x += sz + spacing;
 
                 // Cubic Bezier Curve (4 control points)
-                ImVec2 cp4[4] = { ImVec2(x, y), ImVec2(x + sz * 1.3f, y + sz * 0.3f), ImVec2(x + sz - sz * 1.3f, y + sz - sz * 0.3f), ImVec2(x + sz, y + sz) };
-                draw_list->AddBezierCubic(cp4[0], cp4[1], cp4[2], cp4[3], col, th, curve_segments);
+                draw_list->AddBezierCubic(ImVec2(x + cp4[0].x, y + cp4[0].y), ImVec2(x + cp4[1].x, y + cp4[1].y), ImVec2(x + cp4[2].x, y + cp4[2].y), ImVec2(x + cp4[3].x, y + cp4[3].y), col, th, curve_segments);
 
                 x = p.x + 4;
                 y += sz + spacing;
             }
+
+            // Filled shapes
             draw_list->AddNgonFilled(ImVec2(x + sz * 0.5f, y + sz * 0.5f), sz * 0.5f, col, ngon_sides);             x += sz + spacing;  // N-gon
             draw_list->AddCircleFilled(ImVec2(x + sz * 0.5f, y + sz * 0.5f), sz * 0.5f, col, circle_segments);      x += sz + spacing;  // Circle
             draw_list->AddEllipseFilled(ImVec2(x + sz * 0.5f, y + sz * 0.5f), sz * 0.5f, sz * 0.3f, col, -0.3f, circle_segments); x += sz + spacing;// Ellipse
@@ -8168,9 +8188,27 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             draw_list->AddRectFilled(ImVec2(x, y), ImVec2(x + sz, y + thickness), col);                             x += sz + spacing;  // Horizontal line (faster than AddLine, but only handle integer thickness)
             draw_list->AddRectFilled(ImVec2(x, y), ImVec2(x + thickness, y + sz), col);                             x += spacing * 2.0f;// Vertical line (faster than AddLine, but only handle integer thickness)
             draw_list->AddRectFilled(ImVec2(x, y), ImVec2(x + 1, y + 1), col);                                      x += sz;            // Pixel (faster than AddLine)
+
+            // Path
+            draw_list->PathArcTo(ImVec2(x + sz * 0.5f, y + sz * 0.5f), sz * 0.5f, 3.141592f * -0.5f, 3.141592f);
+            draw_list->PathFillConvex(col);
+            x += sz + spacing;
+
+            // Quadratic Bezier Curve (3 control points)
+            draw_list->PathLineTo(ImVec2(x + cp3[0].x, y + cp3[0].y));
+            draw_list->PathBezierQuadraticCurveTo(ImVec2(x + cp3[1].x, y + cp3[1].y), ImVec2(x + cp3[2].x, y + cp3[2].y), curve_segments);
+            draw_list->PathFillConvex(col);
+            x += sz + spacing;
+
+            // Cubic Bezier Curve (4 control points): this is concave so not drawing it yet
+            //draw_list->PathLineTo(ImVec2(x + cp4[0].x, y + cp4[0].y));
+            //draw_list->PathBezierCubicCurveTo(ImVec2(x + cp4[1].x, y + cp4[1].y), ImVec2(x + cp4[2].x, y + cp4[2].y), ImVec2(x + cp4[3].x, y + cp4[3].y), curve_segments);
+            //draw_list->PathFillConvex(col);
+            //x += sz + spacing;
+
             draw_list->AddRectFilledMultiColor(ImVec2(x, y), ImVec2(x + sz, y + sz), IM_COL32(0, 0, 0, 255), IM_COL32(255, 0, 0, 255), IM_COL32(255, 255, 0, 255), IM_COL32(0, 255, 0, 255));
 
-            ImGui::Dummy(ImVec2((sz + spacing) * 11.2f, (sz + spacing) * 3.0f));
+            ImGui::Dummy(ImVec2((sz + spacing) * 12.2f, (sz + spacing) * 3.0f));
             ImGui::PopItemWidth();
             ImGui::EndTabItem();
         }

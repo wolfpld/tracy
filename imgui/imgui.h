@@ -1,4 +1,4 @@
-// dear imgui, v1.90.1
+// dear imgui, v1.90.4
 // (headers)
 
 // Help:
@@ -23,8 +23,8 @@
 
 // Library Version
 // (Integer encoded as XYYZZ for use in #if preprocessor conditionals, e.g. '#if IMGUI_VERSION_NUM >= 12345')
-#define IMGUI_VERSION       "1.90.1"
-#define IMGUI_VERSION_NUM   19010
+#define IMGUI_VERSION       "1.90.4"
+#define IMGUI_VERSION_NUM   19040
 #define IMGUI_HAS_TABLE
 #define IMGUI_HAS_VIEWPORT          // Viewport WIP branch
 #define IMGUI_HAS_DOCK              // Docking WIP branch
@@ -91,6 +91,8 @@ Index of this file:
 #define IMGUI_CHECKVERSION()        ImGui::DebugCheckVersionAndDataLayout(IMGUI_VERSION, sizeof(ImGuiIO), sizeof(ImGuiStyle), sizeof(ImVec2), sizeof(ImVec4), sizeof(ImDrawVert), sizeof(ImDrawIdx))
 
 // Helper Macros - IM_FMTARGS, IM_FMTLIST: Apply printf-style warnings to our formatting functions.
+// (MSVC provides an equivalent mechanism via SAL Annotations but it would require the macros in a different
+//  location. e.g. #include <sal.h> + void myprintf(_Printf_format_string_ const char* format, ...))
 #if !defined(IMGUI_USE_STB_SPRINTF) && defined(__MINGW32__) && !defined(__clang__)
 #define IM_FMTARGS(FMT)             __attribute__((format(gnu_printf, FMT, FMT+1)))
 #define IM_FMTLIST(FMT)             __attribute__((format(gnu_printf, FMT, 0)))
@@ -348,7 +350,7 @@ namespace ImGui
     // - Use child windows to begin into a self-contained independent scrolling/clipping regions within a host window. Child windows can embed their own child.
     // - Before 1.90 (November 2023), the "ImGuiChildFlags child_flags = 0" parameter was "bool border = false".
     //   This API is backward compatible with old code, as we guarantee that ImGuiChildFlags_Border == true.
-    //   Consider updating your old call sites:
+    //   Consider updating your old code:
     //      BeginChild("Name", size, false)   -> Begin("Name", size, 0); or Begin("Name", size, ImGuiChildFlags_None);
     //      BeginChild("Name", size, true)    -> Begin("Name", size, ImGuiChildFlags_Border);
     // - Manual sizing (each axis can use a different setting e.g. ImVec2(0.0f, 400.0f)):
@@ -452,7 +454,7 @@ namespace ImGui
     IMGUI_API ImVec2        GetFontTexUvWhitePixel();                                       // get UV coordinate for a while pixel, useful to draw custom shapes via the ImDrawList API
     IMGUI_API ImU32         GetColorU32(ImGuiCol idx, float alpha_mul = 1.0f);              // retrieve given style color with style alpha applied and optional extra alpha multiplier, packed as a 32-bit value suitable for ImDrawList
     IMGUI_API ImU32         GetColorU32(const ImVec4& col);                                 // retrieve given color with style alpha applied, packed as a 32-bit value suitable for ImDrawList
-    IMGUI_API ImU32         GetColorU32(ImU32 col);                                         // retrieve given color with style alpha applied, packed as a 32-bit value suitable for ImDrawList
+    IMGUI_API ImU32         GetColorU32(ImU32 col, float alpha_mul = 1.0f);                 // retrieve given color with style alpha applied, packed as a 32-bit value suitable for ImDrawList
     IMGUI_API const ImVec4& GetStyleColorVec4(ImGuiCol idx);                                // retrieve style color as stored in ImGuiStyle structure. use to feed back into PushStyleColor(), otherwise use GetColorU32() to get style color with style alpha baked in.
 
     // Layout cursor positioning
@@ -996,6 +998,7 @@ namespace ImGui
     // - Your main debugging friend is the ShowMetricsWindow() function, which is also accessible from Demo->Tools->Metrics Debugger
     IMGUI_API void          DebugTextEncoding(const char* text);
     IMGUI_API void          DebugFlashStyleColor(ImGuiCol idx);
+    IMGUI_API void          DebugStartItemPicker();
     IMGUI_API bool          DebugCheckVersionAndDataLayout(const char* version_str, size_t sz_io, size_t sz_style, size_t sz_vec2, size_t sz_vec4, size_t sz_drawvert, size_t sz_drawidx); // This is called by IMGUI_CHECKVERSION() macro.
 
     // Memory Allocators
@@ -1068,7 +1071,7 @@ enum ImGuiWindowFlags_
 };
 
 // Flags for ImGui::BeginChild()
-// (Legacy: bot 0 must always correspond to ImGuiChildFlags_Border to be backward compatible with old API using 'bool border = false'.
+// (Legacy: bit 0 must always correspond to ImGuiChildFlags_Border to be backward compatible with old API using 'bool border = false'.
 // About using AutoResizeX/AutoResizeY flags:
 // - May be combined with SetNextWindowSizeConstraints() to set a min/max size for each axis (see "Demo->Child->Auto-resize with Constraints").
 // - Size measurement for a given axis is only performed when the child window is within visible boundaries, or is just appearing.
@@ -1079,7 +1082,7 @@ enum ImGuiWindowFlags_
 enum ImGuiChildFlags_
 {
     ImGuiChildFlags_None                    = 0,
-    ImGuiChildFlags_Border                  = 1 << 0,   // Show an outer border and enable WindowPadding. (Important: this is always == 1 == true for legacy reason)
+    ImGuiChildFlags_Border                  = 1 << 0,   // Show an outer border and enable WindowPadding. (IMPORTANT: this is always == 1 == true for legacy reason)
     ImGuiChildFlags_AlwaysUseWindowPadding  = 1 << 1,   // Pad with style.WindowPadding even if no border are drawn (no padding by default for non-bordered child windows because it makes more sense)
     ImGuiChildFlags_ResizeX                 = 1 << 2,   // Allow resize from right border (layout direction). Enable .ini saving (unless ImGuiWindowFlags_NoSavedSettings passed to window flags)
     ImGuiChildFlags_ResizeY                 = 1 << 3,   // Allow resize from bottom border (layout direction). "
@@ -1148,8 +1151,8 @@ enum ImGuiTreeNodeFlags_
 };
 
 // Flags for OpenPopup*(), BeginPopupContext*(), IsPopupOpen() functions.
-// - To be backward compatible with older API which took an 'int mouse_button = 1' argument, we need to treat
-//   small flags values as a mouse button index, so we encode the mouse button in the first few bits of the flags.
+// - To be backward compatible with older API which took an 'int mouse_button = 1' argument instead of 'ImGuiPopupFlags flags',
+//   we need to treat small flags values as a mouse button index, so we encode the mouse button in the first few bits of the flags.
 //   It is therefore guaranteed to be legal to pass a mouse button index in ImGuiPopupFlags.
 // - For the same reason, we exceptionally default the ImGuiPopupFlags argument of BeginPopupContextXXX functions to 1 instead of 0.
 //   IMPORTANT: because the default parameter is 1 (==ImGuiPopupFlags_MouseButtonRight), if you rely on the default parameter
@@ -1163,10 +1166,12 @@ enum ImGuiPopupFlags_
     ImGuiPopupFlags_MouseButtonMiddle       = 2,        // For BeginPopupContext*(): open on Middle Mouse release. Guaranteed to always be == 2 (same as ImGuiMouseButton_Middle)
     ImGuiPopupFlags_MouseButtonMask_        = 0x1F,
     ImGuiPopupFlags_MouseButtonDefault_     = 1,
-    ImGuiPopupFlags_NoOpenOverExistingPopup = 1 << 5,   // For OpenPopup*(), BeginPopupContext*(): don't open if there's already a popup at the same level of the popup stack
-    ImGuiPopupFlags_NoOpenOverItems         = 1 << 6,   // For BeginPopupContextWindow(): don't return true when hovering items, only when hovering empty space
-    ImGuiPopupFlags_AnyPopupId              = 1 << 7,   // For IsPopupOpen(): ignore the ImGuiID parameter and test for any popup.
-    ImGuiPopupFlags_AnyPopupLevel           = 1 << 8,   // For IsPopupOpen(): search/test at any level of the popup stack (default test in the current level)
+    ImGuiPopupFlags_NoReopen                = 1 << 5,   // For OpenPopup*(), BeginPopupContext*(): don't reopen same popup if already open (won't reposition, won't reinitialize navigation)
+    //ImGuiPopupFlags_NoReopenAlwaysNavInit = 1 << 6,   // For OpenPopup*(), BeginPopupContext*(): focus and initialize navigation even when not reopening.
+    ImGuiPopupFlags_NoOpenOverExistingPopup = 1 << 7,   // For OpenPopup*(), BeginPopupContext*(): don't open if there's already a popup at the same level of the popup stack
+    ImGuiPopupFlags_NoOpenOverItems         = 1 << 8,   // For BeginPopupContextWindow(): don't return true when hovering items, only when hovering empty space
+    ImGuiPopupFlags_AnyPopupId              = 1 << 10,  // For IsPopupOpen(): ignore the ImGuiID parameter and test for any popup.
+    ImGuiPopupFlags_AnyPopupLevel           = 1 << 11,  // For IsPopupOpen(): search/test at any level of the popup stack (default test in the current level)
     ImGuiPopupFlags_AnyPopup                = ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel,
 };
 
@@ -2282,11 +2287,7 @@ struct ImGuiIO
     int         KeyMap[ImGuiKey_COUNT];             // [LEGACY] Input: map of indices into the KeysDown[512] entries array which represent your "native" keyboard state. The first 512 are now unused and should be kept zero. Legacy backend will write into KeyMap[] using ImGuiKey_ indices which are always >512.
     bool        KeysDown[ImGuiKey_COUNT];           // [LEGACY] Input: Keyboard keys that are pressed (ideally left in the "native" order your engine has access to keyboard keys, so you can use your own defines/enums for keys). This used to be [512] sized. It is now ImGuiKey_COUNT to allow legacy io.KeysDown[GetKeyIndex(...)] to work without an overflow.
     float       NavInputs[ImGuiNavInput_COUNT];     // [LEGACY] Since 1.88, NavInputs[] was removed. Backends from 1.60 to 1.86 won't build. Feed gamepad inputs via io.AddKeyEvent() and ImGuiKey_GamepadXXX enums.
-#endif
-#ifndef IMGUI_DISABLE_OBSOLETE_FUNCTIONS
-    void*       ImeWindowHandle;                    // = NULL   // [Obsoleted in 1.87] Set ImGuiViewport::PlatformHandleRaw instead. Set this to your HWND to get automatic IME cursor positioning.
-#else
-    void*       _UnusedPadding;
+    //void*     ImeWindowHandle;                    // [Obsoleted in 1.87] Set ImGuiViewport::PlatformHandleRaw instead. Set this to your HWND to get automatic IME cursor positioning.
 #endif
 
     //------------------------------------------------------------------
@@ -2403,6 +2404,7 @@ struct ImGuiWindowClass
 {
     ImGuiID             ClassId;                    // User data. 0 = Default class (unclassed). Windows of different classes cannot be docked with each others.
     ImGuiID             ParentViewportId;           // Hint for the platform backend. -1: use default. 0: request platform backend to not parent the platform. != 0: request platform backend to create a parent<>child relationship between the platform windows. Not conforming backends are free to e.g. parent every viewport to the main viewport or not.
+    ImGuiID             FocusRouteParentWindowId;   // ID of parent window for shortcut focus route evaluation, e.g. Shortcut() call from Parent Window will succeed when this window is focused.
     ImGuiViewportFlags  ViewportFlagsOverrideSet;   // Viewport flags to set when a window of this class owns a viewport. This allows you to enforce OS decoration or task bar icon, override the defaults on a per-window basis.
     ImGuiViewportFlags  ViewportFlagsOverrideClear; // Viewport flags to clear when a window of this class owns a viewport. This allows you to enforce OS decoration or task bar icon, override the defaults on a per-window basis.
     ImGuiTabItemFlags   TabItemFlagsOverrideSet;    // [EXPERIMENTAL] TabItem flags to set when a window of this class gets submitted into a dock node tab bar. May use with ImGuiTabItemFlags_Leading or ImGuiTabItemFlags_Trailing.
@@ -2883,7 +2885,8 @@ struct ImDrawList
     IMGUI_API void  AddImageRounded(ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, ImU32 col, float rounding, ImDrawFlags flags = 0);
 
     // Stateful path API, add points then finish with PathFillConvex() or PathStroke()
-    // - Filled shapes must always use clockwise winding order. The anti-aliasing fringe depends on it. Counter-clockwise shapes will have "inward" anti-aliasing.
+    // - Important: filled shapes must always use clockwise winding order! The anti-aliasing fringe depends on it. Counter-clockwise shapes will have "inward" anti-aliasing.
+    //   so e.g. 'PathArcTo(center, radius, PI * -0.5f, PI)' is ok, whereas 'PathArcTo(center, radius, PI, PI * -0.5f)' won't have correct anti-aliasing when followed by PathFillConvex().
     inline    void  PathClear()                                                 { _Path.Size = 0; }
     inline    void  PathLineTo(const ImVec2& pos)                               { _Path.push_back(pos); }
     inline    void  PathLineToMergeDuplicate(const ImVec2& pos)                 { if (_Path.Size == 0 || memcmp(&_Path.Data[_Path.Size - 1], &pos, 8) != 0) _Path.push_back(pos); }

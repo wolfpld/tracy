@@ -136,7 +136,7 @@ static void RunOnMainThread( const std::function<void()>& cb, bool forceDelay = 
 
 static void SetupDPIScale()
 {
-    const auto scale = dpiScale * userScale;
+    auto scale = dpiScale * userScale;
 
     LoadFonts( scale );
     if( view ) view->UpdateFont( s_fixedWidth, s_smallFont, s_bigFont );

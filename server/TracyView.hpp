@@ -100,7 +100,7 @@ public:
     };
 
     using SetTitleCallback = void(*)( const char* );
-    using SetScaleCallback = void(*)( float, ImFont*&, ImFont*&, ImFont*& );
+    using SetScaleCallback = void(*)( float );
     using AttentionCallback = void(*)();
 
     View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config );
@@ -109,6 +109,8 @@ public:
 
     bool Draw();
     bool WasActive() const;
+
+    void UpdateFont( ImFont* fixed, ImFont* small, ImFont* big ) { m_fixedFont = fixed; m_smallFont = small; m_bigFont = big; }
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void ViewSource( const char* fileName, int line );

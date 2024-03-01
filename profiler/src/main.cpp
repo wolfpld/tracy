@@ -133,9 +133,10 @@ static void RunOnMainThread( const std::function<void()>& cb, bool forceDelay = 
     mainThreadTasks.Queue( cb, forceDelay );
 }
 
-static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
+static void SetupDPIScale( float scale )
 {
-    LoadFonts( scale, cb_fixedWidth, cb_bigFont, cb_smallFont );
+    LoadFonts( scale );
+    if( view ) view->UpdateFont( s_fixedWidth, s_smallFont, s_bigFont );
 
 #ifdef __APPLE__
     // No need to upscale the style on macOS, but we need to downscale the fonts.
@@ -164,9 +165,9 @@ static void SetupDPIScale( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigF
     delete[] scaleIcon;
 }
 
-static void SetupScaleCallback( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont )
+static void SetupScaleCallback( float scale )
 {
-    RunOnMainThread( [scale, &cb_fixedWidth, &cb_bigFont, &cb_smallFont] { SetupDPIScale( scale * dpiScale, cb_fixedWidth, cb_bigFont, cb_smallFont ); }, true );
+    RunOnMainThread( [scale] { SetupDPIScale( scale * dpiScale ); }, true );
 }
 
 static void LoadConfig()
@@ -204,7 +205,7 @@ static void ScaleChanged( float scale )
     if ( dpiScale == scale ) return;
 
     dpiScale = scale;
-    SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
+    SetupDPIScale( dpiScale );
 }
 
 int main( int argc, char** argv )
@@ -327,7 +328,7 @@ int main( int argc, char** argv )
         }
     }
 
-    SetupDPIScale( dpiScale, s_fixedWidth, s_bigFont, s_smallFont );
+    SetupDPIScale( dpiScale );
 
     tracy::UpdateTextureRGBAMips( zigzagTex, (void**)zigzagPx, zigzagX, zigzagY, 6 );
     for( auto& v : zigzagPx ) free( v );

@@ -7,6 +7,6 @@ extern ImFont* s_bigFont;
 extern ImFont* s_smallFont;
 extern ImFont* s_fixedWidth;
 
-void LoadFonts( float scale, ImFont*& cb_fixedWidth, ImFont*& cb_bigFont, ImFont*& cb_smallFont );
+void LoadFonts( float scale );
 
 #endif

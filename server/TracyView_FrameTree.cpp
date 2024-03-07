@@ -70,7 +70,7 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
                 {
                     auto& ev = *it++;
                     if( ev.CsAlloc() == 0 ) continue;
-                    if( ( memRange == MemRange::Inactive ) == ( ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max ) ) continue;
+                    if( ( memRange == MemRange::Inactive ) != ( ev.TimeFree() >= 0 && ev.TimeFree() < m_memInfo.range.max ) ) continue;
                     auto pit = pathSum.find( ev.CsAlloc() );
                     if( pit == pathSum.end() )
                     {
@@ -110,7 +110,7 @@ unordered_flat_map<uint32_t, View::MemPathData> View::GetCallstackPaths( const M
             for( auto& ev : mem.data )
             {
                 if( ev.CsAlloc() == 0 ) continue;
-                if( ( memRange == MemRange::Inactive ) == ( ev.TimeFree() >= 0 ) ) continue;
+                if( ( memRange == MemRange::Inactive ) != ( ev.TimeFree() >= 0 ) ) continue;
                 auto it = pathSum.find( ev.CsAlloc() );
                 if( it == pathSum.end() )
                 {

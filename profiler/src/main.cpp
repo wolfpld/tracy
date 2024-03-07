@@ -513,6 +513,15 @@ static void UpdateBroadcastClients()
     }
 }
 
+static void TextComment( const char* str )
+{
+    ImGui::SameLine();
+    ImGui::PushFont( s_smallFont );
+    ImGui::AlignTextToFramePadding();
+    tracy::TextDisabledUnformatted( str );
+    ImGui::PopFont();
+}
+
 static void DrawContents()
 {
     static bool reconnect = false;
@@ -657,34 +666,46 @@ static void DrawContents()
                 tracy::OpenWebpage( "https://github.com/wolfpld/tracy" );
             }
             ImGui::Separator();
+            if( ImGui::Selectable( ICON_FA_VIDEO " An Introduction to Tracy Profiler in C++ - Marcos Slomp - CppCon 2023" ) )
+            {
+                tracy::OpenWebpage( "https://youtu.be/ghXk3Bk5F2U?t=37" );
+            }
+            ImGui::Separator();
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.8" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=30wpRpHTTag" );
             }
+            TextComment( "2022-03-28" );
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.7" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
             }
+            TextComment( "2020-06-11" );
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.6" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
             }
+            TextComment( "2019-11-17" );
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.5" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
             }
+            TextComment( "2019-08-10" );
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.4" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
             }
+            TextComment( "2018-10-09" );
             if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.3" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
             }
+            TextComment( "2018-07-03" );
             if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )
             {
                 tracy::OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
             }
+            TextComment( "2018-03-25" );
             ImGui::EndPopup();
         }
         ImGui::SameLine();

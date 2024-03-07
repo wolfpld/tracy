@@ -17,6 +17,8 @@ Tracy supports profiling CPU (Direct support is provided for C, C++, and Lua int
 
 ![](doc/profiler3.png)
 
+[An Introduction to Tracy Profiler in C++ - Marcos Slomp - CppCon 2023](https://youtu.be/ghXk3Bk5F2U?t=37)
+
 [Introduction to Tracy Profiler v0.2](https://www.youtube.com/watch?v=fB5B46lbapc)  
 [New features in Tracy Profiler v0.3](https://www.youtube.com/watch?v=3SXpDpDh2Uo)  
 [New features in Tracy Profiler v0.4](https://www.youtube.com/watch?v=eAkgkaO8B9o)  

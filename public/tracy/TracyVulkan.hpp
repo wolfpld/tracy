@@ -481,7 +481,9 @@ private:
     VkSymbolTable m_symbols;
 #endif
     uint64_t m_deviation;
+#ifdef _WIN32
     int64_t m_qpcToNs;
+#endif
     int64_t m_prevCalibration;
     uint8_t m_context;
 

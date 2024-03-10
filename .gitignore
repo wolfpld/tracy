@@ -44,3 +44,7 @@ compile_commands.json
 profiler/build/wasm/Tracy-release.*
 profiler/build/wasm/Tracy-debug.*
 profiler/build/wasm/embed.tracy
+
+
+# Only ignore top-level build directory
+/build

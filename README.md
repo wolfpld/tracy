@@ -26,3 +26,51 @@ Tracy supports profiling CPU (Direct support is provided for C, C++, and Lua int
 [New features in Tracy Profiler v0.6](https://www.youtube.com/watch?v=uJkrFgriuOo)  
 [New features in Tracy Profiler v0.7](https://www.youtube.com/watch?v=_hU7vw00MZ4)  
 [New features in Tracy Profiler v0.8](https://www.youtube.com/watch?v=30wpRpHTTag)
+
+# Building the executables
+
+For an indepth build guide please refer to the [documentation](https://github.com/wolfpld/tracy/releases/latest/download/tracy.pdf)
+
+For a quick build guide with CMake:
+
+### Profiler
+
+```bash
+cmake -B build/profiler -S profiler
+cmake --build build/profiler
+```
+
+### Update
+
+```bash
+cmake -B build/update -S update
+cmake --build build/update
+```
+
+### Capture
+
+```bash
+cmake -B build/capture -S capture
+cmake --build build/capture
+```
+
+### Csv Export
+
+```bash
+cmake -B build/csvexport -S csvexport
+cmake --build build/csvexport
+```
+
+### Import Chrome
+
+```bash
+cmake -B build/import-chrome -S import-chrome
+cmake --build build/import-chrome
+```
+
+## Import Fuchsia
+
+```bash
+cmake -B build/import-fuchsia -S import-fuchsia
+cmake --build build/import-fuchsia
+```

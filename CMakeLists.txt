@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Run version helper script
-include(version.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/version.cmake)
 
 set(TRACY_VERSION_MAJOR ${major})
 set(TRACY_VERSION_MINOR ${minor})
@@ -20,7 +20,7 @@ option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATI
 
 find_package(Threads REQUIRED)
 
-set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
+set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_LIST_DIR}/public)
 
 if(TRACY_STATIC)
 	set(TRACY_VISIBILITY "STATIC")
@@ -52,14 +52,20 @@ endif()
 
 add_library(Tracy::TracyClient ALIAS TracyClient)
 
-macro(set_option option help value)
-    option(${option} ${help} ${value})
+macro(log_option option help value)
     if(${option})
         message(STATUS "${option}: ON")
-        target_compile_definitions(TracyClient PUBLIC ${option})
     else()
         message(STATUS "${option}: OFF")
     endif()
+endmacro()
+
+macro(set_option option help value)
+    option(${option} ${help} ${value})
+    if(${option})
+        target_compile_definitions(TracyClient PUBLIC ${option})
+    endif()
+    log_option(${option} ${help} ${value})
 endmacro()
 
 set_option(TRACY_ENABLE "Enable profiling" ON)
@@ -162,7 +168,7 @@ install(EXPORT TracyConfig
         FILE TracyTargets.cmake
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
 include(CMakePackageConfigHelpers)
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake"
         INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake

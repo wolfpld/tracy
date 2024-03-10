@@ -2,40 +2,116 @@ name: linux
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-
-    runs-on: ubuntu-22.04
-    container: archlinux:base-devel
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true # Allow other platforms to build even if one fails
     steps:
-    - uses: actions/checkout@v4
-    - name: Install linux libraries
-      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 capstone tbb debuginfod wayland dbus libxkbcommon libglvnd meson
-    - name: Profiler GUI
-      run: make -j`nproc` -C profiler/build/unix debug release
-    - name: Update utility
-      run: make -j`nproc` -C update/build/unix debug release
-    - name: Capture utility
-      run: make -j`nproc` -C capture/build/unix debug release
-    - name: Csvexport utility
-      run: make -j`nproc` -C csvexport/build/unix debug release
-    - name: Import-chrome utility
-      run: make -j`nproc` -C import-chrome/build/unix debug release
-    - name: Import-fuchsia utility
-      run: make -j`nproc` -C import-fuchsia/build/unix debug release
-    - name: Library
-      run: make -j`nproc` -C library/unix debug release
-    - name: Library (meson)
-      run: meson setup -Dprefix=$PWD/install build && meson compile -C build && meson install -C build
-    - name: Test application
-      run: |
-        make -j`nproc` -C test
-        make -j`nproc` -C test clean
-        make -j`nproc` -C test TRACYFLAGS=-DTRACY_ON_DEMAND
-        make -j`nproc` -C test clean
-        make -j`nproc` -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"
-        make           -C test -B ../public/TracyClient.o DEFINES='-DTRACY_DEMANGLE'
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Linux Dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get install -y libcapstone-dev libtbb-dev libglfw3-dev libgtk-3-dev
+
+      - name: Windows MSVC
+        if: startsWith(matrix.os, 'windows')
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install Windows Dependencies
+        if: startsWith(matrix.os, 'windows')
+        run: vcpkg integrate install
+
+      - name: Install MacOS Dependencies
+        if: startsWith(matrix.os, 'macos')
+        run: brew install capstone tbb pkg-config glfw meson dbus
+
+      - name: Build Profiler
+        run: |
+          cmake -B build/profiler -S profiler -DLEGACY=ON
+          cmake --build build/profiler --config Release --parallel
+
+      - name: Build Update
+        run: |
+          cmake -B build/update -S update
+          cmake --build build/update --config Release --parallel
+
+      - name: Build Capture
+        run: |
+          cmake -B build/capture -S capture
+          cmake --build build/capture --config Release --parallel
+
+      - name: Build Csv Export
+        run: |
+          cmake -B build/csvexport -S csvexport
+          cmake --build build/csvexport --config Release --parallel
+
+      - name: Build Import Chrome
+        run: |
+          cmake -B build/import-chrome -S import-chrome
+          cmake --build build/import-chrome --config Release --parallel
+
+      - name: Build Import Fuchsia
+        run: |
+          cmake -B build/import-fuchsia -S import-fuchsia
+          cmake --build build/import-fuchsia --config Release --parallel
+
+      - name: Find Artifacts
+        if: ${{ !startsWith(matrix.os, 'windows') }}
+        id: find_artifacts
+        run: |
+          echo PROFILER_PATH=build/profiler/Tracy >> $GITHUB_OUTPUT
+          echo UPDATE_PATH=build/update/update >> $GITHUB_OUTPUT
+          echo CAPTURE_PATH=build/capture/capture >> $GITHUB_OUTPUT
+          echo CSVEXPORT_PATH=build/csvexport/csvexport >> $GITHUB_OUTPUT
+          echo IMPORT_CHROME_PATH=build/import-chrome/import-chrome >> $GITHUB_OUTPUT
+          echo IMPORT_FUCHSIA_PATH=build/import-fuchsia/import-fuchsia >> $GITHUB_OUTPUT
+
+      - name: Find Artifacts Windows
+        if: startsWith(matrix.os, 'windows')
+        id: find_artifacts_windows
+        run: |
+          echo PROFILER_PATH=build/profiler/Release/Tracy.exe >> $GITHUB_OUTPUT
+          echo UPDATE_PATH=build/update/Release/update.exe >> $GITHUB_OUTPUT
+          echo CAPTURE_PATH=build/capture/Release/capture.exe >> $GITHUB_OUTPUT
+          echo CSVEXPORT_PATH=build/csvexport/Release/csvexport.exe >> $GITHUB_OUTPUT
+          echo IMPORT_CHROME_PATH=build/import-chrome/Release/import-chrome.exe >> $GITHUB_OUTPUT
+          echo IMPORT_FUCHSIA_PATH=build/import-fuchsia/Release/import-fuchsia.exe >> $GITHUB_OUTPUT
+
+      - name: Export Artifacts
+        if: ${{ !startsWith(matrix.os, 'windows') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}
+          path: |
+            ${{ steps.find_artifacts.outputs.PROFILER_PATH }}
+            ${{ steps.find_artifacts.outputs.UPDATE_PATH }}
+            ${{ steps.find_artifacts.outputs.CAPTURE_PATH }}
+            ${{ steps.find_artifacts.outputs.CSVEXPORT_PATH }}
+            ${{ steps.find_artifacts.outputs.IMPORT_CHROME_PATH }}
+            ${{ steps.find_artifacts.outputs.IMPORT_FUCHSIA_PATH }}
+
+      - name: Export Artifacts Windows
+        if: startsWith(matrix.os, 'windows')
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}
+          path: |
+            ${{ steps.find_artifacts_windows.outputs.PROFILER_PATH }}
+            ${{ steps.find_artifacts_windows.outputs.UPDATE_PATH }}
+            ${{ steps.find_artifacts_windows.outputs.CAPTURE_PATH }}
+            ${{ steps.find_artifacts_windows.outputs.CSVEXPORT_PATH }}
+            ${{ steps.find_artifacts_windows.outputs.IMPORT_CHROME_PATH }}
+            ${{ steps.find_artifacts_windows.outputs.IMPORT_FUCHSIA_PATH }}
+

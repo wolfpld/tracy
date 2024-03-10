@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+
 message("Parsing public/common/TracyVersion.hpp file")
 
-file(READ "public/common/TracyVersion.hpp" version)
+file(READ "${ROOT_DIR}/public/common/TracyVersion.hpp" version)
 
 # Note: This looks for a specific pattern in TracyVersion.hpp, if it changes
 # this needs updating.

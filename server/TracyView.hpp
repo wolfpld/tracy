@@ -26,6 +26,11 @@
 #include "TracyWorker.hpp"
 #include "tracy_robin_hood.h"
 
+// Windows defines small
+#ifdef small
+#undef small
+#endif
+
 namespace tracy
 {
 

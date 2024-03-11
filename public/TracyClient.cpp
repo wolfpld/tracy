@@ -20,7 +20,6 @@
 #endif
 
 #include "common/tracy_lz4.cpp"
-#include "common/tracy_lz4hc.cpp"
 #include "client/TracyProfiler.cpp"
 #include "client/TracyCallstack.cpp"
 #include "client/TracySysPower.cpp"

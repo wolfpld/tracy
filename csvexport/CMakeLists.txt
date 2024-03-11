@@ -12,4 +12,4 @@ set(CSVEXPORT_SRC
 
 add_executable(csvexport ${CSVEXPORT_SRC})
 target_include_directories(csvexport PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(csvexport PRIVATE TracyServer)
+target_link_libraries(csvexport PRIVATE TracyServer TracyGetOpt)

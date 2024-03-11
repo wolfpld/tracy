@@ -1,14 +1,22 @@
+set(TRACY_CLIENT_DIR ${CMAKE_CURRENT_LIST_DIR}/../public)
 
 set(TRACY_CLIENT_SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/../public/TracyClient.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../public/common/TracyStackFrames.cpp
+    ${TRACY_CLIENT_DIR}/common/tracy_lz4.cpp
+    ${TRACY_CLIENT_DIR}/common/tracy_lz4hc.cpp
+    ${TRACY_CLIENT_DIR}/common/TracySocket.cpp
+    ${TRACY_CLIENT_DIR}/common/TracyStackFrames.cpp
+    ${TRACY_CLIENT_DIR}/common/TracySystem.cpp
 )
 
 add_library(TracyClient STATIC ${TRACY_CLIENT_SOURCES})
 target_include_directories(TracyClient PUBLIC ${CMAKE_CURRENT_LIST_DIR}/../public)
-target_compile_definitions(TracyClient PUBLIC TRACY_ENABLE)
 if (TRACY_NO_STATISTICS)
     target_compile_definitions(TracyClient PUBLIC TRACY_NO_STATISTICS)
+endif()
+
+# Public dependency on some libraries required when using Mingw
+if(WIN32)
+    target_link_libraries(TracyClient PUBLIC wsock32 ws2_32 dbghelp)
 endif()
 
 set(SERVER_SOURCES
@@ -72,9 +80,26 @@ set(SERVER_SOURCES
     TracyView_Options.cpp
 )
 
-list(TRANSFORM SERVER_SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/../server/)
+set(TRACY_NO_STATS_SOURCE
+    TracyPrint.cpp
+    TracyWorker.cpp
+    TracyThreadCompress.cpp
+    TracyMemory.cpp
+    TracyTextureCompression.cpp
+    TracyTaskDispatch.cpp
+    TracyMmap.cpp
+)
 
-add_library(TracyServer STATIC ${SERVER_SOURCES})
+if (TRACY_NO_STATISTICS)
+    message(STATUS "Building TracyServer without statistics")
+    list(TRANSFORM TRACY_NO_STATS_SOURCE PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/../server/)
+    set(SOURCES ${TRACY_NO_STATS_SOURCE})
+else()
+    list(TRANSFORM SERVER_SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/../server/)
+    set(SOURCES ${SERVER_SOURCES})
+endif()
+
+add_library(TracyServer STATIC ${SOURCES})
 target_include_directories(TracyServer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../server)
 target_link_libraries(TracyServer PUBLIC TracyImGui TracyCapstone TracyZstd TracyClient)
 
@@ -82,11 +107,6 @@ target_compile_definitions(TracyServer PUBLIC NOMINMAX) # Windows.h defines min 
 
 if (NOT NO_TBB)
     target_link_libraries(TracyServer PUBLIC TracyTbb)
-endif()
-
-if (TRACY_NO_STATISTICS)
-    message(STATUS "Disabling server statistics")
-    target_compile_definitions(TracyServer PUBLIC TRACY_NO_STATISTICS)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

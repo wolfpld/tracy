@@ -101,7 +101,12 @@ endif()
 
 add_library(TracyServer STATIC ${SOURCES})
 target_include_directories(TracyServer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../server)
-target_link_libraries(TracyServer PUBLIC TracyImGui TracyCapstone TracyZstd TracyClient)
+
+if (TRACY_NO_STATISTICS)
+    target_link_libraries(TracyServer PUBLIC TracyCapstone TracyZstd TracyClient)
+else()
+    target_link_libraries(TracyServer PUBLIC TracyImGui TracyCapstone TracyZstd TracyClient)
+endif()
 
 target_compile_definitions(TracyServer PUBLIC NOMINMAX) # Windows.h defines min and max macros which conflict with std::min and std::max
 

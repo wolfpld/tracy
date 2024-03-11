@@ -72,47 +72,31 @@ jobs:
         if: ${{ !startsWith(matrix.os, 'windows') }}
         id: find_artifacts
         run: |
-          echo PROFILER_PATH=build/profiler/Tracy >> $GITHUB_OUTPUT
-          echo UPDATE_PATH=build/update/update >> $GITHUB_OUTPUT
-          echo CAPTURE_PATH=build/capture/capture >> $GITHUB_OUTPUT
-          echo CSVEXPORT_PATH=build/csvexport/csvexport >> $GITHUB_OUTPUT
-          echo IMPORT_CHROME_PATH=build/import-chrome/import-chrome >> $GITHUB_OUTPUT
-          echo IMPORT_FUCHSIA_PATH=build/import-fuchsia/import-fuchsia >> $GITHUB_OUTPUT
+          mkdir bin
+          cp build/profiler/Tracy bin
+          cp build/update/update bin
+          cp build/capture/capture bin
+          cp build/csvexport/csvexport bin
+          cp build/import-chrome/import-chrome bin
+          cp build/import-fuchsia/import-fuchsia bin
+          zip -r ${{ matrix.os }}.zip bin
 
       - name: Find Artifacts Windows
         if: startsWith(matrix.os, 'windows')
         id: find_artifacts_windows
         run: |
-          echo PROFILER_PATH=build/profiler/Release/Tracy.exe >> $GITHUB_OUTPUT
-          echo UPDATE_PATH=build/update/Release/update.exe >> $GITHUB_OUTPUT
-          echo CAPTURE_PATH=build/capture/Release/capture.exe >> $GITHUB_OUTPUT
-          echo CSVEXPORT_PATH=build/csvexport/Release/csvexport.exe >> $GITHUB_OUTPUT
-          echo IMPORT_CHROME_PATH=build/import-chrome/Release/import-chrome.exe >> $GITHUB_OUTPUT
-          echo IMPORT_FUCHSIA_PATH=build/import-fuchsia/Release/import-fuchsia.exe >> $GITHUB_OUTPUT
+          mkdir bin
+          copy build\profiler\Release\Tracy.exe bin
+          copy build\update\Release\update.exe bin
+          copy build\capture\Release\capture.exe bin
+          copy build\csvexport\Release\csvexport.exe bin
+          copy build\import-chrome\Release\import-chrome.exe bin
+          copy build\import-fuchsia\Release\import-fuchsia.exe bin
+          Compress-Archive -Path bin/* -Destination ${{ matrix.os }}.zip
 
       - name: Export Artifacts
-        if: ${{ !startsWith(matrix.os, 'windows') }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}
           path: |
-            ${{ steps.find_artifacts.outputs.PROFILER_PATH }}
-            ${{ steps.find_artifacts.outputs.UPDATE_PATH }}
-            ${{ steps.find_artifacts.outputs.CAPTURE_PATH }}
-            ${{ steps.find_artifacts.outputs.CSVEXPORT_PATH }}
-            ${{ steps.find_artifacts.outputs.IMPORT_CHROME_PATH }}
-            ${{ steps.find_artifacts.outputs.IMPORT_FUCHSIA_PATH }}
-
-      - name: Export Artifacts Windows
-        if: startsWith(matrix.os, 'windows')
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}
-          path: |
-            ${{ steps.find_artifacts_windows.outputs.PROFILER_PATH }}
-            ${{ steps.find_artifacts_windows.outputs.UPDATE_PATH }}
-            ${{ steps.find_artifacts_windows.outputs.CAPTURE_PATH }}
-            ${{ steps.find_artifacts_windows.outputs.CSVEXPORT_PATH }}
-            ${{ steps.find_artifacts_windows.outputs.IMPORT_CHROME_PATH }}
-            ${{ steps.find_artifacts_windows.outputs.IMPORT_FUCHSIA_PATH }}
-
+            ${{ matrix.os }}.zip

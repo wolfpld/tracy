@@ -19,7 +19,7 @@ jobs:
     continue-on-error: true # Allow other platforms to build even if one fails
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Linux Dependencies
         if: startsWith(matrix.os, 'ubuntu')
@@ -31,7 +31,8 @@ jobs:
 
       - name: Install Windows Dependencies
         if: startsWith(matrix.os, 'windows')
-        run: ./vcpkg/install_vcpkg_dependencies.bat
+        # run: ./vcpkg/install_vcpkg_dependencies.bat
+        run: echo "Windows dependencies"
 
       - name: Install MacOS Dependencies
         if: startsWith(matrix.os, 'macos')
@@ -39,7 +40,7 @@ jobs:
 
       - name: Build Profiler
         run: |
-          cmake -B build/profiler -S profiler -DLEGACY=ON
+          cmake -B build/profiler -S profiler -DLEGACY=ON -DTRACY_DOWNLOAD_FREETYPE=ON
           cmake --build build/profiler --config Release --parallel
 
       - name: Build Update

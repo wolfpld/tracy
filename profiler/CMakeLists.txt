@@ -3,6 +3,8 @@ project(Profiler C CXX ASM)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(IMGUI_ENABLE_FREETYPE ON)
+
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 

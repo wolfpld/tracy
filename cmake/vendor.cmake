@@ -4,6 +4,7 @@
 set (ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../")
 
 if (EXISTS ${ROOT_DIR}/vcpkg_installed/x64-windows-static/lib/pkgconfig)
+    message(STATUS "Using vcpkg_installed/x64-windows-static/lib/pkgconfig")
     set(ENV{PKG_CONFIG_PATH} "${ROOT_DIR}/vcpkg_installed/x64-windows-static/lib/pkgconfig")
 endif()
 
@@ -66,19 +67,24 @@ endif()
 
 # freetype
 
-pkg_check_modules(FREETYPE freetype2)
-if (FREETYPE_FOUND AND NOT TRACY_DOWNLOAD_FREETYPE)
-    add_library(TracyFreetype INTERFACE)
-    target_include_directories(TracyFreetype INTERFACE ${FREETYPE_INCLUDE_DIRS})
-    target_link_libraries(TracyFreetype INTERFACE ${FREETYPE_LINK_LIBRARIES})
-else()
-    CPMAddPackage(
-        NAME freetype
-        GITHUB_REPOSITORY freetype/freetype
-        GIT_TAG VER-2-13-2
-    )
-    add_library(TracyFreetype INTERFACE)
-    target_link_libraries(TracyFreetype INTERFACE freetype)
+if (IMGUI_ENABLE_FREETYPE)
+    pkg_check_modules(FREETYPE freetype2)
+    if (FREETYPE_FOUND AND NOT TRACY_DOWNLOAD_FREETYPE)
+        add_library(TracyFreetype INTERFACE)
+        target_include_directories(TracyFreetype INTERFACE ${FREETYPE_INCLUDE_DIRS})
+        target_link_libraries(TracyFreetype INTERFACE ${FREETYPE_LINK_LIBRARIES})
+    else()
+        CPMAddPackage(
+            NAME freetype
+            GITHUB_REPOSITORY freetype/freetype
+            GIT_TAG VER-2-10-0
+            OPTIONS
+                "FT_DISABLE_HARFBUZZ ON"
+                "FT_WITH_HARFBUZZ OFF"
+        )
+        add_library(TracyFreetype INTERFACE)
+        target_link_libraries(TracyFreetype INTERFACE freetype)
+    endif()
 endif()
 
 # zstd
@@ -157,13 +163,17 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/imgui_tables.cpp
 )
 
-set(IMGUI_FREETYPE_SOURCES
-    ${IMGUI_DIR}/misc/freetype/imgui_freetype.cpp
-)
+if (IMGUI_ENABLE_FREETYPE)
+    add_definitions(-DIMGUI_ENABLE_FREETYPE)
+    list(APPEND IMGUI_SOURCES ${IMGUI_DIR}/misc/freetype/imgui_freetype.cpp)
+endif()
 
-add_library(TracyImGui STATIC ${IMGUI_SOURCES} ${IMGUI_FREETYPE_SOURCES})
+add_library(TracyImGui STATIC ${IMGUI_SOURCES})
 target_include_directories(TracyImGui PUBLIC ${IMGUI_DIR})
-target_link_libraries(TracyImGui PUBLIC TracyFreetype)
+
+if (IMGUI_ENABLE_FREETYPE)
+    target_link_libraries(TracyImGui PUBLIC TracyFreetype)
+endif()
 
 if (LEGACY)
     target_link_libraries(TracyImGui PUBLIC TracyGlfw3)
@@ -230,7 +240,18 @@ if (NOT NO_TBB)
     # Some distributions have pgk-config files for TBB, others don't.
 
     pkg_check_modules(TBB tbb)
-    add_library(TracyTbb INTERFACE)
-    target_include_directories(TracyTbb INTERFACE ${TBB_INCLUDE_DIRS})
-    target_link_libraries(TracyTbb INTERFACE ${TBB_LINK_LIBRARIES})
+    if (TBB_FOUND)
+        add_library(TracyTbb INTERFACE)
+        target_include_directories(TracyTbb INTERFACE ${TBB_INCLUDE_DIRS})
+        target_link_libraries(TracyTbb INTERFACE ${TBB_LINK_LIBRARIES})
+    else()
+        CPMAddPackage(
+            NAME tbb
+            GITHUB_REPOSITORY oneapi-src/oneTBB
+            GIT_TAG v2021.12.0-rc2
+            OPTIONS "TBB_TEST OFF"
+        )
+        add_library(TracyTbb INTERFACE)
+        target_link_libraries(TracyTbb INTERFACE tbb)
+    endif()
 endif()

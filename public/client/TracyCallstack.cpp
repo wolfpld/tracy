@@ -439,7 +439,6 @@ void InitCallstack()
             MODULEINFO info;
             if( GetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
             {
-                const auto base = uint64_t( info.lpBaseOfDll );
                 char name[1024];
                 const auto nameLength = GetModuleFileNameA( mod[i], name, 1021 );
                 if( nameLength > 0 )

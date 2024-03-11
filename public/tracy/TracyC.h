@@ -178,6 +178,8 @@ struct ___tracy_gpu_time_sync_data {
     uint8_t context;
 };
 
+struct __tracy_lockable_context_data;
+
 // Some containers don't support storing const types.
 // This struct, as visible to user, is immutable, so treat it as if const was declared here.
 typedef /*const*/ struct ___tracy_c_zone_context TracyCZoneCtx;
@@ -227,6 +229,15 @@ TRACY_API void ___tracy_emit_gpu_new_context_serial( const struct ___tracy_gpu_n
 TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_context_name_data );
 TRACY_API void ___tracy_emit_gpu_calibration_serial( const struct ___tracy_gpu_calibration_data );
 TRACY_API void ___tracy_emit_gpu_time_sync_serial( const struct ___tracy_gpu_time_sync_data );
+
+TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx(const struct ___tracy_source_location_data* srcloc );
+TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_data* lockdata);
+TRACY_API int ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata);
+TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata);
+TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata);
+TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int acquired );
+TRACY_API void ___tracy_mark_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
+TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const char* name, size_t nameSz );
 
 TRACY_API int ___tracy_connected(void);
 

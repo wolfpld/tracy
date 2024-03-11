@@ -3,6 +3,10 @@
 
 set (ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../")
 
+if (EXISTS ${ROOT_DIR}/vcpkg_installed/x64-windows-static/lib/pkgconfig)
+    set(ENV{PKG_CONFIG_PATH} "${ROOT_DIR}/vcpkg_installed/x64-windows-static/lib/pkgconfig")
+endif()
+
 # Dependencies are taken from the system first and if not found, they are pulled with CPM and built from source
 
 include(FindPkgConfig)

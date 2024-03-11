@@ -31,7 +31,7 @@ jobs:
 
       - name: Install Windows Dependencies
         if: startsWith(matrix.os, 'windows')
-        run: vcpkg integrate install
+        run: ./vcpkg/install_vcpkg_dependencies.bat
 
       - name: Install MacOS Dependencies
         if: startsWith(matrix.os, 'macos')

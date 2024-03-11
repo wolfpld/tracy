@@ -510,7 +510,7 @@ static const char* GetHostInfo()
 #  ifdef __MINGW32__
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
-        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+        ptr += sprintf( ptr, "OS: Windows %lu.%lu.%lu\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
 #  endif
     }
 #elif defined __linux__

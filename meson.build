@@ -189,7 +189,7 @@ tracy_public_include_dirs = include_directories('public')
 
 compiler = meson.get_compiler('cpp')
 override_options = []
-if compiler.get_id() != 'msvc'
+if compiler.get_id() != 'msvc' and compiler.get_id() != 'clang-cl'
   override_options += 'cpp_std=c++11'
 endif
 

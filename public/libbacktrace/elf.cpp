@@ -6891,7 +6891,7 @@ elf_add (struct backtrace_state *state, const char *filename, int descriptor,
 
   if (symtab_shndx == 0)
     symtab_shndx = dynsym_shndx;
-  if (symtab_shndx != 0 && !debuginfo)
+  if (symtab_shndx != 0)
     {
       const b_elf_shdr *symtab_shdr;
       unsigned int strtab_shndx;

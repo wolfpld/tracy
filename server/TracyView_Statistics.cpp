@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
@@ -85,6 +87,7 @@ void View::DrawStatistics()
 
     Vector<SrcLocZonesSlim> srcloc;
 
+    bool copySrclocsToClipboard = false;
     if( m_statMode == 0 )
     {
         if( !m_worker.AreSourceLocationZonesReady() )
@@ -258,6 +261,8 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
+        ImGui::SameLine();
+        copySrclocsToClipboard = ClipboardButton();
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -440,6 +445,8 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
+        ImGui::SameLine();
+        copySrclocsToClipboard = ClipboardButton();
     }
 
     ImGui::Separator();
@@ -650,6 +657,12 @@ void View::DrawStatistics()
                     break;
                 }
 
+                std::ostringstream clipboardCSV;
+                if( copySrclocsToClipboard )
+                {
+                    clipboardCSV << "name" << ',' << "src_file" << ',' << "src_line" << ',' << "total_ns" << ',' << "counts" << "\n";
+                }
+
                 for( auto& v : srcloc )
                 {
                     ImGui::TableNextRow();
@@ -718,8 +731,19 @@ void View::DrawStatistics()
                         ImGui::TextUnformatted( RealToString( v.numThreads ) );
                     }
                     ImGui::PopID();
+
+                    if( copySrclocsToClipboard )
+                    {
+                        clipboardCSV << name << ',' << file << ',' << srcloc.line << ',' << v.total << ',' << v.numZones << '\n';
+                    }
                 }
                 ImGui::EndTable();
+
+                if( copySrclocsToClipboard )
+                {
+                    std::string clipboardCSVString = clipboardCSV.str();
+                    ImGui::SetClipboardText( clipboardCSVString.c_str() );
+                }
             }
             ImGui::EndChild();
         }

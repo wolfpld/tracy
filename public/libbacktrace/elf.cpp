@@ -5586,6 +5586,7 @@ elf_uncompress_lzma_block (const unsigned char *compressed,
   uint64_t header_compressed_size;
   uint64_t header_uncompressed_size;
   unsigned char lzma2_properties;
+  size_t crc_offset;
   uint32_t computed_crc;
   uint32_t stream_crc;
   size_t uncompressed_offset;
@@ -5689,19 +5690,20 @@ elf_uncompress_lzma_block (const unsigned char *compressed,
   /* The properties describe the dictionary size, but we don't care
      what that is.  */
 
-  /* Block header padding.  */
-  if (unlikely (off + 4 > compressed_size))
+  /* Skip to just before CRC, verifying zero bytes in between.  */
+  crc_offset = block_header_offset + block_header_size - 4;
+  if (unlikely (crc_offset + 4 > compressed_size))
     {
       elf_uncompress_failed ();
       return 0;
     }
-
-  off = (off + 3) &~ (size_t) 3;
-
-  if (unlikely (off + 4 > compressed_size))
+  for (; off < crc_offset; off++)
     {
-      elf_uncompress_failed ();
-      return 0;
+      if (compressed[off] != 0)
+	{
+	  elf_uncompress_failed ();
+	  return 0;
+	}
     }
 
   /* Block header CRC.  */

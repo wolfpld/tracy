@@ -4514,7 +4514,7 @@ struct __tracy_lockable_context_data
 #endif
 };
 
-TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx(const struct ___tracy_source_location_data* srcloc )
+TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx( const struct ___tracy_source_location_data* srcloc )
 {
     struct __tracy_lockable_context_data *lockdata = (__tracy_lockable_context_data*)tracy::tracy_malloc( sizeof( __tracy_lockable_context_data ) );
     lockdata->m_id =tracy:: GetLockCounter().fetch_add( 1, std::memory_order_relaxed );
@@ -4538,7 +4538,7 @@ TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx(c
     return lockdata;
 }
 
-TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_data* lockdata)
+TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_data* lockdata )
 {
     auto item = tracy::Profiler::QueueSerial();
     tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockTerminate );
@@ -4556,7 +4556,7 @@ TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_
     tracy::tracy_free((void*)lockdata);
 }
 
-TRACY_API int ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata)
+TRACY_API int ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata )
 {
 #ifdef TRACY_ON_DEMAND
     bool queue = false;
@@ -4580,7 +4580,7 @@ TRACY_API int ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context
     return true;
 }
 
-TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata)
+TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata )
 {
     auto item = tracy::Profiler::QueueSerial();
     tracy::MemWrite( &item->hdr.type, tracy::QueueType::LockObtain );
@@ -4590,7 +4590,7 @@ TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context
     tracy::Profiler::QueueSerialFinish();
 }
 
-TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata)
+TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata )
 {
 #ifdef TRACY_ON_DEMAND
     lockdata->m_lockCount.fetch_sub( 1, std::memory_order_relaxed );

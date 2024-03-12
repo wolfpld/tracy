@@ -648,6 +648,16 @@ bool View::Draw()
         ImGui::EndPopup();
     }
 
+    if( !m_staticView &&
+        ( ImGui::IsModKey( ImGuiKey_LeftCtrl ) || ImGui::IsModKey( ImGuiKey_RightCtrl ) ) &&
+        ( ImGui::IsModKey( ImGuiKey_LeftShift ) || ImGui::IsModKey( ImGuiKey_RightShift ) ) &&
+        ( ImGui::IsModKey( ImGuiKey_LeftAlt ) || ImGui::IsModKey( ImGuiKey_RightAlt ) ) &&
+        ImGui::IsKeyPressed( ImGuiKey_R ) )
+    {
+        m_reconnectRequested = true;
+        return false;
+    }
+
     s_time += ImGui::GetIO().DeltaTime;
     return DrawImpl();
 }

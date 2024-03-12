@@ -158,6 +158,16 @@ macho_get_executable_path (struct backtrace_state *state,
 
 #endif /* !defined (HAVE_MACH_O_DYLD_H) */
 
+#if HAVE_DECL__PGMPTR
+
+#define windows_executable_filename() _pgmptr
+
+#else /* !HAVE_DECL__PGMPTR */
+
+#define windows_executable_filename() NULL
+
+#endif /* !HAVE_DECL__PGMPTR */
+
 /* Initialize the fileline information from the executable.  Returns 1
    on success, 0 on failure.  */
 
@@ -195,7 +205,7 @@ fileline_initialize (struct backtrace_state *state,
 
   descriptor = -1;
   called_error_callback = 0;
-  for (pass = 0; pass < 8; ++pass)
+  for (pass = 0; pass < 9; ++pass)
     {
       int does_not_exist;
 
@@ -208,23 +218,28 @@ fileline_initialize (struct backtrace_state *state,
 	  filename = getexecname ();
 	  break;
 	case 2:
-	  filename = "/proc/self/exe";
+	  /* Test this before /proc/self/exe, as the latter exists but points
+	     to the wine binary (and thus doesn't work).  */
+	  filename = windows_executable_filename ();
 	  break;
 	case 3:
-	  filename = "/proc/curproc/file";
+	  filename = "/proc/self/exe";
 	  break;
 	case 4:
+	  filename = "/proc/curproc/file";
+	  break;
+	case 5:
 	  snprintf (buf, sizeof (buf), "/proc/%ld/object/a.out",
 		    (long) getpid ());
 	  filename = buf;
 	  break;
-	case 5:
+	case 6:
 	  filename = sysctl_exec_name1 (state, error_callback, data);
 	  break;
-	case 6:
+	case 7:
 	  filename = sysctl_exec_name2 (state, error_callback, data);
 	  break;
-	case 7:
+	case 8:
 	  filename = macho_get_executable_path (state, error_callback, data);
 	  break;
 	default:

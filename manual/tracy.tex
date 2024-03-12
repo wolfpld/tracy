@@ -3204,6 +3204,16 @@ The last column, \emph{Code size}, displays the size of the symbol in the execut
 
 Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the \emph{\faHatWizard{}~Include kernel} switch. The exclusive/inclusive time counting mode can be switched using the \emph{~Timing} menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
 
+A simple CSV document containing the visible zones after filtering and limiting can be copied to the clipboard with the button adjacent to the visible zones count. The document contains the following columns:
+
+\begin{itemize}
+  \item \texttt{name} -- Zone name
+  \item \texttt{src\_file} -- Source file where the zone was set
+  \item \texttt{src\_line} -- Line in the source file where the zone was set
+  \item \texttt{total\_ns} -- Total zone time in nanoseconds
+  \item \texttt{counts} -- Zone count
+\end{itemize}
+
 \subsubsection{GPU zones mode}
 
 This is an analog of the instrumentation mode, but for the GPU zones. Note that the available options may be limited here.

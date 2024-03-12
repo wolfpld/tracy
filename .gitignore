@@ -25,6 +25,8 @@ manual/t*.synctex.gz
 manual/t*.toc
 manual/t*.bbl
 manual/t*.blg
+manual/t*.fdb_latexmk
+manual/t*.fls
 profiler/build/win32/packages
 profiler/build/win32/Tracy.aps
 # include the vcpkg install script but not the files it produces

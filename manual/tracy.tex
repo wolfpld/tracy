@@ -2010,6 +2010,55 @@ However, the validation comes with a performance cost, which you may not want to
 
 There is no explicit support for transient zones (section~\ref{transientzones}) in the C API macros. However, this functionality can be implemented by following instructions outlined in section~\ref{capibindings}.
 
+\subsubsection{Lock markup}
+
+Marking locks in the C API is done with the following macros:
+
+\begin{itemize}
+\item \texttt{TracyCLockAnnounce(lock\_ctx)}
+\item \texttt{TracyCLockTerminate(lock\_ctx)}
+\item \texttt{TracyCLockBeforeLock(lock\_ctx)}
+\item \texttt{TracyCLockAfterLock(lock\_ctx)}
+\item \texttt{TracyCLockAfterUnlock(lock\_ctx)}
+\item \texttt{TracyCLockAfterTryLock(lock\_ctx, acquired)}
+\item \texttt{TracyCLockMark(lock\_ctx)}
+\item \texttt{TracyCLockCustomName(lock\_ctx, name, size)}
+\end{itemize}
+
+Additionally a lock context has to be defined next to the lock that it will be marking:
+
+\begin{lstlisting}
+TracyCLockCtx tracy_lock_ctx;
+HANDLE lock;
+\end{lstlisting}
+
+To initialize the lock context use \texttt{TracyCLockAnnounce}, this should be done when the lock you are marking is initialized/created. When the lock is destroyed use \texttt{TracyCLockTerminate}, this will free the lock context. You can use the \texttt{TracyCLockCustomName} macro to name a lock.
+
+You must markup both before and after acquiring a lock:
+
+\begin{lstlisting}
+TracyCLockBeforeLock(tracy_lock_ctx);
+WaitForSingleObject(lock, INFINITE);
+TracyCLockAfterLock(tracy_lock_ctx);
+\end{lstlisting}
+
+If acquiring the lock may fail, you should instead use the \texttt{TracyCLockAfterTryLock} macro:
+
+\begin{lstlisting}
+TracyCLockBeforeLock(tracy_lock_ctx);
+int acquired = WaitForSingleObject(lock, 200) == WAIT_OBJECT_0;
+TracyCLockAfterTryLock(tracy_lock_ctx, acquired);
+\end{lstlisting}
+
+After you release the lock use the \texttt{TracyCLockAfterUnlock} macro:
+
+\begin{lstlisting}
+ReleaseMutex(lock);
+TracyCLockAfterUnlock(tracy_lock_ctx);
+\end{lstlisting}
+
+You can optionally mark the location of where the lock is held by using the \texttt{TracyCLockMark} macro, this should be done after acquiring the lock.
+
 \subsubsection{Memory profiling}
 
 Use the following macros in your implementations of \texttt{malloc} and \texttt{free}:

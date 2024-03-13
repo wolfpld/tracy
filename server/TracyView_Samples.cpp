@@ -383,6 +383,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     ImGui::TableNextColumn();
                     TextDisabledUnformatted( imageName );
                     ImGui::TableNextColumn();
+                    const auto baseCnt = cnt;
                     if( cnt > 0 )
                     {
                         char buf[64];
@@ -420,6 +421,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     {
                         assert( v.count > 0 );
                         assert( symlen != 0 );
+                        const auto revBaseCnt = 100.0 / baseCnt;
                         auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
                         assert( inSym != nullptr );
                         const auto symEnd = v.symAddr + symlen;
@@ -642,12 +644,27 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                     {
                                         const auto t = cnt * period;
                                         ImGui::TextUnformatted( TimeToString( t ) );
-                                        PrintStringPercent( buf, 100. * t / timeRange );
+                                        if( m_relativeInlines )
+                                        {
+                                            const auto tBase = baseCnt * period;
+                                            PrintStringPercent( buf, 100. * t / tBase );
+                                        }
+                                        else
+                                        {
+                                            PrintStringPercent( buf, 100. * t / timeRange );
+                                        }
                                     }
                                     else
                                     {
                                         ImGui::TextUnformatted( RealToString( cnt ) );
-                                        PrintStringPercent( buf, cnt * revSampleCount100 );
+                                        if( m_relativeInlines )
+                                        {
+                                            PrintStringPercent( buf, cnt * revBaseCnt );
+                                        }
+                                        else
+                                        {
+                                            PrintStringPercent( buf, cnt * revSampleCount100 );
+                                        }
                                     }
                                     ImGui::SameLine();
                                     TextDisabledUnformatted( buf );

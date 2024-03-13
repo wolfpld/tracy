@@ -304,6 +304,10 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
+        ImGui::Checkbox( "Relative", &m_relativeInlines );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
         ImGui::SameLine();
         ImGui::Spacing();

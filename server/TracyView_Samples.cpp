@@ -579,6 +579,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                     if( clicked ) ShowSampleParents( iv.symAddr, false );
                                     ImGui::PopID();
                                 }
+                                if( iv.count > 1 )
+                                {
+                                    ImGui::SameLine();
+                                    ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( iv.count ) );
+                                }
                                 ImGui::TableNextColumn();
                                 float indentVal = 0.f;
                                 if( m_statBuzzAnim.Match( iv.symAddr ) )

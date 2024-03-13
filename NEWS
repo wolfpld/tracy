@@ -82,6 +82,16 @@ vx.xx.x (xxxx-xx-xx)
 - Fixed display of active / inactive allocations in memory call tree.
 - Instrumentation statistics can be now sorted by source location.
 - Added option to hide external code frames in call stack view.
+- There's now a copy to clipboard button in the statistics view. It copies
+  the visible rows of either the instrumentation or GPU statistics view to
+  a CSV string matching a subset of the csvexport format.
+- Source file contents can be copied to the clipboard.
+- Added key binding for immediate reconnect: Ctrl+Shift+Alt+R.
+- Lock markup is now available through the C API.
+- Symbol statistics window now allows aggregation of inlined functions in
+  symbols.
+- Cost measurements of inlined functions in the symbol statistics window
+  can be now relative to the base symbol instead of total program run time.
 
 
 v0.10.0 (2023-10-16)

@@ -300,14 +300,6 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_LAYER_GROUP " Aggregate", &m_mergeInlines );
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        ImGui::Checkbox( "Relative", &m_relativeInlines );
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
         ImGui::SameLine();
         ImGui::Spacing();
@@ -459,7 +451,7 @@ void View::DrawStatistics()
 
     ImGui::Separator();
     ImGui::AlignTextToFramePadding();
-    TextDisabledUnformatted( "Filter results" );
+    TextDisabledUnformatted( "Name" );
     ImGui::SameLine();
     m_statisticsFilter.Draw( ICON_FA_FILTER "###resultFilter", 200 );
     ImGui::SameLine();
@@ -472,7 +464,7 @@ void View::DrawStatistics()
     ImGui::SameLine();
     if( m_statMode == 1 )
     {
-        TextDisabledUnformatted( "Image name" );
+        TextDisabledUnformatted( "Image" );
         ImGui::SameLine();
         m_statisticsImageFilter.Draw( ICON_FA_FILTER "###imageFilter", 200 );
         ImGui::SameLine();
@@ -549,6 +541,25 @@ void View::DrawStatistics()
             ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
         }
     }
+
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( m_statSeparateInlines ) ImGui::BeginDisabled();
+    ImGui::TextUnformatted( "Inlines" );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::Checkbox( ICON_FA_LAYER_GROUP " Aggregate", &m_mergeInlines );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::Checkbox( ICON_FA_LINK " Base relative", &m_relativeInlines );
+    if( m_statSeparateInlines ) ImGui::EndDisabled();
 
     ImGui::Separator();
     ImGui::PopStyleVar();

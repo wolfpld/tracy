@@ -15,7 +15,6 @@ jobs:
     - uses: actions/checkout@v4
     - name: Fix stupidity
       run: |
-        cp AUTHORS AUTHORS.
         cp LICENSE LICENSE.
     - name: Compile LaTeX
       uses: xu-cheng/latex-action@v3

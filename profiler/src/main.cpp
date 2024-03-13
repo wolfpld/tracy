@@ -611,7 +611,7 @@ static void DrawContents()
             ImGui::TextUnformatted( "Created by Bartosz Taudul" );
             ImGui::SameLine();
             tracy::TextDisabledUnformatted( "<wolf@nereid.pl>" );
-            tracy::TextDisabledUnformatted( "Additional authors listed in AUTHORS file and in git history." );
+            tracy::TextDisabledUnformatted( "Additional authors listed in git history." );
             ImGui::Separator();
             if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
             {

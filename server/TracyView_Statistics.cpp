@@ -542,24 +542,27 @@ void View::DrawStatistics()
         }
     }
 
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    if( m_statSeparateInlines ) ImGui::BeginDisabled();
-    ImGui::TextUnformatted( "Inlines" );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    ImGui::Checkbox( ICON_FA_LAYER_GROUP " Aggregate", &m_mergeInlines );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    ImGui::Checkbox( ICON_FA_LINK " Base relative", &m_relativeInlines );
-    if( m_statSeparateInlines ) ImGui::EndDisabled();
+    if( m_statMode == 1 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( m_statSeparateInlines ) ImGui::BeginDisabled();
+        ImGui::TextUnformatted( "Inlines" );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_LAYER_GROUP " Aggregate", &m_mergeInlines );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_LINK " Base relative", &m_relativeInlines );
+        if( m_statSeparateInlines ) ImGui::EndDisabled();
+    }
 
     ImGui::Separator();
     ImGui::PopStyleVar();

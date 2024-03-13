@@ -547,7 +547,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 }
 
                                 const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
-                                if( iv.excl == 0 )
+                                if( m_mergeInlines || iv.excl == 0 )
                                 {
                                     if( m_shortenName == ShortenName::Never )
                                     {

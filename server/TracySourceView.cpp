@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <inttypes.h>
+#include <sstream>
 #include <stdio.h>
 
 #include <capstone.h>
@@ -1058,6 +1059,17 @@ void SourceView::Render( Worker& worker, View& view )
 
     if( m_symAddr == 0 )
     {
+        ImGui::PushFont( m_bigFont );
+        if( ClipboardButton() )
+        {
+            std::ostringstream stream;
+            stream.write( m_source.data(), m_source.data_size() );
+            ImGui::SetClipboardText( stream.str().c_str() );
+        }
+        ImGui::PopFont();
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         if( m_source.filename() )
         {
             ImGui::PushFont( m_bigFont );

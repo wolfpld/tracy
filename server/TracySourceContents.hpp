@@ -27,6 +27,8 @@ public:
     const char* filename() const { return m_file; }
     uint32_t idx() const { return m_fileStringIdx; }
     bool is_cached() const { return m_data != m_dataBuf; }
+    const char* data() const { return m_data; }
+    size_t data_size() const { return m_dataSize; }
 
 private:
     const char* m_file;

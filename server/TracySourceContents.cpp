@@ -33,6 +33,7 @@ void SourceContents::Parse( const char* fileName, const Worker& worker, const Vi
         if( srcCache.data != nullptr )
         {
             m_data = srcCache.data;
+            m_dataSize = srcCache.len;
             sz = srcCache.len;
         }
         else

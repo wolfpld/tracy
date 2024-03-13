@@ -494,6 +494,7 @@ private:
     bool m_showExternalFrames = true;
     bool m_showUnknownFrames = true;
     bool m_statSeparateInlines = false;
+    bool m_mergeInlines = false;
     bool m_statShowAddress = false;
     bool m_statShowKernel = true;
     bool m_groupChildrenLocations = false;

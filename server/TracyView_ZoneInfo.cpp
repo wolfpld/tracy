@@ -1132,7 +1132,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
     const auto ty = ImGui::GetTextLineHeight();
 
     ImGui::SameLine();
-    SmallCheckbox( "Group children locations", &m_groupChildrenLocations );
+    SmallCheckbox( ICON_FA_LAYER_GROUP " Group children locations", &m_groupChildrenLocations );
 
     if( m_groupChildrenLocations )
     {
@@ -1588,7 +1588,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
     const auto ty = ImGui::GetTextLineHeight();
 
     ImGui::SameLine();
-    SmallCheckbox( "Group children locations", &m_groupChildrenLocations );
+    SmallCheckbox( ICON_FA_LAYER_GROUP " Group children locations", &m_groupChildrenLocations );
 
     if( m_groupChildrenLocations )
     {

@@ -951,7 +951,7 @@ void View::DrawSampleParents()
         }
         case 1:
         {
-            SmallCheckbox( "Group by function name", &m_sampleParents.groupBottomUp );
+            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupBottomUp );
             auto tree = GetParentsCallstackFrameTreeBottomUp( stats, m_sampleParents.groupBottomUp );
             if( !tree.empty() )
             {
@@ -967,7 +967,7 @@ void View::DrawSampleParents()
         }
         case 2:
         {
-            SmallCheckbox( "Group by function name", &m_sampleParents.groupTopDown );
+            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupTopDown );
             auto tree = GetParentsCallstackFrameTreeTopDown( stats, m_sampleParents.groupTopDown );
             if( !tree.empty() )
             {

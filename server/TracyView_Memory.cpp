@@ -435,7 +435,7 @@ void View::DrawMemory()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        SmallCheckbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
+        SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         ImGui::SameLine();
@@ -473,7 +473,7 @@ void View::DrawMemory()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        SmallCheckbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
+        SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         ImGui::SameLine();

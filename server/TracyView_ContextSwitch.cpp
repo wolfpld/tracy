@@ -546,7 +546,7 @@ void View::DrawWaitStacks()
         }
         case 1:
         {
-            SmallCheckbox( "Group by function name", &m_groupWaitStackBottomUp );
+            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_groupWaitStackBottomUp );
             auto tree = GetCallstackFrameTreeBottomUp( stacks, m_groupCallstackTreeByNameBottomUp );
             if( !tree.empty() )
             {
@@ -561,7 +561,7 @@ void View::DrawWaitStacks()
         }
         case 2:
         {
-            SmallCheckbox( "Group by function name", &m_groupWaitStackTopDown );
+            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_groupWaitStackTopDown );
             auto tree = GetCallstackFrameTreeTopDown( stacks, m_groupCallstackTreeByNameTopDown );
             if( !tree.empty() )
             {

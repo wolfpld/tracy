@@ -99,6 +99,7 @@ static float dpiScale = 1.f;
 static bool dpiScaleOverriddenFromEnv = false;
 static float userScale = 1.f;
 static float prevScale = 1.f;
+static int dpiChanged = 0;
 static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
@@ -150,6 +151,7 @@ static void SetupDPIScale()
     auto scale = dpiScale * userScale;
 
     if( prevScale == scale ) return;
+    dpiChanged = 2;
 
     LoadFonts( scale );
     if( view ) view->UpdateFont( s_fixedWidth, s_smallFont, s_bigFont );
@@ -610,10 +612,13 @@ static void DrawContents()
         ImGui::PushFont( s_bigFont );
         tracy::TextCentered( buf );
         ImGui::PopFont();
-        ImGui::SameLine( ImGui::GetWindowContentRegionMax().x - ImGui::CalcTextSize( ICON_FA_WRENCH ).x - ImGui::GetStyle().FramePadding.x * 2 );
-        if( ImGui::Button( ICON_FA_WRENCH ) )
+        if( dpiChanged == 0 )
         {
-            ImGui::OpenPopup( "About Tracy" );
+            ImGui::SameLine( ImGui::GetWindowContentRegionMax().x - ImGui::CalcTextSize( ICON_FA_WRENCH ).x - ImGui::GetStyle().FramePadding.x * 2 );
+            if( ImGui::Button( ICON_FA_WRENCH ) )
+            {
+                ImGui::OpenPopup( "About Tracy" );
+            }
         }
         bool keepOpenAbout = true;
         if( ImGui::BeginPopupModal( "About Tracy", &keepOpenAbout, ImGuiWindowFlags_AlwaysAutoResize ) )
@@ -1161,4 +1166,5 @@ static void DrawContents()
     }
 
     bptr->EndFrame();
+    if( dpiChanged > 0 ) dpiChanged--;
 }

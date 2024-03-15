@@ -3,6 +3,7 @@
 #include <atomic>
 #include <chrono>
 #include <inttypes.h>
+#define IMGUI_DEFINE_MATH_OPERATORS 1
 #include <imgui.h>
 #include <mutex>
 #include <stdint.h>
@@ -97,6 +98,7 @@ static double animTime = 0;
 static float dpiScale = 1.f;
 static bool dpiScaleOverriddenFromEnv = false;
 static float userScale = 1.f;
+static float prevScale = 1.f;
 static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
@@ -134,9 +136,20 @@ static void RunOnMainThread( const std::function<void()>& cb, bool forceDelay = 
     mainThreadTasks.Queue( cb, forceDelay );
 }
 
+static void ScaleWindow(ImGuiWindow* window, float scale)
+{
+    ImVec2 origin = window->Viewport->Pos;
+    window->Pos = ImFloor((window->Pos - origin) * scale + origin);
+    window->Size = ImTrunc(window->Size * scale);
+    window->SizeFull = ImTrunc(window->SizeFull * scale);
+    window->ContentSize = ImTrunc(window->ContentSize * scale);
+}
+
 static void SetupDPIScale()
 {
     auto scale = dpiScale * userScale;
+
+    if( prevScale == scale ) return;
 
     LoadFonts( scale );
     if( view ) view->UpdateFont( s_fixedWidth, s_smallFont, s_bigFont );
@@ -166,6 +179,11 @@ static void SetupDPIScale()
     stbir_resize_uint8( iconPx, iconX, iconY, 0, scaleIcon, ty, ty, 0, 4 );
     tracy::UpdateTextureRGBA( iconTex, scaleIcon, ty, ty );
     delete[] scaleIcon;
+
+    const auto ratio = scale / prevScale;
+    prevScale = scale;
+    auto ctx = ImGui::GetCurrentContext();
+    for( auto& w : ctx->Windows ) ScaleWindow( w, ratio );
 }
 
 static void SetupScaleCallback( float scale )

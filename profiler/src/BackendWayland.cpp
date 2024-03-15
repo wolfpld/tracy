@@ -220,6 +220,7 @@ static void RecomputeScale()
     {
         if( out.second->entered && out.second->scale > max ) max = out.second->scale;
     }
+    if( s_maxScale != max ) tracy::s_wasActive = true;
     s_maxScale = max;
 }
 
@@ -644,6 +645,7 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
 
 static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
 {
+    if( s_maxScale != scale ) tracy::s_wasActive = true;
     s_maxScale = scale;
 }
 

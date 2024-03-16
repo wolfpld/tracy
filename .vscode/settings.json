@@ -1,8 +1,8 @@
 {
     "cmake.configureOnOpen": true,
     "cmake.sourceDirectory": [
+        "${workspaceFolder}/profiler",
         "${workspaceFolder}",
-        "${workspaceFolder}/profiler"
     ],
     "cmake.buildDirectory": "${sourceDirectory}/builddir",
 }

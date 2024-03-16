@@ -3,11 +3,6 @@
 
 set (ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../")
 
-if (EXISTS ${ROOT_DIR}/vcpkg_installed/x64-windows-static/lib/pkgconfig)
-    message(STATUS "Using vcpkg_installed/x64-windows-static/lib/pkgconfig")
-    set(ENV{PKG_CONFIG_PATH} "${ROOT_DIR}/vcpkg_installed/x64-windows-static/lib/pkgconfig")
-endif()
-
 if(WIN32)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
 endif()

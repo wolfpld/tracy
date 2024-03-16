@@ -100,6 +100,7 @@ static bool dpiScaleOverriddenFromEnv = false;
 static float userScale = 1.f;
 static float prevScale = 1.f;
 static int dpiChanged = 0;
+static bool dpiFirstSetup = true;
 static Filters* filt;
 static RunQueue mainThreadTasks;
 static uint32_t updateVersion = 0;
@@ -150,7 +151,8 @@ static void SetupDPIScale()
 {
     auto scale = dpiScale * userScale;
 
-    if( prevScale == scale ) return;
+    if( !dpiFirstSetup && prevScale == scale ) return;
+    dpiFirstSetup = false;
     dpiChanged = 2;
 
     LoadFonts( scale );

@@ -220,7 +220,13 @@ static void RecomputeScale()
     {
         if( out.second->entered && out.second->scale > max ) max = out.second->scale;
     }
-    if( s_maxScale != max ) tracy::s_wasActive = true;
+    if( s_maxScale != max )
+    {
+        tracy::s_wasActive = true;
+        s_w = s_w / s_maxScale * max;
+        s_h = s_h / s_maxScale * max;
+        wl_egl_window_resize( s_eglWin, s_w, s_h, 0, 0 );
+    }
     s_maxScale = max;
 }
 
@@ -645,7 +651,13 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
 
 static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
 {
-    if( s_maxScale != scale ) tracy::s_wasActive = true;
+    if( s_maxScale != scale )
+    {
+        tracy::s_wasActive = true;
+        s_w = s_w / s_maxScale * scale;
+        s_h = s_h / s_maxScale * scale;
+        wl_egl_window_resize( s_eglWin, s_w, s_h, 0, 0 );
+    }
     s_maxScale = scale;
 }
 
@@ -851,8 +863,8 @@ void Backend::NewFrame( int& w, int& h )
     m_winPos.maximize = s_maximized;
     if( !s_maximized )
     {
-        m_winPos.w = s_w;
-        m_winPos.h = s_h;
+        m_winPos.w = s_w / s_maxScale;
+        m_winPos.h = s_h / s_maxScale;
     }
 
     w = s_w;

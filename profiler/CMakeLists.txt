@@ -134,7 +134,7 @@ set(PROFILER_FILES
 set(INCLUDES "")
 set(LIBS "")
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT LEGACY)
+if(USE_WAYLAND)
     pkg_check_modules(WAYLAND REQUIRED egl wayland-egl wayland-cursor xkbcommon)
     set(INCLUDES "${INCLUDES};${WAYLAND_INCLUDE_DIRS}")
     set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
@@ -143,6 +143,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT LEGACY)
         src/wayland/xdg-activation.c
         src/wayland/xdg-decoration.c
         src/wayland/xdg-shell.c
+    )
+else()
+    set(PROFILER_FILES ${PROFILER_FILES}
+        src/BackendGlfw.cpp
+        src/imgui/imgui_impl_glfw.cpp
     )
 endif()
 

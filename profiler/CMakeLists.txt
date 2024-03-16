@@ -154,7 +154,16 @@ endif()
 include_directories(${INCLUDES})
 link_libraries(${LIBS})
 
-add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
+if(WIN32)
+    set(PROFILER_FILES ${PROFILER_FILES}
+        win32/Tracy.manifest
+        win32/Tracy.rc
+    )
+    add_executable(${PROJECT_NAME} WIN32 ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
+else()
+    add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
+endif()
+
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyImGui TracyCapstone TracyZstd TracyNfd)
 
 if(UNIX)

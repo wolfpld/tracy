@@ -157,6 +157,10 @@ link_libraries(${LIBS})
 add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyImGui TracyCapstone TracyZstd TracyNfd)
 
-if (UNIX)
+if(UNIX)
     target_link_libraries(${PROJECT_NAME} PRIVATE TracyTbb)
+endif()
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32)
 endif()

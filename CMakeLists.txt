@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Run version helper script
-include(version.cmake)
+include(cmake/version.cmake)
 
 set(TRACY_VERSION_MAJOR ${major})
 set(TRACY_VERSION_MINOR ${minor})

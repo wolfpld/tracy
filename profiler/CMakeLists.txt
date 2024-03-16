@@ -6,7 +6,7 @@ option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux")
 
 find_package(PkgConfig REQUIRED)
 
-include(../version.cmake)
+include(../cmake/version.cmake)
 
 set(TRACY_VERSION_MAJOR ${major})
 set(TRACY_VERSION_MINOR ${minor})

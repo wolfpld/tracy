@@ -32,3 +32,11 @@ target_link_libraries(TracyServer PUBLIC TracyCapstone TracyZstd)
 if(NO_STATISTICS)
     target_compile_definitions(TracyServer PUBLIC TRACY_NO_STATISTICS)
 endif()
+
+if(UNIX)
+    target_link_libraries(TracyServer PRIVATE TracyTbb)
+endif()
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32)
+endif()

@@ -3,10 +3,6 @@
 
 set (ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../")
 
-if(WIN32)
-    add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
-endif()
-
 # Dependencies are taken from the system first and if not found, they are pulled with CPM and built from source
 
 include(FindPkgConfig)

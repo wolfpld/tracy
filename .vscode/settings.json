@@ -2,6 +2,11 @@
     "cmake.configureOnOpen": true,
     "cmake.sourceDirectory": [
         "${workspaceFolder}/profiler",
+        "${workspaceFolder}/capture",
+        "${workspaceFolder}/csvexport",
+        "${workspaceFolder}/import-chrome",
+        "${workspaceFolder}/import-fuchsia",
+        "${workspaceFolder}/update",
         "${workspaceFolder}",
     ],
     "cmake.buildDirectory": "${sourceDirectory}/builddir",

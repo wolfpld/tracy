@@ -26,3 +26,7 @@ set(PROGRAM_FILES
 
 add_executable(${PROJECT_NAME} ${PROGRAM_FILES} ${COMMON_FILES} ${SERVER_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyGetOpt)
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE dbghelp)
+endif()

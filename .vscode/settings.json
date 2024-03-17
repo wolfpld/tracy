@@ -14,5 +14,6 @@
     "cmake.options.advanced": {
         "folder": { "statusBarVisibility": "visible" },
         "variant": { "statusBarVisibility": "compact" }
-    }
+    },
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
 }

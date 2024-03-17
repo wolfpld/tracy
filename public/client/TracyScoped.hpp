@@ -57,7 +57,7 @@ public:
         TracyQueueCommit( zoneBeginThread );
     }
 
-    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active = true )
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -69,13 +69,15 @@ public:
         m_connectionId = GetProfiler().ConnectionId();
 #endif
         TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLoc );
-        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
+        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, srcloc );
         TracyQueueCommit( zoneBeginThread );
     }
 
-    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true )
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active = true ) : ScopedZone( line, source, sourceSz, function, functionSz, name, nameSz, static_cast<uint32_t>(0), is_active ) {}
+
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color, int depth, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -89,11 +91,13 @@ public:
         GetProfiler().SendCallstack( depth );
 
         TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
-        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz );
+        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, srcloc );
         TracyQueueCommit( zoneBeginThread );
     }
+
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true ) : ScopedZone( line, source, sourceSz, function, functionSz, name, nameSz, 0, depth, is_active ) {}
 
     tracy_force_inline ~ScopedZone()
     {

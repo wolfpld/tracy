@@ -167,3 +167,13 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
         INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
+
+option(TRACY_CLIENT_PYTHON "Whether to build Tracy python client library" OFF)
+
+if(TRACY_CLIENT_PYTHON)
+    if(TRACY_STATIC)
+        message(FATAL_ERROR "Python-bindings require a shared client library")
+    endif()
+
+    add_subdirectory(python)
+endif()

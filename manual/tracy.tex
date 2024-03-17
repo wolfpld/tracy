@@ -2181,6 +2181,129 @@ Since you are directly calling the profiler functions here, you will need to tak
 disabling the code if the \texttt{TRACY\_ENABLE} macro is not defined.
 \end{bclogo}
 
+\subsection{Python API}
+\label{pythonapi}
+
+To profile Python code using Tracy, a Python package can be built. This is done using the excellent C++11 based Python bindings generator pybind11, see \url{https://pybind11.readthedocs.io}.
+As a first step, a Tracy-Client shared library needs to be built (with the compile definitions you want to use) and then pybind11 is used to create the Python-bindings.
+Afterwards, a Python c-extension package can be created (the package will be platform and Python version dependent).
+
+An especially powerful feature is the ability to profile Python code and any other C/C++ code used in a single code base as long as the C/C++ code links to the same shared Tracy-Client library that is installed with the Python package.
+
+\subsubsection{Bindings}
+
+An example of how to use the Tracy-Client bindings is shown below:
+
+\begin{lstlisting}
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from time import sleep
+
+import numpy as np
+
+import tracy_client as tracy
+
+
+@tracy.ScopedFrameDecorator("framed")
+@tracy.ScopedZoneDecorator(name="work", color=tracy.ColorType.Red4)
+def work():
+    sleep(0.05)
+
+
+def main():
+    assert tracy.program_name("MyApp")
+    assert tracy.app_info("this is a python app")
+
+    tracy.thread_name("python")  # main thread so bit useless
+
+    plot_id = tracy.plot_config("plot", tracy.PlotFormatType.Number)
+    assert plot_id is not None
+
+    mem_id = None
+
+    index = 0
+    while True:
+        with tracy.ScopedZone(name="test", color=tracy.ColorType.Coral) as zone:
+            index += 1
+
+            tracy.frame_mark()
+
+            inner = tracy.ScopedZone(depth=5, color=tracy.ColorType.Coral)
+            inner.color(index % 5)
+            inner.name(str(index))
+            inner.enter()
+
+            if index % 2:
+                tracy.alloc(44, index)
+            else:
+                tracy.free(44)
+
+            if not index % 2:
+                if mem_id is None:
+                    mem_id = tracy.alloc(1337000000, index, name="named", depth=4)
+                    assert mem_id is not None
+                else:
+                    tracy.alloc(1337000000, index, id=mem_id, depth=4)
+            else:
+                tracy.free(1337000000, mem_id, 4)
+
+            with tracy.ScopedFrame("custom"):
+
+                image = np.full([400, 400, 4], index, dtype=np.uint8)
+                assert tracy.frame_image(image.tobytes(), 400, 400)
+
+            inner.exit()
+
+            zone.text(index)
+
+            assert tracy.message(f"we are at index {index}")
+            assert tracy.message(f"we are at index {index}", tracy.ColorType.Coral)
+
+            assert tracy.plot(plot_id, index)
+
+            work()
+
+            sleep(0.1)
+
+
+if __name__ == "__main__":
+    main()
+\end{lstlisting}
+
+Please not the use of ids as way to cope with the need for unique pointers for certain features of the Tracy profiler, see section~\ref{uniquepointers}.
+
+\subsubsection{Building the Python package}
+
+To build the Python package, you will need to use the CMake build system to compile the Tracy-Client.
+The CMake option \texttt{-D TRACY_CLIENT_PYTHON=ON} is used to enable the generation of the Python bindings in conjunction with a mandatory creation of a shared Tracy-Client library via one of the CMake options \texttt{-D BUILD_SHARED_LIBS=ON} or \texttt{-D DEFAULT_STATIC=OFF}.
+
+The following two variables are available in addition:
+
+\begin{itemize}
+\item \texttt{BUFFER_SIZE} --- The size of the global pointer buffer (defaults to 128) for naming Tracy profiling entities like frame marks, plots, and memory locations.
+\item \texttt{NAME_LENGTH} --- The maximum length (defaults to 128) of a name stored in the global pointer buffer.
+\end{itemize}
+
+Be aware that the memory allocated by this buffer is global and is not freed, see section ~\ref{uniquepointers}.
+
+See below for example steps to build the Python bindings using CMake:
+
+\begin{lstlisting}
+mkdir build
+cd build
+cmake -DTRACY_STATIC=OFF -DTRACY_CLIENT_PYTHON=ON ../
+\end{lstlisting}
+
+Once this has finished building the Python package can be built as follows:
+
+\begin{lstlisting}
+cd ../python
+python3 setup.py bdist_wheel
+\end{lstlisting}
+
+The created package will be in the folder \texttt{python/dist}.
+
 \subsection{Automated data collection}
 \label{automated}
 

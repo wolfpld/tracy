@@ -1,0 +1,16 @@
+function(fix_header FILE)
+    file(READ ${FILE} FILE_CONTENT)
+    string(REPLACE "../client" "client" FILE_CONTENT "${FILE_CONTENT}")
+    string(REPLACE "../common" "common" FILE_CONTENT "${FILE_CONTENT}")
+    string(REPLACE "../tracy" "tracy" FILE_CONTENT "${FILE_CONTENT}")
+    file(WRITE ${FILE} "${FILE_CONTENT}")
+endfunction()
+
+function(fix_headers FOLDER)
+    file(GLOB FILES "${FOLDER}/*.h*")
+    foreach(FILE ${FILES})
+        fix_header(${FILE})
+    endforeach()
+endfunction()
+
+fix_headers(${FOLDER})

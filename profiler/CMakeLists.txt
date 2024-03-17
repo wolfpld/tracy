@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
-option(NO_FILESELECTOR "Disable the file selector")
-option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one")
-option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux")
-option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)")
+option(NO_FILESELECTOR "Disable the file selector" OFF)
+option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
+option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
+option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
+option(NO_STATISTICS "Disable calculation of statistics" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
@@ -44,14 +45,7 @@ else()
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
-
-set(COMMON_FILES
-    ../public/common/tracy_lz4.cpp
-    ../public/common/tracy_lz4hc.cpp
-    ../public/common/TracySocket.cpp
-    ../public/common/TracyStackFrames.cpp
-    ../public/common/TracySystem.cpp
-)
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
 set(SERVER_FILES
     ../server/TracyBadVersion.cpp
@@ -60,20 +54,14 @@ set(SERVER_FILES
     ../server/TracyFileselector.cpp
     ../server/TracyFilesystem.cpp
     ../server/TracyImGui.cpp
-    ../server/TracyMemory.cpp
     ../server/TracyMicroArchitecture.cpp
-    ../server/TracyMmap.cpp
     ../server/TracyMouse.cpp
-    ../server/TracyPrint.cpp
     ../server/TracyProtoHistory.cpp
     ../server/TracySourceContents.cpp
     ../server/TracySourceTokenizer.cpp
     ../server/TracySourceView.cpp
     ../server/TracyStorage.cpp
-    ../server/TracyTaskDispatch.cpp
     ../server/TracyTexture.cpp
-    ../server/TracyTextureCompression.cpp
-    ../server/TracyThreadCompress.cpp
     ../server/TracyTimelineController.cpp
     ../server/TracyTimelineItem.cpp
     ../server/TracyTimelineItemCpuData.cpp
@@ -111,7 +99,6 @@ set(SERVER_FILES
     ../server/TracyView_ZoneInfo.cpp
     ../server/TracyView_ZoneTimeline.cpp
     ../server/TracyWeb.cpp
-    ../server/TracyWorker.cpp
 )
 
 set(PROFILER_FILES
@@ -164,7 +151,7 @@ else()
     add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyImGui TracyCapstone TracyZstd TracyNfd)
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui TracyNfd)
 
 if(UNIX)
     target_link_libraries(${PROJECT_NAME} PRIVATE TracyTbb)

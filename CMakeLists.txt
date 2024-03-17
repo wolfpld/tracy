@@ -3,11 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 # Run version helper script
 include(cmake/version.cmake)
 
-set(TRACY_VERSION_MAJOR ${major})
-set(TRACY_VERSION_MINOR ${minor})
-set(TRACY_VERSION_PATCH ${patch})
-set(TRACY_VERSION_STRING "${TRACY_VERSION_MAJOR}.${TRACY_VERSION_MINOR}.${TRACY_VERSION_PATCH}")
-
 project(Tracy LANGUAGES CXX VERSION ${TRACY_VERSION_STRING})
 
 if(${BUILD_SHARED_LIBS})

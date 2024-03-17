@@ -8,11 +8,6 @@ option(NO_STATISTICS "Disable calculation of statistics" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
-set(TRACY_VERSION_MAJOR ${major})
-set(TRACY_VERSION_MINOR ${minor})
-set(TRACY_VERSION_PATCH ${patch})
-set(TRACY_VERSION_STRING "${TRACY_VERSION_MAJOR}.${TRACY_VERSION_MINOR}.${TRACY_VERSION_PATCH}")
-
 set(CMAKE_CXX_STANDARD 20)
 
 project(

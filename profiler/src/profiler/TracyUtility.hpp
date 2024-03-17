@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "imgui.h"
-#include "TracyEvent.hpp"
+#include "../server/TracyEvent.hpp"
 
 namespace tracy
 {

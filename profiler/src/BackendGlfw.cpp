@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <thread>
 
-#include "../../server/TracyImGui.hpp"
+#include "profiler/TracyImGui.hpp"
 
 #include "Backend.hpp"
 #include "RunQueue.hpp"

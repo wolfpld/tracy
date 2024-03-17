@@ -15,16 +15,16 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
-#include "TracyFileWrite.hpp"
-#include "TracyShortPtr.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyUserData.hpp"
 #include "TracyUtility.hpp"
-#include "TracyVector.hpp"
 #include "TracyViewData.hpp"
-#include "TracyWorker.hpp"
-#include "tracy_robin_hood.h"
+#include "../server/TracyFileWrite.hpp"
+#include "../server/TracyShortPtr.hpp"
+#include "../server/TracyWorker.hpp"
+#include "../server/tracy_robin_hood.h"
+#include "../server/TracyVector.hpp"
 
 namespace tracy
 {

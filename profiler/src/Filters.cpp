@@ -4,7 +4,7 @@
 
 #include "Filters.hpp"
 
-#include "../../server/TracyStorage.hpp"
+#include "profiler/TracyStorage.hpp"
 
 
 Filters::Filters()

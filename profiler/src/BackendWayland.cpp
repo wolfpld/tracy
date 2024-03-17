@@ -23,7 +23,7 @@
 #include "wayland/xdg-decoration.h"
 #include "wayland/xdg-shell.h"
 
-#include "../../server/TracyImGui.hpp"
+#include "profiler/TracyImGui.hpp"
 
 #include "Backend.hpp"
 #include "RunQueue.hpp"

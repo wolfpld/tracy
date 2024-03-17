@@ -4,7 +4,7 @@
 #include "Fonts.hpp"
 #include "misc/freetype/imgui_freetype.h"
 #include "imgui/imgui_impl_opengl3.h"
-#include "../../server/IconsFontAwesome6.h"
+#include "profiler/IconsFontAwesome6.h"
 
 #include "font/DroidSans.hpp"
 #include "font/FiraCodeRetina.hpp"

@@ -5,7 +5,7 @@
 #include "ConnectionHistory.hpp"
 
 #include "../../server/tracy_pdqsort.h"
-#include "../../server/TracyStorage.hpp"
+#include "profiler/TracyStorage.hpp"
 
 
 ConnectionHistory::ConnectionHistory()

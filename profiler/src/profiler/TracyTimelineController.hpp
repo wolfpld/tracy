@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "TracyImGui.hpp"
-#include "TracyTaskDispatch.hpp"
+#include "../server/TracyTaskDispatch.hpp"
+#include "../server/tracy_robin_hood.h"
 #include "../public/common/TracyForceInline.hpp"
-#include "tracy_robin_hood.h"
 
 namespace tracy
 {

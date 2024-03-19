@@ -131,7 +131,7 @@ function(ecm_add_wayland_client_protocol out_var)
     )
 
     add_custom_command(OUTPUT "${_code}"
-        COMMAND ${WaylandScanner_EXECUTABLE} code ${_infile} ${_code}
+        COMMAND ${WaylandScanner_EXECUTABLE} private-code ${_infile} ${_code}
         DEPENDS ${WaylandScanner_EXECUTABLE} ${_infile} ${_client_header}
         VERBATIM
     )

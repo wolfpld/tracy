@@ -98,13 +98,28 @@ set(LIBS "")
 
 if(USE_WAYLAND)
     pkg_check_modules(WAYLAND REQUIRED egl wayland-egl wayland-cursor xkbcommon)
-    set(INCLUDES "${INCLUDES};${WAYLAND_INCLUDE_DIRS}")
+    set(INCLUDES "${INCLUDES};${CMAKE_CURRENT_BINARY_DIR}")
     set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendWayland.cpp
-        src/wayland/xdg-activation.c
-        src/wayland/xdg-decoration.c
-        src/wayland/xdg-shell.c
+    )
+
+    include(${CMAKE_CURRENT_LIST_DIR}/../cmake/FindWaylandScanner.cmake)
+
+    pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
+    pkg_get_variable(WAYLAND_PROTOCOLS_PKGDATADIR wayland-protocols pkgdatadir)
+
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/xdg-shell/xdg-shell.xml
+        BASENAME xdg-shell
+    )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/xdg-activation/xdg-activation-v1.xml
+        BASENAME xdg-activation
+    )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
+        BASENAME xdg-decoration
     )
 else()
     set(PROFILER_FILES ${PROFILER_FILES}

@@ -9,7 +9,7 @@
         "${workspaceFolder}/update",
         "${workspaceFolder}",
     ],
-    "cmake.buildDirectory": "${sourceDirectory}/builddir",
+    "cmake.buildDirectory": "${sourceDirectory}/build",
     "cmake.autoSelectActiveFolder": false,
     "cmake.options.advanced": {
         "folder": { "statusBarVisibility": "visible" },

@@ -33,7 +33,7 @@ if(NO_STATISTICS)
     target_compile_definitions(TracyServer PUBLIC TRACY_NO_STATISTICS)
 endif()
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     target_link_libraries(TracyServer PRIVATE TracyTbb)
 endif()
 

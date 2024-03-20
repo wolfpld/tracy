@@ -33,7 +33,7 @@ endif()
 
 # GLFW
 
-if(NOT USE_WAYLAND)
+if(NOT USE_WAYLAND AND NOT EMSCRIPTEN)
     pkg_check_modules(GLFW glfw3)
     if (GLFW_FOUND AND NOT DOWNLOAD_GLFW)
         add_library(TracyGlfw3 INTERFACE)
@@ -161,13 +161,9 @@ add_library(TracyImGui STATIC ${IMGUI_SOURCES})
 target_include_directories(TracyImGui PUBLIC ${IMGUI_DIR})
 target_link_libraries(TracyImGui PUBLIC TracyFreetype)
 
-if (NOT USE_WAYLAND)
-    target_link_libraries(TracyImGui PUBLIC TracyGlfw3)
-endif()
-
 # NFD
 
-if (NOT NO_FILESELECTOR)
+if (NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
     set(NFD_DIR "${ROOT_DIR}/nfd")
 
     if (WIN32)
@@ -215,7 +211,7 @@ endif()
 
 # TBB
 
-if (UNIX AND NOT APPLE)
+if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     # Tracy does not use TBB directly, but the implementation of parallel algorithms
     # in some versions of libstdc++ depends on TBB. When it does, you must
     # explicitly link against -ltbb.

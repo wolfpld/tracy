@@ -190,9 +190,7 @@ if (NOT NO_FILESELECTOR)
         find_library(APPKIT_LIBRARY AppKit)
         find_library(UNIFORMTYPEIDENTIFIERS_LIBRARY UniformTypeIdentifiers)
         target_link_libraries(TracyNfd PUBLIC ${APPKIT_LIBRARY} ${UNIFORMTYPEIDENTIFIERS_LIBRARY})
-    endif()
-
-    if (UNIX)
+    elseif (UNIX)
         if (TRACY_GTK_FILESELECTOR)
             pkg_check_modules(GTK3 gtk+-3.0)
             if (NOT GTK3_FOUND)
@@ -217,7 +215,7 @@ endif()
 
 # TBB
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
     # Tracy does not use TBB directly, but the implementation of parallel algorithms
     # in some versions of libstdc++ depends on TBB. When it does, you must
     # explicitly link against -ltbb.

@@ -1,4 +1,4 @@
-name: linux
+name: build
 
 on:
   push:
@@ -8,12 +8,25 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: archlinux:base-devel
+    strategy:
+      matrix:
+        os: [ windows-latest, macos-latest ]
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 capstone tbb debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols
+    - if: startsWith(matrix.os, 'windows')
+      uses: microsoft/setup-msbuild@v2
+    - if: startsWith(matrix.os, 'windows')
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - if: startsWith(matrix.os, 'windows')
+      run: pip install meson ninja
+    - if: startsWith(matrix.os, 'macos')
+      name: Install macos dependencies
+      run: brew install pkg-config glfw meson
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler
@@ -38,17 +51,11 @@ jobs:
       run: |
         cmake -B import-fuchsia/build -S import-fuchsia
         cmake --build import-fuchsia/build --config Release --parallel
-    - name: Library
+    - if: ${{ !startsWith(matrix.os, 'windows') }}
+      name: Library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
-    - name: Test application
-      run: |
-        make -j`nproc` -C test
-        make -j`nproc` -C test clean
-        make -j`nproc` -C test TRACYFLAGS=-DTRACY_ON_DEMAND
-        make -j`nproc` -C test clean
-        make -j`nproc` -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"
-        make           -C test -B ../public/TracyClient.o DEFINES='-DTRACY_DEMANGLE'
-    - name: Find Artifacts
+    - if: ${{ !startsWith(matrix.os, 'windows') }}
+      name: Find Artifacts
       id: find_artifacts
       run: |
         mkdir -p bin
@@ -58,8 +65,18 @@ jobs:
         cp csvexport/build/tracy-csvexport bin
         cp import-chrome/build/tracy-import-chrome bin
         cp import-fuchsia/build/tracy-import-fuchsia bin
-        strip bin/tracy-*
+    - if: startsWith(matrix.os, 'windows')
+      name: Find Artifacts
+      id: find_artifacts_windows
+      run: |
+        mkdir bin
+        copy profiler\build\Release\tracy-profiler.exe bin
+        copy update\build\Release\tracy-update.exe bin
+        copy capture\build\Release\tracy-capture.exe bin
+        copy csvexport\build\Release\tracy-csvexport.exe bin
+        copy import-chrome\build\Release\tracy-import-chrome.exe bin
+        copy import-fuchsia\build\Release\tracy-import-fuchsia.exe bin
     - uses: actions/upload-artifact@v4
       with:
-        name: arch-linux
+        name: ${{ matrix.os }}
         path: bin

@@ -36,7 +36,3 @@ endif()
 if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     target_link_libraries(TracyServer PRIVATE TracyTbb)
 endif()
-
-if(WIN32)
-    target_link_libraries(TracyServer PRIVATE ws2_32)
-endif()

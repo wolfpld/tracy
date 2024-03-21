@@ -16,6 +16,8 @@
 
 #include "OfflineSymbolResolver.h"
 
+#pragma comment(lib, "dbghelp.lib")
+
 class SymbolResolver
 {
 public:

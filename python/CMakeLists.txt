@@ -1,9 +1,13 @@
-find_package(Python 3.6 COMPONENTS Interpreter Development REQUIRED)
+option(EXTERNAL_PYBIND11 "Whether to download pybind11" ON)
 
-include(FetchContent)
+if(EXTERNAL_PYBIND11)
+    find_package(Python 3.6 COMPONENTS Interpreter Development REQUIRED)
 
-FetchContent_Declare(pybind11 GIT_REPOSITORY "https://github.com/pybind/pybind11.git" GIT_TAG "v2.11.1" GIT_SHALLOW ON TEST_BEFORE_INSTALL ON)
-FetchContent_MakeAvailable(pybind11)
+    include(FetchContent)
+
+    FetchContent_Declare(pybind11 GIT_REPOSITORY "https://github.com/pybind/pybind11.git" GIT_TAG "v2.11.1" GIT_SHALLOW ON TEST_BEFORE_INSTALL ON)
+    FetchContent_MakeAvailable(pybind11)
+endif()
 
 set(BUFFER_SIZE 128 CACHE STRING "The size of the pointer buffer")
 set(NAME_LENGTH 128 CACHE STRING "The length of a name in the buffer")

@@ -3,6 +3,12 @@
 // include __WORDSIZE headers for musl
 #  include <bits/reg.h>
 #endif
+
+#ifdef __HAIKU__
+#  include <config/HaikuConfig.h>
+#  define __WORDSIZE __HAIKU_ARCH_BITS
+#endif
+
 #if __WORDSIZE == 64
 #  define BACKTRACE_ELF_SIZE 64
 #else

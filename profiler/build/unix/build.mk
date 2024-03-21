@@ -2,7 +2,7 @@ CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=c++17
 DEFINES += -DIMGUI_ENABLE_FREETYPE
 INCLUDES := -I../../../imgui $(shell pkg-config --cflags freetype2 capstone wayland-egl egl wayland-cursor xkbcommon)
-LIBS := $(shell pkg-config --libs freetype2 capstone wayland-egl egl wayland-cursor xkbcommon) -lpthread -ldl
+LIBS := $(shell pkg-config --libs freetype2 capstone wayland-egl egl wayland-cursor xkbcommon) -lpthread
 
 PROJECT := Tracy
 IMAGE := $(PROJECT)-$(BUILD)
@@ -21,9 +21,14 @@ else
 		INCLUDES += $(shell pkg-config --cflags gtk+-3.0)
 		LIBS += $(shell pkg-config --libs gtk+-3.0)
 	else
-		SRC += ../../../nfd/nfd_portal.cpp
-		INCLUDES += $(shell pkg-config --cflags dbus-1)
-		LIBS += $(shell pkg-config --libs dbus-1)
+		ifeq ($(shell uname -o),Haiku)
+			SRC += ../../../nfd/nfd_haiku.cpp
+			LIBS += -lbe -ltracker
+		else
+			SRC += ../../../nfd/nfd_portal.cpp
+			INCLUDES += $(shell pkg-config --cflags dbus-1)
+			LIBS += $(shell pkg-config --libs dbus-1)
+		endif
 	endif
 endif
 

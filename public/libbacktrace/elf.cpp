@@ -71,6 +71,10 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #endif
 #endif
 
+#ifdef __HAIKU__
+#  define ElfW(x) Elf_##x
+#endif
+
 namespace tracy
 {
 

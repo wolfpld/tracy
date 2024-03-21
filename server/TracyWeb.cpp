@@ -17,7 +17,7 @@ void OpenWebpage( const char* url )
 {
 #ifdef _WIN32
     ShellExecuteA( nullptr, nullptr, url, nullptr, nullptr, 0 );
-#elif defined __APPLE__
+#elif defined __APPLE__ || defined __HAIKU__
     char buf[1024];
     sprintf( buf, "open %s", url );
     system( buf );

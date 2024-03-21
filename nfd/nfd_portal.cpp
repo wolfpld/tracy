@@ -16,7 +16,20 @@
 #include <string.h>
 #include <unistd.h>  // for access()
 
-#if !defined(__has_include) || !defined(__linux__)
+#if defined __HAIKU__
+#include <uuid/uuid.h>
+static inline size_t szmin(size_t a, size_t b) {
+	return a < b? a : b;
+}
+static inline ssize_t getrandom(unsigned char * buf, size_t buflen, unsigned int flags) {
+	for (size_t i = 0; i < buflen; i += sizeof(uuid_t)) {
+		uuid_t uuid;
+		uuid_generate_random(uuid);
+		memcpy(buf+i, uuid, szmin(buflen-i, sizeof(uuid)));
+	}
+	return buflen;
+}
+#elif !defined(__has_include) || !defined(__linux__)
 #include <sys/random.h>  // for getrandom() - the random token string
 #elif __has_include(<sys/random.h>)
 #include <sys/random.h>

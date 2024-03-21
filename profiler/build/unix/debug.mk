@@ -1,4 +1,5 @@
 CFLAGS := -g3 -Wall
+LDFLAGS := -g3
 DEFINES := -DDEBUG
 BUILD := debug
 

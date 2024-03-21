@@ -90,7 +90,7 @@
 #  endif
 #endif
 
-#ifdef __APPLE__
+#if defined __APPLE__ || defined __HAIKU__
 #  ifndef TRACY_DELAYED_INIT
 #    define TRACY_DELAYED_INIT
 #  endif
@@ -418,9 +418,30 @@ static const char* GetProcessName()
     if( buf ) processName = buf;
 #elif defined __QNX__
     processName = __progname;
+#elif defined __HAIKU__
+	team_info ti;
+	get_team_info(B_CURRENT_TEAM, &ti);
+	static char name[B_OS_NAME_LENGTH];
+	memcpy(name, ti.name, sizeof(name));
+	processName = name;
 #endif
     return processName;
 }
+
+
+#if defined __HAIKU__
+#include <image.h>
+static char executable_path[MAXPATHLEN];
+
+extern "C" void
+initialize_before(image_id our_image)
+{
+  image_info ii;
+  get_image_info(our_image, &ii);
+  snprintf(executable_path, sizeof(executable_path), "%s", ii.name);
+}
+#endif
+
 
 static const char* GetProcessExecutablePath()
 {
@@ -459,6 +480,8 @@ static const char* GetProcessExecutablePath()
     static char buf[_PC_PATH_MAX + 1];
     _cmdname(buf);
     return buf;
+#elif defined __HAIKU__
+	return executable_path;
 #else
     return nullptr;
 #endif
@@ -539,6 +562,8 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
 #elif defined __QNX__
     ptr += sprintf( ptr, "OS: QNX\n" );
+#elif defined __HAIKU__
+    ptr += sprintf( ptr, "OS: Haiku\n" );
 #else
     ptr += sprintf( ptr, "OS: unknown\n" );
 #endif
@@ -726,6 +751,11 @@ static const char* GetHostInfo()
     }
     memSize = memSize / 1024 / 1024;
     ptr += sprintf( ptr, "RAM: %llu MB\n", memSize);
+#elif defined __HAIKU__
+    system_info si;
+    get_system_info(&si);
+    size_t memSize = si.max_pages * PAGESIZE;
+    ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024);
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );
 #endif

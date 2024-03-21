@@ -31,6 +31,8 @@
 #elif defined __QNX__
 #  include <process.h>
 #  include <sys/neutrino.h>
+#elif defined __HAIKU__
+#  include <kernel/OS.h>
 #endif
 
 #ifdef __MINGW32__
@@ -86,6 +88,8 @@ TRACY_API uint32_t GetThreadHandleImpl()
 #elif defined __EMSCRIPTEN__
     // Not supported, but let it compile.
     return 0;
+#elif defined __HAIKU__
+	return find_thread(0);
 #else
     // To add support for a platform, retrieve and return the kernel thread identifier here.
     //
@@ -196,6 +200,8 @@ TRACY_API void SetThreadName( const char* name )
             pthread_setname_np( pthread_self(), buf );
         }
     };
+#elif defined __HAIKU__
+	rename_thread(find_thread(0), name);
 #endif
 #ifdef TRACY_ENABLE
     {
@@ -280,6 +286,10 @@ TRACY_API const char* GetThreadName( uint32_t id )
     if (pthread_getname_np(static_cast<int>(id), qnxNameBuf, _NTO_THREAD_NAME_MAX) == 0) {
         return qnxNameBuf;
     };
+#elif defined __HAIKU__
+	thread_info ti;
+	get_thread_info(find_thread(NULL), &ti);
+	snprintf(buf, sizeof(buf), "%s", ti.name);
 #endif
 
   sprintf( buf, "%" PRIu32, id );

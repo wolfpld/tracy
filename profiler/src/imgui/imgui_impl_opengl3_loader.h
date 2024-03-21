@@ -685,7 +685,13 @@ static int open_libgl(void)
         libgl = dlopen("libGL.so.3", RTLD_LAZY | RTLD_LOCAL);
     if (!libgl)
         return GL3W_ERROR_LIBRARY_OPEN;
-    *(void **)(&glx_get_proc_address) = dlsym(libgl, "glXGetProcAddressARB");
+    *(void **)(&glx_get_proc_address) = dlsym(libgl,
+#if defined __HAIKU__
+											  "_glapi_get_proc_address"
+#else
+											  "glXGetProcAddressARB"
+#endif
+											  );
     return GL3W_OK;
 }
 

@@ -1,5 +1,5 @@
 #ifdef TRACY_ENABLE
-#  ifdef __linux__
+#  if defined __linux__ || defined __HAIKU__
 #    include "TracyDebug.hpp"
 #    ifdef TRACY_VERBOSE
 #      include <dlfcn.h>

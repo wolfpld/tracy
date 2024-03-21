@@ -3,7 +3,12 @@ CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE
 CXXFLAGS := $(CFLAGS) -std=gnu++11
 DEFINES +=
 INCLUDES := -I../public/tracy
-LIBS := -lpthread -ldl
+LIBS := -lpthread
+ifeq ($(shell uname -o),Haiku)
+LIBS += -lroot -lnetwork -lbsd
+else
+LIBS += -ldl
+endif
 LDFLAGS := -rdynamic
 IMAGE := tracy_test
 

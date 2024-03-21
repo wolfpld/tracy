@@ -1,7 +1,9 @@
 #include <atomic>
 #include <assert.h>
 #include <errno.h>
+#if !defined __HAIKU__
 #include <linux/perf_event.h>
+#endif
 #include <stdint.h>
 #include <string.h>
 #include <sys/ioctl.h>

@@ -605,8 +605,7 @@ public:
         profiler.m_serialLock.unlock();
 #else
         static_cast<void>(depth); // unused
-        static_cast<void>(name); // unused
-        MemAlloc( ptr, size, secure );
+        MemAllocNamed( ptr, size, secure, name );
 #endif
     }
 
@@ -629,8 +628,7 @@ public:
         profiler.m_serialLock.unlock();
 #else
         static_cast<void>(depth); // unused
-        static_cast<void>(name); // unused
-        MemFree( ptr, secure );
+        MemFreeNamed( ptr, secure, name );
 #endif
     }
 

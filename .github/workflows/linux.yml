@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
-      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 capstone tbb debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 tbb debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler

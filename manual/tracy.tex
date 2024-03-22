@@ -772,6 +772,8 @@ We can also see that the graph gradually falls off to the right (representing lo
 \subsection{Building the server}
 \label{buildingserver}
 
+Tracy uses the CMake build system. Unlike in most other programs, the root-level \texttt{CMakeLists.txt} file is only used to provide client integration. The build definition files used to create profiler executables are stored in directories specific to each utility.
+
 The easiest way to get going is to build the data analyzer, available in the \texttt{profiler} directory. Then, you can connect to localhost or remote clients and view the collected data right away with it.
 
 If you prefer to inspect the data only after a trace has been performed, you may use the command-line utility in the \texttt{capture} directory. It will save a data dump that you may later open in the graphical viewer application.
@@ -783,6 +785,26 @@ See section~\ref{capturing} for more information about performing captures.
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
+logo=\bclampe
+]{How to use CMake}
+The \texttt{CMakeLists.txt} file only contains the general definition of how the program should be built. To be able to actually compile the program, you must first create a build directory that takes into account the specific compiler you have on your system, the set of available libraries, the build options you specify, and so on. You can do this by issuing the following command, in this case for the \texttt{profiler} utility:
+
+\begin{lstlisting}[language=sh]
+cmake -B profiler/build -S profiler
+\end{lstlisting}
+
+Now that you have a build directory, you can actually compile the program. For example, you could run the following command:
+
+\begin{lstlisting}[language=sh]
+cmake --build profiler/build --config Release --parallel
+\end{lstlisting}
+
+The build directory can be reused if you want to compile the program in the future, for example if there have been some updates to the source code, and usually does not need to be regenerated. Note that all build artifacts are contained in the build directory.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
 logo=\bcbombe
 ]{Important}
 Due to the memory requirements for data storage, the Tracy server is only supposed to run on 64-bit platforms. While nothing prevents the program from building and executing in a 32-bit environment, doing so is not supported.
@@ -790,44 +812,49 @@ Due to the memory requirements for data storage, the Tracy server is only suppos
 
 \subsubsection{Required libraries}
 
-To build the application contained in the \texttt{profiler} directory, you will need to install external libraries, which are not bundled with Tracy.
+The core libraries necessary for the building of Tracy utilities are:
 
-\subparagraph{Capstone library} At the time of writing, the capstone library is in a bit of disarray. The officially released version 4.0.2 can't disassemble some AVX instructions, which are successfully parsed by the \texttt{next} branch. However, the \texttt{next} branch somehow lost information about input/output registers for some functions. You may want to explore the various available versions to find one that suits your needs the best. Note that only the \texttt{next} branch is actively maintained. Be aware that your package manager might distribute the deprecated \texttt{master} branch.
+\begin{itemize}
+\item capstone
+\item glfw
+\item freetype
+\end{itemize}
+
+The capstone library will always be downloaded from GitHub when the CMake build directory is created, unless you have it installed on your system and set the specific build option. You must have git installed for this download to work. Using the capstone library provided by package managers is not recommended, as these packages are typically slow to provide up-to-date versions of the library, and the API may be incompatible.
+
+It is recommended that you install the glfw and freetype libraries on your system so that Tracy can find them with \texttt{pkg-config}. However, if these libraries are not available, they will be downloaded from GitHub.
 
 \paragraph{Windows}
 
-On Windows, you will need to use the \texttt{vcpkg} utility. If you are not familiar with this tool, please read the description at the following address: \url{https://docs.microsoft.com/en-us/cpp/build/vcpkg}.
-
-There are two ways you can run \texttt{vcpkg} to install the dependencies for Tracy:
-
-\begin{itemize}
-\item Local installation within the project directory -- run this script to download and build both \texttt{vcpkg} and the required dependencies:
-\begin{lstlisting}[language=sh]
-vcpkg\install_vcpkg_dependencies.bat
-\end{lstlisting}
-This writes files only to the \texttt{vcpkg\textbackslash{}vcpkg} directory and makes no other changes on your machine.
-\item System-wide installation with Manifest mode -- install \texttt{vcpkg} by following the instructions on its website, make sure that the environment variable \texttt{VCPKG\_ROOT} is set to the path where you have clone the repository, and then execute the following command:
-\begin{lstlisting}[language=sh]
-vcpkg integrate install
-\end{lstlisting}
-After this step, you can use any Visual Studio project files to build as usual.
-Dependencies will be installed automatically based on vcpkg manifest listing (the \texttt{vcpkg.json} file at repository root).
-For more information about vcpkg manifest mode in Visual Studio, you can read more details at the following address: \url{https://vcpkg.io/en/docs/users/manifests.html#msbuild-integration}.
-\end{itemize}
+There is no need to install external libraries (e.g. with vcpkg). All libraries are downloaded automatically by CMake. You still need git, though.
 
 \paragraph{Unix}
 
-On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}, \texttt{capstone}, \texttt{dbus}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). Be aware that your package manager might distribute the deprecated \texttt{master}-branch version of \texttt{capstone}, and a build from source from the \texttt{next}-branch might be necessary for you. Have fun!
+On Unix systems (including Linux), you will need to install the \texttt{pkg-config} utility to provide information about libraries.
 
-In addition to the beforementioned libraries, you might also have to install the \texttt{tbb} library\footnote{Technically this is not a dependency of Tracy but rather of \texttt{libstdc++} but it may still not be installed by default.}.
+Due to some questionable design decisions by the compiler developers, you will most likely also need the \texttt{tbb} library\footnote{Technically, this is not a Tracy dependency, but rather a \texttt{libstdc++} dependency, but it may still not be installed by default.}. If not found, this library is downloaded automatically.
 
 Installation of the libraries on OSX can be facilitated using the \texttt{brew} package manager.
 
-\subparagraph{Wayland}
+\paragraph{Linux}
 
-Linux builds of Tracy use the Wayland protocol by default, which allows proper support for Hi-DPI scaling and high-precision input devices such as touchpads. As such, the \texttt{glfw} library is no longer needed, but you will have to install \texttt{libxkbcommon}, \texttt{wayland}, \texttt{libglvnd} (or \texttt{libegl} on some distributions).
+There are some Linux-specific libraries that you need to have installed on your system. These won't be downloaded automatically.
 
-You can build the profiler the old way on Linux by enabling the \texttt{LEGACY} flag, e.g. by issuing the following build command \texttt{make LEGACY=1}.
+For XDG Portal support in the file selector, you need to install the \texttt{dbus} library. If you're one of those weird people who doesn't like modern things, you can install \texttt{gtk3} instead and force the GTK file selector with a build option.
+
+Linux builds of Tracy use the Wayland protocol by default, which allows proper support for Hi-DPI scaling and high-precision input devices such as touchpads. As such, the \texttt{glfw} library is no longer needed, but you will need to install \texttt{libxkbcommon}, \texttt{wayland}, \texttt{wayland-protocols}, \texttt{libglvnd} (or \texttt{libegl} on some distributions).
+
+If you want to use X11 instead, you can enable the \texttt{LEGACY} option in CMake build settings.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Linux distributions}
+Some Linux distributions require you to add a \texttt{lib} prefix and a \texttt{-dev} or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}).
+
+Some Linux distributions ship outdated versions of libraries that are too old for Tracy to build, and do not provide new versions by design. Please reconsider your choice of distribution in this case, as the only function of a Linux distribution is to provide packages, and the one you have chosen is clearly failing at this task.
+\end{bclogo}
 
 \begin{bclogo}[
 noborder=true,
@@ -836,12 +863,6 @@ logo=\bcbombe
 ]{Window decorations}
 Please don't ask about window decorations in Gnome. The current behavior is the intended behavior. Gnome does not want windows to have decorations, and Tracy respects that choice. If you find this problematic, use a desktop environment that actually listens to its users.
 \end{bclogo}
-
-\subsubsection{Build process}
-
-As mentioned earlier, each utility is contained in its own directory, for example \texttt{profiler} or \texttt{capture}\footnote{Other utilities are contained in the \texttt{csvexport}, \texttt{import-chrome} and \texttt{update} directories.}. Where do you go within these directories depends on the operating system you are using.
-
-On Windows navigate to the \texttt{build/win32} directory and open the solution file in Visual Studio. On Unix go to the \texttt{build/unix} directory and build the \texttt{release} target using GNU make.
 
 \subsubsection{Embedding the server in profiled application}
 \label{embeddingserver}

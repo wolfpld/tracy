@@ -226,6 +226,7 @@ static void RecomputeScale()
         if( out.second->entered && out.second->scale > max ) max = out.second->scale;
     }
     s_maxScale = max * 120;
+    tracy::s_wasActive = true;
 }
 
 static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
@@ -649,6 +650,7 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
 static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
 {
     s_maxScale = scale * 120;
+    tracy::s_wasActive = true;
 }
 
 static void SurfacePreferredBufferTransform( void*, struct wl_surface* surface, uint32_t transform )

@@ -5,6 +5,15 @@
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"
 
+#ifndef TRACY_HAS_CALLSTACK
+
+namespace tracy
+{
+static tracy_force_inline void* Callstack( int /*depth*/ ) { return nullptr; }
+}
+
+#else
+
 #if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 #  include <unwind.h>
 #elif TRACY_HAS_CALLSTACK >= 3
@@ -16,15 +25,6 @@
 #    include <execinfo.h>
 #  endif
 #endif
-
-#ifndef TRACY_HAS_CALLSTACK
-
-namespace tracy
-{
-static tracy_force_inline void* Callstack( int depth ) { return nullptr; }
-}
-
-#else
 
 #ifdef TRACY_DEBUGINFOD
 #  include <elfutils/debuginfod.h>

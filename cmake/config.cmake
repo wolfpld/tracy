@@ -37,3 +37,8 @@ if(EMSCRIPTEN)
     add_compile_options(-pthread)
     add_link_options(-pthread)
 endif()
+
+find_program(MOLD_LINKER mold)
+if(MOLD_LINKER)
+    set(CMAKE_LINKER_TYPE "MOLD")
+endif()

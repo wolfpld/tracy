@@ -3257,7 +3257,17 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 {
                     if( m_cost == CostType::SampleCount )
                     {
-                        if( worker ) TextFocused( "Local time:", TimeToString( ipcnt.local * worker->GetSamplingPeriod() ) );
+                        if( worker )
+                        {
+                            const auto time = ipcnt.local * worker->GetSamplingPeriod();
+                            TextFocused( "Local time:", TimeToString( time ) );
+                            const auto timePct = 100.f * time / worker->GetLastTime();
+                            if( timePct >= 0.01f )
+                            {
+                                ImGui::SameLine();
+                                ImGui::TextDisabled( "(%.2f%% run time)", timePct );
+                            }
+                        }
                         TextFocused( "Local samples:", RealToString( ipcnt.local ) );
                     }
                     else
@@ -3267,7 +3277,17 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
                 }
                 if( ipcnt.ext )
                 {
-                    if( worker ) TextFocused( "Child time:", TimeToString( ipcnt.ext * worker->GetSamplingPeriod() ) );
+                    if( worker )
+                    {
+                        const auto time = ipcnt.ext * worker->GetSamplingPeriod();
+                        TextFocused( "Child time:", TimeToString( time ) );
+                        const auto timePct = 100.f * time / worker->GetLastTime();
+                        if( timePct >= 0.01f )
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.2f%% run time)", timePct );
+                        }
+                    }
                     TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 }
                 if( hasHwData ) PrintHwSampleTooltip( cycles, retired, cacheRef, cacheMiss, branchRetired, branchMiss, false );
@@ -3584,7 +3604,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 {
                     if( m_cost == CostType::SampleCount )
                     {
-                        TextFocused( "Local time:", TimeToString( ipcnt.local * worker.GetSamplingPeriod() ) );
+                        const auto time = ipcnt.local * worker.GetSamplingPeriod();
+                        TextFocused( "Local time:", TimeToString( time ) );
+                        const auto timePct = 100.f * time / worker.GetLastTime();
+                        if( timePct >= 0.01f )
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.2f%% run time)", timePct );
+                        }
                         TextFocused( "Local samples:", RealToString( ipcnt.local ) );
                     }
                     else
@@ -3594,7 +3621,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 }
                 if( ipcnt.ext )
                 {
-                    TextFocused( "Child time:", TimeToString( ipcnt.ext * worker.GetSamplingPeriod() ) );
+                    const auto time = ipcnt.ext * worker.GetSamplingPeriod();
+                    TextFocused( "Child time:", TimeToString( time ) );
+                    const auto timePct = 100.f * time / worker.GetLastTime();
+                    if( timePct >= 0.01f )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.2f%% run time)", timePct );
+                    }
                     TextFocused( "Child samples:", RealToString( ipcnt.ext ) );
                 }
 

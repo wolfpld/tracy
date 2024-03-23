@@ -1,0 +1,8 @@
+*.dylib
+*.so.*
+build
+dist
+tracy_client.egg-info
+client
+common
+tracy

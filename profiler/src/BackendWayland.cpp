@@ -207,7 +207,8 @@ static int s_maxScale = 1;
 static int s_prevScale = 1;
 
 static bool s_running = true;
-static int s_w, s_h;
+static int s_width, s_height;
+static int s_prevWidth, s_prevHeight;
 static bool s_maximized;
 static uint64_t s_time;
 
@@ -223,13 +224,6 @@ static void RecomputeScale()
     for( auto& out : s_output )
     {
         if( out.second->entered && out.second->scale > max ) max = out.second->scale;
-    }
-    if( s_maxScale != max )
-    {
-        tracy::s_wasActive = true;
-        s_w = s_w / s_maxScale * max;
-        s_h = s_h / s_maxScale * max;
-        wl_egl_window_resize( s_eglWin, s_w, s_h, 0, 0 );
     }
     s_maxScale = max;
 }
@@ -612,17 +606,8 @@ static void XdgToplevelConfigure( void*, struct xdg_toplevel* toplevel, int32_t 
     }
     s_maximized = max;
 
-    width *= s_maxScale;
-    height *= s_maxScale;
-
-    if( s_w != width || s_h != height )
-    {
-        s_w = width;
-        s_h = height;
-
-        wl_egl_window_resize( s_eglWin, width, height, 0, 0 );
-        wl_surface_commit( s_surf );
-    }
+    s_width = width;
+    s_height = height;
 }
 
 static void XdgToplevelClose( void*, struct xdg_toplevel* toplevel )
@@ -663,13 +648,6 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
 
 static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
 {
-    if( s_maxScale != scale )
-    {
-        tracy::s_wasActive = true;
-        s_w = s_w / s_maxScale * scale;
-        s_h = s_h / s_maxScale * scale;
-        wl_egl_window_resize( s_eglWin, s_w, s_h, 0, 0 );
-    }
     s_maxScale = scale;
 }
 
@@ -710,8 +688,8 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     s_redraw = redraw;
     s_scaleChanged = scaleChanged;
     s_mainThreadTasks = mainThreadTasks;
-    s_w = m_winPos.w;
-    s_h = m_winPos.h;
+    s_prevWidth = s_width = m_winPos.w;
+    s_prevHeight = s_height = m_winPos.h;
     s_maximized = m_winPos.maximize;
 
     s_dpy = wl_display_connect( nullptr );
@@ -866,6 +844,13 @@ void Backend::Attention()
 
 void Backend::NewFrame( int& w, int& h )
 {
+    if( s_prevWidth != s_width || s_prevHeight != s_height || s_prevScale != s_maxScale )
+    {
+        s_prevWidth = s_width;
+        s_prevHeight = s_height;
+        wl_egl_window_resize( s_eglWin, s_width * s_maxScale, s_height * s_maxScale, 0, 0 );
+    }
+
     if( s_prevScale != s_maxScale )
     {
         s_scaleChanged( s_maxScale );
@@ -877,12 +862,12 @@ void Backend::NewFrame( int& w, int& h )
     m_winPos.maximize = s_maximized;
     if( !s_maximized )
     {
-        m_winPos.w = s_w / s_maxScale;
-        m_winPos.h = s_h / s_maxScale;
+        m_winPos.w = s_width;
+        m_winPos.h = s_height;
     }
 
-    w = s_w;
-    h = s_h;
+    w = s_width * s_maxScale;
+    h = s_height * s_maxScale;
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2( w, h );
@@ -900,7 +885,7 @@ void Backend::EndFrame()
     const ImVec4 clear_color = ImColor( 114, 144, 154 );
 
     ImGui::Render();
-    glViewport( 0, 0, s_w, s_h );
+    glViewport( 0, 0, s_width * s_maxScale, s_height * s_maxScale );
     glClearColor( clear_color.x, clear_color.y, clear_color.z, clear_color.w );
     glClear( GL_COLOR_BUFFER_BIT );
     ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );

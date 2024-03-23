@@ -125,6 +125,10 @@ if(USE_WAYLAND)
         PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/fractional-scale/fractional-scale-v1.xml
         BASENAME fractional-scale
     )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/viewporter/viewporter.xml
+        BASENAME viewporter
+    )
 else()
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendGlfw.cpp

@@ -2256,13 +2256,21 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         ImGui::SameLine();
         if( m_cost == CostType::SampleCount )
         {
+            int64_t time;
             if( m_childCalls )
             {
-                TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+                time = ( count.local + count.ext ) * worker.GetSamplingPeriod();
             }
             else
             {
-                TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
+                time = count.local * worker.GetSamplingPeriod();
+            }
+            TextFocused( "Time:", TimeToString( time ) );
+            const auto timePct = 100.f * time / worker.GetLastTime();
+            if( timePct >= 0.01f )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%% run time)", timePct );
             }
             ImGui::SameLine();
             ImGui::Spacing();
@@ -3097,13 +3105,21 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         ImGui::SameLine();
         if( m_cost == CostType::SampleCount )
         {
+            int64_t time;
             if( m_childCalls )
             {
-                TextFocused( "Time:", TimeToString( ( count.local + count.ext ) * worker.GetSamplingPeriod() ) );
+                time = ( count.local + count.ext ) * worker.GetSamplingPeriod();
             }
             else
             {
-                TextFocused( "Time:", TimeToString( count.local * worker.GetSamplingPeriod() ) );
+                time = count.local * worker.GetSamplingPeriod();
+            }
+            TextFocused( "Time:", TimeToString( time ) );
+            const auto timePct = 100.f * time / worker.GetLastTime();
+            if( timePct >= 0.01f )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%% run time)", timePct );
             }
             ImGui::SameLine();
             ImGui::Spacing();

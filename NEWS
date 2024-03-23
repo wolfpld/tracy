@@ -108,6 +108,8 @@ vx.xx.x (xxxx-xx-xx)
   protocols is required, which, as always, is not available on Ubuntu.
   Seriously, stop trying to build modern software with that broken distro.
 - Added Python bindings.
+- The per-line sampling statistics are now also displayed as a percentage
+  of total program run time.
 
 
 v0.10.0 (2023-10-16)

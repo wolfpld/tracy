@@ -2276,16 +2276,18 @@ Please not the use of ids as way to cope with the need for unique pointers for c
 \subsubsection{Building the Python package}
 
 To build the Python package, you will need to use the CMake build system to compile the Tracy-Client.
-The CMake option \texttt{-D TRACY_CLIENT_PYTHON=ON} is used to enable the generation of the Python bindings in conjunction with a mandatory creation of a shared Tracy-Client library via one of the CMake options \texttt{-D BUILD_SHARED_LIBS=ON} or \texttt{-D DEFAULT_STATIC=OFF}.
+The CMake option \texttt{-D TRACY\_CLIENT\_PYTHON=ON} is used to enable the generation of the Python bindings in conjunction with a mandatory creation of a shared Tracy-Client library via one of the CMake options \texttt{-D BUILD\_SHARED\_LIBS=ON} or \texttt{-D DEFAULT\_STATIC=OFF}.
 
-The following two variables are available in addition:
+The following other variables are available in addition:
 
 \begin{itemize}
-\item \texttt{BUFFER_SIZE} --- The size of the global pointer buffer (defaults to 128) for naming Tracy profiling entities like frame marks, plots, and memory locations.
-\item \texttt{NAME_LENGTH} --- The maximum length (defaults to 128) of a name stored in the global pointer buffer.
+\item \texttt{EXTERNAL\_PYBIND11} --- Can be used to disable the download of pybind11 when Tracy is embedded in another CMake project that already uses pybind11.
+\item \texttt{TRACY\_CLIENT\_PYTHON\_TARGET} --- Optional directory to copy Tracy Python bindings to when Tracy is embedded in another CMake project.
+\item \texttt{BUFFER\_SIZE} --- The size of the global pointer buffer (defaults to 128) for naming Tracy profiling entities like frame marks, plots, and memory locations.
+\item \texttt{NAME\_LENGTH} --- The maximum length (defaults to 128) of a name stored in the global pointer buffer.
 \end{itemize}
 
-Be aware that the memory allocated by this buffer is global and is not freed, see section ~\ref{uniquepointers}.
+Be aware that the memory allocated by this buffer is global and is not freed, see section~\ref{uniquepointers}.
 
 See below for example steps to build the Python bindings using CMake:
 

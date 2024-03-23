@@ -6,6 +6,12 @@ vx.xx.x (xxxx-xx-xx)
 --------------------
 
 - Support for pre-0.9 traces has been dropped.
+- The old server-side build system has been replaced by CMake. The client
+  integration is not affected. Refer to the manual for details.
+  - Most importantly, a known version of the capstone library is now
+    downloaded from GitHub. You will need to have git installed for this
+    to work (there is a CMake option to use the capstone installed on the
+    system, as was done previously).
 - Various Meson fixes.
 - Proper way of loading Vulkan calibrated timestamps extension.
 - Fixed C API support for GPU tracing when on demand mode is enabled.
@@ -92,6 +98,16 @@ vx.xx.x (xxxx-xx-xx)
   symbols.
 - Cost measurements of inlined functions in the symbol statistics window
   can be now relative to the base symbol instead of total program run time.
+- ScopedZone and AllocSourceLocation now accept color parameter. Impact on
+  existing code should be minimal.
+  - AllocSourceLocation has a new parameter with a default value.
+  - __tracy_alloc_srcloc and __tracy_alloc_srcloc_name break the existing
+    API. This can be easily fixed by setting the last parameter to zero.
+- To build the profiler GUI with Wayland you now need wayland-scanner and
+  wayland-protocols to be installed. A reasonably recent release of the
+  protocols is required, which, as always, is not available on Ubuntu.
+  Seriously, stop trying to build modern software with that broken distro.
+- Added Python bindings.
 
 
 v0.10.0 (2023-10-16)

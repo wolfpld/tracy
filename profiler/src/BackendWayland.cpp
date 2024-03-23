@@ -203,8 +203,8 @@ struct Output
     bool entered;
 };
 static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
-static int s_maxScale = 1;
-static int s_prevScale = 1;
+static int s_maxScale = 120;
+static int s_prevScale = 120;
 
 static bool s_running = true;
 static int s_width, s_height;
@@ -225,14 +225,14 @@ static void RecomputeScale()
     {
         if( out.second->entered && out.second->scale > max ) max = out.second->scale;
     }
-    s_maxScale = max;
+    s_maxScale = max * 120;
 }
 
 static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
 {
     wl_pointer_set_cursor( pointer, serial, s_cursorSurf, s_cursorX, s_cursorY );
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale ), wl_fixed_to_double( sy * s_maxScale ) );
+    io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale / 120 ), wl_fixed_to_double( sy * s_maxScale / 120 ) );
 }
 
 static void PointerLeave( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf )
@@ -244,7 +244,7 @@ static void PointerLeave( void*, struct wl_pointer* pointer, uint32_t serial, st
 static void PointerMotion( void*, struct wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy )
 {
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale ), wl_fixed_to_double( sy * s_maxScale ) );
+    io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale / 120 ), wl_fixed_to_double( sy * s_maxScale / 120 ) );
 }
 
 static void PointerButton( void*, struct wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state )
@@ -648,7 +648,7 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
 
 static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
 {
-    s_maxScale = scale;
+    s_maxScale = scale * 120;
 }
 
 static void SurfacePreferredBufferTransform( void*, struct wl_surface* surface, uint32_t transform )
@@ -668,7 +668,7 @@ static void SetupCursor()
     auto env_xcursor_size = getenv( "XCURSOR_SIZE" );
 
     int size = env_xcursor_size ? atoi( env_xcursor_size ) : 24;
-    size *= s_maxScale;
+    size = size * s_maxScale / 120;
 
     if( s_cursorSurf ) wl_surface_destroy( s_cursorSurf );
     if( s_cursorTheme ) wl_cursor_theme_destroy( s_cursorTheme );
@@ -676,11 +676,11 @@ static void SetupCursor()
     s_cursorTheme = wl_cursor_theme_load( env_xcursor_theme, size, s_shm );
     auto cursor = wl_cursor_theme_get_cursor( s_cursorTheme, "left_ptr" );
     s_cursorSurf = wl_compositor_create_surface( s_comp );
-    if( s_maxScale != 1 ) wl_surface_set_buffer_scale( s_cursorSurf, s_maxScale );
+    if( s_maxScale != 120 ) wl_surface_set_buffer_scale( s_cursorSurf, s_maxScale / 120 );
     wl_surface_attach( s_cursorSurf, wl_cursor_image_get_buffer( cursor->images[0] ), 0, 0 );
     wl_surface_commit( s_cursorSurf );
-    s_cursorX = cursor->images[0]->hotspot_x / s_maxScale;
-    s_cursorY = cursor->images[0]->hotspot_y / s_maxScale;
+    s_cursorX = cursor->images[0]->hotspot_x * 120 / s_maxScale;
+    s_cursorY = cursor->images[0]->hotspot_y * 120 / s_maxScale;
 }
 
 Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, RunQueue* mainThreadTasks )
@@ -848,14 +848,14 @@ void Backend::NewFrame( int& w, int& h )
     {
         s_prevWidth = s_width;
         s_prevHeight = s_height;
-        wl_egl_window_resize( s_eglWin, s_width * s_maxScale, s_height * s_maxScale, 0, 0 );
+        wl_egl_window_resize( s_eglWin, s_width * s_maxScale / 120, s_height * s_maxScale / 120, 0, 0 );
     }
 
     if( s_prevScale != s_maxScale )
     {
-        s_scaleChanged( s_maxScale );
+        s_scaleChanged( s_maxScale / 120.f );
         SetupCursor();
-        wl_surface_set_buffer_scale( s_surf, s_maxScale );
+        wl_surface_set_buffer_scale( s_surf, s_maxScale / 120 );
         s_prevScale = s_maxScale;
     }
 
@@ -866,8 +866,8 @@ void Backend::NewFrame( int& w, int& h )
         m_winPos.h = s_height;
     }
 
-    w = s_width * s_maxScale;
-    h = s_height * s_maxScale;
+    w = s_width * s_maxScale / 120;
+    h = s_height * s_maxScale / 120;
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2( w, h );
@@ -885,7 +885,7 @@ void Backend::EndFrame()
     const ImVec4 clear_color = ImColor( 114, 144, 154 );
 
     ImGui::Render();
-    glViewport( 0, 0, s_width * s_maxScale, s_height * s_maxScale );
+    glViewport( 0, 0, s_width * s_maxScale / 120, s_height * s_maxScale / 120 );
     glClearColor( clear_color.x, clear_color.y, clear_color.z, clear_color.w );
     glClear( GL_COLOR_BUFFER_BIT );
     ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
@@ -904,5 +904,5 @@ void Backend::SetTitle( const char* title )
 
 float Backend::GetDpiScale()
 {
-    return s_maxScale;
+    return s_maxScale / 120.f;
 }

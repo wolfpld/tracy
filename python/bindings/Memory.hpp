@@ -9,12 +9,12 @@ namespace py = pybind11;
 using OptionalString = std::optional<std::string>;
 using OptionalInt = std::optional<int>;
 
+#ifdef TRACY_ENABLE
 template <typename Type = uint64_t>
 OptionalNumber MemoryAllocate(const Type &type, std::size_t size,
                               const OptionalString &name = std::nullopt,
                               const OptionalNumber &id = std::nullopt,
                               OptionalInt depth = std::nullopt) {
-#ifdef TRACY_ENABLE
   if (!name && !id) {
     if (!depth)
       TracyAlloc(reinterpret_cast<void *>(type), size);
@@ -38,27 +38,11 @@ OptionalNumber MemoryAllocate(const Type &type, std::size_t size,
   else
     TracyAllocNS(reinterpret_cast<void *>(type), size, *depth, entry.second);
   return entry.first;
-#else
-  static_cast<void>(type);   // unused
-  static_cast<void>(size);   // unused
-  static_cast<void>(name);   // unused
-  static_cast<void>(id);     // unused
-  static_cast<void>(depth);  // unused
-#endif
-}
-
-template <>
-OptionalNumber MemoryAllocate(const py::object &object, std::size_t size,
-                              const OptionalString &name,
-                              const OptionalNumber &id, OptionalInt depth) {
-  return MemoryAllocate<uint64_t>(reinterpret_cast<uint64_t>(object.ptr()),
-                                  size, name, id, depth);
 }
 
 template <typename Type = uint64_t>
 bool MemoryFree(const Type &type, const OptionalNumber &id = std::nullopt,
                 OptionalInt depth = std::nullopt) {
-#ifdef TRACY_ENABLE
   if (!id) {
     if (!depth)
       TracyFree(reinterpret_cast<void *>(type));
@@ -75,11 +59,27 @@ bool MemoryFree(const Type &type, const OptionalNumber &id = std::nullopt,
   else
     TracyFreeNS(reinterpret_cast<void *>(type), *depth, ptr);
   return true;
+}
 #else
-  static_cast<void>(type);   // unused
-  static_cast<void>(id);     // unused
-  static_cast<void>(depth);  // unused
+
+template <typename Type = uint64_t>
+OptionalNumber MemoryAllocate(const Type &, std::size_t, const OptionalString &,
+                              const OptionalNumber &, OptionalInt) {
+  return 0ul;
+}
+
+template <typename Type = uint64_t>
+bool MemoryFree(const Type &, const OptionalNumber &, OptionalInt) {
+  return true;
+}
 #endif
+
+template <>
+OptionalNumber MemoryAllocate(const py::object &object, std::size_t size,
+                              const OptionalString &name,
+                              const OptionalNumber &id, OptionalInt depth) {
+  return MemoryAllocate<uint64_t>(reinterpret_cast<uint64_t>(object.ptr()),
+                                  size, name, id, depth);
 }
 
 template <>

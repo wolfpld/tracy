@@ -23,7 +23,6 @@ bool SetText(const std::string& text, tracy::ScopedZone* zone) {
   zone->Text(text.c_str(), text.size());
   return true;
 }
-#endif
 
 class PyScopedZone {
  public:
@@ -45,47 +44,30 @@ class PyScopedZone {
   virtual ~PyScopedZone() { Exit(); };
 
   bool IsActive() const {
-#ifdef TRACY_ENABLE
     if (!m_zone) return m_active;
     return m_zone->IsActive();
-#else
-    return false;
-#endif
   }
 
   template <typename Type>
   bool Text(const Type& text) {
-#ifdef TRACY_ENABLE
     return SetText(text, m_zone);
-#else
-    static_cast<void>(text);  // unused
-#endif
   }
 
   bool Name(const std::string& name) {
-#ifdef TRACY_ENABLE
     if (name.size() >= std::numeric_limits<uint16_t>::max()) return false;
     m_name = name;
     if (!m_zone) return true;
     m_zone->Name(m_name->c_str(), m_name->size());
     return true;
-#else
-    static_cast<void>(name);  // unused
-#endif
   }
 
   void Color(uint32_t color) {
-#ifdef TRACY_ENABLE
     m_color = color;
     if (!m_zone) return;
     m_zone->Color(m_color);
-#else
-    static_cast<void>(color);  // unused
-#endif
   }
 
   void Enter() {
-#ifdef TRACY_ENABLE
     if (m_depth)
       m_zone = new tracy::ScopedZone(
           m_line, m_source.c_str(), m_source.size(), m_function.c_str(),
@@ -96,14 +78,11 @@ class PyScopedZone {
           m_line, m_source.c_str(), m_source.size(), m_function.c_str(),
           m_function.size(), m_name ? m_name->c_str() : nullptr,
           m_name ? m_name->size() : 0ul, m_color, m_active);
-#endif
   }
 
   void Exit() {
-#ifdef TRACY_ENABLE
     if (m_zone) delete m_zone;
     m_zone = nullptr;
-#endif
   }
 
  private:
@@ -116,7 +95,26 @@ class PyScopedZone {
   std::string m_source;
   uint32_t m_line;
 
-#ifdef TRACY_ENABLE
   tracy::ScopedZone* m_zone;
-#endif
 };
+#else
+
+class PyScopedZone {
+ public:
+  PyScopedZone(const std::optional<std::string>&, uint32_t, std::optional<int>,
+               bool, const std::string&, const std::string&, uint32_t line) {}
+  virtual ~PyScopedZone(){};
+
+  bool IsActive() const { return false; }
+
+  template <typename Type>
+  bool Text(const Type&) {
+    return true;
+  }
+
+  bool Name(const std::string&) { return true; }
+  void Color(uint32_t) {}
+  void Enter() {}
+  void Exit() {}
+};
+#endif

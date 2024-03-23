@@ -22,6 +22,7 @@
 #include "wayland-xdg-activation-client-protocol.h"
 #include "wayland-xdg-decoration-client-protocol.h"
 #include "wayland-xdg-shell-client-protocol.h"
+#include "wayland-fractional-scale-client-protocol.h"
 
 #include "profiler/TracyImGui.hpp"
 
@@ -184,6 +185,7 @@ static struct xdg_activation_v1* s_activation;
 static struct xdg_activation_token_v1* s_actToken;
 static struct zxdg_decoration_manager_v1* s_decoration;
 static struct zxdg_toplevel_decoration_v1* s_tldec;
+static struct wp_fractional_scale_manager_v1* s_fractionalScale;
 static struct wl_keyboard* s_keyboard;
 static struct xkb_context* s_xkbCtx;
 static struct xkb_keymap* s_xkbKeymap;
@@ -556,6 +558,10 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
     {
         s_decoration = (zxdg_decoration_manager_v1*)wl_registry_bind( reg, name, &zxdg_decoration_manager_v1_interface, 1 );
     }
+    else if( strcmp( interface, wp_fractional_scale_manager_v1_interface.name ) == 0 )
+    {
+        s_fractionalScale = (wp_fractional_scale_manager_v1*)wl_registry_bind( reg, name, &wp_fractional_scale_manager_v1_interface, 1 );
+    }
 }
 
 static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name )
@@ -783,6 +789,7 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_fractionalScale ) wp_fractional_scale_manager_v1_destroy( s_fractionalScale );
     if( s_tldec ) zxdg_toplevel_decoration_v1_destroy( s_tldec );
     if( s_decoration ) zxdg_decoration_manager_v1_destroy( s_decoration );
     if( s_actToken ) xdg_activation_token_v1_destroy( s_actToken );

@@ -24,6 +24,7 @@
 #include "wayland-xdg-shell-client-protocol.h"
 #include "wayland-fractional-scale-client-protocol.h"
 #include "wayland-viewporter-client-protocol.h"
+#include "wayland-cursor-shape-client-protocol.h"
 
 #include "profiler/TracyImGui.hpp"
 
@@ -190,6 +191,8 @@ static struct wp_fractional_scale_manager_v1* s_fractionalScale;
 static struct wp_fractional_scale_v1* s_fracSurf;
 static struct wp_viewporter* s_viewporter;
 static struct wp_viewport* s_viewport;
+static struct wp_cursor_shape_manager_v1* s_cursorShape;
+static struct wp_cursor_shape_device_v1* s_cursorShapeDev;
 static struct wl_keyboard* s_keyboard;
 static struct xkb_context* s_xkbCtx;
 static struct xkb_keymap* s_xkbKeymap;
@@ -235,7 +238,14 @@ static void RecomputeScale()
 
 static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, struct wl_surface* surf, wl_fixed_t sx, wl_fixed_t sy )
 {
-    wl_pointer_set_cursor( pointer, serial, s_cursorSurf, s_cursorX, s_cursorY );
+    if( s_cursorShapeDev )
+    {
+        wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT );
+    }
+    else
+    {
+        wl_pointer_set_cursor( pointer, serial, s_cursorSurf, s_cursorX, s_cursorY );
+    }
     ImGuiIO& io = ImGui::GetIO();
     io.AddMousePosEvent( wl_fixed_to_double( sx * s_maxScale / 120 ), wl_fixed_to_double( sy * s_maxScale / 120 ) );
 }
@@ -448,9 +458,15 @@ static void SeatCapabilities( void*, struct wl_seat* seat, uint32_t caps )
     {
         s_pointer = wl_seat_get_pointer( s_seat );
         wl_pointer_add_listener( s_pointer, &pointerListener, nullptr );
+        if( s_cursorShape ) s_cursorShapeDev = wp_cursor_shape_manager_v1_get_pointer( s_cursorShape, s_pointer );
     }
     else if( !hasPointer && s_pointer )
     {
+        if( s_cursorShapeDev )
+        {
+            wp_cursor_shape_device_v1_destroy( s_cursorShapeDev );
+            s_cursorShapeDev = nullptr;
+        }
         wl_pointer_release( s_pointer );
         s_pointer = nullptr;
     }
@@ -567,6 +583,11 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
     {
         s_viewporter = (wp_viewporter*)wl_registry_bind( reg, name, &wp_viewporter_interface, 1 );
     }
+    else if( strcmp( interface, wp_cursor_shape_manager_v1_interface.name ) == 0 )
+    {
+        s_cursorShape = (wp_cursor_shape_manager_v1*)wl_registry_bind( reg, name, &wp_cursor_shape_manager_v1_interface, 1 );
+        if( s_pointer ) s_cursorShapeDev = wp_cursor_shape_manager_v1_get_pointer( s_cursorShape, s_pointer );
+    }
 }
 
 static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name )
@@ -682,6 +703,8 @@ constexpr struct wp_fractional_scale_v1_listener fractionalListener = {
 
 static void SetupCursor()
 {
+    if( s_cursorShape ) return;
+
     auto env_xcursor_theme = getenv( "XCURSOR_THEME" );
     auto env_xcursor_size = getenv( "XCURSOR_SIZE" );
 
@@ -798,6 +821,8 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_cursorShapeDev ) wp_cursor_shape_device_v1_destroy( s_cursorShapeDev );
+    if( s_cursorShape ) wp_cursor_shape_manager_v1_destroy( s_cursorShape );
     if( s_viewport ) wp_viewport_destroy( s_viewport );
     if( s_fracSurf ) wp_fractional_scale_v1_destroy( s_fracSurf );
     if( s_viewporter ) wp_viewporter_destroy( s_viewporter );
@@ -813,8 +838,8 @@ Backend::~Backend()
     eglDestroyContext( s_eglDpy, s_eglCtx );
     eglTerminate( s_eglDpy );
     xdg_toplevel_destroy( s_toplevel );
-    wl_surface_destroy( s_cursorSurf );
-    wl_cursor_theme_destroy( s_cursorTheme );
+    if( s_cursorSurf ) wl_surface_destroy( s_cursorSurf );
+    if( s_cursorTheme ) wl_cursor_theme_destroy( s_cursorTheme );
     xdg_surface_destroy( s_xdgSurf );
     wl_egl_window_destroy( s_eglWin );
     wl_surface_destroy( s_surf );

@@ -196,6 +196,13 @@ static void SetupScaleCallback( float scale )
     RunOnMainThread( []{ SetupDPIScale(); }, true );
 }
 
+static int IsBusy()
+{
+    if( loadThread.joinable() ) return 2;
+    if( view && !view->IsBackgroundDone() ) return 1;
+    return 0;
+}
+
 static void LoadConfig()
 {
     const auto fn = tracy::GetSavePath( "tracy.ini" );

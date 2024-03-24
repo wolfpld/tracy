@@ -152,6 +152,8 @@ public:
     bool DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offset );
     bool DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDraw>& cpuDraw, const std::vector<std::vector<CpuCtxDraw>>& ctxDraw, int& offset, bool hasCpuData );
 
+    bool IsBackgroundDone() const { return m_worker.IsBackgroundDone(); }
+
     bool m_showRanges = false;
     Range m_statRange;
     Range m_waitStackRange;

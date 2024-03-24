@@ -200,6 +200,8 @@ static struct xkb_state* s_xkbState;
 static struct xkb_compose_table* s_xkbComposeTable;
 static struct xkb_compose_state* s_xkbComposeState;
 static xkb_mod_index_t s_xkbCtrl, s_xkbAlt, s_xkbShift, s_xkbSuper;
+static ImGuiMouseCursor s_mouseCursor;
+static uint32_t s_mouseCursorSerial;
 
 struct Output
 {
@@ -241,6 +243,8 @@ static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, st
     if( s_cursorShapeDev )
     {
         wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT );
+        s_mouseCursor = ImGuiMouseCursor_Arrow;
+        s_mouseCursorSerial = serial;
     }
     else
     {
@@ -935,6 +939,44 @@ void Backend::NewFrame( int& w, int& h )
     uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
     io.DeltaTime = std::min( 0.1f, ( time - s_time ) / 1000000.f );
     s_time = time;
+
+    if( s_cursorShapeDev )
+    {
+        ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
+        if( cursor != s_mouseCursor )
+        {
+            s_mouseCursor = cursor;
+            switch( cursor )
+            {
+            case ImGuiMouseCursor_None:
+                wl_pointer_set_cursor( s_pointer, s_mouseCursorSerial, nullptr, 0, 0 );
+                break;
+            case ImGuiMouseCursor_Arrow:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT );
+                break;
+            case ImGuiMouseCursor_TextInput:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_TEXT );
+                break;
+            case ImGuiMouseCursor_ResizeNS:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NS_RESIZE );
+                break;
+            case ImGuiMouseCursor_ResizeEW:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_EW_RESIZE );
+                break;
+            case ImGuiMouseCursor_ResizeNESW:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NESW_RESIZE );
+                break;
+            case ImGuiMouseCursor_ResizeNWSE:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NWSE_RESIZE );
+                break;
+            case ImGuiMouseCursor_NotAllowed:
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NOT_ALLOWED );
+                break;
+            default:
+                break;
+            };
+        }
+    }
 }
 
 void Backend::EndFrame()

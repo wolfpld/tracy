@@ -129,6 +129,14 @@ if(USE_WAYLAND)
         PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/viewporter/viewporter.xml
         BASENAME viewporter
     )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/cursor-shape/cursor-shape-v1.xml
+        BASENAME cursor-shape
+    )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/unstable/tablet/tablet-unstable-v2.xml
+        BASENAME tablet
+    )
 else()
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendGlfw.cpp

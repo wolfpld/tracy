@@ -187,7 +187,9 @@ static struct xdg_activation_token_v1* s_actToken;
 static struct zxdg_decoration_manager_v1* s_decoration;
 static struct zxdg_toplevel_decoration_v1* s_tldec;
 static struct wp_fractional_scale_manager_v1* s_fractionalScale;
+static struct wp_fractional_scale_v1* s_fracSurf;
 static struct wp_viewporter* s_viewporter;
+static struct wp_viewport* s_viewport;
 static struct wl_keyboard* s_keyboard;
 static struct xkb_context* s_xkbCtx;
 static struct xkb_keymap* s_xkbKeymap;
@@ -217,6 +219,8 @@ static bool s_wheel;
 
 static void RecomputeScale()
 {
+    if( s_fracSurf ) return;
+
     // On wl_compositor >= 6 the scale is sent explicitly via wl_surface.preferred_buffer_scale.
     if ( s_comp_version >= 6 ) return;
 
@@ -649,6 +653,7 @@ static void SurfaceLeave( void*, struct wl_surface* surface, struct wl_output* o
 
 static void SurfacePreferredBufferScale( void*, struct wl_surface* surface, int32_t scale )
 {
+    if( s_fracSurf ) return;
     s_maxScale = scale * 120;
     tracy::s_wasActive = true;
 }
@@ -663,6 +668,17 @@ constexpr struct wl_surface_listener surfaceListener = {
     .preferred_buffer_scale = SurfacePreferredBufferScale,
     .preferred_buffer_transform = SurfacePreferredBufferTransform
 };
+
+static void FractionalPreferredScale( void*, struct wp_fractional_scale_v1* frac, uint32_t scale )
+{
+    s_maxScale = scale;
+    tracy::s_wasActive = true;
+}
+
+constexpr struct wp_fractional_scale_v1_listener fractionalListener = {
+    .preferred_scale = FractionalPreferredScale
+};
+
 
 static void SetupCursor()
 {
@@ -711,6 +727,13 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     s_eglWin = wl_egl_window_create( s_surf, m_winPos.w, m_winPos.h );
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
     xdg_surface_add_listener( s_xdgSurf, &xdgSurfaceListener, nullptr );
+
+    if( s_fractionalScale && s_viewporter )
+    {
+        s_fracSurf = wp_fractional_scale_manager_v1_get_fractional_scale( s_fractionalScale, s_surf );
+        wp_fractional_scale_v1_add_listener( s_fracSurf, &fractionalListener, nullptr );
+        s_viewport = wp_viewporter_get_viewport( s_viewporter, s_surf );
+    }
 
     SetupCursor();
 
@@ -775,6 +798,8 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_viewport ) wp_viewport_destroy( s_viewport );
+    if( s_fracSurf ) wp_fractional_scale_v1_destroy( s_fracSurf );
     if( s_viewporter ) wp_viewporter_destroy( s_viewporter );
     if( s_fractionalScale ) wp_fractional_scale_manager_v1_destroy( s_fractionalScale );
     if( s_tldec ) zxdg_toplevel_decoration_v1_destroy( s_tldec );
@@ -851,13 +876,18 @@ void Backend::NewFrame( int& w, int& h )
         s_prevWidth = s_width;
         s_prevHeight = s_height;
         wl_egl_window_resize( s_eglWin, s_width * s_maxScale / 120, s_height * s_maxScale / 120, 0, 0 );
+        if( s_fracSurf )
+        {
+            wp_viewport_set_source( s_viewport, 0, 0, wl_fixed_from_double( s_width * s_maxScale / 120. ), wl_fixed_from_double( s_height * s_maxScale / 120. ) );
+            wp_viewport_set_destination( s_viewport, s_width, s_height );
+        }
     }
 
     if( s_prevScale != s_maxScale )
     {
         s_scaleChanged( s_maxScale / 120.f );
         SetupCursor();
-        wl_surface_set_buffer_scale( s_surf, s_maxScale / 120 );
+        if( !s_fracSurf ) wl_surface_set_buffer_scale( s_surf, s_maxScale / 120 );
         s_prevScale = s_maxScale;
     }
 

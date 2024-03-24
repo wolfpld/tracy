@@ -341,7 +341,7 @@ int main( int argc, char** argv )
     LoadConfig();
 
     ImGuiTracyContext imguiContext;
-    Backend backend( title, DrawContents, ScaleChanged, &mainThreadTasks );
+    Backend backend( title, DrawContents, ScaleChanged, IsBusy, &mainThreadTasks );
     tracy::InitTexture();
     iconTex = tracy::MakeTexture();
     zigzagTex = tracy::MakeTexture( true );

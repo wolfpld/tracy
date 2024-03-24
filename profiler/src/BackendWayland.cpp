@@ -728,7 +728,7 @@ static void SetupCursor()
     s_cursorY = cursor->images[0]->hotspot_y * 120 / s_maxScale;
 }
 
-Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, RunQueue* mainThreadTasks )
+Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, const std::function<int(void)>& isBusy, RunQueue* mainThreadTasks )
 {
     s_redraw = redraw;
     s_scaleChanged = scaleChanged;

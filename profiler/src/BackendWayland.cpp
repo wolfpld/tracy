@@ -164,6 +164,7 @@ constexpr ImGuiKey s_keyTable[] = {
 
 static std::function<void()> s_redraw;
 static std::function<void(float)> s_scaleChanged;
+static std::function<int(void)> s_isBusy;
 static RunQueue* s_mainThreadTasks;
 
 static struct wl_display* s_dpy;
@@ -200,7 +201,7 @@ static struct xkb_state* s_xkbState;
 static struct xkb_compose_table* s_xkbComposeTable;
 static struct xkb_compose_state* s_xkbComposeState;
 static xkb_mod_index_t s_xkbCtrl, s_xkbAlt, s_xkbShift, s_xkbSuper;
-static ImGuiMouseCursor s_mouseCursor;
+static wp_cursor_shape_device_v1_shape s_mouseCursor;
 static uint32_t s_mouseCursorSerial;
 
 struct Output
@@ -243,7 +244,7 @@ static void PointerEnter( void*, struct wl_pointer* pointer, uint32_t serial, st
     if( s_cursorShapeDev )
     {
         wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT );
-        s_mouseCursor = ImGuiMouseCursor_Arrow;
+        s_mouseCursor = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;
         s_mouseCursorSerial = serial;
     }
     else
@@ -732,7 +733,9 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 {
     s_redraw = redraw;
     s_scaleChanged = scaleChanged;
+    s_isBusy = isBusy;
     s_mainThreadTasks = mainThreadTasks;
+
     s_prevWidth = s_width = m_winPos.w;
     s_prevHeight = s_height = m_winPos.h;
     s_maximized = m_winPos.maximize;
@@ -943,38 +946,61 @@ void Backend::NewFrame( int& w, int& h )
     if( s_cursorShapeDev )
     {
         ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
-        if( cursor != s_mouseCursor )
+        wp_cursor_shape_device_v1_shape shape;
+
+        switch( cursor )
         {
-            s_mouseCursor = cursor;
-            switch( cursor )
+        case ImGuiMouseCursor_None:
+            shape = (wp_cursor_shape_device_v1_shape)0;
+            break;
+        case ImGuiMouseCursor_Arrow:
+            switch( s_isBusy() )
             {
-            case ImGuiMouseCursor_None:
-                wl_pointer_set_cursor( s_pointer, s_mouseCursorSerial, nullptr, 0, 0 );
-                break;
-            case ImGuiMouseCursor_Arrow:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT );
-                break;
-            case ImGuiMouseCursor_TextInput:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_TEXT );
-                break;
-            case ImGuiMouseCursor_ResizeNS:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NS_RESIZE );
-                break;
-            case ImGuiMouseCursor_ResizeEW:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_EW_RESIZE );
-                break;
-            case ImGuiMouseCursor_ResizeNESW:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NESW_RESIZE );
-                break;
-            case ImGuiMouseCursor_ResizeNWSE:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NWSE_RESIZE );
-                break;
-            case ImGuiMouseCursor_NotAllowed:
-                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NOT_ALLOWED );
-                break;
             default:
+            case 0:
+                shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;
                 break;
-            };
+            case 1:
+                shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_PROGRESS;
+                break;
+            case 2:
+                shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_WAIT;
+                break;
+            }
+            break;
+        case ImGuiMouseCursor_TextInput:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_TEXT;
+            break;
+        case ImGuiMouseCursor_ResizeNS:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NS_RESIZE;
+            break;
+        case ImGuiMouseCursor_ResizeEW:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_EW_RESIZE;
+            break;
+        case ImGuiMouseCursor_ResizeNESW:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NESW_RESIZE;
+            break;
+        case ImGuiMouseCursor_ResizeNWSE:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NWSE_RESIZE;
+            break;
+        case ImGuiMouseCursor_NotAllowed:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NOT_ALLOWED;
+            break;
+        default:
+            break;
+        };
+
+        if( shape != s_mouseCursor )
+        {
+            s_mouseCursor = shape;
+            if( shape == 0 )
+            {
+                wl_pointer_set_cursor( s_pointer, s_mouseCursorSerial, nullptr, 0, 0 );
+            }
+            else
+            {
+                wp_cursor_shape_device_v1_set_shape( s_cursorShapeDev, s_mouseCursorSerial, shape );
+            }
         }
     }
 }

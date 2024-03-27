@@ -159,6 +159,9 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui)
 
+find_package(ZLIB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer ZLIB::ZLIB)
+
 if(NOT EMSCRIPTEN)
     target_link_libraries(${PROJECT_NAME} PRIVATE TracyNfd)
     if (NOT USE_WAYLAND)

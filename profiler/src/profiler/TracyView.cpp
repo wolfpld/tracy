@@ -649,9 +649,9 @@ bool View::Draw()
     }
 
     if( !m_staticView &&
-        ( ImGui::IsModKey( ImGuiKey_LeftCtrl ) || ImGui::IsModKey( ImGuiKey_RightCtrl ) ) &&
-        ( ImGui::IsModKey( ImGuiKey_LeftShift ) || ImGui::IsModKey( ImGuiKey_RightShift ) ) &&
-        ( ImGui::IsModKey( ImGuiKey_LeftAlt ) || ImGui::IsModKey( ImGuiKey_RightAlt ) ) &&
+        ( ImGui::IsKeyDown( ImGuiKey_LeftCtrl ) || ImGui::IsKeyDown( ImGuiKey_RightCtrl ) ) &&
+        ( ImGui::IsKeyDown( ImGuiKey_LeftShift ) || ImGui::IsKeyDown( ImGuiKey_RightShift ) ) &&
+        ( ImGui::IsKeyDown( ImGuiKey_LeftAlt ) || ImGui::IsKeyDown( ImGuiKey_RightAlt ) ) &&
         ImGui::IsKeyPressed( ImGuiKey_R ) )
     {
         m_reconnectRequested = true;

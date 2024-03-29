@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <thread>
 
+#include "profiler/TracyConfig.hpp"
 #include "profiler/TracyImGui.hpp"
 
 #include "Backend.hpp"
@@ -24,6 +25,9 @@ static std::function<void()> s_redraw;
 static RunQueue* s_mainThreadTasks;
 static WindowPosition* s_winPos;
 static bool s_iconified;
+
+extern tracy::Config s_config;
+
 
 static void glfw_error_callback( int error, const char* description )
 {
@@ -146,10 +150,7 @@ void Backend::Run()
         {
             glfwPollEvents();
             s_redraw();
-            if( !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) )
-            {
-                std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-            }
+            if( s_config.focusLostLimit && !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
             s_mainThreadTasks->Run();
         }
     }

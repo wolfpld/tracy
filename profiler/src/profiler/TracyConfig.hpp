@@ -7,6 +7,7 @@ namespace tracy
 struct Config
 {
     bool threadedRendering = true;
+    bool focusLostLimit = true;
     int targetFps = 60;
 };
 

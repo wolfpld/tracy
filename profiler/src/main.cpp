@@ -211,6 +211,7 @@ static void LoadConfig()
 
     int v;
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
+    if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
 
     ini_free( ini );
@@ -224,6 +225,7 @@ static bool SaveConfig()
 
     fprintf( f, "[core]\n" );
     fprintf( f, "threadedRendering = %i\n", (int)s_config.threadedRendering );
+    fprintf( f, "focusLostLimit = %i\n", (int)s_config.focusLostLimit );
 
     fprintf( f, "\n[timeline]\n" );
     fprintf( f, "targetFps = %i\n", s_config.targetFps );
@@ -657,6 +659,9 @@ static void DrawContents()
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "Restricts rendering to a single CPU core. Can reduce profiler frame rate." );
                 ImGui::Unindent();
+
+                ImGui::Spacing();
+                if( ImGui::Checkbox( "Reduce render rate when focus is lost", &s_config.focusLostLimit ) ) SaveConfig();
 
                 ImGui::Spacing();
                 ImGui::TextUnformatted( "Target FPS" );

@@ -203,6 +203,7 @@ static struct xkb_compose_state* s_xkbComposeState;
 static xkb_mod_index_t s_xkbCtrl, s_xkbAlt, s_xkbShift, s_xkbSuper;
 static wp_cursor_shape_device_v1_shape s_mouseCursor;
 static uint32_t s_mouseCursorSerial;
+static bool s_hasFocus = false;
 
 struct Output
 {
@@ -381,11 +382,13 @@ static void KeyboardKeymap( void*, struct wl_keyboard* kbd, uint32_t format, int
 static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf, struct wl_array* keys )
 {
     ImGui::GetIO().AddFocusEvent( true );
+    s_hasFocus = true;
 }
 
 static void KeyboardLeave( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf )
 {
     ImGui::GetIO().AddFocusEvent( false );
+    s_hasFocus = false;
 }
 
 static xkb_keysym_t Compose( const xkb_keysym_t sym )

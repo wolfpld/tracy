@@ -30,6 +30,7 @@
 
 #include "Backend.hpp"
 #include "RunQueue.hpp"
+#include "profiler/TracyConfig.hpp"
 
 constexpr ImGuiKey s_keyTable[] = {
     /*   0 */ ImGuiKey_None,
@@ -223,6 +224,9 @@ static uint64_t s_time;
 
 static wl_fixed_t s_wheelAxisX, s_wheelAxisY;
 static bool s_wheel;
+
+extern tracy::Config s_config;
+
 
 static void RecomputeScale()
 {
@@ -876,7 +880,7 @@ void Backend::Run()
 {
     while( s_running && wl_display_dispatch( s_dpy ) != -1 )
     {
-        if( !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        if( s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
         s_redraw();
         s_mainThreadTasks->Run();
     }

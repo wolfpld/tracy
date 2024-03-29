@@ -116,7 +116,7 @@ void* zigzagTex;
 static Backend* bptr;
 static bool s_customTitle = false;
 static bool s_isElevated = false;
-static tracy::Config s_config;
+tracy::Config s_config;
 
 static void SetWindowTitleCallback( const char* title )
 {

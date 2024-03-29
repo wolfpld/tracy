@@ -876,6 +876,7 @@ void Backend::Run()
 {
     while( s_running && wl_display_dispatch( s_dpy ) != -1 )
     {
+        if( !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
         s_redraw();
         s_mainThreadTasks->Run();
     }

@@ -505,7 +505,7 @@ Finally, let's check if the \texttt{debugoptimized} build type is enabled, and p
 
 \begin{lstlisting}
 if get_option('tracy_enable') and get_option('buildtype') != 'debugoptimized'
-    message('Profiling builds should set --buildtype=debugoptimized')
+    warning('Profiling builds should set --buildtype=debugoptimized')
 endif
 \end{lstlisting}
 

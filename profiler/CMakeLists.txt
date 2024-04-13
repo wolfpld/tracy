@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(
     tracy-profiler
-    LANGUAGES ASM C CXX
+    LANGUAGES C CXX ASM
     VERSION ${TRACY_VERSION_STRING}
 )
 

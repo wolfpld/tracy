@@ -863,6 +863,8 @@ void View::DrawInfo()
             m_sourceRegexValid = regexValid;
         }
 
+        ImGui::Checkbox("Enforce source file modification time older than trace capture time", &m_validateSourceAge);
+
         ImGui::TreePop();
     }
 

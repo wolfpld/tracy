@@ -3736,6 +3736,8 @@ Let's say we have an Unix-based operating system with program sources in \texttt
 \end{itemize}
 \end{bclogo}
 
+By default, all source file modification times need to be older than the cature time of the trace. This can be disabled using the \emph{Enforce source file modification time older than trace capture time} check box, i.e. when the source files are under source control and the file modification time is not relevant.
+
 In this window, you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, total available RAM, etc. In addition, if application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
 If an application should crash during profiling (section~\ref{crashhandling}), the profiler will display the crash information in this window. It provides you information about the thread that has crashed, the crash reason, and the crash call stack (section~\ref{callstackwindow}).

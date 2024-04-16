@@ -124,6 +124,7 @@ public:
     uint16_t GetPort() const { return m_worker.GetPort(); }
 
     const char* SourceSubstitution( const char* srcFile ) const;
+    bool ValidateSourceAge() const { return m_validateSourceAge; }
 
     void ShowSampleParents( uint64_t symAddr, bool withInlines ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; m_sampleParents.withInlines = withInlines; }
 
@@ -585,6 +586,7 @@ private:
 
     std::vector<SourceRegex> m_sourceSubstitutions;
     bool m_sourceRegexValid = true;
+    bool m_validateSourceAge = true;
 
     RangeSlim m_setRangePopup;
     bool m_setRangePopupOpen = false;

@@ -16,28 +16,28 @@ jobs:
       run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 tbb debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols
     - name: Profiler GUI
       run: |
-        cmake -B profiler/build -S profiler
-        cmake --build profiler/build --config Release --parallel
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release
+        cmake --build profiler/build --parallel
     - name: Update utility
       run: |
-        cmake -B update/build -S update
-        cmake --build update/build --config Release --parallel
+        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release
+        cmake --build update/build --parallel
     - name: Capture utility
       run: |
-        cmake -B capture/build -S capture
-        cmake --build capture/build --config Release --parallel
+        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release
+        cmake --build capture/build --parallel
     - name: Csvexport utility
       run: |
-        cmake -B csvexport/build -S csvexport
-        cmake --build csvexport/build --config Release --parallel
+        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
+        cmake --build csvexport/build --parallel
     - name: Import-chrome utility
       run: |
-        cmake -B import-chrome/build -S import-chrome
-        cmake --build import-chrome/build --config Release --parallel
+        cmake -B import-chrome/build -S import-chrome -DCMAKE_BUILD_TYPE=Release
+        cmake --build import-chrome/build --parallel
     - name: Import-fuchsia utility
       run: |
-        cmake -B import-fuchsia/build -S import-fuchsia
-        cmake --build import-fuchsia/build --config Release --parallel
+        cmake -B import-fuchsia/build -S import-fuchsia -DCMAKE_BUILD_TYPE=Release
+        cmake --build import-fuchsia/build --parallel
     - name: Library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
     - name: Test application

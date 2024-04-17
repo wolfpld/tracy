@@ -30,27 +30,27 @@ jobs:
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release
-        cmake --build profiler/build --parallel
+        cmake --build profiler/build --parallel --config Release
     - name: Update utility
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release
-        cmake --build update/build --parallel
+        cmake --build update/build --parallel --config Release
     - name: Capture utility
       run: |
         cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release
-        cmake --build capture/build --parallel
+        cmake --build capture/build --parallel --config Release
     - name: Csvexport utility
       run: |
         cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
-        cmake --build csvexport/build --parallel
+        cmake --build csvexport/build --parallel --config Release
     - name: Import-chrome utility
       run: |
         cmake -B import-chrome/build -S import-chrome -DCMAKE_BUILD_TYPE=Release
-        cmake --build import-chrome/build --parallel
+        cmake --build import-chrome/build --parallel --config Release
     - name: Import-fuchsia utility
       run: |
         cmake -B import-fuchsia/build -S import-fuchsia -DCMAKE_BUILD_TYPE=Release
-        cmake --build import-fuchsia/build --parallel
+        cmake --build import-fuchsia/build --parallel --config Release
     - if: ${{ !startsWith(matrix.os, 'windows') }}
       name: Library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build

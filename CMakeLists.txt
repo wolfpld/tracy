@@ -140,6 +140,7 @@ set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 set_option(TRACY_LIBUNWIND_BACKTRACE "Use libunwind backtracing where supported" OFF)
 set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resolution, only resolve the image path and offset to enable offline symbol resolution" OFF)
 set_option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation" OFF)
+set_option(TRACY_NAME_BUFFER "Enable name buffer for other languages" OFF)
 set_option(TRACY_DEBUGINFOD "Enable debuginfod support" OFF)
 
 # advanced
@@ -221,6 +222,16 @@ set(common_includes
     ${TRACY_PUBLIC_DIR}/common/TracyWinFamily.hpp
     ${TRACY_PUBLIC_DIR}/common/TracyYield.hpp)
 
+if(TRACY_NAME_BUFFER)
+    set(TRACY_BUFFER_SIZE 128 CACHE STRING "The size of the name buffer")
+    set(TRACY_NAME_LENGTH 128 CACHE STRING "The length of a name in the buffer")
+
+    list(APPEND common_includes ${TRACY_PUBLIC_DIR}/common/TracyNameBuffer.hpp)
+
+    target_compile_definitions(TracyClient PRIVATE TRACY_BUFFER_SIZE=${TRACY_BUFFER_SIZE})
+    target_compile_definitions(TracyClient PRIVATE TRACY_NAME_LENGTH=${TRACY_NAME_LENGTH})
+endif()
+
 install(TARGETS TracyClient
         EXPORT TracyConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}/$<IF:$<CONFIG:Release>,,$<CONFIG>>
@@ -276,6 +287,9 @@ option(TRACY_CLIENT_PYTHON "Whether to build Tracy python client library" OFF)
 if(TRACY_CLIENT_PYTHON)
     if(TRACY_STATIC)
         message(FATAL_ERROR "Python-bindings require a shared client library")
+    endif()
+    if(NOT TRACY_NAME_BUFFER)
+        message(FATAL_ERROR "Python-bindings require name buffer being enabled")
     endif()
 
     add_subdirectory(python)

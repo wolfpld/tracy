@@ -3,8 +3,8 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
-#include "NameBuffer.hpp"
 #include "tracy/Tracy.hpp"
+using namespace tracy;
 
 using OptionalString = std::optional<std::string>;
 using OptionalInt = std::optional<int32_t>;
@@ -61,6 +61,7 @@ bool MemoryFree(const Type &type, const OptionalNumber &id = std::nullopt,
   return true;
 }
 #else
+using OptionalNumber = std::optional<uint16_t>;
 
 template <typename Type = uint64_t>
 OptionalNumber MemoryAllocate(const Type &, std::size_t, const OptionalString &,

@@ -1,25 +1,18 @@
 #include "Memory.hpp"
 #include "ScopedZone.hpp"
 #include "tracy/TracyC.h"
+using namespace tracy;
 
 namespace tracy {
 #ifndef TRACY_ENABLE
 enum class PlotFormatType : uint8_t { Number, Memory, Percentage };
 #endif
-
-constexpr static inline bool IsEnabled() {
-#ifdef TRACY_ENABLE
-  return true;
-#else
-  return false;
-#endif
-}
 }  // namespace tracy
 
 PYBIND11_MODULE(TracyClientBindings, m) {
   m.doc() = "Tracy Client Bindings";
 
-  m.def("is_enabled", &tracy::IsEnabled);
+  m.def("is_enabled", []() -> bool { return TracyCEnabled(); });
 
   py::enum_<tracy::Color::ColorType>(m, "ColorType")
       .value("Snow", tracy::Color::Snow)
@@ -703,10 +696,10 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "program_name",
       [](const std::string &name) {
-        if (!tracy::IsEnabled()) return true;
-        auto entry = NameBuffer::Add(name);
-        if (!entry.first) return false;
-        TracySetProgramName(entry.second);
+        if (!TracyCEnabled()) return true;
+        auto ptr = TracyCNameBufferAdd(name.c_str(), nullptr);
+        if (!ptr) return false;
+        TracySetProgramName(ptr);
         return true;
       },
       "name"_a.none(false));
@@ -714,7 +707,7 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "thread_name",
       [](const std::string &name) {
-        if (!tracy::IsEnabled()) return;
+        if (!TracyCEnabled()) return;
         tracy::SetThreadName(name.c_str());
       },
       "name"_a.none(false));
@@ -722,7 +715,7 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "app_info",
       [](const std::string &text) {
-        if (!tracy::IsEnabled()) return true;
+        if (!TracyCEnabled()) return true;
         if (text.size() >= std::numeric_limits<uint16_t>::max()) return false;
         TracyAppInfo(text.c_str(), text.size());
         return true;
@@ -732,7 +725,7 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "message",
       [](const std::string &message) {
-        if (!tracy::IsEnabled()) return true;
+        if (!TracyCEnabled()) return true;
         if (message.size() >= std::numeric_limits<uint16_t>::max())
           return false;
         TracyMessage(message.c_str(), message.size());
@@ -743,7 +736,7 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "message",
       [](const std::string &message, uint32_t pColor) {
-        if (!tracy::IsEnabled()) return true;
+        if (!TracyCEnabled()) return true;
         if (message.size() >= std::numeric_limits<uint16_t>::max())
           return false;
         TracyMessageC(message.c_str(), message.size(), pColor);
@@ -755,20 +748,21 @@ PYBIND11_MODULE(TracyClientBindings, m) {
 
   m.def(
       "frame_mark_start",
-      [](const std::string &name) {
-        if (!tracy::IsEnabled()) return static_cast<OptionalNumber>(0ul);
-        auto entry = NameBuffer::Add(name);
-        if (!entry.first) return static_cast<OptionalNumber>(std::nullopt);
-        FrameMarkStart(entry.second);
-        return entry.first;
+      [](const std::string &name) -> OptionalNumber {
+        if (!TracyCEnabled()) return 0ul;
+        uint16_t id = 0ul;
+        auto ptr = TracyCNameBufferAdd(name.c_str(), &id);
+        if (!ptr) return static_cast<OptionalNumber>(std::nullopt);
+        FrameMarkStart(ptr);
+        return id;
       },
       "name"_a.none(false));
 
   m.def(
       "frame_mark_end",
       [](std::size_t id) {
-        if (!tracy::IsEnabled()) return true;
-        auto ptr = NameBuffer::Get(id);
+        if (!TracyCEnabled()) return true;
+        auto ptr = TracyCNameBufferGet(id);
         if (!ptr) return false;
         FrameMarkEnd(ptr);
         return true;
@@ -779,7 +773,7 @@ PYBIND11_MODULE(TracyClientBindings, m) {
       "frame_image",
       [](const py::bytes &image, uint16_t width, uint16_t height,
          uint8_t offset = 0, bool flip = false) {
-        if (!tracy::IsEnabled()) return true;
+        if (!TracyCEnabled()) return true;
         if (width % 4 != 0 || height % 4 != 0) return false;
         TracyCFrameImage(std::string(image).data(), width, height, offset,
                          flip);
@@ -821,12 +815,13 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "_plot_config",
       [](const std::string &name, int32_t type, bool step, bool fill,
-         uint32_t color = 0) {
-        if (!tracy::IsEnabled()) return static_cast<OptionalNumber>(0ul);
-        auto entry = NameBuffer::Add(name);
-        if (!entry.first) return static_cast<OptionalNumber>(std::nullopt);
-        TracyCPlotConfig(entry.second, type, step, fill, color);
-        return entry.first;
+         uint32_t color = 0) -> OptionalNumber {
+        if (!TracyCEnabled()) return 0ul;
+        uint16_t id = 0ul;
+        auto ptr = TracyCNameBufferAdd(name.c_str(), &id);
+        if (!ptr) return static_cast<OptionalNumber>(std::nullopt);
+        TracyCPlotConfig(ptr, type, step, fill, color);
+        return id;
       },
       "name"_a.none(false), "type"_a.none(false), "step"_a.none(false),
       "fill"_a.none(false), "color"_a.none(false));
@@ -840,8 +835,8 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "plot",
       [](std::size_t id, double value) {
-        if (!tracy::IsEnabled()) return true;
-        auto ptr = NameBuffer::Get(id);
+        if (!TracyCEnabled()) return true;
+        auto ptr = TracyCNameBufferGet(id);
         if (!ptr) return false;
         TracyCPlot(ptr, value);
         return true;
@@ -850,8 +845,8 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "plot",
       [](std::size_t id, float value) {
-        if (!tracy::IsEnabled()) return true;
-        auto ptr = NameBuffer::Get(id);
+        if (!TracyCEnabled()) return true;
+        auto ptr = TracyCNameBufferGet(id);
         if (!ptr) return false;
         TracyCPlotF(ptr, value);
         return true;
@@ -860,8 +855,8 @@ PYBIND11_MODULE(TracyClientBindings, m) {
   m.def(
       "plot",
       [](std::size_t id, int64_t value) {
-        if (!tracy::IsEnabled()) return true;
-        auto ptr = NameBuffer::Get(id);
+        if (!TracyCEnabled()) return true;
+        auto ptr = TracyCNameBufferGet(id);
         if (!ptr) return false;
         TracyCPlotI(ptr, value);
         return true;

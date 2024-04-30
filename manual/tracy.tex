@@ -864,6 +864,25 @@ logo=\bcbombe
 Please don't ask about window decorations in Gnome. The current behavior is the intended behavior. Gnome does not want windows to have decorations, and Tracy respects that choice. If you find this problematic, use a desktop environment that actually listens to its users.
 \end{bclogo}
 
+\subsubsection{Using an IDE}
+
+The recommended development environment is Visual Studio Code\footnote{\url{https://code.visualstudio.com/}}. This is a cross-platform solution, so you always get the same experience, no matter what OS you are using.
+
+VS Code is highly modular, and unlike some other IDEs, it does not come with a compiler. You will need to have one, such as gcc or clang, already installed on your system. On Windows, you should have MSVC 2022 installed in order to have access to its build tools.
+
+When you open the Tracy directory in VS Code, it will prompt you to install some recommended extensions: clangd, CodeLLDB, and CMake Tools. You should do this if you don't already have them.
+
+The CMake build configuration will begin immediately. It is likely that you will be prompted to select a development kit to use; for example, you may have a preference as to whether you want to use gcc or clang, and CMake will need to be told about it.
+
+After the build configuration phase is over, you may want to make some further adjustments to what is being built. The primary place to do this is in the \emph{Project Status} section of the CMake side panel. The two key settings there are also available in the status bar at the bottom of the window:
+
+\begin{itemize}
+\item The \emph{Folder} setting allows you to choose which Tracy utility you want to work with. Select "profiler" for the profiler's GUI.
+\item The \emph{Build variant} setting is used to toggle between the debug and release build configurations.
+\end{itemize}
+
+With all this taken care of, you can now start the program with the \keys{F5} key, set breakpoints, get code completion and navigation\footnote{To get the Intellisense experience if you are using the MSVC compiler, you need to do some additional setup. First, you need to install Ninja (\url{https://ninja-build.org/}). The Meson installer (\url{https://github.com/mesonbuild/meson/releases}) is probably the most convenient way to do this. Then you need to set the \texttt{cmake.generator} option in the VS Code settings to \texttt{Ninja}. Once this is done, all you have to do is wipe the existing build directories and run the CMake configuration again.}, and so on.
+
 \subsubsection{Embedding the server in profiled application}
 \label{embeddingserver}
 

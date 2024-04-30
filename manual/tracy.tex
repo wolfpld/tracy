@@ -790,7 +790,7 @@ logo=\bclampe
 The \texttt{CMakeLists.txt} file only contains the general definition of how the program should be built. To be able to actually compile the program, you must first create a build directory that takes into account the specific compiler you have on your system, the set of available libraries, the build options you specify, and so on. You can do this by issuing the following command, in this case for the \texttt{profiler} utility:
 
 \begin{lstlisting}[language=sh]
-cmake -B profiler/build -S profiler
+cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release
 \end{lstlisting}
 
 Now that you have a build directory, you can actually compile the program. For example, you could run the following command:

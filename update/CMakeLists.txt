@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(
     tracy-update
-    LANGUAGES C CXX ASM
+    LANGUAGES C CXX
     VERSION ${TRACY_VERSION_STRING}
 )
 

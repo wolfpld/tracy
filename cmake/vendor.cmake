@@ -109,9 +109,6 @@ set(ZSTD_SOURCES
     dictBuilder/cover.c
     dictBuilder/divsufsort.c
     dictBuilder/fastcover.c
-
-    # Assembly
-    decompress/huf_decompress_amd64.S
 )
 
 list(TRANSFORM ZSTD_SOURCES PREPEND "${ZSTD_DIR}/")
@@ -120,6 +117,7 @@ set_property(SOURCE ${ZSTD_DIR}/decompress/huf_decompress_amd64.S APPEND PROPERT
 
 add_library(TracyZstd STATIC ${ZSTD_SOURCES})
 target_include_directories(TracyZstd PUBLIC ${ZSTD_DIR})
+target_compile_definitions(TracyZstd PRIVATE ZSTD_DISABLE_ASM)
 
 
 # Diff Template Library

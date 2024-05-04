@@ -107,9 +107,14 @@ vx.xx.x (xxxx-xx-xx)
   wayland-protocols to be installed. A reasonably recent release of the
   protocols is required, which, as always, is not available on Ubuntu.
   Seriously, stop trying to build modern software with that broken distro.
+- Fractional DPI scaling is now properly supported on Wayland.
 - Added Python bindings.
 - The per-line sampling statistics are now also displayed as a percentage
   of total program run time.
+- The out-of-focus render frame rate reduction can be now disabled in
+  global settings.
+- It is now possible to load source files that are newer than the trace.
+  The default setting is still to reject such files.
 
 
 v0.10.0 (2023-10-16)

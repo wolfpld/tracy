@@ -234,7 +234,7 @@ int main( int argc, char** argv )
             AnsiPrintf( ANSI_YELLOW, "Tx: ");
             AnsiPrintf( ANSI_GREEN, "%s",  tracy::MemSizeToString( netTotal ) );
             printf( " | ");
-            AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage ) );
+            AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage.load( std::memory_order_relaxed ) ) );
             printf( " | ");
             AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() - firstTime ) );
             fflush( stdout );

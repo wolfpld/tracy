@@ -1,12 +1,13 @@
 #ifndef __TRACYMEMORY_HPP__
 #define __TRACYMEMORY_HPP__
 
-#include <stdlib.h>
+#include <atomic>
+#include <stdint.h>
 
 namespace tracy
 {
 
-extern size_t memUsage;
+extern std::atomic<int64_t> memUsage;
 
 }
 

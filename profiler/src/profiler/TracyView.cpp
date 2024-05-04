@@ -1012,12 +1012,13 @@ bool View::DrawImpl()
 
         targetLabelSize = ImGui::CalcTextSize( ICON_FA_MEMORY " 1234.56 MB (123.45 %%)" ).x;
         cx = ImGui::GetCursorPosX();
-        ImGui::Text( ICON_FA_MEMORY " %s", MemSizeToString( memUsage ) );
+        const auto mem = memUsage.load( std::memory_order_relaxed );
+        ImGui::Text( ICON_FA_MEMORY " %s", MemSizeToString( mem ) );
         TooltipIfHovered( "Profiler memory usage" );
         if( m_totalMemory != 0 )
         {
             ImGui::SameLine();
-            const auto memUse = float( memUsage ) / m_totalMemory * 100;
+            const auto memUse = float( mem ) / m_totalMemory * 100;
             if( memUse < 80 )
             {
                 ImGui::TextDisabled( "(%.2f%%)", memUse );

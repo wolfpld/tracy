@@ -7,6 +7,8 @@
 #  include <unistd.h>
 #endif
 
+#include "../ini.h"
+
 #include "TracyStorage.hpp"
 #include "TracyUserData.hpp"
 #include "TracyViewData.hpp"
@@ -96,6 +98,7 @@ void UserData::LoadState( ViewData& data )
     {
         uint32_t ver;
         fread( &ver, 1, sizeof( ver ), f );
+        // TODO: remove in future
         if( ver == VersionOptions )
         {
             fread( &data.drawGpuZones, 1, sizeof( data.drawGpuZones ), f );
@@ -114,8 +117,36 @@ void UserData::LoadState( ViewData& data )
             fread( &data.forceColors, 1, sizeof( data.forceColors ), f );
             fread( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
             fread( &data.frameTarget, 1, sizeof( data.frameTarget ), f );
+            fclose( f );
         }
-        fclose( f );
+        else
+        {
+            fclose( f );
+            const auto path = GetSavePath( m_program.c_str(), m_time, FileOptions, false );
+            assert( path );
+            auto ini = ini_load( path );
+            if( ini )
+            {
+                int v;
+                if( ini_sget( ini, "options", "drawGpuZones", "%d", &v ) ) data.drawGpuZones = v;
+                if( ini_sget( ini, "options", "drawZones", "%d", &v ) ) data.drawZones = v;
+                if( ini_sget( ini, "options", "drawLocks", "%d", &v ) ) data.drawLocks = v;
+                if( ini_sget( ini, "options", "drawPlots", "%d", &v ) ) data.drawPlots = v;
+                if( ini_sget( ini, "options", "onlyContendedLocks", "%d", &v ) ) data.onlyContendedLocks = v;
+                if( ini_sget( ini, "options", "drawEmptyLabels", "%d", &v ) ) data.drawEmptyLabels = v;
+                if( ini_sget( ini, "options", "drawFrameTargets", "%d", &v ) ) data.drawFrameTargets = v;
+                if( ini_sget( ini, "options", "drawContextSwitches", "%d", &v ) ) data.drawContextSwitches = v;
+                if( ini_sget( ini, "options", "darkenContextSwitches", "%d", &v ) ) data.darkenContextSwitches = v;
+                if( ini_sget( ini, "options", "drawCpuData", "%d", &v ) ) data.drawCpuData = v;
+                if( ini_sget( ini, "options", "drawCpuUsageGraph", "%d", &v ) ) data.drawCpuUsageGraph = v;
+                if( ini_sget( ini, "options", "drawSamples", "%d", &v ) ) data.drawSamples = v;
+                if( ini_sget( ini, "options", "dynamicColors", "%d", &v ) ) data.dynamicColors = v;
+                if( ini_sget( ini, "options", "forceColors", "%d", &v ) ) data.forceColors = v;
+                if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) data.ghostZones = v;
+                if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) data.frameTarget = v;
+                ini_free( ini );
+            }
+        }
     }
 }
 
@@ -143,24 +174,23 @@ void UserData::SaveState( const ViewData& data )
     f = OpenFile( FileOptions, true );
     if( f )
     {
-        uint32_t ver = VersionOptions;
-        fwrite( &ver, 1, sizeof( ver ), f );
-        fwrite( &data.drawGpuZones, 1, sizeof( data.drawGpuZones ), f );
-        fwrite( &data.drawZones, 1, sizeof( data.drawZones ), f );
-        fwrite( &data.drawLocks, 1, sizeof( data.drawLocks ), f );
-        fwrite( &data.drawPlots, 1, sizeof( data.drawPlots ), f );
-        fwrite( &data.onlyContendedLocks, 1, sizeof( data.onlyContendedLocks ), f );
-        fwrite( &data.drawEmptyLabels, 1, sizeof( data.drawEmptyLabels ), f );
-        fwrite( &data.drawFrameTargets, 1, sizeof( data.drawFrameTargets ), f );
-        fwrite( &data.drawContextSwitches, 1, sizeof( data.drawContextSwitches ), f );
-        fwrite( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
-        fwrite( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
-        fwrite( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
-        fwrite( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
-        fwrite( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
-        fwrite( &data.forceColors, 1, sizeof( data.forceColors ), f );
-        fwrite( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
-        fwrite( &data.frameTarget, 1, sizeof( data.frameTarget ), f );
+        fprintf( f, "[options]\n" );
+        fprintf( f, "drawGpuZones = %d\n", data.drawGpuZones );
+        fprintf( f, "drawZones = %d\n", data.drawZones );
+        fprintf( f, "drawLocks = %d\n", data.drawLocks );
+        fprintf( f, "drawPlots = %d\n", data.drawPlots );
+        fprintf( f, "onlyContendedLocks = %d\n", data.onlyContendedLocks );
+        fprintf( f, "drawEmptyLabels = %d\n", data.drawEmptyLabels );
+        fprintf( f, "drawFrameTargets = %d\n", data.drawFrameTargets );
+        fprintf( f, "drawContextSwitches = %d\n", data.drawContextSwitches );
+        fprintf( f, "darkenContextSwitches = %d\n", data.darkenContextSwitches );
+        fprintf( f, "drawCpuData = %d\n", data.drawCpuData );
+        fprintf( f, "drawCpuUsageGraph = %d\n", data.drawCpuUsageGraph );
+        fprintf( f, "drawSamples = %d\n", data.drawSamples );
+        fprintf( f, "dynamicColors = %d\n", data.dynamicColors );
+        fprintf( f, "forceColors = %d\n", data.forceColors );
+        fprintf( f, "ghostZones = %d\n", data.ghostZones );
+        fprintf( f, "frameTarget = %d\n", data.frameTarget );
         fclose( f );
     }
 }

@@ -137,7 +137,8 @@ public:
 
 private:
     tracy::FastVector<ImageEntry> m_images;
-    bool m_updated;
+    bool m_updated = false;
+    bool m_haveMainImageName = false;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data )
     {
@@ -155,26 +156,13 @@ private:
         image->m_startAddress = startAddress;
         image->m_endAddress = endAddress;
 
-        const char* imageName = nullptr;
-        // the base executable name isn't provided when iterating with dl_iterate_phdr, get it with dladdr()
+        // the base executable name isn't provided when iterating with dl_iterate_phdr,
+        // we will have to patch the executable image name outside this callback
         if( info->dlpi_name && info->dlpi_name[0] != '\0' )
         {
-            imageName = info->dlpi_name;
-        }
-        else
-        {
-            Dl_info dlInfo;
-            if( dladdr( (void *)info->dlpi_addr, &dlInfo ) )
-            {
-                imageName = dlInfo.dli_fname;
-            }
-        }
-
-        if( imageName )
-        {
-            size_t sz = strlen( imageName ) + 1;
+            size_t sz = strlen( info->dlpi_name ) + 1;
             image->m_name = (char*)tracy_malloc( sz );
-            memcpy( image->m_name, imageName, sz );
+            memcpy( image->m_name,  info->dlpi_name, sz );
         }
         else
         {
@@ -200,7 +188,40 @@ private:
         {
             std::sort( m_images.begin(), m_images.end(),
                 []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
+
+            // patch the main executable image name here, as calling dl_* functions inside the dl_iterate_phdr callback might cause deadlocks
+            UpdateMainImageName();
         }
+    }
+
+    void UpdateMainImageName()
+    {
+        if( m_haveMainImageName )
+        {
+            return;
+        }
+
+        for( ImageEntry& entry : m_images )
+        {
+            if( entry.m_name == nullptr )
+            {
+                Dl_info dlInfo;
+                if( dladdr( (void *)entry.m_startAddress, &dlInfo ) )
+                {
+                    if( dlInfo.dli_fname )
+                    {
+                        size_t sz = strlen( dlInfo.dli_fname ) + 1;
+                        entry.m_name = (char*)tracy_malloc( sz );
+                        memcpy( entry.m_name, dlInfo.dli_fname, sz );
+                    }
+                }
+
+                // we only expect one entry to be null for the main executable entry
+                break;
+            }
+        }
+
+        m_haveMainImageName = true;
     }
 
     const ImageEntry* GetImageForAddressImpl( void* address ) const
@@ -223,6 +244,7 @@ private:
         }
 
         m_images.clear();
+        m_haveMainImageName = false;
     }
 };
 #endif //#ifdef TRACY_USE_IMAGE_CACHE

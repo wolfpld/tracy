@@ -1092,6 +1092,8 @@ private:
     uint32_t m_nextSourceCodeQuery = 0;
 
     unordered_flat_map<uint64_t, PowerData> m_powerData;
+
+    Vector<InlineStackData> m_inlineStack;
 };
 
 }

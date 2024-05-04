@@ -976,8 +976,8 @@ bool View::DrawImpl()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        const auto targetLabelSize = ImGui::CalcTextSize( "WWWWWWW" ).x;
 
+        auto targetLabelSize = ImGui::CalcTextSize( ICON_FA_EYE " 12345.67 ms" ).x;
         auto cx = ImGui::GetCursorPosX();
         ImGui::Text( ICON_FA_EYE " %s", TimeToString( m_vd.zvEnd - m_vd.zvStart ) );
         TooltipIfHovered( "View span" );
@@ -1010,6 +1010,7 @@ bool View::DrawImpl()
         dx = ImGui::GetCursorPosX() - cx;
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
 
+        targetLabelSize = ImGui::CalcTextSize( ICON_FA_MEMORY " 1234.56 MB (123.45 %%)" ).x;
         cx = ImGui::GetCursorPosX();
         ImGui::Text( ICON_FA_MEMORY " %s", MemSizeToString( memUsage ) );
         TooltipIfHovered( "Profiler memory usage" );

@@ -20,19 +20,10 @@
 #include "TracySourceView.hpp"
 #include "TracyTexture.hpp"
 #include "TracyView.hpp"
+#include "../server/TracySysUtil.hpp"
 #include "../public/common/TracyStackFrames.hpp"
 
 #include "imgui_internal.h"
-
-#ifdef _WIN32
-#  include <windows.h>
-#elif defined __linux__
-#  include <sys/sysinfo.h>
-#elif defined __APPLE__ || defined BSD
-#  include <sys/types.h>
-#  include <sys/sysctl.h>
-#endif
-
 #include "IconsFontAwesome6.h"
 
 #ifndef M_PI_2
@@ -49,6 +40,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
     , m_viewModeHeuristicTry( true )
+    , m_totalMemory( GetPhysicalMemorySize() )
     , m_forceConnectionPopup( true, true )
     , m_tc( *this, m_worker, config.threadedRendering )
     , m_frames( nullptr )
@@ -64,7 +56,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_userData()
     , m_cbMainThread( cbMainThread )
 {
-    InitMemory();
     InitTextEditor();
 
     m_vd.frameTarget = config.targetFps;
@@ -75,6 +66,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_filename( f.GetFilename() )
     , m_staticView( true )
     , m_viewMode( ViewMode::Paused )
+    , m_totalMemory( GetPhysicalMemorySize() )
     , m_tc( *this, m_worker, config.threadedRendering )
     , m_frames( m_worker.GetFramesBase() )
     , m_messagesScrollBottom( false )
@@ -90,7 +82,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
-    InitMemory();
     InitTextEditor();
     m_vd.zvStart = m_worker.GetFirstTime();
     m_vd.zvEnd = m_worker.GetLastTime();
@@ -118,32 +109,6 @@ View::~View()
 
     if( m_frameTexture ) FreeTexture( m_frameTexture, m_cbMainThread );
     if( m_playback.texture ) FreeTexture( m_playback.texture, m_cbMainThread );
-}
-
-void View::InitMemory()
-{
-#ifdef _WIN32
-    MEMORYSTATUSEX statex;
-    statex.dwLength = sizeof( statex );
-    GlobalMemoryStatusEx( &statex );
-    m_totalMemory = statex.ullTotalPhys;
-#elif defined __linux__
-    struct sysinfo sysInfo;
-    sysinfo( &sysInfo );
-    m_totalMemory = sysInfo.totalram;
-#elif defined __APPLE__
-    size_t memSize;
-    size_t sz = sizeof( memSize );
-    sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
-    m_totalMemory = memSize;
-#elif defined BSD
-    size_t memSize;
-    size_t sz = sizeof( memSize );
-    sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
-    m_totalMemory = memSize;
-#else
-    m_totalMemory = 0;
-#endif
 }
 
 void View::InitTextEditor()

@@ -222,7 +222,6 @@ private:
         uint32_t count;
     };
 
-    void InitMemory();
     void InitTextEditor();
 
     bool DrawImpl();

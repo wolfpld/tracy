@@ -46,6 +46,7 @@
 #include "../../server/TracyFileHeader.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyPrint.hpp"
+#include "../../server/TracySysUtil.hpp"
 #include "../../server/TracyWorker.hpp"
 
 #include "icon.hpp"
@@ -116,6 +117,7 @@ void* zigzagTex;
 static Backend* bptr;
 static bool s_customTitle = false;
 static bool s_isElevated = false;
+static size_t s_totalMem = tracy::GetPhysicalMemorySize();
 tracy::Config s_config;
 
 static void SetWindowTitleCallback( const char* title )
@@ -213,6 +215,8 @@ static void LoadConfig()
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
     if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
+    if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
+    if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
 
     ini_free( ini );
 }
@@ -229,6 +233,10 @@ static bool SaveConfig()
 
     fprintf( f, "\n[timeline]\n" );
     fprintf( f, "targetFps = %i\n", s_config.targetFps );
+
+    fprintf( f, "\n[memory]\n" );
+    fprintf( f, "limit = %i\n", (int)s_config.memoryLimit );
+    fprintf( f, "percent = %i\n", s_config.memoryLimitPercent );
 
     fclose( f );
     return true;
@@ -650,6 +658,7 @@ static void DrawContents()
             if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
             {
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+
                 ImGui::TextUnformatted( "Threaded rendering" );
                 ImGui::Indent();
                 if( ImGui::RadioButton( "Enabled", s_config.threadedRendering ) ) { s_config.threadedRendering = true; SaveConfig(); }
@@ -669,6 +678,30 @@ static void DrawContents()
                 int tmp = s_config.targetFps;
                 ImGui::SetNextItemWidth( 90 * dpiScale );
                 if( ImGui::InputInt( "##targetfps", &tmp ) ) { s_config.targetFps = std::clamp( tmp, 1, 9999 ); SaveConfig(); }
+
+                if( s_totalMem == 0 )
+                {
+                    ImGui::BeginDisabled();
+                    s_config.memoryLimit = false;
+                }
+
+                ImGui::Spacing();
+                if( ImGui::Checkbox( "Memory limit", &s_config.memoryLimit ) ) SaveConfig();
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of available memory. Values greater than 100% will rely on swap. You need to make sure that memory is actually available." );
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth( 70 * dpiScale );
+                if( ImGui::InputInt( "##memorylimit", &s_config.memoryLimitPercent ) ) { s_config.memoryLimitPercent = std::clamp( s_config.memoryLimitPercent, 1, 999 ); SaveConfig(); }
+                ImGui::SameLine();
+                ImGui::TextUnformatted( "%" );
+                if( s_totalMem != 0 )
+                {
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", tracy::MemSizeToString( s_totalMem * s_config.memoryLimitPercent / 100 ) );
+                }
+
+                if( s_totalMem == 0 ) ImGui::EndDisabled();
+
                 ImGui::PopStyleVar();
                 ImGui::TreePop();
             }

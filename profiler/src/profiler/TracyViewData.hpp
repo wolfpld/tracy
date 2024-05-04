@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <regex>
 
+#include "TracyUtility.hpp"
+
 namespace tracy
 {
 
@@ -53,6 +55,7 @@ struct ViewData
     uint8_t dynamicColors = 1;
     uint8_t forceColors = false;
     uint8_t ghostZones = true;
+    ShortenName shortenName = ShortenName::NoSpaceAndNormalize;
 
     uint32_t frameTarget = 60;
 };

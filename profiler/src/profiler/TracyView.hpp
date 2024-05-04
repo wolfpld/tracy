@@ -131,7 +131,7 @@ public:
     ViewData& GetViewData() { return m_vd; }
     const ViewData& GetViewData() const { return m_vd; }
 
-    ShortenName GetShortenName() const { return m_shortenName; }
+    ShortenName GetShortenName() const { return m_vd.shortenName; }
     int GetNextGpuIdx() { return m_gpuIdx++; }
 
     const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
@@ -513,7 +513,6 @@ private:
     bool m_groupWaitStackTopDown = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
-    ShortenName m_shortenName = ShortenName::NoSpaceAndNormalize;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_sampleParentBuzzAnim;

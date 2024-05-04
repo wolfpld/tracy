@@ -252,7 +252,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         {
                             TextColoredUnformatted( 0xFF8888FF, txt );
                         }
-                        else if( m_shortenName == ShortenName::Never )
+                        else if( m_vd.shortenName == ShortenName::Never )
                         {
                             ImGui::TextUnformatted( txt );
                         }
@@ -455,7 +455,7 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
         {
             TextDisabledUnformatted( txt );
         }
-        else if( m_shortenName == ShortenName::Never )
+        else if( m_vd.shortenName == ShortenName::Never )
         {
             ImGui::TextUnformatted( txt );
         }
@@ -526,7 +526,7 @@ void View::CallstackTooltipContents( uint32_t idx )
                 {
                     TextColoredUnformatted( 0xFF8888FF, txt );
                 }
-                else if( m_shortenName == ShortenName::Never )
+                else if( m_vd.shortenName == ShortenName::Never )
                 {
                     ImGui::TextUnformatted( txt );
                 }

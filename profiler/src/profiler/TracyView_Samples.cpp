@@ -276,7 +276,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         {
                             TextColoredUnformatted( 0xFF8888FF, name );
                         }
-                        else if( m_shortenName == ShortenName::Never )
+                        else if( m_vd.shortenName == ShortenName::Never )
                         {
                             ImGui::TextUnformatted( name );
                         }
@@ -297,7 +297,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                             clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
                             ImGui::PopStyleColor();
                         }
-                        else if( m_shortenName == ShortenName::Never )
+                        else if( m_vd.shortenName == ShortenName::Never )
                         {
                             clicked = ImGui::Selectable( name, m_sampleParents.withInlines && m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns );
                         }
@@ -315,7 +315,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     if( parentName )
                     {
                         ImGui::SameLine();
-                        if( m_shortenName == ShortenName::Never )
+                        if( m_vd.shortenName == ShortenName::Never )
                         {
                             ImGui::TextDisabled( "(%s)", parentName );
                         }
@@ -551,7 +551,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
                                 if( m_mergeInlines || iv.excl == 0 )
                                 {
-                                    if( m_shortenName == ShortenName::Never )
+                                    if( m_vd.shortenName == ShortenName::Never )
                                     {
                                         ImGui::TextUnformatted( sn );
                                     }
@@ -566,7 +566,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 {
                                     ImGui::PushID( idx++ );
                                     bool clicked;
-                                    if( m_shortenName == ShortenName::Never )
+                                    if( m_vd.shortenName == ShortenName::Never )
                                     {
                                         clicked = ImGui::Selectable( sn, !m_sampleParents.withInlines && m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns );
                                     }
@@ -727,7 +727,7 @@ void View::DrawSampleParents()
         assert( !stats.empty() );
 
         const auto symName = m_worker.GetString( symbol->name );
-        const char* normalized = m_shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : nullptr;
+        const char* normalized = m_vd.shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : nullptr;
         ImGui::PushFont( m_bigFont );
         TextFocused( "Function:", normalized ? normalized : symName );
         if( normalized )
@@ -886,7 +886,7 @@ void View::DrawSampleParents()
                             {
                                 TextColoredUnformatted( 0xFF8888FF, txt );
                             }
-                            else if( m_shortenName == ShortenName::Never )
+                            else if( m_vd.shortenName == ShortenName::Never )
                             {
                                 ImGui::TextUnformatted( txt );
                             }

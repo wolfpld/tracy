@@ -288,9 +288,9 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );
-            if( m_shortenName == ShortenName::Always || ( ( m_shortenName == ShortenName::NoSpace || m_shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
+            if( m_vd.shortenName == ShortenName::Always || ( ( m_vd.shortenName == ShortenName::NoSpace || m_vd.shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
             {
-                zoneName = ShortenZoneName( m_shortenName, zoneName, tsz, zsz );
+                zoneName = ShortenZoneName( m_vd.shortenName, zoneName, tsz, zsz );
             }
 
             const auto pr0 = ( ev.Start() - m_vd.zvStart ) * pxns;
@@ -514,9 +514,9 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, 1.f );
 
                 auto origSymName = symName;
-                if( m_shortenName != ShortenName::Never && ( m_shortenName != ShortenName::NoSpace || tsz.x > zsz ) )
+                if( m_vd.shortenName != ShortenName::Never && ( m_vd.shortenName != ShortenName::NoSpace || tsz.x > zsz ) )
                 {
-                    symName = ShortenZoneName( m_shortenName, symName, tsz, zsz );
+                    symName = ShortenZoneName( m_vd.shortenName, symName, tsz, zsz );
                 }
 
                 if( tsz.x < zsz )
@@ -555,7 +555,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                         TextDisabledUnformatted( ICON_FA_HAT_WIZARD " kernel" );
                     }
                     ImGui::Separator();
-                    const auto normalized = m_shortenName == ShortenName::Never ? origSymName : ShortenZoneName( ShortenName::OnlyNormalize, origSymName );
+                    const auto normalized = m_vd.shortenName == ShortenName::Never ? origSymName : ShortenZoneName( ShortenName::OnlyNormalize, origSymName );
                     ImGui::TextUnformatted( normalized );
                     if( isInline )
                     {

@@ -444,7 +444,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
                 {
                     TextColoredUnformatted( 0xFF8888FF, frameName );
                 }
-                else if( m_shortenName == ShortenName::Never )
+                else if( m_vd.shortenName == ShortenName::Never )
                 {
                     ImGui::TextUnformatted( frameName );
                 }
@@ -463,7 +463,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
                 else if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
-                    if( m_shortenName == ShortenName::Never )
+                    if( m_vd.shortenName == ShortenName::Never )
                     {
                         expand = ImGui::TreeNodeEx( frameName, ImGuiTreeNodeFlags_DefaultOpen );
                     }
@@ -476,7 +476,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, MemCallstackFr
                 }
                 else
                 {
-                    if( m_shortenName == ShortenName::Never )
+                    if( m_vd.shortenName == ShortenName::Never )
                     {
                         expand = ImGui::TreeNode( frameName );
                     }
@@ -618,7 +618,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 {
                     TextColoredUnformatted( 0xFF8888FF, frameName );
                 }
-                else if( m_shortenName == ShortenName::Never )
+                else if( m_vd.shortenName == ShortenName::Never )
                 {
                     ImGui::TextUnformatted( frameName );
                 }
@@ -637,7 +637,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 else if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
-                    if( m_shortenName == ShortenName::Never )
+                    if( m_vd.shortenName == ShortenName::Never )
                     {
                         expand = ImGui::TreeNodeEx( frameName, ImGuiTreeNodeFlags_DefaultOpen );
                     }
@@ -650,7 +650,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 }
                 else
                 {
-                    if( m_shortenName == ShortenName::Never )
+                    if( m_vd.shortenName == ShortenName::Never )
                     {
                         expand = ImGui::TreeNode( frameName );
                     }
@@ -762,7 +762,7 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
                 {
                     TextColoredUnformatted( 0xFF8888FF, frameName );
                 }
-                else if( m_shortenName == ShortenName::Never )
+                else if( m_vd.shortenName == ShortenName::Never )
                 {
                     ImGui::TextUnformatted( frameName );
                 }
@@ -781,7 +781,7 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
                 else if( isKernel ) ImGui::PushStyleColor( ImGuiCol_Text, 0xFF8888FF );
                 if( tree.size() == 1 )
                 {
-                    if( m_shortenName == ShortenName::Never )
+                    if( m_vd.shortenName == ShortenName::Never )
                     {
                         expand = ImGui::TreeNodeEx( frameName, ImGuiTreeNodeFlags_DefaultOpen );
                     }
@@ -794,7 +794,7 @@ void View::DrawParentsFrameTreeLevel( const unordered_flat_map<uint64_t, Callsta
                 }
                 else
                 {
-                    if( m_shortenName == ShortenName::Never )
+                    if( m_vd.shortenName == ShortenName::Never )
                     {
                         expand = ImGui::TreeNode( frameName );
                     }

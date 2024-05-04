@@ -1702,7 +1702,7 @@ void View::DrawFindZone()
                                     TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
                                 }
                                 ImGui::SameLine();
-                                if( m_shortenName == ShortenName::Never )
+                                if( m_vd.shortenName == ShortenName::Never )
                                 {
                                     ImGui::TextUnformatted( txt );
                                 }

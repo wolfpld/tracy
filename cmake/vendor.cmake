@@ -43,7 +43,7 @@ if(NOT USE_WAYLAND AND NOT EMSCRIPTEN)
         CPMAddPackage(
             NAME glfw
             GITHUB_REPOSITORY glfw/glfw
-            GIT_TAG 3.3.9
+            GIT_TAG 3.4
             OPTIONS
                 "GLFW_BUILD_EXAMPLES OFF"
                 "GLFW_BUILD_TESTS OFF"
@@ -66,7 +66,7 @@ else()
     CPMAddPackage(
         NAME freetype
         GITHUB_REPOSITORY freetype/freetype
-        GIT_TAG VER-2-10-0
+        GIT_TAG VER-2-13-2
         OPTIONS
             "FT_DISABLE_HARFBUZZ ON"
             "FT_WITH_HARFBUZZ OFF"

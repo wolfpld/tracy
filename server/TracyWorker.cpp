@@ -260,7 +260,7 @@ static bool IsQueryPrio( ServerQuery type )
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr, uint16_t port )
+Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     : m_addr( addr )
     , m_port( port )
     , m_hasData( false )
@@ -276,6 +276,7 @@ Worker::Worker( const char* addr, uint16_t port )
     , m_pendingCallstackFrames( 0 )
     , m_pendingCallstackSubframes( 0 )
     , m_pendingSymbolCode( 0 )
+    , m_memoryLimit( memoryLimit )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
@@ -317,6 +318,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_buffer( nullptr )
     , m_onDemand( false )
     , m_inconsistentSamples( false )
+    , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
     m_data.sourceLocationExpand.push_back( 0 );
@@ -554,12 +556,13 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     }
 }
 
-Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allowStringModification)
+Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allowStringModification )
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_inconsistentSamples( false )
-    , m_allowStringModification(allowStringModification)
+    , m_memoryLimit( -1 )
+    , m_allowStringModification( allowStringModification )
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 

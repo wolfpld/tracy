@@ -452,7 +452,7 @@ public:
         NUM_FAILURES
     };
 
-    Worker( const char* addr, uint16_t port );
+    Worker( const char* addr, uint16_t port, int64_t memoryLimit );
     Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true, bool allowStringModification = false);
     ~Worker();
@@ -1031,6 +1031,7 @@ private:
     uint64_t m_memNamePayload = 0;
 
     Slab<64*1024*1024> m_slab;
+    int64_t m_memoryLimit;
 
     DataBlock m_data;
     MbpsBlock m_mbpsData;

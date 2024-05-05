@@ -868,6 +868,12 @@ static void DrawContents()
                 view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config );
             }
         }
+        if( s_config.memoryLimit )
+        {
+            ImGui::SameLine();
+            tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+            tracy::TooltipIfHovered( "Memory limit is active" );
+        }
         ImGui::SameLine( 0, ImGui::GetTextLineHeight() * 2 );
 
 #ifndef TRACY_NO_FILESELECTOR

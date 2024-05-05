@@ -2555,6 +2555,7 @@ You can capture a trace using a command line utility contained in the \texttt{ca
 \item \texttt{-p port} -- network port which should be used (optional).
 \item \texttt{-f} -- force overwrite, if output file already exists.
 \item \texttt{-s seconds} -- number of seconds to capture before automatically disconnecting (optional).
+\item \texttt{-m memlimit} -- sets memory limit for the trace. The connection will be terminated, if it is exceeded. Specified as a percentage of total system memory. Can be greater than 100\%, which will use swap. Disabled, if not set.
 \end{itemize}
 
 If no client is running at the given address, the server will wait until it can make a connection. During the capture, the utility will display the following information:
@@ -2576,6 +2577,8 @@ You can disconnect from the client and save the captured trace by pressing \keys
 
 If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Web}, \faComment~\emph{Join chat} and \faHeart{}~\emph{Sponsor}). The \faGlobeAmericas{}~\emph{Web} button opens a drop-down list with links to the profiler's \emph{\faHome{}~Home page} and a bunch of \emph{\faVideo{}~Feature videos}.
 
+The \emph{\faWrench{}~Wrench} button opens the about dialog, which also contains a number of global settings you may want to tweak.
+
 The client \emph{address entry} field and the \faWifi{}~\emph{Connect} button are used to connect to a running client\footnote{Note that a custom port may be provided here, for example by entering '127.0.0.1:1234'.}. You can use the connection history button~\faCaretDown{} to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the \faMousePointer{}~mouse cursor over an entry and pressing the \keys{\del} button on the keyboard.
 
 If you want to open a trace that you have stored on the disk, you can do so by pressing the \faFolderOpen{}~\emph{Open saved trace} button.
@@ -2584,8 +2587,12 @@ The \emph{discovered clients} list is only displayed if clients are broadcasting
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0) rectangle (4.95, -3.2);
-\draw[pattern=crosshatch dots] (0, 0) rectangle+(4.95, 0.3);
+\draw (0, 0.8) rectangle (4.95, -3.2);
+\draw[pattern=crosshatch dots] (0, 0.8) rectangle+(4.95, 0.3);
+
+\draw (1.0, 0.65) node[anchor=north west] {\large{}Tracy Profiler};
+\draw[rounded corners=5pt] (4.33, 0.6) rectangle+(0.5, -0.5) node[midway] {\faWrench};
+
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.1, -0.5) node [midway] {\faBook};
 \draw[rounded corners=5pt] (1.3, -0.1) rectangle+(1.1, -0.5) node [midway] {\faGlobeAmericas};
 \draw[rounded corners=5pt] (2.5, -0.1) rectangle+(1.1, -0.5) node [midway] {\faComment};

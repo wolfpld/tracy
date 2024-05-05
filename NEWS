@@ -115,6 +115,8 @@ vx.xx.x (xxxx-xx-xx)
   global settings.
 - It is now possible to load source files that are newer than the trace.
   The default setting is still to reject such files.
+- Memory limit for a capture can be now set, both in the GUI profiler and
+  in the capture utility.
 
 
 v0.10.0 (2023-10-16)

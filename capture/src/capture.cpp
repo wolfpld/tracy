@@ -111,6 +111,7 @@ int main( int argc, char** argv )
     const char* output = nullptr;
     int port = 8086;
     int seconds = -1;
+    int64_t memoryLimit = -1;
 
     int c;
     while( ( c = getopt( argc, argv, "a:o:p:fs:" ) ) != -1 )
@@ -158,7 +159,7 @@ int main( int argc, char** argv )
 
     printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );
-    tracy::Worker worker( address, port );
+    tracy::Worker worker( address, port, memoryLimit );
     while( !worker.HasData() )
     {
         const auto handshake = worker.GetHandshakeStatus();

@@ -238,9 +238,14 @@ int main( int argc, char** argv )
             AnsiPrintf( ANSI_YELLOW ANSI_BOLD, "%7.2f Mbps", mbps / compRatio );
             printf( " | ");
             AnsiPrintf( ANSI_YELLOW, "Tx: ");
-            AnsiPrintf( ANSI_GREEN, "%s",  tracy::MemSizeToString( netTotal ) );
+            AnsiPrintf( ANSI_GREEN, "%s", tracy::MemSizeToString( netTotal ) );
             printf( " | ");
             AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage.load( std::memory_order_relaxed ) ) );
+            if( memoryLimit > 0 )
+            {
+                printf( " / " );
+                AnsiPrintf( ANSI_BLUE ANSI_BOLD, "%s", tracy::MemSizeToString( memoryLimit ) );
+            }
             printf( " | ");
             AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() - firstTime ) );
             fflush( stdout );

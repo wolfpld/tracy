@@ -997,6 +997,18 @@ bool View::DrawImpl()
         dx = ImGui::GetCursorPosX() - cx;
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
         ImGui::Spacing();
+
+        if( m_worker.GetMemoryLimit() > 0 )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Memory limit: %s", MemSizeToString( m_worker.GetMemoryLimit() ) );
+                ImGui::EndTooltip();
+            }
+        }
     }
     DrawNotificationArea();
 

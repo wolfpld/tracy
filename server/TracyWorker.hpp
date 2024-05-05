@@ -643,6 +643,7 @@ public:
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
     void Disconnect();
     bool WasDisconnectIssued() const { return m_disconnect; }
+    int64_t GetMemoryLimit() const { return m_memoryLimit; }
 
     void Write( FileWrite& f, bool fiDict );
     int GetTraceVersion() const { return m_traceVersion; }

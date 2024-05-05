@@ -2763,7 +2763,7 @@ void Worker::Exec()
 
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) )
+        if( m_shutdown.load( std::memory_order_relaxed ) || ( m_memoryLimit > 0 && memUsage.load( std::memory_order_relaxed ) > m_memoryLimit ) )
         {
             QueryTerminate();
             goto close;

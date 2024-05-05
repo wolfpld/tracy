@@ -998,14 +998,22 @@ bool View::DrawImpl()
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
         ImGui::Spacing();
 
-        if( m_worker.GetMemoryLimit() > 0 )
+        const auto memoryLimit = m_worker.GetMemoryLimit();
+        if( memoryLimit > 0 )
         {
             ImGui::SameLine();
-            TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+            if( memUsage.load( std::memory_order_relaxed ) > memoryLimit )
+            {
+                TextColoredUnformatted( 0xFF2222FF, ICON_FA_TRIANGLE_EXCLAMATION );
+            }
+            else
+            {
+                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+            }
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "Memory limit: %s", MemSizeToString( m_worker.GetMemoryLimit() ) );
+                ImGui::Text( "Memory limit: %s", MemSizeToString( memoryLimit ) );
                 ImGui::EndTooltip();
             }
         }

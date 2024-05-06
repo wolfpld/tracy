@@ -117,6 +117,7 @@ vx.xx.x (xxxx-xx-xx)
   The default setting is still to reject such files.
 - Memory limit for a capture can be now set, both in the GUI profiler and
   in the capture utility.
+- Thread list can be now sorted alphabetically.
 
 
 v0.10.0 (2023-10-16)

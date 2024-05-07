@@ -11,9 +11,6 @@
 namespace tracy
 {
 
-constexpr int PlotHeightPx = 100;
-
-
 bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset )
 {
     auto draw = ImGui::GetWindowDrawList();
@@ -24,7 +21,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
     const auto hover = ctx.hover;
     const auto ty = ctx.ty;
 
-    const auto PlotHeight = PlotHeightPx * GetScale();
+    const auto PlotHeight = GetViewData().plotHeight * GetScale();
 
     auto yPos = wpos.y + offset;
     if( yPos + PlotHeight >= ctx.yMin && yPos <= ctx.yMax )

@@ -541,6 +541,12 @@ void View::DrawOptions()
         val = m_vd.drawPlots;
         ImGui::Checkbox( ICON_FA_SIGNATURE " Draw plots", &val );
         m_vd.drawPlots = val;
+
+        ImGui::SameLine();
+        int pH = m_vd.plotHeight;
+        ImGui::SliderInt("Plot heights", &pH, 30, 200);
+        m_vd.plotHeight = pH;
+
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );

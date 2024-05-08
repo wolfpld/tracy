@@ -21,7 +21,7 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
     const auto hover = ctx.hover;
     const auto ty = ctx.ty;
 
-    const auto PlotHeight = GetViewData().plotHeight * GetScale();
+    const auto PlotHeight = m_vd.plotHeight * GetScale();
 
     auto yPos = wpos.y + offset;
     if( yPos + PlotHeight >= ctx.yMin && yPos <= ctx.yMax )

@@ -145,6 +145,7 @@ void UserData::LoadState( ViewData& data )
                 if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) data.ghostZones = v;
                 if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) data.frameTarget = v;
                 if( ini_sget( ini, "options", "shortenName", "%d", &v ) ) data.shortenName = (ShortenName)v;
+                if( ini_sget( ini, "options", "plotHeight", "%d", &v ) ) data.plotHeight = v;
                 ini_free( ini );
             }
         }
@@ -193,6 +194,7 @@ void UserData::SaveState( const ViewData& data )
         fprintf( f, "ghostZones = %d\n", data.ghostZones );
         fprintf( f, "frameTarget = %d\n", data.frameTarget );
         fprintf( f, "shortenName = %d\n", (int)data.shortenName );
+        fprintf( f, "plotHeight = %d\n", data.plotHeight );
         fclose( f );
     }
 }

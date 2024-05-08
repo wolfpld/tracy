@@ -58,6 +58,8 @@ struct ViewData
     ShortenName shortenName = ShortenName::NoSpaceAndNormalize;
 
     uint32_t frameTarget = 60;
+
+    uint32_t plotHeight = 100;
 };
 
 struct Annotation

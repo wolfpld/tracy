@@ -43,7 +43,16 @@ using TracyMetalCtx = void*;
 // ok to import if in obj-c code
 #import <Metal/Metal.h>
 
-#define TracyMetalPanic(msg, ...) do { assert(false && "TracyMetal: " msg); TracyMessageLC("TracyMetal: " msg, tracy::Color::Red4); fprintf(stderr, "TracyMetal: %s\n", msg); __VA_ARGS__; } while(false);
+#define VA_ARGS(...) , ##__VA_ARGS__
+
+#define TracyMetalPanic(ret, msg, ...) do { \
+    char buffer [1024]; \
+    snprintf(buffer, sizeof(buffer), "TracyMetal: " msg VA_ARGS(__VA_ARGS__)); \
+    TracyMessageC(buffer, strlen(buffer), tracy::Color::OrangeRed); \
+    fprintf(stderr, "%s\n", buffer); \
+    assert(false && "TracyMetal: " msg); \
+    ret; \
+    } while(false);
 
 
 namespace tracy

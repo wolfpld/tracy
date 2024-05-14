@@ -43,6 +43,8 @@ using TracyMetalCtx = void*;
 // ok to import if in obj-c code
 #import <Metal/Metal.h>
 
+#define TRACY_METAL_DEBUG_NO_WRAPAROUND (0)
+
 #define VA_ARGS(...) , ##__VA_ARGS__
 
 #define TracyMetalPanic(ret, msg, ...) do { \
@@ -69,6 +71,9 @@ public:
         : m_device(device)
     {
         ZoneScopedNC("TracyMetalCtx", tracy::Color::Red4);
+        
+        TracyMetalPanic(, "MTLCounterErrorValue = 0x%llx", MTLCounterErrorValue);
+        TracyMetalPanic(, "MTLCounterDontSample = 0x%llx", MTLCounterDontSample);
         
         if (m_device == nil)
         {
@@ -125,6 +130,7 @@ public:
         m_counterSampleBuffer = counterSampleBuffer;
         
         m_timestampRequestTime.resize(MaxQueries);
+        go_horse.resize(MaxQueries);
 
         MTLTimestamp cpuTimestamp = 0;
         MTLTimestamp gpuTimestamp = 0;
@@ -211,6 +217,10 @@ public:
 
         uintptr_t begin = m_previousCheckpoint.load();
         uintptr_t latestCheckpoint = m_queryCounter.load(); // TODO: MTLEvent? MTLFence?;
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        latestCheckpoint = (latestCheckpoint >= MaxQueries) ? MaxQueries : latestCheckpoint;
+        //if (latestCheckpoint >= MaxQueries) return true;
+#endif
         uint32_t count = RingCount(begin, latestCheckpoint);
         ZoneValue(begin);
         ZoneValue(latestCheckpoint);
@@ -233,8 +243,10 @@ public:
 
         if (count >= MaxQueries)
         {
-            //TracyMetalPanic(return false, "Collect: FULL! too many pending timestamp queries. [%llu, %llu] (%u)", begin, latestCheckpoint, count);
+            TracyMetalPanic(return false, "Collect: FULL! too many pending timestamp queries. [%llu, %llu] (%u)", begin, latestCheckpoint, count);
         }
+
+        //TracyMetalPanic(, "Collect: [%llu, %llu] :: (%u)", begin, latestCheckpoint, count);
 
         NSRange range = NSMakeRange(RingIndex(begin), count);
         NSData* data = [m_counterSampleBuffer resolveCounterRange:range];
@@ -257,13 +269,25 @@ public:
             MTLTimestamp& t_end = timestamps[i+1].timestamp;
             uint32_t k = RingIndex(begin + i);
             //fprintf(stdout, "TracyMetal: Collect: timestamp[%u] = %llu | timestamp[%u] = %llu | diff = %llu\n", k, t_start, k+1, t_end, (t_end - t_start));
-            if (t_start == MTLCounterErrorValue)
+            if ((t_start == MTLCounterErrorValue)  || (t_end == MTLCounterErrorValue))
             {
                 TracyMetalPanic(, "Collect: invalid timestamp (MTLCounterErrorValue) at %u.", k);
                 break;
             }
-            if (t_start == 0 || t_end == 0) // zero is apparently also considered "invalid"...
+            if (go_horse[k+0] == 0)
             {
+                TracyMetalPanic(, "Collect: go_horse not ready at %u (%llu).", k+0, begin+i+0);
+                break;
+            }
+            if (go_horse[k+1] == 0)
+            {
+                TracyMetalPanic(, "Collect: go_horse not ready at %u (%llu).", k+1, begin+i+1);
+                break;
+            }
+            if ((t_start == 0) || (t_end == 0)) // zero is apparently also considered "invalid"...
+            {
+                break;
+                
                 auto checkTime = std::chrono::high_resolution_clock::now();
                 auto requestTime = m_timestampRequestTime[k];
                 auto ms_in_flight = std::chrono::duration<float>(checkTime-requestTime).count()*1000.0f;
@@ -278,11 +302,17 @@ public:
                 t_start = t_end = lastValidTimestamp + 100;
                 HACK_retries = 0;
             }
-            m_previousCheckpoint += 2;
+            auto t_start_copy = t_start;
+            auto t_end_copy = t_end;
+            t_start = t_end = MTLCounterErrorValue;  // "reset" timestamps
+            t_start = t_end = 0;
+            m_timestampRequestTime[k+0] += std::chrono::minutes(60);
+            m_timestampRequestTime[k+1] += std::chrono::minutes(60);
+            go_horse[k+0] = go_horse[k+1] = 0;
             {
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_start));
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_start_copy));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k));
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
@@ -290,14 +320,16 @@ public:
             {
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_end));
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_end_copy));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k+1));
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
             }
-            lastValidTimestamp = t_end;
-            t_start = t_end = MTLCounterErrorValue;  // "reset" timestamps
+            TracyMetalPanic(, "zone %u ]", k);
+            TracyMetalPanic(, "zone %u ]", k+1);
+            lastValidTimestamp = t_end_copy;
             TracyFreeN((void*)(uintptr_t)k, "TracyMetalTimestampQueryId");
+            m_previousCheckpoint += 2;
         }
         ZoneValue(RingCount(begin, m_previousCheckpoint.load()));
 
@@ -329,6 +361,9 @@ private:
     {
         ZoneScopedNC("TracyMetal::NextQueryId", tracy::Color::LightCoral);
         auto id = m_queryCounter.fetch_add(n);
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        if (id >= MaxQueries) return MaxQueries;
+#endif
         ZoneValue(id);
         auto count = RingCount(m_previousCheckpoint, id);
         if (count >= MaxQueries)
@@ -337,10 +372,11 @@ private:
             // #TODO: return some sentinel value; ideally a "hidden" query index
             return (MaxQueries - n);
         }
-        TracyAllocN((void*)(uintptr_t)RingIndex(id), 2, "TracyMetalTimestampQueryId");
         uint32_t idx = RingIndex(id);
+        TracyAllocN((void*)(uintptr_t)idx, 2, "TracyMetalTimestampQueryId");
         m_timestampRequestTime[idx] = std::chrono::high_resolution_clock::now();
-        //TracyMetalPanic(, "NextQueryId: %u (%llu)", idx, id);
+        //if (id >= MaxQueries)
+        //    TracyMetalPanic(, "NextQueryId: %u (%llu)", idx, id);
         return idx;
     }
 
@@ -362,6 +398,7 @@ private:
     atomic_counter::value_type m_nextCheckpoint = 0;
     
     std::vector<std::chrono::high_resolution_clock::time_point> m_timestampRequestTime;
+    std::vector<uint64_t> go_horse;
     
     std::mutex m_collectionMutex;
 };
@@ -381,18 +418,16 @@ public:
         m_ctx = ctx;
 
         auto queryId = m_queryId = ctx->NextQueryId(2);
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        if (queryId >= MetalCtx::MaxQueries) return;
+#endif
+
         desc.sampleBufferAttachments[0].sampleBuffer = ctx->m_counterSampleBuffer;
         desc.sampleBufferAttachments[0].startOfEncoderSampleIndex = queryId;
         desc.sampleBufferAttachments[0].endOfEncoderSampleIndex = queryId+1;
 
-        auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
-        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
-        Profiler::QueueSerialFinish();
+        SubmitZoneBeginGpu(ctx, queryId, srcloc);
+        //SubmitZoneEndGpu(ctx, queryId+1);
     }
 
     tracy_force_inline MetalZoneScope( MetalCtx* ctx, MTLBlitPassDescriptor* desc, const SourceLocationData* srcloc, bool is_active )
@@ -407,18 +442,16 @@ public:
         m_ctx = ctx;
 
         auto queryId = m_queryId = ctx->NextQueryId(2);
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        if (queryId >= MetalCtx::MaxQueries) return;
+#endif
+
         desc.sampleBufferAttachments[0].sampleBuffer = ctx->m_counterSampleBuffer;
         desc.sampleBufferAttachments[0].startOfEncoderSampleIndex = queryId;
         desc.sampleBufferAttachments[0].endOfEncoderSampleIndex = queryId+1;
 
-        auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
-        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
-        Profiler::QueueSerialFinish();
+        SubmitZoneBeginGpu(ctx, queryId, srcloc);
+        //SubmitZoneEndGpu(ctx, queryId+1);
     }
 
     tracy_force_inline MetalZoneScope( MetalCtx* ctx, MTLRenderPassDescriptor* desc, const SourceLocationData* srcloc, bool is_active )
@@ -433,20 +466,18 @@ public:
         m_ctx = ctx;
 
         auto queryId = m_queryId = ctx->NextQueryId(2);
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        if (queryId >= MetalCtx::MaxQueries) return;
+#endif
+
         desc.sampleBufferAttachments[0].sampleBuffer = ctx->m_counterSampleBuffer;
         desc.sampleBufferAttachments[0].startOfVertexSampleIndex = queryId;
         desc.sampleBufferAttachments[0].endOfVertexSampleIndex = MTLCounterDontSample;
         desc.sampleBufferAttachments[0].startOfFragmentSampleIndex = MTLCounterDontSample;
         desc.sampleBufferAttachments[0].endOfFragmentSampleIndex = queryId+1;
 
-        auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
-        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
-        Profiler::QueueSerialFinish();
+        SubmitZoneBeginGpu(ctx, queryId, srcloc);
+        //SubmitZoneEndGpu(ctx, queryId+1);
     }
 
 #if 0
@@ -462,34 +493,27 @@ public:
         m_cmdEncoder = cmdEncoder;
 
         auto queryId = m_queryId = ctx->NextQueryId();
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        if (queryId >= MetalCtx::MaxQueries) return;
+#endif
+
         [m_cmdEncoder sampleCountersInBuffer:m_ctx->m_counterSampleBuffer atSampleIndex:queryId withBarrier:YES];
 
-        auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
-        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
-
-        Profiler::QueueSerialFinish();
+        SubmitZoneBeginGpu(ctx, queryId, srcloc);
     }
 #endif
 
     tracy_force_inline ~MetalZoneScope()
     {
         if( !m_active ) return;
-
+        
         auto queryId = m_queryId + 1;
 
-        auto* item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneEndSerial );
-        MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
-        MemWrite( &item->gpuZoneEnd.thread, GetThreadHandle() );
-        MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
-        MemWrite( &item->gpuZoneEnd.context, m_ctx->GetContextId() );
-
-        Profiler::QueueSerialFinish();
+#if TRACY_METAL_DEBUG_NO_WRAPAROUND
+        if (queryId >= MetalCtx::MaxQueries) return;
+#endif
+        
+        SubmitZoneEndGpu(m_ctx, queryId);
     }
 
 private:
@@ -497,6 +521,37 @@ private:
 
     MetalCtx* m_ctx;
     id<MTLComputeCommandEncoder> m_cmdEncoder;
+    
+    static void SubmitZoneBeginGpu(MetalCtx* ctx, uint32_t queryId, const SourceLocationData* srcloc)
+    {
+        auto* item = Profiler::QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
+        MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
+        Profiler::QueueSerialFinish();
+        
+        TracyMetalPanic(, "zone %u [", queryId);
+        
+        ctx->go_horse[queryId] = 1;
+    }
+    
+    static void SubmitZoneEndGpu(MetalCtx* ctx, uint32_t queryId)
+    {
+        auto* item = Profiler::QueueSerial();
+        MemWrite( &item->hdr.type, QueueType::GpuZoneEndSerial );
+        MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneEnd.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
+        MemWrite( &item->gpuZoneEnd.context, ctx->GetContextId() );
+        Profiler::QueueSerialFinish();
+        
+        TracyMetalPanic(, "zone %u {]", queryId);
+        
+        ctx->go_horse[queryId] = 1;
+    }
 
 public:
     uint32_t m_queryId = 0;

@@ -100,10 +100,8 @@ public:
         
         m_counterSampleBuffers[0] = NewTimestampSampleBuffer(m_device, MaxQueries);
         m_counterSampleBuffers[1] = NewTimestampSampleBuffer(m_device, MaxQueries);
-        //m_counterSampleBuffer = NewTimestampSampleBuffer(m_device, MaxQueries);
         
         m_timestampRequestTime.resize(MaxQueries);
-        go_horse.resize(MaxQueries);
 
         MTLTimestamp cpuTimestamp = 0;
         MTLTimestamp gpuTimestamp = 0;
@@ -252,59 +250,39 @@ public:
                 TracyMetalPanic(, "Collect: invalid timestamp (MTLCounterErrorValue) at %u.", k);
                 break;
             }
-            if (go_horse[k+0] == 0)
-            {
-                TracyMetalPanic(, "Collect: go_horse not ready at %u (%llu).", k+0, begin+i+0);
-                break;
-            }
-            if (go_horse[k+1] == 0)
-            {
-                TracyMetalPanic(, "Collect: go_horse not ready at %u (%llu).", k+1, begin+i+1);
-                break;
-            }
             if ((t_start == 0) || (t_end == 0)) // zero is apparently also considered "invalid"...
             {
-                break;
-                
                 auto checkTime = std::chrono::high_resolution_clock::now();
                 auto requestTime = m_timestampRequestTime[k];
                 auto ms_in_flight = std::chrono::duration<float>(checkTime-requestTime).count()*1000.0f;
                 //TracyMetalPanic(, "Collect: invalid timestamp (zero) at %u [%.0fms in flight].", k, ms_in_flight);
-                const float timeout_ms = 2000.0f;
+                const float timeout_ms = 200.0f;
                 if (ms_in_flight < timeout_ms)
                     break;
+                ZoneScopedN("TracyMetal::Collect::Drop");
                 TracyMetalPanic(, "Collect: giving up on timestamp at %u [%.0fms in flight].", k, ms_in_flight);
-                t_start = t_end = lastValidTimestamp + 100;
+                t_start = lastValidTimestamp + 5;
+                t_end = t_start + 5;
             }
             TracyFreeN((void*)(uintptr_t)(k+0), "TracyMetalGpuZone");
             TracyFreeN((void*)(uintptr_t)(k+1), "TracyMetalGpuZone");
-            auto t_start_copy = t_start;
-            auto t_end_copy = t_end;
-            t_start = t_end = 0;
-            m_timestampRequestTime[k+0] += std::chrono::minutes(60);
-            m_timestampRequestTime[k+1] += std::chrono::minutes(60);
-            go_horse[k+0] = go_horse[k+1] = 0;
             {
-            ZoneScopedN("TracyMetal::Collect::QueueSerial");
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_start_copy));
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_start));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k));
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
             }
             {
-            ZoneScopedN("TracyMetal::Collect::QueueSerial");
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);
-            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_end_copy));
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(t_end));
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(k+1));
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
             }
-            //TracyMetalPanic(, "zone %u ]", k);
-            //TracyMetalPanic(, "zone %u ]", k+1);
-            lastValidTimestamp = t_end_copy;
+            lastValidTimestamp = t_end;
             TracyFreeN((void*)(uintptr_t)k, "TracyMetalTimestampQueryId");
             resolved += 2;
         }
@@ -435,7 +413,6 @@ private:
 
     id<MTLDevice> m_device = nil;
     id<MTLCounterSampleBuffer> m_counterSampleBuffers [2] = {};
-    //id<MTLCounterSampleBuffer> m_counterSampleBuffer;
 
     using atomic_counter = std::atomic<uintptr_t>;
     static_assert(atomic_counter::is_always_lock_free);
@@ -445,7 +422,6 @@ private:
     atomic_counter::value_type m_nextCheckpoint = 0;
     
     std::vector<std::chrono::high_resolution_clock::time_point> m_timestampRequestTime;
-    std::vector<uint64_t> go_horse;
     
     std::mutex m_collectionMutex;
 };
@@ -564,10 +540,7 @@ private:
         MemWrite( &item->gpuZoneBegin.context, ctx->GetContextId() );
         Profiler::QueueSerialFinish();
         
-        //TracyMetalPanic(, "zone %u [", queryId);
         TracyAllocN((void*)(uintptr_t)queryId, 1, "TracyMetalGpuZone");
-        
-        ctx->go_horse[queryId] = 1;
     }
     
     static void SubmitZoneEndGpu(MetalCtx* ctx, uint32_t queryId)
@@ -580,10 +553,7 @@ private:
         MemWrite( &item->gpuZoneEnd.context, ctx->GetContextId() );
         Profiler::QueueSerialFinish();
         
-        //TracyMetalPanic(, "zone %u {]", queryId);
         TracyAllocN((void*)(uintptr_t)queryId, 1, "TracyMetalGpuZone");
-        
-        ctx->go_horse[queryId] = 1;
     }
 
 public:

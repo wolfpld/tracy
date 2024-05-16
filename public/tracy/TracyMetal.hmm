@@ -63,6 +63,10 @@ using TracyMetalCtx = void*;
 #define TracyMetalDebug(mask, ...)
 #endif
 
+#ifndef TracyMetalZoneScopeWireTap
+#define TracyMetalZoneScopeWireTap
+#endif//TracyMetalZoneScopeWireTap
+
 namespace tracy
 {
 
@@ -508,6 +512,8 @@ public:
 
         SubmitZoneEndGpu(m_ctx, m_query.idx + 1);
     }
+    
+    TracyMetalZoneScopeWireTap;
 
 private:
     const bool m_active;

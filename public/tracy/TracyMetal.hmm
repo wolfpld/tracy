@@ -144,6 +144,12 @@ public:
     ~MetalCtx()
     {
         ZoneScopedNC("~TracyMetalCtx", tracy::Color::Red4);
+        ZoneValue(m_previousCheckpoint.load());
+        ZoneValue(m_queryCounter.load());
+        // collect the last remnants of Metal GPU activity...
+        // TODO: add a timeout to this loop?
+        while (m_previousCheckpoint.load() != m_queryCounter.load())
+            Collect();
     }
 
     static MetalCtx* Create(id<MTLDevice> device)

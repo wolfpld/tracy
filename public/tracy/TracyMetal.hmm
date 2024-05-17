@@ -1,6 +1,34 @@
 #ifndef __TRACYMETAL_HMM__
 #define __TRACYMETAL_HMM__
 
+/* The Metal back-end in Tracy operates differently than other GPU back-ends like Vulkan,
+   Direct3D and OpenGL. Specifically, TracyMetalZone() must be placed around the site where
+   a command encoder is created. This is because not all hardware supports timestamps at
+   command granularity, and can only provide timestamps around an entire command encoder.
+   This accommodates for all tiers of hardware; in the future, variants of TracyMetalZone()
+   will be added to support the habitual command-level granularity of Tracy GPU back-ends.
+   Metal also imposes a few restrictions that make the process of requesting and collecting
+   queries more complicated in Tracy:
+   a) timestamp query buffers are limited to 4096 queries (32KB, where each query is 8 bytes)
+   b) when a timestamp query buffer is created, Metal initializes all timestamps with zeroes,
+      and there's no way to reset them back to zero after timestamps get resolved; the only
+      way to clear the timestamps is by allocating a new timestamp query buffer
+   c) if a command encoder records no commands and its corresponding command buffer ends up
+      committed to the command queue, Metal will "optimize-away" the encoder along with any
+      timestamp queries associated with it (the timestamp will remain as zero and will never
+      get resolved)
+   Because of the limitations above, two timestamp buffers are managed internally. Once one
+   of the buffers fills up with requests, the second buffer can start serving new requests.
+   Once all requests in a buffer get resolved and collected, the entire buffer is discarded
+   and a new one allocated for future requests. (Proper cycling through a ring buffer would
+   require bookkeeping and completion handlers to collect only the known complete queries.)
+   In the current implementation, there is potential for a race condition when the buffer is
+   discarded and reallocated. In practice, the race condition will never materialize so long
+   as TracyMetalCollect() is called frequently to keep the amount of unresolved queries low.
+   Finally, there's a timeout mechanism during timestamp collection to detect "empty" command
+   encoders and ensure progress.
+*/
+
 #ifndef TRACY_ENABLE
 
 #define TracyMetalContext(device) nullptr

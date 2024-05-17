@@ -146,6 +146,7 @@ public:
         MTLTimestamp cpuTimestamp = 0;
         MTLTimestamp gpuTimestamp = 0;
         [m_device sampleTimestamps:&cpuTimestamp gpuTimestamp:&gpuTimestamp];
+        m_mostRecentTimestamp = gpuTimestamp;
         TracyMetalDebug(1<<0, TracyMetalPanic(, "Calibration: CPU timestamp (Metal): %llu", cpuTimestamp));
         TracyMetalDebug(1<<0, TracyMetalPanic(, "Calibration: GPU timestamp (Metal): %llu", gpuTimestamp));
 
@@ -186,8 +187,8 @@ public:
         new (ctx) MetalCtx(device);
         if (ctx->m_contextId == 255)
         {
-            Destroy(ctx);
             TracyMetalPanic(return nullptr, "ERROR: unable to create context.");
+            Destroy(ctx);
         }
         return ctx;
     }
@@ -288,9 +289,8 @@ public:
         for (auto i = 0; i < numResolvedTimestamps; i += 2)
         {
             ZoneScopedN("TracyMetal::Collect::[i]");
-            static MTLTimestamp lastValidTimestamp = 0;
-            MTLTimestamp& t_start = timestamps[i+0].timestamp;
-            MTLTimestamp& t_end = timestamps[i+1].timestamp;
+            MTLTimestamp t_start = timestamps[i+0].timestamp;
+            MTLTimestamp t_end = timestamps[i+1].timestamp;
             uint32_t k = RingIndex(begin + i);
             TracyMetalDebug(1<<4, TracyMetalPanic(, "Collect: timestamp[%u] = %llu | timestamp[%u] = %llu | diff = %llu\n", k, t_start, k+1, t_end, (t_end - t_start)));
             if ((t_start == MTLCounterErrorValue)  || (t_end == MTLCounterErrorValue))
@@ -298,7 +298,9 @@ public:
                 TracyMetalPanic(, "Collect: invalid timestamp (MTLCounterErrorValue) at %u.", k);
                 break;
             }
-            if ((t_start == 0) || (t_end == 0)) // zero is apparently also considered "invalid"...
+            // Metal will initialize timestamp buffer with zeroes; encountering a zero-value
+            // timestamp means that the timestamp has not been written and resolved yet
+            if ((t_start == 0) || (t_end == 0))
             {
                 auto checkTime = std::chrono::high_resolution_clock::now();
                 auto requestTime = m_timestampRequestTime[k];
@@ -309,7 +311,7 @@ public:
                     break;
                 ZoneScopedN("TracyMetal::Collect::Drop");
                 TracyMetalPanic(, "Collect: giving up on timestamp at %u [%.0fms in flight].", k, ms_in_flight);
-                t_start = lastValidTimestamp + 5;
+                t_start = m_mostRecentTimestamp + 5;
                 t_end = t_start + 5;
             }
             TracyMetalDebug(1<<2, TracyFreeN((void*)(uintptr_t)(k+0), "TracyMetalGpuZone"));
@@ -330,7 +332,7 @@ public:
             MemWrite(&item->gpuTime.context, m_contextId);
             Profiler::QueueSerialFinish();
             }
-            lastValidTimestamp = t_end;
+            m_mostRecentTimestamp = (t_end > m_mostRecentTimestamp) ? t_end : m_mostRecentTimestamp;
             TracyMetalDebug(1<<1, TracyFreeN((void*)(uintptr_t)k, "TracyMetalTimestampQueryId"));
             resolved += 2;
         }
@@ -338,7 +340,11 @@ public:
         
         m_previousCheckpoint += resolved;
         
-        counterSampleBuffer = nil;
+        // Check whether the timestamp buffer has been fully resolved/collected:
+        // WARN: there's technically a race condition here: NextQuery() may reference the
+        // buffer that is being released instead of the new one. In practice, this should
+        // never happen so long as Collect is called frequently enough to prevent pending
+        // timestamp query requests from piling up too quickly.
         if ((resolved == count) && (m_previousCheckpoint.load() % MaxQueries) == 0)
             m_counterSampleBuffers[buffer_idx] = NewTimestampSampleBuffer(m_device, MaxQueries);
 
@@ -448,7 +454,7 @@ private:
     atomic_counter m_queryCounter = 0;
 
     atomic_counter m_previousCheckpoint = 0;
-    atomic_counter::value_type m_nextCheckpoint = 0;
+    MTLTimestamp m_mostRecentTimestamp = 0;
     
     std::vector<std::chrono::high_resolution_clock::time_point> m_timestampRequestTime;
     

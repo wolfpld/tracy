@@ -187,8 +187,8 @@ static void PrintDiff( const std::string& diff )
 
 static void PrintSpeedupOrSlowdown( double time_this, double time_external, const char *metric )
 {
-    const char *label;
-    const char *time_diff = TimeToString( abs( time_external - time_this ) );
+    const char* label;
+    const char* time_diff = TimeToString( abs( time_external - time_this ) );
     ImVec4 color;
     double factor = time_this / time_external;
     if( time_external >= time_this )
@@ -201,23 +201,23 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
     }
     ImGui::TextDisabled( "%s:", metric );
     ImGui::SameLine();
-    TextColoredUnformatted( color, time_diff );
+    ImGui::TextUnformatted( time_diff );
     ImGui::SameLine();
     TextColoredUnformatted( color, label );
     ImGui::SameLine();
-    ImGui::TextUnformatted( "than external" );
+    TextDisabledUnformatted( "than external" );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
 
     TextDisabledUnformatted("(");
-    ImGui::SameLine();
+    ImGui::SameLine( 0, 0 );
     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
     ImGui::SameLine();
     ImGui::TextDisabled("=  %.2f%%", factor * 100 );
     ImGui::SameLine();
     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
-    ImGui::SameLine();
+    ImGui::SameLine( 0, 0 );
     TextDisabledUnformatted(")");
 }
 

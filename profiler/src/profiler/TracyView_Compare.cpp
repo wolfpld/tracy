@@ -207,10 +207,8 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    char buf[128];
-    sprintf(buf, "(this %s %c%s is %.2f%% of external %s %c%s)",
-            ICON_FA_LEMON, tolower( metric[0] ), metric + 1, factor * 100,
-            ICON_FA_GEM, tolower( metric[0] ), metric + 1 );
+    char buf[64];
+    sprintf(buf, "(%s  =  %.2f%%  %s)", ICON_FA_LEMON, factor * 100, ICON_FA_GEM );
     TextDisabledUnformatted( buf );
 }
 

@@ -185,42 +185,35 @@ static void PrintDiff( const std::string& diff )
     }
 }
 
-static void PrintSpeedupOrSlowdown( double time_this, double time_external )
+static void PrintSpeedupOrSlowdown( double time_this, double time_external, const char *metric )
 {
     const char *label, *label2;
     const char *time_diff = TimeToString( abs( time_external - time_this ) );
     ImVec4 color;
-    double factor;
+    double factor = time_this / time_external;
     if( time_external >= time_this )
     {
-        label = "Speedup:", label2 = "faster";
-        color = ImVec4( 0.1f, 0.6f, 0.1f, 1.0f);
-        factor = time_external / time_this;
+        label = "less than external", label2 = "faster";
+        color = ImVec4( 0.1f, 0.6f, 0.1f, 1.0f );
     } else {
-        label = "Slowdown:", label2 = "slower";
+        label = "more than external", label2 = "slower";
         color = ImVec4( 0.8f, 0.1f, 0.1f, 1.0f );
-        factor = time_this / time_external;
     }
-    TextColoredUnformatted( color, label );
+    TextColoredUnformatted( color, metric );
     ImGui::SameLine();
     TextColoredUnformatted(color, time_diff );
     ImGui::SameLine();
-    TextColoredUnformatted( color, label2 );
+    TextColoredUnformatted( color, label );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
     char buf[64];
-    memcpy( buf, "( ", 2 );
-    char *ptr = &buf[2];
+    memcpy( buf, "(Time factor compared to external: ", 35 );
+    char *ptr = &buf[35];
     ptr = PrintFloat( ptr, buf + sizeof(buf), factor, 3 );
-    memcpy( ptr, "x ", 2 );
-    ptr += 2;
-    int ssz = strlen( label2 );
-    memcpy( ptr, label2, ssz );
-    ptr += ssz;
-    memcpy( ptr, " )", 3 );
+    memcpy( ptr, ")", 2 );
+    ptr += 23;
     TextDisabledUnformatted( buf );
-
 }
 
 void View::DrawCompare()
@@ -1004,7 +997,7 @@ void View::DrawCompare()
                         ImGui::SameLine();
                         TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
                         ImGui::Indent();
-                        PrintSpeedupOrSlowdown( total0 * adj0, total1 * adj1 );
+                        PrintSpeedupOrSlowdown( total0 * adj0, total1 * adj1, "Total time" );
                         ImGui::Unindent();
                         TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
@@ -1059,7 +1052,8 @@ void View::DrawCompare()
                             TooltipIfHovered( "Standard deviation" );
                         }
                         ImGui::Indent();
-                        PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1] );
+                        PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean time" );
+                        PrintSpeedupOrSlowdown( m_compare.median[0], m_compare.median[1], "Median time" );
                         ImGui::Unindent();
 
                         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );

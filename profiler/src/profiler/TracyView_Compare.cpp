@@ -968,7 +968,7 @@ void View::DrawCompare()
                         TextFocused( "Savings:", TimeToString( total1 * adj1 - total0 * adj0 ) );
                         ImGui::SameLine();
                         char buf[64];
-                        PrintStringPercent( buf, ( total0 * adj0 ) / ( total1 * adj1 ) * 100 );
+                        PrintStringPercent( buf, (1.0 - ( total0 * adj0 ) / ( total1 * adj1 )) * 100 );
                         TextDisabledUnformatted( buf );
                         TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 

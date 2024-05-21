@@ -185,6 +185,42 @@ static void PrintDiff( const std::string& diff )
     }
 }
 
+static void PrintSpeedupOrSlowdown( double time_this, double time_external, const char *metric )
+{
+    const char *label;
+    const char *time_diff = TimeToString( abs( time_external - time_this ) );
+    ImVec4 color;
+    double factor = time_this / time_external;
+    if( time_external >= time_this )
+    {
+        label = "less";
+        color = ImVec4( 0.1f, 0.6f, 0.1f, 1.0f );
+    } else {
+        label = "more";
+        color = ImVec4( 0.8f, 0.1f, 0.1f, 1.0f );
+    }
+    ImGui::TextDisabled( "%s:", metric );
+    ImGui::SameLine();
+    TextColoredUnformatted( color, time_diff );
+    ImGui::SameLine();
+    TextColoredUnformatted( color, label );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( "than external" );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+
+    TextDisabledUnformatted("(");
+    ImGui::SameLine();
+    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+    ImGui::SameLine();
+    ImGui::TextDisabled("=  %.2f%%", factor * 100 );
+    ImGui::SameLine();
+    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+    ImGui::SameLine();
+    TextDisabledUnformatted(")");
+}
+
 void View::DrawCompare()
 {
     const auto scale = GetScale();
@@ -796,7 +832,7 @@ void View::DrawCompare()
                 ImGui::SameLine();
                 SmallCheckbox( "Normalize values", &m_compare.normalize );
                 ImGui::SameLine();
-                DrawHelpMarker( "Normalization will fudge reported data values!" );
+                DrawHelpMarker( "Normalization will rescale the total time of the external trace to match the count of this trace. This will skew reported total values!" );
 
                 const auto cumulateTime = m_compare.cumulateTime;
 
@@ -965,11 +1001,9 @@ void View::DrawCompare()
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
                         TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
-                        TextFocused( "Savings:", TimeToString( total1 * adj1 - total0 * adj0 ) );
-                        ImGui::SameLine();
-                        char buf[64];
-                        PrintStringPercent( buf, ( total0 * adj0 ) / ( total1 * adj1 ) * 100 );
-                        TextDisabledUnformatted( buf );
+                        ImGui::Indent();
+                        PrintSpeedupOrSlowdown( total0 * adj0, total1 * adj1, "Total time" );
+                        ImGui::Unindent();
                         TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
@@ -1022,6 +1056,10 @@ void View::DrawCompare()
                             TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
                             TooltipIfHovered( "Standard deviation" );
                         }
+                        ImGui::Indent();
+                        PrintSpeedupOrSlowdown( m_compare.average[0], m_compare.average[1], "Mean time" );
+                        PrintSpeedupOrSlowdown( m_compare.median[0], m_compare.median[1], "Median time" );
+                        ImGui::Unindent();
 
                         ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );
                         ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );

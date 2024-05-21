@@ -187,16 +187,16 @@ static void PrintDiff( const std::string& diff )
 
 static void PrintSpeedupOrSlowdown( double time_this, double time_external, const char *metric )
 {
-    const char *label, *label2;
+    const char *label;
     const char *time_diff = TimeToString( abs( time_external - time_this ) );
     ImVec4 color;
     double factor = time_this / time_external;
     if( time_external >= time_this )
     {
-        label = "less than external", label2 = "faster";
+        label = "less than external";
         color = ImVec4( 0.1f, 0.6f, 0.1f, 1.0f );
     } else {
-        label = "more than external", label2 = "slower";
+        label = "more than external";
         color = ImVec4( 0.8f, 0.1f, 0.1f, 1.0f );
     }
     TextColoredUnformatted( color, metric );

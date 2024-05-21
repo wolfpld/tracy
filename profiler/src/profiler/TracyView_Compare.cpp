@@ -207,12 +207,10 @@ static void PrintSpeedupOrSlowdown( double time_this, double time_external, cons
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    char buf[64];
-    memcpy( buf, "(Time factor compared to external: ", 35 );
-    char *ptr = &buf[35];
-    ptr = PrintFloat( ptr, buf + sizeof(buf), factor, 3 );
-    memcpy( ptr, ")", 2 );
-    ptr += 23;
+    char buf[128];
+    sprintf(buf, "(this %s %c%s is %.2f%% of external %s %c%s)",
+            ICON_FA_LEMON, tolower( metric[0] ), metric + 1, factor * 100,
+            ICON_FA_GEM, tolower( metric[0] ), metric + 1 );
     TextDisabledUnformatted( buf );
 }
 

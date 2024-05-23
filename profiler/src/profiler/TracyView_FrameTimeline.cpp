@@ -95,7 +95,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
 {
     const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_vd.zvStart, m_vd.zvEnd );
     if( zrange.first < 0 ) return;
-    if( m_worker.GetFrameBegin( frames, zrange.first ) > m_vd.zvEnd || m_worker.GetFrameEnd( frames, zrange.second ) < m_vd.zvStart ) return;
+    if( m_worker.GetFrameBegin( frames, zrange.first ) > m_vd.zvEnd || m_worker.GetFrameEnd( frames, zrange.second - 1 ) < m_vd.zvStart ) return;
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );

@@ -2074,6 +2074,7 @@ int64_t Worker::GetFirstTime() const
 
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
+    assert( idx < fd.frames.size() );
     if( fd.continuous )
     {
         if( idx < fd.frames.size() - 1 )
@@ -2108,6 +2109,7 @@ int64_t Worker::GetFrameBegin( const FrameData& fd, size_t idx ) const
 
 int64_t Worker::GetFrameEnd( const FrameData& fd, size_t idx ) const
 {
+    assert( idx < fd.frames.size() );
     if( fd.continuous )
     {
         if( idx < fd.frames.size() - 1 )
@@ -2142,6 +2144,7 @@ const FrameImage* Worker::GetFrameImage( const FrameData& fd, size_t idx ) const
 
 std::pair<int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
 {
+    assert( !fd.frames.empty() );
     auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from, [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs; } );
     if( zitbegin == fd.frames.end() ) zitbegin--;
 

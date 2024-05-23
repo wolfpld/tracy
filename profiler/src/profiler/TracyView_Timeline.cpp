@@ -310,7 +310,7 @@ void View::DrawTimeline()
         auto& frames = m_worker.GetFrames();
         for( auto fd : frames )
         {
-            if( Vis( fd ) )
+            if( Vis( fd ) && m_worker.GetFrameCount( *fd ) > 0 )
             {
                 DrawTimelineFrames( *fd );
             }

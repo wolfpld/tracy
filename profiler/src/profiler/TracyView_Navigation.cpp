@@ -74,7 +74,7 @@ void View::ZoomToRange( int64_t start, int64_t end, bool pause )
 
 void View::ZoomToPrevFrame()
 {
-    if( m_vd.zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
+    if( m_worker.GetFrameCount( *m_frames ) > 0 && m_vd.zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
         size_t frame;
         if( m_frames->continuous )
@@ -98,6 +98,8 @@ void View::ZoomToPrevFrame()
 
 void View::ZoomToNextFrame()
 {
+    if( m_worker.GetFrameCount( *m_frames ) == 0 ) return;
+
     int64_t start;
     if( m_zoomAnim.active )
     {
@@ -133,6 +135,7 @@ void View::CenterAtTime( int64_t t )
 void View::SetViewToLastFrames()
 {
     const int total = m_worker.GetFrameCount( *m_frames );
+    if( total == 0 ) return;
 
     m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
     if( total == 1 )

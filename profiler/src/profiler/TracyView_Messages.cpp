@@ -243,7 +243,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     {
         m_msgHighlight = &msg;
 
-        if( m_showMessageImages )
+        if( m_showMessageImages && m_worker.GetFrameCount( *m_frames ) > 0 )
         {
             const auto frameIdx = m_worker.GetFrameRange( *m_frames, msg.time, msg.time ).first;
             auto fi = m_worker.GetFrameImage( *m_frames, frameIdx );

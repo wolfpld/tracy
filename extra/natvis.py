@@ -6,7 +6,7 @@ def VectorSummary(value, dict):
     capacityVal = v.GetChildMemberWithName('m_capacity').GetValueAsUnsigned()
     capacity = 1 << capacityVal if capacityVal < 63 else 'read-only'
     magic = bool(v.GetChildMemberWithName('m_magic').GetValueAsUnsigned())
-    return '{{size={0}, capacity={1}, magic={2}}}'.format(size, capacity, magic)
+    return f'{{size={size}, capacity={capacity}, magic={magic}}}'
 
 def ShortPtrSummary(value, dict):
     val = value.GetNonSyntheticValue()
@@ -92,6 +92,48 @@ def Int48Summary(value, dict):
     p5 = val.GetChildAtIndex(5).GetValueAsUnsigned()
     return p0 | (p1 << 8) | (p2 << 16) | (p3 << 24) | (p4 << 32) | (p5 << 40)
 
+class ZoneEventPrinter:
+    def __init__(self, val, dict):
+        self.val = val
+
+    def update(self):
+        _start_srcloc = self.val.GetChildMemberWithName('_start_srcloc').GetValueAsUnsigned()
+        _child2 = self.val.GetChildMemberWithName('_child2').GetValueAsUnsigned()
+        _end_child1 = self.val.GetChildMemberWithName('_end_child1').GetValueAsUnsigned()
+        self.extra = self.val.GetChildMemberWithName('extra').GetValueAsUnsigned()
+        self.start = _start_srcloc >> 16
+        self.end = _end_child1 >> 16
+        self.srcloc = _start_srcloc & 0xffff
+        self.child = ((_end_child1 & 0xffff) << 16) | _child2
+
+    def num_children(self):
+        return 5
+
+    def get_child_index(self, name):
+        if name == 'start':
+            return 0
+        if name == 'end':
+            return 1
+        if name == 'srcloc':
+            return 2
+        if name == 'child':
+            return 3
+        if name == 'extra':
+            return 4
+        return -1
+
+    def get_child_at_index(self, index):
+        if index == 0:
+            return self.val.CreateValueFromExpression('start', f'int64_t x = {self.start}; x')
+        if index == 1:
+            return self.val.CreateValueFromExpression('end', f'int64_t x = {self.end}; x')
+        if index == 2:
+            return self.val.CreateValueFromExpression('srcloc', f'int16_t x = {self.srcloc}; x')
+        if index == 3:
+            return self.val.CreateValueFromExpression('child', f'int32_t x = {self.child}; x')
+        if index == 4:
+            return self.val.CreateValueFromExpression('extra', f'uint32_t x = {self.extra}; x')
+
 def __lldb_init_module(debugger, dict):
     lldb.formatters.Logger._lldb_formatters_debug_level = 2
     debugger.HandleCommand('type summary add -w tracy -F natvis.VectorSummary -x ^tracy::Vector<.+>')
@@ -100,4 +142,6 @@ def __lldb_init_module(debugger, dict):
     debugger.HandleCommand('type summary add -w tracy -F natvis.Int48Summary -x ^tracy::Int48')
     debugger.HandleCommand('type synthetic add -w tracy -l natvis.VectorPrinter -x ^tracy::Vector<.+>')
     debugger.HandleCommand('type synthetic add -w tracy -l natvis.ShortPtrPrinter -x ^tracy::short_ptr<.+>')
+    debugger.HandleCommand('type synthetic add -w tracy -l natvis.ZoneEventPrinter -x ^tracy::ZoneEvent')
+    debugger.HandleCommand('type summary add -w tracy -x ^tracy::ZoneEvent --summary-string "start = ${var.start}, end = ${var.end}, srcloc = ${var.srcloc}, child = ${var.child}, extra = ${var.extra}"')
     debugger.HandleCommand('type category enable tracy')

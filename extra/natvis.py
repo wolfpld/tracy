@@ -134,12 +134,19 @@ class ZoneEventPrinter:
         if index == 4:
             return self.val.CreateValueFromExpression('extra', f'uint32_t x = {self.extra}; x')
 
+def RobinHoodSummary(value, dict):
+    val = value.GetNonSyntheticValue()
+    size = val.GetChildMemberWithName('mNumElements').GetValueAsUnsigned()
+    mask = val.GetChildMemberWithName('mMask').GetValueAsUnsigned()
+    return f'{{size={size}, load={float(size) / (mask+1)}}}'
+
 def __lldb_init_module(debugger, dict):
     lldb.formatters.Logger._lldb_formatters_debug_level = 2
     debugger.HandleCommand('type summary add -w tracy -F natvis.VectorSummary -x ^tracy::Vector<.+>')
     debugger.HandleCommand('type summary add -w tracy -F natvis.ShortPtrSummary -x ^tracy::short_ptr<.+>')
     debugger.HandleCommand('type summary add -w tracy -F natvis.Int24Summary -x ^tracy::Int24')
     debugger.HandleCommand('type summary add -w tracy -F natvis.Int48Summary -x ^tracy::Int48')
+    debugger.HandleCommand('type summary add -w tracy -F natvis.RobinHoodSummary -x ^tracy::detail::Table<.*>')
     debugger.HandleCommand('type synthetic add -w tracy -l natvis.VectorPrinter -x ^tracy::Vector<.+>')
     debugger.HandleCommand('type synthetic add -w tracy -l natvis.ShortPtrPrinter -x ^tracy::short_ptr<.+>')
     debugger.HandleCommand('type synthetic add -w tracy -l natvis.ZoneEventPrinter -x ^tracy::ZoneEvent')

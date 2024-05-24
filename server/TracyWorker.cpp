@@ -2121,7 +2121,7 @@ int64_t Worker::GetFrameEnd( const FrameData& fd, size_t idx ) const
     }
     else
     {
-        if( fd.frames[idx].end >= 0 )
+        if( idx < fd.frames.size() && fd.frames[idx].end >= 0 )
         {
             return fd.frames[idx].end;
         }

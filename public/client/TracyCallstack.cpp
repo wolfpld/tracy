@@ -795,7 +795,7 @@ static void InitKernelSymbols()
 {
     FILE* f = fopen( "/proc/kallsyms", "rb" );
     if( !f ) return;
-    tracy::FastVector<KernelSymbol> tmpSym( 1024 );
+    tracy::FastVector<KernelSymbol> tmpSym( 512 * 1024 );
     size_t linelen = 16 * 1024;     // linelen must be big enough to prevent reallocs in getline()
     auto linebuf = (char*)tracy_malloc( linelen );
     ssize_t sz;

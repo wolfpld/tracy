@@ -1219,12 +1219,35 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     }
     ImGui::SameLine();
     ImGui::PopFont();
-    ImGui::AlignTextToFramePadding();
+
+    auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+    const auto symEnd = m_baseAddr + m_codeLen;
+    if( inlineList )
+    {
+        auto it = inlineList;
+        while( *it < symEnd ) ++it;
+        const auto inlineCount = it - inlineList;
+        if( inlineCount > 0 )
+        {
+            ImGui::SameLine();
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled( "(%s inlined functions)", RealToString( inlineCount + 1 ) );
+        }
+        if( m_calcInlineStats )
+        {
+                ImGui::SameLine();
+                ImGui::AlignTextToFramePadding();
+                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
+                TooltipIfHovered( "Context is limited to an inline function" );
+        }
+    }
+
     {
         const auto imageName = worker.GetString( sym->imageName );
         char tmp[1024];
         snprintf( tmp, 1024, "%s 0x%" PRIx64, imageName, m_baseAddr );
         ImGui::SameLine( ImGui::GetWindowContentRegionMax().x - ImGui::CalcTextSize( tmp ).x - ImGui::GetStyle().FramePadding.x * 2 );
+        ImGui::AlignTextToFramePadding();
         TextDisabledUnformatted( tmp );
     }
 
@@ -1232,16 +1255,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
 
     const bool limitView = view.m_statRange.active;
-    auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
     if( inlineList )
     {
-        if( m_calcInlineStats )
-        {
-            ImGui::SameLine();
-            ImGui::AlignTextToFramePadding();
-            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
-            TooltipIfHovered( "Context is limited to an inline function" );
-        }
         if( SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats ) )
         {
             m_asmTarget.line = 0;
@@ -1254,7 +1269,6 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         if( shortenName != ShortenName::Never ) currSymName = ShortenZoneName( ShortenName::OnlyNormalize, currSymName );
         if( ImGui::BeginCombo( "##functionList", currSymName, ImGuiComboFlags_HeightLarge ) )
         {
-            const auto symEnd = m_baseAddr + m_codeLen;
             unordered_flat_map<uint64_t, uint32_t> symStat;
             if( limitView )
             {

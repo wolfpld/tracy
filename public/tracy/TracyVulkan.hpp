@@ -218,7 +218,9 @@ public:
 
         WriteInitialItem( physdev, tcpu, tgpu );
 
-        m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
+        // We need the buffer to be twice as large for availability values
+        size_t resSize = sizeof( int64_t ) * m_queryCount * 2;
+        m_res = (int64_t*)tracy_malloc( resSize );
     }
 #endif
 
@@ -283,17 +285,22 @@ public:
         }
 
 
-        if( VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, wrappedTail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY ) )
-        {
-            m_oldCnt = cnt;
-            return;
-        }
+        VK_FUNCTION_WRAPPER( vkGetQueryPoolResults( m_device, m_query, wrappedTail, cnt, sizeof( int64_t ) * m_queryCount * 2, m_res, sizeof( int64_t ) * 2, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT ) );
 
         for( unsigned int idx=0; idx<cnt; idx++ )
         {
+            int64_t avail = m_res[idx * 2 + 1];
+            if( avail == 0 )
+            {
+                m_oldCnt = cnt - idx;
+                cnt = idx;
+
+                break;
+            }
+
             auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuTime );
-            MemWrite( &item->gpuTime.gpuTime, m_res[idx] );
+            MemWrite( &item->gpuTime.gpuTime, m_res[idx * 2] );
             MemWrite( &item->gpuTime.queryId, uint16_t( wrappedTail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
             Profiler::QueueSerialFinish();

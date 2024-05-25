@@ -183,7 +183,7 @@ private:
     void RenderSimpleSourceView();
     void RenderSymbolView( Worker& worker, View& view );
 
-    void RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view );
+    void RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view, bool hasInlines );
     uint64_t RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view );
 
     void RenderLine( const Tokenizer::Line& line, int lineNum, const AddrStat& ipcnt, const AddrStatData& as, Worker* worker, const View* view );

@@ -1717,14 +1717,14 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     switch( m_displayMode )
     {
     case DisplaySource:
-        RenderSymbolSourceView( as, worker, view );
+        RenderSymbolSourceView( as, worker, view, inlineList != nullptr );
         break;
     case DisplayAsm:
         jumpOut = RenderSymbolAsmView( as, worker, view );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
-        RenderSymbolSourceView( as, worker, view );
+        RenderSymbolSourceView( as, worker, view, inlineList != nullptr );
         ImGui::NextColumn();
         jumpOut = RenderSymbolAsmView( as, worker, view );
         ImGui::EndColumns();
@@ -1845,10 +1845,10 @@ static uint32_t GetGoodnessColor( float inRatio )
     return GoodnessColor[ratio];
 }
 
-void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view )
+void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view, bool hasInlines )
 {
     const auto scale = GetScale();
-    if( !m_calcInlineStats && ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
+    if( hasInlines && !m_calcInlineStats && ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) )
     {
         const auto samplesReady = worker.AreSymbolSamplesReady();
         if( !samplesReady )

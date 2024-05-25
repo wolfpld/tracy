@@ -1220,9 +1220,13 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     ImGui::SameLine();
     ImGui::PopFont();
     ImGui::AlignTextToFramePadding();
-    TextDisabledUnformatted( worker.GetString( sym->imageName ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "0x%" PRIx64, m_baseAddr );
+    {
+        const auto imageName = worker.GetString( sym->imageName );
+        char tmp[1024];
+        snprintf( tmp, 1024, "%s 0x%" PRIx64, imageName, m_baseAddr );
+        ImGui::SameLine( ImGui::GetWindowContentRegionMax().x - ImGui::CalcTextSize( tmp ).x - ImGui::GetStyle().FramePadding.x * 2 );
+        TextDisabledUnformatted( tmp );
+    }
 
     if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
     if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;

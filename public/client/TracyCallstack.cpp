@@ -831,7 +831,7 @@ static void InitKernelSymbols()
         }
         if( addr == 0 ) continue;
         ptr++;
-        if( *ptr != 'T' && *ptr != 't' ) continue;
+        const bool valid = *ptr == 'T' || *ptr == 't';
         ptr += 2;
         const auto namestart = ptr;
         while( *ptr != '\t' && *ptr != '\n' ) ptr++;
@@ -846,16 +846,21 @@ static void InitKernelSymbols()
             modend = ptr;
         }
 
-        auto strname = (char*)tracy_malloc_fast( nameend - namestart + 1 );
-        memcpy( strname, namestart, nameend - namestart );
-        strname[nameend-namestart] = '\0';
-
+        char* strname = nullptr;
         char* strmod = nullptr;
-        if( modstart )
+
+        if( valid )
         {
-            strmod = (char*)tracy_malloc_fast( modend - modstart + 1 );
-            memcpy( strmod, modstart, modend - modstart );
-            strmod[modend-modstart] = '\0';
+            strname = (char*)tracy_malloc_fast( nameend - namestart + 1 );
+            memcpy( strname, namestart, nameend - namestart );
+            strname[nameend-namestart] = '\0';
+
+            if( modstart )
+            {
+                strmod = (char*)tracy_malloc_fast( modend - modstart + 1 );
+                memcpy( strmod, modstart, modend - modstart );
+                strmod[modend-modstart] = '\0';
+            }
         }
 
         auto sym = tmpSym.push_next();

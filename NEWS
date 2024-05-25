@@ -118,6 +118,8 @@ vx.xx.x (xxxx-xx-xx)
 - Memory limit for a capture can be now set, both in the GUI profiler and
   in the capture utility.
 - Thread list can be now sorted alphabetically.
+- It is now possible to adjust plot height.
+- Trace comparison statistics were expanded and made more clear.
 
 
 v0.10.0 (2023-10-16)

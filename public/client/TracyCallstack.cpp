@@ -784,6 +784,7 @@ static FastVector<DebugInfo>* s_di_known;
 struct KernelSymbol
 {
     uint64_t addr;
+    uint32_t size;
     const char* name;
     const char* mod;
 };
@@ -799,6 +800,7 @@ static void InitKernelSymbols()
     size_t linelen = 16 * 1024;     // linelen must be big enough to prevent reallocs in getline()
     auto linebuf = (char*)tracy_malloc( linelen );
     ssize_t sz;
+    size_t validCnt = 0;
     while( ( sz = getline( &linebuf, &linelen, f ) ) != -1 )
     {
         auto ptr = linebuf;
@@ -851,6 +853,8 @@ static void InitKernelSymbols()
 
         if( valid )
         {
+            validCnt++;
+
             strname = (char*)tracy_malloc_fast( nameend - namestart + 1 );
             memcpy( strname, namestart, nameend - namestart );
             strname[nameend-namestart] = '\0';
@@ -865,6 +869,7 @@ static void InitKernelSymbols()
 
         auto sym = tmpSym.push_next();
         sym->addr = addr;
+        sym->size = 0;
         sym->name = strname;
         sym->mod = strmod;
     }
@@ -872,11 +877,22 @@ static void InitKernelSymbols()
     fclose( f );
     if( tmpSym.empty() ) return;
 
-    std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr > rhs.addr; } );
-    s_kernelSymCnt = tmpSym.size();
-    s_kernelSym = (KernelSymbol*)tracy_malloc_fast( sizeof( KernelSymbol ) * s_kernelSymCnt );
-    memcpy( s_kernelSym, tmpSym.data(), sizeof( KernelSymbol ) * s_kernelSymCnt );
-    TracyDebug( "Loaded %zu kernel symbols\n", s_kernelSymCnt );
+    std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr < rhs.addr; } );
+    for( size_t i=0; i<tmpSym.size()-1; i++ )
+    {
+        if( tmpSym[i].name ) tmpSym[i].size = tmpSym[i+1].addr - tmpSym[i].addr;
+    }
+
+    s_kernelSymCnt = validCnt;
+    s_kernelSym = (KernelSymbol*)tracy_malloc_fast( sizeof( KernelSymbol ) * validCnt );
+    auto dst = s_kernelSym;
+    for( auto& v : tmpSym )
+    {
+        if( v.name ) *dst++ = v;
+    }
+    assert( dst == s_kernelSym + validCnt );
+
+    TracyDebug( "Loaded %zu kernel symbols (%zu code sections)\n", tmpSym.size(), validCnt );
 }
 #endif
 
@@ -1277,7 +1293,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef __linux
     else if( s_kernelSym )
     {
-        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
+        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr + lhs.size < rhs; } );
         if( it != s_kernelSym + s_kernelSymCnt )
         {
             cb_data[0].name = CopyStringFast( it->name );

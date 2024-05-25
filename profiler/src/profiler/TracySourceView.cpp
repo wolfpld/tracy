@@ -1231,7 +1231,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         {
             ImGui::SameLine();
             ImGui::AlignTextToFramePadding();
-            ImGui::TextDisabled( "(%s inlined functions)", RealToString( inlineCount + 1 ) );
+            ImGui::TextDisabled( "(+%s inlined functions)", RealToString( inlineCount ) );
         }
         if( m_calcInlineStats )
         {

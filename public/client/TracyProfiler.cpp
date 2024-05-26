@@ -1421,6 +1421,11 @@ Profiler::Profiler()
     CalibrateDelay();
     ReportTopology();
 
+#ifdef __linux__
+    m_kcore = (KCore*)tracy_malloc( sizeof( KCore ) );
+    new(m_kcore) KCore();
+#endif
+
 #ifndef TRACY_NO_EXIT
     const char* noExitEnv = GetEnvVar( "TRACY_NO_EXIT" );
     if( noExitEnv && noExitEnv[0] == '1' )
@@ -1566,6 +1571,11 @@ Profiler::~Profiler()
 
 #ifdef TRACY_HAS_CALLSTACK
     EndCallstack();
+#endif
+
+#ifdef __linux__
+    m_kcore->~KCore();
+    tracy_free( m_kcore );
 #endif
 
     tracy_free( m_lz4Buf );
@@ -3356,6 +3366,17 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
                     FreeLibrary( hnd );
                 }
             }
+        }
+#elif defined __linux__
+        void* data = m_kcore->Retrieve( si.ptr, si.extra );
+        if( data )
+        {
+            TracyLfqPrepare( QueueType::SymbolCodeMetadata );
+            MemWrite( &item->symbolCodeMetadata.symbol, si.ptr );
+            MemWrite( &item->symbolCodeMetadata.ptr, (uint64_t)data );
+            MemWrite( &item->symbolCodeMetadata.size, (uint32_t)si.extra );
+            TracyLfqCommit;
+            break;
         }
 #endif
         TracyLfqPrepare( QueueType::AckSymbolCodeNotAvailable );

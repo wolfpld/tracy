@@ -10,6 +10,7 @@
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
 #include "TracyCallstack.hpp"
+#include "TracyKCore.hpp"
 #include "TracySysPower.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
@@ -995,6 +996,7 @@ private:
     struct {
         struct sigaction pwr, ill, fpe, segv, pipe, bus, abrt;
     } m_prevSignal;
+    KCore* m_kcore;
 #endif
     bool m_crashHandlerInstalled;
 

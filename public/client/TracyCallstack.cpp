@@ -1299,7 +1299,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb_data[0].name = CopyStringFast( it->name );
             cb_data[0].file = CopyStringFast( "<kernel>" );
             cb_data[0].line = 0;
-            cb_data[0].symLen = 0;
+            cb_data[0].symLen = it->size;
             cb_data[0].symAddr = it->addr;
             return { cb_data, 1, it->mod ? it->mod : "<kernel>" };
         }

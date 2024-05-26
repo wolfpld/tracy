@@ -120,6 +120,7 @@ vx.xx.x (xxxx-xx-xx)
 - Thread list can be now sorted alphabetically.
 - It is now possible to adjust plot height.
 - Trace comparison statistics were expanded and made more clear.
+- Implemented retrieval of kernel symbol code on Linux.
 
 
 v0.10.0 (2023-10-16)

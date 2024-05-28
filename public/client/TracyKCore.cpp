@@ -25,13 +25,11 @@ using elf_sword = int32_t;
 #if __WORDSIZE == 32
     using elf_addr = uint32_t;
     using elf_off = uint32_t;
-    using elf_wxword = uint32_t;
+    using elf_xword = uint32_t;
 #else
     using elf_addr = uint64_t;
     using elf_off = uint64_t;
     using elf_xword = uint64_t;
-    using elf_sxword = int64_t;
-    using elf_wxword = uint64_t;
 #endif
 
 struct elf_ehdr

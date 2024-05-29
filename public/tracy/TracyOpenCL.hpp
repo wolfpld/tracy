@@ -373,9 +373,9 @@ namespace tracy {
 
 using TracyCLCtx = tracy::OpenCLCtx*;
 
-#define TracyCLContext(context, device) tracy::CreateCLContext(context, device);
+#define TracyCLContext(ctx, device) tracy::CreateCLContext(ctx, device);
 #define TracyCLDestroy(ctx) tracy::DestroyCLContext(ctx);
-#define TracyCLContextName(context, name, size) ctx->Name(name, size);
+#define TracyCLContextName(ctx, name, size) ctx->Name(name, size);
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyCLNamedZone(ctx, varname, name, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, 0 }; tracy::OpenCLCtxScope varname(ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
 #  define TracyCLNamedZoneC(ctx, varname, name, color, active) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::OpenCLCtxScope varname(ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );

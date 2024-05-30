@@ -36,6 +36,8 @@ UserData::UserData( const char* program, uint64_t time )
     : m_program( program )
     , m_time( time )
 {
+    if( m_program.empty() ) m_program = "_";
+
     FILE* f = OpenFile( FileDescription, false );
     if( f )
     {
@@ -54,6 +56,8 @@ void UserData::Init( const char* program, uint64_t time )
     assert( !Valid() );
     m_program = program;
     m_time = time;
+
+    if( m_program.empty() ) m_program = "_";
 }
 
 bool UserData::SetDescription( const char* description )

@@ -357,7 +357,7 @@ public:
 private:
     tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, bool active )
 #ifdef TRACY_ON_DEMAND
-        : m_active( is_active && GetProfiler().IsConnected() )
+        : m_active( active && GetProfiler().IsConnected() )
 #else
         : m_active( active )
 #endif

@@ -154,7 +154,7 @@ int main( int argc, char** argv )
 
     try
     {
-        int64_t t;
+        int64_t tLoad, tSave;
         float ratio;
         int inVer;
         {
@@ -167,9 +167,10 @@ int main( int argc, char** argv )
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 #endif
 
-            if( cacheSource ) worker.CacheSourceFiles();
+            const auto t1 = std::chrono::high_resolution_clock::now();
 
-            if ( resolveSymbols ) PatchSymbols( worker, pathSubstitutions );
+            if( cacheSource ) worker.CacheSourceFiles();
+            if( resolveSymbols ) PatchSymbols( worker, pathSubstitutions );
 
             auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel ) );
             if( !w )
@@ -181,11 +182,12 @@ int main( int argc, char** argv )
             fflush( stdout );
             worker.Write( *w, buildDict );
             w->Finish();
-            const auto t1 = std::chrono::high_resolution_clock::now();
+            const auto t2 = std::chrono::high_resolution_clock::now();
             const auto stats = w->GetCompressionStatistics();
             ratio = 100.f * stats.second / stats.first;
             inVer = worker.GetTraceVersion();
-            t = std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count();
+            tLoad = std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count();
+            tSave = std::chrono::duration_cast<std::chrono::nanoseconds>( t2 - t1 ).count();
         }
 
         FILE* in = fopen( input, "rb" );
@@ -198,10 +200,10 @@ int main( int argc, char** argv )
         const auto outSize = ftello64( out );
         fclose( out );
 
-        printf( "%s (%i.%i.%i) {%s} -> %s (%i.%i.%i) {%s, %.2f%%}  %s, %.2f%% change\n",
+        printf( "%s (%i.%i.%i) {%s} -> %s (%i.%i.%i) {%s, %.2f%%}  %s load, %s save, %.2f%% change\n",
             input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, tracy::MemSizeToString( inSize ),
             output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::MemSizeToString( outSize ), ratio,
-            tracy::TimeToString( t ), float( outSize ) / inSize * 100 );
+            tracy::TimeToString( tLoad ), tracy::TimeToString( tSave ), float( outSize ) / inSize * 100 );
     }
     catch( const tracy::UnsupportedVersion& e )
     {

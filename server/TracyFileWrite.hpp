@@ -20,6 +20,9 @@
 namespace tracy
 {
 
+constexpr size_t FileBufSize = 64 * 1024;
+constexpr size_t FileBoundSize = std::max( LZ4_COMPRESSBOUND( FileBufSize ), ZSTD_COMPRESSBOUND( FileBufSize ) );
+
 enum class FileCompression
 {
     Fast,
@@ -28,55 +31,15 @@ enum class FileCompression
     Zstd
 };
 
-class FileWrite
+class WriteStream
 {
 public:
-    static FileWrite* Open( const char* fn, FileCompression comp = FileCompression::Fast, int level = 1 )
-    {
-        auto f = fopen( fn, "wb" );
-        return f ? new FileWrite( f, comp, level ) : nullptr;
-    }
-
-    ~FileWrite()
-    {
-        if( m_offset > 0 ) WriteLz4Block();
-        fclose( m_file );
-
-        if( m_stream ) LZ4_freeStream( m_stream );
-        if( m_streamHC ) LZ4_freeStreamHC( m_streamHC );
-        if( m_streamZstd ) ZSTD_freeCStream( m_streamZstd );
-    }
-
-    void Finish()
-    {
-        if( m_offset > 0 ) WriteLz4Block();
-    }
-
-    tracy_force_inline void Write( const void* ptr, size_t size )
-    {
-        if( m_offset + size <= BufSize )
-        {
-            WriteSmall( ptr, size );
-        }
-        else
-        {
-            WriteBig( ptr, size );
-        }
-    }
-
-    std::pair<size_t, size_t> GetCompressionStatistics() const { return std::make_pair( m_srcBytes, m_dstBytes ); }
-
-private:
-    FileWrite( FILE* f, FileCompression comp, int level )
+    WriteStream( FileCompression comp, int level )
         : m_stream( nullptr )
         , m_streamHC( nullptr )
         , m_streamZstd( nullptr )
-        , m_file( f )
         , m_buf( m_bufData[0] )
         , m_second( m_bufData[1] )
-        , m_offset( 0 )
-        , m_srcBytes( 0 )
-        , m_dstBytes( 0 )
     {
         switch( comp )
         {
@@ -99,7 +62,95 @@ private:
             assert( false );
             break;
         }
+    }
 
+    ~WriteStream()
+    {
+        if( m_stream ) LZ4_freeStream( m_stream );
+        if( m_streamHC ) LZ4_freeStreamHC( m_streamHC );
+        if( m_streamZstd ) ZSTD_freeCStream( m_streamZstd );
+    }
+
+    char* GetBuffer() { return m_buf; }
+
+    const char* Compress( uint32_t& sz )
+    {
+        if( m_stream )
+        {
+            sz = LZ4_compress_fast_continue( m_stream, m_buf, m_compressed, sz, FileBoundSize, 1 );
+        }
+        else if( m_streamZstd )
+        {
+            ZSTD_outBuffer out = { m_compressed, FileBoundSize, 0 };
+            ZSTD_inBuffer in = { m_buf, sz, 0 };
+            const auto ret = ZSTD_compressStream2( m_streamZstd, &out, &in, ZSTD_e_flush );
+            assert( ret == 0 );
+            sz = out.pos;
+        }
+        else
+        {
+            sz = LZ4_compress_HC_continue( m_streamHC, m_buf, m_compressed, sz, FileBoundSize );
+        }
+
+        std::swap( m_buf, m_second );
+        return m_compressed;
+    }
+
+private:
+    LZ4_stream_t* m_stream;
+    LZ4_streamHC_t* m_streamHC;
+    ZSTD_CStream* m_streamZstd;
+
+    char m_bufData[2][FileBufSize];
+    char* m_buf;
+    char* m_second;
+
+    char m_compressed[FileBoundSize];
+};
+
+class FileWrite
+{
+public:
+    static FileWrite* Open( const char* fn, FileCompression comp = FileCompression::Fast, int level = 1 )
+    {
+        auto f = fopen( fn, "wb" );
+        return f ? new FileWrite( f, comp, level ) : nullptr;
+    }
+
+    ~FileWrite()
+    {
+        Finish();
+        fclose( m_file );
+    }
+
+    void Finish()
+    {
+        if( m_offset > 0 ) WriteBlock();
+    }
+
+    tracy_force_inline void Write( const void* ptr, size_t size )
+    {
+        if( m_offset + size <= FileBufSize )
+        {
+            WriteSmall( ptr, size );
+        }
+        else
+        {
+            WriteBig( ptr, size );
+        }
+    }
+
+    std::pair<size_t, size_t> GetCompressionStatistics() const { return std::make_pair( m_srcBytes, m_dstBytes ); }
+
+private:
+    FileWrite( FILE* f, FileCompression comp, int level )
+        : m_stream( comp, level )
+        , m_file( f )
+        , m_buf( m_stream.GetBuffer() )
+        , m_offset( 0 )
+        , m_srcBytes( 0 )
+        , m_dstBytes( 0 )
+    {
         if( comp == FileCompression::Zstd )
         {
             fwrite( ZstdHeader, 1, sizeof( ZstdHeader ), m_file );
@@ -121,59 +172,36 @@ private:
         auto src = (const char*)ptr;
         while( size > 0 )
         {
-            const auto sz = std::min( size, BufSize - m_offset );
+            const auto sz = std::min( size, FileBufSize - m_offset );
             memcpy( m_buf + m_offset, src, sz );
             m_offset += sz;
             src += sz;
             size -= sz;
 
-            if( m_offset == BufSize )
+            if( m_offset == FileBufSize )
             {
-                WriteLz4Block();
+                WriteBlock();
             }
         }
     }
 
-    void WriteLz4Block()
+    void WriteBlock()
     {
-        char lz4[LZ4Size];
-        uint32_t sz;
-        if( m_stream )
-        {
-            sz = LZ4_compress_fast_continue( m_stream, m_buf, lz4, m_offset, LZ4Size, 1 );
-        }
-        else if( m_streamZstd )
-        {
-            ZSTD_outBuffer out = { lz4, LZ4Size, 0 };
-            ZSTD_inBuffer in = { m_buf, m_offset, 0 };
-            const auto ret = ZSTD_compressStream2( m_streamZstd, &out, &in, ZSTD_e_flush );
-            assert( ret == 0 );
-            sz = out.pos;
-        }
-        else
-        {
-            sz = LZ4_compress_HC_continue( m_streamHC, m_buf, lz4, m_offset, LZ4Size );
-        }
-
+        uint32_t sz = m_offset;
         m_srcBytes += m_offset;
+        auto block = m_stream.Compress( sz );
         m_dstBytes += sz;
 
         fwrite( &sz, 1, sizeof( sz ), m_file );
-        fwrite( lz4, 1, sz, m_file );
+        fwrite( block, 1, sz, m_file );
+
         m_offset = 0;
-        std::swap( m_buf, m_second );
+        m_buf = m_stream.GetBuffer();
     }
 
-    enum { BufSize = 64 * 1024 };
-    enum { LZ4Size = std::max( LZ4_COMPRESSBOUND( BufSize ), ZSTD_COMPRESSBOUND( BufSize ) ) };
-
-    LZ4_stream_t* m_stream;
-    LZ4_streamHC_t* m_streamHC;
-    ZSTD_CStream* m_streamZstd;
+    WriteStream m_stream;
     FILE* m_file;
-    char m_bufData[2][BufSize];
     char* m_buf;
-    char* m_second;
     size_t m_offset;
     size_t m_srcBytes;
     size_t m_dstBytes;

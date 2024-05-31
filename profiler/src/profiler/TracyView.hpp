@@ -367,7 +367,7 @@ private:
     void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime );
 
     void SetPlaybackFrame( uint32_t idx );
-    bool Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict );
+    bool Save( const char* fn, FileCompression comp, int zlevel, bool buildDict );
 
     void Attention( bool& alreadyDone );
     void UpdateTitle();

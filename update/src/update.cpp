@@ -50,7 +50,7 @@ int main( int argc, char** argv )
     }
 #endif
 
-    tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
+    tracy::FileCompression clev = tracy::FileCompression::Fast;
     uint32_t events = tracy::EventType::All;
     int zstdLevel = 1;
     bool buildDict = false;
@@ -64,13 +64,13 @@ int main( int argc, char** argv )
         switch( c )
         {
         case 'h':
-            clev = tracy::FileWrite::Compression::Slow;
+            clev = tracy::FileCompression::Slow;
             break;
         case 'e':
-            clev = tracy::FileWrite::Compression::Extreme;
+            clev = tracy::FileCompression::Extreme;
             break;
         case 'z':
-            clev = tracy::FileWrite::Compression::Zstd;
+            clev = tracy::FileCompression::Zstd;
             zstdLevel = atoi( optarg );
             if( zstdLevel > ZSTD_maxCLevel() || zstdLevel < ZSTD_minCLevel() )
             {

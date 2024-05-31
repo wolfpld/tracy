@@ -381,7 +381,7 @@ int main(int argc, char **argv) {
   }
 #endif
 
-  tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
+  tracy::FileCompression clev = tracy::FileCompression::Fast;
 
   if (argc != 3)
     Usage();

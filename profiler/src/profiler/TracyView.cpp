@@ -551,7 +551,7 @@ bool View::Draw()
         ImGui::PopFont();
         ImGui::Separator();
 
-        static FileWrite::Compression comp = FileWrite::Compression::Fast;
+        static FileCompression comp = FileCompression::Fast;
         static int zlvl = 6;
         ImGui::TextUnformatted( ICON_FA_FILE_ZIPPER " Trace compression" );
         ImGui::SameLine();
@@ -560,7 +560,7 @@ bool View::Draw()
         int idx = 0;
         while( CompressionName[idx] )
         {
-            if( ImGui::RadioButton( CompressionName[idx], (int)comp == idx ) ) comp = (FileWrite::Compression)idx;
+            if( ImGui::RadioButton( CompressionName[idx], (int)comp == idx ) ) comp = (FileCompression)idx;
             ImGui::SameLine();
             TextDisabledUnformatted( CompressionDesc[idx] );
             idx++;
@@ -572,7 +572,7 @@ bool View::Draw()
         ImGui::Indent();
         if( ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp ) )
         {
-            comp = FileWrite::Compression::Zstd;
+            comp = FileCompression::Zstd;
         }
         ImGui::Unindent();
 
@@ -1340,7 +1340,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     ImGui::PopStyleVar();
 }
 
-bool View::Save( const char* fn, FileWrite::Compression comp, int zlevel, bool buildDict )
+bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDict )
 {
     std::unique_ptr<FileWrite> f( FileWrite::Open( fn, comp, zlevel ) );
     if( !f ) return false;

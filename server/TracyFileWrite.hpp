@@ -20,18 +20,18 @@
 namespace tracy
 {
 
+enum class FileCompression
+{
+    Fast,
+    Slow,
+    Extreme,
+    Zstd
+};
+
 class FileWrite
 {
 public:
-    enum class Compression
-    {
-        Fast,
-        Slow,
-        Extreme,
-        Zstd
-    };
-
-    static FileWrite* Open( const char* fn, Compression comp = Compression::Fast, int level = 1 )
+    static FileWrite* Open( const char* fn, FileCompression comp = FileCompression::Fast, int level = 1 )
     {
         auto f = fopen( fn, "wb" );
         return f ? new FileWrite( f, comp, level ) : nullptr;
@@ -67,7 +67,7 @@ public:
     std::pair<size_t, size_t> GetCompressionStatistics() const { return std::make_pair( m_srcBytes, m_dstBytes ); }
 
 private:
-    FileWrite( FILE* f, Compression comp, int level )
+    FileWrite( FILE* f, FileCompression comp, int level )
         : m_stream( nullptr )
         , m_streamHC( nullptr )
         , m_streamZstd( nullptr )
@@ -80,17 +80,17 @@ private:
     {
         switch( comp )
         {
-        case Compression::Fast:
+        case FileCompression::Fast:
             m_stream = LZ4_createStream();
             break;
-        case Compression::Slow:
+        case FileCompression::Slow:
             m_streamHC = LZ4_createStreamHC();
             break;
-        case Compression::Extreme:
+        case FileCompression::Extreme:
             m_streamHC = LZ4_createStreamHC();
             LZ4_resetStreamHC( m_streamHC, LZ4HC_CLEVEL_MAX );
             break;
-        case Compression::Zstd:
+        case FileCompression::Zstd:
             m_streamZstd = ZSTD_createCStream();
             ZSTD_CCtx_setParameter( m_streamZstd, ZSTD_c_compressionLevel, level );
             ZSTD_CCtx_setParameter( m_streamZstd, ZSTD_c_contentSizeFlag, 0 );
@@ -100,7 +100,7 @@ private:
             break;
         }
 
-        if( comp == Compression::Zstd )
+        if( comp == FileCompression::Zstd )
         {
             fwrite( ZstdHeader, 1, sizeof( ZstdHeader ), m_file );
         }

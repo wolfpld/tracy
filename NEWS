@@ -121,6 +121,11 @@ vx.xx.x (xxxx-xx-xx)
 - It is now possible to adjust plot height.
 - Trace comparison statistics were expanded and made more clear.
 - Implemented retrieval of kernel symbol code on Linux.
+- Added support for multiple compression streams in trace files. This
+  effectively parallelizes both load and save operations.
+  - The default save configuration in tracy-profiler and tracy-update is
+    now set to Zstd level 3 with 4 compression streams. This gives both
+    shorter compression time and smaller file size.
 
 
 v0.10.0 (2023-10-16)

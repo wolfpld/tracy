@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "TracyFileHeader.hpp"
+#include "TracyFileMeta.hpp"
 #include "../public/common/tracy_lz4.hpp"
 #include "../public/common/tracy_lz4hc.hpp"
 #include "../public/common/TracyForceInline.hpp"
@@ -23,9 +24,6 @@
 
 namespace tracy
 {
-
-constexpr size_t FileBufSize = 64 * 1024;
-constexpr size_t FileBoundSize = std::max( LZ4_COMPRESSBOUND( FileBufSize ), ZSTD_COMPRESSBOUND( FileBufSize ) );
 
 enum class FileCompression
 {

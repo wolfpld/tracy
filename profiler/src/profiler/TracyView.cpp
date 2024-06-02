@@ -551,8 +551,8 @@ bool View::Draw()
         ImGui::PopFont();
         ImGui::Separator();
 
-        static FileCompression comp = FileCompression::Fast;
-        static int zlvl = 6;
+        static FileCompression comp = FileCompression::Zstd;
+        static int zlvl = 3;
         ImGui::TextUnformatted( ICON_FA_FILE_ZIPPER " Trace compression" );
         ImGui::SameLine();
         TextDisabledUnformatted( "Can be changed later with the upgrade utility" );
@@ -576,6 +576,14 @@ bool View::Draw()
         }
         ImGui::Unindent();
 
+        static int streams = 4;
+        ImGui::TextUnformatted( ICON_FA_SHUFFLE " Compression streams" );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Parallelize save and load at the cost of file size" );
+        ImGui::Indent();
+        ImGui::SliderInt( "##streams", &streams, 1, 64, "%d", ImGuiSliderFlags_AlwaysClamp );
+        ImGui::Unindent();
+
         static bool buildDict = false;
         if( m_worker.GetFrameImageCount() != 0 )
         {
@@ -588,7 +596,7 @@ bool View::Draw()
         ImGui::Separator();
         if( ImGui::Button( ICON_FA_FLOPPY_DISK " Save trace" ) )
         {
-            saveFailed = !Save( fn, comp, zlvl, buildDict );
+            saveFailed = !Save( fn, comp, zlvl, buildDict, streams );
             m_filenameStaging.clear();
             ImGui::CloseCurrentPopup();
         }
@@ -1340,9 +1348,9 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     ImGui::PopStyleVar();
 }
 
-bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDict )
+bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDict, int streams )
 {
-    std::unique_ptr<FileWrite> f( FileWrite::Open( fn, comp, zlevel ) );
+    std::unique_ptr<FileWrite> f( FileWrite::Open( fn, comp, zlevel, streams ) );
     if( !f ) return false;
 
     m_userData.StateShouldBePreserved();

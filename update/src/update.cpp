@@ -36,6 +36,7 @@ void Usage()
     printf( "  -c: scan for source files missing in cache and add if found\n" );
     printf( "  -r: resolve symbols and patch callstack frames\n");
     printf( "  -p: substitute symbol resolution path with an alternative: \"REGEX_MATCH;REPLACEMENT\"\n");
+    printf( "  -j: number of threads to use for compression (-1 to use all cores)\n" );
 
     exit( 1 );
 }
@@ -53,13 +54,14 @@ int main( int argc, char** argv )
     tracy::FileCompression clev = tracy::FileCompression::Fast;
     uint32_t events = tracy::EventType::All;
     int zstdLevel = 1;
+    int streams = 1;
     bool buildDict = false;
     bool cacheSource = false;
     bool resolveSymbols = false;
     std::vector<std::string> pathSubstitutions;
 
     int c;
-    while( ( c = getopt( argc, argv, "hez:ds:crp:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "hez:ds:crp:j:" ) ) != -1 )
     {
         switch( c )
         {
@@ -132,6 +134,9 @@ int main( int argc, char** argv )
         case 'p':
             pathSubstitutions.push_back(optarg);
             break;
+        case 'j':
+            streams = atoi( optarg );
+            break;
         default:
             Usage();
             break;
@@ -161,7 +166,7 @@ int main( int argc, char** argv )
             const auto t0 = std::chrono::high_resolution_clock::now();
             const bool allowBgThreads = false;
             const bool allowStringModification = resolveSymbols;
-            tracy::Worker worker( *f, (tracy::EventType::Type)events, allowBgThreads, allowStringModification);
+            tracy::Worker worker( *f, (tracy::EventType::Type)events, allowBgThreads, allowStringModification );
 
 #ifndef TRACY_NO_STATISTICS
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
@@ -172,7 +177,7 @@ int main( int argc, char** argv )
             if( cacheSource ) worker.CacheSourceFiles();
             if( resolveSymbols ) PatchSymbols( worker, pathSubstitutions );
 
-            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel ) );
+            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel, streams ) );
             if( !w )
             {
                 fprintf( stderr, "Cannot open output file!\n" );

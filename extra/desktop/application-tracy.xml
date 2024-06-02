@@ -7,6 +7,7 @@
         <magic>
             <match type="string" value="tlZ\x04" offset="0"/>
             <match type="string" value="tZst" offset="0"/>
+            <match type="string" value="tr\xFDP" offset="0"/>
         </magic>
         <glob pattern="*.tracy"/>
     </mime-type>

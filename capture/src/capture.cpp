@@ -346,7 +346,7 @@ int main( int argc, char** argv )
         worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - firstTime ), tracy::RealToString( worker.GetZoneCount() ),
         tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
-    auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
+    auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, tracy::FileCompression::Zstd, 3, 4 ) );
     if( f )
     {
         worker.Write( *f, false );

@@ -101,15 +101,15 @@ class FileRead
 {
     struct StreamHandle
     {
-        StreamHandle( uint8_t type ) : stream( type ) {}
+        StreamHandle( uint8_t type ) : stream( type ), outputReady( false ) {}
 
         ReadStream stream;
         const char* src;
         uint32_t size;
 
         bool inputReady = false;
-        bool outputReady = false;
         bool exit = false;
+        alignas(64) std::atomic<bool> outputReady;
 
         std::mutex signalLock;
         std::condition_variable signal;
@@ -504,19 +504,16 @@ private:
 
     static void Worker( StreamHandle* hnd )
     {
-        std::unique_lock lock( hnd->signalLock );
         for(;;)
         {
+            std::unique_lock lock( hnd->signalLock );
             hnd->signal.wait( lock, [&] { return hnd->inputReady || hnd->exit; } );
             if( hnd->exit ) return;
             lock.unlock();
 
             hnd->stream.Decompress( hnd->src, hnd->size );
             hnd->inputReady = false;
-
-            lock.lock();
-            hnd->outputReady = true;
-            hnd->signal.notify_one();
+            hnd->outputReady.store( true, std::memory_order_release );
         }
     }
 
@@ -567,18 +564,15 @@ private:
     void GetNextDataBlock()
     {
         auto& hnd = *m_streams[m_streamId];
-        std::unique_lock lock( hnd.signalLock );
-        hnd.signal.wait( lock, [&hnd]{ return hnd.outputReady; } );
-        lock.unlock();
-
-        hnd.outputReady = false;
+        while( hnd.outputReady.load( std::memory_order_acquire ) == false ) { YieldThread(); }
+        hnd.outputReady.store( false, std::memory_order_relaxed );
         m_buf = hnd.stream.GetBuffer();
         m_offset = 0;
 
         if( m_dataOffset < m_dataSize )
         {
             const auto sz = ReadBlockSize();
-            lock.lock();
+            std::unique_lock lock( hnd.signalLock );
             hnd.src = m_data + m_dataOffset;
             hnd.size = sz;
             hnd.inputReady = true;

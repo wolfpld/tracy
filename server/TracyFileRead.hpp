@@ -349,7 +349,39 @@ private:
             fclose( f );
             throw NotTracyDump();
         }
-        if( memcmp( hdr, Lz4Header, sizeof( hdr ) ) == 0 )
+
+        uint8_t streams = 1;
+        m_dataOffset = sizeof( hdr );
+
+        if( memcmp( hdr, TracyHeader, sizeof( hdr ) ) == 0 )
+        {
+            uint8_t type;
+            if( fread( &type, 1, 1, f ) != 1 )
+            {
+                fclose( f );
+                throw NotTracyDump();
+            }
+            switch( type )
+            {
+            case 0:
+                m_stream = LZ4_createStreamDecode();
+                break;
+            case 1:
+                m_streamZstd = ZSTD_createDStream();
+                break;
+            default:
+                fclose( f );
+                throw NotTracyDump();
+                break;
+            }
+            if( fread( &streams, 1, 1, f ) != 1 )
+            {
+                fclose( f );
+                throw NotTracyDump();
+            }
+            m_dataOffset += 2;
+        }
+        else if( memcmp( hdr, Lz4Header, sizeof( hdr ) ) == 0 )
         {
             m_stream = LZ4_createStreamDecode();
         }
@@ -380,7 +412,6 @@ private:
         {
             throw FileReadError();
         }
-        m_dataOffset = sizeof( hdr );
 
         ReadBlock( ReadBlockSize() );
         std::swap( m_buf, m_second );

@@ -19,6 +19,7 @@
 \usepackage{xfrac}
 \usepackage[euler]{textgreek}
 \usepackage{nameref}
+\usepackage{diagbox}
 
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \geometry{a4paper,textwidth=6.5in,hmarginratio=1:1,
@@ -2690,31 +2691,31 @@ The \texttt{update} utility supports optional higher levels of data compression,
 \centering
 \begin{tabular}[h]{c|c|c|c|c}
 \textbf{Mode} & \textbf{Size} & \textbf{Ratio} & \textbf{Save time} & \textbf{Load time} \\ \hline
-\emph{default} & 162.48 MB & 17.19\% & 1.91 \si{\second} & 470 \si{\milli\second} \\
-\texttt{hc} & 77.33 MB & 8.18\% & 39.24 \si{\second} & 401 \si{\milli\second} \\
-\texttt{extreme} & 72.67 MB & 7.68\% & 4:30 & 406 \si{\milli\second} \\ \hline
-\texttt{zstd 1} & 63.17 MB & 6.68\% & 2.27 \si{\second} & 868 \si{\milli\second} \\
-\texttt{zstd 2} & 63.29 MB & 6.69\% & 2.31 \si{\second} & 884 \si{\milli\second} \\
-\texttt{zstd 3} & 62.94 MB & 6.65\% & 2.43 \si{\second} & 867 \si{\milli\second} \\
-\texttt{zstd 4} & 62.81 MB & 6.64\% & 2.44 \si{\second} & 855 \si{\milli\second} \\
-\texttt{zstd 5} & 61.04 MB & 6.45\% & 3.98 \si{\second} & 855 \si{\milli\second} \\
-\texttt{zstd 6} & 60.27 MB & 6.37\% & 4.19 \si{\second} & 827 \si{\milli\second} \\
-\texttt{zstd 7} & 61.53 MB & 6.5\% & 6.6 \si{\second} & 761 \si{\milli\second} \\
-\texttt{zstd 8} & 60.44 MB & 6.39\% & 7.84 \si{\second} & 746 \si{\milli\second} \\
-\texttt{zstd 9} & 59.58 MB & 6.3\% & 9.6 \si{\second} & 724 \si{\milli\second} \\
-\texttt{zstd 10} & 59.36 MB & 6.28\% & 10.29 \si{\second} & 706 \si{\milli\second} \\
-\texttt{zstd 11} & 59.2 MB & 6.26\% & 11.23 \si{\second} & 717 \si{\milli\second} \\
-\texttt{zstd 12} & 58.51 MB & 6.19\% & 15.43 \si{\second} & 695 \si{\milli\second} \\
-\texttt{zstd 13} & 56.16 MB & 5.94\% & 35.55 \si{\second} & 642 \si{\milli\second} \\
-\texttt{zstd 14} & 55.76 MB & 5.89\% & 37.74 \si{\second} & 627 \si{\milli\second} \\
-\texttt{zstd 15} & 54.65 MB & 5.78\% & 1:01 & 600 \si{\milli\second} \\
-\texttt{zstd 16} & 50.94 MB & 5.38\% & 1:34 & 537 \si{\milli\second} \\
-\texttt{zstd 17} & 50.18 MB & 5.30\% & 1:44 & 542 \si{\milli\second} \\
-\texttt{zstd 18} & 49.91 MB & 5.28\% & 2:17 & 554 \si{\milli\second} \\
-\texttt{zstd 19} & 46.99 MB & 4.97\% & 7:09 & 605 \si{\milli\second} \\
-\texttt{zstd 20} & 46.81 MB & 4.95\% & 7:08 & 608 \si{\milli\second} \\
-\texttt{zstd 21} & 45.77 MB & 4.84\% & 13:01 & 614 \si{\milli\second} \\
-\texttt{zstd 22} & 45.52 MB & 4.81\% & 15:11 & 621 \si{\milli\second}
+lz4 & 162.48 MB & 17.19\% & 1.91 \si{\second} & 470 \si{\milli\second} \\
+lz4 hc & 77.33 MB & 8.18\% & 39.24 \si{\second} & 401 \si{\milli\second} \\
+lz4 extreme & 72.67 MB & 7.68\% & 4:30 & 406 \si{\milli\second} \\ \hline
+zstd 1 & 63.17 MB & 6.68\% & 2.27 \si{\second} & 868 \si{\milli\second} \\
+zstd 2 & 63.29 MB & 6.69\% & 2.31 \si{\second} & 884 \si{\milli\second} \\
+zstd 3 & 62.94 MB & 6.65\% & 2.43 \si{\second} & 867 \si{\milli\second} \\
+zstd 4 & 62.81 MB & 6.64\% & 2.44 \si{\second} & 855 \si{\milli\second} \\
+zstd 5 & 61.04 MB & 6.45\% & 3.98 \si{\second} & 855 \si{\milli\second} \\
+zstd 6 & 60.27 MB & 6.37\% & 4.19 \si{\second} & 827 \si{\milli\second} \\
+zstd 7 & 61.53 MB & 6.5\% & 6.6 \si{\second} & 761 \si{\milli\second} \\
+zstd 8 & 60.44 MB & 6.39\% & 7.84 \si{\second} & 746 \si{\milli\second} \\
+zstd 9 & 59.58 MB & 6.3\% & 9.6 \si{\second} & 724 \si{\milli\second} \\
+zstd 10 & 59.36 MB & 6.28\% & 10.29 \si{\second} & 706 \si{\milli\second} \\
+zstd 11 & 59.2 MB & 6.26\% & 11.23 \si{\second} & 717 \si{\milli\second} \\
+zstd 12 & 58.51 MB & 6.19\% & 15.43 \si{\second} & 695 \si{\milli\second} \\
+zstd 13 & 56.16 MB & 5.94\% & 35.55 \si{\second} & 642 \si{\milli\second} \\
+zstd 14 & 55.76 MB & 5.89\% & 37.74 \si{\second} & 627 \si{\milli\second} \\
+zstd 15 & 54.65 MB & 5.78\% & 1:01 & 600 \si{\milli\second} \\
+zstd 16 & 50.94 MB & 5.38\% & 1:34 & 537 \si{\milli\second} \\
+zstd 17 & 50.18 MB & 5.30\% & 1:44 & 542 \si{\milli\second} \\
+zstd 18 & 49.91 MB & 5.28\% & 2:17 & 554 \si{\milli\second} \\
+zstd 19 & 46.99 MB & 4.97\% & 7:09 & 605 \si{\milli\second} \\
+zstd 20 & 46.81 MB & 4.95\% & 7:08 & 608 \si{\milli\second} \\
+zstd 21 & 45.77 MB & 4.84\% & 13:01 & 614 \si{\milli\second} \\
+zstd 22 & 45.52 MB & 4.81\% & 15:11 & 621 \si{\milli\second}
 \end{tabular}
 \caption{Compression results for an example trace. \\ Tests performed on Ryzen 9 3900X.}
 \label{compressiontimes}
@@ -2730,11 +2731,11 @@ The \texttt{update} utility supports optional higher levels of data compression,
 };
 \addlegendentry{zstd}
 \addplot[mark=o, blue] plot coordinates { (23, 162.48) };
-\addlegendentry{default}
+\addlegendentry{lz4}
 \addplot[mark=*, blue] plot coordinates { (24, 77.33) };
-\addlegendentry{hc}
+\addlegendentry{lz4 hc}
 \addplot[mark=triangle*, blue] plot coordinates { (25, 72.67) };
-\addlegendentry{extreme}
+\addlegendentry{lz4 extreme}
 \end{axis}
 \end{tikzpicture}
 \caption{Plot of trace sizes for different compression modes (see table~\ref{compressiontimes}).}
@@ -2751,11 +2752,11 @@ The \texttt{update} utility supports optional higher levels of data compression,
 };
 \addlegendentry{zstd}
 \addplot[mark=o, blue] plot coordinates { (23, 1.91) };
-\addlegendentry{default}
+\addlegendentry{lz4}
 \addplot[mark=*, blue] plot coordinates { (24, 39.24) };
-\addlegendentry{hc}
+\addlegendentry{lz4 hc}
 \addplot[mark=triangle*, blue] plot coordinates { (25, 270) };
-\addlegendentry{extreme}
+\addlegendentry{lz4 extreme}
 \end{semilogyaxis}
 \end{tikzpicture}
 \caption{Logarithmic plot of trace compression times for different compression modes (see table~\ref{compressiontimes}).}
@@ -2772,11 +2773,11 @@ The \texttt{update} utility supports optional higher levels of data compression,
 };
 \addlegendentry{zstd}
 \addplot[mark=o, blue] plot coordinates { (23, 470) };
-\addlegendentry{default}
+\addlegendentry{lz4}
 \addplot[mark=*, blue] plot coordinates { (24, 401) };
-\addlegendentry{hc}
+\addlegendentry{lz4 hc}
 \addplot[mark=triangle*, blue] plot coordinates { (25, 406) };
-\addlegendentry{extreme}
+\addlegendentry{lz4 extreme}
 \end{axis}
 \end{tikzpicture}
 \caption{Plot of trace load times for different compression modes (see table~\ref{compressiontimes}).}
@@ -2786,6 +2787,48 @@ The \texttt{update} utility supports optional higher levels of data compression,
 Trace files created using the \emph{default}, \emph{hc} and \emph{extreme} modes are optimized for fast decompression and can be further compressed using file compression utilities. For example, using 7-zip results in archives of the following sizes: 77.2 MB, 54.3 MB, 52.4 MB.
 
 For archival purposes, it is, however, much better to use the \emph{zstd} compression modes, which are faster, compress trace files more tightly, and are directly loadable by the profiler, without the intermediate decompression step.
+
+\subsubsection{Compression streams}
+
+Saving and loading trace data can be parallelized using the \texttt{-j streams} parameter. Each compression stream runs on its own thread, and it makes little sense to use more streams than you have CPU cores. Note that the number of streams set at save time will also be used at load time, which may affect load performance if you are viewing the trace on a less powerful machine.
+
+Going overboard with the number of streams is not recommended, especially with the fast compression modes where it will be difficult to keep each stream busy. Also, complex compression codecs (e.g. zstd at level 22) have significantly worse compression rates when the work is divided. This is a fairly nuanced topic, and you are encouraged to do your own measurements, but for a rough guideline on the behavior, you can refer to tables~\ref{streamsize} and~\ref{streamspeedup}.
+
+\begin{table}[h]
+	\centering
+    \begin{tabular}{c|c|c|c|c}
+		\diagbox[font=\footnotesize,width=5.25em,trim=lr]{\textbf{Mode}}{\textbf{Streams}} & \textbf{4} & \textbf{8} & \textbf{16} & \textbf{32} \\ \hline
+		lz4 & 100.30\% & 100.30\% & 100.61\% & 102.73\% \\
+		lz4 hc & 100.80\% & 101.20\% & 101.61\% & 102.41\% \\
+		lz4 ext & 100.40\% & 101.21\% & 101.62\% & 102.02\% \\ \hline
+		zstd 1 & 100.90\% & 101.36\% & 101.81\% & 102.26\% \\
+		zstd 3 & 100.51\% & 101.02\% & 101.53\% & 102.04\% \\
+		zstd 6 & 100.55\% & 101.10\% & 101.65\% & 102.75\% \\
+		zstd 9 & 101.27\% & 103.16\% & 105.06\% & 108.23\% \\
+		zstd 18 & 103.08\% & 106.15\% & 109.23\% & 115.38\% \\
+		zstd 22 & 107.08\% & 113.27\% & 122.12\% & 130.97\% \\
+	\end{tabular}
+	\caption{The increase in file size for different compression modes, as compared to a single stream.}
+	\label{streamsize}
+\end{table}
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{c|c|c|c|c}
+        \diagbox[font=\footnotesize,width=5.25em,trim=lr]{\textbf{Mode}}{\textbf{Streams}} & \textbf{4} & \textbf{8} & \textbf{16} & \textbf{32} \\ \hline
+		lz4 & 2.04 & 2.52 & 2.11 & 3.24 \\ 
+		lz4 hc & 3.56 & 6.73 & 9.49 & 15.26 \\ 
+		lz4 ext & 3.38 & 6.53 & 9.57 & 17.03 \\ \hline
+		zstd 1 & 2.24 & 3.68 & 3.40 & 3.37 \\ 
+		zstd 3 & 3.23 & 4.13 & 4.07 & 4.50 \\ 
+		zstd 6 & 3.52 & 6.00 & 6.53 & 6.95 \\ 
+		zstd 9 & 3.10 & 4.26 & 5.12 & 5.40 \\ 
+		zstd 18 & 3.22 & 5.41 & 8.49 & 14.51 \\ 
+		zstd 22 & 3.99 & 7.47 & 11.10 & 18.20 \\ 
+	\end{tabular}
+	\caption{The speedup (\emph{x} times faster) in saving time for different modes of compression, as compared to a single stream.}
+	\label{streamspeedup}
+\end{table}
 
 \subsubsection{Frame images dictionary}
 \label{fidict}

@@ -26,6 +26,7 @@
 void Usage()
 {
     printf( "Usage: update [options] input.tracy output.tracy\n\n" );
+    printf( "  -4: enable LZ4 compression\n" );
     printf( "  -h: enable LZ4HC compression\n" );
     printf( "  -e: enable extreme LZ4HC compression (very slow)\n" );
     printf( "  -z level: use Zstd compression with given compression level\n" );
@@ -51,20 +52,23 @@ int main( int argc, char** argv )
     }
 #endif
 
-    tracy::FileCompression clev = tracy::FileCompression::Fast;
+    tracy::FileCompression clev = tracy::FileCompression::Zstd;
     uint32_t events = tracy::EventType::All;
-    int zstdLevel = 1;
-    int streams = 1;
+    int zstdLevel = 3;
+    int streams = 4;
     bool buildDict = false;
     bool cacheSource = false;
     bool resolveSymbols = false;
     std::vector<std::string> pathSubstitutions;
 
     int c;
-    while( ( c = getopt( argc, argv, "hez:ds:crp:j:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "4hez:ds:crp:j:" ) ) != -1 )
     {
         switch( c )
         {
+        case '4':
+            clev = tracy::FileCompression::Fast;
+            break;
         case 'h':
             clev = tracy::FileCompression::Slow;
             break;

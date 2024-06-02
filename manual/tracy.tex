@@ -2682,12 +2682,13 @@ The new file contains the same data as the old one but with an updated internal 
 The \texttt{update} utility supports optional higher levels of data compression, which reduce disk size of traces at the cost of increased compression times. The output files have a reasonable size and are quick to save and load with the default settings. A list of available compression modes and their respective results is available in table~\ref{compressiontimes} and figures~\ref{savesize}, \ref{savetime} and~\ref{loadtime}. The following command-line options control compression mode selection:
 
 \begin{itemize}
+\item \texttt{-4} -- selects LZ4 algorithm.
 \item \texttt{-h} -- enables LZ4 HC compression.
 \item \texttt{-e} -- uses LZ4 extreme compression.
 \item \texttt{-z level} -- selects Zstandard algorithm, with a specified compression level.
 \end{itemize}
 
-\begin{table}[h]
+\begin{table}
 \centering
 \begin{tabular}[h]{c|c|c|c|c}
 \textbf{Mode} & \textbf{Size} & \textbf{Ratio} & \textbf{Save time} & \textbf{Load time} \\ \hline
@@ -2721,7 +2722,7 @@ zstd 22 & 45.52 MB & 4.81\% & 15:11 & 621 \si{\milli\second}
 \label{compressiontimes}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}
 \begin{minipage}[c]{.475\textwidth}
 \begin{figure}[H]
 \centering\begin{tikzpicture}
@@ -2765,7 +2766,7 @@ zstd 22 & 45.52 MB & 4.81\% & 15:11 & 621 \si{\milli\second}
 \end{minipage}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}
 \centering\begin{tikzpicture}
 \begin{axis}[xlabel=Mode,ylabel=Time (ms), legend pos=south west, width=0.475\textwidth]
 \addplot[mark=x, red] plot coordinates {
@@ -2784,7 +2785,7 @@ zstd 22 & 45.52 MB & 4.81\% & 15:11 & 621 \si{\milli\second}
 \label{loadtime}
 \end{figure}
 
-Trace files created using the \emph{default}, \emph{hc} and \emph{extreme} modes are optimized for fast decompression and can be further compressed using file compression utilities. For example, using 7-zip results in archives of the following sizes: 77.2 MB, 54.3 MB, 52.4 MB.
+Trace files created using the \emph{lz4}, \emph{lz4 hc} and \emph{lz4 extreme} modes are optimized for fast decompression and can be further compressed using file compression utilities. For example, using 7-zip results in archives of the following sizes: 77.2 MB, 54.3 MB, 52.4 MB.
 
 For archival purposes, it is, however, much better to use the \emph{zstd} compression modes, which are faster, compress trace files more tightly, and are directly loadable by the profiler, without the intermediate decompression step.
 
@@ -2794,7 +2795,7 @@ Saving and loading trace data can be parallelized using the \texttt{-j streams} 
 
 Going overboard with the number of streams is not recommended, especially with the fast compression modes where it will be difficult to keep each stream busy. Also, complex compression codecs (e.g. zstd at level 22) have significantly worse compression rates when the work is divided. This is a fairly nuanced topic, and you are encouraged to do your own measurements, but for a rough guideline on the behavior, you can refer to tables~\ref{streamsize} and~\ref{streamspeedup}.
 
-\begin{table}[h]
+\begin{table}
 	\centering
     \begin{tabular}{c|c|c|c|c}
 		\diagbox[font=\footnotesize,width=5.25em,trim=lr]{\textbf{Mode}}{\textbf{Streams}} & \textbf{4} & \textbf{8} & \textbf{16} & \textbf{32} \\ \hline
@@ -2812,7 +2813,7 @@ Going overboard with the number of streams is not recommended, especially with t
 	\label{streamsize}
 \end{table}
 
-\begin{table}[h]
+\begin{table}
 	\centering
 	\begin{tabular}{c|c|c|c|c}
         \diagbox[font=\footnotesize,width=5.25em,trim=lr]{\textbf{Mode}}{\textbf{Streams}} & \textbf{4} & \textbf{8} & \textbf{16} & \textbf{32} \\ \hline

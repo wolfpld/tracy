@@ -8,8 +8,9 @@
 namespace tracy
 {
 
-static const char Lz4Header[4]  = { 't', 'l', 'Z', 4 };
-static const char ZstdHeader[4] = { 't', 'Z', 's', 't' };
+static const uint8_t TracyHeader[4] = { 't', 'r', 253, 'P' };
+static const uint8_t Lz4Header[4]  = { 't', 'l', 'Z', 4 };
+static const uint8_t ZstdHeader[4] = { 't', 'Z', 's', 't' };
 
 static constexpr tracy_force_inline int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
 {

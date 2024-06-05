@@ -217,6 +217,8 @@ static void LoadConfig()
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
     if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
     if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
+    if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
+    if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
 
     ini_free( ini );
 }
@@ -237,6 +239,10 @@ static bool SaveConfig()
     fprintf( f, "\n[memory]\n" );
     fprintf( f, "limit = %i\n", (int)s_config.memoryLimit );
     fprintf( f, "percent = %i\n", s_config.memoryLimitPercent );
+
+    fprintf( f, "\n[achievements]\n" );
+    fprintf( f, "enabled = %i\n", (int)s_config.achievements );
+    fprintf( f, "asked = %i\n", (int)s_config.achievementsAsked );
 
     fclose( f );
     return true;
@@ -699,8 +705,13 @@ static void DrawContents()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", tracy::MemSizeToString( s_totalMem * s_config.memoryLimitPercent / 100 ) );
                 }
+                else
+                {
+                    ImGui::EndDisabled();
+                }
 
-                if( s_totalMem == 0 ) ImGui::EndDisabled();
+                ImGui::Spacing();
+                if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();
@@ -1215,6 +1226,40 @@ static void DrawContents()
         ImGui::TextUnformatted( "Check nfd library implementation for details." );
         ImGui::Separator();
         if( ImGui::Button( "Ok" ) ) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    if( !s_config.achievementsAsked )
+    {
+        s_config.achievementsAsked = true;
+        ImGui::OpenPopup( ICON_FA_STAR " Achievements" );
+    }
+    if( ImGui::BeginPopupModal( ICON_FA_STAR " Achievements", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        ImGui::TextUnformatted( "Tracy Profiler is a complex tool with many features. It" );
+        ImGui::TextUnformatted( "can be difficult to discover all of them on your own." );
+        ImGui::TextUnformatted( "The Achievements system will guide you through the" );
+        ImGui::TextUnformatted( "main features and teach you how to use them in an" );
+        ImGui::TextUnformatted( "easy-to-handle manner." );
+        ImGui::Separator();
+        ImGui::TextUnformatted( "Would you like to enable achievements?" );
+        ImGui::PushFont( s_smallFont );
+        tracy::TextDisabledUnformatted( "You can change this setting later in the global settings." );
+        ImGui::PopFont();
+        ImGui::Separator();
+        if( ImGui::Button( "Yes" ) )
+        {
+            s_config.achievements = true;
+            SaveConfig();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if( ImGui::Button( "No" ) )
+        {
+            s_config.achievements = false;
+            SaveConfig();
+            ImGui::CloseCurrentPopup();
+        }
         ImGui::EndPopup();
     }
 

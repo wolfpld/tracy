@@ -11,6 +11,8 @@ struct Config
     int targetFps = 60;
     bool memoryLimit = false;
     int memoryLimitPercent = 80;
+    bool achievements = false;
+    bool achievementsAsked = false;
 };
 
 }

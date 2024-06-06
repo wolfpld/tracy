@@ -30,6 +30,7 @@
 
 #include "../../public/common/TracyProtocol.hpp"
 #include "../../public/common/TracyVersion.hpp"
+#include "profiler/TracyAchievements.hpp"
 #include "profiler/TracyBadVersion.hpp"
 #include "profiler/TracyConfig.hpp"
 #include "profiler/TracyFileselector.hpp"
@@ -119,6 +120,12 @@ static bool s_customTitle = false;
 static bool s_isElevated = false;
 static size_t s_totalMem = tracy::GetPhysicalMemorySize();
 tracy::Config s_config;
+tracy::AchievementsMgr s_achievements;
+
+static float smoothstep( float x )
+{
+    return x * x * ( 3.0f - 2.0f * x );
+}
 
 static void SetWindowTitleCallback( const char* title )
 {
@@ -582,7 +589,7 @@ static void DrawContents()
     bptr->NewFrame( display_w, display_h );
 
     static int activeFrames = 3;
-    if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) )
+    if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) || s_achievements.NeedsUpdates() )
     {
         activeFrames = 3;
     }
@@ -1261,6 +1268,79 @@ static void DrawContents()
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
+    }
+
+    if( s_config.achievements )
+    {
+        ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 16 * dpiScale );
+
+        ImGui::PushFont( s_bigFont );
+        const auto starSize = ImGui::CalcTextSize( ICON_FA_STAR );
+        ImGui::PopFont();
+
+        static int animStage = 0;
+        static float animProgress = 0;
+
+        float aSize = 0;
+        const auto aName = s_achievements.GetNextQueue();
+        if( aName )
+        {
+            aSize = ImGui::CalcTextSize( aName->c_str() ).x + ImGui::GetStyle().ItemSpacing.x + ImGui::GetStyle().WindowPadding.x * 0.5f;
+            if( animStage == 0 )
+            {
+                animStage = 1;
+            }
+        }
+
+        if( animStage == 1 )
+        {
+            animProgress = std::min( animProgress + ImGui::GetIO().DeltaTime / 0.3f, 1.f );
+            if( animProgress == 1 ) animStage = 2;
+        }
+        else if( animStage == 3 )
+        {
+            animProgress = std::max( animProgress - ImGui::GetIO().DeltaTime / 0.3f, 0.f );
+            if( animProgress == 0 )
+            {
+                s_achievements.PopQueue();
+                animStage = 0;
+            }
+        }
+
+        ImGui::SetNextWindowPos( ImVec2( display_w - starSize.x - ImGui::GetStyle().WindowPadding.x * 1.5f - aSize * smoothstep( animProgress ), display_h - starSize.y * 2 - ImGui::GetStyle().WindowPadding.y * 2 ) );
+        ImGui::SetNextWindowSize( ImVec2( starSize.x + aSize + 100, starSize.y + ImGui::GetStyle().WindowPadding.y * 2 ) );
+        ImGui::Begin( "###achievements", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_Tooltip );
+
+        const auto cursor = ImGui::GetCursorPos();
+        const auto cursorScreen = ImGui::GetCursorScreenPos();
+        uint32_t color = 0xFF888888;
+        if( ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( cursorScreen - ImVec2( dpiScale * 2, dpiScale * 2 ), cursorScreen + starSize + ImVec2( dpiScale * 4, dpiScale * 4 ) ) )
+        {
+            color = 0xFFFFFFFF;
+        }
+        ImGui::PushFont( s_bigFont );
+        tracy::TextColoredUnformatted( color, ICON_FA_STAR );
+        ImGui::PopFont();
+
+        if( aName )
+        {
+            ImGui::SameLine();
+            const auto dismiss = ImGui::GetCursorScreenPos();
+            const auto th = ImGui::GetTextLineHeight();
+            ImGui::SetCursorPosY( cursor.y - th * 0.175f );
+            ImGui::TextUnformatted( aName->c_str() );
+            ImGui::PushFont( s_smallFont );
+            ImGui::SetCursorPos( cursor + ImVec2( starSize.x + ImGui::GetStyle().ItemSpacing.x, th ) );
+            tracy::TextDisabledUnformatted( "Click to dismiss" );
+            ImGui::PopFont();
+            if( animStage == 2 && ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( 0 ) )
+            {
+                animStage = 3;
+            }
+        }
+
+        ImGui::End();
+        ImGui::PopStyleVar();
     }
 
     bptr->EndFrame();

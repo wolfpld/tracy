@@ -179,7 +179,7 @@ void Backend::NewFrame( int& w, int& h )
 
 void Backend::EndFrame()
 {
-    const ImVec4 clear_color = ImColor( 114, 144, 154 );
+    const ImVec4 clear_color = ImColor( 20, 20, 17 );
 
     ImGui::Render();
     glViewport( 0, 0, m_w, m_h );

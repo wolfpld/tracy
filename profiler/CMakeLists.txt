@@ -22,6 +22,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
 set(SERVER_FILES
+    TracyAchievements.cpp
     TracyBadVersion.cpp
     TracyColor.cpp
     TracyEventDebug.cpp

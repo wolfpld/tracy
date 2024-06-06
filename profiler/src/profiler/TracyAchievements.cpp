@@ -26,7 +26,7 @@ void AchievementsMgr::PopQueue()
 
 bool AchievementsMgr::NeedsUpdates() const
 {
-    return !m_queue.empty();
+    return false;
 }
 
 }

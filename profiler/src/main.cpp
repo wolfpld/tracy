@@ -1296,6 +1296,7 @@ static void DrawContents()
         {
             animProgress = std::min( animProgress + ImGui::GetIO().DeltaTime / 0.3f, 1.f );
             if( animProgress == 1 ) animStage = 2;
+            tracy::s_wasActive = true;
         }
         else if( animStage == 3 )
         {
@@ -1305,6 +1306,7 @@ static void DrawContents()
                 s_achievements.PopQueue();
                 animStage = 0;
             }
+            tracy::s_wasActive = true;
         }
 
         ImGui::SetNextWindowPos( ImVec2( display_w - starSize.x - ImGui::GetStyle().WindowPadding.x * 1.5f - aSize * smoothstep( animProgress ), display_h - starSize.y * 2 - ImGui::GetStyle().WindowPadding.y * 2 ) );

@@ -670,6 +670,7 @@ bool View::DrawImpl()
         return keepOpen;
     }
 
+    Achieve( "connectToClient" );
     Attention( m_attnWorking );
 
     if( !m_uarchSet )

@@ -1280,6 +1280,7 @@ static void DrawContents()
 
         static int animStage = 0;
         static float animProgress = 0;
+        static bool showAchievements = false;
 
         float aSize = 0;
         const auto aName = s_achievements.GetNextQueue();
@@ -1319,6 +1320,7 @@ static void DrawContents()
         if( ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( cursorScreen - ImVec2( dpiScale * 2, dpiScale * 2 ), cursorScreen + starSize + ImVec2( dpiScale * 4, dpiScale * 4 ) ) )
         {
             color = 0xFFFFFFFF;
+            if( ImGui::IsMouseClicked( 0 ) ) showAchievements = !showAchievements;
         }
         ImGui::PushFont( s_bigFont );
         tracy::TextColoredUnformatted( color, ICON_FA_STAR );
@@ -1343,6 +1345,13 @@ static void DrawContents()
 
         ImGui::End();
         ImGui::PopStyleVar();
+
+        if( showAchievements )
+        {
+            ImGui::SetNextWindowSize( ImVec2( 600 * dpiScale, 400 * dpiScale ), ImGuiCond_FirstUseEver );
+            ImGui::Begin( "Achievements List", &showAchievements, ImGuiWindowFlags_NoDocking );
+            ImGui::End();
+        }
     }
 
     bptr->EndFrame();

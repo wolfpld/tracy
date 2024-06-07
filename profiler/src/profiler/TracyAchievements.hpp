@@ -56,6 +56,7 @@ class AchievementsMgr
 
 public:
     AchievementsMgr();
+    ~AchievementsMgr();
 
     void Achieve( const char* id );
     data::AchievementCategory** GetCategories() const;

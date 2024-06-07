@@ -1,7 +1,11 @@
 #include <assert.h>
+#include <inttypes.h>
 #include <time.h>
 
+#include "../ini.h"
+
 #include "TracyAchievements.hpp"
+#include "TracyStorage.hpp"
 
 namespace tracy
 {
@@ -16,6 +20,49 @@ AchievementsMgr::AchievementsMgr()
         FillMap( (*cat)->items, *cat );
         cat++;
     }
+
+    const auto fn = tracy::GetSavePath( "achievements.ini" );
+    auto ini = ini_load( fn );
+    if( !ini ) return;
+
+    for( auto& v : m_map )
+    {
+        uint64_t unlockTime, doneTime;
+        int hideCompleted, hideNew;
+
+        if( ini_sget( ini, v.first, "unlockTime", "%" PRIu64, &unlockTime ) &&
+            ini_sget( ini, v.first, "doneTime", "%" PRIu64, &doneTime ) &&
+            ini_sget( ini, v.first, "hideCompleted", "%d", &hideCompleted ) &&
+            ini_sget( ini, v.first, "hideNew", "%d", &hideNew ) )
+        {
+            auto& it = v.second.item;
+            it->unlockTime = unlockTime;
+            it->doneTime = doneTime;
+            it->hideCompleted = hideCompleted != 0;
+            it->hideNew = hideNew != 0;
+        }
+    }
+
+    ini_free( ini );
+}
+
+AchievementsMgr::~AchievementsMgr()
+{
+    const auto fn = tracy::GetSavePath( "achievements.ini" );
+    FILE* f = fopen( fn, "wb" );
+    if( !f ) return;
+
+    for( auto& v : m_map )
+    {
+        auto& it = v.second.item;
+        fprintf( f, "[%s]\n", it->id );
+        fprintf( f, "unlockTime=%" PRIu64 "\n", it->unlockTime );
+        fprintf( f, "doneTime=%" PRIu64 "\n", it->doneTime );
+        fprintf( f, "hideCompleted=%d\n", it->hideCompleted ? 1 : 0 );
+        fprintf( f, "hideNew=%d\n\n", it->hideNew ? 1 : 0 );
+    }
+
+    fclose( f );
 }
 
 void AchievementsMgr::Achieve( const char* id )

@@ -35,7 +35,7 @@ namespace tracy
 
 double s_time = 0;
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
     : m_worker( addr, port, config.memoryLimit == 0 ? -1 : ( config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
@@ -55,13 +55,15 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_acb( acb )
     , m_userData()
     , m_cbMainThread( cbMainThread )
+    , m_achievementsMgr( amgr )
+    , m_achievements( config.achievements )
 {
     InitTextEditor();
 
     m_vd.frameTarget = config.targetFps;
 }
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
@@ -78,6 +80,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_acb( acb )
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
     , m_cbMainThread( cbMainThread )
+    , m_achievementsMgr( amgr )
+    , m_achievements( config.achievements )
 {
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
@@ -115,6 +119,12 @@ void View::InitTextEditor()
 {
     m_sourceView = std::make_unique<SourceView>();
     m_sourceViewFile = nullptr;
+}
+
+void View::Achieve( const char* id )
+{
+    if( !m_achievements || !m_achievementsMgr ) return;
+    m_achievementsMgr->Achieve( id );
 }
 
 void View::ViewSource( const char* fileName, int line )

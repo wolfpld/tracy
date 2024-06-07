@@ -11,6 +11,7 @@
 
 #include "imgui.h"
 
+#include "TracyAchievements.hpp"
 #include "TracyBadVersion.hpp"
 #include "TracyBuzzAnim.hpp"
 #include "TracyConfig.hpp"
@@ -103,8 +104,8 @@ public:
     using SetScaleCallback = void(*)( float );
     using AttentionCallback = void(*)();
 
-    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config );
-    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr );
     ~View();
 
     bool Draw();
@@ -223,6 +224,7 @@ private:
     };
 
     void InitTextEditor();
+    void Achieve( const char* id );
 
     bool DrawImpl();
     void DrawNotificationArea();
@@ -867,6 +869,9 @@ private:
     bool m_attnFailure = false;
     bool m_attnWorking = false;
     bool m_attnDisconnected = false;
+
+    AchievementsMgr* m_achievementsMgr;
+    bool m_achievements = false;
 };
 
 }

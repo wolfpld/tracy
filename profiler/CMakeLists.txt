@@ -6,6 +6,7 @@ option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
 option(NO_STATISTICS "Disable calculation of statistics" OFF)
 option(SELF_PROFILE "Enable self-profiling" OFF)
+option(NO_PARALLEL_STL "Disable parallel STL" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

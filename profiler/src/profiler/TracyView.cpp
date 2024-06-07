@@ -670,7 +670,7 @@ bool View::DrawImpl()
         return keepOpen;
     }
 
-    Achieve( "connectToClient" );
+    if( m_worker.IsConnected() ) Achieve( "connectToClient" );
     Attention( m_attnWorking );
 
     if( !m_uarchSet )

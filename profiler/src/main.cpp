@@ -630,8 +630,10 @@ static void DrawContents()
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );
 
+    const bool achievementsAttention = s_config.achievements ? s_achievements.NeedsAttention() : false;
+
     static int activeFrames = 3;
-    if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) || s_achievements.NeedsUpdates() )
+    if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) || achievementsAttention )
     {
         activeFrames = 3;
     }
@@ -1372,6 +1374,13 @@ static void DrawContents()
         const auto cursor = ImGui::GetCursorPos();
         const auto cursorScreen = ImGui::GetCursorScreenPos();
         uint32_t color = 0xFF888888;
+        if( achievementsAttention && !showAchievements )
+        {
+            const auto t = sin( ImGui::GetTime() * 4 ) * 0.5f + 0.5f;
+            const auto c0 = uint32_t( std::lerp( 0x88, 0x00, t ) );
+            const auto c1 = uint32_t( std::lerp( 0x88, 0xFF, t ) );
+            color = 0xFF000000 | ( c0 << 16 ) | ( c1 << 8 ) | c1;
+        }
         if( ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( cursorScreen - ImVec2( dpiScale * 2, dpiScale * 2 ), cursorScreen + starSize + ImVec2( dpiScale * 4, dpiScale * 4 ) ) )
         {
             color = 0xFFFFFFFF;

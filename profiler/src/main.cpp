@@ -385,6 +385,8 @@ int main( int argc, char** argv )
         }
     }
 
+    s_achievements.Achieve( "achievementsIntro" );
+
     SetupDPIScale();
 
     tracy::UpdateTextureRGBAMips( zigzagTex, (void**)zigzagPx, zigzagX, zigzagY, 6 );

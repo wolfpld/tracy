@@ -6,6 +6,29 @@
 namespace tracy::data
 {
 
+AchievementItem ai_loadTrace = { "loadTrace", "Load a trace", [](const ctx&){
+    ImGui::TextWrapped( "You can open a previously saved trace file (or one received from a friend) with the '" ICON_FA_FOLDER_OPEN " Open saved trace' button on the welcome screen." );
+} };
+
+AchievementItem ai_saveTrace = { "saveTrace", "Save a trace", [](const ctx&){
+    ImGui::TextWrapped( "Now that you have traced your application (or are in the process of doing so), you can save it to disk for future reference. You can do this by clicking on the " ICON_FA_WIFI " icon in the top left corner of the screen and then clicking on the '" ICON_FA_FLOPPY_DISK " Save trace' button." );
+    ImGui::TextWrapped( "Keeping old traces on hand can be beneficial, as you can compare the performance of your optimizations with what you had before." );
+    ImGui::TextWrapped( "You can also share the trace with your friends or co-workers by sending them the trace file." );
+    ImGui::Spacing();
+    tracy::TextColoredUnformatted( 0xFF44FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( "Warning" );
+    ImGui::SameLine();
+    tracy::TextColoredUnformatted( 0xFF44FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+    ImGui::TextWrapped( "Trace files can contain sensitive information about your application, such as program code, or even the contents of source files. Be careful when sharing them with others." );
+} };
+
+AchievementItem* ac_connectToServerItems[] = {
+    &ai_saveTrace,
+    &ai_loadTrace,
+    nullptr
+};
+
 AchievementItem ai_connectToServer = { "connectToClient", "First profiling session", [](const ctx&){
     ImGui::TextWrapped( "Let's start our adventure by instrumenting your application and connecting it to the profiler. Here's a quick refresher:" );
     ImGui::TextWrapped( " 1. Integrate Tracy Profiler into your application. This can be done using CMake, Meson, or simply by adding the source files to your project." );
@@ -17,7 +40,7 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
     {
         tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
     }
-} };
+}, ac_connectToServerItems };
 
 AchievementItem* ac_achievementsIntroItems[] = {
     &ai_connectToServer,

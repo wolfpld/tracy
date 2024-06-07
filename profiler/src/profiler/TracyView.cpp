@@ -98,6 +98,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
 
     m_vd.frameTarget = config.targetFps;
+
+    Achieve( "loadTrace" );
 }
 
 View::~View()
@@ -609,6 +611,7 @@ bool View::Draw()
             saveFailed = !Save( fn, comp, zlvl, buildDict, streams );
             m_filenameStaging.clear();
             ImGui::CloseCurrentPopup();
+            Achieve( "saveTrace" );
         }
         ImGui::SameLine();
         if( ImGui::Button( "Cancel" ) )

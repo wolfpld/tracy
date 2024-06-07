@@ -1236,11 +1236,14 @@ static void DrawContents()
         ImGui::EndPopup();
     }
 
+#ifndef __EMSCRIPTEN__
     if( !s_config.achievementsAsked )
     {
         s_config.achievementsAsked = true;
         ImGui::OpenPopup( ICON_FA_STAR " Achievements" );
     }
+#endif
+
     if( ImGui::BeginPopupModal( ICON_FA_STAR " Achievements", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         ImGui::TextUnformatted( "Tracy Profiler is a complex tool with many features. It" );

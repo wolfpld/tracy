@@ -53,8 +53,14 @@ void AchievementsMgr::PopQueue()
     m_queue.erase( m_queue.begin() );
 }
 
-bool AchievementsMgr::NeedsUpdates() const
+bool AchievementsMgr::NeedsAttention() const
 {
+    for( auto& v : m_map )
+    {
+        auto& it = v.second.item;
+        if( it->unlockTime > 0 && !it->hideNew ) return true;
+        if( it->doneTime > 0 && !it->hideCompleted ) return true;
+    }
     return false;
 }
 

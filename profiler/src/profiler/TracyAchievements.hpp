@@ -63,7 +63,7 @@ public:
     data::AchievementItem* GetNextQueue();
     void PopQueue();
 
-    bool NeedsUpdates() const;
+    bool NeedsAttention() const;
 
 private:
     void FillMap( data::AchievementItem** items, data::AchievementCategory* category );

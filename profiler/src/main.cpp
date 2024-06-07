@@ -121,6 +121,7 @@ static bool s_isElevated = false;
 static size_t s_totalMem = tracy::GetPhysicalMemorySize();
 tracy::Config s_config;
 tracy::AchievementsMgr s_achievements;
+static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 
 static float smoothstep( float x )
 {
@@ -572,6 +573,45 @@ static void TextComment( const char* str )
     ImGui::AlignTextToFramePadding();
     tracy::TextDisabledUnformatted( str );
     ImGui::PopFont();
+}
+
+static void DrawAchievements( tracy::data::AchievementItem** items )
+{
+    while( *items )
+    {
+        auto& it = *items++;
+        if( it->unlockTime > 0 )
+        {
+            if( it->doneTime > 0 ) ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+            bool isSelected = s_achievementItem == it;
+            if( isSelected )
+            {
+                if( !it->hideNew ) it->hideNew = true;
+                if( !it->hideCompleted && it->doneTime > 0 ) it->hideCompleted = true;
+            }
+            if( ImGui::Selectable( it->name, isSelected ) )
+            {
+                s_achievementItem = it;
+            }
+            if( it->doneTime > 0 ) ImGui::PopStyleColor();
+            if( !it->hideNew )
+            {
+                ImGui::SameLine();
+                tracy::TextColoredUnformatted( 0xFF4488FF, ICON_FA_CIRCLE_EXCLAMATION );
+            }
+            if( !it->hideCompleted && it->doneTime > 0 )
+            {
+                ImGui::SameLine();
+                tracy::TextColoredUnformatted( 0xFF44FF44, ICON_FA_CIRCLE_CHECK );
+            }
+            if( it->items )
+            {
+                ImGui::Indent();
+                DrawAchievements( it->items );
+                ImGui::Unindent();
+            }
+        }
+    }
 }
 
 static void DrawContents()
@@ -1284,33 +1324,43 @@ static void DrawContents()
         static int animStage = 0;
         static float animProgress = 0;
         static bool showAchievements = false;
+        static float openTimeLeft = 0;
 
         float aSize = 0;
-        const auto aName = s_achievements.GetNextQueue();
-        if( aName )
+        const auto aItem = s_achievements.GetNextQueue();
+
+        if( aItem )
         {
-            aSize = ImGui::CalcTextSize( aName->c_str() ).x + ImGui::GetStyle().ItemSpacing.x + ImGui::GetStyle().WindowPadding.x * 0.5f;
+            aSize = ImGui::CalcTextSize( aItem->name ).x + ImGui::GetStyle().ItemSpacing.x + ImGui::GetStyle().WindowPadding.x * 0.5f;
             if( animStage == 0 )
             {
                 animStage = 1;
             }
         }
 
-        if( animStage == 1 )
+        if( animStage > 0 )
         {
-            animProgress = std::min( animProgress + ImGui::GetIO().DeltaTime / 0.3f, 1.f );
-            if( animProgress == 1 ) animStage = 2;
             tracy::s_wasActive = true;
-        }
-        else if( animStage == 3 )
-        {
-            animProgress = std::max( animProgress - ImGui::GetIO().DeltaTime / 0.3f, 0.f );
-            if( animProgress == 0 )
+
+            if( animStage == 1 )
             {
-                s_achievements.PopQueue();
-                animStage = 0;
+                animProgress = std::min( animProgress + ImGui::GetIO().DeltaTime / 0.3f, 1.f );
+                if( animProgress == 1 )
+                {
+                    animStage = 2;
+                    openTimeLeft = 8;
+                }
+                tracy::s_wasActive = true;
             }
-            tracy::s_wasActive = true;
+            else if( animStage == 3 )
+            {
+                animProgress = std::max( animProgress - ImGui::GetIO().DeltaTime / 0.3f, 0.f );
+                if( animProgress == 0 )
+                {
+                    s_achievements.PopQueue();
+                    animStage = 0;
+                }
+            }
         }
 
         ImGui::SetNextWindowPos( ImVec2( display_w - starSize.x - ImGui::GetStyle().WindowPadding.x * 1.5f - aSize * smoothstep( animProgress ), display_h - starSize.y * 2 - ImGui::GetStyle().WindowPadding.y * 2 ) );
@@ -1323,26 +1373,48 @@ static void DrawContents()
         if( ( animStage == 0 || animStage == 2 ) && ImGui::IsMouseHoveringRect( cursorScreen - ImVec2( dpiScale * 2, dpiScale * 2 ), cursorScreen + starSize + ImVec2( dpiScale * 4, dpiScale * 4 ) ) )
         {
             color = 0xFFFFFFFF;
-            if( ImGui::IsMouseClicked( 0 ) ) showAchievements = !showAchievements;
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                if( animStage == 0 )
+                {
+                    showAchievements = !showAchievements;
+                }
+                else
+                {
+                    showAchievements = true;
+                    animStage = 3;
+                    s_achievementItem = aItem;
+                }
+            }
         }
         ImGui::PushFont( s_bigFont );
         tracy::TextColoredUnformatted( color, ICON_FA_STAR );
         ImGui::PopFont();
 
-        if( aName )
+        if( aItem )
         {
             ImGui::SameLine();
             const auto dismiss = ImGui::GetCursorScreenPos();
             const auto th = ImGui::GetTextLineHeight();
             ImGui::SetCursorPosY( cursor.y - th * 0.175f );
-            ImGui::TextUnformatted( aName->c_str() );
+            ImGui::TextUnformatted( aItem->name );
             ImGui::PushFont( s_smallFont );
             ImGui::SetCursorPos( cursor + ImVec2( starSize.x + ImGui::GetStyle().ItemSpacing.x, th ) );
-            tracy::TextDisabledUnformatted( "Click to dismiss" );
+            tracy::TextDisabledUnformatted( "Click to open" );
             ImGui::PopFont();
-            if( animStage == 2 && ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( 0 ) )
+            if( animStage == 2 )
             {
-                animStage = 3;
+                if( ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( 0 ) )
+                {
+                    s_achievementItem = aItem;
+                    showAchievements = true;
+                    animStage = 3;
+                }
+                if( !aItem->keepOpen )
+                {
+                    openTimeLeft -= ImGui::GetIO().DeltaTime;
+                    if( openTimeLeft < 0 ) animStage = 3;
+                }
             }
         }
 
@@ -1353,6 +1425,29 @@ static void DrawContents()
         {
             ImGui::SetNextWindowSize( ImVec2( 600 * dpiScale, 400 * dpiScale ), ImGuiCond_FirstUseEver );
             ImGui::Begin( "Achievements List", &showAchievements, ImGuiWindowFlags_NoDocking );
+            ImGui::BeginTabBar( "###categories" );
+            auto categories = s_achievements.GetCategories();
+            while( *categories )
+            {
+                auto& c = *categories++;
+                if( c->unlockTime > 0 )
+                {
+                    if( ImGui::BeginTabItem( c->name ) )
+                    {
+                        ImGui::Columns( 2 );
+                        DrawAchievements( c->items );
+                        ImGui::NextColumn();
+                        if( s_achievementItem )
+                        {
+                            const tracy::data::ctx ctx = { s_bigFont, s_smallFont, s_fixedWidth };
+                            s_achievementItem->description( ctx );
+                        }
+                        ImGui::EndColumns();
+                        ImGui::EndTabItem();
+                    }
+                }
+            }
+            ImGui::EndTabBar();
             ImGui::End();
         }
     }

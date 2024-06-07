@@ -5,6 +5,11 @@
 #include <string>
 #include <vector>
 
+#include "imgui.h"
+
+#include "TracyCharUtil.hpp"
+#include "tracy_robin_hood.h"
+
 namespace tracy
 {
 
@@ -43,16 +48,28 @@ struct AchievementCategory
 
 class AchievementsMgr
 {
+    struct AchievementPair
+    {
+        data::AchievementItem* item;
+        data::AchievementCategory* category;
+    };
+
 public:
     AchievementsMgr();
 
-    const std::string* GetNextQueue();
+    void Achieve( const char* id );
+    data::AchievementCategory** GetCategories() const;
+
+    data::AchievementItem* GetNextQueue();
     void PopQueue();
 
     bool NeedsUpdates() const;
 
 private:
-    std::vector<std::string> m_queue;
+    void FillMap( data::AchievementItem** items, data::AchievementCategory* category );
+
+    std::vector<data::AchievementItem*> m_queue;
+    tracy::unordered_flat_map<const char*, AchievementPair, charutil::Hasher, charutil::Comparator> m_map;
 };
 
 }

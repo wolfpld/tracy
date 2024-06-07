@@ -107,6 +107,7 @@ set(client_includes
     ${TRACY_PUBLIC_DIR}/client/tracy_concurrentqueue.h
     ${TRACY_PUBLIC_DIR}/client/tracy_rpmalloc.hpp
     ${TRACY_PUBLIC_DIR}/client/tracy_SPSCQueue.h
+    ${TRACY_PUBLIC_DIR}/client/TracyKCore.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyArmCpuTable.hpp
     ${TRACY_PUBLIC_DIR}/client/TracyCallstack.h
     ${TRACY_PUBLIC_DIR}/client/TracyCallstack.hpp

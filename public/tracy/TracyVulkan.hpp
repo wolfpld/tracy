@@ -417,11 +417,11 @@ private:
         };
         uint64_t ts[2];
         uint64_t deviation[NumProbes];
-        for( int i=0; i<NumProbes; i++ ) {
+        for( size_t i=0; i<NumProbes; i++ ) {
             m_vkGetCalibratedTimestampsEXT( m_device, 2, spec, ts, deviation + i );
         }
         uint64_t minDeviation = deviation[0];
-        for( int i=1; i<NumProbes; i++ ) {
+        for( size_t i=1; i<NumProbes; i++ ) {
             if ( minDeviation > deviation[i] ) {
                 minDeviation = deviation[i];
             }

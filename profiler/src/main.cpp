@@ -1434,7 +1434,7 @@ static void DrawContents()
 
         if( showAchievements )
         {
-            ImGui::SetNextWindowSize( ImVec2( 600 * dpiScale, 400 * dpiScale ), ImGuiCond_FirstUseEver );
+            ImGui::SetNextWindowSize( ImVec2( 700 * dpiScale, 450 * dpiScale ), ImGuiCond_FirstUseEver );
             ImGui::Begin( "Achievements List", &showAchievements, ImGuiWindowFlags_NoDocking );
             ImGui::BeginTabBar( "###categories" );
             auto categories = s_achievements.GetCategories();
@@ -1455,6 +1455,7 @@ static void DrawContents()
                     if( ImGui::BeginTabItem( tmp ) )
                     {
                         ImGui::Columns( 2 );
+                        ImGui::SetColumnWidth( 0, 300 * dpiScale );
                         DrawAchievements( c->items );
                         ImGui::NextColumn();
                         if( s_achievementItem )

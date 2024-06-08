@@ -60,30 +60,45 @@ void SourceContents::Parse( const char* fileName, const Worker& worker, const Vi
             }
         }
 
-        if( m_file )
+        if( m_file ) Tokenize( m_data, sz );
+    }
+}
+
+void SourceContents::Parse( const char* source )
+{
+    if( source == m_data ) return;
+
+    const size_t len = strlen( source );
+
+    m_file = nullptr;
+    m_fileStringIdx = 0;
+    m_data = source;
+    m_dataBuf = nullptr;
+    m_dataSize = len;
+    Tokenize( source, len );
+}
+
+void SourceContents::Tokenize( const char* txt, size_t sz )
+{
+    Tokenizer tokenizer;
+    for(;;)
+    {
+        auto end = txt;
+        while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
+        m_lines.emplace_back( Tokenizer::Line { txt, end, tokenizer.Tokenize( txt, end ) } );
+        if( end - m_data == sz ) break;
+        if( *end == '\n' )
         {
-            Tokenizer tokenizer;
-            auto txt = m_data;
-            for(;;)
-            {
-                auto end = txt;
-                while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
-                m_lines.emplace_back( Tokenizer::Line { txt, end, tokenizer.Tokenize( txt, end ) } );
-                if( end - m_data == sz ) break;
-                if( *end == '\n' )
-                {
-                    end++;
-                    if( end - m_data < sz && *end == '\r' ) end++;
-                }
-                else if( *end == '\r' )
-                {
-                    end++;
-                    if( end - m_data < sz && *end == '\n' ) end++;
-                }
-                if( end - m_data == sz ) break;
-                txt = end;
-            }
+            end++;
+            if( end - m_data < sz && *end == '\r' ) end++;
         }
+        else if( *end == '\r' )
+        {
+            end++;
+            if( end - m_data < sz && *end == '\n' ) end++;
+        }
+        if( end - m_data == sz ) break;
+        txt = end;
     }
 }
 

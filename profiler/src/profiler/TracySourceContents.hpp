@@ -20,6 +20,7 @@ public:
     ~SourceContents();
 
     void Parse( const char* fileName, const Worker& worker, const View& view );
+    void Parse( const char* source );
 
     const std::vector<Tokenizer::Line>& get() const { return m_lines; }
     bool empty() const { return m_lines.empty(); }
@@ -31,6 +32,8 @@ public:
     size_t data_size() const { return m_dataSize; }
 
 private:
+    void Tokenize( const char* txt, size_t sz );
+
     const char* m_file;
     uint32_t m_fileStringIdx;
 

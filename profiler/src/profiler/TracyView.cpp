@@ -673,7 +673,21 @@ bool View::DrawImpl()
         return keepOpen;
     }
 
-    if( m_worker.IsConnected() ) Achieve( "connectToClient" );
+    if( m_achievements )
+    {
+        if( m_worker.IsConnected() ) Achieve( "connectToClient" );
+
+        const auto& threadData = m_worker.GetThreadData();
+        for( auto& td : threadData )
+        {
+            if( !td->timeline.empty() )
+            {
+                Achieve( "instrumentationIntro" );
+                break;
+            }
+        }
+    }
+
     Attention( m_attnWorking );
 
     if( !m_uarchSet )

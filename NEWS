@@ -125,6 +125,8 @@ vx.xx.x (xxxx-xx-xx)
   effectively parallelizes both load and save operations.
   - The default save setup is now set to Zstd level 3 with 4 compression
     streams. This gives both faster compression time and smaller file size.
+- New users will be now eased into the profiler with a set of tutorial
+  achievements.
 
 
 v0.10.0 (2023-10-16)

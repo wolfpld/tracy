@@ -136,6 +136,13 @@ data::AchievementCategory** AchievementsMgr::GetCategories() const
     return data::AchievementCategories;
 }
 
+data::AchievementCategory* AchievementsMgr::GetCategoryForAchievement( const char* id ) const
+{
+    auto it = m_map.find( id );
+    assert( it != m_map.end() );
+    return it->second.category;
+}
+
 data::AchievementItem* AchievementsMgr::GetNextQueue()
 {
     if( m_queue.empty() ) return nullptr;

@@ -61,6 +61,7 @@ public:
 
     void Achieve( const char* id );
     data::AchievementCategory** GetCategories() const;
+    data::AchievementCategory* GetCategoryForAchievement( const char* id ) const;
 
     data::AchievementItem* GetNextQueue();
     void PopQueue();

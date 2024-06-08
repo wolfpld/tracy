@@ -1443,7 +1443,16 @@ static void DrawContents()
                 auto& c = *categories++;
                 if( c->unlockTime > 0 )
                 {
-                    if( ImGui::BeginTabItem( c->name ) )
+                    char tmp[256];
+                    if( s_achievements.CategoryNeedsAttention( c->id ) )
+                    {
+                        snprintf( tmp, 256, ICON_FA_CIRCLE_EXCLAMATION " %s###%s", c->name, c->id );
+                    }
+                    else
+                    {
+                        snprintf( tmp, 256, "%s###%s", c->name, c->id );
+                    }
+                    if( ImGui::BeginTabItem( tmp ) )
                     {
                         ImGui::Columns( 2 );
                         DrawAchievements( c->items );

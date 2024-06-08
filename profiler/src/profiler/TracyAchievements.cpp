@@ -69,6 +69,7 @@ void AchievementsMgr::Achieve( const char* id )
 {
     auto it = m_map.find( id );
     assert( it != m_map.end() );
+    if( it->second.item->unlockTime == 0 ) return;
     if( it->second.item->doneTime > 0 ) return;
 
     const auto t = uint64_t( time( nullptr ) );

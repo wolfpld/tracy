@@ -1,14 +1,37 @@
 #include "IconsFontAwesome6.h"
 #include "TracyAchievements.hpp"
 #include "TracyImGui.hpp"
+#include "TracySourceContents.hpp"
 #include "TracyWeb.hpp"
 
 namespace tracy::data
 {
 
-AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentation", [](const ctx&){
+AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentation", [](const ctx& c){
+    constexpr const char* src = R"(#include "Tracy.hpp"
+
+void SomeFunction()
+{
+    ZoneScoped;
+    // Your code here
+}
+)";
+
+    static SourceContents sc;
+    sc.Parse( src );
+    
     ImGui::TextWrapped( "Instrumentation is a powerful feature that allows you to see the exact runtime of each call to the selected set of functions. The downside is that it takes a bit of manual work to get it set up." );
     ImGui::TextWrapped( "To get started, open a source file and include the Tracy.hpp header. This will give you access to a variety of macros provided by Tracy. Next, add the ZoneScoped macro to the beginning of one of your functions, like this:" );
+    ImGui::PushFont( c.fixed );
+    PrintSource( sc.get() );
+    ImGui::PopFont();
+    ImGui::TextWrapped( "Now, when you profile your application, you will see a new zone appear on the timeline for each call to the function. This allows you to see how much time is spent in each call and how many times the function is called." );
+    ImGui::PushFont( c.small );
+    ImGui::PushStyleColor( ImGuiCol_Text, 0xFF888888 );
+    ImGui::TextWrapped( "Note: The ZoneScoped macro is just one of the many macros provided by Tracy. See the documentation for more information." );
+    ImGui::TextWrapped( "The above description applies to C++ code, but things are done similarly in other programming languages. Refer to the documentation for your language for more information." );
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
 } };
 
 AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, nullptr };

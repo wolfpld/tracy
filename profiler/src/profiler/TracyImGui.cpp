@@ -98,4 +98,33 @@ void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImV
     draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), ty15 ), 0x66FFFFFF, range );
 }
 
+void PrintSource( const std::vector<Tokenizer::Line>& lines )
+{
+    for( auto& line: lines )
+    {
+        auto ptr = line.begin;
+        auto it = line.tokens.begin();
+        while( ptr < line.end )
+        {
+            if( it == line.tokens.end() )
+            {
+                ImGui::TextUnformatted( ptr, line.end );
+                ImGui::SameLine( 0, 0 );
+                break;
+            }
+            if( ptr < it->begin )
+            {
+                ImGui::TextUnformatted( ptr, it->begin );
+                ImGui::SameLine( 0, 0 );
+            }
+            auto color = SyntaxColors[(int)it->color];
+            TextColoredUnformatted( color, it->begin, it->end );
+            ImGui::SameLine( 0, 0 );
+            ptr = it->end;
+            ++it;
+        }
+        ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
+    }
+}
+
 }

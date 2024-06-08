@@ -7,12 +7,14 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <vector>
 
 #include "imgui.h"
 #include "imgui_internal.h"
 
 #include "../public/common/TracyForceInline.hpp"
 #include "IconsFontAwesome6.h"
+#include "TracySourceTokenizer.hpp"
 
 #if !IMGUI_DEFINE_MATH_OPERATORS
 static inline ImVec2 operator+( const ImVec2& l, const ImVec2& r ) { return ImVec2( l.x + r.x, l.y + r.y ); }
@@ -29,6 +31,7 @@ bool WasActive();
 void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color );
 void DrawStripedRect( ImDrawList* draw, const ImVec2& wpos, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted );
 void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty );
+void PrintSource( const std::vector<Tokenizer::Line>& lines );
 
 
 static constexpr const uint32_t SyntaxColors[] = {

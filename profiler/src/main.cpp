@@ -122,6 +122,7 @@ static size_t s_totalMem = tracy::GetPhysicalMemorySize();
 tracy::Config s_config;
 tracy::AchievementsMgr s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
+static bool s_switchAchievementCategory = false;
 
 static float smoothstep( float x )
 {
@@ -1418,6 +1419,7 @@ static void DrawContents()
                 if( ImGui::IsMouseHoveringRect( dismiss - ImVec2( 0, dpiScale * 6 ), dismiss + ImVec2( aSize, th * 1.5f + dpiScale * 4 ) ) && ImGui::IsMouseClicked( 0 ) )
                 {
                     s_achievementItem = aItem;
+                    s_switchAchievementCategory = true;
                     showAchievements = true;
                     animStage = 3;
                 }
@@ -1434,6 +1436,14 @@ static void DrawContents()
 
         if( showAchievements )
         {
+            const tracy::data::AchievementCategory* targetCategory = nullptr;
+            if( s_switchAchievementCategory )
+            {
+                s_switchAchievementCategory = false;
+                assert( s_achievementItem );
+                targetCategory = s_achievements.GetCategoryForAchievement( s_achievementItem->id );
+            }
+
             ImGui::SetNextWindowSize( ImVec2( 700 * dpiScale, 450 * dpiScale ), ImGuiCond_FirstUseEver );
             ImGui::Begin( "Achievements List", &showAchievements, ImGuiWindowFlags_NoDocking );
             ImGui::BeginTabBar( "###categories" );
@@ -1452,7 +1462,9 @@ static void DrawContents()
                     {
                         snprintf( tmp, 256, "%s###%s", c->name, c->id );
                     }
-                    if( ImGui::BeginTabItem( tmp ) )
+                    ImGuiTabItemFlags flags = 0;
+                    if( targetCategory == c ) flags |= ImGuiTabItemFlags_SetSelected;
+                    if( ImGui::BeginTabItem( tmp, nullptr, flags ) )
                     {
                         ImGui::Columns( 2 );
                         ImGui::SetColumnWidth( 0, 300 * dpiScale );

@@ -43,6 +43,23 @@ AchievementsMgr::AchievementsMgr()
         }
     }
 
+    for( auto& v : m_map )
+    {
+        auto& it = v.second.item;
+        if( it->doneTime > 0 )
+        {
+            auto c = it->items;
+            if( c )
+            {
+                while( *c )
+                {
+                    if( (*c)->unlockTime == 0 ) (*c)->unlockTime = it->doneTime;
+                    c++;
+                }
+            }
+        }
+    }
+
     ini_free( ini );
 }
 

@@ -49,7 +49,7 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
     {
         tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
     }
-}, ac_connectToServerItems };
+}, ac_connectToServerItems, ac_instrumentationItems };
 
 AchievementItem* ac_achievementsIntroItems[] = {
     &ai_connectToServer,
@@ -67,11 +67,16 @@ AchievementItem ai_achievementsIntro = { "achievementsIntro", "Click here to dis
     ImGui::SameLine();
     TextColoredUnformatted( 0xFF44FF44, ICON_FA_CIRCLE_CHECK );
     ImGui::TextWrapped( "Good luck!" );
-}, ac_achievementsIntroItems, true, 1 };
+}, ac_achievementsIntroItems, nullptr, true, 1 };
 
 AchievementItem* ac_firstStepsItems[] = { &ai_achievementsIntro, nullptr };
 AchievementCategory ac_firstSteps = { "firstSteps", "First steps", ac_firstStepsItems, 1 };
 
-AchievementCategory* AchievementCategories[] = { &ac_firstSteps, nullptr };
+
+AchievementCategory* AchievementCategories[] = {
+    &ac_firstSteps,
+    &ac_instrumentation,
+    nullptr
+};
 
 }

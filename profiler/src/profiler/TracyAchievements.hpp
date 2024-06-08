@@ -29,6 +29,7 @@ struct AchievementItem
     const char* name;
     void(*description)(const ctx&);
     AchievementItem** items;
+    AchievementItem** unlocks;
     bool keepOpen;
     uint64_t unlockTime;
     uint64_t doneTime;

@@ -57,6 +57,23 @@ AchievementsMgr::AchievementsMgr()
                     c++;
                 }
             }
+            c = it->unlocks;
+            if( c )
+            {
+                while( *c )
+                {
+                    if( (*c)->unlockTime == 0 ) (*c)->unlockTime = it->doneTime;
+                    c++;
+                }
+            }
+        }
+    }
+
+    for( auto& v : m_map )
+    {
+        if( v.second.category->unlockTime == 0 && v.second.item->unlockTime > 0 )
+        {
+            v.second.category->unlockTime = v.second.item->unlockTime;
         }
     }
 
@@ -86,18 +103,31 @@ void AchievementsMgr::Achieve( const char* id )
 {
     auto it = m_map.find( id );
     assert( it != m_map.end() );
-    if( it->second.item->unlockTime == 0 ) return;
-    if( it->second.item->doneTime > 0 ) return;
+    auto& a = *it->second.item;
+
+    if( a.unlockTime == 0 ) return;
+    if( a.doneTime > 0 ) return;
 
     const auto t = uint64_t( time( nullptr ) );
 
-    it->second.item->doneTime = uint64_t( t );
-    m_queue.push_back( it->second.item );
+    a.doneTime = uint64_t( t );
+    m_queue.push_back( &a );
 
-    auto c = it->second.item->items;
+    auto c = a.items;
     if( c )
     {
         while( *c ) (*c++)->unlockTime = t;
+    }
+    c = a.unlocks;
+    if( c )
+    {
+        while( *c )
+        {
+            (*c)->unlockTime = t;
+            auto cit = m_map.find( (*c)->id );
+            if( cit->second.category->unlockTime == 0 ) cit->second.category->unlockTime = t;
+            c++;
+        }
     }
 }
 

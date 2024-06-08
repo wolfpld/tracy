@@ -34,7 +34,7 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
     ImGui::TextWrapped( " 1. Integrate Tracy Profiler into your application. This can be done using CMake, Meson, or simply by adding the source files to your project." );
     ImGui::TextWrapped( " 2. Make sure that TracyClient.cpp (or the Tracy library) is included in your build." );
     ImGui::TextWrapped( " 3. Define TRACY_ENABLE in your build configuration, for the whole application. Do not do it in a single source file because it won't work." );
-    ImGui::TextWrapped( " 4. Start your application, and connect to it with the profiler." );
+    ImGui::TextWrapped( " 4. Start your application, and '" ICON_FA_WIFI " Connect' to it with the profiler." );
     ImGui::TextWrapped( "Please refer to the user manual for more details." );
     if( ImGui::SmallButton( "Download the user manual" ) )
     {
@@ -50,6 +50,7 @@ AchievementItem* ac_achievementsIntroItems[] = {
 AchievementItem ai_achievementsIntro = { "achievementsIntro", "Click here to discover achievements!", [](const ctx&){
     ImGui::TextWrapped( "Clicking on the " ICON_FA_STAR " button opens the Achievements List. Here you can see the tasks to be completed along with a short description of what needs to be done." );
     ImGui::TextWrapped( "As you complete each Achievement, new Achievements will appear, so be sure to keep checking the list for new ones!" );
+    ImGui::TextWrapped( "To make the new things easier to spot, the Achievements List will show a marker next to them. The achievements " ICON_FA_STAR " button will glow yellow when there are new things to see." );
     ImGui::TextUnformatted( "New tasks:" );
     ImGui::SameLine();
     TextColoredUnformatted( 0xFF4488FF, ICON_FA_CIRCLE_EXCLAMATION );

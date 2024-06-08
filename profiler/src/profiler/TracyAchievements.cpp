@@ -159,6 +159,30 @@ bool AchievementsMgr::NeedsAttention() const
     return false;
 }
 
+bool AchievementsMgr::CategoryNeedsAttention( const char* id ) const
+{
+    auto c = data::AchievementCategories;
+    while( *c )
+    {
+        if( strcmp( (*c)->id, id ) == 0 )
+        {
+            for( auto& v : m_map )
+            {
+                if( v.second.category == (*c) )
+                {
+                    auto& it = v.second.item;
+                    if( it->unlockTime > 0 && !it->hideNew ) return true;
+                    if( it->doneTime > 0 && !it->hideCompleted ) return true;
+                }
+            }
+            return false;
+        }
+        c++;
+    }
+    assert( false );
+    return false;
+}
+
 void AchievementsMgr::FillMap( data::AchievementItem** items, data::AchievementCategory* category )
 {
     while( *items )

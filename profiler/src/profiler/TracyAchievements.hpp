@@ -66,6 +66,7 @@ public:
     void PopQueue();
 
     bool NeedsAttention() const;
+    bool CategoryNeedsAttention( const char* id ) const;
 
 private:
     void FillMap( data::AchievementItem** items, data::AchievementCategory* category );

@@ -6,6 +6,15 @@
 namespace tracy::data
 {
 
+AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentation", [](const ctx&){
+    ImGui::TextWrapped( "Instrumentation is a powerful feature that allows you to see the exact runtime of each call to the selected set of functions. The downside is that it takes a bit of manual work to get it set up." );
+    ImGui::TextWrapped( "To get started, open a source file and include the Tracy.hpp header. This will give you access to a variety of macros provided by Tracy. Next, add the ZoneScoped macro to the beginning of one of your functions, like this:" );
+} };
+
+AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, nullptr };
+AchievementCategory ac_instrumentation = { "instrumentation", "Instrumentation", ac_instrumentationItems };
+
+
 AchievementItem ai_loadTrace = { "loadTrace", "Load a trace", [](const ctx&){
     ImGui::TextWrapped( "You can open a previously saved trace file (or one received from a friend) with the '" ICON_FA_FOLDER_OPEN " Open saved trace' button on the welcome screen." );
 } };

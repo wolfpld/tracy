@@ -7,6 +7,21 @@
 namespace tracy::data
 {
 
+AchievementItem ai_samplingIntro = { "samplingIntro", "Sampling", [](const ctx& c){
+    ImGui::TextWrapped( "Sampling program execution is a great way to find out where the hot spots are in your program. It can be used to find out which functions take the most time, or which lines of code are executed the most often." );
+    ImGui::TextWrapped( "While instrumentation requires changes to your code, sampling does not. However, because of the way it works, the results are coarser and it's not possible to know when functions are called or when they return." );
+    ImGui::TextWrapped( "Sampling is automatic on Linux. On Windows, you must run the profiled application as an administrator for it to work." );
+    ImGui::PushFont( c.small );
+    ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+    ImGui::TextWrapped( "Depending on your system configuration, some additional steps may be required. Please refer to the user manual for more information." );
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
+} };
+
+AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };
+AchievementCategory ac_sampling = { "sampling", "Sampling", ac_samplingItems };
+
+
 AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentation", [](const ctx& c){
     constexpr const char* src = R"(#include "Tracy.hpp"
 
@@ -27,7 +42,7 @@ void SomeFunction()
     ImGui::PopFont();
     ImGui::TextWrapped( "Now, when you profile your application, you will see a new zone appear on the timeline for each call to the function. This allows you to see how much time is spent in each call and how many times the function is called." );
     ImGui::PushFont( c.small );
-    ImGui::PushStyleColor( ImGuiCol_Text, 0xFF888888 );
+    ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
     ImGui::TextWrapped( "Note: The ZoneScoped macro is just one of the many macros provided by Tracy. See the documentation for more information." );
     ImGui::TextWrapped( "The above description applies to C++ code, but things are done similarly in other programming languages. Refer to the documentation for your language for more information." );
     ImGui::PopStyleColor();
@@ -61,6 +76,12 @@ AchievementItem* ac_connectToServerItems[] = {
     nullptr
 };
 
+AchievementItem* ac_connectToServerUnlock[] = {
+    &ai_instrumentationIntro,
+    &ai_samplingIntro,
+    nullptr
+};
+
 AchievementItem ai_connectToServer = { "connectToClient", "First profiling session", [](const ctx&){
     ImGui::TextWrapped( "Let's start our adventure by instrumenting your application and connecting it to the profiler. Here's a quick refresher:" );
     ImGui::TextWrapped( " 1. Integrate Tracy Profiler into your application. This can be done using CMake, Meson, or simply by adding the source files to your project." );
@@ -72,7 +93,7 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
     {
         tracy::OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
     }
-}, ac_connectToServerItems, ac_instrumentationItems };
+}, ac_connectToServerItems, ac_connectToServerUnlock };
 
 AchievementItem* ac_achievementsIntroItems[] = {
     &ai_connectToServer,
@@ -99,6 +120,7 @@ AchievementCategory ac_firstSteps = { "firstSteps", "First steps", ac_firstSteps
 AchievementCategory* AchievementCategories[] = {
     &ac_firstSteps,
     &ac_instrumentation,
+    &ac_sampling,
     nullptr
 };
 

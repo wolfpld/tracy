@@ -7,7 +7,7 @@
 namespace tracy::data
 {
 
-AchievementItem ai_samplingIntro = { "samplingIntro", "Sampling", [](const ctx& c){
+AchievementItem ai_samplingIntro = { "samplingIntro", "Sampling program execution", [](const ctx& c){
     ImGui::TextWrapped( "Sampling program execution is a great way to find out where the hot spots are in your program. It can be used to find out which functions take the most time, or which lines of code are executed the most often." );
     ImGui::TextWrapped( "While instrumentation requires changes to your code, sampling does not. However, because of the way it works, the results are coarser and it's not possible to know when functions are called or when they return." );
     ImGui::TextWrapped( "Sampling is automatic on Linux. On Windows, you must run the profiled application as an administrator for it to work." );
@@ -22,7 +22,7 @@ AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };
 AchievementCategory ac_sampling = { "sampling", "Sampling", ac_samplingItems };
 
 
-AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentation", [](const ctx& c){
+AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentating your application", [](const ctx& c){
     constexpr const char* src = R"(#include "Tracy.hpp"
 
 void SomeFunction()

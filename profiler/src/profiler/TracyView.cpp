@@ -676,16 +676,7 @@ bool View::DrawImpl()
     if( m_achievements )
     {
         if( m_worker.IsConnected() ) Achieve( "connectToClient" );
-
-        const auto& threadData = m_worker.GetThreadData();
-        for( auto& td : threadData )
-        {
-            if( !td->timeline.empty() )
-            {
-                Achieve( "instrumentationIntro" );
-                break;
-            }
-        }
+        if( m_worker.GetZoneCount() > 0 ) Achieve( "instrumentationIntro" );
     }
 
     Attention( m_attnWorking );

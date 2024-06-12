@@ -25,9 +25,7 @@ const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, fl
     static char buf[64*1024];
     char tmp[64*1024];
 
-    auto end = name;
-    while( *end ) end++;
-
+    auto end = name + strlen( name );
     auto ptr = name;
     auto dst = tmp;
     int cnt = 0;

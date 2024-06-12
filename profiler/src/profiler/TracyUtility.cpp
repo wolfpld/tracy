@@ -19,7 +19,7 @@ constexpr const char* TypesList[] = {
 const char* ShortenZoneName( ShortenName type, const char* name, ImVec2& tsz, float zsz )
 {
     assert( type != ShortenName::Never );
-    if( name[0] == '<' ) return name;
+    if( name[0] == '<' || name[0] == '[' ) return name;
     if( type == ShortenName::Always ) zsz = 0;
 
     static char buf[64*1024];

@@ -22,6 +22,16 @@ AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };
 AchievementCategory ac_sampling = { "sampling", "Sampling", ac_samplingItems };
 
 
+AchievementItem ai_instrumentationStatistics = { "instrumentationStatistics", "Show me the stats!", [](const ctx& c){
+    ImGui::TextWrapped( "Once you have instrumented your application, you can view the statistics for each zone in the timeline. This allows you to see how much time is spent in each zone and how many times it is called." );
+    ImGui::TextWrapped( "To view the statistics, click on the '" ICON_FA_ARROW_UP_WIDE_SHORT " Statistics' button on the top bar. This will open a new window with a list of all zones in the trace." );
+} };
+
+AchievementItem* ac_instrumentationIntroItems[] = {
+    &ai_instrumentationStatistics,
+    nullptr
+};
+
 AchievementItem ai_instrumentationIntro = { "instrumentationIntro", "Instrumentating your application", [](const ctx& c){
     constexpr const char* src = R"(#include "Tracy.hpp"
 
@@ -47,7 +57,7 @@ void SomeFunction()
     ImGui::TextWrapped( "The above description applies to C++ code, but things are done similarly in other programming languages. Refer to the documentation for your language for more information." );
     ImGui::PopStyleColor();
     ImGui::PopFont();
-} };
+}, ac_instrumentationIntroItems };
 
 AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, nullptr };
 AchievementCategory ac_instrumentation = { "instrumentation", "Instrumentation", ac_instrumentationItems };

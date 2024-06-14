@@ -51,6 +51,8 @@ void View::DrawStatistics()
         return;
     }
 
+    Achieve( "instrumentationStatistics" );
+
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
     ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
     if( m_worker.AreCallstackSamplesReady() )

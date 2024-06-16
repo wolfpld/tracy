@@ -901,8 +901,7 @@ char* NormalizePath( const char* path )
     if( path[0] != '/' ) return nullptr;
 
     const char* ptr = path;
-    const char* end = path;
-    while( *end ) end++;
+    const char* end = path + strlen( path );
 
     char* res = (char*)tracy_malloc( end - ptr + 1 );
     size_t rsz = 0;

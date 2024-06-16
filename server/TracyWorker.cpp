@@ -3638,14 +3638,12 @@ void Worker::AddSourceLocationPayload( const char* data, size_t sz )
     memcpy( &color, data, 4 );
     memcpy( &line, data + 4, 4 );
     data += 8;
-    auto end = data;
+    auto end = data + strlen( data );
 
-    while( *end ) end++;
     const auto func = StoreString( data, end - data );
     end++;
 
-    data = end;
-    while( *end ) end++;
+    data = end + strlen( data );
     const auto source = StoreString( data, end - data );
     end++;
 

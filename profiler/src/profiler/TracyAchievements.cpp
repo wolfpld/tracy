@@ -82,21 +82,7 @@ AchievementsMgr::AchievementsMgr()
 
 AchievementsMgr::~AchievementsMgr()
 {
-    const auto fn = tracy::GetSavePath( "achievements.ini" );
-    FILE* f = fopen( fn, "wb" );
-    if( !f ) return;
-
-    for( auto& v : m_map )
-    {
-        auto& it = v.second.item;
-        fprintf( f, "[%s]\n", it->id );
-        fprintf( f, "unlockTime=%" PRIu64 "\n", it->unlockTime );
-        fprintf( f, "doneTime=%" PRIu64 "\n", it->doneTime );
-        fprintf( f, "hideCompleted=%d\n", it->hideCompleted ? 1 : 0 );
-        fprintf( f, "hideNew=%d\n\n", it->hideNew ? 1 : 0 );
-    }
-
-    fclose( f );
+    Save();
 }
 
 void AchievementsMgr::Achieve( const char* id )
@@ -129,6 +115,8 @@ void AchievementsMgr::Achieve( const char* id )
             c++;
         }
     }
+
+    Save();
 }
 
 data::AchievementCategory** AchievementsMgr::GetCategories() const
@@ -198,6 +186,25 @@ void AchievementsMgr::FillMap( data::AchievementItem** items, data::AchievementC
         if( (*items)->items) FillMap( (*items)->items, category );
         items++;
     }
+}
+
+void AchievementsMgr::Save()
+{
+    const auto fn = tracy::GetSavePath( "achievements.ini" );
+    FILE* f = fopen( fn, "wb" );
+    if( !f ) return;
+
+    for( auto& v : m_map )
+    {
+        auto& it = v.second.item;
+        fprintf( f, "[%s]\n", it->id );
+        fprintf( f, "unlockTime=%" PRIu64 "\n", it->unlockTime );
+        fprintf( f, "doneTime=%" PRIu64 "\n", it->doneTime );
+        fprintf( f, "hideCompleted=%d\n", it->hideCompleted ? 1 : 0 );
+        fprintf( f, "hideNew=%d\n\n", it->hideNew ? 1 : 0 );
+    }
+
+    fclose( f );
 }
 
 }

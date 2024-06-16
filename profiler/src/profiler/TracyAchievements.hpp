@@ -71,6 +71,7 @@ public:
 
 private:
     void FillMap( data::AchievementItem** items, data::AchievementCategory* category );
+    void Save();
 
     std::vector<data::AchievementItem*> m_queue;
     tracy::unordered_flat_map<const char*, AchievementPair, charutil::Hasher, charutil::Comparator> m_map;

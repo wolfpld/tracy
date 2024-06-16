@@ -118,8 +118,14 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
     }
 }, ac_connectToServerItems, ac_connectToServerUnlock };
 
+AchievementItem ai_globalSettings = { "globalSettings", "Global settings", [](const ctx&){
+    ImGui::TextWrapped( "Tracy has a variety of settings that can be adjusted to suit your needs. These settings can be found by clicking on the " ICON_FA_WRENCH " icon on the welcome screen. This will open the about window, where you can expand the '" ICON_FA_TOOLBOX " Global settings' menu." );
+    ImGui::TextWrapped( "The settings are saved between sessions, so you only need to set them once." );
+} };
+
 AchievementItem* ac_achievementsIntroItems[] = {
     &ai_connectToServer,
+    &ai_globalSettings,
     nullptr
 };
 

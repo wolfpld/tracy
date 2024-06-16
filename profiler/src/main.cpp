@@ -715,6 +715,8 @@ static void DrawContents()
             ImGui::Separator();
             if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
             {
+                s_achievements.Achieve( "globalSettings" );
+
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
 
                 ImGui::TextUnformatted( "Threaded rendering" );

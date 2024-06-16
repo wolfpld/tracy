@@ -735,6 +735,8 @@ static void DrawContents()
                 ImGui::Spacing();
                 ImGui::TextUnformatted( "Target FPS" );
                 ImGui::SameLine();
+                tracy::DrawHelpMarker( "The default target frame rate for your application. Frames displayed in the frame time graph will be colored accordingly if they are within the target frame rate. This can be adjusted later for each individual trace." );
+                ImGui::SameLine();
                 int tmp = s_config.targetFps;
                 ImGui::SetNextItemWidth( 90 * dpiScale );
                 if( ImGui::InputInt( "##targetfps", &tmp ) ) { s_config.targetFps = std::clamp( tmp, 1, 9999 ); SaveConfig(); }

@@ -22,12 +22,25 @@ AchievementItem* ac_samplingItems[] = { &ai_samplingIntro, nullptr };
 AchievementCategory ac_sampling = { "sampling", "Sampling", ac_samplingItems };
 
 
-AchievementItem ai_instrumentationStatistics = { "instrumentationStatistics", "Show me the stats!", [](const ctx& c){
+AchievementItem ai_100million = { "100million", "It's over 100 million!", [](const ctx& c){
+    ImGui::TextWrapped( "Tracy can handle a lot of data. How about 100 million zones in a single trace? Add a lot of zones to your program and see how it handles it!" );
+    ImGui::TextWrapped( "Capturing a long-running profile trace is easy. Need to profile an hour of your program execution? You can do it." );
+    ImGui::TextWrapped( "Note that it doesn't make much sense to instrument every little function you might have. The cost of the instrumentation itself will be higher than the cost of the function in such a case." );
+    ImGui::PushFont( c.small );
+    ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+    ImGui::TextWrapped( "Keep in mind that the more zones you have, the more memory and CPU time the profiler will use. Be careful not to run out of memory." );
+    ImGui::TextWrapped( "To capture 100 million zones, you will need approximately 4 GB of RAM." );
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
+} };
+
+AchievementItem ai_instrumentationStatistics = { "instrumentationStatistics", "Show me the stats!", [](const ctx&){
     ImGui::TextWrapped( "Once you have instrumented your application, you can view the statistics for each zone in the timeline. This allows you to see how much time is spent in each zone and how many times it is called." );
     ImGui::TextWrapped( "To view the statistics, click on the '" ICON_FA_ARROW_UP_WIDE_SHORT " Statistics' button on the top bar. This will open a new window with a list of all zones in the trace." );
 } };
 
 AchievementItem* ac_instrumentationIntroItems[] = {
+    &ai_100million,
     &ai_instrumentationStatistics,
     nullptr
 };

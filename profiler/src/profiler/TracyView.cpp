@@ -56,6 +56,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( config.achievements )
+    , m_horizontalScrollMultiplier( config.horizontalScrollMultiplier )
+    , m_verticalScrollMultiplier( config.verticalScrollMultiplier )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -85,6 +87,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( config.achievements )
+    , m_horizontalScrollMultiplier( config.horizontalScrollMultiplier )
+    , m_verticalScrollMultiplier( config.verticalScrollMultiplier )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else

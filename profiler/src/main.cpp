@@ -224,12 +224,15 @@ static void LoadConfig()
     if( !ini ) return;
 
     int v;
+    double v1;
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
     if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
     if( ini_sget( ini, "timeline", "dynamicColors", "%d", &v ) ) s_config.dynamicColors = v;
     if( ini_sget( ini, "timeline", "forceColors", "%d", &v ) ) s_config.forceColors = v;
     if( ini_sget( ini, "timeline", "shortenName", "%d", &v ) ) s_config.shortenName = v;
+    if( ini_sget( ini, "timeline", "horizontalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.horizontalScrollMultiplier = v1;
+    if( ini_sget( ini, "timeline", "verticalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.verticalScrollMultiplier = v1;
     if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
     if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
     if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
@@ -253,6 +256,8 @@ static bool SaveConfig()
     fprintf( f, "dynamicColors = %i\n", s_config.dynamicColors );
     fprintf( f, "forceColors = %i\n", (int)s_config.forceColors );
     fprintf( f, "shortenName = %i\n", s_config.shortenName );
+    fprintf( f, "horizontalScrollMultiplier = %lf\n", s_config.horizontalScrollMultiplier );
+    fprintf( f, "verticalScrollMultiplier = %lf\n", s_config.verticalScrollMultiplier );
 
     fprintf( f, "\n[memory]\n" );
     fprintf( f, "limit = %i\n", (int)s_config.memoryLimit );
@@ -793,6 +798,19 @@ static void DrawContents()
                 ImGui::RadioButton( "As needed + normalize", &s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpaceAndNormalize );
                 ImGui::PopStyleVar();
                 ImGui::Unindent();
+
+                ImGui::Spacing();
+                ImGui::TextUnformatted( "Scroll Multipliers" );
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "The multipliers to the amount to scroll by horizontally and vertically. This is used in the timeline and setting this value can help compensate for scroll wheel sensitivity." );
+                ImGui::SameLine();
+                double tmpScroll = s_config.horizontalScrollMultiplier;
+                ImGui::SetNextItemWidth( 45 * dpiScale );
+                if( ImGui::InputDouble( "##horizontalscrollmultiplier", &tmpScroll ) ) { s_config.horizontalScrollMultiplier = std::max( tmpScroll, 0.01 ); SaveConfig(); }
+                tmpScroll = s_config.verticalScrollMultiplier;
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth( 45 * dpiScale );
+                if( ImGui::InputDouble( "##verticalscrollmultiplier", &tmpScroll ) ) { s_config.verticalScrollMultiplier = std::max( tmpScroll, 0.01 ); SaveConfig(); }
 
                 if( s_totalMem == 0 )
                 {

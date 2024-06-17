@@ -95,7 +95,7 @@ void View::DrawFrames()
 
     if( hover )
     {
-        const auto hwheel_delta = io.MouseWheelH * 100.f;
+        const auto hwheel_delta = io.MouseWheelH * 100.f * m_horizontalScrollMultiplier;
         if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
         {
             m_viewMode = ViewMode::Paused;

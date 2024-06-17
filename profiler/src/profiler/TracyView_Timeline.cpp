@@ -86,7 +86,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         }
     }
 
-    const auto hwheel_delta = io.MouseWheelH * 100.f;
+    const auto hwheel_delta = io.MouseWheelH * 100.f * m_horizontalScrollMultiplier;
     if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
     {
         m_viewMode = ViewMode::Paused;
@@ -142,6 +142,8 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         double mod = 0.25;
         if( io.KeyCtrl ) mod = 0.05;
         else if( io.KeyShift ) mod = 0.5;
+
+        mod *= m_verticalScrollMultiplier;
 
         if( wheel > 0 )
         {

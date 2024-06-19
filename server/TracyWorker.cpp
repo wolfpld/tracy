@@ -3643,7 +3643,8 @@ void Worker::AddSourceLocationPayload( const char* data, size_t sz )
     const auto func = StoreString( data, end - data );
     end++;
 
-    data = end + strlen( data );
+    data = end;
+    end = data + strlen( data );
     const auto source = StoreString( data, end - data );
     end++;
 

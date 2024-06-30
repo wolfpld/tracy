@@ -53,7 +53,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
-    , m_userData()
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( config.achievements )

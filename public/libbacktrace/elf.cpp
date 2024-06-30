@@ -7471,7 +7471,7 @@ phdr_callback (struct PhdrIterate *info, void *pdata)
 static int elf_iterate_phdr_and_add_new_files(phdr_data *pd)
 {
 	assert(s_phdrData.empty());
-	// dl_iterate_phdr, will only add entries for elf files loaded in a previouly unseen range
+	// dl_iterate_phdr, will only add entries for elf files loaded in a previously unseen range
 	dl_iterate_phdr(phdr_callback_mock, nullptr);
 
 	if(s_phdrData.size() == 0)

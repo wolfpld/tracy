@@ -85,6 +85,8 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
     InitTextEditor();
+    SetupConfig( config );
+
     m_vd.zvStart = m_worker.GetFirstTime();
     m_vd.zvEnd = m_worker.GetLastTime();
     m_userData.StateShouldBePreserved();
@@ -94,8 +96,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
 
     if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
-
-    SetupConfig( config );
 
     Achieve( "loadTrace" );
 }

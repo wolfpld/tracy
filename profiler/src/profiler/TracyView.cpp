@@ -59,8 +59,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_achievements( config.achievements )
 {
     InitTextEditor();
-
-    m_vd.frameTarget = config.targetFps;
+    SetupConfig( config );
 }
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
@@ -97,7 +96,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
 
-    m_vd.frameTarget = config.targetFps;
+    SetupConfig( config );
 
     Achieve( "loadTrace" );
 }
@@ -121,6 +120,11 @@ void View::InitTextEditor()
 {
     m_sourceView = std::make_unique<SourceView>();
     m_sourceViewFile = nullptr;
+}
+
+void View::SetupConfig( const Config& config )
+{
+    m_vd.frameTarget = config.targetFps;
 }
 
 void View::Achieve( const char* id )

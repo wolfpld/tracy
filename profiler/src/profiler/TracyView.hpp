@@ -224,6 +224,7 @@ private:
     };
 
     void InitTextEditor();
+    void SetupConfig( const Config& config );
     void Achieve( const char* id );
 
     bool DrawImpl();

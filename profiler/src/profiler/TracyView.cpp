@@ -124,6 +124,9 @@ void View::InitTextEditor()
 void View::SetupConfig( const Config& config )
 {
     m_vd.frameTarget = config.targetFps;
+    m_vd.dynamicColors = config.dynamicColors;
+    m_vd.forceColors = config.forceColors;
+    m_vd.shortenName = (ShortenName)config.shortenName;
 }
 
 void View::Achieve( const char* id )

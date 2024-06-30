@@ -224,6 +224,9 @@ static void LoadConfig()
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
     if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
+    if( ini_sget( ini, "timeline", "dynamicColors", "%d", &v ) ) s_config.dynamicColors = v;
+    if( ini_sget( ini, "timeline", "forceColors", "%d", &v ) ) s_config.forceColors = v;
+    if( ini_sget( ini, "timeline", "shortenName", "%d", &v ) ) s_config.shortenName = v;
     if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
     if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
     if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
@@ -244,6 +247,9 @@ static bool SaveConfig()
 
     fprintf( f, "\n[timeline]\n" );
     fprintf( f, "targetFps = %i\n", s_config.targetFps );
+    fprintf( f, "dynamicColors = %i\n", s_config.dynamicColors );
+    fprintf( f, "forceColors = %i\n", (int)s_config.forceColors );
+    fprintf( f, "shortenName = %i\n", s_config.shortenName );
 
     fprintf( f, "\n[memory]\n" );
     fprintf( f, "limit = %i\n", (int)s_config.memoryLimit );
@@ -740,6 +746,28 @@ static void DrawContents()
                 int tmp = s_config.targetFps;
                 ImGui::SetNextItemWidth( 90 * dpiScale );
                 if( ImGui::InputInt( "##targetfps", &tmp ) ) { s_config.targetFps = std::clamp( tmp, 1, 9999 ); SaveConfig(); }
+
+                ImGui::Spacing();
+                ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );
+                ImGui::SameLine();
+                tracy::SmallCheckbox( "Ignore custom", &s_config.forceColors );
+                ImGui::Indent();
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+                ImGui::RadioButton( "Static", &s_config.dynamicColors, 0 );
+                ImGui::RadioButton( "Thread dynamic", &s_config.dynamicColors, 1 );
+                ImGui::RadioButton( "Source location dynamic", &s_config.dynamicColors, 2 );
+                ImGui::PopStyleVar();
+                ImGui::Unindent();
+                ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
+                ImGui::Indent();
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+                ImGui::RadioButton( "Disabled", &s_config.shortenName, (uint8_t)tracy::ShortenName::Never );
+                ImGui::RadioButton( "Minimal length", &s_config.shortenName, (uint8_t)tracy::ShortenName::Always );
+                ImGui::RadioButton( "Only normalize", &s_config.shortenName, (uint8_t)tracy::ShortenName::OnlyNormalize );
+                ImGui::RadioButton( "As needed", &s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpace );
+                ImGui::RadioButton( "As needed + normalize", &s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpaceAndNormalize );
+                ImGui::PopStyleVar();
+                ImGui::Unindent();
 
                 if( s_totalMem == 0 )
                 {

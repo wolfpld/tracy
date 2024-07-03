@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-option(USE_DEBUGINFOD "Compile with debuginfod integration" OFF)
+option(USE_DEBUGINFOD "Compile with debuginfod integration" ON)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

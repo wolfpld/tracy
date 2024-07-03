@@ -7,6 +7,7 @@
         "${workspaceFolder}/import-chrome",
         "${workspaceFolder}/import-fuchsia",
         "${workspaceFolder}/update",
+        "${workspaceFolder}/test",
         "${workspaceFolder}",
     ],
     "cmake.buildDirectory": "${sourceDirectory}/build",

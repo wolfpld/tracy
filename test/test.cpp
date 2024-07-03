@@ -1,9 +1,9 @@
 #include <chrono>
+#include <iostream>
 #include <mutex>
 #include <thread>
 #include <stdlib.h>
-#include "Tracy.hpp"
-#include "../common/TracySystem.hpp"
+#include "tracy/Tracy.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
@@ -328,7 +328,10 @@ int main()
 
     int x, y;
     auto image = stbi_load( "image.jpg", &x, &y, nullptr, 4 );
-
+    if(image == nullptr)
+    {
+        std::cerr << "Could not find image.jpg in the current working directory, skipping" << std::endl;
+    }
     for(;;)
     {
         TracyMessageL( "Tick" );
@@ -337,7 +340,10 @@ int main()
             ZoneScoped;
             std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         }
-        FrameImage( image, x, y, 0, false );
+        if(image != nullptr)
+        {
+            FrameImage( image, x, y, 0, false );
+        }
         FrameMark;
     }
 }

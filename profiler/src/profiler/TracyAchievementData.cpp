@@ -66,7 +66,7 @@ void SomeFunction()
 
     static SourceContents sc;
     sc.Parse( src );
-    
+
     ImGui::TextWrapped( "Instrumentation is a powerful feature that allows you to see the exact runtime of each call to the selected set of functions. The downside is that it takes a bit of manual work to get it set up." );
     ImGui::TextWrapped( "To get started, open a source file and include the Tracy.hpp header. This will give you access to a variety of macros provided by Tracy. Next, add the ZoneScoped macro to the beginning of one of your functions, like this:" );
     ImGui::PushFont( c.fixed );
@@ -81,7 +81,31 @@ void SomeFunction()
     ImGui::PopFont();
 }, ac_instrumentationIntroItems };
 
-AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, nullptr };
+AchievementItem ai_instrumentFrames = { "instrumentFrames", "Instrumenting frames", [](const ctx& c){
+        constexpr const char* src = R"(#include "Tracy.hpp"
+
+void Render()
+{
+    // Render the frame
+    SwapBuffers();
+    FrameMark;
+}
+)";
+
+    static SourceContents sc;
+    sc.Parse( src );
+
+    ImGui::TextWrapped( "In addition to instrumenting functions, you can also instrument frames. This allows you to see how much time is spent in each frame of your application." );
+    ImGui::TextWrapped( "To instrument frames, you need to add the FrameMark macro at the beginning of each frame. This can be done in the main loop of your application, or in a separate function that is called at the beginning of each frame." );
+    ImGui::PushFont( c.fixed );
+    PrintSource( sc.get() );
+    ImGui::PopFont();
+    ImGui::TextWrapped( "When you profile your application, you will see a new frame appear on the timeline each time the FrameMark macro is called. This allows you to see how much time is spent in each frame and how many frames are rendered per second." );
+    ImGui::TextWrapped( "The FrameMark macro is a great way to see at a glance how your application is performing over time. Maybe there are some performance problems that only appear after a few minutes of running the application? A frame graph is drawn at the top of the profiler window where you can see the timing of all frames." );
+    ImGui::TextWrapped( "Note that some applications do not have a frame-based structure, and in such cases, frame instrumentation may not be useful. That's ok." );
+} };
+
+AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, &ai_instrumentFrames, nullptr };
 AchievementCategory ac_instrumentation = { "instrumentation", "Instrumentation", ac_instrumentationItems };
 
 

@@ -69,6 +69,8 @@ void View::DrawPlayback()
 
     if( !m_playback.pause )
     {
+        Achieve( "frameImages" );
+
         auto time = ImGui::GetIO().DeltaTime * m_playback.speed;
         while( !m_playback.pause && time > 0 )
         {

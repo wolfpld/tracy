@@ -81,6 +81,19 @@ void SomeFunction()
     ImGui::PopFont();
 }, ac_instrumentationIntroItems };
 
+AchievementItem ai_frameImages = { "frameImages", "A picture is worth a thousand words", [](const ctx&){
+    ImGui::TextWrapped( "Tracy allows you to add context to each frame, by attaching a screenshot. You can do this with the FrameImage macro." );
+    ImGui::TextWrapped( "You will have to do the screen capture and resizing yourself, which can be a bit complicated. The manual provides a sample code that shows how to do this in a performant way." );
+    ImGui::TextWrapped( "The frame images are displayed in the context of a frame, for example, when you hover over the frame in the timeline or in the frame graph at the top of the screen." );
+    ImGui::TextWrapped( "You can even view a recording of what your application was doing by clicking the " ICON_FA_SCREWDRIVER_WRENCH " icon and then selecting the \"" ICON_FA_PLAY " Playback\" option. Try it out!" );
+    ImGui::TextWrapped( "The FrameImage macro is a great way to see what happened in your application at a particular time. Maybe you have a performance problem that only occurs when a certain object is on the screen?" );
+} };
+
+AchievementItem* ac_instrumentFramesItems[] = {
+    &ai_frameImages,
+    nullptr
+};
+
 AchievementItem ai_instrumentFrames = { "instrumentFrames", "Instrumenting frames", [](const ctx& c){
         constexpr const char* src = R"(#include "Tracy.hpp"
 
@@ -103,7 +116,7 @@ void Render()
     ImGui::TextWrapped( "When you profile your application, you will see a new frame appear on the timeline each time the FrameMark macro is called. This allows you to see how much time is spent in each frame and how many frames are rendered per second." );
     ImGui::TextWrapped( "The FrameMark macro is a great way to see at a glance how your application is performing over time. Maybe there are some performance problems that only appear after a few minutes of running the application? A frame graph is drawn at the top of the profiler window where you can see the timing of all frames." );
     ImGui::TextWrapped( "Note that some applications do not have a frame-based structure, and in such cases, frame instrumentation may not be useful. That's ok." );
-} };
+}, ac_instrumentFramesItems };
 
 AchievementItem* ac_instrumentationItems[] = { &ai_instrumentationIntro, &ai_instrumentFrames, nullptr };
 AchievementCategory ac_instrumentation = { "instrumentation", "Instrumentation", ac_instrumentationItems };

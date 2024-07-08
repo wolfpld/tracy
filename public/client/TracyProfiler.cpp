@@ -271,8 +271,19 @@ static bool EnsureReadable( uintptr_t address )
     MappingInfo* mapping = LookUpMapping(address);
     return mapping && EnsureReadable( *mapping );
 }
-
-#endif  // defined __ANDROID__
+#elif defined WIN32
+static bool EnsureReadable( uintptr_t address )
+{
+    MEMORY_BASIC_INFORMATION memInfo;
+    VirtualQuery( reinterpret_cast<void*>( address ), &memInfo, sizeof( memInfo ) );
+    return memInfo.Protect != PAGE_NOACCESS;
+}
+#else
+static bool EnsureReadable( uintptr_t address )
+{
+    return true;
+}
+#endif
 
 #ifndef TRACY_DELAYED_INIT
 
@@ -3913,15 +3924,12 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
     else
     {
-#ifdef __ANDROID__
-        // On Android it's common for code to be in mappings that are only executable
-        // but not readable.
         if( !EnsureReadable( symbol ) )
         {
             AckSymbolCodeNotAvailable();
             return;
         }
-#endif
+
         SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
     }
 }

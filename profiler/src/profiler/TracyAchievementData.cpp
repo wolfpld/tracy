@@ -39,9 +39,18 @@ AchievementItem ai_instrumentationStatistics = { "instrumentationStatistics", "S
     ImGui::TextWrapped( "To view the statistics, click on the \"" ICON_FA_ARROW_UP_WIDE_SHORT " Statistics\" button on the top bar. This will open a new window with a list of all zones in the trace." );
 } };
 
+AchievementItem ai_findZone = { "findZone", "Find some zones", [](const ctx&){
+    ImGui::TextWrapped( "You can search for zones in the trace by opening the search window with the \"" ICON_FA_MAGNIFYING_GLASS " Find zone\" button on the top bar. It will ask you for the zone name, which in most cases will be the function name in the code." );
+    ImGui::TextWrapped( "The search may find more than one zone with the same name. A list of all the zones found is displayed, and you can select any of them." );
+    ImGui::TextWrapped( "Alternatively, you can open the Statistics window and click an entry there. This will open the Find zone window as if you had searched for that zone." );
+    ImGui::TextWrapped( "When a zone is selected, a number of statistics are displayed to help you understand the performance of your application. In addition, a histogram of the zone execution times is displayed to make it easier for you to determine the performance of the profiled code. Be sure to select a zone with a large number of calls to make the histogram look interesting!" );
+    ImGui::TextWrapped( "Note that you can draw a range on the histogram to limit the number of entries displayed in the zone list below. This list allows you to examine each zone individually. There are also a number of zone groupings that you can select. Each group can be selected and the time associated with the selected group will be highlighted on the histogram." );
+} };
+
 AchievementItem* ac_instrumentationIntroItems[] = {
     &ai_100million,
     &ai_instrumentationStatistics,
+    &ai_findZone,
     nullptr
 };
 

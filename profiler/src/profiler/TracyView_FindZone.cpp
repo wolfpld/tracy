@@ -326,6 +326,8 @@ void View::DrawFindZone()
 
     if( !m_findZone.match.empty() )
     {
+        Achieve( "findZone" );
+
         const auto rangeMin = m_findZone.range.min;
         const auto rangeMax = m_findZone.range.max;
 

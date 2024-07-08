@@ -127,6 +127,9 @@ vx.xx.x (xxxx-xx-xx)
     streams. This gives both faster compression time and smaller file size.
 - New users will be now eased into the profiler with a set of tutorial
   achievements.
+- You can now set the timeline options default values in global settings.
+- Added a check for program memory being available before symbol retrieval
+  on Windows.
 
 
 v0.10.0 (2023-10-16)

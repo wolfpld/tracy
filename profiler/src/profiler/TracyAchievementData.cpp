@@ -36,7 +36,7 @@ AchievementItem ai_100million = { "100million", "It's over 100 million!", [](con
 
 AchievementItem ai_instrumentationStatistics = { "instrumentationStatistics", "Show me the stats!", [](const ctx&){
     ImGui::TextWrapped( "Once you have instrumented your application, you can view the statistics for each zone in the timeline. This allows you to see how much time is spent in each zone and how many times it is called." );
-    ImGui::TextWrapped( "To view the statistics, click on the '" ICON_FA_ARROW_UP_WIDE_SHORT " Statistics' button on the top bar. This will open a new window with a list of all zones in the trace." );
+    ImGui::TextWrapped( "To view the statistics, click on the \"" ICON_FA_ARROW_UP_WIDE_SHORT " Statistics\" button on the top bar. This will open a new window with a list of all zones in the trace." );
 } };
 
 AchievementItem* ac_instrumentationIntroItems[] = {
@@ -77,11 +77,11 @@ AchievementCategory ac_instrumentation = { "instrumentation", "Instrumentation",
 
 
 AchievementItem ai_loadTrace = { "loadTrace", "Load a trace", [](const ctx&){
-    ImGui::TextWrapped( "You can open a previously saved trace file (or one received from a friend) with the '" ICON_FA_FOLDER_OPEN " Open saved trace' button on the welcome screen." );
+    ImGui::TextWrapped( "You can open a previously saved trace file (or one received from a friend) with the \"" ICON_FA_FOLDER_OPEN " Open saved trace\" button on the welcome screen." );
 } };
 
 AchievementItem ai_saveTrace = { "saveTrace", "Save a trace", [](const ctx&){
-    ImGui::TextWrapped( "Now that you have traced your application (or are in the process of doing so), you can save it to disk for future reference. You can do this by clicking on the " ICON_FA_WIFI " icon in the top left corner of the screen and then clicking on the '" ICON_FA_FLOPPY_DISK " Save trace' button." );
+    ImGui::TextWrapped( "Now that you have traced your application (or are in the process of doing so), you can save it to disk for future reference. You can do this by clicking on the " ICON_FA_WIFI " icon in the top left corner of the screen and then clicking on the \"" ICON_FA_FLOPPY_DISK " Save trace\" button." );
     ImGui::TextWrapped( "Keeping old traces on hand can be beneficial, as you can compare the performance of your optimizations with what you had before." );
     ImGui::TextWrapped( "You can also share the trace with your friends or co-workers by sending them the trace file." );
     ImGui::Spacing();
@@ -110,7 +110,7 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
     ImGui::TextWrapped( " 1. Integrate Tracy Profiler into your application. This can be done using CMake, Meson, or simply by adding the source files to your project." );
     ImGui::TextWrapped( " 2. Make sure that TracyClient.cpp (or the Tracy library) is included in your build." );
     ImGui::TextWrapped( " 3. Define TRACY_ENABLE in your build configuration, for the whole application. Do not do it in a single source file because it won't work." );
-    ImGui::TextWrapped( " 4. Start your application, and '" ICON_FA_WIFI " Connect' to it with the profiler." );
+    ImGui::TextWrapped( " 4. Start your application, and \"" ICON_FA_WIFI " Connect\" to it with the profiler." );
     ImGui::TextWrapped( "Please refer to the user manual for more details." );
     if( ImGui::SmallButton( "Download the user manual" ) )
     {
@@ -119,7 +119,7 @@ AchievementItem ai_connectToServer = { "connectToClient", "First profiling sessi
 }, ac_connectToServerItems, ac_connectToServerUnlock };
 
 AchievementItem ai_globalSettings = { "globalSettings", "Global settings", [](const ctx&){
-    ImGui::TextWrapped( "Tracy has a variety of settings that can be adjusted to suit your needs. These settings can be found by clicking on the " ICON_FA_WRENCH " icon on the welcome screen. This will open the about window, where you can expand the '" ICON_FA_TOOLBOX " Global settings' menu." );
+    ImGui::TextWrapped( "Tracy has a variety of settings that can be adjusted to suit your needs. These settings can be found by clicking on the " ICON_FA_WRENCH " icon on the welcome screen. This will open the about window, where you can expand the \"" ICON_FA_TOOLBOX " Global settings\" menu." );
     ImGui::TextWrapped( "The settings are saved between sessions, so you only need to set them once." );
 } };
 

@@ -77,6 +77,21 @@ AchievementsMgr::AchievementsMgr()
         }
     }
 
+    auto c = data::AchievementCategories;
+    while( *c )
+    {
+        if( (*c)->unlockTime > 0 )
+        {
+            auto items = (*c)->items;
+            while( *items )
+            {
+                if( (*items)->unlockTime == 0 ) (*items)->unlockTime = (*c)->unlockTime;
+                items++;
+            }
+        }
+        c++;
+    }
+
     ini_free( ini );
 }
 

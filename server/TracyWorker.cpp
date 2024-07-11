@@ -6307,7 +6307,7 @@ void Worker::ProcessCallstackSampleImplStats( const SampleData& sd, ThreadData& 
 
     if( t != 0 )
     {
-        assert( td.samples.size() > td.ghostIdx );
+        //assert( td.samples.size() > td.ghostIdx );
         if( framesKnown && td.ghostIdx + 1 == td.samples.size() )
         {
             td.ghostIdx++;

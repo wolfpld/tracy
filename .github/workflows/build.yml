@@ -43,14 +43,10 @@ jobs:
       run: |
         cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
         cmake --build csvexport/build --parallel --config Release
-    - name: Import-chrome utility
+    - name: Import utilities
       run: |
-        cmake -B import-chrome/build -S import-chrome -DCMAKE_BUILD_TYPE=Release
-        cmake --build import-chrome/build --parallel --config Release
-    - name: Import-fuchsia utility
-      run: |
-        cmake -B import-fuchsia/build -S import-fuchsia -DCMAKE_BUILD_TYPE=Release
-        cmake --build import-fuchsia/build --parallel --config Release
+        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release
+        cmake --build import/build --parallel --config Release
     - if: ${{ !startsWith(matrix.os, 'windows') }}
       name: Library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
@@ -63,8 +59,8 @@ jobs:
         cp update/build/tracy-update bin
         cp capture/build/tracy-capture bin
         cp csvexport/build/tracy-csvexport bin
-        cp import-chrome/build/tracy-import-chrome bin
-        cp import-fuchsia/build/tracy-import-fuchsia bin
+        cp import/build/tracy-import-chrome bin
+        cp import/build/tracy-import-fuchsia bin
     - if: startsWith(matrix.os, 'windows')
       name: Find Artifacts
       id: find_artifacts_windows
@@ -74,8 +70,8 @@ jobs:
         copy update\build\Release\tracy-update.exe bin
         copy capture\build\Release\tracy-capture.exe bin
         copy csvexport\build\Release\tracy-csvexport.exe bin
-        copy import-chrome\build\Release\tracy-import-chrome.exe bin
-        copy import-fuchsia\build\Release\tracy-import-fuchsia.exe bin
+        copy import\build\Release\tracy-import-chrome.exe bin
+        copy import\build\Release\tracy-import-fuchsia.exe bin
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os }}

@@ -12,6 +12,8 @@ project(
   LANGUAGES C CXX
   VERSION ${TRACY_VERSION_STRING})
 
+file(GENERATE OUTPUT .gitignore CONTENT "*")
+
 # a bit weird but works: include the client cmake config coming from top-level
 # cmake needs us to specify the build subfolder -> client/ this way we can
 # simply link the test executable against TracyClient

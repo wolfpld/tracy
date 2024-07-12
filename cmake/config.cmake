@@ -52,3 +52,5 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-eliminate-unused-debug-types")
     endif()
 endif()
+
+file(GENERATE OUTPUT .gitignore CONTENT "*")

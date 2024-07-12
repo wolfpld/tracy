@@ -5,6 +5,8 @@ include(cmake/version.cmake)
 
 project(Tracy LANGUAGES CXX VERSION ${TRACY_VERSION_STRING})
 
+file(GENERATE OUTPUT .gitignore CONTENT "*")
+
 if(${BUILD_SHARED_LIBS})
 	set(DEFAULT_STATIC OFF)
 else()

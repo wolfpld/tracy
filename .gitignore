@@ -1,10 +1,4 @@
 .vs
-*.opendb
-*.db
-*.vcxproj.user
-x64
-Release
-Debug
 _build
 _compiler
 tools/*
@@ -36,7 +30,6 @@ profiler/build/win32/Tracy.aps
 extra/vswhere.exe
 extra/tracy-build
 .cache
-build
 compile_commands.json
 profiler/build/wasm/Tracy-release.*
 profiler/build/wasm/Tracy-debug.*

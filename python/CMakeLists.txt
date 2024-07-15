@@ -9,14 +9,8 @@ if(EXTERNAL_PYBIND11)
     FetchContent_MakeAvailable(pybind11)
 endif()
 
-set(BUFFER_SIZE 128 CACHE STRING "The size of the pointer buffer")
-set(NAME_LENGTH 128 CACHE STRING "The length of a name in the buffer")
-
 pybind11_add_module(TracyClientBindings SHARED bindings/Module.cpp)
 target_link_libraries(TracyClientBindings PUBLIC TracyClient)
-target_compile_definitions(TracyClientBindings PUBLIC BUFFER_SIZE=${BUFFER_SIZE})
-target_compile_definitions(TracyClientBindings PUBLIC NAME_LENGTH=${NAME_LENGTH})
-
 set(TRACY_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tracy_client)
 set(TRACY_LIB_SYMLINK $<TARGET_FILE_PREFIX:TracyClient>$<TARGET_FILE_BASE_NAME:TracyClient>$<TARGET_FILE_SUFFIX:TracyClient>)
 

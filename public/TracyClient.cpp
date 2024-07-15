@@ -50,6 +50,10 @@
 #  endif
 #endif
 
+#ifdef TRACY_NAME_BUFFER
+#include "common/TracyNameBuffer.cpp"
+#endif
+
 #ifdef _MSC_VER
 #  pragma comment(lib, "ws2_32.lib")
 #  pragma comment(lib, "dbghelp.lib")

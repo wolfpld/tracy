@@ -2,7 +2,7 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-vx.xx.x (xxxx-xx-xx)
+v0.11.0 (2024-07-16)
 --------------------
 
 - Support for pre-0.9 traces has been dropped.

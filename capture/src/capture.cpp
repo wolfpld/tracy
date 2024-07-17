@@ -1,8 +1,8 @@
 #ifdef _WIN32
-#  include <windows.h>
-#  include <io.h>
+#    include <io.h>
+#    include <windows.h>
 #else
-#  include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #include <atomic>
@@ -25,28 +25,28 @@
 #include "../../server/TracyWorker.hpp"
 
 #ifdef _WIN32
-#  include "../../getopt/getopt.h"
+#    include "../../getopt/getopt.h"
 #endif
-
 
 // This atomic is written by a signal handler (SigInt). Traditionally that would
 // have had to be `volatile sig_atomic_t`, and annoyingly, `bool` was
 // technically not allowed there, even though in practice it would work.
 // The good thing with C++11 atomics is that we can use atomic<bool> instead
 // here and be on the actually supported path.
-static std::atomic<bool> s_disconnect { false };
+static std::atomic<bool> s_disconnect{ false };
 
 void SigInt( int )
 {
     // Relaxed order is closest to a traditional `volatile` write.
     // We don't need stronger ordering since this signal handler doesn't do
     // anything else that would need to be ordered relatively to this.
-    s_disconnect.store(true, std::memory_order_relaxed);
+    s_disconnect.store( true, std::memory_order_relaxed );
 }
 
 static bool s_isStdoutATerminal = false;
 
-void InitIsStdoutATerminal() {
+void InitIsStdoutATerminal()
+{
 #ifdef _WIN32
     s_isStdoutATerminal = _isatty( fileno( stdout ) );
 #else
@@ -69,7 +69,8 @@ bool IsStdoutATerminal() { return s_isStdoutATerminal; }
 
 // Like printf, but if stdout is a terminal, prepends the output with
 // the given `ansiEscape` and appends ANSI_RESET.
-void AnsiPrintf( const char* ansiEscape, const char* format, ... ) {
+void AnsiPrintf( const char* ansiEscape, const char* format, ... )
+{
     if( IsStdoutATerminal() )
     {
         // Prepend ansiEscape and append ANSI_RESET.
@@ -133,7 +134,7 @@ int main( int argc, char** argv )
             overwrite = true;
             break;
         case 's':
-            seconds = atoi(optarg);
+            seconds = atoi( optarg );
             break;
         case 'm':
             memoryLimit = std::clamp( atoll( optarg ), 1ll, 999ll ) * tracy::GetPhysicalMemorySize() / 100;
@@ -170,22 +171,26 @@ int main( int argc, char** argv )
         const auto handshake = worker.GetHandshakeStatus();
         if( handshake == tracy::HandshakeProtocolMismatch )
         {
-            printf( "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
+            printf(
+                "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
             return 1;
         }
         if( handshake == tracy::HandshakeNotAvailable )
         {
-            printf( "\nThe client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled.\n" );
+            printf(
+                "\nThe client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled.\n" );
             return 2;
         }
         if( handshake == tracy::HandshakeDropped )
         {
-            printf( "\nThe client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration.\n" );
+            printf(
+                "\nThe client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration.\n" );
             return 3;
         }
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
-    printf( "\nQueue delay: %s\nTimer resolution: %s\n", tracy::TimeToString( worker.GetDelay() ), tracy::TimeToString( worker.GetResolution() ) );
+    printf( "\nQueue delay: %s\nTimer resolution: %s\n", tracy::TimeToString( worker.GetDelay() ),
+            tracy::TimeToString( worker.GetResolution() ) );
 
 #ifdef _WIN32
     signal( SIGINT, SigInt );
@@ -210,7 +215,7 @@ int main( int argc, char** argv )
             worker.Disconnect();
             // Relaxed order is sufficient because only this thread ever reads
             // this value.
-            s_disconnect.store(false, std::memory_order_relaxed );
+            s_disconnect.store( false, std::memory_order_relaxed );
             break;
         }
 
@@ -232,21 +237,22 @@ int main( int argc, char** argv )
                 unitsPerMbps = 1000.f;
             }
             AnsiPrintf( ANSI_ERASE_LINE ANSI_CYAN ANSI_BOLD, "\r%7.2f %s", mbps * unitsPerMbps, unit );
-            printf( " /");
+            printf( " /" );
             AnsiPrintf( ANSI_CYAN ANSI_BOLD, "%5.1f%%", compRatio * 100.f );
-            printf( " =");
+            printf( " =" );
             AnsiPrintf( ANSI_YELLOW ANSI_BOLD, "%7.2f Mbps", mbps / compRatio );
-            printf( " | ");
-            AnsiPrintf( ANSI_YELLOW, "Tx: ");
+            printf( " | " );
+            AnsiPrintf( ANSI_YELLOW, "Tx: " );
             AnsiPrintf( ANSI_GREEN, "%s", tracy::MemSizeToString( netTotal ) );
-            printf( " | ");
-            AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage.load( std::memory_order_relaxed ) ) );
+            printf( " | " );
+            AnsiPrintf( ANSI_RED ANSI_BOLD, "%s",
+                        tracy::MemSizeToString( tracy::memUsage.load( std::memory_order_relaxed ) ) );
             if( memoryLimit > 0 )
             {
                 printf( " / " );
                 AnsiPrintf( ANSI_BLUE ANSI_BOLD, "%s", tracy::MemSizeToString( memoryLimit ) );
             }
-            printf( " | ");
+            printf( " | " );
             AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() - firstTime ) );
             fflush( stdout );
         }
@@ -255,11 +261,11 @@ int main( int argc, char** argv )
         if( seconds != -1 )
         {
             const auto dur = std::chrono::high_resolution_clock::now() - t0;
-            if( std::chrono::duration_cast<std::chrono::seconds>(dur).count() >= seconds )
+            if( std::chrono::duration_cast<std::chrono::seconds>( dur ).count() >= seconds )
             {
                 // Relaxed order is sufficient because only this thread ever reads
                 // this value.
-                s_disconnect.store(true, std::memory_order_relaxed );
+                s_disconnect.store( true, std::memory_order_relaxed );
             }
         }
     }
@@ -289,12 +295,12 @@ int main( int argc, char** argv )
                 else
                 {
                     const auto fsz = frameData->size;
-                    for( uint8_t f=0; f<fsz; f++ )
+                    for( uint8_t f = 0; f < fsz; f++ )
                     {
                         const auto& frame = frameData->data[f];
                         auto txt = worker.GetString( frame.name );
 
-                        if( fidx == 0 && f != fsz-1 )
+                        if( fidx == 0 && f != fsz - 1 )
                         {
                             auto test = tracy::s_tracyStackFrames;
                             bool match = false;
@@ -305,12 +311,11 @@ int main( int argc, char** argv )
                                     match = true;
                                     break;
                                 }
-                            }
-                            while( *++test );
+                            } while( *++test );
                             if( match ) continue;
                         }
 
-                        if( f == fsz-1 )
+                        if( f == fsz - 1 )
                         {
                             printf( "%3i. ", fidx++ );
                         }
@@ -343,8 +348,9 @@ int main( int argc, char** argv )
     }
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
-        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - firstTime ), tracy::RealToString( worker.GetZoneCount() ),
-        tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
+            worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - firstTime ),
+            tracy::RealToString( worker.GetZoneCount() ),
+            tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, tracy::FileCompression::Zstd, 3, 4 ) );
     if( f )
@@ -353,11 +359,12 @@ int main( int argc, char** argv )
         AnsiPrintf( ANSI_GREEN ANSI_BOLD, " done!\n" );
         f->Finish();
         const auto stats = f->GetCompressionStatistics();
-        printf( "Trace size %s (%.2f%% ratio)\n", tracy::MemSizeToString( stats.second ), 100.f * stats.second / stats.first );
+        printf( "Trace size %s (%.2f%% ratio)\n", tracy::MemSizeToString( stats.second ),
+                100.f * stats.second / stats.first );
     }
     else
     {
-        AnsiPrintf( ANSI_RED ANSI_BOLD, " failed!\n");
+        AnsiPrintf( ANSI_RED ANSI_BOLD, " failed!\n" );
     }
 
     return 0;

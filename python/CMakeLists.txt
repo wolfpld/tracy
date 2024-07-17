@@ -14,6 +14,7 @@ set(NAME_LENGTH 128 CACHE STRING "The length of a name in the buffer")
 
 pybind11_add_module(TracyClientBindings SHARED bindings/Module.cpp)
 target_link_libraries(TracyClientBindings PUBLIC TracyClient)
+target_link_libraries(TracyClientBindings PUBLIC ${Python_LIBRARIES})
 target_compile_definitions(TracyClientBindings PUBLIC BUFFER_SIZE=${BUFFER_SIZE})
 target_compile_definitions(TracyClientBindings PUBLIC NAME_LENGTH=${NAME_LENGTH})
 

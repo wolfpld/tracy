@@ -1,3 +1,5 @@
+set(CMAKE_CXX_STANDARD 20)
+
 option(EXTERNAL_PYBIND11 "Whether to download pybind11" ON)
 
 if(EXTERNAL_PYBIND11)

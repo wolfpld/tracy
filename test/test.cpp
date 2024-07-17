@@ -1,7 +1,9 @@
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <signal.h>
 #include <stdlib.h>
 #include "tracy/Tracy.hpp"
 
@@ -17,6 +19,19 @@ struct static_init_test_t
         new char[64*1024];
     }
 };
+
+static std::atomic<bool> s_triggerCrash{false};
+static std::atomic<bool> s_triggerInstrumentationFailure{false};
+
+void SignalHandler_TriggerCrash(int)
+{
+    s_triggerCrash.store(true, std::memory_order_relaxed);
+}
+
+void SignalHandler_TriggerInstrumentationFailure(int)
+{
+    s_triggerInstrumentationFailure.store(true, std::memory_order_relaxed);
+}
 
 static const static_init_test_t static_init_test;
 
@@ -301,6 +316,20 @@ void DeadlockTest2()
 
 int main()
 {
+#ifdef _WIN32
+    signal( SIGUSR1, SignalHandler_TriggerCrash );
+    signal( SIGUSR2, SignalHandler_TriggerInstrumentationFailure );
+#else
+    struct sigaction sigusr1, oldsigusr1,sigusr2, oldsigusr2 ;
+    memset( &sigusr1, 0, sizeof( sigusr1 ) );
+    sigusr1.sa_handler = SignalHandler_TriggerCrash;
+    sigaction( SIGUSR1, &sigusr1, &oldsigusr1 );
+
+    memset( &sigusr2, 0, sizeof( sigusr2 ) );
+    sigusr2.sa_handler = SignalHandler_TriggerInstrumentationFailure;
+    sigaction( SIGUSR2, &sigusr2, &oldsigusr2 );
+#endif
+
     auto t1 = std::thread( TestFunction );
     auto t2 = std::thread( TestFunction );
     auto t3 = std::thread( ResolutionCheck );
@@ -338,6 +367,19 @@ int main()
         std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         {
             ZoneScoped;
+            if(s_triggerCrash.load(std::memory_order_relaxed))
+            {
+                std::cout << "Abort requested" << std::endl;
+                std::abort();
+            }
+            if (s_triggerInstrumentationFailure.load(std::memory_order_relaxed))
+            {
+                std::cout << "Triggering instrumentation failure" << std::endl;
+                char const* randomPtr = "Hello!";
+                TracyFree(randomPtr);
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                return 2;
+            }
             std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         }
         if(image != nullptr)

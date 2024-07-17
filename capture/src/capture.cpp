@@ -276,7 +276,7 @@ int main( int argc, char** argv )
         }
         if( fd.callstack != 0 )
         {
-            AnsiPrintf( ANSI_BOLD, "\n%sFailure callstack:%s\n" );
+            AnsiPrintf( ANSI_BOLD, "\nFailure callstack:\n" );
             auto& cs = worker.GetCallstack( fd.callstack );
             int fidx = 0;
             for( auto& entry : cs )

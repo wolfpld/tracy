@@ -2336,6 +2336,7 @@ See below for example steps to build the Python bindings using CMake:
 mkdir build
 cd build
 cmake -DTRACY_STATIC=OFF -DTRACY_CLIENT_PYTHON=ON ../
+make -j$(nproc)
 \end{lstlisting}
 
 Once this has finished building the Python package can be built as follows:
@@ -2817,15 +2818,15 @@ Going overboard with the number of streams is not recommended, especially with t
 	\centering
 	\begin{tabular}{c|c|c|c|c}
         \diagbox[font=\footnotesize,width=5.25em,trim=lr]{\textbf{Mode}}{\textbf{Streams}} & \textbf{4} & \textbf{8} & \textbf{16} & \textbf{32} \\ \hline
-		lz4 & 2.04 & 2.52 & 2.11 & 3.24 \\ 
-		lz4 hc & 3.56 & 6.73 & 9.49 & 15.26 \\ 
+		lz4 & 2.04 & 2.52 & 2.11 & 3.24 \\
+		lz4 hc & 3.56 & 6.73 & 9.49 & 15.26 \\
 		lz4 ext & 3.38 & 6.53 & 9.57 & 17.03 \\ \hline
-		zstd 1 & 2.24 & 3.68 & 3.40 & 3.37 \\ 
-		zstd 3 & 3.23 & 4.13 & 4.07 & 4.50 \\ 
-		zstd 6 & 3.52 & 6.00 & 6.53 & 6.95 \\ 
-		zstd 9 & 3.10 & 4.26 & 5.12 & 5.40 \\ 
-		zstd 18 & 3.22 & 5.41 & 8.49 & 14.51 \\ 
-		zstd 22 & 3.99 & 7.47 & 11.10 & 18.20 \\ 
+		zstd 1 & 2.24 & 3.68 & 3.40 & 3.37 \\
+		zstd 3 & 3.23 & 4.13 & 4.07 & 4.50 \\
+		zstd 6 & 3.52 & 6.00 & 6.53 & 6.95 \\
+		zstd 9 & 3.10 & 4.26 & 5.12 & 5.40 \\
+		zstd 18 & 3.22 & 5.41 & 8.49 & 14.51 \\
+		zstd 22 & 3.99 & 7.47 & 11.10 & 18.20 \\
 	\end{tabular}
 	\caption{The speedup (\emph{x} times faster) in saving time for different modes of compression, as compared to a single stream.}
 	\label{streamspeedup}

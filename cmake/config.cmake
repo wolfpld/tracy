@@ -42,7 +42,7 @@ if(EMSCRIPTEN)
     add_link_options(-pthread)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT EMSCRIPTEN)
     find_program(MOLD_LINKER mold)
     if(MOLD_LINKER)
         set(CMAKE_LINKER_TYPE "MOLD")

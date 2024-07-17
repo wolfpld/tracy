@@ -1,9 +1,9 @@
 #include <atomic>
 #include <chrono>
-#include <csignal>
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <signal.h>
 #include <stdlib.h>
 #include "tracy/Tracy.hpp"
 

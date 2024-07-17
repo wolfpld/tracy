@@ -1,0 +1,18 @@
+# Empirical format config, based on observed style guide
+# Use this only as an help to fit the surrounding code style - don't reformat whole files at once
+---
+BasedOnStyle: LLVM
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Allman
+BreakConstructorInitializers: BeforeComma
+BreakStringLiterals: false
+ColumnLimit: 120
+FixNamespaceComments: false
+IndentPPDirectives: AfterHash
+IndentWidth: 4
+PointerAlignment: Left
+SpaceBeforeParens: Never
+SpacesInParentheses: true
+TabWidth: 4

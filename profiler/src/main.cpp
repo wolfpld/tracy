@@ -120,7 +120,7 @@ static bool s_customTitle = false;
 static bool s_isElevated = false;
 static size_t s_totalMem = tracy::GetPhysicalMemorySize();
 tracy::Config s_config;
-tracy::AchievementsMgr s_achievements;
+tracy::AchievementsMgr* s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 static bool s_switchAchievementCategory = false;
 
@@ -341,9 +341,11 @@ int main( int argc, char** argv )
 
     ConnectionHistory connHistory;
     Filters filters;
+    tracy::AchievementsMgr achievements;
 
     connHist = &connHistory;
     filt = &filters;
+    s_achievements = &achievements;
 
 #ifndef __EMSCRIPTEN__
     updateThread = std::thread( [] {
@@ -392,7 +394,7 @@ int main( int argc, char** argv )
         }
     }
 
-    s_achievements.Achieve( "achievementsIntro" );
+    s_achievements->Achieve( "achievementsIntro" );
 
     SetupDPIScale();
 
@@ -401,12 +403,12 @@ int main( int argc, char** argv )
 
     if( initFileOpen )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
         initFileOpen.reset();
     }
     else if( connectTo )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
     }
 
     tracy::Fileselector::Init();
@@ -637,7 +639,7 @@ static void DrawContents()
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );
 
-    const bool achievementsAttention = s_config.achievements ? s_achievements.NeedsAttention() : false;
+    const bool achievementsAttention = s_config.achievements ? s_achievements->NeedsAttention() : false;
 
     static int activeFrames = 3;
     if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) || achievementsAttention )
@@ -721,7 +723,7 @@ static void DrawContents()
             ImGui::Separator();
             if( ImGui::TreeNode( ICON_FA_TOOLBOX " Global settings" ) )
             {
-                s_achievements.Achieve( "globalSettings" );
+                s_achievements->Achieve( "globalSettings" );
 
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
 
@@ -956,11 +958,11 @@ static void DrawContents()
             {
                 std::string addrPart = std::string( addr, ptr );
                 uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+                view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
             }
             else
             {
-                view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+                view = std::make_unique<tracy::View>( RunOnMainThread, addr, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
             }
         }
         if( s_config.memoryLimit )
@@ -983,7 +985,7 @@ static void DrawContents()
                         loadThread = std::thread( [f] {
                             try
                             {
-                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -1116,7 +1118,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -1285,7 +1287,7 @@ static void DrawContents()
         viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
         if( reconnect )
         {
-            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, &s_achievements );
+            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
         }
         break;
     default:
@@ -1364,7 +1366,7 @@ static void DrawContents()
         static float openTimeLeft = 0;
 
         float aSize = 0;
-        const auto aItem = s_achievements.GetNextQueue();
+        const auto aItem = s_achievements->GetNextQueue();
 
         if( aItem )
         {
@@ -1394,7 +1396,7 @@ static void DrawContents()
                 animProgress = std::max( animProgress - ImGui::GetIO().DeltaTime / 0.3f, 0.f );
                 if( animProgress == 0 )
                 {
-                    s_achievements.PopQueue();
+                    s_achievements->PopQueue();
                     animStage = 0;
                 }
             }
@@ -1473,20 +1475,20 @@ static void DrawContents()
             {
                 s_switchAchievementCategory = false;
                 assert( s_achievementItem );
-                targetCategory = s_achievements.GetCategoryForAchievement( s_achievementItem->id );
+                targetCategory = s_achievements->GetCategoryForAchievement( s_achievementItem->id );
             }
 
             ImGui::SetNextWindowSize( ImVec2( 700 * dpiScale, 450 * dpiScale ), ImGuiCond_FirstUseEver );
             ImGui::Begin( "Achievements List", &showAchievements, ImGuiWindowFlags_NoDocking );
             ImGui::BeginTabBar( "###categories" );
-            auto categories = s_achievements.GetCategories();
+            auto categories = s_achievements->GetCategories();
             while( *categories )
             {
                 auto& c = *categories++;
                 if( c->unlockTime > 0 )
                 {
                     char tmp[256];
-                    if( s_achievements.CategoryNeedsAttention( c->id ) )
+                    if( s_achievements->CategoryNeedsAttention( c->id ) )
                     {
                         snprintf( tmp, 256, ICON_FA_CIRCLE_EXCLAMATION " %s###%s", c->name, c->id );
                     }

@@ -9,7 +9,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 set(CMAKE_CXX_STANDARD 20)
 
 project(
-    tracy-import-fuchsia
+    tracy-import
     LANGUAGES C CXX
     VERSION ${TRACY_VERSION_STRING}
 )
@@ -18,10 +18,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
-set(PROGRAM_FILES
+add_executable(tracy-import-chrome
+    src/import-chrome.cpp
+)
+target_link_libraries(tracy-import-chrome PRIVATE TracyServer)
+
+add_executable(tracy-import-fuchsia
     src/import-fuchsia.cpp
 )
+target_link_libraries(tracy-import-fuchsia PRIVATE TracyServer)
 
-add_executable(${PROJECT_NAME} ${PROGRAM_FILES} ${COMMON_FILES} ${SERVER_FILES})
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer)
 set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

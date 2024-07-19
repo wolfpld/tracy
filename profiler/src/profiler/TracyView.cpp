@@ -36,7 +36,7 @@ namespace tracy
 double s_time = 0;
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
-    : m_worker( addr, port, config.memoryLimit == 0 ? -1 : ( config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
+    : m_worker( addr, port, config.memoryLimit == 0 ? NO_WORKER_MEMORY_LIMIT : ( config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
     , m_viewModeHeuristicTry( true )

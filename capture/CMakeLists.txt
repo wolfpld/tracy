@@ -18,10 +18,15 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
-set(PROGRAM_FILES
+
+add_executable(${PROJECT_NAME}
     src/capture.cpp
 )
-
-add_executable(${PROJECT_NAME} ${PROGRAM_FILES} ${COMMON_FILES} ${SERVER_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyGetOpt)
+
+add_executable(tracy-multicapture
+    src/multicapture.cpp
+)
+target_link_libraries(tracy-multicapture TracyServer TracyGetOpt)
+
 set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

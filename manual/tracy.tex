@@ -638,6 +638,10 @@ Although the basic features will work without them, you'll have to grant elevate
     \item \texttt{-{}-pid=host}
 \end{itemize}
 
+\subsubsection{Troubleshooting}
+
+Setting the \texttt{TRACY\_VERBOSE} variable will make the client display advanced information about the detected features. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
+
 \subsubsection{Changing network port}
 
 By default, the client and server communicate on the network using port 8086. The profiling session utilizes the TCP protocol, and the client sends presence announcement broadcasts over UDP.

@@ -47,6 +47,13 @@ if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     target_link_libraries(TracyClient PUBLIC ${EXECINFO_LIBRARY})
 endif()
 
+if(TRACY_LIBUNWIND_BACKTRACE)
+    include(FindPkgConfig)
+    pkg_check_modules(unwind REQUIRED libunwind)
+    target_include_directories(TracyClient INTERFACE ${unwind_INCLUDE_DIRS})
+    target_link_libraries(TracyClient INTERFACE ${unwind_LINK_LIBRARIES})
+endif()
+
 add_library(Tracy::TracyClient ALIAS TracyClient)
 
 macro(set_option option help value)

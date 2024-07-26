@@ -38,7 +38,7 @@ target_link_libraries(
 )
 
 # Public dependency on some libraries required when using Mingw
-if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU|Clang")
     target_link_libraries(TracyClient PUBLIC ws2_32 dbghelp)
 endif()
 

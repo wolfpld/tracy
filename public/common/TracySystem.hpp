@@ -14,6 +14,16 @@ TRACY_API uint32_t GetThreadHandleImpl();
 }
 
 #ifdef TRACY_ENABLE
+struct ThreadNameData
+{
+    uint32_t id;
+    uint32_t groupHint;
+    const char* name;
+    ThreadNameData* next;
+};
+
+ThreadNameData* GetThreadNameData( uint32_t id );
+
 TRACY_API uint32_t GetThreadHandle();
 #else
 static inline uint32_t GetThreadHandle()

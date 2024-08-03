@@ -101,13 +101,6 @@ TRACY_API uint32_t GetThreadHandleImpl()
 }
 
 #ifdef TRACY_ENABLE
-struct ThreadNameData
-{
-    uint32_t id;
-    uint32_t groupHint;
-    const char* name;
-    ThreadNameData* next;
-};
 std::atomic<ThreadNameData*>& GetThreadNameData();
 #endif
 
@@ -218,6 +211,22 @@ TRACY_API void SetThreadNameWithHint( const char* name, uint32_t groupHint )
     }
 #endif
 }
+
+#ifdef TRACY_ENABLE
+ThreadNameData* GetThreadNameData( uint32_t id )
+{
+    auto ptr = GetThreadNameData().load( std::memory_order_relaxed );
+    while( ptr )
+    {
+        if( ptr->id == id )
+        {
+            return ptr;
+        }
+        ptr = ptr->next;
+    }
+    return nullptr;
+}
+#endif
 
 TRACY_API const char* GetThreadName( uint32_t id )
 {

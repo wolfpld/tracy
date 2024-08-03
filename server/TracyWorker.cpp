@@ -984,7 +984,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         auto td = m_slab.AllocInit<ThreadData>();
         uint64_t tid;
-        f.Read4( tid, td->count, td->kernelSampleCnt, td->isFiber );
+        if( fileVer >= FileVersion( 0, 11, 1 ) )
+        {
+            f.Read5( tid, td->count, td->kernelSampleCnt, td->isFiber, td->groupHint );
+        }
+        else
+        {
+            f.Read4( tid, td->count, td->kernelSampleCnt, td->isFiber );
+            td->groupHint = 0;
+        }
         td->id = tid;
         m_data.zonesCnt += td->count;
         uint32_t tsz;
@@ -1054,7 +1062,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 f.Skip( ssz * ( 8 + 3 ) );
             }
         }
-        td->groupHint = 0;
         m_data.threads[i] = td;
         m_threadMap.emplace( tid, td );
     }
@@ -7904,6 +7911,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &thread->count, sizeof( thread->count ) );
         f.Write( &thread->kernelSampleCnt, sizeof( thread->kernelSampleCnt ) );
         f.Write( &thread->isFiber, sizeof( thread->isFiber ) );
+        f.Write( &thread->groupHint, sizeof( thread->groupHint ) );
         WriteTimeline( f, thread->timeline, refTime );
         sz = thread->messages.size();
         f.Write( &sz, sizeof( sz ) );

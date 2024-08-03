@@ -914,6 +914,8 @@ The graphic server application will adapt to the system DPI scaling. If for some
 
 Remember to set thread names for proper identification of threads. You should do so by using the function \texttt{tracy::SetThreadName(name)} exposed in the \texttt{public/common/TracySystem.hpp} header, as the system facilities typically have limited functionality.
 
+It is also possible to specify a thread group hint with \texttt{tracy::SetThreadNameWithHint(name, int32\_t groupHint)}. This hint is an arbitrary number that is used to group threads together in the profiler UI. The default value and the value for the main thread is zero.
+
 Tracy will try to capture thread names through operating system data if context switch capture is active. However, this is only a fallback mechanism, and it shouldn't be relied upon.
 
 \subsubsection{Source location data customization}

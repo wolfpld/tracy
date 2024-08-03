@@ -368,7 +368,8 @@ void View::DrawTimeline()
             m_threadOrder.reserve( threadData.size() );
             for( size_t i=m_threadOrder.size(); i<threadData.size(); i++ )
             {
-                m_threadOrder.push_back( threadData[i] );
+                auto it = std::upper_bound( m_threadOrder.begin(), m_threadOrder.end(), threadData[i]->groupHint, []( const auto& lhs, const auto& rhs ) { return lhs < rhs->groupHint; } );
+                m_threadOrder.insert( it, threadData[i] );
             }
         }
         for( const auto& v : m_threadOrder )

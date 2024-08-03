@@ -608,7 +608,10 @@ void View::DrawOptions()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Sort" ) )
         {
-            std::sort( m_threadOrder.begin(), m_threadOrder.end(), [this] ( const auto& lhs, const auto& rhs ) { return strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) ) < 0; } );
+            std::sort( m_threadOrder.begin(), m_threadOrder.end(), [this] ( const auto& lhs, const auto& rhs ) {
+                if( lhs->groupHint != rhs->groupHint ) return lhs->groupHint < rhs->groupHint;
+                return strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) ) < 0;
+            } );
         }
 
         const auto wposx = ImGui::GetCursorScreenPos().x;

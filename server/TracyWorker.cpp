@@ -1054,6 +1054,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 f.Skip( ssz * ( 8 + 3 ) );
             }
         }
+        td->groupHint = 0;
         m_data.threads[i] = td;
         m_threadMap.emplace( tid, td );
     }
@@ -3464,6 +3465,7 @@ ThreadData* Worker::NewThread( uint64_t thread, bool fiber )
     td->fiber = nullptr;
     td->stackCount = (uint8_t*)m_slab.AllocBig( sizeof( uint8_t ) * 64*1024 );
     memset( td->stackCount, 0, sizeof( uint8_t ) * 64*1024 );
+    td->groupHint = 0;
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     m_data.threadDataLast.first = thread;
@@ -4679,6 +4681,9 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::MemNamePayload:
         ProcessMemNamePayload( ev.memName );
+        break;
+    case QueueType::ThreadGroupHint:
+        ProcessThreadGroupHint( ev.threadGroupHint );
         break;
     case QueueType::FiberEnter:
         ProcessFiberEnter( ev.fiberEnter );
@@ -6860,6 +6865,13 @@ void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )
 {
     assert( m_memNamePayload == 0 );
     m_memNamePayload = ev.name;
+}
+
+void Worker::ProcessThreadGroupHint( const QueueThreadGroupHint& ev )
+{
+    auto td = RetrieveThread( ev.thread );
+    assert( td );
+    td->groupHint = ev.groupHint;
 }
 
 void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )

@@ -688,6 +688,7 @@ struct ThreadData
     uint8_t isFiber;
     ThreadData* fiber;
     uint8_t* stackCount;
+    int32_t groupHint;
 
     tracy_force_inline void IncStackCount( int16_t srcloc ) { stackCount[uint16_t(srcloc)]++; }
     tracy_force_inline bool DecStackCount( int16_t srcloc ) { return --stackCount[uint16_t(srcloc)] != 0; }

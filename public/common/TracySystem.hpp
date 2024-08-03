@@ -23,6 +23,7 @@ static inline uint32_t GetThreadHandle()
 #endif
 
 TRACY_API void SetThreadName( const char* name );
+TRACY_API void SetThreadNameWithHint( const char* name, uint32_t groupHint );
 TRACY_API const char* GetThreadName( uint32_t id );
 
 TRACY_API const char* GetEnvVar( const char* name );

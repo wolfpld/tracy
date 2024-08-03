@@ -2,6 +2,17 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+vx.xx.x (xxxx-xx-xx)
+--------------------
+
+- Utilities import-chrome and import-fuchsia now live together in the import
+  directory.
+- Added TRACY_VERBOSE to available CMake options.
+- It is now possible to set TRACY_SAMPLING_HZ via a environment variable.
+- Thread group hints can be now used to group threads together in the
+  profiler UI.
+
+
 v0.11.0 (2024-07-16)
 --------------------
 

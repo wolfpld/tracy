@@ -709,6 +709,17 @@ bool View::DrawImpl()
         m_acb();
     }
 
+    auto& threadHints = m_worker.GetPendingThreadHints();
+    if( !threadHints.empty() )
+    {
+        for( auto v : threadHints )
+        {
+            auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [v]( const auto& t ) { return t->id == v; } );
+            if( it != m_threadOrder.end() ) m_threadOrder.erase( it );      // Will be added in the correct place later, like any newly appearing thread
+        }
+        m_worker.ClearPendingThreadHints();
+    }
+
     const auto& io = ImGui::GetIO();
     m_wasActive = false;
 

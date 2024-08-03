@@ -163,7 +163,7 @@ void RecLock()
 
 void Plot()
 {
-    tracy::SetThreadName( "Plot 1/2" );
+    tracy::SetThreadNameWithHint( "Plot 1/2", -1 );
     unsigned char i = 0;
     for(;;)
     {

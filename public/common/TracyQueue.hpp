@@ -260,6 +260,7 @@ struct QueueFiberEnter
     int64_t time;
     uint64_t fiber;     // ptr
     uint32_t thread;
+    int32_t groupHint;
 };
 
 struct QueueFiberLeave

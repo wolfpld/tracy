@@ -6872,6 +6872,7 @@ void Worker::ProcessThreadGroupHint( const QueueThreadGroupHint& ev )
     auto td = RetrieveThread( ev.thread );
     assert( td );
     td->groupHint = ev.groupHint;
+    m_pendingThreadHints.emplace_back( ev.thread );
 }
 
 void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )

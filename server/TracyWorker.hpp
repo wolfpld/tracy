@@ -678,6 +678,9 @@ public:
 
     StringLocation StoreString(const char* str, size_t sz);
 
+    std::vector<uint32_t>& GetPendingThreadHints() { return m_pendingThreadHints; }
+    void ClearPendingThreadHints() { m_pendingThreadHints.clear(); }
+
 private:
     void Network();
     void Exec();
@@ -1097,6 +1100,8 @@ private:
     unordered_flat_map<uint64_t, PowerData> m_powerData;
 
     Vector<InlineStackData> m_inlineStack;
+
+    std::vector<uint32_t> m_pendingThreadHints;
 };
 
 }

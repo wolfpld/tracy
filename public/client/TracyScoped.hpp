@@ -126,7 +126,7 @@ public:
         TracyQueueCommit( zoneTextFatThread );
     }
 
-    tracy_force_inline void TextFmt( const char* fmt, ... )
+    void TextFmt( const char* fmt, ... )
     {
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
@@ -165,7 +165,7 @@ public:
         TracyQueueCommit( zoneTextFatThread );
     }
 
-    tracy_force_inline void NameFmt( const char* fmt, ... )
+    void NameFmt( const char* fmt, ... )
     {
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND

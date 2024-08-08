@@ -651,7 +651,7 @@ void IpAddress::Set( const struct sockaddr& addr )
 #else
     auto ai = (const struct sockaddr_in*)&addr;
 #endif
-    inet_ntop( AF_INET, &ai->sin_addr, m_text, TEXT_SIZE );
+    inet_ntop(AF_INET, &ai->sin_addr, m_text, TEXT_SIZE);
     m_number = ai->sin_addr.s_addr;
 }
 

@@ -456,7 +456,7 @@ static void UpdateBroadcastClients()
                 auto parsedMessageOpt = tracy::ParseBroadcastMessage(msg, len);
                 if (parsedMessageOpt.has_value())
                 {
-                    auto parsedMessage = parsedMessageOpt.value();
+                    auto parsedMessage     = parsedMessageOpt.value();
                     auto address = addr.GetText();
                     const auto clientId = tracy::ClientUniqueID(addr, parsedMessage.listenPort);
                     const auto ipNumerical = addr.GetNumber();
@@ -478,16 +478,24 @@ static void UpdateBroadcastClients()
                                     } );
                             }
                             resolvLock.unlock();
-                            clients.emplace( clientId, ClientData { time, parsedMessage.protocolVersion, parsedMessage.activeTime, parsedMessage.listenPort, parsedMessage.pid, parsedMessage.programName, std::move( ip ) } );
+                            clients.emplace(clientId,
+                                            ClientData{time,
+                                                       parsedMessage.protocolVersion,
+                                                       parsedMessage.activeTime,
+                                                       parsedMessage.listenPort,
+                                                       parsedMessage.pid,
+                                                       parsedMessage.programName,
+                                                       std::move(ip)});
                         }
                         else
                         {
                             it->second.time = time;
-                            it->second.activeTime = parsedMessage.activeTime;
-                            it->second.port = parsedMessage.listenPort;
-                            it->second.pid = parsedMessage.pid;
+                            it->second.activeTime      = parsedMessage.activeTime;
+                            it->second.port            = parsedMessage.listenPort;
+                            it->second.pid             = parsedMessage.pid;
                             it->second.protocolVersion = parsedMessage.protocolVersion;
-                            if( strcmp( it->second.procName.c_str(), parsedMessage.programName ) != 0 ) it->second.procName = parsedMessage.programName;
+                            if (strcmp(it->second.procName.c_str(), parsedMessage.programName) != 0)
+                                it->second.procName = parsedMessage.programName;
                         }
                     }
                     else if( it != clients.end() )

@@ -104,4 +104,4 @@ uint64_t ClientUniqueID(tracy::IpAddress const& addr, uint16_t port)
 {
     return uint64_t(addr.GetNumber()) | (uint64_t(port) << 32);
 }
-}
+}  // namespace tracy

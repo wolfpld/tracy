@@ -12,6 +12,6 @@ namespace tracy
 std::optional<tracy::BroadcastMessage> ParseBroadcastMessage(const char* msg, size_t msgLen);
 // internal unique ID for a client
 uint64_t ClientUniqueID(tracy::IpAddress const& addr, uint16_t port);
-}
+}  // namespace tracy
 
 #endif

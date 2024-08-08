@@ -25,11 +25,11 @@
 
 #include "TracyFileWrite.hpp"
 #include "TracyPrint.hpp"
+#include "TracyProtocol.hpp"
 #include "TracyProtocolServer.hpp"
+#include "TracySocket.hpp"
 #include "TracySysUtil.hpp"
 #include "TracyWorker.hpp"
-#include "TracyProtocol.hpp"
-#include "TracySocket.hpp"
 #include "tracy_lz4.hpp"
 
 #include "lib.cpp"
@@ -285,7 +285,8 @@ struct CaptureArgs
                 {
                     if( args.overwrite )
                     {
-                        if (args.verbose) {
+                        if( args.verbose )
+                        {
                             std::cout << "Deleting " << entry.path() << std::endl;
                         }
                         std::filesystem::remove( entry );
@@ -314,7 +315,8 @@ struct CaptureArgs
                 }
                 else
                 {
-                    std::cout << "ERROR: Output file " << args.outputPath << " already exists! Use -f to force overwrite." << std::endl;
+                    std::cout << "ERROR: Output file " << args.outputPath
+                              << " already exists! Use -f to force overwrite." << std::endl;
                     exit( 4 );
                 }
             }
@@ -332,7 +334,8 @@ struct CaptureArgs
         std::cout << "verbose " << verbose << "\n";
         std::cout << "address " << address << "\n";
         std::cout << "port " << port << "\n";
-        std::cout << "stopAfter (seconds)" << std::chrono::duration_cast<std::chrono::duration<float>>(stopAfter).count() << "\n";
+        std::cout << "stopAfter (seconds)"
+                  << std::chrono::duration_cast<std::chrono::duration<float>>( stopAfter ).count() << "\n";
         std::cout << "multi " << multi << "\n";
     }
 };
@@ -407,7 +410,8 @@ int runCaptureSingle( CaptureArgs const& args )
     printWorkerFailure( worker, "" );
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
-            worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - worker.GetFirstTime() ),
+            worker.GetFrameCount( *worker.GetFramesBase() ),
+            tracy::TimeToString( worker.GetLastTime() - worker.GetFirstTime() ),
             tracy::RealToString( worker.GetZoneCount() ),
             tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
@@ -488,10 +492,11 @@ int runCaptureMulti( CaptureArgs const& args )
                 {
                     if( bcastClient.msg.protocolVersion != tracy::ProtocolVersion )
                     {
-                        AnsiPrintf(ANSI_RED, "Rejecting client %s; bad protocol version\n", bcastClient.runtimeName().c_str());
+                        AnsiPrintf( ANSI_RED, "Rejecting client %s; bad protocol version\n",
+                                    bcastClient.runtimeName().c_str() );
                         liveUpdateLines = 0;
                         bcastClient.status = ClientStatus::DISABLED;
-                        knownClients.emplace_back(std::move(bcastClient));
+                        knownClients.emplace_back( std::move( bcastClient ) );
                         continue;
                     }
                     if( args.verbose )
@@ -598,9 +603,9 @@ int runCaptureMulti( CaptureArgs const& args )
             double elapsedSeconds =
                 std::chrono::duration_cast<std::chrono::duration<double>>( now - startCaptureTimestamp ).count();
             AnsiPrintf( ANSI_YELLOW, "t=%.1lfs", elapsedSeconds );
-            AnsiPrintf(ANSI_RED, " | ");
-            printCurrentMemoryUsage(tracy::NO_WORKER_MEMORY_LIMIT);
-            printf("\n");
+            AnsiPrintf( ANSI_RED, " | " );
+            printCurrentMemoryUsage( tracy::NO_WORKER_MEMORY_LIMIT );
+            printf( "\n" );
             liveUpdateLines++;
             for( auto const& client : knownClients )
             {

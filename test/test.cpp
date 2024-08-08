@@ -16,6 +16,7 @@ struct static_init_test_t
     static_init_test_t()
     {
         ZoneScoped;
+        ZoneTextF( "Static %s", "init test" );
         new char[64*1024];
     }
 };

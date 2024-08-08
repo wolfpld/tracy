@@ -14,7 +14,8 @@
 
 static bool s_isStdoutATerminal = false;
 
-void InitIsStdoutATerminal() {
+void InitIsStdoutATerminal()
+{
 #ifdef _WIN32
     s_isStdoutATerminal = _isatty( fileno( stdout ) );
 #else
@@ -23,7 +24,6 @@ void InitIsStdoutATerminal() {
 }
 
 bool IsStdoutATerminal() { return s_isStdoutATerminal; }
-
 
 #define ANSI_RESET "\033[0m"
 #define ANSI_BOLD "\033[1m"
@@ -40,9 +40,10 @@ bool IsStdoutATerminal() { return s_isStdoutATerminal; }
 // Like printf, but if stdout is a terminal, prepends the output with
 // the given `ansiEscape` and appends ANSI_RESET.
 #ifdef __GNUC__
-[[gnu::format(__printf__, 2, 3)]]
+[[gnu::format( __printf__, 2, 3 )]]
 #endif
-void AnsiPrintf( const char* ansiEscape, const char* format, ... ) {
+void AnsiPrintf( const char* ansiEscape, const char* format, ... )
+{
     if( IsStdoutATerminal() )
     {
         // Prepend ansiEscape and append ANSI_RESET.
@@ -65,27 +66,30 @@ void AnsiPrintf( const char* ansiEscape, const char* format, ... ) {
 
 // Check handshake status
 // If failure, printf helpful message and return non-zero
-int checkHandshake(tracy::HandshakeStatus handshake)
+int checkHandshake( tracy::HandshakeStatus handshake )
 {
     if( handshake == tracy::HandshakeProtocolMismatch )
     {
-        printf( "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
+        printf(
+            "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
         return 1;
     }
     if( handshake == tracy::HandshakeNotAvailable )
     {
-        printf( "\nThe client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled.\n" );
+        printf(
+            "\nThe client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled.\n" );
         return 2;
     }
     if( handshake == tracy::HandshakeDropped )
     {
-        printf( "\nThe client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration.\n" );
+        printf(
+            "\nThe client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration.\n" );
         return 3;
     }
     return 0;
 }
 
-void printCurrentMemoryUsage(int64_t memoryLimit)
+void printCurrentMemoryUsage( int64_t memoryLimit )
 {
     AnsiPrintf( ANSI_RED ANSI_BOLD, "%s", tracy::MemSizeToString( tracy::memUsage.load( std::memory_order_relaxed ) ) );
     if( memoryLimit > 0 )
@@ -95,7 +99,7 @@ void printCurrentMemoryUsage(int64_t memoryLimit)
     }
 }
 
-void printWorkerUpdate(tracy::Worker& worker, int64_t memoryLimit, bool erase, bool memoryUsage)
+void printWorkerUpdate( tracy::Worker& worker, int64_t memoryLimit, bool erase, bool memoryUsage )
 {
     auto& lock = worker.GetMbpsDataLock();
     lock.lock();
@@ -111,30 +115,30 @@ void printWorkerUpdate(tracy::Worker& worker, int64_t memoryLimit, bool erase, b
         unit = "Kbps";
         unitsPerMbps = 1000.f;
     }
-    if(erase)
+    if( erase )
     {
-        AnsiPrintf(ANSI_ERASE_LINE, "\r");
+        AnsiPrintf( ANSI_ERASE_LINE, "\r" );
     }
     AnsiPrintf( ANSI_CYAN ANSI_BOLD, "%7.2f %s", mbps * unitsPerMbps, unit );
-    printf( " /");
+    printf( " /" );
     AnsiPrintf( ANSI_CYAN ANSI_BOLD, "%5.1f%%", compRatio * 100.f );
-    printf( " =");
+    printf( " =" );
     AnsiPrintf( ANSI_YELLOW ANSI_BOLD, "%7.2f Mbps", mbps / compRatio );
-    printf( " | ");
-    AnsiPrintf( ANSI_YELLOW, "Tx: ");
+    printf( " | " );
+    AnsiPrintf( ANSI_YELLOW, "Tx: " );
     AnsiPrintf( ANSI_GREEN, "%s", tracy::MemSizeToString( netTotal ) );
-    if (memoryUsage)
+    if( memoryUsage )
     {
-        printf( " | ");
-        printCurrentMemoryUsage(memoryLimit);
+        printf( " | " );
+        printCurrentMemoryUsage( memoryLimit );
     }
 
-    printf( " | ");
+    printf( " | " );
     AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() - worker.GetFirstTime() ) );
     fflush( stdout );
 }
 
-bool printWorkerFailure(tracy::Worker& worker, char const* prefix)
+bool printWorkerFailure( tracy::Worker& worker, char const* prefix )
 {
     auto const& failure = worker.GetFailureType();
     if( failure == tracy::Worker::Failure::None )
@@ -143,7 +147,8 @@ bool printWorkerFailure(tracy::Worker& worker, char const* prefix)
     }
     else
     {
-        AnsiPrintf( ANSI_RED ANSI_BOLD, "\n%s Instrumentation failure: %s", prefix, tracy::Worker::GetFailureString( failure ) );
+        AnsiPrintf( ANSI_RED ANSI_BOLD, "\n%s Instrumentation failure: %s", prefix,
+                    tracy::Worker::GetFailureString( failure ) );
         auto& fd = worker.GetFailureData();
         if( !fd.message.empty() )
         {
@@ -164,12 +169,12 @@ bool printWorkerFailure(tracy::Worker& worker, char const* prefix)
                 else
                 {
                     const auto fsz = frameData->size;
-                    for( uint8_t f=0; f<fsz; f++ )
+                    for( uint8_t f = 0; f < fsz; f++ )
                     {
                         const auto& frame = frameData->data[f];
                         auto txt = worker.GetString( frame.name );
 
-                        if( fidx == 0 && f != fsz-1 )
+                        if( fidx == 0 && f != fsz - 1 )
                         {
                             auto test = tracy::s_tracyStackFrames;
                             bool match = false;
@@ -180,12 +185,11 @@ bool printWorkerFailure(tracy::Worker& worker, char const* prefix)
                                     match = true;
                                     break;
                                 }
-                            }
-                            while( *++test );
+                            } while( *++test );
                             if( match ) continue;
                         }
 
-                        if( f == fsz-1 )
+                        if( f == fsz - 1 )
                         {
                             printf( "%3i. ", fidx++ );
                         }

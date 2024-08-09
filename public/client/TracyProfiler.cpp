@@ -1629,12 +1629,12 @@ void Profiler::Worker()
     auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
 #else
     const bool dataPortSearch = m_userPort == 0;
-    auto dataPort = m_userPort != 0 ? m_userPort : 8086;
+    auto dataPort = m_userPort != 0 ? m_userPort : DEFAULT_CLIENT_DATA_TCP_PORT;
 #endif
 #ifdef TRACY_BROADCAST_PORT
     const auto broadcastPort = TRACY_BROADCAST_PORT;
 #else
-    const auto broadcastPort = 8086;
+    const auto broadcastPort = DEFAULT_BROADCAST_UDP_PORT;
 #endif
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );

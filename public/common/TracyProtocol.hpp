@@ -7,6 +7,9 @@
 namespace tracy
 {
 
+constexpr uint16_t DEFAULT_BROADCAST_UDP_PORT = 8086;
+constexpr uint16_t DEFAULT_CLIENT_DATA_TCP_PORT = 8086;
+
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
 enum : uint32_t { ProtocolVersion = 68 };

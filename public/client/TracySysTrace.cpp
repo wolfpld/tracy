@@ -330,7 +330,7 @@ static void SetupVsync()
 #endif
 }
 
-static constexpr int GetSamplingInterval()
+static int GetSamplingInterval()
 {
     return GetSamplingPeriod() / 100;
 }

@@ -46,6 +46,7 @@
 #include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyFileHeader.hpp"
 #include "../../server/TracyFileRead.hpp"
+#include "../../server/TracyProtocolServer.hpp"
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracySysUtil.hpp"
 #include "../../server/TracyWorker.hpp"
@@ -85,7 +86,7 @@ enum class ViewShutdown { False, True, Join };
 static tracy::unordered_flat_map<uint64_t, ClientData> clients;
 static std::unique_ptr<tracy::View> view;
 static tracy::BadVersionState badVer;
-static uint16_t port = 8086;
+static uint16_t port = tracy::DEFAULT_BROADCAST_UDP_PORT;
 static const char* connectTo = nullptr;
 static char title[128];
 static std::thread loadThread, updateThread, updateNotesThread;
@@ -452,76 +453,15 @@ static void UpdateBroadcastClients()
             {
                 auto msg = broadcastListen->Read( len, addr, 0 );
                 if( !msg ) break;
-                if( len > sizeof( tracy::BroadcastMessage ) ) continue;
-                uint16_t broadcastVersion;
-                memcpy( &broadcastVersion, msg, sizeof( uint16_t ) );
-                if( broadcastVersion <= tracy::BroadcastVersion )
+                auto parsedMessageOpt = tracy::ParseBroadcastMessage(msg, len);
+                if (parsedMessageOpt.has_value())
                 {
-                    uint32_t protoVer;
-                    char procname[tracy::WelcomeMessageProgramNameSize];
-                    int32_t activeTime;
-                    uint16_t listenPort;
-                    uint64_t pid;
-
-                    switch( broadcastVersion )
-                    {
-                    case 3:
-                    {
-                        tracy::BroadcastMessage bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = bm.listenPort;
-                        pid = bm.pid;
-                        break;
-                    }
-                    case 2:
-                    {
-                        if( len > sizeof( tracy::BroadcastMessage_v2 ) ) continue;
-                        tracy::BroadcastMessage_v2 bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = bm.listenPort;
-                        pid = 0;
-                        break;
-                    }
-                    case 1:
-                    {
-                        if( len > sizeof( tracy::BroadcastMessage_v1 ) ) continue;
-                        tracy::BroadcastMessage_v1 bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = bm.listenPort;
-                        pid = 0;
-                        break;
-                    }
-                    case 0:
-                    {
-                        if( len > sizeof( tracy::BroadcastMessage_v0 ) ) continue;
-                        tracy::BroadcastMessage_v0 bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = 8086;
-                        pid = 0;
-                        break;
-                    }
-                    default:
-                        assert( false );
-                        break;
-                    }
-
+                    auto parsedMessage = parsedMessageOpt.value();
                     auto address = addr.GetText();
+                    const auto clientId = tracy::ClientUniqueID(addr, parsedMessage.listenPort);
                     const auto ipNumerical = addr.GetNumber();
-                    const auto clientId = uint64_t( ipNumerical ) | ( uint64_t( listenPort ) << 32 );
                     auto it = clients.find( clientId );
-                    if( activeTime >= 0 )
+                    if( parsedMessage.activeTime >= 0 )
                     {
                         if( it == clients.end() )
                         {
@@ -538,16 +478,16 @@ static void UpdateBroadcastClients()
                                     } );
                             }
                             resolvLock.unlock();
-                            clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, pid, procname, std::move( ip ) } );
+                            clients.emplace( clientId, ClientData { time, parsedMessage.protocolVersion, parsedMessage.activeTime, parsedMessage.listenPort, parsedMessage.pid, parsedMessage.programName, std::move( ip ) } );
                         }
                         else
                         {
                             it->second.time = time;
-                            it->second.activeTime = activeTime;
-                            it->second.port = listenPort;
-                            it->second.pid = pid;
-                            it->second.protocolVersion = protoVer;
-                            if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                            it->second.activeTime = parsedMessage.activeTime;
+                            it->second.port = parsedMessage.listenPort;
+                            it->second.pid = parsedMessage.pid;
+                            it->second.protocolVersion = parsedMessage.protocolVersion;
+                            if( strcmp( it->second.procName.c_str(), parsedMessage.programName ) != 0 ) it->second.procName = parsedMessage.programName;
                         }
                     }
                     else if( it != clients.end() )

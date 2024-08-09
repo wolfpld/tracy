@@ -188,6 +188,13 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     TracyQueueCommit( callstackAllocFatThread );
 }
 
+static inline void LuaShortenSrc( char* dst, const char* src )
+{
+    size_t l = std::min( (size_t)255, strlen( src ) );
+    memcpy( dst, src, l );
+    dst[l] = 0;
+}
+
 static inline int LuaZoneBeginS( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
@@ -207,7 +214,9 @@ static inline int LuaZoneBeginS( lua_State* L )
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
-    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
+    char src[256];
+    LuaShortenSrc( src, dbg.source );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, src, dbg.name ? dbg.name : dbg.short_src );
 
     TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
@@ -237,8 +246,10 @@ static inline int LuaZoneBeginNS( lua_State* L )
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
     size_t nsz;
+    char src[256];
+    LuaShortenSrc( src, dbg.source );
     const auto name = lua_tolstring( L, 1, &nsz );
-    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, src, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
     TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
@@ -264,7 +275,9 @@ static inline int LuaZoneBegin( lua_State* L )
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
-    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
+    char src[256];
+    LuaShortenSrc( src, dbg.source );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, src, dbg.name ? dbg.name : dbg.short_src );
 
     TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
@@ -290,8 +303,10 @@ static inline int LuaZoneBeginN( lua_State* L )
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
     size_t nsz;
+    char src[256];
+    LuaShortenSrc( src, dbg.source );
     const auto name = lua_tolstring( L, 1, &nsz );
-    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, src, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
     TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );

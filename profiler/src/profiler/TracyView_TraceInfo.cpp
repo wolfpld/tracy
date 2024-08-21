@@ -704,6 +704,7 @@ void View::DrawInfo()
             std::vector<int> maxthreads( topology.size() );
 
             float ptsz = 0;
+            float dtsz = 0;
             float ctsz = 0;
             float ttsz = 0;
             for( auto& package : topology )
@@ -715,20 +716,27 @@ void View::DrawInfo()
                 ImGui::PopFont();
 
                 size_t mt = 0;
-                for( auto& core : package.second )
+                for( auto& die : package.second )
                 {
-                    sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core.first );
-                    const auto csz = ImGui::CalcTextSize( buf ).x;
-                    if( csz > ctsz ) ctsz = csz;
+                    sprintf( buf, ICON_FA_DICE_D6 " Die %" PRIu32, die.first );
+                    const auto dsz = ImGui::CalcTextSize( buf ).x;
+                    if( dsz > dtsz ) dtsz = dsz;
 
-                    const auto tnum = core.second.size();
-                    if( tnum > mt ) mt = tnum;
-
-                    for( auto& thread : core.second )
+                    for( auto& core : die.second )
                     {
-                        sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, thread );
-                        const auto tsz = ImGui::CalcTextSize( buf ).x;
-                        if( tsz > ttsz ) ttsz = tsz;
+                        sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core.first );
+                        const auto csz = ImGui::CalcTextSize( buf ).x;
+                        if( csz > ctsz ) ctsz = csz;
+
+                        const auto tnum = core.second.size();
+                        if( tnum > mt ) mt = tnum;
+
+                        for( auto& thread : core.second )
+                        {
+                            sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, thread );
+                            const auto tsz = ImGui::CalcTextSize( buf ).x;
+                            if( tsz > ttsz ) ttsz = tsz;
+                        }
                     }
                 }
                 maxthreads[package.first] = (int)mt;
@@ -752,48 +760,60 @@ void View::DrawInfo()
                 draw->AddText( dpos, 0xFFFFFFFF, buf );
                 dpos.y += ty;
 
-                const auto inCoreWidth = ( ttsz + margin ) * maxthreads[package->first];
-                const auto coreWidth = inCoreWidth + 2 * margin;
-                const auto inCoreHeight = margin + 2 * small + ty;
-                const auto coreHeight = inCoreHeight + ty;
-                const auto cpl = std::max( 1, (int)floor( ( remainingWidth - 2 * margin ) / coreWidth ) );
-                const auto cl = ( package->second.size() + cpl - 1 ) / cpl;
-                const auto pw = cpl * coreWidth + 2 * margin;
-                const auto ph = margin + cl * coreHeight;
-                if( pw > width ) width = pw;
-
-                draw->AddRect( dpos, dpos + ImVec2( margin + coreWidth * std::min<size_t>( cpl, package->second.size() ), ph ), 0xFFFFFFFF );
-
-                std::vector<decltype(package->second.begin())> csort;
-                csort.reserve( package->second.size() );
-                for( auto it = package->second.begin(); it != package->second.end(); ++it ) csort.emplace_back( it );
-                std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
-                auto cpos = dpos + ImVec2( margin, margin );
-                int ll = cpl;
-                for( auto& core : csort )
+                std::vector<decltype(package->second.begin())> dsort;
+                dsort.reserve( package->second.size() );
+                for( auto it = package->second.begin(); it != package->second.end(); ++it ) dsort.emplace_back( it );
+                std::sort( dsort.begin(), dsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+                for( auto& die : dsort )
                 {
-                    sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core->first );
-                    draw->AddText( cpos, 0xFFFFFFFF, buf );
-                    draw->AddRect( cpos + ImVec2( 0, ty ), cpos + ImVec2( inCoreWidth + small, inCoreHeight + small ), 0xFFFFFFFF );
+                    dpos.y += small;
+                    sprintf( buf, ICON_FA_DICE_D6 " Die %" PRIu32, die->first );
+                    draw->AddText( dpos, 0xFFFFFFFF, buf );
+                    dpos.y += ty;
 
-                    for( int i=0; i<core->second.size(); i++ )
-                    {
-                        sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, core->second[i] );
-                        draw->AddText( cpos + ImVec2( margin + i * ( margin + ttsz ), ty + small ), 0xFFFFFFFF, buf );
-                    }
+                    const auto inCoreWidth = ( ttsz + margin ) * maxthreads[package->first];
+                    const auto coreWidth = inCoreWidth + 2 * margin;
+                    const auto inCoreHeight = margin + 2 * small + ty;
+                    const auto coreHeight = inCoreHeight + ty;
+                    const auto cpl = std::max( 1, (int)floor( ( remainingWidth - 2 * margin ) / coreWidth ) );
+                    const auto cl = ( die->second.size() + cpl - 1 ) / cpl;
+                    const auto pw = cpl * coreWidth + 2 * margin;
+                    const auto ph = margin + cl * coreHeight;
+                    if( pw > width ) width = pw;
 
-                    if( --ll == 0 )
+                    draw->AddRect( dpos, dpos + ImVec2( margin + coreWidth * std::min<size_t>( cpl, die->second.size() ), ph ), 0xFFFFFFFF );
+
+                    std::vector<decltype(die->second.begin())> csort;
+                    csort.reserve( die->second.size() );
+                    for( auto it = die->second.begin(); it != die->second.end(); ++it ) csort.emplace_back( it );
+                    std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+                    auto cpos = dpos + ImVec2( margin, margin );
+                    int ll = cpl;
+                    for( auto& core : csort )
                     {
-                        ll = cpl;
-                        cpos.x -= (cpl-1) * coreWidth;
-                        cpos.y += coreHeight;
+                        sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core->first );
+                        draw->AddText( cpos, 0xFFFFFFFF, buf );
+                        draw->AddRect( cpos + ImVec2( 0, ty ), cpos + ImVec2( inCoreWidth + small, inCoreHeight + small ), 0xFFFFFFFF );
+
+                        for( int i=0; i<core->second.size(); i++ )
+                        {
+                            sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, core->second[i] );
+                            draw->AddText( cpos + ImVec2( margin + i * ( margin + ttsz ), ty + small ), 0xFFFFFFFF, buf );
+                        }
+
+                        if( --ll == 0 )
+                        {
+                            ll = cpl;
+                            cpos.x -= (cpl-1) * coreWidth;
+                            cpos.y += coreHeight;
+                        }
+                        else
+                        {
+                            cpos.x += coreWidth;
+                        }
                     }
-                    else
-                    {
-                        cpos.x += coreWidth;
-                    }
+                    dpos.y += ph;
                 }
-                dpos.y += ph;
             }
             ImGui::ItemSize( ImVec2( width, dpos.y - origy ) );
             ImGui::TreePop();

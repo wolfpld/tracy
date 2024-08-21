@@ -643,22 +643,50 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         uint32_t packageId;
         uint64_t psz;
         f.Read2( packageId, psz );
-        auto& package = *m_data.cpuTopology.emplace( packageId, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
+        auto& package = *m_data.cpuTopology.emplace( packageId, unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>> {} ).first;
         package.second.reserve( psz );
         for( uint64_t j=0; j<psz; j++ )
         {
-            uint32_t coreId;
-            uint64_t csz;
-            f.Read2( coreId, csz );
-            auto& core = *package.second.emplace( coreId, std::vector<uint32_t> {} ).first;
-            core.second.reserve( csz );
-            for( uint64_t k=0; k<csz; k++ )
+            if( fileVer >= FileVersion( 0, 11, 2 ) )
             {
-                uint32_t thread;
-                f.Read( thread );
-                core.second.emplace_back( thread );
+                uint32_t dieId;
+                uint64_t dsz;
+                f.Read2( dieId, dsz );
+                auto& die = *package.second.emplace( dieId, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
+                die.second.reserve( dsz );
+                for( uint64_t k=0; k<dsz; k++ )
+                {
+                    uint32_t coreId;
+                    uint64_t csz;
+                    f.Read2( coreId, csz );
+                    auto& core = *die.second.emplace( coreId, std::vector<uint32_t> {} ).first;
+                    core.second.reserve( csz );
+                    for( uint64_t l=0; l<csz; l++ )
+                    {
+                        uint32_t thread;
+                        f.Read( thread );
+                        core.second.emplace_back( thread );
 
-                m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, coreId } );
+                        m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, coreId } );
+                    }
+                }
+            }
+            else
+            {
+                auto& die = *package.second.emplace( 0, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
+                uint32_t coreId;
+                uint64_t csz;
+                f.Read2( coreId, csz );
+                auto& core = *die.second.emplace( coreId, std::vector<uint32_t> {} ).first;
+                core.second.reserve( csz );
+                for( uint64_t k=0; k<csz; k++ )
+                {
+                    uint32_t thread;
+                    f.Read( thread );
+                    core.second.emplace_back( thread );
+
+                    m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, coreId } );
+                }
             }
         }
     }
@@ -6859,9 +6887,13 @@ void Worker::ProcessSourceCodeNotAvailable( const QueueSourceCodeNotAvailable& e
 void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )
 {
     auto package = m_data.cpuTopology.find( ev.package );
-    if( package == m_data.cpuTopology.end() ) package = m_data.cpuTopology.emplace( ev.package, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
-    auto core = package->second.find( ev.core );
-    if( core == package->second.end() ) core = package->second.emplace( ev.core, std::vector<uint32_t> {} ).first;
+    if( package == m_data.cpuTopology.end() ) package = m_data.cpuTopology.emplace( ev.package, unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>> {} ).first;
+
+    auto die = package->second.find( ev.die );
+    if( die == package->second.end() ) die = package->second.emplace( ev.die, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
+
+    auto core = die->second.find( ev.core );
+    if( core == die->second.end() ) core = die->second.emplace( ev.core, std::vector<uint32_t> {} ).first;
     core->second.emplace_back( ev.thread );
 
     assert( m_data.cpuTopologyMap.find( ev.thread ) == m_data.cpuTopologyMap.end() );
@@ -7699,14 +7731,20 @@ void Worker::Write( FileWrite& f, bool fiDict )
         sz = package.second.size();
         f.Write( &package.first, sizeof( package.first ) );
         f.Write( &sz, sizeof( sz ) );
-        for( auto& core : package.second )
+        for( auto& die : package.second )
         {
-            sz = core.second.size();
-            f.Write( &core.first, sizeof( core.first ) );
+            sz = die.second.size();
+            f.Write( &die.first, sizeof( die.first ) );
             f.Write( &sz, sizeof( sz ) );
-            for( auto& thread : core.second )
+            for( auto& core : die.second )
             {
-                f.Write( &thread, sizeof( thread ) );
+                sz = core.second.size();
+                f.Write( &core.first, sizeof( core.first ) );
+                f.Write( &sz, sizeof( sz ) );
+                for( auto& thread : core.second )
+                {
+                    f.Write( &thread, sizeof( thread ) );
+                }
             }
         }
     }

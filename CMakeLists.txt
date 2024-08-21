@@ -161,7 +161,12 @@ install(TARGETS TracyClient
         EXPORT TracyConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT lib)
+# Export targets to build tree root
+export(TARGETS TracyClient
+       NAMESPACE Tracy::
+       FILE ${CMAKE_BINARY_DIR}/TracyTargets.cmake)
 install(FILES ${tracy_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
 install(FILES ${client_includes}

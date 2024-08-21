@@ -3727,6 +3727,7 @@ void Profiler::ReportTopology()
     struct CpuData
     {
         uint32_t package;
+        uint32_t die;
         uint32_t core;
         uint32_t thread;
     };
@@ -3801,6 +3802,7 @@ void Profiler::ReportTopology()
 
         TracyLfqPrepare( QueueType::CpuTopology );
         MemWrite( &item->cpuTopology.package, data.package );
+        MemWrite( &item->cpuTopology.die, data.die );
         MemWrite( &item->cpuTopology.core, data.core );
         MemWrite( &item->cpuTopology.thread, data.thread );
 
@@ -3850,6 +3852,7 @@ void Profiler::ReportTopology()
 
         TracyLfqPrepare( QueueType::CpuTopology );
         MemWrite( &item->cpuTopology.package, data.package );
+        MemWrite( &item->cpuTopology.die, data.die );
         MemWrite( &item->cpuTopology.core, data.core );
         MemWrite( &item->cpuTopology.thread, data.thread );
 

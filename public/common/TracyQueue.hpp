@@ -647,6 +647,7 @@ struct QueueSourceCodeNotAvailable
 struct QueueCpuTopology
 {
     uint32_t package;
+    uint32_t die;
     uint32_t core;
     uint32_t thread;
 };

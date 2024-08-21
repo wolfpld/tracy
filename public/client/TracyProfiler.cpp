@@ -3838,12 +3838,20 @@ void Profiler::ReportTopology()
         fclose( f );
         cpuData[i].package = uint32_t( atoi( buf ) );
         cpuData[i].thread = i;
+
         sprintf( path, "%s%i/topology/core_id", basePath, i );
         f = fopen( path, "rb" );
         read = fread( buf, 1, 1024, f );
         buf[read] = '\0';
         fclose( f );
         cpuData[i].core = uint32_t( atoi( buf ) );
+
+        sprintf( path, "%s%i/topology/die_id", basePath, i );
+        f = fopen( path, "rb" );
+        read = fread( buf, 1, 1024, f );
+        buf[read] = '\0';
+        fclose( f );
+        cpuData[i].die = uint32_t( atoi( buf ) );
     }
 
     for( int i=0; i<numcpus; i++ )

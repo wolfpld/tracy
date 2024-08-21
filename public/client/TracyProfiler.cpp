@@ -3756,6 +3756,7 @@ void Profiler::ReportTopology()
     const uint32_t numcpus = sysinfo.dwNumberOfProcessors;
 
     auto cpuData = (CpuData*)tracy_malloc( sizeof( CpuData ) * numcpus );
+    memset( cpuData, 0, sizeof( CpuData ) * numcpus );
     for( uint32_t i=0; i<numcpus; i++ ) cpuData[i].thread = i;
 
     int idx = 0;

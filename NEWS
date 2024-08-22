@@ -11,6 +11,8 @@ vx.xx.x (xxxx-xx-xx)
 - It is now possible to set TRACY_SAMPLING_HZ via a environment variable.
 - Thread group hints can be now used to group threads together in the
   profiler UI.
+- Limit Lua file names to 255 characters, as the source string can contain
+  the whole script, if loaded with loadstring().
 
 
 v0.11.0 (2024-07-16)

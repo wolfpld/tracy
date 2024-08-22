@@ -1,30 +1,21 @@
 set(TRACY_COMMON_DIR ${CMAKE_CURRENT_LIST_DIR}/../public/common)
 
-set(TRACY_COMMON_SOURCES
-    tracy_lz4.cpp
-    tracy_lz4hc.cpp
-    TracySocket.cpp
-    TracyStackFrames.cpp
-    TracySystem.cpp
+file(GLOB TRACY_COMMON_SOURCES
+    ${TRACY_COMMON_DIR}/*.cpp
+    ${TRACY_COMMON_DIR}/*.hpp
 )
 
-list(TRANSFORM TRACY_COMMON_SOURCES PREPEND "${TRACY_COMMON_DIR}/")
+# list(TRANSFORM TRACY_COMMON_SOURCES PREPEND "${TRACY_COMMON_DIR}/")
 
 
 set(TRACY_SERVER_DIR ${CMAKE_CURRENT_LIST_DIR}/../server)
 
-set(TRACY_SERVER_SOURCES
-    TracyMemory.cpp
-    TracyMmap.cpp
-    TracyPrint.cpp
-    TracySysUtil.cpp
-    TracyTaskDispatch.cpp
-    TracyTextureCompression.cpp
-    TracyThreadCompress.cpp
-    TracyWorker.cpp
+file(GLOB TRACY_SERVER_SOURCES
+    ${TRACY_SERVER_DIR}/*.cpp
+    ${TRACY_SERVER_DIR}/*.hpp
 )
 
-list(TRANSFORM TRACY_SERVER_SOURCES PREPEND "${TRACY_SERVER_DIR}/")
+# list(TRANSFORM TRACY_SERVER_SOURCES PREPEND "${TRACY_SERVER_DIR}/")
 
 
 add_library(TracyServer STATIC ${TRACY_COMMON_SOURCES} ${TRACY_SERVER_SOURCES})

@@ -2,7 +2,7 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-vx.xx.x (xxxx-xx-xx)
+v0.11.1 (2024-08-22)
 --------------------
 
 - Utilities import-chrome and import-fuchsia now live together in the import

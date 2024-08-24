@@ -1200,14 +1200,7 @@ elf_fetch_bits_backward (const unsigned char **ppin,
   val = *pval;
 
   if (unlikely (pin <= pinend))
-    {
-      if (bits == 0)
-	{
-	  elf_uncompress_failed ();
-	  return 0;
-	}
-      return 1;
-    }
+    return 1;
 
   pin -= 4;
 

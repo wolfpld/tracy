@@ -3746,6 +3746,12 @@ void Profiler::ReportTopology()
     auto res = _GetLogicalProcessorInformationEx( RelationProcessorPackage, packageInfo, &psz );
     assert( res );
 
+    DWORD dsz = 0;
+    _GetLogicalProcessorInformationEx( RelationProcessorDie, nullptr, &dsz );
+    auto dieInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( dsz );
+    res = _GetLogicalProcessorInformationEx( RelationProcessorDie, dieInfo, &dsz );
+    assert( res );
+
     DWORD csz = 0;
     _GetLogicalProcessorInformationEx( RelationProcessorCore, nullptr, &csz );
     auto coreInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( csz );
@@ -3771,6 +3777,24 @@ void Profiler::ReportTopology()
         while( mask != 0 )
         {
             if( mask & 1 ) cpuData[core].package = idx;
+            core++;
+            mask >>= 1;
+        }
+        ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + ptr->Size);
+        idx++;
+    }
+
+    idx = 0;
+    ptr = dieInfo;
+    while( (char*)ptr < ((char*)dieInfo) + dsz )
+    {
+        assert( ptr->Relationship == RelationProcessorDie );
+        // FIXME account for GroupCount
+        auto mask = ptr->Processor.GroupMask[0].Mask;
+        int core = 0;
+        while( mask != 0 )
+        {
+            if( mask & 1 ) cpuData[core].die = idx;
             core++;
             mask >>= 1;
         }

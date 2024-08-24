@@ -80,6 +80,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                     TextFocused( "Number of cores:", RealToString( cpuCnt ) );
                     if( usage.own + usage.other != 0 )
                     {
+                        auto& topo = m_worker.GetCpuTopology();
                         const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx;
                         ImGui::Separator();
                         for( int i=0; i<cpuCnt; i++ )
@@ -93,7 +94,14 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                                     auto tt = m_worker.GetThreadTopology( i );
                                     if( tt )
                                     {
-                                        ImGui::TextDisabled( "[%i:%i] CPU %i:", tt->package, tt->core, i );
+                                        if( topo.size() > 1 )
+                                        {
+                                            ImGui::TextDisabled( "[%i:%i:%i] CPU %i:", tt->package, tt->die, tt->core, i );
+                                        }
+                                        else
+                                        {
+                                            ImGui::TextDisabled( "[%i:%i] CPU %i:", tt->die, tt->core, i );
+                                        }
                                     }
                                     else
                                     {
@@ -174,6 +182,8 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             ImGui::Spacing();
                             ImGui::SameLine();
                             TextFocused( "Package:", RealToString( tt->package ) );
+                            ImGui::SameLine();
+                            TextFocused( "Die:", RealToString( tt->die ) );
                             ImGui::SameLine();
                             TextFocused( "Core:", RealToString( tt->core ) );
                         }
@@ -264,6 +274,8 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             ImGui::SameLine();
                             TextFocused( "Package:", RealToString( tt->package ) );
                             ImGui::SameLine();
+                            TextFocused( "Die:", RealToString( tt->die ) );
+                            ImGui::SameLine();
                             TextFocused( "Core:", RealToString( tt->core ) );
                         }
                         if( local )
@@ -327,7 +339,15 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         char buf[64];
         if( tt )
         {
-            sprintf( buf, "[%i:%i] CPU %i", tt->package, tt->core, i );
+            auto& topo = m_worker.GetCpuTopology();
+            if( topo.size() > 1 )
+            {
+                sprintf( buf, "[%i:%i:%i] CPU %i", tt->package, tt->die, tt->core, i );
+            }
+            else
+            {
+                sprintf( buf, "[%i:%i] CPU %i", tt->die, tt->core, i );
+            }
         }
         else
         {
@@ -346,6 +366,8 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 ImGui::Spacing();
                 ImGui::SameLine();
                 TextFocused( "Package:", RealToString( tt->package ) );
+                ImGui::SameLine();
+                TextFocused( "Die:", RealToString( tt->die ) );
                 ImGui::SameLine();
                 TextFocused( "Core:", RealToString( tt->core ) );
             }

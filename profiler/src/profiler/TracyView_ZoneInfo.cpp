@@ -686,6 +686,11 @@ void View::DrawZoneInfoWindow()
                                                     ImGui::SameLine();
                                                     TextDisabledUnformatted( "P" );
                                                 }
+                                                else if( tt0->die != tt1->die )
+                                                {
+                                                    ImGui::SameLine();
+                                                    TextDisabledUnformatted( "D" );
+                                                }
                                                 else if( tt0->core != tt1->core )
                                                 {
                                                     ImGui::SameLine();

@@ -667,7 +667,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                         f.Read( thread );
                         core.second.emplace_back( thread );
 
-                        m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, coreId } );
+                        m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, dieId, coreId } );
                     }
                 }
             }
@@ -685,7 +685,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                     f.Read( thread );
                     core.second.emplace_back( thread );
 
-                    m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, coreId } );
+                    m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, 0, coreId } );
                 }
             }
         }
@@ -6897,7 +6897,7 @@ void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )
     core->second.emplace_back( ev.thread );
 
     assert( m_data.cpuTopologyMap.find( ev.thread ) == m_data.cpuTopologyMap.end() );
-    m_data.cpuTopologyMap.emplace( ev.thread, CpuThreadTopology { ev.package, ev.core } );
+    m_data.cpuTopologyMap.emplace( ev.thread, CpuThreadTopology { ev.package, ev.die, ev.core } );
 }
 
 void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )

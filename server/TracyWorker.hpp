@@ -148,6 +148,7 @@ public:
     struct CpuThreadTopology
     {
         uint32_t package;
+        uint32_t die;
         uint32_t core;
     };
 

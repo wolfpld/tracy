@@ -731,6 +731,12 @@ void View::DrawZoneInfoWindow()
                                                     TextDisabledUnformatted( "C" );
                                                     TooltipIfHovered( "Jump from one CPU core to another, within the same die" );
                                                 }
+                                                else
+                                                {
+                                                    ImGui::SameLine();
+                                                    TextDisabledUnformatted( "H" );
+                                                    TooltipIfHovered( "Jump from one CPU hyperthread to another, within the same core" );
+                                                }
                                             }
                                         }
                                         ImGui::TableNextColumn();

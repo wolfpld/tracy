@@ -725,8 +725,8 @@ struct dwarf_data
   struct dwarf_data *next;
   /* The data for .gnu_debugaltlink.  */
   struct dwarf_data *altlink;
-  /* The base address for this file.  */
-  uintptr_t base_address;
+/* The base address mapping for this file.  */
+  struct libbacktrace_base_address base_address;
   /* A sorted list of address ranges.  */
   struct unit_addrs *addrs;
   /* Number of address ranges in list.  */
@@ -1947,8 +1947,9 @@ update_pcrange (const struct attr* attr, const struct attr_val* val,
 static int
 add_low_high_range (struct backtrace_state *state,
 		    const struct dwarf_sections *dwarf_sections,
-		    uintptr_t base_address, int is_bigendian,
-		    struct unit *u, const struct pcrange *pcrange,
+		    struct libbacktrace_base_address base_address,
+		    int is_bigendian, struct unit *u,
+		    const struct pcrange *pcrange,
 		    int (*add_range) (struct backtrace_state *state,
 				      void *rdata, uintptr_t lowpc,
 				      uintptr_t highpc,
@@ -1983,8 +1984,8 @@ add_low_high_range (struct backtrace_state *state,
 
   /* Add in the base address of the module when recording PC values,
      so that we can look up the PC directly.  */
-  lowpc += base_address;
-  highpc += base_address;
+  lowpc = libbacktrace_add_base (lowpc, base_address);
+  highpc = libbacktrace_add_base (highpc, base_address);
 
   return add_range (state, rdata, lowpc, highpc, error_callback, data, vec);
 }
@@ -1996,7 +1997,7 @@ static int
 add_ranges_from_ranges (
     struct backtrace_state *state,
     const struct dwarf_sections *dwarf_sections,
-    uintptr_t base_address, int is_bigendian,
+    struct libbacktrace_base_address base_address, int is_bigendian,
     struct unit *u, uintptr_t base,
     const struct pcrange *pcrange,
     int (*add_range) (struct backtrace_state *state, void *rdata,
@@ -2042,10 +2043,11 @@ add_ranges_from_ranges (
 	base = (uintptr_t) high;
       else
 	{
-	  if (!add_range (state, rdata, 
-			  (uintptr_t) low + base + base_address,
-			  (uintptr_t) high + base + base_address,
-			  error_callback, data, vec))
+	  uintptr_t rl, rh;
+
+	  rl = libbacktrace_add_base ((uintptr_t) low + base, base_address);
+	  rh = libbacktrace_add_base ((uintptr_t) high + base, base_address);
+	  if (!add_range (state, rdata, rl, rh, error_callback, data, vec))
 	    return 0;
 	}
     }
@@ -2063,7 +2065,7 @@ static int
 add_ranges_from_rnglists (
     struct backtrace_state *state,
     const struct dwarf_sections *dwarf_sections,
-    uintptr_t base_address, int is_bigendian,
+    struct libbacktrace_base_address base_address, int is_bigendian,
     struct unit *u, uintptr_t base,
     const struct pcrange *pcrange,
     int (*add_range) (struct backtrace_state *state, void *rdata,
@@ -2146,9 +2148,10 @@ add_ranges_from_rnglists (
 				     u->addrsize, is_bigendian, index,
 				     error_callback, data, &high))
 	      return 0;
-	    if (!add_range (state, rdata, low + base_address,
-			    high + base_address, error_callback, data,
-			    vec))
+	    if (!add_range (state, rdata,
+			    libbacktrace_add_base (low, base_address),
+			    libbacktrace_add_base (high, base_address),
+			    error_callback, data, vec))
 	      return 0;
 	  }
 	  break;
@@ -2165,7 +2168,7 @@ add_ranges_from_rnglists (
 				     error_callback, data, &low))
 	      return 0;
 	    length = read_uleb128 (&rnglists_buf);
-	    low += base_address;
+	    low = libbacktrace_add_base (low, base_address);
 	    if (!add_range (state, rdata, low, low + length,
 			    error_callback, data, vec))
 	      return 0;
@@ -2179,8 +2182,9 @@ add_ranges_from_rnglists (
 
 	    low = read_uleb128 (&rnglists_buf);
 	    high = read_uleb128 (&rnglists_buf);
-	    if (!add_range (state, rdata, low + base + base_address,
-			    high + base + base_address,
+	    if (!add_range (state, rdata,
+			    libbacktrace_add_base (low + base, base_address),
+			    libbacktrace_add_base (high + base, base_address),
 			    error_callback, data, vec))
 	      return 0;
 	  }
@@ -2197,9 +2201,10 @@ add_ranges_from_rnglists (
 
 	    low = (uintptr_t) read_address (&rnglists_buf, u->addrsize);
 	    high = (uintptr_t) read_address (&rnglists_buf, u->addrsize);
-	    if (!add_range (state, rdata, low + base_address,
-			    high + base_address, error_callback, data,
-			    vec))
+	    if (!add_range (state, rdata,
+			    libbacktrace_add_base (low, base_address),
+			    libbacktrace_add_base (high, base_address),
+			    error_callback, data, vec))
 	      return 0;
 	  }
 	  break;
@@ -2211,7 +2216,7 @@ add_ranges_from_rnglists (
 
 	    low = (uintptr_t) read_address (&rnglists_buf, u->addrsize);
 	    length = (uintptr_t) read_uleb128 (&rnglists_buf);
-	    low += base_address;
+	    low = libbacktrace_add_base (low, base_address);
 	    if (!add_range (state, rdata, low, low + length,
 			    error_callback, data, vec))
 	      return 0;
@@ -2239,7 +2244,7 @@ add_ranges_from_rnglists (
 static int
 add_ranges (struct backtrace_state *state,
 	    const struct dwarf_sections *dwarf_sections,
-	    uintptr_t base_address, int is_bigendian,
+	    struct libbacktrace_base_address base_address, int is_bigendian,
 	    struct unit *u, uintptr_t base, const struct pcrange *pcrange,
 	    int (*add_range) (struct backtrace_state *state, void *rdata, 
 			      uintptr_t lowpc, uintptr_t highpc,
@@ -2275,7 +2280,8 @@ add_ranges (struct backtrace_state *state,
    read, 0 if there is some error.  */
 
 static int
-find_address_ranges (struct backtrace_state *state, uintptr_t base_address,
+find_address_ranges (struct backtrace_state *state,
+		     struct libbacktrace_base_address base_address,
 		     struct dwarf_buf *unit_buf,
 		     const struct dwarf_sections *dwarf_sections,
 		     int is_bigendian, struct dwarf_data *altlink,
@@ -2430,7 +2436,8 @@ find_address_ranges (struct backtrace_state *state, uintptr_t base_address,
    on success, 0 on failure.  */
 
 static int
-build_address_map (struct backtrace_state *state, uintptr_t base_address,
+build_address_map (struct backtrace_state *state,
+		   struct libbacktrace_base_address base_address,
 		   const struct dwarf_sections *dwarf_sections,
 		   int is_bigendian, struct dwarf_data *altlink,
 		   backtrace_error_callback error_callback, void *data,
@@ -2649,7 +2656,7 @@ add_line (struct backtrace_state *state, struct dwarf_data *ddata,
 
   /* Add in the base address here, so that we can look up the PC
      directly.  */
-  ln->pc = pc + ddata->base_address;
+  ln->pc = libbacktrace_add_base (pc, ddata->base_address);
 
   ln->filename = filename;
   ln->lineno = lineno;
@@ -4329,7 +4336,7 @@ dwarf_fileline (struct backtrace_state *state, uintptr_t pc,
 
 static struct dwarf_data *
 build_dwarf_data (struct backtrace_state *state,
-		  uintptr_t base_address,
+		  struct libbacktrace_base_address base_address,
 		  const struct dwarf_sections *dwarf_sections,
 		  int is_bigendian,
 		  struct dwarf_data *altlink,
@@ -4387,7 +4394,7 @@ build_dwarf_data (struct backtrace_state *state,
 
 int
 backtrace_dwarf_add (struct backtrace_state *state,
-		     uintptr_t base_address,
+		     struct libbacktrace_base_address base_address,
 		     const struct dwarf_sections *dwarf_sections,
 		     int is_bigendian,
 		     struct dwarf_data *fileline_altlink,

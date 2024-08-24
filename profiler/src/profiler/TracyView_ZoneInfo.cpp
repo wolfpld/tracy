@@ -717,16 +717,19 @@ void View::DrawZoneInfoWindow()
                                                 {
                                                     ImGui::SameLine();
                                                     TextDisabledUnformatted( "P" );
+                                                    TooltipIfHovered( "Jump from one CPU package to another" );
                                                 }
                                                 else if( tt0->die != tt1->die )
                                                 {
                                                     ImGui::SameLine();
                                                     TextDisabledUnformatted( "D" );
+                                                    TooltipIfHovered( "Jump from one CPU die to another, within the same package" );
                                                 }
                                                 else if( tt0->core != tt1->core )
                                                 {
                                                     ImGui::SameLine();
                                                     TextDisabledUnformatted( "C" );
+                                                    TooltipIfHovered( "Jump from one CPU core to another, within the same die" );
                                                 }
                                             }
                                         }

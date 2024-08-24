@@ -673,12 +673,44 @@ void View::DrawZoneInfoWindow()
                                         if( cpu0 == cpu1 )
                                         {
                                             ImGui::TextUnformatted( RealToString( cpu0 ) );
+                                            if( ImGui::IsItemHovered() )
+                                            {
+                                                const auto tt = m_worker.GetThreadTopology( cpu0 );
+                                                if( tt )
+                                                {
+                                                    ImGui::BeginTooltip();
+                                                    TextFocused( "Package", RealToString( tt->package ) );
+                                                    TextFocused( "Die", RealToString( tt->die ) );
+                                                    TextFocused( "Core", RealToString( tt->core ) );
+                                                    ImGui::EndTooltip();
+                                                }
+                                            }
                                         }
                                         else
                                         {
-                                            ImGui::Text( "%i " ICON_FA_RIGHT_LONG " %i", cpu0, cpu1 );
                                             const auto tt0 = m_worker.GetThreadTopology( cpu0 );
                                             const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                                            ImGui::Text( "%i ", cpu0 );
+                                            if( tt0 && ImGui::IsItemHovered() )
+                                            {
+                                                ImGui::BeginTooltip();
+                                                TextFocused( "Package", RealToString( tt0->package ) );
+                                                TextFocused( "Die", RealToString( tt0->die ) );
+                                                TextFocused( "Core", RealToString( tt0->core ) );
+                                                ImGui::EndTooltip();
+                                            }
+                                            ImGui::SameLine( 0, 0 );
+                                            TextDisabledUnformatted( ICON_FA_RIGHT_LONG );
+                                            ImGui::SameLine( 0, 0 );
+                                            ImGui::Text( " %i", cpu1 );
+                                            if( tt1 && ImGui::IsItemHovered() )
+                                            {
+                                                ImGui::BeginTooltip();
+                                                TextFocused( "Package", RealToString( tt1->package ) );
+                                                TextFocused( "Die", RealToString( tt1->die ) );
+                                                TextFocused( "Core", RealToString( tt1->core ) );
+                                                ImGui::EndTooltip();
+                                            }
                                             if( tt0 && tt1 )
                                             {
                                                 if( tt0->package != tt1->package )

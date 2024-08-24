@@ -6860,7 +6860,8 @@ elf_add (struct backtrace_state *state, const char *filename, int descriptor,
 	    }
 	}
 
-      if (!gnu_debugdata_view_valid
+      if (!debuginfo
+	  && !gnu_debugdata_view_valid
 	  && strcmp (name, ".gnu_debugdata") == 0)
 	{
 	  if (!elf_get_view (state, descriptor, memory, memory_size,

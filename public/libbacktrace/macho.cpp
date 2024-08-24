@@ -274,12 +274,14 @@ struct macho_nlist_64
 
 /* Value found in nlist n_type field.  */
 
-#define MACH_O_N_EXT	0x01	/* Extern symbol */
-#define MACH_O_N_ABS	0x02	/* Absolute symbol */
-#define MACH_O_N_SECT	0x0e	/* Defined in section */
-
-#define MACH_O_N_TYPE	0x0e	/* Mask for type bits */
 #define MACH_O_N_STAB	0xe0	/* Stabs debugging symbol */
+#define MACH_O_N_TYPE	0x0e	/* Mask for type bits */
+
+/* Values found after masking with MACH_O_N_TYPE.  */
+#define MACH_O_N_UNDF	0x00	/* Undefined symbol */
+#define MACH_O_N_ABS	0x02	/* Absolute symbol */
+#define MACH_O_N_SECT	0x0e	/* Defined in section from n_sect field */
+
 
 /* Information we keep for a Mach-O symbol.  */
 
@@ -495,10 +497,10 @@ macho_defined_symbol (uint8_t type)
 {
   if ((type & MACH_O_N_STAB) != 0)
     return 0;
-  if ((type & MACH_O_N_EXT) != 0)
-    return 0;
   switch (type & MACH_O_N_TYPE)
     {
+    case MACH_O_N_UNDF:
+      return 0;
     case MACH_O_N_ABS:
       return 1;
     case MACH_O_N_SECT:

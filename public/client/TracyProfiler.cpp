@@ -3740,23 +3740,48 @@ void Profiler::ReportTopology()
 #  endif
     if( !_GetLogicalProcessorInformationEx ) return;
 
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* packageInfo = nullptr;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* dieInfo = nullptr;
+    SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* coreInfo = nullptr;
+
     DWORD psz = 0;
     _GetLogicalProcessorInformationEx( RelationProcessorPackage, nullptr, &psz );
-    auto packageInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( psz );
-    auto res = _GetLogicalProcessorInformationEx( RelationProcessorPackage, packageInfo, &psz );
-    assert( res );
+    if( GetLastError() == ERROR_INSUFFICIENT_BUFFER )
+    {
+        packageInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( psz );
+        auto res = _GetLogicalProcessorInformationEx( RelationProcessorPackage, packageInfo, &psz );
+        assert( res );
+    }
+    else
+    {
+        psz = 0;
+    }
 
     DWORD dsz = 0;
     _GetLogicalProcessorInformationEx( RelationProcessorDie, nullptr, &dsz );
-    auto dieInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( dsz );
-    res = _GetLogicalProcessorInformationEx( RelationProcessorDie, dieInfo, &dsz );
-    assert( res );
+    if( GetLastError() == ERROR_INSUFFICIENT_BUFFER )
+    {
+        dieInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( dsz );
+        auto res = _GetLogicalProcessorInformationEx( RelationProcessorDie, dieInfo, &dsz );
+        assert( res );
+    }
+    else
+    {
+        dsz = 0;
+    }
 
     DWORD csz = 0;
     _GetLogicalProcessorInformationEx( RelationProcessorCore, nullptr, &csz );
-    auto coreInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( csz );
-    res = _GetLogicalProcessorInformationEx( RelationProcessorCore, coreInfo, &csz );
-    assert( res );
+    if( GetLastError() == ERROR_INSUFFICIENT_BUFFER )
+    {
+        coreInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( csz );
+        auto res = _GetLogicalProcessorInformationEx( RelationProcessorCore, coreInfo, &csz );
+        assert( res );
+    }
+    else
+    {
+        csz = 0;
+    }
 
     SYSTEM_INFO sysinfo;
     GetSystemInfo( &sysinfo );

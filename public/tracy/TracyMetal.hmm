@@ -1,7 +1,9 @@
 #ifndef __TRACYMETAL_HMM__
 #define __TRACYMETAL_HMM__
 
-/* The Metal back-end in Tracy operates differently than other GPU back-ends like Vulkan,
+/* This file implements a Metal API back-end for Tracy (it has only been tested on Apple
+   Silicon devices, but it should also work on Intel-based Macs and older iOS devices).
+   The Metal back-end in Tracy operates differently than other GPU back-ends like Vulkan,
    Direct3D and OpenGL. Specifically, TracyMetalZone() must be placed around the site where
    a command encoder is created. This is because not all hardware supports timestamps at
    command granularity, and can only provide timestamps around an entire command encoder.
@@ -58,6 +60,10 @@ using TracyMetalCtx = void*;
 
 #else
 
+#if not __has_feature(objc_arc)
+#error TracyMetal requires ARC to be enabled.
+#endif
+
 #include <atomic>
 #include <assert.h>
 #include <stdlib.h>
@@ -82,8 +88,13 @@ using TracyMetalCtx = void*;
     ret; \
     } while(false);
 
+#ifndef TRACY_METAL_TIMESTAMP_COLLECT_TIMEOUT
+#define TRACY_METAL_TIMESTAMP_COLLECT_TIMEOUT 0.200f
+#endif//TRACY_METAL_TIMESTAMP_COLLECT_TIMEOUT
 
+#ifndef TRACY_METAL_DEBUG_MASK
 #define TRACY_METAL_DEBUG_MASK (0)
+#endif//TRACY_METAL_DEBUG_MASK
 
 #if TRACY_METAL_DEBUG_MASK
 #define TracyMetalDebug(mask, ...) if (mask & TRACY_METAL_DEBUG_MASK) { __VA_ARGS__; }
@@ -91,9 +102,9 @@ using TracyMetalCtx = void*;
 #define TracyMetalDebug(mask, ...)
 #endif
 
-#ifndef TracyMetalZoneScopeWireTap
-#define TracyMetalZoneScopeWireTap
-#endif//TracyMetalZoneScopeWireTap
+#ifndef TracyMetalDebugZoneScopeWireTap
+#define TracyMetalDebugZoneScopeWireTap
+#endif//TracyMetalDebugZoneScopeWireTap
 
 namespace tracy
 {
@@ -109,7 +120,7 @@ public:
     : m_device(device)
     {
         ZoneScopedNC("TracyMetalCtx", tracy::Color::Red4);
-        
+  
         TracyMetalDebug(1<<0, TracyMetalPanic(, "MTLCounterErrorValue = 0x%llx", MTLCounterErrorValue));
         TracyMetalDebug(1<<0, TracyMetalPanic(, "MTLCounterDontSample = 0x%llx", MTLCounterDontSample));
         
@@ -123,19 +134,19 @@ public:
         }
         if (![m_device supportsCounterSampling:MTLCounterSamplingPointAtDrawBoundary])
         {
-            TracyMetalPanic(, "WARNING: timestamp sampling at draw call boundary is not supported.");
+            TracyMetalDebug(1<<0, fprintf(stderr, "WARNING: timestamp sampling at draw call boundary is not supported.\n"));
         }
         if (![m_device supportsCounterSampling:MTLCounterSamplingPointAtBlitBoundary])
         {
-            TracyMetalPanic(, "WARNING: timestamp sampling at blit boundary is not supported.");
+            TracyMetalDebug(1<<0, fprintf(stderr, "WARNING: timestamp sampling at blit boundary is not supported.\n"));
         }
         if (![m_device supportsCounterSampling:MTLCounterSamplingPointAtDispatchBoundary])
         {
-            TracyMetalPanic(, "WARNING: timestamp sampling at compute dispatch boundary is not supported.");
+            TracyMetalDebug(1<<0, fprintf(stderr, "WARNING: timestamp sampling at compute dispatch boundary is not supported.\n"));
         }
         if (![m_device supportsCounterSampling:MTLCounterSamplingPointAtTileDispatchBoundary])
         {
-            TracyMetalPanic(, "WARNING: timestamp sampling at tile dispatch boundary is not supported.");
+            TracyMetalDebug(1<<0, fprintf(stderr, "WARNING: timestamp sampling at tile dispatch boundary is not supported.\n"));
         }
         
         m_counterSampleBuffers[0] = NewTimestampSampleBuffer(m_device, MaxQueries);
@@ -161,20 +172,20 @@ public:
         MemWrite(&item->hdr.type, QueueType::GpuNewContext);
         MemWrite(&item->gpuNewContext.cpuTime, int64_t(cpuTimestamp));
         MemWrite(&item->gpuNewContext.gpuTime, int64_t(gpuTimestamp));
-        MemWrite(&item->gpuNewContext.thread, uint32_t(0)); // #TODO: why not GetThreadHandle()?
+        MemWrite(&item->gpuNewContext.thread, uint32_t(0)); // TODO: why not GetThreadHandle()?
         MemWrite(&item->gpuNewContext.period, period);
         MemWrite(&item->gpuNewContext.context, m_contextId);
         //MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
         MemWrite(&item->gpuNewContext.flags, GpuContextFlags(0));
         MemWrite(&item->gpuNewContext.type, GpuContextType::Metal);
-        Profiler::QueueSerialFinish();  // TODO: DeferItem() for TRACY_ON_DEMAND
+        SubmitQueueItem(item);
     }
 
     ~MetalCtx()
     {
         ZoneScopedNC("~TracyMetalCtx", tracy::Color::Red4);
-        ZoneValue(m_previousCheckpoint.load());
-        ZoneValue(m_queryCounter.load());
+        TracyMetalDebug(1<<0, ZoneValue(m_previousCheckpoint.load()));
+        TracyMetalDebug(1<<0, ZoneValue(m_queryCounter.load()));
         // collect the last remnants of Metal GPU activity...
         // TODO: add a timeout to this loop?
         while (m_previousCheckpoint.load() != m_queryCounter.load())
@@ -204,15 +215,12 @@ public:
         auto ptr = (char*)tracy_malloc( len );
         memcpy( ptr, name, len );
 
-        auto item = Profiler::QueueSerial();
+        auto* item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuContextName );
         MemWrite( &item->gpuContextNameFat.context, m_contextId );
         MemWrite( &item->gpuContextNameFat.ptr, (uint64_t)ptr );
         MemWrite( &item->gpuContextNameFat.size, len );
-#ifdef TRACY_ON_DEMAND
-        GetProfiler().DeferItem( *item );
-#endif
-        Profiler::QueueSerialFinish();
+        SubmitQueueItem(item);
     }
 
     bool Collect()
@@ -237,8 +245,8 @@ public:
 
         uintptr_t begin = m_previousCheckpoint.load();
         uintptr_t latestCheckpoint = m_queryCounter.load(); // TODO: MTLEvent? MTLFence?;
-        ZoneValue(begin);
-        ZoneValue(latestCheckpoint);
+        TracyMetalDebug(1<<3, ZoneValue(begin));
+        TracyMetalDebug(1<<3, ZoneValue(latestCheckpoint));
 
         uint32_t count = RingCount(begin, latestCheckpoint);
         if (count == 0)   // no pending timestamp queries
@@ -259,7 +267,7 @@ public:
             count = RingSize() - RingIndex(begin);
             reallocateBuffer = true;
         }
-        ZoneValue(count);
+        TracyMetalDebug(1<<3, ZoneValue(count));
         
         auto buffer_idx = (begin / MaxQueries) % 2;
         auto counterSampleBuffer = m_counterSampleBuffers[buffer_idx];
@@ -306,7 +314,7 @@ public:
                 auto requestTime = m_timestampRequestTime[k];
                 auto ms_in_flight = std::chrono::duration<float>(checkTime-requestTime).count()*1000.0f;
                 TracyMetalDebug(1<<4, TracyMetalPanic(, "Collect: invalid timestamp (zero) at %u [%.0fms in flight].", k, ms_in_flight));
-                const float timeout_ms = 200.0f;
+                const float timeout_ms = TRACY_METAL_TIMESTAMP_COLLECT_TIMEOUT * 1000.0f;
                 if (ms_in_flight < timeout_ms)
                     break;
                 ZoneScopedN("TracyMetal::Collect::Drop");
@@ -336,7 +344,7 @@ public:
             TracyMetalDebug(1<<1, TracyFreeN((void*)(uintptr_t)k, "TracyMetalTimestampQueryId"));
             resolved += 2;
         }
-        ZoneValue(RingCount(begin, m_previousCheckpoint.load()));
+        TracyMetalDebug(1<<3, ZoneValue(RingCount(begin, m_previousCheckpoint.load())));
         
         m_previousCheckpoint += resolved;
         
@@ -346,7 +354,9 @@ public:
         // never happen so long as Collect is called frequently enough to prevent pending
         // timestamp query requests from piling up too quickly.
         if ((resolved == count) && (m_previousCheckpoint.load() % MaxQueries) == 0)
+        {
             m_counterSampleBuffers[buffer_idx] = NewTimestampSampleBuffer(m_device, MaxQueries);
+        }
 
         //RecalibrateClocks();    // to account for drift
 
@@ -354,6 +364,14 @@ public:
     }
 
 private:
+    tracy_force_inline void SubmitQueueItem(QueueItem* item)
+    {
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem(*item);
+#endif
+        Profiler::QueueSerialFinish();
+    }
+
     tracy_force_inline uint32_t RingIndex(uintptr_t index)
     {
         index %= MaxQueries;
@@ -378,7 +396,7 @@ private:
     {
         ZoneScopedNC("TracyMetal::NextQuery", tracy::Color::LightCoral);
         auto id = m_queryCounter.fetch_add(2);
-        ZoneValue(id);
+        TracyMetalDebug(1<<1, ZoneValue(id));
         auto count = RingCount(m_previousCheckpoint, id);
         if (count >= MaxQueries)
         {
@@ -386,17 +404,17 @@ private:
             Query sentinel = Query{ m_counterSampleBuffers[1], MaxQueries-2 };
             TracyMetalPanic(
                 return sentinel,
-                "NextQueryId: FULL! too many pending timestamp queries. [%llu, %llu] (%u)",
+                "NextQueryId: FULL! too many pending timestamp queries. Consider calling TracyMetalCollect() more frequently. [%llu, %llu] (%u)",
                 m_previousCheckpoint.load(), id, count
             );
         }
         uint32_t buffer_idx = (id / MaxQueries) % 2;
-        ZoneValue(buffer_idx);
+        TracyMetalDebug(1<<1, ZoneValue(buffer_idx));
         auto buffer = m_counterSampleBuffers[buffer_idx];
         if (buffer == nil)
             TracyMetalPanic(, "NextQueryId: sample buffer is nil! (id=%llu)", id);
         uint32_t idx = RingIndex(id);
-        ZoneValue(idx);
+        TracyMetalDebug(1<<1, ZoneValue(idx));
         TracyMetalDebug(1<<1, TracyAllocN((void*)(uintptr_t)idx, 2, "TracyMetalTimestampQueryId"));
         m_timestampRequestTime[idx] = std::chrono::high_resolution_clock::now();
         return Query{ buffer, idx };
@@ -526,7 +544,7 @@ public:
         SubmitZoneBeginGpu(ctx, query.idx + 0, srcloc);
     }
 
-#if 0
+    /* TODO: implement this constructor interfarce for "command-level" profiling, if the device supports it
     tracy_force_inline MetalZoneScope( MetalCtx* ctx, id<MTLComputeCommandEncoder> cmdEncoder, const SourceLocationData* srcloc, bool is_active )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
@@ -544,7 +562,7 @@ public:
 
         SubmitZoneBeginGpu(ctx, query.idx, srcloc);
     }
-#endif
+    */
 
     tracy_force_inline ~MetalZoneScope()
     {
@@ -553,13 +571,16 @@ public:
         SubmitZoneEndGpu(m_ctx, m_query.idx + 1);
     }
     
-    TracyMetalZoneScopeWireTap;
+    TracyMetalDebugZoneScopeWireTap;
 
 private:
     const bool m_active;
 
     MetalCtx* m_ctx;
+
+    /* TODO: declare it for "command-level" profiling
     id<MTLComputeCommandEncoder> m_cmdEncoder;
+    */
     
     static void SubmitZoneBeginGpu(MetalCtx* ctx, uint32_t queryId, const SourceLocationData* srcloc)
     {

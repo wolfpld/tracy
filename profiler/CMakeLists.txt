@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 option(NO_FILESELECTOR "Disable the file selector" OFF)
 option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
-option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
+option(X11 "Instead of Wayland, use the X11 backend on Linux" OFF)
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
 option(NO_STATISTICS "Disable calculation of statistics" OFF)
 option(SELF_PROFILE "Enable self-profiling" OFF)

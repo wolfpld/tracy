@@ -92,6 +92,31 @@ void View::DrawFlameGraph()
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Flame graph", &m_showFlameGraph, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+    ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_flameMode, 0 );
+
+    if( m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0 )
+    {
+        ImGui::SameLine();
+        ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 );
+    }
+
+    ImGui::Separator();
+    ImGui::PopStyleVar();
+
+    Vector<FlameGraphItem> data;
+
+    for( auto& thread : m_worker.GetThreadData() ) BuildFlameGraph( m_worker, data, thread->timeline );
+    SortFlameGraph( data );
+
+    int64_t zsz = 0;
+    for( auto& v : data ) zsz += v.time;
+
+    ImGui::BeginChild( "##flameGraph" );
+    ImGui::EndChild();
+
     ImGui::End();
 }
 

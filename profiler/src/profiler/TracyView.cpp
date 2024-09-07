@@ -880,6 +880,8 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_ARROW_UP_WIDE_SHORT " Statistics", m_showStatistics );
     ImGui::SameLine();
+    ToggleButton( ICON_FA_FIRE_FLAME_CURVED " Flame", m_showFlameGraph );
+    ImGui::SameLine();
     ToggleButton( ICON_FA_MEMORY " Memory", m_memInfo.show );
     ImGui::SameLine();
     ToggleButton( ICON_FA_SCALE_BALANCED " Compare", m_compare.show );
@@ -1123,6 +1125,7 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
+    if( m_showFlameGraph ) DrawFlameGraph();
 
     if( m_setRangePopup.active )
     {

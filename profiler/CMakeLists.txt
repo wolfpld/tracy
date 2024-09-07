@@ -55,6 +55,7 @@ set(SERVER_FILES
     TracyView_ContextSwitch.cpp
     TracyView_CpuData.cpp
     TracyView_FindZone.cpp
+    TracyView_FlameGraph.cpp
     TracyView_FrameOverview.cpp
     TracyView_FrameTimeline.cpp
     TracyView_FrameTree.cpp

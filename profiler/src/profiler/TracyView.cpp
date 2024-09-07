@@ -872,11 +872,11 @@ bool View::DrawImpl()
         ImGui::PopStyleColor( 3 );
     }
     ImGui::SameLine();
-    ToggleButton( ICON_FA_GEAR " Options", m_showOptions );
+    ToggleButton( ICON_FA_GEAR, m_showOptions );
     ImGui::SameLine();
     ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
     ImGui::SameLine();
-    ToggleButton( ICON_FA_MAGNIFYING_GLASS " Find zone", m_findZone.show );
+    ToggleButton( ICON_FA_MAGNIFYING_GLASS " Find", m_findZone.show );
     ImGui::SameLine();
     ToggleButton( ICON_FA_ARROW_UP_WIDE_SHORT " Statistics", m_showStatistics );
     ImGui::SameLine();

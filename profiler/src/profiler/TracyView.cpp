@@ -1108,6 +1108,7 @@ bool View::DrawImpl()
 
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
+    if( m_showFlameGraph ) DrawFlameGraph();
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
     if( m_memInfo.show ) DrawMemory();
@@ -1125,7 +1126,6 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
-    if( m_showFlameGraph ) DrawFlameGraph();
 
     if( m_setRangePopup.active )
     {

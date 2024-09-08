@@ -123,7 +123,8 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     const auto darkColor = DarkenColor( color );
 
     const auto zsz = x1 - x0;
-    const char* name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+    const char* slName = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+    const char* name = slName;
 
     auto tsz = ImGui::CalcTextSize( name );
     if( m_vd.shortenName == ShortenName::Always || ( ( m_vd.shortenName == ShortenName::NoSpace || m_vd.shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
@@ -166,6 +167,11 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         TextFocused( "Time:", TimeToString( item.time ) );
         if( !item.children.empty() ) TextFocused( "Self time:", TimeToString( self ) );
         ImGui::EndTooltip();
+
+        if( ImGui::IsMouseClicked( 0 ) )
+        {
+            m_findZone.ShowZone( item.srcloc, slName );
+        }
     }
 
     uint64_t cts = ts;

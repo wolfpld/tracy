@@ -51,6 +51,8 @@ struct CpuUsageDraw;
 struct CpuCtxDraw;
 struct LockDraw;
 struct PlotDraw;
+struct FlameGraphItem;
+struct FlameGraphContext;
 
 
 class View
@@ -272,6 +274,7 @@ private:
     void DrawSourceTooltip( const char* filename, uint32_t line, int before = 3, int after = 3, bool separateTooltip = true );
     void DrawWaitStacks();
     void DrawFlameGraph();
+    void DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, uint64_t ts, int depth );
 
     void ListMemData( std::vector<const MemEvent*>& vec, const std::function<void(const MemEvent*)>& DrawAddress, int64_t startTime = -1, uint64_t pool = 0 );
 

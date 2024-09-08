@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -207,6 +208,9 @@ static uint32_t s_mouseCursorSerial;
 static bool s_hasFocus = false;
 static struct wl_data_device_manager* s_dataDevMgr;
 static struct wl_data_device* s_dataDev;
+static struct wl_data_source* s_dataSource;
+static uint32_t s_dataSerial;
+static std::string s_clipboard;
 
 struct Output
 {
@@ -434,6 +438,7 @@ static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32
                 ImGui::GetIO().AddInputCharactersUTF8( txt );
             }
         }
+        s_dataSerial = serial;
     }
 }
 
@@ -748,6 +753,41 @@ constexpr struct wl_data_device_listener dataDeviceListener = {
 };
 
 
+void DataSourceTarget( void*, struct wl_data_source* dataSource, const char* mimeType )
+{
+}
+
+void DataSourceSend( void*, struct wl_data_source* dataSource, const char* mimeType, int32_t fd )
+{
+    if( !s_clipboard.empty() )
+    {
+        auto len = s_clipboard.size();
+        auto ptr = s_clipboard.data();
+        while( len > 0 )
+        {
+            auto sz = write( fd, ptr, len );
+            if( sz < 0 ) break;
+            len -= sz;
+            ptr += sz;
+        }
+    }
+    close( fd );
+}
+
+void DataSourceCancelled( void*, struct wl_data_source* dataSource )
+{
+    s_clipboard.clear();
+    wl_data_source_destroy( s_dataSource );
+    s_dataSource = nullptr;
+}
+
+constexpr struct wl_data_source_listener dataSourceListener = {
+    .target = DataSourceTarget,
+    .send = DataSourceSend,
+    .cancelled = DataSourceCancelled
+};
+
+
 static void SetupCursor()
 {
     if( s_cursorShape ) return;
@@ -769,6 +809,22 @@ static void SetupCursor()
     wl_surface_commit( s_cursorSurf );
     s_cursorX = cursor->images[0]->hotspot_x * 120 / s_maxScale;
     s_cursorY = cursor->images[0]->hotspot_y * 120 / s_maxScale;
+}
+
+static void SetClipboard( void*, const char* text )
+{
+    s_clipboard = text;
+
+    if( s_dataSource ) wl_data_source_destroy( s_dataSource );
+    s_dataSource = wl_data_device_manager_create_data_source( s_dataDevMgr );
+    wl_data_source_add_listener( s_dataSource, &dataSourceListener, nullptr );
+    wl_data_source_offer( s_dataSource, "text/plain" );
+    wl_data_device_set_selection( s_dataDev, s_dataSource, s_dataSerial );
+}
+
+static const char* GetClipboard( void* )
+{
+    return nullptr;
 }
 
 Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, const std::function<int(void)>& isBusy, RunQueue* mainThreadTasks )
@@ -868,6 +924,9 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     {
         s_dataDev = wl_data_device_manager_get_data_device( s_dataDevMgr, s_seat );
         wl_data_device_add_listener( s_dataDev, &dataDeviceListener, nullptr );
+
+        io.SetClipboardTextFn = SetClipboard;
+        io.GetClipboardTextFn = GetClipboard;
     }
 
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
@@ -877,6 +936,7 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_dataSource ) wl_data_source_destroy( s_dataSource );
     if( s_dataDev ) wl_data_device_destroy( s_dataDev );
     if( s_dataDevMgr ) wl_data_device_manager_destroy( s_dataDevMgr );
     if( s_cursorShapeDev ) wp_cursor_shape_device_v1_destroy( s_cursorShapeDev );

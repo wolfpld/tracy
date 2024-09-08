@@ -163,9 +163,25 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         for( auto& v : item.children ) self -= v.time;
 
         ImGui::BeginTooltip();
-        TextFocused( "Name:", name );
-        TextFocused( "Time:", TimeToString( item.time ) );
-        if( !item.children.empty() ) TextFocused( "Self time:", TimeToString( self ) );
+        if( srcloc.name.active )
+        {
+            ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
+        }
+        ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
+        ImGui::Separator();
+        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+        ImGui::Separator();
+        TextFocused( "Execution time:", TimeToString( item.time ) );
+        if( !item.children.empty() )
+        {
+            TextFocused( "Self time:", TimeToString( self ) );
+            char buf[64];
+            PrintStringPercent( buf, 100.f * self / item.time );
+            ImGui::SameLine();
+            TextDisabledUnformatted( buf );
+        }
         ImGui::EndTooltip();
 
         if( ImGui::IsMouseClicked( 0 ) )

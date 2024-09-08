@@ -68,6 +68,8 @@
 #include "ResolvService.hpp"
 #include "RunQueue.hpp"
 
+#include "GitRef.hpp"
+
 
 struct ClientData
 {
@@ -713,6 +715,11 @@ static void DrawContents()
             ImGui::Spacing();
             ImGui::PushFont( s_bigFont );
             tracy::TextCentered( buf );
+            ImGui::PopFont();
+            ImGui::PushFont( s_smallFont );
+            ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+            tracy::TextCentered( tracy::GitRef );
+            ImGui::PopStyleColor();
             ImGui::PopFont();
             ImGui::Spacing();
             ImGui::TextUnformatted( "A real time, nanosecond resolution, remote telemetry, hybrid\nframe and sampling profiler for games and other applications." );

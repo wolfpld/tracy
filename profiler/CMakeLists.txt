@@ -98,12 +98,11 @@ set(PROFILER_FILES
     src/winmainArchDiscovery.cpp
 )
 
-set(INCLUDES "")
+set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")
 
 if(USE_WAYLAND)
     pkg_check_modules(WAYLAND REQUIRED egl wayland-egl wayland-cursor xkbcommon)
-    set(INCLUDES "${INCLUDES};${CMAKE_CURRENT_BINARY_DIR}")
     set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendWayland.cpp

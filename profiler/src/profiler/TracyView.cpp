@@ -555,6 +555,11 @@ bool View::Draw()
         ImGui::EndPopup();
     }
 
+    static FileCompression comp = FileCompression::Zstd;
+    static int zlvl = 3;
+    static bool buildDict = false;
+    static int streams = 4;
+
     bool saveFailed = false;
     if( !m_filenameStaging.empty() )
     {
@@ -569,46 +574,44 @@ bool View::Draw()
         ImGui::PopFont();
         ImGui::Separator();
 
-        static FileCompression comp = FileCompression::Zstd;
-        static int zlvl = 3;
-        ImGui::TextUnformatted( ICON_FA_FILE_ZIPPER " Trace compression" );
-        ImGui::SameLine();
-        TextDisabledUnformatted( "Can be changed later with the upgrade utility" );
-        ImGui::Indent();
-        int idx = 0;
-        while( CompressionName[idx] )
+        if( ImGui::TreeNode( ICON_FA_FILE_ZIPPER " Trace compression" ) )
         {
-            if( ImGui::RadioButton( CompressionName[idx], (int)comp == idx ) ) comp = (FileCompression)idx;
+            TextDisabledUnformatted( "Can be changed later with the upgrade utility" );
+            ImGui::Indent();
+            int idx = 0;
+            while( CompressionName[idx] )
+            {
+                if( ImGui::RadioButton( CompressionName[idx], (int)comp == idx ) ) comp = (FileCompression)idx;
+                ImGui::SameLine();
+                TextDisabledUnformatted( CompressionDesc[idx] );
+                idx++;
+            }
+            ImGui::Unindent();
+            ImGui::TextUnformatted( "Zstd level" );
             ImGui::SameLine();
-            TextDisabledUnformatted( CompressionDesc[idx] );
-            idx++;
-        }
-        ImGui::Unindent();
-        ImGui::TextUnformatted( "Zstd level" );
-        ImGui::SameLine();
-        TextDisabledUnformatted( "Increasing level decreases file size, but increases save and load times" );
-        ImGui::Indent();
-        if( ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp ) )
-        {
-            comp = FileCompression::Zstd;
-        }
-        ImGui::Unindent();
+            TextDisabledUnformatted( "Increasing level decreases file size, but increases save and load times" );
+            ImGui::Indent();
+            if( ImGui::SliderInt( "##zstd", &zlvl, 1, 22, "%d", ImGuiSliderFlags_AlwaysClamp ) )
+            {
+                comp = FileCompression::Zstd;
+            }
+            ImGui::Unindent();
 
-        static int streams = 4;
-        ImGui::TextUnformatted( ICON_FA_SHUFFLE " Compression streams" );
-        ImGui::SameLine();
-        TextDisabledUnformatted( "Parallelize save and load at the cost of file size" );
-        ImGui::Indent();
-        ImGui::SliderInt( "##streams", &streams, 1, 64, "%d", ImGuiSliderFlags_AlwaysClamp );
-        ImGui::Unindent();
-
-        static bool buildDict = false;
-        if( m_worker.GetFrameImageCount() != 0 )
-        {
-            ImGui::Separator();
-            ImGui::Checkbox( "Build frame images dictionary", &buildDict );
+            ImGui::TextUnformatted( ICON_FA_SHUFFLE " Compression streams" );
             ImGui::SameLine();
-            TextDisabledUnformatted( "Decreases run-time memory requirements" );
+            TextDisabledUnformatted( "Parallelize save and load at the cost of file size" );
+            ImGui::Indent();
+            ImGui::SliderInt( "##streams", &streams, 1, 64, "%d", ImGuiSliderFlags_AlwaysClamp );
+            ImGui::Unindent();
+
+            if( m_worker.GetFrameImageCount() != 0 )
+            {
+                ImGui::Separator();
+                ImGui::Checkbox( "Build frame images dictionary", &buildDict );
+                ImGui::SameLine();
+                TextDisabledUnformatted( "Decreases run-time memory requirements" );
+            }
+            ImGui::TreePop();
         }
 
         ImGui::Separator();

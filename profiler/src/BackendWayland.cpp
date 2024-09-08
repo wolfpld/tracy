@@ -233,7 +233,7 @@ static void RecomputeScale()
     if( s_fracSurf ) return;
 
     // On wl_compositor >= 6 the scale is sent explicitly via wl_surface.preferred_buffer_scale.
-    if ( s_comp_version >= 6 ) return;
+    if( s_comp_version >= 6 ) return;
 
     int max = 1;
     for( auto& out : s_output )

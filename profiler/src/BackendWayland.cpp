@@ -205,6 +205,7 @@ static xkb_mod_index_t s_xkbCtrl, s_xkbAlt, s_xkbShift, s_xkbSuper;
 static wp_cursor_shape_device_v1_shape s_mouseCursor;
 static uint32_t s_mouseCursorSerial;
 static bool s_hasFocus = false;
+static struct wl_data_device_manager* s_dataDevMgr;
 
 struct Output
 {
@@ -600,6 +601,10 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
         s_cursorShape = (wp_cursor_shape_manager_v1*)wl_registry_bind( reg, name, &wp_cursor_shape_manager_v1_interface, 1 );
         if( s_pointer ) s_cursorShapeDev = wp_cursor_shape_manager_v1_get_pointer( s_cursorShape, s_pointer );
     }
+    else if( strcmp( interface, wl_data_device_manager_interface.name ) == 0 )
+    {
+        s_dataDevMgr = (wl_data_device_manager*)wl_registry_bind( reg, name, &wl_data_device_manager_interface, 2 );
+    }
 }
 
 static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name )
@@ -835,6 +840,7 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_dataDevMgr ) wl_data_device_manager_destroy( s_dataDevMgr );
     if( s_cursorShapeDev ) wp_cursor_shape_device_v1_destroy( s_cursorShapeDev );
     if( s_cursorShape ) wp_cursor_shape_manager_v1_destroy( s_cursorShape );
     if( s_viewport ) wp_viewport_destroy( s_viewport );

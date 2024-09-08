@@ -381,6 +381,7 @@ private:
 
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;
+    unordered_flat_map<uint64_t, bool> m_flameGraphThread;
     unordered_flat_map<const void*, int> m_gpuDrift;
     unordered_flat_map<const PlotData*, PlotView> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
@@ -402,6 +403,16 @@ private:
         if( it == m_waitStackThread.end() )
         {
             it = m_waitStackThread.emplace( thread, true ).first;
+        }
+        return it->second;
+    }
+
+    tracy_force_inline bool& FlameGraphThread( uint64_t thread )
+    {
+        auto it = m_flameGraphThread.find( thread );
+        if( it == m_flameGraphThread.end() )
+        {
+            it = m_flameGraphThread.emplace( thread, true ).first;
         }
         return it->second;
     }

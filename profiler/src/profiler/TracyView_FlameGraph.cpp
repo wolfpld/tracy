@@ -291,6 +291,60 @@ void View::DrawFlameGraph()
         ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 );
     }
 
+    auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
+    ImGui::SameLine();
+    size_t visibleThreads = 0;
+    size_t tsz = 0;
+    for( const auto& t : m_threadOrder )
+    {
+        if( FlameGraphThread( t->id ) ) visibleThreads++;
+        tsz++;
+    }
+    if( visibleThreads == tsz )
+    {
+        ImGui::TextDisabled( "(%zu)", tsz );
+    }
+    else
+    {
+        ImGui::TextDisabled( "(%zu/%zu)", visibleThreads, tsz );
+    }
+    if( expand )
+    {
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Select all" ) )
+        {
+            for( const auto& t : m_threadOrder )
+            {
+                FlameGraphThread( t->id ) = true;
+            }
+        }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Unselect all" ) )
+        {
+            for( const auto& t : m_threadOrder )
+            {
+                FlameGraphThread( t->id ) = false;
+            }
+        }
+
+        int idx = 0;
+        for( const auto& t : m_threadOrder )
+        {
+            ImGui::PushID( idx++ );
+            const auto threadColor = GetThreadColor( t->id, 0 );
+            SmallColorBox( threadColor );
+            ImGui::SameLine();
+            SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) );
+            ImGui::PopID();
+            if( t->isFiber )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+            }
+        }
+        ImGui::TreePop();
+    }
+
     ImGui::Separator();
     ImGui::PopStyleVar();
 
@@ -298,11 +352,17 @@ void View::DrawFlameGraph()
 
     if( m_flameMode == 0 )
     {
-        for( auto& thread : m_worker.GetThreadData() ) BuildFlameGraph( m_worker, data, thread->timeline );
+        for( auto& thread : m_worker.GetThreadData() )
+        {
+            if( FlameGraphThread( thread->id ) ) BuildFlameGraph( m_worker, data, thread->timeline );
+        }
     }
     else
     {
-        for( auto& thread : m_worker.GetThreadData() ) BuildFlameGraph( m_worker, data, thread->samples );
+        for( auto& thread : m_worker.GetThreadData() )
+        {
+            if( FlameGraphThread( thread->id ) ) BuildFlameGraph( m_worker, data, thread->samples );
+        }
     }
     SortFlameGraph( data );
 

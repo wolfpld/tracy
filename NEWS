@@ -2,6 +2,16 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+vx.xx.x (xxxx-xx-xx)
+--------------------
+
+- CPU topology data now includes CPU die information.
+- Clients running under Wine will now report that in the trace info.
+- Added flame graph.
+- The Git ref information for the build is now included in the about dialog.
+- Added support for clipboard copy and paste on Wayland.
+
+
 v0.11.1 (2024-08-22)
 --------------------
 

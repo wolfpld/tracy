@@ -22,9 +22,6 @@ void View::DrawMessages()
         return;
     }
 
-    size_t tsz = 0;
-    for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
-
     bool filterChanged = m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_DELETE_LEFT " Clear" ) )
@@ -51,7 +48,22 @@ void View::DrawMessages()
     bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", tsz );
+    size_t visibleThreads = 0;
+    size_t tsz = 0;
+    for( const auto& t : m_threadOrder )
+    {
+        if( t->messages.empty() ) continue;
+        if( VisibleMsgThread( t->id ) ) visibleThreads++;
+        tsz++;
+    }
+    if( visibleThreads == tsz )
+    {
+        ImGui::TextDisabled( "(%zu)", tsz );
+    }
+    else
+    {
+        ImGui::TextDisabled( "(%zu/%zu)", visibleThreads, tsz );
+    }
     if( expand )
     {
         auto& crash = m_worker.GetCrashEvent();

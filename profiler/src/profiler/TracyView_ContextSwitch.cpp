@@ -440,7 +440,16 @@ void View::DrawWaitStacks()
     bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
+    size_t visibleThreads = 0;
+    for( const auto& t : m_threadOrder ) if( WaitStackThread( t->id ) ) visibleThreads++;
+    if( visibleThreads == m_threadOrder.size() )
+    {
+        ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
+    }
+    else
+    {
+        ImGui::TextDisabled( "(%zi/%zu)", visibleThreads, m_threadOrder.size() );
+    }
     if( expand )
     {
         auto& crash = m_worker.GetCrashEvent();

@@ -89,7 +89,16 @@ void View::DrawOptions()
         m_vd.drawGpuZones = val;
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", gpuData.size() );
+        size_t visibleGpu = 0;
+        for( const auto& gd : gpuData ) if( m_tc.GetItem( gd ).IsVisible() ) visibleGpu++;
+        if( visibleGpu == gpuData.size() )
+        {
+            ImGui::TextDisabled( "(%zu)", gpuData.size() );
+        }
+        else
+        {
+            ImGui::TextDisabled( "(%zu/%zu)", visibleGpu, gpuData.size() );
+        }
         if( expand )
         {
             for( size_t i=0; i<gpuData.size(); i++ )
@@ -274,7 +283,16 @@ void View::DrawOptions()
         m_vd.onlyContendedLocks = val;
         const auto expand = ImGui::TreeNode( "Locks" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", lockCnt );
+        size_t visibleLocks = 0;
+        for( const auto& l : m_worker.GetLockMap() ) if( Vis( l.second ) ) visibleLocks++;
+        if( visibleLocks == lockCnt )
+        {
+            ImGui::TextDisabled( "(%zu)", lockCnt );
+        }
+        else
+        {
+            ImGui::TextDisabled( "(%zu/%zu)", visibleLocks, lockCnt );
+        }
         TooltipIfHovered( "Locks with no recorded events are counted, but not listed." );
         if( expand )
         {
@@ -299,7 +317,16 @@ void View::DrawOptions()
 
             const bool multiExpand = ImGui::TreeNodeEx( "Contended locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%zu)", multiCntCont );
+            size_t visibleMultiCntCont = 0;
+            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threadList.size() != 1 && l.second->isContended && Vis( l.second ) ) visibleMultiCntCont++;
+            if( visibleMultiCntCont == multiCntCont )
+            {
+                ImGui::TextDisabled( "(%zu)", multiCntCont );
+            }
+            else
+            {
+                ImGui::TextDisabled( "(%zu/%zu)", visibleMultiCntCont, multiCntCont );
+            }
             if( multiExpand )
             {
                 ImGui::SameLine();
@@ -377,7 +404,16 @@ void View::DrawOptions()
             }
             const bool multiUncontExpand = ImGui::TreeNodeEx( "Uncontended locks present in multiple threads", 0 );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%zu)", multiCntUncont );
+            uint64_t visibleMultiCntUncont = 0;
+            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threadList.size() != 1 && !l.second->isContended && Vis( l.second ) ) visibleMultiCntUncont++;
+            if( visibleMultiCntUncont == multiCntUncont )
+            {
+                ImGui::TextDisabled( "(%zu)", multiCntUncont );
+            }
+            else
+            {
+                ImGui::TextDisabled( "(%zu/%zu)", visibleMultiCntUncont, multiCntUncont );
+            }
             if( multiUncontExpand )
             {
                 ImGui::SameLine();
@@ -455,7 +491,16 @@ void View::DrawOptions()
             }
             const auto singleExpand = ImGui::TreeNodeEx( "Locks present in a single thread", 0 );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%zu)", singleCnt );
+            uint64_t visibleSingleCnt = 0;
+            for( const auto& l : m_worker.GetLockMap() ) if( l.second->threadList.size() == 1 && Vis( l.second ) ) visibleSingleCnt++;
+            if( visibleSingleCnt == singleCnt )
+            {
+                ImGui::TextDisabled( "(%zu)", singleCnt );
+            }
+            else
+            {
+                ImGui::TextDisabled( "(%zu/%zu)", visibleSingleCnt, singleCnt );
+            }
             if( singleExpand )
             {
                 ImGui::SameLine();
@@ -549,7 +594,16 @@ void View::DrawOptions()
 
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
+        size_t visiblePlots = 0;
+        for( const auto& p : m_worker.GetPlots() ) if( m_tc.GetItem( p ).IsVisible() ) visiblePlots++;
+        if( visiblePlots == m_worker.GetPlots().size() )
+        {
+            ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
+        }
+        else
+        {
+            ImGui::TextDisabled( "(%zu/%zu)", visiblePlots, m_worker.GetPlots().size() );
+        }
         if( expand )
         {
             ImGui::SameLine();
@@ -584,7 +638,16 @@ void View::DrawOptions()
     ImGui::Separator();
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
+    size_t visibleThreads = 0;
+    for( const auto& t : m_threadOrder ) if( m_tc.GetItem( t ).IsVisible() ) visibleThreads++;
+    if( visibleThreads == m_threadOrder.size() )
+    {
+        ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
+    }
+    else
+    {
+        ImGui::TextDisabled( "(%zu/%zu)", visibleThreads, m_threadOrder.size() );
+    }
     if( expand )
     {
         auto& crash = m_worker.GetCrashEvent();
@@ -715,7 +778,16 @@ void View::DrawOptions()
         ImGui::Separator();
         expand = ImGui::TreeNode( ICON_FA_IMAGES " Visible frame sets:" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
+        uint64_t visibleFrames = 0;
+        for( const auto& fd : m_worker.GetFrames() ) if( Vis( fd ) ) visibleFrames++;
+        if( visibleFrames == m_worker.GetFrames().size() )
+        {
+            ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
+        }
+        else
+        {
+            ImGui::TextDisabled( "(%zu/%zu)", visibleFrames, m_worker.GetFrames().size() );
+        }
         if( expand )
         {
             ImGui::SameLine();

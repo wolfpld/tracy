@@ -17,6 +17,9 @@ struct FlameGraphItem
 
 static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones )
 {
+    FlameGraphItem* it;
+    int16_t last = 0;
+
     if( zones.is_magic() )
     {
         auto& vec = *(Vector<ZoneEvent>*)&zones;
@@ -25,17 +28,7 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
             if( !v.IsEndValid() ) break;
             const auto srcloc = v.SrcLoc();
             const auto duration = v.End() - v.Start();
-            auto it = std::find_if( data.begin(), data.end(), [srcloc]( const auto& v ) { return v.srcloc == srcloc; } );
-            if( it == data.end() )
-            {
-                data.push_back( FlameGraphItem { srcloc, duration } );
-                if( v.HasChildren() )
-                {
-                    auto& children = worker.GetZoneChildren( v.Child() );
-                    BuildFlameGraph( worker, data.back().children, children );
-                }
-            }
-            else
+            if( srcloc == last )
             {
                 it->time += duration;
                 if( v.HasChildren() )
@@ -43,6 +36,30 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
                     auto& children = worker.GetZoneChildren( v.Child() );
                     BuildFlameGraph( worker, it->children, children );
                 }
+            }
+            else
+            {
+                it = std::find_if( data.begin(), data.end(), [srcloc]( const auto& v ) { return v.srcloc == srcloc; } );
+                if( it == data.end() )
+                {
+                    data.push_back( FlameGraphItem { srcloc, duration } );
+                    if( v.HasChildren() )
+                    {
+                        auto& children = worker.GetZoneChildren( v.Child() );
+                        BuildFlameGraph( worker, data.back().children, children );
+                    }
+                    it = &data.back();
+                }
+                else
+                {
+                    it->time += duration;
+                    if( v.HasChildren() )
+                    {
+                        auto& children = worker.GetZoneChildren( v.Child() );
+                        BuildFlameGraph( worker, it->children, children );
+                    }
+                }
+                last = srcloc;
             }
         }
     }
@@ -53,17 +70,7 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
             if( !v->IsEndValid() ) break;
             const auto srcloc = v->SrcLoc();
             const auto duration = v->End() - v->Start();
-            auto it = std::find_if( data.begin(), data.end(), [srcloc]( const auto& v ) { return v.srcloc == srcloc; } );
-            if( it == data.end() )
-            {
-                data.push_back( FlameGraphItem { srcloc, duration } );
-                if( v->HasChildren() )
-                {
-                    auto& children = worker.GetZoneChildren( v->Child() );
-                    BuildFlameGraph( worker, data.back().children, children );
-                }
-            }
-            else
+            if( srcloc == last )
             {
                 it->time += duration;
                 if( v->HasChildren() )
@@ -71,6 +78,30 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
                     auto& children = worker.GetZoneChildren( v->Child() );
                     BuildFlameGraph( worker, it->children, children );
                 }
+            }
+            else
+            {
+                it = std::find_if( data.begin(), data.end(), [srcloc]( const auto& v ) { return v.srcloc == srcloc; } );
+                if( it == data.end() )
+                {
+                    data.push_back( FlameGraphItem { srcloc, duration } );
+                    if( v->HasChildren() )
+                    {
+                        auto& children = worker.GetZoneChildren( v->Child() );
+                        BuildFlameGraph( worker, data.back().children, children );
+                    }
+                    it = &data.back();
+                }
+                else
+                {
+                    it->time += duration;
+                    if( v->HasChildren() )
+                    {
+                        auto& children = worker.GetZoneChildren( v->Child() );
+                        BuildFlameGraph( worker, it->children, children );
+                    }
+                }
+                last = srcloc;
             }
         }
     }

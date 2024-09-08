@@ -721,6 +721,16 @@ static void DrawContents()
             tracy::TextCentered( tracy::GitRef );
             ImGui::PopStyleColor();
             ImGui::PopFont();
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Click to copy git reference to clipboard" );
+                ImGui::EndTooltip();
+                if( ImGui::IsItemClicked() )
+                {
+                    ImGui::SetClipboardText( tracy::GitRef );
+                }
+            }
             ImGui::Spacing();
             ImGui::TextUnformatted( "A real time, nanosecond resolution, remote telemetry, hybrid\nframe and sampling profiler for games and other applications." );
             ImGui::Spacing();

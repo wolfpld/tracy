@@ -66,7 +66,7 @@ else()
     CPMAddPackage(
         NAME freetype
         GITHUB_REPOSITORY freetype/freetype
-        GIT_TAG VER-2-13-2
+        GIT_TAG VER-2-13-3
         OPTIONS
             "FT_DISABLE_HARFBUZZ ON"
             "FT_WITH_HARFBUZZ OFF"

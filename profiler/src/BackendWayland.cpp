@@ -210,7 +210,10 @@ static struct wl_data_device_manager* s_dataDevMgr;
 static struct wl_data_device* s_dataDev;
 static struct wl_data_source* s_dataSource;
 static uint32_t s_dataSerial;
-static std::string s_clipboard;
+static std::string s_clipboard, s_clipboardIncoming;
+static struct wl_data_offer* s_dataOffer;
+static struct wl_data_offer* s_newDataOffer;
+static bool s_newDataOfferValid;
 
 struct Output
 {
@@ -397,6 +400,12 @@ static void KeyboardEnter( void*, struct wl_keyboard* kbd, uint32_t serial, stru
 
 static void KeyboardLeave( void*, struct wl_keyboard* kbd, uint32_t serial, struct wl_surface* surf )
 {
+    if( s_dataOffer )
+    {
+        wl_data_offer_destroy( s_dataOffer );
+        s_dataOffer = nullptr;
+    }
+
     ImGui::GetIO().AddFocusEvent( false );
     s_hasFocus = false;
 }
@@ -724,12 +733,50 @@ constexpr struct wp_fractional_scale_v1_listener fractionalListener = {
 };
 
 
+static void DataOfferOffer( void*, struct wl_data_offer* offer, const char* mimeType )
+{
+    assert( s_newDataOffer == offer );
+
+    if( strcmp( mimeType, "text/plain" ) == 0 )
+    {
+        wl_data_offer_accept( offer, 0, mimeType );
+        s_newDataOfferValid = true;
+    }
+    else
+    {
+        wl_data_offer_accept( offer, 0, nullptr );
+    }
+}
+
+static void DataOfferSourceActions( void*, struct wl_data_offer* offer, uint32_t sourceActions )
+{
+}
+
+static void DataOfferAction( void*, struct wl_data_offer* offer, uint32_t dndAction )
+{
+}
+
+constexpr struct wl_data_offer_listener dataOfferListener = {
+    .offer = DataOfferOffer,
+    .source_actions = DataOfferSourceActions,
+    .action = DataOfferAction
+};
+
+
 static void DataDeviceDataOffer( void*, struct wl_data_device* dataDevice, struct wl_data_offer* offer )
 {
+    s_newDataOffer = offer;
+    wl_data_offer_add_listener( offer, &dataOfferListener, nullptr );
+    s_newDataOfferValid = false;
 }
 
 static void DataDeviceEnter( void*, struct wl_data_device* dataDevice, uint32_t serial, struct wl_surface* surface, wl_fixed_t x, wl_fixed_t y, struct wl_data_offer* offer )
 {
+    if( s_newDataOffer )
+    {
+        wl_data_offer_destroy( s_newDataOffer );
+        s_newDataOffer = nullptr;
+    }
 }
 
 static void DataDeviceLeave( void*, struct wl_data_device* dataDevice )
@@ -742,6 +789,24 @@ static void DataDeviceMotion( void*, struct wl_data_device* dataDevice, uint32_t
 
 static void DataDeviceSelection( void*, struct wl_data_device* dataDevice, struct wl_data_offer* offer )
 {
+    if( s_dataOffer ) wl_data_offer_destroy( s_dataOffer );
+    if( offer )
+    {
+        if( s_newDataOfferValid )
+        {
+            s_dataOffer = s_newDataOffer;
+        }
+        else
+        {
+            if( s_newDataOffer ) wl_data_offer_destroy( s_newDataOffer );
+            s_dataOffer = nullptr;
+        }
+        s_newDataOffer = nullptr;
+    }
+    else
+    {
+        s_dataOffer = nullptr;
+    }
 }
 
 constexpr struct wl_data_device_listener dataDeviceListener = {
@@ -824,7 +889,24 @@ static void SetClipboard( void*, const char* text )
 
 static const char* GetClipboard( void* )
 {
-    return nullptr;
+    if( !s_dataOffer ) return nullptr;
+    int fd[2];
+    if( pipe( fd ) != 0 ) return nullptr;
+    wl_data_offer_receive( s_dataOffer, "text/plain", fd[1] );
+    close( fd[1] );
+    wl_display_roundtrip( s_dpy );
+
+    s_clipboardIncoming.clear();
+    char buf[4096];
+    while( true )
+    {
+        auto len = read( fd[0], buf, sizeof( buf ) );
+        if( len <= 0 ) break;
+        s_clipboardIncoming.append( buf, len );
+    }
+
+    close( fd[0] );
+    return s_clipboardIncoming.c_str();
 }
 
 Backend::Backend( const char* title, const std::function<void()>& redraw, const std::function<void(float)>& scaleChanged, const std::function<int(void)>& isBusy, RunQueue* mainThreadTasks )
@@ -936,6 +1018,7 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_dataOffer ) wl_data_offer_destroy( s_dataOffer );
     if( s_dataSource ) wl_data_source_destroy( s_dataSource );
     if( s_dataDev ) wl_data_device_destroy( s_dataDev );
     if( s_dataDevMgr ) wl_data_device_manager_destroy( s_dataDevMgr );

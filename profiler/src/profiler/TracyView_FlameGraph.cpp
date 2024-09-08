@@ -10,7 +10,7 @@ namespace tracy
 
 struct FlameGraphItem
 {
-    int16_t srcloc;
+    int64_t srcloc;
     int64_t time;
     Vector<FlameGraphItem> children;
 };
@@ -107,6 +107,44 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
     }
 }
 
+static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data, const Vector<SampleData>& samples )
+{
+    for( auto& v : samples )
+    {
+        const auto cs = v.callstack.Val();
+        const auto& callstack = worker.GetCallstack( cs );
+
+        auto vec = &data;
+        const auto csz = callstack.size();
+        for( size_t i=csz; i>0; i--)
+        {
+            auto frame = worker.GetCallstackFrame( callstack[i-1] );
+            if( frame )
+            {
+                for( uint8_t j=frame->size; j>0; j-- )
+                {
+                    const auto ip = frame->data[j-1].symAddr;
+                    const auto symaddr = worker.GetInlineSymbolForAddress( ip );
+                    if( symaddr != 0 )
+                    {
+                        auto it = std::find_if( vec->begin(), vec->end(), [symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
+                        if( it == vec->end() )
+                        {
+                            vec->push_back( FlameGraphItem { (int64_t)symaddr, 1 } );
+                            vec = &vec->back().children;
+                        }
+                        else
+                        {
+                            it->time++;
+                            vec = &it->children;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 static void SortFlameGraph( Vector<FlameGraphItem>& data )
 {
     std::sort( data.begin(), data.end(), []( const FlameGraphItem& lhs, const FlameGraphItem& rhs ) { return lhs.time > rhs.time; } );
@@ -133,21 +171,37 @@ struct FlameGraphContext
     double nxps;
 };
 
-void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, uint64_t ts, int depth )
+void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples )
 {
     const auto x0 = ctx.dpos.x + ts * ctx.pxns;
     const auto x1 = x0 + item.time * ctx.pxns;
     const auto y0 = ctx.dpos.y + depth * ctx.ostep;
     const auto y1 = y0 + ctx.ty;
 
-    const auto& srcloc = m_worker.GetSourceLocation( item.srcloc );
-    const auto color = GetSrcLocColor( srcloc, depth );
+    const SourceLocation* srcloc;
+    uint32_t color;
+    const char* name;
+    const char* slName;
+
+    if( !samples )
+    {
+        srcloc = &m_worker.GetSourceLocation( item.srcloc );
+        color = GetSrcLocColor( *srcloc, depth );
+        name = slName = m_worker.GetString( srcloc->name.active ? srcloc->name : srcloc->function );
+    }
+    else
+    {
+        auto sym = m_worker.GetSymbolData( (uint64_t)item.srcloc );
+        name = m_worker.GetString( sym->name );
+        auto namehash = charutil::hash( name );
+        if( namehash == 0 ) namehash++;
+        color = GetHsvColor( namehash, depth );
+    }
+
     const auto hiColor = HighlightColor( color );
     const auto darkColor = DarkenColor( color );
 
     const auto zsz = x1 - x0;
-    const char* slName = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-    const char* name = slName;
 
     auto tsz = ImGui::CalcTextSize( name );
     if( m_vd.shortenName == ShortenName::Always || ( ( m_vd.shortenName == ShortenName::NoSpace || m_vd.shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
@@ -180,21 +234,21 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         ImGui::PopClipRect();
     }
 
-    if( hover )
+    if( hover && !samples )
     {
         uint64_t self = item.time;
         for( auto& v : item.children ) self -= v.time;
 
         ImGui::BeginTooltip();
-        if( srcloc.name.active )
+        if( srcloc->name.active )
         {
-            ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
+            ImGui::TextUnformatted( m_worker.GetString( srcloc->name ) );
         }
-        ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
+        ImGui::TextUnformatted( m_worker.GetString( srcloc->function ) );
         ImGui::Separator();
-        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+        SmallColorBox( GetSrcLocColor( *srcloc, 0 ) );
         ImGui::SameLine();
-        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc->file ), srcloc->line ) );
         ImGui::Separator();
         TextFocused( "Execution time:", TimeToString( item.time ) );
         if( !item.children.empty() )
@@ -216,7 +270,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     uint64_t cts = ts;
     for( auto& v : item.children )
     {
-        DrawFlameGraphItem( v, ctx, cts, depth+1 );
+        DrawFlameGraphItem( v, ctx, cts, depth+1, samples );
         cts += v.time;
     }
 }
@@ -242,7 +296,14 @@ void View::DrawFlameGraph()
 
     Vector<FlameGraphItem> data;
 
-    for( auto& thread : m_worker.GetThreadData() ) BuildFlameGraph( m_worker, data, thread->timeline );
+    if( m_flameMode == 0 )
+    {
+        for( auto& thread : m_worker.GetThreadData() ) BuildFlameGraph( m_worker, data, thread->timeline );
+    }
+    else
+    {
+        for( auto& thread : m_worker.GetThreadData() ) BuildFlameGraph( m_worker, data, thread->samples );
+    }
     SortFlameGraph( data );
 
     int64_t zsz = 0;
@@ -264,7 +325,7 @@ void View::DrawFlameGraph()
     uint64_t ts = 0;
     for( auto& v : data )
     {
-        DrawFlameGraphItem( v, ctx, ts, 0 );
+        DrawFlameGraphItem( v, ctx, ts, 0, m_flameMode == 1 );
         ts += v.time;
     }
 

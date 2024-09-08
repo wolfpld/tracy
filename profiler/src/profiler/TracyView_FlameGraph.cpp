@@ -90,6 +90,15 @@ static void SortFlameGraph( Vector<FlameGraphItem>& data )
     for( auto& v : data ) SortFlameGraph( v.children );
 }
 
+static void FreeVector( Vector<FlameGraphItem>& data )
+{
+    for( auto& v : data )
+    {
+        FreeVector( v.children );
+        v.children.~Vector();
+    }
+}
+
 struct FlameGraphContext
 {
     ImDrawList* draw;
@@ -217,6 +226,7 @@ void View::DrawFlameGraph()
     ImGui::EndChild();
 
     ImGui::End();
+    FreeVector( data );
 }
 
 }

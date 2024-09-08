@@ -206,6 +206,7 @@ static wp_cursor_shape_device_v1_shape s_mouseCursor;
 static uint32_t s_mouseCursorSerial;
 static bool s_hasFocus = false;
 static struct wl_data_device_manager* s_dataDevMgr;
+static struct wl_data_device* s_dataDev;
 
 struct Output
 {
@@ -718,6 +719,35 @@ constexpr struct wp_fractional_scale_v1_listener fractionalListener = {
 };
 
 
+static void DataDeviceDataOffer( void*, struct wl_data_device* dataDevice, struct wl_data_offer* offer )
+{
+}
+
+static void DataDeviceEnter( void*, struct wl_data_device* dataDevice, uint32_t serial, struct wl_surface* surface, wl_fixed_t x, wl_fixed_t y, struct wl_data_offer* offer )
+{
+}
+
+static void DataDeviceLeave( void*, struct wl_data_device* dataDevice )
+{
+}
+
+static void DataDeviceMotion( void*, struct wl_data_device* dataDevice, uint32_t time, wl_fixed_t x, wl_fixed_t y )
+{
+}
+
+static void DataDeviceSelection( void*, struct wl_data_device* dataDevice, struct wl_data_offer* offer )
+{
+}
+
+constexpr struct wl_data_device_listener dataDeviceListener = {
+    .data_offer = DataDeviceDataOffer,
+    .enter = DataDeviceEnter,
+    .leave = DataDeviceLeave,
+    .motion = DataDeviceMotion,
+    .selection = DataDeviceSelection
+};
+
+
 static void SetupCursor()
 {
     if( s_cursorShape ) return;
@@ -833,6 +863,13 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 
     ImGuiIO& io = ImGui::GetIO();
     io.BackendPlatformName = "wayland (tracy profiler)";
+
+    if( s_dataDevMgr )
+    {
+        s_dataDev = wl_data_device_manager_get_data_device( s_dataDevMgr, s_seat );
+        wl_data_device_add_listener( s_dataDev, &dataDeviceListener, nullptr );
+    }
+
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 }
 
@@ -840,6 +877,7 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_dataDev ) wl_data_device_destroy( s_dataDev );
     if( s_dataDevMgr ) wl_data_device_manager_destroy( s_dataDevMgr );
     if( s_cursorShapeDev ) wp_cursor_shape_device_v1_destroy( s_cursorShapeDev );
     if( s_cursorShape ) wp_cursor_shape_manager_v1_destroy( s_cursorShape );

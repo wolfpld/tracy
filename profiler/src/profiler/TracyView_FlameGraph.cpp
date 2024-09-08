@@ -4,7 +4,6 @@
 #include "TracyPrint.hpp"
 #include "TracyVector.hpp"
 #include "TracyView.hpp"
-#include "tracy_robin_hood.h"
 
 namespace tracy
 {
@@ -18,9 +17,6 @@ struct FlameGraphItem
 
 static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones )
 {
-    unordered_flat_map<int16_t, uint16_t> map;
-    for( size_t i=0; i<data.size(); i++ ) map.emplace( data[i].srcloc, i );
-
     if( zones.is_magic() )
     {
         auto& vec = *(Vector<ZoneEvent>*)&zones;
@@ -29,10 +25,9 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
             if( !v.IsEndValid() ) break;
             const auto srcloc = v.SrcLoc();
             const auto duration = v.End() - v.Start();
-            auto it = map.find( srcloc );
-            if( it == map.end() )
+            auto it = std::find_if( data.begin(), data.end(), [srcloc]( const auto& v ) { return v.srcloc == srcloc; } );
+            if( it == data.end() )
             {
-                map.emplace( srcloc, data.size() );
                 data.push_back( FlameGraphItem { srcloc, duration } );
                 if( v.HasChildren() )
                 {
@@ -42,12 +37,11 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
             }
             else
             {
-                auto& item = data[it->second];
-                item.time += duration;
+                it->time += duration;
                 if( v.HasChildren() )
                 {
                     auto& children = worker.GetZoneChildren( v.Child() );
-                    BuildFlameGraph( worker, item.children, children );
+                    BuildFlameGraph( worker, it->children, children );
                 }
             }
         }
@@ -59,10 +53,9 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
             if( !v->IsEndValid() ) break;
             const auto srcloc = v->SrcLoc();
             const auto duration = v->End() - v->Start();
-            auto it = map.find( srcloc );
-            if( it == map.end() )
+            auto it = std::find_if( data.begin(), data.end(), [srcloc]( const auto& v ) { return v.srcloc == srcloc; } );
+            if( it == data.end() )
             {
-                map.emplace( srcloc, data.size() );
                 data.push_back( FlameGraphItem { srcloc, duration } );
                 if( v->HasChildren() )
                 {
@@ -72,12 +65,11 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
             }
             else
             {
-                auto& item = data[it->second];
-                item.time += duration;
+                it->time += duration;
                 if( v->HasChildren() )
                 {
                     auto& children = worker.GetZoneChildren( v->Child() );
-                    BuildFlameGraph( worker, item.children, children );
+                    BuildFlameGraph( worker, it->children, children );
                 }
             }
         }

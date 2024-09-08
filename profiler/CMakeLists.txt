@@ -174,6 +174,12 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui)
 
+add_custom_target(git-ref
+    COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/../extra/git-ref.py
+    BYPRODUCTS GitRef.hpp
+)
+add_dependencies(${PROJECT_NAME} git-ref)
+
 if(NOT EMSCRIPTEN)
     target_link_libraries(${PROJECT_NAME} PRIVATE TracyNfd)
     if (NOT USE_WAYLAND)

@@ -1,6 +1,7 @@
 #include "TracyColor.hpp"
 #include "TracyEvent.hpp"
 #include "TracyImGui.hpp"
+#include "TracyPrint.hpp"
 #include "TracyVector.hpp"
 #include "TracyView.hpp"
 #include "tracy_robin_hood.h"
@@ -121,9 +122,18 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         name = ShortenZoneName( m_vd.shortenName, name, tsz, zsz );
     }
 
+    const bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ) );
+
     ctx.draw->AddRectFilled( ImVec2( x0, y0 ), ImVec2( x1, y1 ), color );
-    DrawLine( ctx.draw, ImVec2( x0, y1 ), ImVec2( x0, y0 ), ImVec2( x1-1, y0 ), hiColor );
-    DrawLine( ctx.draw, ImVec2( x0, y1 ), ImVec2( x1-1, y1), ImVec2( x1-1, y0 ), darkColor );
+    if( hover )
+    {
+        ctx.draw->AddRect( ImVec2( x0 - 0.5f, y0 - 0.5f ), ImVec2( x1 - 0.5f, y1 - 0.5f ), 0xFFEEEEEE );
+    }
+    else
+    {
+        DrawLine( ctx.draw, ImVec2( x0, y1 ), ImVec2( x0, y0 ), ImVec2( x1-1, y0 ), hiColor );
+        DrawLine( ctx.draw, ImVec2( x0, y1 ), ImVec2( x1-1, y1), ImVec2( x1-1, y0 ), darkColor );
+    }
 
     if( tsz.x < zsz )
     {
@@ -135,6 +145,18 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         ImGui::PushClipRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ), true );
         DrawTextContrast( ctx.draw, ImVec2( x0, y0 ), 0xFFFFFFFF, name );
         ImGui::PopClipRect();
+    }
+
+    if( hover )
+    {
+        uint64_t self = item.time;
+        for( auto& v : item.children ) self -= v.time;
+
+        ImGui::BeginTooltip();
+        TextFocused( "Name:", name );
+        TextFocused( "Time:", TimeToString( item.time ) );
+        if( !item.children.empty() ) TextFocused( "Self time:", TimeToString( self ) );
+        ImGui::EndTooltip();
     }
 
     uint64_t cts = ts;

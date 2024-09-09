@@ -11,6 +11,8 @@
 #if defined _WIN32
 #  include <windows.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
+extern "C" typedef char* (WINAPI *t_WineGetVersion)();
+extern "C" typedef char* (WINAPI *t_WineGetBuildId)();
 #elif defined __linux__
 #  include <sys/utsname.h>
 #elif defined __APPLE__

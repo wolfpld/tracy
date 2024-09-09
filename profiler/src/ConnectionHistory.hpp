@@ -14,7 +14,7 @@ public:
 
     const std::string& Name( size_t idx ) const { return m_connHistVec[idx]->first; }
 
-    void Count( const char* name );
+    void Count( const std::string& name );
     void Erase( size_t idx );
 
     bool empty() const { return m_connHistVec.empty(); }

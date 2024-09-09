@@ -65,17 +65,16 @@ void ConnectionHistory::Rebuild()
     std::swap( m_connHistVec, vec );
 }
 
-void ConnectionHistory::Count( const char* name )
+void ConnectionHistory::Count( const std::string& name )
 {
-    std::string addr( name );
-    auto it = m_connHistMap.find( addr );
+    auto it = m_connHistMap.find( name );
     if( it != m_connHistMap.end() )
     {
         it->second++;
     }
     else
     {
-        m_connHistMap.emplace( std::move( addr ), 1 );
+        m_connHistMap.emplace( name, 1 );
     }
     Rebuild();
 }

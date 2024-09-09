@@ -39,7 +39,16 @@ static const char* GetOsInfo()
 #  ifdef __MINGW32__
         sprintf( buf, "Windows %i.%i.%i (MingW)", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
-        sprintf( buf, "Windows %i.%i.%i", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+        auto WineGetVersion = (t_WineGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "wine_get_version" );
+        auto WineGetBuildId = (t_WineGetBuildId)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "wine_get_build_id" );
+        if( WineGetVersion && WineGetBuildId )
+        {
+            sprintf( buf, "Windows %i.%i.%i (Wine %s [%s])", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber, WineGetVersion(), WineGetBuildId() );
+        }
+        else
+        {
+            sprintf( buf, "Windows %i.%i.%i", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+        }
 #  endif
     }
 #elif defined __linux__

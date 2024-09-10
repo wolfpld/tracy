@@ -37,17 +37,17 @@
 #define TracyMetalDestroy(ctx)
 #define TracyMetalContextName(ctx, name, size)
 
-#define TracyMetalZone(ctx, name)
-#define TracyMetalZoneC(ctx, name, color)
-#define TracyMetalNamedZone(ctx, varname, name, active)
-#define TracyMetalNamedZoneC(ctx, varname, name, color, active)
-#define TracyMetalZoneTransient(ctx, varname, name, active)
+#define TracyMetalZone(ctx, encoder, name)
+#define TracyMetalZoneC(ctx, encoder, name, color)
+#define TracyMetalNamedZone(ctx, varname, encoder, name, active)
+#define TracyMetalNamedZoneC(ctx, varname, encoder, name, color, active)
+#define TracyMetalZoneTransient(ctx, varname, encoder, name, active)
 
-#define TracyMetalZoneS(ctx, name, depth)
-#define TracyMetalZoneCS(ctx, name, color, depth)
-#define TracyMetalNamedZoneS(ctx, varname, name, depth, active)
-#define TracyMetalNamedZoneCS(ctx, varname, name, color, depth, active)
-#define TracyMetalZoneTransientS(ctx, varname, name, depth, active)
+#define TracyMetalZoneS(ctx, encoder, name, depth)
+#define TracyMetalZoneCS(ctx,encoder,  name, color, depth)
+#define TracyMetalNamedZoneS(ctx, varname, nencoder, ame, depth, active)
+#define TracyMetalNamedZoneCS(ctx, varname, encoder, name, color, depth, active)
+#define TracyMetalZoneTransientS(ctx, varname, encoder, name, depth, active)
 
 #define TracyMetalCollect(ctx)
 
@@ -621,31 +621,31 @@ using TracyMetalCtx = tracy::MetalCtx*;
 #define TracyMetalContextName(ctx, name, size) ctx->Name(name, size)
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyMetalZone( ctx, name ) TracyMetalNamedZoneS( ctx, ___tracy_gpu_zone, name, TRACY_CALLSTACK, true )
-#  define TracyMetalZoneC( ctx, name, color ) TracyMetalNamedZoneCS( ctx, ___tracy_gpu_zone, name, color, TRACY_CALLSTACK, true )
-#  define TracyMetalNamedZone( ctx, varname, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
-#  define TracyMetalNamedZoneC( ctx, varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
-#  define TracyMetalZoneTransient(ctx, varname, name, active) TracyMetalZoneTransientS(ctx, varname, cmdList, name, TRACY_CALLSTACK, active)
+#  define TracyMetalZone( ctx, encoder, name ) TracyMetalNamedZoneS( ctx, ___tracy_gpu_zone, encoder, name, TRACY_CALLSTACK, true )
+#  define TracyMetalZoneC( ctx, encoder, name, color ) TracyMetalNamedZoneCS( ctx, ___tracy_gpu_zone, encoder, name, color, TRACY_CALLSTACK, true )
+#  define TracyMetalNamedZone( ctx, varname, encoder, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, encoder, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
+#  define TracyMetalNamedZoneC( ctx, varname, encoder, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, encoder, &TracyConcat(__tracy_gpu_source_location,TracyLine), TRACY_CALLSTACK, active );
+#  define TracyMetalZoneTransient(ctx, varname, encoder, name, active) TracyMetalZoneTransientS(ctx, varname, encoder, name, TRACY_CALLSTACK, active)
 #else
-#  define TracyMetalZone( ctx, cmdEnc, name ) TracyMetalNamedZone( ctx, ___tracy_gpu_zone, cmdEnc, name, true )
-#  define TracyMetalZoneC( ctx, name, color ) TracyMetalNamedZoneC( ctx, ___tracy_gpu_zone, name, color, true )
-#  define TracyMetalNamedZone( ctx, varname, cmdEnc, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, cmdEnc, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
-#  define TracyMetalNamedZoneC( ctx, varname, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
-#  define TracyMetalZoneTransient(ctx, varname, name, active) tracy::MetalZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), active };
+#  define TracyMetalZone( ctx, encoder, name ) TracyMetalNamedZone( ctx, ___tracy_gpu_zone, encoder, name, true )
+#  define TracyMetalZoneC( ctx, encoder, name, color ) TracyMetalNamedZoneC( ctx, ___tracy_gpu_zone, encoder, name, color, true )
+#  define TracyMetalNamedZone( ctx, varname, encoder, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, encoder, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
+#  define TracyMetalNamedZoneC( ctx, varname, encoder, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, encoder, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
+#  define TracyMetalZoneTransient(ctx, varname, encoder, name, active) tracy::MetalZoneScope varname{ ctx, encoder, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), active };
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyMetalZoneS( ctx, name, depth ) TracyMetalNamedZoneS( ctx, ___tracy_gpu_zone, name, depth, true )
-#  define TracyMetalZoneCS( ctx, name, color, depth ) TracyMetalNamedZoneCS( ctx, ___tracy_gpu_zone, name, color, depth, true )
-#  define TracyMetalNamedZoneS( ctx, varname, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
-#  define TracyMetalNamedZoneCS( ctx, varname, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
-#  define TracyMetalZoneTransientS(ctx, varname, name, depth, active) tracy::MetalZoneScope varname{ ctx, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), depth, active };
+#  define TracyMetalZoneS( ctx, encoder, name, depth ) TracyMetalNamedZoneS( ctx, ___tracy_gpu_zone, encoder, name, depth, true )
+#  define TracyMetalZoneCS( ctx, encoder, name, color, depth ) TracyMetalNamedZoneCS( ctx, ___tracy_gpu_zone, encoder, name, color, depth, true )
+#  define TracyMetalNamedZoneS( ctx, varname, encoder, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, encoder, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
+#  define TracyMetalNamedZoneCS( ctx, varname, encoder, name, color, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, encoder, &TracyConcat(__tracy_gpu_source_location,TracyLine), depth, active );
+#  define TracyMetalZoneTransientS(ctx, varname, encoder, name, depth, active) tracy::MetalZoneScope varname{ ctx, encoder, TracyLine, TracyFile, strlen(TracyFile), TracyFunction, strlen(TracyFunction), name, strlen(name), depth, active };
 #else
-#  define TracyMetalZoneS( ctx, name, depth, active ) TracyMetalZone( ctx, name )
-#  define TracyMetalZoneCS( ctx, name, color, depth, active ) TracyMetalZoneC( name, color )
-#  define TracyMetalNamedZoneS( ctx, varname, name, depth, active ) TracyMetalNamedZone( ctx, varname, name, active )
-#  define TracyMetalNamedZoneCS( ctx, varname, name, color, depth, active ) TracyMetalNamedZoneC( ctx, varname, name, color, active )
-#  define TracyMetalZoneTransientS(ctx, varname, name, depth, active) TracyMetalZoneTransient(ctx, varname, name, active)
+#  define TracyMetalZoneS( ctx, encoder, name, depth, active ) TracyMetalZone( ctx, encoder, name )
+#  define TracyMetalZoneCS( ctx, encoder, name, color, depth, active ) TracyMetalZoneC( ctx, encoder, name, color )
+#  define TracyMetalNamedZoneS( ctx, varname, encoder, name, depth, active ) TracyMetalNamedZone( ctx, varname, encoder, name, active )
+#  define TracyMetalNamedZoneCS( ctx, varname, encoder, name, color, depth, active ) TracyMetalNamedZoneC( ctx, varname, encoder, name, color, active )
+#  define TracyMetalZoneTransientS(ctx, varname, encoder, name, depth, active) TracyMetalZoneTransient(ctx, varname, encoder, name, active)
 #endif
 
 #define TracyMetalCollect( ctx ) ctx->Collect();

@@ -36,7 +36,8 @@ constexpr const char* GpuContextNames[] = {
     "Vulkan",
     "OpenCL",
     "Direct3D 12",
-    "Direct3D 11"
+    "Direct3D 11",
+    "Metal"
 };
 
 struct MemoryPage;

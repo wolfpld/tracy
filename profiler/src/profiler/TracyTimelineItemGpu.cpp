@@ -42,7 +42,8 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
     const bool isMultithreaded =
         ( m_gpu->type == GpuContextType::Vulkan ) ||
         ( m_gpu->type == GpuContextType::OpenCL ) ||
-        ( m_gpu->type == GpuContextType::Direct3D12 );
+        ( m_gpu->type == GpuContextType::Direct3D12 ) ||
+        ( m_gpu->type == GpuContextType::Metal );
 
     char buf[64];
     sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );

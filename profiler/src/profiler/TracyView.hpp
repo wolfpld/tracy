@@ -386,6 +386,7 @@ private:
     unordered_flat_map<const void*, int> m_gpuDrift;
     unordered_flat_map<const PlotData*, PlotView> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
+    Vector<const ThreadData*> m_threadReinsert;
     Vector<float> m_threadDnd;
 
     tracy_force_inline bool& VisibleMsgThread( uint64_t thread )

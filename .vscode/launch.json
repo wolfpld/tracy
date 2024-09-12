@@ -7,8 +7,7 @@
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "terminal": "console"
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

@@ -366,11 +366,19 @@ void View::DrawTimeline()
         if( threadData.size() != m_threadOrder.size() )
         {
             m_threadOrder.reserve( threadData.size() );
-            for( size_t i=m_threadOrder.size(); i<threadData.size(); i++ )
+            // Only new threads are in the end of the worker's ThreadData vector.
+            // Threads which get reordered by received thread hints are not new, yet removed from m_threadOrder.
+            // Therefore, those are kept in the m_threadReinsert vector. As such, we will gather first threads from the
+            // reinsert vector, and afterwards the remaining ones must be new (and thus found at the end of threadData).
+            size_t numReinsert = m_threadReinsert.size();
+            size_t numNew = threadData.size() - m_threadOrder.size() - numReinsert;
+            for( size_t i = 0; i < numReinsert + numNew; i++ )
             {
-                auto it = std::upper_bound( m_threadOrder.begin(), m_threadOrder.end(), threadData[i]->groupHint, []( const auto& lhs, const auto& rhs ) { return lhs < rhs->groupHint; } );
-                m_threadOrder.insert( it, threadData[i] );
+                const ThreadData *td = i < numReinsert ? m_threadReinsert[i] : threadData[m_threadOrder.size()];
+                auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [td]( const auto t ) { return td->groupHint < t->groupHint; } );
+                m_threadOrder.insert( it, td );
             }
+            m_threadReinsert.clear();
         }
         for( const auto& v : m_threadOrder )
         {

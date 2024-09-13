@@ -41,12 +41,6 @@
 namespace tracy
 {
 
-static tracy_force_inline uint32_t UnpackFileLine( uint64_t packed, uint32_t& line )
-{
-    line = packed & 0xFFFFFFFF;
-    return packed >> 32;
-}
-
 static bool SourceFileValid( const char* fn, uint64_t olderThan )
 {
     struct stat buf;

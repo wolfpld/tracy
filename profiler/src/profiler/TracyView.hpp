@@ -313,7 +313,7 @@ private:
     uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    ZoneColorData GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth );
+    ZoneColorData GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t inheritedColor );
     ZoneColorData GetZoneColorData( const GpuEvent& ev );
 
     void ZoomToZone( const ZoneEvent& ev );

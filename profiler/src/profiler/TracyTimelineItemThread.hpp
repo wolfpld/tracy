@@ -37,10 +37,10 @@ private:
 #ifndef TRACY_NO_STATISTICS
     int PreprocessGhostLevel( const TimelineContext& ctx, const Vector<GhostZone>& vec, int depth, bool visible );
 #endif
-    int PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible );
+    int PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible, uint32_t inheritedColor );
 
     template<typename Adapter, typename V>
-    int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible );
+    int PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible, uint32_t inheritedColor );
 
     void PreprocessContextSwitches( const TimelineContext& ctx, const ContextSwitch& ctxSwitch, bool visible );
     void PreprocessSamples( const TimelineContext& ctx, const Vector<SampleData>& vec, bool visible, int yPos );

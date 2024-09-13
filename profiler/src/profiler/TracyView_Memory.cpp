@@ -8,11 +8,11 @@
 namespace tracy
 {
 
-enum { ChunkBits = 10 };
-enum { PageBits = 10 };
-enum { PageSize = 1 << PageBits };
-enum { PageChunkBits = ChunkBits + PageBits };
-enum { PageChunkSize = 1 << PageChunkBits };
+constexpr size_t ChunkBits = 10;
+constexpr size_t PageBits = 10;
+constexpr size_t PageSize = 1 << PageBits;
+constexpr size_t PageChunkBits = ChunkBits + PageBits;
+constexpr size_t PageChunkSize = 1 << PageChunkBits;
 
 uint32_t MemDecayColor[256] = {
     0x0, 0xFF077F07, 0xFF078007, 0xFF078207, 0xFF078307, 0xFF078507, 0xFF078707, 0xFF078807,

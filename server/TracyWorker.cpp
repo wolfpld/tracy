@@ -5097,7 +5097,7 @@ void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
 
 void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
 {
-    auto fd = m_data.frames.Retrieve( ev.name, [this] ( uint64_t name ) -> FrameData* {
+    auto fd = m_data.frames.Retrieve( ev.name, [] ( uint64_t name ) -> FrameData* {
         return nullptr;
     }, [this] ( uint64_t name ) {
         Query( ServerQueryFrameName, name );

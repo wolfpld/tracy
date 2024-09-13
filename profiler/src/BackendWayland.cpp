@@ -1182,6 +1182,7 @@ void Backend::NewFrame( int& w, int& h )
             shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NOT_ALLOWED;
             break;
         default:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;
             break;
         };
 

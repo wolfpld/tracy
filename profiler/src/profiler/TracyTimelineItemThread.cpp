@@ -9,6 +9,7 @@
 #include "TracyTimelineItemThread.hpp"
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"
+#include "TracyColor.hpp"
 
 namespace tracy
 {
@@ -300,7 +301,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         else
 #endif
         {
-            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0, visible );
+            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0, visible, 0 );
         }
     } );
 
@@ -399,20 +400,20 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
 }
 #endif
 
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible, uint32_t parentCustomColor )
 {
     if( vec.is_magic() )
     {
-        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth, visible );
+        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth, visible, parentCustomColor );
     }
     else
     {
-        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth, visible );
+        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth, visible, parentCustomColor );
     }
 }
 
 template<typename Adapter, typename V>
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible, uint32_t parentCustomColor )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -450,17 +451,30 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
                 if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
-            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ) } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ), parentCustomColor } );
             it = next;
         }
         else
         {
+            uint32_t customColor = m_view.GetZoneCustomColor( ev, m_thread->id );
+            uint32_t childCustomColor = 0;
+            if( m_view.GetViewData().inheritParentColors )
+            {
+                if( customColor != 0 )
+                {
+                    childCustomColor = DarkenColorSlightly( customColor );
+                } else
+                {
+                    customColor = parentCustomColor;
+                    childCustomColor = parentCustomColor;
+                }
+            }
             if( ev.HasChildren() )
             {
-                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible );
+                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible, childCustomColor );
                 if( d > maxdepth ) maxdepth = d;
             }
-            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev, 0, 0, customColor } );
             ++it;
         }
     }

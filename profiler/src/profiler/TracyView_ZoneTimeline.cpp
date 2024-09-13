@@ -223,7 +223,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
         case TimelineDrawType::Folded:
         {
             auto& ev = *(const ZoneEvent*)v.ev.get();
-            const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : GetThreadColor( tid, v.depth );
+            const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : DarkenColor( GetZoneColor( ev, tid, v.depth, v.customColor ) );
             const auto rend = v.rend.Val();
             const auto px0 = ( ev.Start() - vStart ) * pxns;
             const auto px1 = ( rend - vStart ) * pxns;
@@ -284,7 +284,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             auto& ev = *(const ZoneEvent*)v.ev.get();
             const auto end = m_worker.GetZoneEnd( ev );
             const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
-            const auto zoneColor = GetZoneColorData( ev, tid, v.depth );
+            const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.customColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );

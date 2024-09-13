@@ -308,14 +308,17 @@ private:
 
     void AddAnnotation( int64_t start, int64_t end );
 
+public:
     uint32_t GetThreadColor( uint64_t thread, int depth );
     uint32_t GetSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );
-    uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
+    uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t customColor );
+    uint32_t GetZoneCustomColor( const ZoneEvent& ev, uint64_t thread );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    ZoneColorData GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth );
+    ZoneColorData GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t customColor );
     ZoneColorData GetZoneColorData( const GpuEvent& ev );
 
+private:
     void ZoomToZone( const ZoneEvent& ev );
     void ZoomToZone( const GpuEvent& ev );
     void ZoomToPrevFrame();
@@ -331,6 +334,7 @@ private:
     void CallstackTooltipContents( uint32_t idx );
     void CrashTooltip();
 
+public:
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone, uint64_t tid ) const;
     const ZoneEvent* GetZoneChild( const ZoneEvent& zone, int64_t time ) const;
@@ -348,6 +352,7 @@ private:
     const char* GetFrameSetName( const FrameData& fd ) const;
     static const char* GetFrameSetName( const FrameData& fd, const Worker& worker );
 
+private:
 #ifndef TRACY_NO_STATISTICS
     void FindZones();
     void FindZonesCompare();

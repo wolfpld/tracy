@@ -24,6 +24,7 @@ struct TimelineDraw
     short_ptr<void*> ev;
     Int48 rend;
     uint32_t num;
+    uint32_t customColor;
 };
 
 

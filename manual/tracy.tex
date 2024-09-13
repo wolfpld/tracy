@@ -3412,6 +3412,7 @@ In this window, you can set various trace-related options. For example, the time
 \item \emph{Source location dynamic} -- Zone color is determined by source location (function name) and depth level.
 \end{itemize}
 Enabling the \emph{Ignore custom} option will force usage of the selected zone coloring scheme, disregarding any colors set by the user in profiled code.
+Enabling the \emph{Inherit parent colors} option will cause zones that have a color set by the user in the profiled code to be propagated down to the child zones, although slightly darker.
 \item \emph{\faRulerHorizontal{} Zone name shortening} -- controls display behavior of long zone names, which don't fit inside a zone box:
 \begin{itemize}
 \item \emph{Disabled} -- Shortening of zone names is not performed and names are always displayed in full (e.g.\ \texttt{bool ns::container<float>::add(const float\&)}).

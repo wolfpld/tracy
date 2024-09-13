@@ -41,20 +41,29 @@ uint32_t View::GetSrcLocColor( const SourceLocation& srcloc, int depth )
     return GetRawSrcLocColor( srcloc, depth );
 }
 
-uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
+uint32_t View::GetZoneCustomColor( const ZoneEvent& ev, uint64_t thread )
 {
+    if( m_worker.HasZoneExtra( ev ) )
+    {
+        const auto custom_color = m_worker.GetZoneExtra( ev ).color.Val();
+        if( custom_color != 0 ) return custom_color | 0xFF000000;
+    }
     const auto sl = ev.SrcLoc();
     const auto& srcloc = m_worker.GetSourceLocation( sl );
+    const auto color = srcloc.color;
+    if( color != 0 ) return color | 0xFF000000;
+    return 0;
+}
+
+uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t customColor )
+{
     if( !m_vd.forceColors )
     {
-        if( m_worker.HasZoneExtra( ev ) )
-        {
-            const auto custom_color = m_worker.GetZoneExtra( ev ).color.Val();
-            if( custom_color != 0 ) return custom_color | 0xFF000000;
-        }
-        const auto color = srcloc.color;
-        if( color != 0 ) return color | 0xFF000000;
+        // First check if the zone itself has a color, before we fetch the chain-of-parents, which is expensive to do.
+        if( customColor != 0 ) return customColor | 0xFF000000;
     }
+    const auto sl = ev.SrcLoc();
+    const auto& srcloc = m_worker.GetSourceLocation( sl );
     switch( m_vd.dynamicColors )
     {
     case 0:
@@ -76,27 +85,27 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
 
-View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth )
+View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t customColor )
 {
     ZoneColorData ret;
     const auto& srcloc = ev.SrcLoc();
     if( m_zoneInfoWindow == &ev )
     {
-        ret.color = GetZoneColor( ev, thread, depth );
+        ret.color = GetZoneColor( ev, thread, depth, customColor );
         ret.accentColor = 0xFF44DD44;
         ret.thickness = 3.f;
         ret.highlight = true;
     }
     else if( m_zoneHighlight == &ev )
     {
-        ret.color = GetZoneColor( ev, thread, depth );
+        ret.color = GetZoneColor( ev, thread, depth, customColor );
         ret.accentColor = 0xFF4444FF;
         ret.thickness = 3.f;
         ret.highlight = true;
     }
     else if( m_zoneSrcLocHighlight == srcloc )
     {
-        ret.color = GetZoneColor( ev, thread, depth );
+        ret.color = GetZoneColor( ev, thread, depth, customColor );
         ret.accentColor = 0xFFEEEEEE;
         ret.thickness = 1.f;
         ret.highlight = true;
@@ -119,7 +128,7 @@ View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread
     }
     else
     {
-        const auto color = GetZoneColor( ev, thread, depth );
+        const auto color = GetZoneColor( ev, thread, depth, customColor );
         ret.color = color;
         ret.accentColor = HighlightColor( color );
         ret.thickness = 1.f;

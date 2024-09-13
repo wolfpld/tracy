@@ -145,6 +145,7 @@ void UserData::LoadState( ViewData& data )
                 if( ini_sget( ini, "options", "drawCpuUsageGraph", "%d", &v ) ) data.drawCpuUsageGraph = v;
                 if( ini_sget( ini, "options", "drawSamples", "%d", &v ) ) data.drawSamples = v;
                 if( ini_sget( ini, "options", "dynamicColors", "%d", &v ) ) data.dynamicColors = v;
+                if( ini_sget( ini, "options", "inheritParentColors", "%d", &v ) ) data.inheritParentColors = v;
                 if( ini_sget( ini, "options", "forceColors", "%d", &v ) ) data.forceColors = v;
                 if( ini_sget( ini, "options", "ghostZones", "%d", &v ) ) data.ghostZones = v;
                 if( ini_sget( ini, "options", "frameTarget", "%d", &v ) ) data.frameTarget = v;
@@ -194,6 +195,7 @@ void UserData::SaveState( const ViewData& data )
         fprintf( f, "drawCpuUsageGraph = %d\n", data.drawCpuUsageGraph );
         fprintf( f, "drawSamples = %d\n", data.drawSamples );
         fprintf( f, "dynamicColors = %d\n", data.dynamicColors );
+        fprintf( f, "inheritParentColors = %d\n", data.inheritParentColors );
         fprintf( f, "forceColors = %d\n", data.forceColors );
         fprintf( f, "ghostZones = %d\n", data.ghostZones );
         fprintf( f, "frameTarget = %d\n", data.frameTarget );

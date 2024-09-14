@@ -400,7 +400,7 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
 }
 #endif
 
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible, uint32_t inheritedColor )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible, const uint32_t inheritedColor )
 {
     if( vec.is_magic() )
     {
@@ -413,7 +413,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
 }
 
 template<typename Adapter, typename V>
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible, uint32_t inheritedColor )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible, const uint32_t inheritedColor )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -458,6 +458,7 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
         {
             const auto hasChildren = ev.HasChildren();
             auto currentInherited = inheritedColor;
+            auto childrenInherited = inheritedColor;
             if( m_view.GetViewData().inheritParentColors )
             {
                 uint32_t color = 0;
@@ -474,12 +475,12 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
                 if( color != 0 )
                 {
                     currentInherited = color | 0xFF000000;
-                    if( hasChildren ) inheritedColor = DarkenColorSlightly( color );
+                    if( hasChildren ) childrenInherited = DarkenColorSlightly( color );
                 }
             }
             if( hasChildren )
             {
-                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible, inheritedColor );
+                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible, childrenInherited );
                 if( d > maxdepth ) maxdepth = d;
             }
             if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev, 0, 0, currentInherited } );

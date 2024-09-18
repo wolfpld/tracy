@@ -952,7 +952,7 @@ static void DrawContents()
                     {
                         memcpy( addr, str.c_str(), str.size() + 1 );
                     }
-                    if( ImGui::IsItemHovered() && ImGui::IsKeyPressed( ImGui::GetKeyIndex( ImGuiKey_Delete ), false ) )
+                    if( ImGui::IsItemHovered() && ImGui::IsKeyPressed( ImGuiKey_Delete, false ) )
                     {
                         idxRemove = (int)i;
                     }

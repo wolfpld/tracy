@@ -1084,7 +1084,7 @@ bool View::DrawImpl()
     DrawFrames();
 
     const auto dockspaceId = ImGui::GetID( "tracyDockspace" );
-    ImGui::DockSpace( dockspaceId, ImVec2( 0, 0 ), ImGuiDockNodeFlags_NoDockingInCentralNode );
+    ImGui::DockSpace( dockspaceId, ImVec2( 0, 0 ), ImGuiDockNodeFlags_NoDockingOverCentralNode );
     if( ImGuiDockNode* node = ImGui::DockBuilderGetCentralNode( dockspaceId ) )
     {
         node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;

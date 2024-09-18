@@ -247,7 +247,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     const auto text = m_worker.GetString( msg.ref );
     const auto tid = m_worker.DecompressThread( msg.thread );
     ImGui::PushID( &msg );
-    if( ImGui::Selectable( TimeToStringExact( msg.time ), m_msgHighlight == &msg, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap ) )
+    if( ImGui::Selectable( TimeToStringExact( msg.time ), m_msgHighlight == &msg, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap ) )
     {
         CenterAtTime( msg.time );
     }

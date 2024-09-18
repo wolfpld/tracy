@@ -115,7 +115,7 @@ void View::DrawPlayback()
         changed = true;
     }
     changed |= ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" );
-    ImGui::SetItemUsingMouseWheel();
+    ImGui::SetItemKeyOwner( ImGuiKey_MouseWheelY );
     if( wheel && ImGui::IsItemHovered() )
     {
         if( ImGui::IsItemActive() )

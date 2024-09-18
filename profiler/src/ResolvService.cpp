@@ -14,22 +14,28 @@
 ResolvService::ResolvService( uint16_t port )
     : m_exit( false )
     , m_port( port )
+#ifndef __EMSCRIPTEN__
     , m_thread( [this] { Worker(); } )
+#endif
 {
 }
 
 ResolvService::~ResolvService()
 {
+#ifndef __EMSCRIPTEN__
     m_exit.store( true, std::memory_order_relaxed );
     m_cv.notify_one();
     m_thread.join();
+#endif
 }
 
 void ResolvService::Query( uint32_t ip, const std::function<void(std::string&&)>& callback )
 {
+#ifndef __EMSCRIPTEN__
     std::lock_guard<std::mutex> lock( m_lock );
     m_queue.emplace_back( QueueItem { ip, callback } );
     m_cv.notify_one();
+#endif
 }
 
 void ResolvService::Worker()

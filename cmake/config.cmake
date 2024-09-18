@@ -37,11 +37,6 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
 
-if(EMSCRIPTEN)
-    add_compile_options(-pthread)
-    add_link_options(-pthread)
-endif()
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT EMSCRIPTEN)
     find_program(MOLD_LINKER mold)
     if(MOLD_LINKER)

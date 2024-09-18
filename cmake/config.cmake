@@ -33,6 +33,10 @@ else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 endif()
 
+if(EMSCRIPTEN)
+    add_compile_options(-sUSE_FREETYPE=1 -pthread -DIMGUI_IMPL_OPENGL_ES2)
+endif()
+
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()

@@ -489,9 +489,9 @@ private:
             uptr->thread = std::thread( [ptr = uptr.get()] { Worker( ptr ); } );
             m_streams.emplace_back( std::move( uptr ) );
             m_dataOffset += sz;
-       }
+        }
 
-       GetNextDataBlock();
+        GetNextDataBlock();
     }
 
     tracy_force_inline uint32_t ReadBlockSize()

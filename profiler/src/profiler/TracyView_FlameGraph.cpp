@@ -291,6 +291,12 @@ void View::DrawFlameGraph()
         ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 );
     }
 
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+
+    ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort );
+
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     size_t visibleThreads = 0;
@@ -364,7 +370,8 @@ void View::DrawFlameGraph()
             if( FlameGraphThread( thread->id ) ) BuildFlameGraph( m_worker, data, thread->samples );
         }
     }
-    SortFlameGraph( data );
+
+    if( m_flameSort ) SortFlameGraph( data );
 
     int64_t zsz = 0;
     for( auto& v : data ) zsz += v.time;

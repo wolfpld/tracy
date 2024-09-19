@@ -159,6 +159,10 @@ add_library(TracyImGui STATIC ${IMGUI_SOURCES})
 target_include_directories(TracyImGui PUBLIC ${IMGUI_DIR})
 target_link_libraries(TracyImGui PUBLIC TracyFreetype)
 
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(TracyImGui PUBLIC "IMGUI_DISABLE_DEBUG_TOOLS")
+endif()
+
 # NFD
 
 if (NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)

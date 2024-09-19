@@ -89,16 +89,6 @@
       var spinnerElement = document.getElementById('spinner');
       var preloadElement = document.getElementById('preload');
 
-      function resizeHandler() {
-        let w = Math.floor(Math.floor(window.innerWidth * window.devicePixelRatio) / window.devicePixelRatio);
-        let h = Math.floor(Math.floor(window.innerHeight * window.devicePixelRatio) / window.devicePixelRatio);
-        if(preloadElement.hidden === true) {
-          Module.ccall('nativeResize', 'number', ['number', 'number'], [w * window.devicePixelRatio, h * window.devicePixelRatio]);
-        }
-        Module.canvas.style.width = w + 'px';
-        Module.canvas.style.height = h + 'px';
-      }
-
       var Module = {
         preRun: [],
         postRun: [],
@@ -139,7 +129,6 @@
             progressElement.hidden = true;
             preloadElement.hidden = true;
             spinnerElement.style.display = 'none';
-            resizeHandler();
           }
           statusElement.innerHTML = text;
         },
@@ -158,8 +147,6 @@
           if (text) console.error('[post-exception status] ' + text);
         };
       };
-      addEventListener('resize', resizeHandler);
-      resizeHandler();
     </script>
     <script async type="text/javascript" src="tracy-profiler.js"></script>
   </body>

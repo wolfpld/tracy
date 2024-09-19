@@ -1,11 +1,6 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
-#ifdef __EMSCRIPTEN__
-#  include <GLES2/gl2.h>
-#  include <emscripten/html5.h>
-#else
-#  include "imgui/imgui_impl_opengl3_loader.h"
-#endif
+#include "imgui/imgui_impl_opengl3_loader.h"
 
 #include <chrono>
 #include <GLFW/glfw3.h>
@@ -97,11 +92,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     glfwSetWindowRefreshCallback( s_window, []( GLFWwindow* ) { tracy::s_wasActive = true; s_redraw(); } );
 
     ImGui_ImplGlfw_InitForOpenGL( s_window, true );
-#ifdef __EMSCRIPTEN__
-    ImGui_ImplOpenGL3_Init( "#version 100" );
-#else
     ImGui_ImplOpenGL3_Init( "#version 150" );
-#endif
 
     s_redraw = redraw;
     s_mainThreadTasks = mainThreadTasks;
@@ -133,13 +124,6 @@ void Backend::Show()
 
 void Backend::Run()
 {
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop( []() {
-        glfwPollEvents();
-        s_redraw();
-        s_mainThreadTasks->Run();
-    }, 0, 1 );
-#else
     while( !glfwWindowShouldClose( s_window ) )
     {
         if( s_iconified )
@@ -154,7 +138,6 @@ void Backend::Run()
             s_mainThreadTasks->Run();
         }
     }
-#endif
 }
 
 void Backend::Attention()
@@ -206,9 +189,7 @@ void Backend::SetTitle( const char* title )
 
 float Backend::GetDpiScale()
 {
-#ifdef __EMSCRIPTEN__
-    return EM_ASM_DOUBLE( { return window.devicePixelRatio; } );
-#elif GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
+#if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
     auto monitor = glfwGetWindowMonitor( s_window );
     if( !monitor ) monitor = glfwGetPrimaryMonitor();
     if( monitor )
@@ -220,11 +201,3 @@ float Backend::GetDpiScale()
 #endif
     return 1;
 }
-
-#ifdef __EMSCRIPTEN__
-extern "C" int nativeResize( int width, int height )
-{
-    glfwSetWindowSize( s_window, width, height );
-    return 0;
-}
-#endif

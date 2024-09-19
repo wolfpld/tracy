@@ -15,6 +15,5 @@
         "folder": { "statusBarVisibility": "visible" },
         "variant": { "statusBarVisibility": "compact" }
     },
-    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
     "lldb.launch.initCommands": ["command script import ${workspaceRoot}/extra/natvis.py"],
 }

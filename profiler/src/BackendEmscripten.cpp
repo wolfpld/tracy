@@ -205,7 +205,6 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         return EM_TRUE;
     } );
     emscripten_set_keydown_callback( EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, [] ( int, const EmscriptenKeyboardEvent* e, void* ) -> EM_BOOL {
-        printf( "key down: %s\n", e->code );
         const auto code = TranslateKeyCode( e->code );
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, true );

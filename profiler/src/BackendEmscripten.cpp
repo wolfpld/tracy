@@ -200,7 +200,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         return EM_TRUE;
     } );
     emscripten_set_wheel_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenWheelEvent* e, void* ) -> EM_BOOL {
-        ImGui::GetIO().AddMouseWheelEvent( -e->deltaX, -e->deltaY );
+        ImGui::GetIO().AddMouseWheelEvent( e->deltaX * -0.05, e->deltaY * -0.05 );
         tracy::s_wasActive = true;
         return EM_TRUE;
     } );

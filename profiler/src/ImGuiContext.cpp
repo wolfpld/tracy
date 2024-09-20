@@ -11,6 +11,7 @@ ImGuiTracyContext::ImGuiTracyContext()
     io.IniFilename = m_iniFilename.c_str();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
     io.ConfigInputTextCursorBlink = false;
+    io.ConfigScrollbarScrollByPage = false;
 }
 
 ImGuiTracyContext::~ImGuiTracyContext()

@@ -1,0 +1,39 @@
+name: emscripten
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+    - name: Install dependencies
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed cmake git unzip python ninja
+    - name: Setup emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 3.1.67
+    - uses: actions/checkout@v4
+    - name: Profiler GUI
+      run: |
+        cmake -G Ninja -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_TOOLCHAIN_FILE=${{env.EMSDK}}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+        cmake --build profiler/build --parallel
+    - name: Compress artifacts
+      run: |
+        gzip -9 profiler/build/tracy-profiler.js profiler/build/tracy-profiler.wasm
+    - name: Find Artifacts
+      id: find_artifacts
+      run: |
+        mkdir -p bin
+        cp profiler/build/index.html bin
+        cp profiler/build/tracy-profiler.data bin
+        cp profiler/build/tracy-profiler.js.gz bin
+        cp profiler/build/tracy-profiler.wasm.gz bin
+    - uses: actions/upload-artifact@v4
+      with:
+        name: emscripten
+        path: bin

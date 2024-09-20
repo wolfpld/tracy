@@ -24,6 +24,7 @@ static EGLSurface s_eglSurf;
 static float s_prevScale;
 static int s_width, s_height;
 static uint64_t s_time;
+static const char* s_prevCursor = nullptr;
 
 static ImGuiKey TranslateKeyCode( const char* code )
 {
@@ -271,6 +272,36 @@ void Backend::NewFrame( int& w, int& h )
     io.DisplayFramebufferScale = ImVec2( 1, 1 );
 
     ImGui_ImplOpenGL3_NewFrame();
+
+    ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
+    const char* cursorName;
+    switch( cursor )
+    {
+    case ImGuiMouseCursor_None:         cursorName = "none"; break;
+    case ImGuiMouseCursor_Arrow:
+        switch( s_isBusy() )
+        {
+        default:
+        case 0: cursorName = "default"; break;
+        case 1: cursorName = "progress"; break;
+        case 2: cursorName = "wait"; break;
+        }
+        break;
+    case ImGuiMouseCursor_TextInput:    cursorName = "text"; break;
+    case ImGuiMouseCursor_ResizeAll:    cursorName = "move"; break;
+    case ImGuiMouseCursor_ResizeNS:     cursorName = "ns-resize"; break;
+    case ImGuiMouseCursor_ResizeEW:     cursorName = "ew-resize"; break;
+    case ImGuiMouseCursor_ResizeNESW:   cursorName = "nesw-resize"; break;
+    case ImGuiMouseCursor_ResizeNWSE:   cursorName = "nwse-resize"; break;
+    case ImGuiMouseCursor_Hand:         cursorName = "pointer"; break;
+    case ImGuiMouseCursor_NotAllowed:   cursorName = "not-allowed"; break;
+    default:                            cursorName = "auto"; break;
+    };
+    if( s_prevCursor != cursorName )
+    {
+        s_prevCursor = cursorName;
+        EM_ASM_INT( { document.getElementById('canvas').style.cursor = UTF8ToString($0); }, cursorName );
+    }
 
     uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
     io.DeltaTime = std::min( 0.1f, ( time - s_time ) / 1000000.f );

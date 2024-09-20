@@ -34,7 +34,7 @@ else()
 endif()
 
 if(EMSCRIPTEN)
-    add_compile_options(-sUSE_FREETYPE=1 -pthread -DIMGUI_IMPL_OPENGL_ES2)
+    add_compile_options(-pthread -DIMGUI_IMPL_OPENGL_ES2)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)

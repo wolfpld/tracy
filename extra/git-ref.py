@@ -2,13 +2,19 @@
 
 import filecmp
 import subprocess
+import sys
 import os
 
 out = "GitRef.hpp"
 tmp = f"{out}.tmp"
 
+if len(sys.argv) > 1:
+    rev = sys.argv[1]
+else:
+    rev = "HEAD"
+
 try:
-    ref = subprocess.run(["git", "rev-parse", "--short", "HEAD"], check=True, capture_output=True).stdout.decode().strip()
+    ref = subprocess.run(["git", "rev-parse", "--short", rev], check=True, capture_output=True).stdout.decode().strip()
 except subprocess.CalledProcessError:
     ref = "unknown"
 

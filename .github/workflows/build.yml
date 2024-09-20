@@ -27,6 +27,8 @@ jobs:
     - if: startsWith(matrix.os, 'macos')
       name: Install macos dependencies
       run: brew install pkg-config glfw meson
+    - name: Trust git repo
+      run: git config --global --add safe.directory '*'
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

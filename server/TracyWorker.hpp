@@ -126,7 +126,7 @@ public:
     struct ZoneThreadData
     {
         tracy_force_inline ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
-        tracy_force_inline void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
+        tracy_force_inline void SetZone( ZoneEvent* zone ) { auto z64 = (uint64_t)zone; assert( ( z64 & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &z64, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&z64)+4, 2 ); }
         tracy_force_inline uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
         tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
 
@@ -137,7 +137,7 @@ public:
     struct GpuZoneThreadData
     {
         tracy_force_inline GpuEvent* Zone() const { return (GpuEvent*)( _zone_thread >> 16 ); }
-        tracy_force_inline void SetZone( GpuEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
+        tracy_force_inline void SetZone( GpuEvent* zone ) { auto z64 = (uint64_t)zone; assert( ( z64 & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &z64, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&z64)+4, 2 ); }
         tracy_force_inline uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
         tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
 

@@ -37,7 +37,6 @@ Checks:
 '
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
-AnalyzeTemporaryDtors: false
 FormatStyle:     none
 CheckOptions:
   llvm-else-after-return.WarnOnConditionVariables: 'false'

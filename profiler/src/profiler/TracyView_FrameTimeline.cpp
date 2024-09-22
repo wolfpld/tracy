@@ -106,7 +106,9 @@ void View::DrawTimelineFrames( const FrameData& frames )
     const auto ty025 = ty * 0.25f;
     const auto ty05 = round( ty * 0.5f );
 
+    ImGui::PushID( &frames );
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty ) );
+    ImGui::PopID();
     bool hover = ImGui::IsItemHovered();
 
     auto timespan = m_vd.zvEnd - m_vd.zvStart;

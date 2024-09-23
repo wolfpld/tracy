@@ -111,6 +111,7 @@ extern "C" typedef char* (WINAPI *t_WineGetBuildId)();
 #else
 #  include <unistd.h>
 #  include <limits.h>
+#  include <fcntl.h>
 #endif
 #if defined __linux__
 #  include <sys/sysinfo.h>
@@ -1462,6 +1463,22 @@ Profiler::Profiler()
         m_userPort = atoi( userPort );
     }
 
+    m_safeSendBufferSize = 65536;
+    m_safeSendBuffer = (char*)tracy_malloc( m_safeSendBufferSize );
+
+#ifndef _WIN32
+    pipe(m_pipe);
+#  if defined __APPLE__ || defined BSD
+    // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default 
+    m_pipeBufSize = 16384;
+#  else
+    m_pipeBufSize = (int)(ptrdiff_t)m_safeSendBufferSize;
+    while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) == -1 && errno == EPERM )
+        m_pipeBufSize /= 2; // too big; reduce
+    m_pipeBufSize = fcntl( m_pipe[0], F_GETPIPE_SZ );
+#  endif
+#endif
+
 #if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME)
     SpawnWorkerThreads();
 #endif
@@ -1487,7 +1504,7 @@ void Profiler::InstallCrashHandler()
 #endif
 
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
-    m_exceptionHandler = AddVectoredExceptionHandler( 1, CrashFilter );
+    m_exceptionHandler = AddVectoredExceptionHandler( 0, CrashFilter );
 #endif
 
 #ifndef TRACY_NO_CRASH_HANDLER
@@ -1599,6 +1616,12 @@ Profiler::~Profiler()
     m_kcore->~KCore();
     tracy_free( m_kcore );
 #endif
+
+#ifndef _WIN32
+    close( m_pipe[0] );
+    close( m_pipe[1] );
+#endif
+    tracy_free( m_safeSendBuffer );
 
     tracy_free( m_lz4Buf );
     tracy_free( m_buffer );
@@ -4017,13 +4040,13 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
     else
     {
-        if( !EnsureReadable( symbol ) )
-        {
-            AckSymbolCodeNotAvailable();
+        // 'symbol' may have come from a module that has since unloaded, perform a safe copy before sending
+        if( withSafeCopy( (const char*)symbol, size, [this, symbol]( const char* buf, size_t size ) {
+            SendLongString( symbol, buf, size, QueueType::SymbolCode );
+        }))
             return;
-        }
-
-        SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
+        
+        AckSymbolCodeNotAvailable();
     }
 }
 

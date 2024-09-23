@@ -833,6 +833,72 @@ private:
         m_bufferOffset += int( len );
     }
 
+    template<class Callable> // must be void(const char* buf, size_t size)
+    bool withSafeCopy(const char* p, size_t size, Callable&& callable)
+    {
+        bool success = true, heap = false;
+        char* buf = m_safeSendBuffer;
+
+#ifndef NDEBUG
+        assert( !m_inUse.exchange(true) );
+#endif
+
+        if( size > m_safeSendBufferSize )
+        {
+            heap = true;
+            buf = (char*)tracy_malloc( size );
+        }
+
+#ifdef _WIN32
+        __try
+        {
+            memcpy( buf, p, size );
+        }
+        __except( 1 /*EXCEPTION_EXECUTE_HANDLER*/ )
+        {
+            success = false;
+        }
+#else
+        // Send through the pipe to ensure safe reads
+        for( size_t offset = 0; offset != size; /*in loop*/ )
+        {
+            size_t sendsize = std::min( size - offset, (size_t)(ptrdiff_t)m_pipeBufSize );
+            ssize_t result1, result2;
+            while( ( result1 = write( m_pipe[1], p + offset, sendsize ) ) < 0 && errno == EINTR )
+                /* retry */;
+            if( result1 < 0 )
+            {
+                success = false;
+                break;
+            }
+            while( ( result2 = read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno == EINTR )
+                /* retry */;
+            if( result2 != result1 )
+            {
+                success = false;
+                break;
+            }
+            offset += result1;
+        }
+#endif
+
+        if( success )
+        {
+            callable( buf, size );
+        }
+
+        if( heap )
+        {
+            tracy_free( buf );
+        }
+
+#ifndef NDEBUG
+        m_inUse.store( false );
+#endif
+
+        return success;
+    }
+
     bool SendData( const char* data, size_t len );
     void SendLongString( uint64_t ptr, const char* str, size_t len, QueueType type );
     void SendSourceLocation( uint64_t ptr );
@@ -990,9 +1056,20 @@ private:
     char* m_queryData;
     char* m_queryDataPtr;
 
+#ifndef NDEBUG
+    // m_safeSendBuffer and m_pipe should only be used by the Tracy Profiler thread; this ensures that in debug builds.
+    std::atomic_bool m_inUse{ false };
+#endif
+    char* m_safeSendBuffer;
+    size_t m_safeSendBufferSize;
+
 #if defined _WIN32
     void* m_exceptionHandler;
+#else
+    int m_pipe[2];
+    int m_pipeBufSize;
 #endif
+
 #ifdef __linux__
     struct {
         struct sigaction pwr, ill, fpe, segv, pipe, bus, abrt;

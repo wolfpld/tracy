@@ -28,9 +28,6 @@ endif()
 if(WIN32)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
     add_compile_options(/MP)
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
 endif()
 
 if(EMSCRIPTEN)
@@ -53,3 +50,5 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT EMSCRIPTEN)
 endif()
 
 file(GENERATE OUTPUT .gitignore CONTENT "*")
+
+set(CMAKE_COLOR_DIAGNOSTICS ON)

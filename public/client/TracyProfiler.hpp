@@ -1063,9 +1063,7 @@ private:
     char* m_safeSendBuffer;
     size_t m_safeSendBufferSize;
 
-#if defined _WIN32
-    void* m_exceptionHandler;
-#else
+#ifndef _WIN32
     int m_pipe[2];
     int m_pipeBufSize;
 #endif

@@ -1501,14 +1501,17 @@ void Profiler::InstallCrashHandler()
     sigaction( SIGPIPE, &crashHandler, &m_prevSignal.pipe );
     sigaction( SIGBUS, &crashHandler, &m_prevSignal.bus );
     sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
+
+    m_crashHandlerInstalled = true;
 #endif
 
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
-    m_exceptionHandler = AddVectoredExceptionHandler( 0, CrashFilter );
-#endif
-
-#ifndef TRACY_NO_CRASH_HANDLER
-    m_crashHandlerInstalled = true;
+    // We cannot use Vectored Exception handling because it catches application-wide frame-based SEH blocks. We only
+    // want to catch unhandled exceptions in the event that there is not already an unhandled exception filter.
+    if( auto prev = SetUnhandledExceptionFilter( CrashFilter ) )
+        SetUnhandledExceptionFilter( prev ); // Already had a handler => put it back
+    else
+        m_crashHandlerInstalled = true;
 #endif
 
 }
@@ -1516,7 +1519,12 @@ void Profiler::InstallCrashHandler()
 void Profiler::RemoveCrashHandler()
 {
 #if defined _WIN32 && !defined TRACY_UWP
-    if( m_crashHandlerInstalled ) RemoveVectoredExceptionHandler( m_exceptionHandler );
+    if( m_crashHandlerInstalled )
+    {
+        auto prev = SetUnhandledExceptionFilter( NULL );
+        if( prev != CrashFilter )
+            SetUnhandledExceptionFilter( prev ); // A different exception filter was installed over ours => put it back
+    }
 #endif
 
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER

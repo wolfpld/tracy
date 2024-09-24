@@ -616,6 +616,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                     if( clicked ) ShowSampleParents( iv.symAddr, false );
                                     ImGui::PopID();
                                 }
+                                if( sn == parentName )
+                                {
+                                    ImGui::SameLine();
+                                    TextDisabledUnformatted( "(self)" );
+                                }
                                 if( iv.count > 1 )
                                 {
                                     ImGui::SameLine();

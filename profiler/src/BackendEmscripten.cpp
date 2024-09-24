@@ -200,6 +200,16 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         tracy::s_wasActive = true;
         return EM_TRUE;
     } );
+    emscripten_set_mouseleave_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent*, void* ) -> EM_BOOL {
+        ImGui::GetIO().AddFocusEvent( false );
+        tracy::s_wasActive = true;
+        return EM_TRUE;
+    } );
+    emscripten_set_mouseenter_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent*, void* ) -> EM_BOOL {
+        ImGui::GetIO().AddFocusEvent( true );
+        tracy::s_wasActive = true;
+        return EM_TRUE;
+    } );
     emscripten_set_wheel_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenWheelEvent* e, void* ) -> EM_BOOL {
         ImGui::GetIO().AddMouseWheelEvent( e->deltaX * -0.05, e->deltaY * -0.05 );
         tracy::s_wasActive = true;

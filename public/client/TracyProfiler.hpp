@@ -862,7 +862,7 @@ private:
         // Send through the pipe to ensure safe reads
         for( size_t offset = 0; offset != size; /*in loop*/ )
         {
-            size_t sendsize = std::min( size - offset, (size_t)(ptrdiff_t)m_pipeBufSize );
+            size_t sendsize = size - offset;
             ssize_t result1, result2;
             while( ( result1 = write( m_pipe[1], p + offset, sendsize ) ) < 0 && errno == EINTR )
                 /* retry */;

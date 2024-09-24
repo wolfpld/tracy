@@ -1473,10 +1473,11 @@ Profiler::Profiler()
     m_pipeBufSize = 16384;
 #  else
     m_pipeBufSize = (int)(ptrdiff_t)m_safeSendBufferSize;
-    while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) == -1 && errno == EPERM )
+    while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) < 0 && errno == EPERM )
         m_pipeBufSize /= 2; // too big; reduce
     m_pipeBufSize = fcntl( m_pipe[0], F_GETPIPE_SZ );
 #  endif
+    fcntl( m_pipe[1], F_SETFL, O_NONBLOCK );
 #endif
 
 #if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME)

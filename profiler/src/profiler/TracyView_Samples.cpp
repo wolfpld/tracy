@@ -304,40 +304,42 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 auto symAddr = *inSym;
                                 auto sit = inlineMap.find( symAddr );
                                 auto sym = symMap.find( symAddr );
-                                assert( sym != symMap.end() );
-                                auto mit = mergeMap.find( sym->second.name.Idx() );
-                                if( mit == mergeMap.end() )
+                                if( sym != symMap.end() )
                                 {
-                                    mergeMap.emplace( sym->second.name.Idx(), symAddr );
-                                }
-                                else
-                                {
-                                    symAddr = mit->second;
-                                }
-                                if( sit != inlineMap.end() )
-                                {
-                                    auto oit = outMap.find( symAddr );
-                                    if( oit == outMap.end() )
+                                    auto mit = mergeMap.find( sym->second.name.Idx() );
+                                    if( mit == mergeMap.end() )
                                     {
-                                        outMap.emplace( symAddr, SymList { symAddr, sit->second.incl, sit->second.excl, 1 } );
+                                        mergeMap.emplace( sym->second.name.Idx(), symAddr );
                                     }
                                     else
                                     {
-                                        oit->second.incl += sit->second.incl;
-                                        oit->second.excl += sit->second.excl;
-                                        oit->second.count++;
+                                        symAddr = mit->second;
                                     }
-                                }
-                                else
-                                {
-                                    auto oit = outMap.find( symAddr );
-                                    if( oit == outMap.end() )
+                                    if( sit != inlineMap.end() )
                                     {
-                                        outMap.emplace( symAddr, SymList { symAddr, 0, 0, 1 } );
+                                        auto oit = outMap.find( symAddr );
+                                        if( oit == outMap.end() )
+                                        {
+                                            outMap.emplace( symAddr, SymList { symAddr, sit->second.incl, sit->second.excl, 1 } );
+                                        }
+                                        else
+                                        {
+                                            oit->second.incl += sit->second.incl;
+                                            oit->second.excl += sit->second.excl;
+                                            oit->second.count++;
+                                        }
                                     }
                                     else
                                     {
-                                        oit->second.count++;
+                                        auto oit = outMap.find( symAddr );
+                                        if( oit == outMap.end() )
+                                        {
+                                            outMap.emplace( symAddr, SymList { symAddr, 0, 0, 1 } );
+                                        }
+                                        else
+                                        {
+                                            oit->second.count++;
+                                        }
                                     }
                                 }
                                 inSym++;

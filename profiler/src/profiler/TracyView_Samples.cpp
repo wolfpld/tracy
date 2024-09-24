@@ -272,7 +272,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     }
 
                     Vector<SymList> inSymList;
-                    if( !m_statSeparateInlines && !hasNoSamples && v.count > 0 && v.symAddr != 0 && expand )
+                    if( !m_statSeparateInlines && !hasNoSamples && v.count > 0 && v.symAddr != 0 && ( expand || m_topInline ) )
                     {
                         assert( v.count > 0 );
                         assert( symlen != 0 );
@@ -364,6 +364,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         }
                     }
 
+                    const auto origName = name;
                     if( hasNoSamples )
                     {
                         if( isKernel )
@@ -383,6 +384,15 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     }
                     else
                     {
+                        if( !inSymList.empty() && m_topInline )
+                        {
+                            const auto topName = m_worker.GetString( symMap.find( inSymList[0].symAddr )->second.name );
+                            if( topName != name )
+                            {
+                                parentName = name;
+                                name = topName;
+                            }
+                        }
                         ImGui::PushID( idx++ );
                         bool clicked;
                         if( isKernel )
@@ -552,7 +562,22 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                     break;
                                 }
 
-                                const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
+                                const char* sn;
+                                if( iv.symAddr == v.symAddr )
+                                {
+                                    if( parentName )
+                                    {
+                                        sn = parentName;
+                                    }
+                                    else
+                                    {
+                                        sn = "[ - self - ]";
+                                    }
+                                }
+                                else
+                                {
+                                    sn = name;
+                                }
                                 if( m_mergeInlines || iv.excl == 0 )
                                 {
                                     if( m_vd.shortenName == ShortenName::Never )

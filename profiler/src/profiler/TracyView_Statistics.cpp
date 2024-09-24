@@ -563,6 +563,10 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_LINK " Base relative", &m_relativeInlines );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_FIRE " Top inline", &m_topInline );
         if( m_statSeparateInlines ) ImGui::EndDisabled();
     }
 

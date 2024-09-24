@@ -9,8 +9,9 @@ SourceContents::SourceContents()
     : m_file( nullptr )
     , m_fileStringIdx( 0 )
     , m_data( nullptr )
-    , m_dataBuf( nullptr )
     , m_dataSize( 0 )
+    , m_dataBuf( nullptr )
+    , m_dataBufSize( 0 )
 {
 }
 
@@ -44,14 +45,15 @@ void SourceContents::Parse( const char* fileName, const Worker& worker, const Vi
                 fseek( f, 0, SEEK_END );
                 sz = ftell( f );
                 fseek( f, 0, SEEK_SET );
-                if( sz > m_dataSize )
+                if( sz > m_dataBufSize )
                 {
                     delete[] m_dataBuf;
                     m_dataBuf = new char[sz];
-                    m_dataSize = sz;
+                    m_dataBufSize = sz;
                 }
                 fread( m_dataBuf, 1, sz, f );
                 m_data = m_dataBuf;
+                m_dataSize = sz;
                 fclose( f );
             }
             else
@@ -73,7 +75,6 @@ void SourceContents::Parse( const char* source )
     m_file = nullptr;
     m_fileStringIdx = 0;
     m_data = source;
-    m_dataBuf = nullptr;
     m_dataSize = len;
     Tokenize( source, len );
 }

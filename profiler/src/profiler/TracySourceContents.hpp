@@ -38,8 +38,10 @@ private:
     uint32_t m_fileStringIdx;
 
     const char* m_data;
-    char* m_dataBuf;
     size_t m_dataSize;
+
+    char* m_dataBuf;
+    size_t m_dataBufSize;
 
     std::vector<Tokenizer::Line> m_lines;
 };

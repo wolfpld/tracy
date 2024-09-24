@@ -391,6 +391,10 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                             const auto topName = m_worker.GetString( symMap.find( inSymList[0].symAddr )->second.name );
                             if( topName != name )
                             {
+                                // Parent name at this point should only be enabled if m_statSeparateInlines
+                                // is enabled. These two code paths should be mutually exclusive.
+                                assert( !parentName );
+
                                 parentName = name;
                                 name = topName;
                             }

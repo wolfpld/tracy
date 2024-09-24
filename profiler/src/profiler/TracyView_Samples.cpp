@@ -270,6 +270,100 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                             }
                         }
                     }
+
+                    Vector<SymList> inSymList;
+                    if( !m_statSeparateInlines && !hasNoSamples && v.count > 0 && v.symAddr != 0 && expand )
+                    {
+                        assert( v.count > 0 );
+                        assert( symlen != 0 );
+                        auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
+                        assert( inSym != nullptr );
+                        const auto symEnd = v.symAddr + symlen;
+                        if( !m_mergeInlines )
+                        {
+                            while( *inSym < symEnd )
+                            {
+                                auto sit = inlineMap.find( *inSym );
+                                if( sit != inlineMap.end() )
+                                {
+                                    inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
+                                }
+                                else
+                                {
+                                    inSymList.push_back( SymList { *inSym, 0, 0 } );
+                                }
+                                inSym++;
+                            }
+                        }
+                        else
+                        {
+                            unordered_flat_map<uint32_t, uint64_t> mergeMap;
+                            unordered_flat_map<uint64_t, SymList> outMap;
+                            while( *inSym < symEnd )
+                            {
+                                auto symAddr = *inSym;
+                                auto sit = inlineMap.find( symAddr );
+                                auto sym = symMap.find( symAddr );
+                                assert( sym != symMap.end() );
+                                auto mit = mergeMap.find( sym->second.name.Idx() );
+                                if( mit == mergeMap.end() )
+                                {
+                                    mergeMap.emplace( sym->second.name.Idx(), symAddr );
+                                }
+                                else
+                                {
+                                    symAddr = mit->second;
+                                }
+                                if( sit != inlineMap.end() )
+                                {
+                                    auto oit = outMap.find( symAddr );
+                                    if( oit == outMap.end() )
+                                    {
+                                        outMap.emplace( symAddr, SymList { symAddr, sit->second.incl, sit->second.excl, 1 } );
+                                    }
+                                    else
+                                    {
+                                        oit->second.incl += sit->second.incl;
+                                        oit->second.excl += sit->second.excl;
+                                        oit->second.count++;
+                                    }
+                                }
+                                else
+                                {
+                                    auto oit = outMap.find( symAddr );
+                                    if( oit == outMap.end() )
+                                    {
+                                        outMap.emplace( symAddr, SymList { symAddr, 0, 0, 1 } );
+                                    }
+                                    else
+                                    {
+                                        oit->second.count++;
+                                    }
+                                }
+                                inSym++;
+                            }
+                            inSymList.reserve( outMap.size() );
+                            for( auto& v : outMap )
+                            {
+                                inSymList.push_back( v.second );
+                            }
+                        }
+                        auto statIt = inlineMap.find( v.symAddr );
+                        if( statIt != inlineMap.end() )
+                        {
+                            inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
+                        }
+
+                        if( accumulationMode == AccumulationMode::SelfOnly )
+                        {
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+                        }
+                    }
+
                     if( hasNoSamples )
                     {
                         if( isKernel )
@@ -419,97 +513,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
                     if( !m_statSeparateInlines && expand )
                     {
-                        assert( v.count > 0 );
-                        assert( symlen != 0 );
                         const auto revBaseCnt = 100.0 / baseCnt;
-                        auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
-                        assert( inSym != nullptr );
-                        const auto symEnd = v.symAddr + symlen;
-                        Vector<SymList> inSymList;
-                        if( !m_mergeInlines )
-                        {
-                            while( *inSym < symEnd )
-                            {
-                                auto sit = inlineMap.find( *inSym );
-                                if( sit != inlineMap.end() )
-                                {
-                                    inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
-                                }
-                                else
-                                {
-                                    inSymList.push_back( SymList { *inSym, 0, 0 } );
-                                }
-                                inSym++;
-                            }
-                        }
-                        else
-                        {
-                            unordered_flat_map<uint32_t, uint64_t> mergeMap;
-                            unordered_flat_map<uint64_t, SymList> outMap;
-                            while( *inSym < symEnd )
-                            {
-                                auto symAddr = *inSym;
-                                auto sit = inlineMap.find( symAddr );
-                                auto sym = symMap.find( symAddr );
-                                assert( sym != symMap.end() );
-                                auto mit = mergeMap.find( sym->second.name.Idx() );
-                                if( mit == mergeMap.end() )
-                                {
-                                    mergeMap.emplace( sym->second.name.Idx(), symAddr );
-                                }
-                                else
-                                {
-                                    symAddr = mit->second;
-                                }
-                                if( sit != inlineMap.end() )
-                                {
-                                    auto oit = outMap.find( symAddr );
-                                    if( oit == outMap.end() )
-                                    {
-                                        outMap.emplace( symAddr, SymList { symAddr, sit->second.incl, sit->second.excl, 1 } );
-                                    }
-                                    else
-                                    {
-                                        oit->second.incl += sit->second.incl;
-                                        oit->second.excl += sit->second.excl;
-                                        oit->second.count++;
-                                    }
-                                }
-                                else
-                                {
-                                    auto oit = outMap.find( symAddr );
-                                    if( oit == outMap.end() )
-                                    {
-                                        outMap.emplace( symAddr, SymList { symAddr, 0, 0, 1 } );
-                                    }
-                                    else
-                                    {
-                                        oit->second.count++;
-                                    }
-                                }
-                                inSym++;
-                            }
-                            inSymList.reserve( outMap.size() );
-                            for( auto& v : outMap )
-                            {
-                                inSymList.push_back( v.second );
-                            }
-                        }
-                        auto statIt = inlineMap.find( v.symAddr );
-                        if( statIt != inlineMap.end() )
-                        {
-                            inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
-                        }
-
-                        if( accumulationMode == AccumulationMode::SelfOnly )
-                        {
-                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
-                        }
-
                         ImGui::Indent();
                         for( auto& iv : inSymList )
                         {

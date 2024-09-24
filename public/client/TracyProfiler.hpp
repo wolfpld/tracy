@@ -833,70 +833,19 @@ private:
         m_bufferOffset += int( len );
     }
 
-    template<class Callable> // must be void(const char* buf, size_t size)
-    bool withSafeCopy(const char* p, size_t size, Callable&& callable)
+    char* SafeCopyProlog( const char* p, size_t size );
+    void SafeCopyEpilog( char* buf );
+
+    template<class Callable> // must be void( const char* buf, size_t size )
+    bool WithSafeCopy( const char* p, size_t size, Callable&& callable )
     {
-        bool success = true, heap = false;
-        char* buf = m_safeSendBuffer;
-
-#ifndef NDEBUG
-        assert( !m_inUse.exchange(true) );
-#endif
-
-        if( size > m_safeSendBufferSize )
-        {
-            heap = true;
-            buf = (char*)tracy_malloc( size );
-        }
-
-#ifdef _WIN32
-        __try
-        {
-            memcpy( buf, p, size );
-        }
-        __except( 1 /*EXCEPTION_EXECUTE_HANDLER*/ )
-        {
-            success = false;
-        }
-#else
-        // Send through the pipe to ensure safe reads
-        for( size_t offset = 0; offset != size; /*in loop*/ )
-        {
-            size_t sendsize = size - offset;
-            ssize_t result1, result2;
-            while( ( result1 = write( m_pipe[1], p + offset, sendsize ) ) < 0 && errno == EINTR )
-                /* retry */;
-            if( result1 < 0 )
-            {
-                success = false;
-                break;
-            }
-            while( ( result2 = read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno == EINTR )
-                /* retry */;
-            if( result2 != result1 )
-            {
-                success = false;
-                break;
-            }
-            offset += result1;
-        }
-#endif
-
-        if( success )
+        if( char* buf = SafeCopyProlog( p, size ) )
         {
             callable( buf, size );
+            SafeCopyEpilog( buf );
+            return true;
         }
-
-        if( heap )
-        {
-            tracy_free( buf );
-        }
-
-#ifndef NDEBUG
-        m_inUse.store( false );
-#endif
-
-        return success;
+        return false;
     }
 
     bool SendData( const char* data, size_t len );

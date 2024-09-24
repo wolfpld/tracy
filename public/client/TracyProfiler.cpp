@@ -3095,6 +3095,69 @@ bool Profiler::CommitData()
     return ret;
 }
 
+char* Profiler::SafeCopyProlog( const char* data, size_t size )
+{
+    bool success = true;
+    char* buf = m_safeSendBuffer;
+#ifndef NDEBUG
+    assert( !m_inUse.exchange(true) );
+#endif
+
+    if( size > m_safeSendBufferSize )
+    {
+        buf = (char*)tracy_malloc( size );
+    }
+
+#ifdef _WIN32
+    __try
+    {
+        memcpy( buf, data, size );
+    }
+    __except( 1 /*EXCEPTION_EXECUTE_HANDLER*/ )
+    {
+        success = false;
+    }
+#else
+    // Send through the pipe to ensure safe reads
+    for( size_t offset = 0; offset != size; /*in loop*/ )
+    {
+        size_t sendsize = size - offset;
+        ssize_t result1, result2;
+        while( ( result1 = write( m_pipe[1], data + offset, sendsize ) ) < 0 && errno == EINTR )
+            /* retry */;
+        if( result1 < 0 )
+        {
+            success = false;
+            break;
+        }
+        while( ( result2 = read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno == EINTR )
+            /* retry */;
+        if( result2 != result1 )
+        {
+            success = false;
+            break;
+        }
+        offset += result1;
+    }
+#endif
+
+    if( success )
+        return buf;
+
+    SafeCopyEpilog( buf );
+    return nullptr;
+}
+
+void Profiler::SafeCopyEpilog( char* buf )
+{
+    if( buf != m_safeSendBuffer )
+        tracy_free( buf );
+    
+#ifndef NDEBUG
+    m_inUse.store( false );
+#endif
+}
+
 bool Profiler::SendData( const char* data, size_t len )
 {
     const lz4sz_t lz4sz = LZ4_compress_fast_continue( (LZ4_stream_t*)m_stream, data, m_lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
@@ -4050,7 +4113,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     else
     {
         // 'symbol' may have come from a module that has since unloaded, perform a safe copy before sending
-        if( withSafeCopy( (const char*)symbol, size, [this, symbol]( const char* buf, size_t size ) {
+        if( WithSafeCopy( (const char*)symbol, size, [this, symbol]( const char* buf, size_t size ) {
             SendLongString( symbol, buf, size, QueueType::SymbolCode );
         }))
             return;

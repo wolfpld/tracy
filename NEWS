@@ -5,11 +5,23 @@ here.
 vx.xx.x (xxxx-xx-xx)
 --------------------
 
+- Enabled workaround for MSVC runtime library SNAFU, which manifested with
+  the profiler executables crashing at startup inside mutex code.
 - CPU topology data now includes CPU die information.
 - Clients running under Wine will now report that in the trace info.
 - Added flame graph.
 - The Git ref information for the build is now included in the about dialog.
 - Added support for clipboard copy and paste on Wayland.
+- The welcome dialog client address entry field will now trim the entered
+  address, so that stray spaces at the start and the end are removed. This
+  should reduce the amount of user precision required when copy pasting the
+  address from somewhere else.
+- Metal GPU profiling is now available.
+- Profiling zones can now optionally inherit their parent color.
+- It is no longer needed to have up-to-date copy of wayland-protocols
+  installed. CMake will download the required version from GitHub.
+- Added option to show the top inline in symbol statistics list in stead of
+  the symbol name.
 
 
 v0.11.1 (2024-08-22)

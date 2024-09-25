@@ -12,7 +12,7 @@ jobs:
     container: archlinux:base-devel
     steps:
     - name: Install dependencies
-      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed cmake git unzip python ninja
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed cmake git unzip python ninja zstd
     - name: Setup emscripten
       uses: mymindstorm/setup-emsdk@v14
       with:
@@ -26,6 +26,7 @@ jobs:
         cmake --build profiler/build --parallel
     - name: Compress artifacts
       run: |
+        zstd -18 profiler/build/tracy-profiler.js profiler/build/tracy-profiler.wasm
         gzip -9 profiler/build/tracy-profiler.js profiler/build/tracy-profiler.wasm
     - name: Find Artifacts
       id: find_artifacts
@@ -34,7 +35,9 @@ jobs:
         cp profiler/build/index.html bin
         cp profiler/build/tracy-profiler.data bin
         cp profiler/build/tracy-profiler.js.gz bin
+        cp profiler/build/tracy-profiler.js.zst bin
         cp profiler/build/tracy-profiler.wasm.gz bin
+        cp profiler/build/tracy-profiler.wasm.zst bin
     - uses: actions/upload-artifact@v4
       with:
         name: emscripten

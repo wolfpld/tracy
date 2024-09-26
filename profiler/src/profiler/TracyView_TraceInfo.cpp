@@ -3,6 +3,7 @@
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -752,7 +753,7 @@ void View::DrawInfo()
             std::vector<decltype(topology.begin())> tsort;
             tsort.reserve( topology.size() );
             for( auto it = topology.begin(); it != topology.end(); ++it ) tsort.emplace_back( it );
-            std::sort( tsort.begin(), tsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+            pdqsort_branchless( tsort.begin(), tsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
             for( auto& package : tsort )
             {
                 if( package->first != 0 ) dpos.y += ty;
@@ -763,7 +764,7 @@ void View::DrawInfo()
                 std::vector<decltype(package->second.begin())> dsort;
                 dsort.reserve( package->second.size() );
                 for( auto it = package->second.begin(); it != package->second.end(); ++it ) dsort.emplace_back( it );
-                std::sort( dsort.begin(), dsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+                pdqsort_branchless( dsort.begin(), dsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
                 for( auto& die : dsort )
                 {
                     dpos.y += small;
@@ -786,7 +787,7 @@ void View::DrawInfo()
                     std::vector<decltype(die->second.begin())> csort;
                     csort.reserve( die->second.size() );
                     for( auto it = die->second.begin(); it != die->second.end(); ++it ) csort.emplace_back( it );
-                    std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+                    pdqsort_branchless( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
                     auto cpos = dpos + ImVec2( margin, margin );
                     int ll = cpl;
                     for( auto& core : csort )

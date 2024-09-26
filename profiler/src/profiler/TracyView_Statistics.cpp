@@ -4,6 +4,7 @@
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -487,7 +488,7 @@ void View::DrawStatistics()
             {
                 imgNames.emplace_back( m_worker.GetString( img ) );
             }
-            std::sort( imgNames.begin(), imgNames.end(), [] ( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+            pdqsort_branchless( imgNames.begin(), imgNames.end(), [] ( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
             for( auto& img : imgNames )
             {
                 bool sel = false;

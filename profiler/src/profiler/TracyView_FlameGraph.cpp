@@ -4,6 +4,7 @@
 #include "TracyPrint.hpp"
 #include "TracyVector.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -147,7 +148,7 @@ static void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data,
 
 static void SortFlameGraph( Vector<FlameGraphItem>& data )
 {
-    std::sort( data.begin(), data.end(), []( const FlameGraphItem& lhs, const FlameGraphItem& rhs ) { return lhs.time > rhs.time; } );
+    pdqsort_branchless( data.begin(), data.end(), []( const FlameGraphItem& lhs, const FlameGraphItem& rhs ) { return lhs.time > rhs.time; } );
     for( auto& v : data ) SortFlameGraph( v.children );
 }
 

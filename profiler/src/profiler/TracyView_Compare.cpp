@@ -8,6 +8,7 @@
 #include "TracyFileselector.hpp"
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -400,9 +401,9 @@ void View::DrawCompare()
                     }
                 }
 
-                std::sort( m_compare.thisUnique.begin(), m_compare.thisUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
-                std::sort( m_compare.secondUnique.begin(), m_compare.secondUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
-                std::sort( m_compare.diffs.begin(), m_compare.diffs.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs.first, rhs.first ) < 0; } );
+                pdqsort_branchless( m_compare.thisUnique.begin(), m_compare.thisUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+                pdqsort_branchless( m_compare.secondUnique.begin(), m_compare.secondUnique.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs, rhs ) < 0; } );
+                pdqsort_branchless( m_compare.diffs.begin(), m_compare.diffs.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs.first, rhs.first ) < 0; } );
             }
         }
 

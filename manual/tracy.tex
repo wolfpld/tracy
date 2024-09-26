@@ -553,7 +553,7 @@ By default, the Tracy client will listen on IPv6 interfaces, falling back to IPv
 
 Things are a bit different in projects that consist of multiple DLLs/shared objects. Compiling \texttt{TracyClient.cpp} into every DLL is not an option because this would result in several instances of Tracy objects lying around in the process. We instead need to pass their instances to the different DLLs to be reused there.
 
-For that, you need a \emph{profiler DLL} to which your executable and the other DLLs link. If that doesn't exist, you have to create one explicitly for Tracy\footnote{You may also look at the \texttt{library} directory in the profiler source tree.}. This library should contain the \texttt{public/TracyClient.cpp} source file. Link the executable and all DLLs you want to profile to this DLL.
+For that, you need a \emph{profiler DLL} to which your executable and the other DLLs link. If that doesn't exist, you have to create one explicitly for Tracy\footnote{You can use the top-level Meson or CMake build scripts to get it. Make sure that the same build flags are set for both the library and your application, or you may find yourself chasing weird issues.}. This library should contain the \texttt{public/TracyClient.cpp} source file. Link the executable and all DLLs you want to profile to this DLL.
 
 If you are targeting Windows with Microsoft Visual Studio or MinGW, add the \texttt{TRACY\_IMPORTS} define to your application.
 

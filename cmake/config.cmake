@@ -25,6 +25,10 @@ else()
     set(USE_WAYLAND OFF)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    add_compile_options(-fexperimental-library)
+endif()
+
 if(WIN32)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
     add_compile_options(/MP)

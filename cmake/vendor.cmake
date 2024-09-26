@@ -25,6 +25,7 @@ else()
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
         GIT_TAG 5.0.3
+        EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyCapstone INTERFACE)
     target_include_directories(TracyCapstone INTERFACE ${capstone_SOURCE_DIR}/include/capstone)
@@ -49,6 +50,7 @@ if(NOT USE_WAYLAND AND NOT EMSCRIPTEN)
                 "GLFW_BUILD_TESTS OFF"
                 "GLFW_BUILD_DOCS OFF"
                 "GLFW_INSTALL OFF"
+            EXCLUDE_FROM_ALL TRUE
         )
         add_library(TracyGlfw3 INTERFACE)
         target_link_libraries(TracyGlfw3 INTERFACE glfw)
@@ -70,6 +72,7 @@ else()
         OPTIONS
             "FT_DISABLE_HARFBUZZ ON"
             "FT_WITH_HARFBUZZ OFF"
+        EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyFreetype INTERFACE)
     target_link_libraries(TracyFreetype INTERFACE freetype)
@@ -115,7 +118,7 @@ list(TRANSFORM ZSTD_SOURCES PREPEND "${ZSTD_DIR}/")
 
 set_property(SOURCE ${ZSTD_DIR}/decompress/huf_decompress_amd64.S APPEND PROPERTY COMPILE_OPTIONS "-x" "assembler-with-cpp")
 
-add_library(TracyZstd STATIC ${ZSTD_SOURCES})
+add_library(TracyZstd STATIC EXCLUDE_FROM_ALL ${ZSTD_SOURCES})
 target_include_directories(TracyZstd PUBLIC ${ZSTD_DIR})
 target_compile_definitions(TracyZstd PRIVATE ZSTD_DISABLE_ASM)
 
@@ -134,7 +137,7 @@ target_include_directories(TracyDtl INTERFACE ${DTL_DIR})
 set(GETOPT_DIR "${ROOT_DIR}/getopt")
 set(GETOPT_SOURCES ${GETOPT_DIR}/getopt.c)
 set(GETOPT_HEADERS ${GETOPT_DIR}/getopt.h)
-add_library(TracyGetOpt STATIC ${GETOPT_SOURCES} ${GETOPT_HEADERS})
+add_library(TracyGetOpt STATIC EXCLUDE_FROM_ALL ${GETOPT_SOURCES} ${GETOPT_HEADERS})
 target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
 
 
@@ -155,7 +158,7 @@ list(TRANSFORM IMGUI_SOURCES PREPEND "${IMGUI_DIR}/")
 
 add_definitions(-DIMGUI_ENABLE_FREETYPE)
 
-add_library(TracyImGui STATIC ${IMGUI_SOURCES})
+add_library(TracyImGui STATIC EXCLUDE_FROM_ALL ${IMGUI_SOURCES})
 target_include_directories(TracyImGui PUBLIC ${IMGUI_DIR})
 target_link_libraries(TracyImGui PUBLIC TracyFreetype)
 
@@ -181,7 +184,7 @@ if (NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
     endif()
 
     file(GLOB_RECURSE NFD_HEADERS CONFIGURE_DEPENDS RELATIVE ${NFD_DIR} "*.h")
-    add_library(TracyNfd STATIC ${NFD_SOURCES} ${NFD_HEADERS})
+    add_library(TracyNfd STATIC EXCLUDE_FROM_ALL ${NFD_SOURCES} ${NFD_HEADERS})
     target_include_directories(TracyNfd PUBLIC ${NFD_DIR})
 
     if (APPLE)

@@ -33,6 +33,7 @@ jobs:
       run: |
         mkdir -p bin
         cp profiler/build/index.html bin
+        cp profiler/build/favicon.svg bin
         cp profiler/build/tracy-profiler.data bin
         cp profiler/build/tracy-profiler.js.gz bin
         cp profiler/build/tracy-profiler.js.zst bin

@@ -1502,27 +1502,26 @@ void Profiler::InstallCrashHandler()
     sigaction( SIGPIPE, &crashHandler, &m_prevSignal.pipe );
     sigaction( SIGBUS, &crashHandler, &m_prevSignal.bus );
     sigaction( SIGABRT, &crashHandler, &m_prevSignal.abrt );
-
-    m_crashHandlerInstalled = true;
 #endif
 
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     // We cannot use Vectored Exception handling because it catches application-wide frame-based SEH blocks. We only
-    // want to catch unhandled exceptions in the event that there is not already an unhandled exception filter.
-    if( auto prev = SetUnhandledExceptionFilter( CrashFilter ) )
-        SetUnhandledExceptionFilter( prev ); // Already had a handler => put it back
-    else
-        m_crashHandlerInstalled = true;
+    // want to catch unhandled exceptions.
+    m_prevHandler = SetUnhandledExceptionFilter( CrashFilter );
+#endif
+
+#ifndef TRACY_NO_CRASH_HANDLER
+    m_crashHandlerInstalled = true;
 #endif
 
 }
 
 void Profiler::RemoveCrashHandler()
 {
-#if defined _WIN32 && !defined TRACY_UWP
+#if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled )
     {
-        auto prev = SetUnhandledExceptionFilter( NULL );
+        auto prev = SetUnhandledExceptionFilter( (LPTOP_LEVEL_EXCEPTION_FILTER)m_prevHandler );
         if( prev != CrashFilter )
             SetUnhandledExceptionFilter( prev ); // A different exception filter was installed over ours => put it back
     }
@@ -1531,13 +1530,19 @@ void Profiler::RemoveCrashHandler()
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled )
     {
-        sigaction( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr, nullptr );
-        sigaction( SIGILL, &m_prevSignal.ill, nullptr );
-        sigaction( SIGFPE, &m_prevSignal.fpe, nullptr );
-        sigaction( SIGSEGV, &m_prevSignal.segv, nullptr );
-        sigaction( SIGPIPE, &m_prevSignal.pipe, nullptr );
-        sigaction( SIGBUS, &m_prevSignal.bus, nullptr );
-        sigaction( SIGABRT, &m_prevSignal.abrt, nullptr );
+        auto restore = [this]( int signum, struct sigaction* prev ) {
+            struct sigaction old;
+            sigaction( signum, prev, &old );
+            if( old.sa_sigaction != CrashHandler )
+                sigaction( signum, &old, nullptr ); // A different signal handler was installed over ours => put it back
+        };
+        restore( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr );
+        restore( SIGILL, &m_prevSignal.ill );
+        restore( SIGFPE, &m_prevSignal.fpe );
+        restore( SIGSEGV, &m_prevSignal.segv );
+        restore( SIGPIPE, &m_prevSignal.pipe );
+        restore( SIGBUS, &m_prevSignal.bus );
+        restore( SIGABRT, &m_prevSignal.abrt );
     }
 #endif
     m_crashHandlerInstalled = false;

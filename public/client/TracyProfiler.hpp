@@ -1012,7 +1012,9 @@ private:
     char* m_safeSendBuffer;
     size_t m_safeSendBufferSize;
 
-#ifndef _WIN32
+#if defined _WIN32
+    void* m_prevHandler;
+#else
     int m_pipe[2];
     int m_pipeBufSize;
 #endif

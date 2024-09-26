@@ -5,6 +5,7 @@
 #include "TracyPrint.hpp"
 #include "TracyMouse.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {

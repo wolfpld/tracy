@@ -7,7 +7,9 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracySort.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -507,10 +509,10 @@ void View::DrawFindZone()
                     }
                 }
                 auto mid = vec.begin() + vszorig;
-#ifdef NO_PARALLEL_SORT
+#ifdef __EMSCRIPTEN__
                 pdqsort_branchless( mid, vec.end() );
 #else
-                std::sort( std::execution::par_unseq, mid, vec.end() );
+                ppqsort::sort( ppqsort::execution::par, mid, vec.end() );
 #endif
                 std::inplace_merge( vec.begin(), mid, vec.end() );
 

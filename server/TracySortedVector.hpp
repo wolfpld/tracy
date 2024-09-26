@@ -102,10 +102,10 @@ public:
         const auto se = sb + sortedEnd;
         const auto sl = se - 1;
         const auto ue = v.end();
-#ifdef NO_PARALLEL_SORT
-        pdqsort_branchless( se, ue, comp );
+#ifdef __EMSCRIPTEN__
+        pdqsort_branchless( sb, se, comp );
 #else
-        std::sort( std::execution::par_unseq, se, ue, comp );
+        ppqsort::sort( ppqsort::execution::par, sb, se, comp );
 #endif
         const auto ss = std::lower_bound( sb, se, *se, comp );
         const auto uu = std::lower_bound( se, ue, *sl, comp );

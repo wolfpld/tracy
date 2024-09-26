@@ -13,11 +13,11 @@
 #include "TracyImGui.hpp"
 #include "TracyMicroArchitecture.hpp"
 #include "TracyPrint.hpp"
-#include "TracySort.hpp"
 #include "TracySourceView.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"
+#include "tracy_pdqsort.h"
 
 #include "IconsFontAwesome6.h"
 

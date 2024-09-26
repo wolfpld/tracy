@@ -29,11 +29,7 @@ list(TRANSFORM TRACY_SERVER_SOURCES PREPEND "${TRACY_SERVER_DIR}/")
 
 add_library(TracyServer STATIC EXCLUDE_FROM_ALL ${TRACY_COMMON_SOURCES} ${TRACY_SERVER_SOURCES})
 target_include_directories(TracyServer PUBLIC ${TRACY_COMMON_DIR} ${TRACY_SERVER_DIR})
-target_link_libraries(TracyServer PUBLIC TracyCapstone TracyZstd)
+target_link_libraries(TracyServer PUBLIC TracyCapstone TracyZstd PPQSort::PPQSort)
 if(NO_STATISTICS)
     target_compile_definitions(TracyServer PUBLIC TRACY_NO_STATISTICS)
-endif()
-
-if(NOT NO_PARALLEL_STL AND UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
-    target_link_libraries(TracyServer PRIVATE TracyTbb)
 endif()

@@ -8,6 +8,7 @@
 #include "TracyTimelineItem.hpp"
 #include "TracyTimelineContext.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 constexpr float MinVisSize = 3;
 

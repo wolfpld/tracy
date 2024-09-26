@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
-option(NO_PARALLEL_STL "Disable parallel STL" OFF)
 
 set(NO_STATISTICS OFF)
 

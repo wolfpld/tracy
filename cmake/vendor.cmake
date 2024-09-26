@@ -214,32 +214,11 @@ if (NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
     endif()
 endif()
 
-# TBB
-if (NO_PARALLEL_STL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNO_PARALLEL_SORT")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_PARALLEL_SORT")
-else()
-    if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
-        # Tracy does not use TBB directly, but the implementation of parallel algorithms
-        # in some versions of libstdc++ depends on TBB. When it does, you must
-        # explicitly link against -ltbb.
-        #
-        # Some distributions have pgk-config files for TBB, others don't.
+# PPQSort
 
-        pkg_check_modules(TBB tbb)
-        if (TBB_FOUND)
-            add_library(TracyTbb INTERFACE)
-            target_include_directories(TracyTbb INTERFACE ${TBB_INCLUDE_DIRS})
-            target_link_libraries(TracyTbb INTERFACE ${TBB_LINK_LIBRARIES})
-        else()
-            CPMAddPackage(
-                NAME tbb
-                GITHUB_REPOSITORY oneapi-src/oneTBB
-                GIT_TAG v2021.12.0-rc2
-                OPTIONS "TBB_TEST OFF"
-            )
-            add_library(TracyTbb INTERFACE)
-            target_link_libraries(TracyTbb INTERFACE tbb)
-        endif()
-    endif()
-endif()
+CPMAddPackage(
+    NAME PPQSort
+    GITHUB_REPOSITORY GabTux/PPQSort
+    VERSION 1.0.3
+    EXCLUDE_FROM_ALL TRUE
+)

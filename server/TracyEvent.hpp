@@ -179,7 +179,7 @@ private:
     uint8_t m_val[6];
 };
 
-struct Int48Sort { bool operator()( const Int48& lhs, const Int48& rhs ) { return lhs.Val() < rhs.Val(); }; };
+struct Int48Sort { bool operator()( const Int48& lhs, const Int48& rhs ) const { return lhs.Val() < rhs.Val(); }; };
 
 
 struct SourceLocationBase
@@ -264,7 +264,7 @@ struct SampleData
 
 enum { SampleDataSize = sizeof( SampleData ) };
 
-struct SampleDataSort { bool operator()( const SampleData& lhs, const SampleData& rhs ) { return lhs.time.Val() < rhs.time.Val(); }; };
+struct SampleDataSort { bool operator()( const SampleData& lhs, const SampleData& rhs ) const { return lhs.time.Val() < rhs.time.Val(); }; };
 
 
 struct SampleDataRange
@@ -742,7 +742,7 @@ enum class PlotValueFormatting : uint8_t
 
 struct PlotData
 {
-    struct PlotItemSort { bool operator()( const PlotItem& lhs, const PlotItem& rhs ) { return lhs.time.Val() < rhs.time.Val(); }; };
+    struct PlotItemSort { bool operator()( const PlotItem& lhs, const PlotItem& rhs ) const { return lhs.time.Val() < rhs.time.Val(); }; };
 
     uint64_t name;
     double min;

@@ -198,7 +198,7 @@ public:
 private:
     struct SourceLocationZones
     {
-        struct ZtdSort { bool operator()( const ZoneThreadData& lhs, const ZoneThreadData& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } };
+        struct ZtdSort { bool operator()( const ZoneThreadData& lhs, const ZoneThreadData& rhs ) const { return lhs.Zone()->Start() < rhs.Zone()->Start(); } };
 
         SortedVector<ZoneThreadData, ZtdSort> zones;
         int64_t min = std::numeric_limits<int64_t>::max();
@@ -217,7 +217,7 @@ private:
 
     struct GpuSourceLocationZones
     {
-        struct GpuZtdSort { bool operator()( const GpuZoneThreadData& lhs, const GpuZoneThreadData& rhs ) { return lhs.Zone()->GpuStart() < rhs.Zone()->GpuStart(); } };
+        struct GpuZtdSort { bool operator()( const GpuZoneThreadData& lhs, const GpuZoneThreadData& rhs ) const { return lhs.Zone()->GpuStart() < rhs.Zone()->GpuStart(); } };
 
         SortedVector<GpuZoneThreadData, GpuZtdSort> zones;
         int64_t min = std::numeric_limits<int64_t>::max();

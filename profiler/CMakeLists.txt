@@ -160,8 +160,7 @@ link_libraries(${LIBS})
 
 if(SELF_PROFILE)
     add_definitions(-DTRACY_ENABLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer")
+    add_compile_options(-g -O3 -fno-omit-frame-pointer)
     set(PROFILER_FILES ${PROFILER_FILES}
         ../public/TracyClient.cpp
     )

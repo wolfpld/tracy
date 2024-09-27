@@ -1,0 +1,76 @@
+diff '--color=auto' -ruN e4f53010203bd9cf867b892a5cf6b192609bdb26/backends/imgui_impl_opengl3_loader.h new/backends/imgui_impl_opengl3_loader.h
+--- e4f53010203bd9cf867b892a5cf6b192609bdb26/backends/imgui_impl_opengl3_loader.h	2024-09-27 15:28:48.719522293 +0200
++++ new/backends/imgui_impl_opengl3_loader.h	2024-09-27 15:49:51.695380147 +0200
+@@ -10,7 +10,7 @@
+ // THE REST OF YOUR APP SHOULD USE A DIFFERENT GL LOADER: ANY GL LOADER OF YOUR CHOICE.
+ //
+ // IF YOU GET BUILD ERRORS IN THIS FILE (commonly macro redefinitions or function redefinitions):
+-// IT LIKELY MEANS THAT YOU ARE BUILDING 'imgui_impl_opengl3.cpp' OR INCLUDING 'imgui_impl_opengl3_loader.h'
++// IT LIKELY MEANS THAT YOU ARE BUILDING 'imgui_impl_opengl3.cpp' OR INCUDING 'imgui_impl_opengl3_loader.h'
+ // IN THE SAME COMPILATION UNIT AS ONE OF YOUR FILE WHICH IS USING A THIRD-PARTY OPENGL LOADER.
+ // (e.g. COULD HAPPEN IF YOU ARE DOING A UNITY/JUMBO BUILD, OR INCLUDING .CPP FILES FROM OTHERS)
+ // YOU SHOULD NOT BUILD BOTH IN THE SAME COMPILATION UNIT.
+@@ -179,8 +179,12 @@
+ #define GL_VERSION                        0x1F02
+ #define GL_EXTENSIONS                     0x1F03
+ #define GL_LINEAR                         0x2601
++#define GL_LINEAR_MIPMAP_LINEAR           0x2703
+ #define GL_TEXTURE_MAG_FILTER             0x2800
+ #define GL_TEXTURE_MIN_FILTER             0x2801
++#define GL_TEXTURE_WRAP_S                 0x2802
++#define GL_TEXTURE_WRAP_T                 0x2803
++#define GL_REPEAT                         0x2901
+ typedef void (APIENTRYP PFNGLPOLYGONMODEPROC) (GLenum face, GLenum mode);
+ typedef void (APIENTRYP PFNGLSCISSORPROC) (GLint x, GLint y, GLsizei width, GLsizei height);
+ typedef void (APIENTRYP PFNGLTEXPARAMETERIPROC) (GLenum target, GLenum pname, GLint param);
+@@ -231,12 +235,17 @@
+ GLAPI void APIENTRY glGenTextures (GLsizei n, GLuint *textures);
+ #endif
+ #endif /* GL_VERSION_1_1 */
++#ifndef GL_VERSION_1_2
++#define GL_CLAMP_TO_EDGE                  0x812F
++#endif /* GL_VERSION_1_2 */
+ #ifndef GL_VERSION_1_3
+ #define GL_TEXTURE0                       0x84C0
+ #define GL_ACTIVE_TEXTURE                 0x84E0
+ typedef void (APIENTRYP PFNGLACTIVETEXTUREPROC) (GLenum texture);
++typedef void (APIENTRYP PFNGLCOMPRESSEDTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
+ #ifdef GL_GLEXT_PROTOTYPES
+ GLAPI void APIENTRY glActiveTexture (GLenum texture);
++GLAPI void APIENTRY glCompressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
+ #endif
+ #endif /* GL_VERSION_1_3 */
+ #ifndef GL_VERSION_1_4
+@@ -472,7 +481,7 @@
+ 
+ /* gl3w internal state */
+ union ImGL3WProcs {
+-    GL3WglProc ptr[59];
++    GL3WglProc ptr[60];
+     struct {
+         PFNGLACTIVETEXTUREPROC            ActiveTexture;
+         PFNGLATTACHSHADERPROC             AttachShader;
+@@ -488,6 +497,7 @@
+         PFNGLCLEARPROC                    Clear;
+         PFNGLCLEARCOLORPROC               ClearColor;
+         PFNGLCOMPILESHADERPROC            CompileShader;
++        PFNGLCOMPRESSEDTEXIMAGE2DPROC     CompressedTexImage2D;
+         PFNGLCREATEPROGRAMPROC            CreateProgram;
+         PFNGLCREATESHADERPROC             CreateShader;
+         PFNGLDELETEBUFFERSPROC            DeleteBuffers;
+@@ -553,6 +563,7 @@
+ #define glClear                           imgl3wProcs.gl.Clear
+ #define glClearColor                      imgl3wProcs.gl.ClearColor
+ #define glCompileShader                   imgl3wProcs.gl.CompileShader
++#define glCompressedTexImage2D            imgl3wProcs.gl.CompressedTexImage2D
+ #define glCreateProgram                   imgl3wProcs.gl.CreateProgram
+ #define glCreateShader                    imgl3wProcs.gl.CreateShader
+ #define glDeleteBuffers                   imgl3wProcs.gl.DeleteBuffers
+@@ -848,6 +859,7 @@
+     "glClear",
+     "glClearColor",
+     "glCompileShader",
++    "glCompressedTexImage2D",
+     "glCreateProgram",
+     "glCreateShader",
+     "glDeleteBuffers",

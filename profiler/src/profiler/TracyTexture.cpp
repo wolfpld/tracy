@@ -5,7 +5,7 @@
 #  include <emscripten/html5.h>
 #  include <GLES2/gl2.h>
 #else
-#  include "../profiler/src/imgui/imgui_impl_opengl3_loader.h"
+#  include <backends/imgui_impl_opengl3_loader.h>
 #endif
 #include "TracyTexture.hpp"
 #include "../public/common/TracyForceInline.hpp"

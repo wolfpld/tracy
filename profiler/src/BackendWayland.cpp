@@ -1,8 +1,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-
-#include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_opengl3_loader.h"
+#include <backends/imgui_impl_opengl3.h>
+#include <backends/imgui_impl_opengl3_loader.h>
 
 #include <chrono>
 #include <linux/input-event-codes.h>

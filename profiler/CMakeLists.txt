@@ -81,7 +81,6 @@ set(SERVER_FILES
 list(TRANSFORM SERVER_FILES PREPEND "src/profiler/")
 
 set(PROFILER_FILES
-    src/imgui/imgui_impl_opengl3.cpp
     src/ConnectionHistory.cpp
     src/Filters.cpp
     src/Fonts.cpp
@@ -151,7 +150,7 @@ elseif(EMSCRIPTEN)
 else()
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendGlfw.cpp
-        src/imgui/imgui_impl_glfw.cpp
+        ${ImGui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
     )
 endif()
 

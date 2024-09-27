@@ -143,7 +143,15 @@ target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
 
 # ImGui
 
-set(IMGUI_DIR "${ROOT_DIR}/imgui")
+CPMAddPackage(
+    NAME ImGui
+    GITHUB_REPOSITORY ocornut/imgui
+    GIT_TAG 10fe2b67
+    DOWNLOAD_ONLY TRUE
+    PATCHES
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-loader.patch"
+)
 
 set(IMGUI_SOURCES
     imgui_widgets.cpp
@@ -152,18 +160,18 @@ set(IMGUI_SOURCES
     imgui.cpp
     imgui_tables.cpp
     misc/freetype/imgui_freetype.cpp
+    backends/imgui_impl_opengl3.cpp
 )
 
-list(TRANSFORM IMGUI_SOURCES PREPEND "${IMGUI_DIR}/")
-
-add_definitions(-DIMGUI_ENABLE_FREETYPE)
+list(TRANSFORM IMGUI_SOURCES PREPEND "${ImGui_SOURCE_DIR}/")
 
 add_library(TracyImGui STATIC EXCLUDE_FROM_ALL ${IMGUI_SOURCES})
-target_include_directories(TracyImGui PUBLIC ${IMGUI_DIR})
+target_include_directories(TracyImGui PUBLIC ${ImGui_SOURCE_DIR})
 target_link_libraries(TracyImGui PUBLIC TracyFreetype)
+target_compile_definitions(TracyImGui PRIVATE "IMGUI_ENABLE_FREETYPE")
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(TracyImGui PUBLIC "IMGUI_DISABLE_DEBUG_TOOLS")
+    target_compile_definitions(TracyImGui PRIVATE "IMGUI_DISABLE_DEBUG_TOOLS")
 endif()
 
 # NFD

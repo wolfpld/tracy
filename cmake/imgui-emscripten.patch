@@ -1,0 +1,14 @@
+diff '--color=auto' -ruN 72d8f61727dc878102157113d1998f86b852d20e/imconfig.h new/imconfig.h
+--- 72d8f61727dc878102157113d1998f86b852d20e/imconfig.h	2024-09-27 14:28:05.568760349 +0200
++++ new/imconfig.h	2024-09-27 14:29:47.310243707 +0200
+@@ -113,6 +113,10 @@
+ // Read about ImGuiBackendFlags_RendererHasVtxOffset for details.
+ //#define ImDrawIdx unsigned int
+ 
++#ifdef __EMSCRIPTEN__
++#define ImDrawIdx unsigned int
++#endif
++
+ //---- Override ImDrawCallback signature (will need to modify renderer backends accordingly)
+ //struct ImDrawList;
+ //struct ImDrawCmd;

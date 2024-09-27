@@ -5,8 +5,7 @@
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
 #include <emscripten/html5.h>
-
-#include "imgui/imgui_impl_opengl3.h"
+#include <backends/imgui_impl_opengl3.h>
 
 #include "Backend.hpp"
 #include "RunQueue.hpp"

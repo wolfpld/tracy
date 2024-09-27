@@ -1,9 +1,9 @@
 #include <imgui.h>
 #include <math.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <misc/freetype/imgui_freetype.h>
 
 #include "Fonts.hpp"
-#include "misc/freetype/imgui_freetype.h"
-#include "imgui/imgui_impl_opengl3.h"
 #include "profiler/IconsFontAwesome6.h"
 
 #include "font/DroidSans.hpp"

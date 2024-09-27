@@ -445,24 +445,36 @@ void View::DrawFlameGraph()
     for( auto& v : data ) zsz += v.time;
 
     ImGui::BeginChild( "##flameGraph" );
-    DrawFlameGraphHeader( m_flameMode == 0 ? zsz : zsz * m_worker.GetSamplingPeriod() );
-
     const auto region = ImGui::GetContentRegionAvail();
-    FlameGraphContext ctx;
-    ctx.draw = ImGui::GetWindowDrawList();
-    ctx.wpos = ImGui::GetCursorScreenPos();
-    ctx.dpos = ctx.wpos + ImVec2( 0.5f, 0.5f );
-    ctx.ty = ImGui::GetTextLineHeight();
-    ctx.ostep = ctx.ty + 1;
-    ctx.pxns = region.x / zsz;
-    ctx.nxps = 1.0 / ctx.pxns;
 
-    ImGui::ItemSize( region );
-    uint64_t ts = 0;
-    for( auto& v : data )
+    if( data.empty() )
     {
-        DrawFlameGraphItem( v, ctx, ts, 0, m_flameMode == 1 );
-        ts += v.time;
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( region.y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_CAT );
+        TextCentered( "No data available to display" );
+        ImGui::PopFont();
+    }
+    else
+    {
+        DrawFlameGraphHeader( m_flameMode == 0 ? zsz : zsz * m_worker.GetSamplingPeriod() );
+
+        FlameGraphContext ctx;
+        ctx.draw = ImGui::GetWindowDrawList();
+        ctx.wpos = ImGui::GetCursorScreenPos();
+        ctx.dpos = ctx.wpos + ImVec2( 0.5f, 0.5f );
+        ctx.ty = ImGui::GetTextLineHeight();
+        ctx.ostep = ctx.ty + 1;
+        ctx.pxns = region.x / zsz;
+        ctx.nxps = 1.0 / ctx.pxns;
+
+        ImGui::ItemSize( region );
+        uint64_t ts = 0;
+        for( auto& v : data )
+        {
+            DrawFlameGraphItem( v, ctx, ts, 0, m_flameMode == 1 );
+            ts += v.time;
+        }
     }
 
     ImGui::EndChild();

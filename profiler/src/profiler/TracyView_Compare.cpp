@@ -237,8 +237,14 @@ void View::DrawCompare()
 #else
     if( !m_compare.second )
     {
-        ImGui::TextWrapped( "Please load a second trace to compare results." );
-        if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open second trace" ) && !m_compare.loadThread.joinable() )
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 5 ) * 0.5f ) );
+        TextCentered( ICON_FA_SCALE_BALANCED );
+        TextCentered( "Please load a second trace to compare results" );
+        ImGui::PopFont();
+        ImGui::TextUnformatted( "" );
+        if( ButtonCentered( ICON_FA_FOLDER_OPEN " Open second trace" ) && !m_compare.loadThread.joinable() )
         {
             Fileselector::OpenFile( "tracy", "Tracy Profiler trace file", [this]( const char* fn ) {
                 try

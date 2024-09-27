@@ -54,6 +54,13 @@ if(TRACY_LIBUNWIND_BACKTRACE)
     target_link_libraries(TracyClient INTERFACE ${unwind_LINK_LIBRARIES})
 endif()
 
+if(TRACY_DEBUGINFOD)
+    include(FindPkgConfig)
+    pkg_check_modules(debuginfod REQUIRED libdebuginfod)
+    target_include_directories(TracyClient INTERFACE ${debuginfod_INCLUDE_DIRS})
+    target_link_libraries(TracyClient INTERFACE ${debuginfod_LINK_LIBRARIES})
+endif()
+
 add_library(Tracy::TracyClient ALIAS TracyClient)
 
 macro(set_option option help value)
@@ -91,6 +98,7 @@ set_option(TRACY_TIMER_FALLBACK "Use lower resolution timers" OFF)
 set_option(TRACY_LIBUNWIND_BACKTRACE "Use libunwind backtracing where supported" OFF)
 set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resolution, only resolve the image path and offset to enable offline symbol resolution" OFF)
 set_option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation" OFF)
+set_option(TRACY_DEBUGINFOD "Enable debuginfod support" OFF)
 
 # advanced
 set_option(TRACY_VERBOSE "[advanced] Verbose output from the profiler" OFF)

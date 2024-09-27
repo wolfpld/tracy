@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-option(USE_DEBUGINFOD "Compile with debuginfod integration" ON)
-
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
 # we target C++11 for the client part
@@ -25,15 +23,9 @@ target_link_libraries(tracy-test TracyClient)
 
 # OS-specific options
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND USE_DEBUGINFOD)
-  target_compile_definitions(tracy-test PRIVATE TRACY_DEBUGINFOD)
-  target_link_libraries(tracy-test "debuginfod")
-endif()
-
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   target_link_libraries(tracy-test "execinfo")
 endif()
-
 
 # copy image file in build folder
 configure_file(${CMAKE_CURRENT_LIST_DIR}/image.jpg image.jpg COPYONLY)

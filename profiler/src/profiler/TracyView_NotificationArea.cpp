@@ -230,7 +230,7 @@ void View::DrawNotificationArea()
         ImGui::SameLine();
         const auto pos = ImGui::GetCursorPos();
         ImGui::TextUnformatted( "  " );
-        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.675f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
         auto rmin = ImGui::GetItemRectMin();
         rmin.x -= ty * 0.5f;
         const auto rmax = ImGui::GetItemRectMax();

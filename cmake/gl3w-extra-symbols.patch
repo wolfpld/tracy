@@ -1,0 +1,14 @@
+diff --git a/extra_symbols.txt b/extra_symbols.txt
+index 447818e..d086538 100644
+--- a/extra_symbols.txt
++++ b/extra_symbols.txt
+@@ -1,3 +1,9 @@
++glCompressedTexImage2D
++GL_LINEAR_MIPMAP_LINEAR
++GL_TEXTURE_WRAP_S
++GL_TEXTURE_WRAP_T
++GL_REPEAT
++GL_CLAMP_TO_EDGE
+ glReadPixels
+ glClearColor
+ glClear

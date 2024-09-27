@@ -193,10 +193,18 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     else
     {
         auto sym = m_worker.GetSymbolData( (uint64_t)item.srcloc );
-        name = m_worker.GetString( sym->name );
-        auto namehash = charutil::hash( name );
-        if( namehash == 0 ) namehash++;
-        color = GetHsvColor( namehash, depth );
+        if( sym )
+        {
+            name = m_worker.GetString( sym->name );
+            auto namehash = charutil::hash( name );
+            if( namehash == 0 ) namehash++;
+            color = GetHsvColor( namehash, depth );
+        }
+        else
+        {
+            name = "???";
+            color = 0xFF888888;
+        }
     }
 
     const auto hiColor = HighlightColor( color );

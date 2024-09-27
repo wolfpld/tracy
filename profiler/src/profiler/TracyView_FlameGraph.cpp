@@ -284,6 +284,65 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     }
 }
 
+void View::DrawFlameGraphHeader( uint64_t timespan )
+{
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
+    const auto w = ImGui::GetContentRegionAvail().x;// - ImGui::GetStyle().ScrollbarSize;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto ty = ImGui::GetTextLineHeight();
+    const auto ty025 = round( ty * 0.25f );
+    const auto ty0375 = round( ty * 0.375f );
+    const auto ty05 = round( ty * 0.5f );
+
+    const auto pxns = w / double( timespan );
+    const auto nspx = 1.0 / pxns;
+    const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+    const auto step = pow( 10, scale );
+
+    ImGui::InvisibleButton( "##flameHeader", ImVec2( w, ty * 1.5f ) );
+    TooltipIfHovered( TimeToStringExact( ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx ) );
+
+    const auto dx = step * pxns;
+    double x = 0;
+    int tw = 0;
+    int tx = 0;
+    int64_t tt = 0;
+    while( x < w )
+    {
+        DrawLine( draw, dpos + ImVec2( x, 0 ), dpos + ImVec2( x, ty05 ), 0x66FFFFFF );
+        if( tw == 0 )
+        {
+            auto txt = "0";
+            draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
+            tw = ImGui::CalcTextSize( txt ).x;
+        }
+        else if( x > tx + tw + ty * 2 )
+        {
+            tx = x;
+            auto txt = TimeToString( tt );
+            draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
+            tw = ImGui::CalcTextSize( txt ).x;
+        }
+
+        if( scale != 0 )
+        {
+            for( int i=1; i<5; i++ )
+            {
+                DrawLine( draw, dpos + ImVec2( x + i * dx / 10, 0 ), dpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
+            }
+            DrawLine( draw, dpos + ImVec2( x + 5 * dx / 10, 0 ), dpos + ImVec2( x + 5 * dx / 10, ty0375 ), 0x33FFFFFF );
+            for( int i=6; i<10; i++ )
+            {
+                DrawLine( draw, dpos + ImVec2( x + i * dx / 10, 0 ), dpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
+            }
+        }
+
+        x += dx;
+        tt += step;
+    }
+}
+
 void View::DrawFlameGraph()
 {
     const auto scale = GetScale();
@@ -386,6 +445,7 @@ void View::DrawFlameGraph()
     for( auto& v : data ) zsz += v.time;
 
     ImGui::BeginChild( "##flameGraph" );
+    DrawFlameGraphHeader( m_flameMode == 0 ? zsz : zsz * m_worker.GetSamplingPeriod() );
 
     const auto region = ImGui::GetContentRegionAvail();
     FlameGraphContext ctx;

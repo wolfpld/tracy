@@ -83,6 +83,13 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     ImGui::TextUnformatted( text );
 }
 
+[[maybe_unused]] static inline bool ButtonCentered( const char* text )
+{
+    const auto tw = ImGui::CalcTextSize( text ).x + ImGui::GetStyle().FramePadding.x * 2;
+    ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw ) * 0.5f );
+    return ImGui::Button( text );
+}
+
 [[maybe_unused]] static inline void TextColoredUnformatted( uint32_t col, const char* text, const char* end = nullptr )
 {
     ImGui::PushStyleColor( ImGuiCol_Text, col );

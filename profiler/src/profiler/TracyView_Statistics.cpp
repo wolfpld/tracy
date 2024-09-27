@@ -46,7 +46,12 @@ void View::DrawStatistics()
 #else
     if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
     {
-        ImGui::TextWrapped( "Please wait, computing data..." );
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
+        TextCentered( ICON_FA_HIPPO );
+        TextCentered( "Please wait, computing data..." );
+        ImGui::PopFont();
         DrawWaitingDots( s_time );
         ImGui::End();
         return;
@@ -589,7 +594,11 @@ void View::DrawStatistics()
     {
         if( srcloc.empty() )
         {
-            ImGui::TextUnformatted( "No entries to be displayed." );
+            ImGui::PushFont( m_bigFont );
+            ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+            TextCentered( ICON_FA_HIPPO );
+            TextCentered( "No entries to be displayed" );
+            ImGui::PopFont();
         }
         else
         {

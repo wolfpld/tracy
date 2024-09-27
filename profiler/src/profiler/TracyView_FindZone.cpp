@@ -265,7 +265,12 @@ void View::DrawFindZone()
 #else
     if( !m_worker.AreSourceLocationZonesReady() )
     {
-        ImGui::TextWrapped( "Please wait, computing data..." );
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
+        TextCentered( ICON_FA_CROW );
+        TextCentered( "Please wait, computing data..." );
+        ImGui::PopFont();
         DrawWaitingDots( s_time );
         ImGui::End();
         return;

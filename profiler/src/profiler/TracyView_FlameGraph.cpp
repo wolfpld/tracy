@@ -295,15 +295,15 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             auto namehash = charutil::hash( name );
             if( namehash == 0 ) namehash++;
             color = GetHsvColor( namehash, depth );
+            if( sym->isInline )
+            {
+                color = DarkenColorHalf( color );
+            }
         }
         else
         {
             name = "???";
             color = 0xFF888888;
-        }
-        if( sym->isInline )
-        {
-            color = DarkenColorHalf( color );
         }
     }
 

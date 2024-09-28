@@ -222,7 +222,7 @@ struct Output
 };
 static std::unordered_map<uint32_t, std::unique_ptr<Output>> s_output;
 static int s_maxScale = 120;
-static int s_prevScale = 120;
+static int s_prevScale = -1;
 
 static bool s_running = true;
 static int s_width, s_height;

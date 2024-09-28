@@ -17,9 +17,11 @@
 
 static GLFWwindow* s_window;
 static std::function<void()> s_redraw;
+static std::function<void(float)> s_scaleChanged;
 static RunQueue* s_mainThreadTasks;
 static WindowPosition* s_winPos;
 static bool s_iconified;
+static float s_prevScale = -1;
 
 extern tracy::Config s_config;
 
@@ -95,6 +97,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     ImGui_ImplOpenGL3_Init( "#version 150" );
 
     s_redraw = redraw;
+    s_scaleChanged = scaleChanged;
     s_mainThreadTasks = mainThreadTasks;
     s_winPos = &m_winPos;
     s_iconified = false;
@@ -152,6 +155,13 @@ void Backend::Attention()
 
 void Backend::NewFrame( int& w, int& h )
 {
+    const auto scale = GetDpiScale();
+    if( scale != s_prevScale )
+    {
+        s_prevScale = scale;
+        s_scaleChanged( scale );
+    }
+
     glfwGetFramebufferSize( s_window, &w, &h );
     m_w = w;
     m_h = h;

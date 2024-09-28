@@ -20,7 +20,7 @@ static EGLDisplay s_eglDpy;
 static EGLContext s_eglCtx;
 static EGLSurface s_eglSurf;
 
-static float s_prevScale;
+static float s_prevScale = -1;
 static int s_width, s_height;
 static uint64_t s_time;
 static const char* s_prevCursor = nullptr;

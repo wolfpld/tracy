@@ -36,6 +36,14 @@ static tracy_force_inline uint32_t DarkenColor( uint32_t color )
         ( ( ( ( color & 0x000000FF )       ) * 2 / 3 )       );
 }
 
+static tracy_force_inline uint32_t DarkenColorHalf( uint32_t color )
+{
+    return 0xFF000000 |
+        ( ( ( ( color & 0x00FF0000 ) >> 16 ) / 2 ) << 16 ) |
+        ( ( ( ( color & 0x0000FF00 ) >> 8  ) / 2 ) << 8  ) |
+        ( ( ( ( color & 0x000000FF )       ) / 2 )       );
+}
+
 static tracy_force_inline uint32_t DarkenColorMore( uint32_t color )
 {
     return 0xFF000000 |

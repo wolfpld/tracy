@@ -199,7 +199,12 @@ void View::DrawMemory()
     auto& mem = m_worker.GetMemoryNamed( m_memInfo.pool );
     if( mem.data.empty() )
     {
-        ImGui::TextWrapped( "No memory data collected." );
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_DOG );
+        TextCentered( "No memory data collected" );
+        ImGui::PopFont();
         ImGui::End();
         return;
     }

@@ -277,6 +277,9 @@ private:
     void DrawFlameGraph();
     void DrawFlameGraphHeader( uint64_t timespan );
     void DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples );
+    void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones );
+    void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones, const ContextSwitch* ctx );
+    void BuildFlameGraph( const Worker& worker, Vector<FlameGraphItem>& data, const Vector<SampleData>& samples );
 
     void ListMemData( std::vector<const MemEvent*>& vec, const std::function<void(const MemEvent*)>& DrawAddress, int64_t startTime = -1, uint64_t pool = 0 );
 

@@ -99,7 +99,7 @@ static char addr[1024] = { "127.0.0.1" };
 static ConnectionHistory* connHist;
 static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
-static float dpiScale = 1.f;
+static float dpiScale = -1.f;
 static bool dpiScaleOverriddenFromEnv = false;
 static float userScale = 1.f;
 static float prevScale = 1.f;
@@ -385,7 +385,6 @@ int main( int argc, char** argv )
     backend.SetIcon( iconPx, iconX, iconY );
     bptr = &backend;
 
-    dpiScale = backend.GetDpiScale();
     const auto envDpiScale = getenv( "TRACY_DPI_SCALE" );
     if( envDpiScale )
     {

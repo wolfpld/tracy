@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "TracyColor.hpp"
 #include "TracyEvent.hpp"
 #include "TracyImGui.hpp"
@@ -243,36 +245,104 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         ImGui::PopClipRect();
     }
 
-    if( hover && !samples )
+    if( hover )
     {
         uint64_t self = item.time;
         for( auto& v : item.children ) self -= v.time;
 
         ImGui::BeginTooltip();
-        if( srcloc->name.active )
+        if( samples )
         {
-            ImGui::TextUnformatted( m_worker.GetString( srcloc->name ) );
+            const auto symAddr = (uint64_t)item.srcloc;
+            auto sym = m_worker.GetSymbolData( symAddr );
+            if( sym )
+            {
+                auto name = m_worker.GetString( sym->name );
+                auto normalized = m_vd.shortenName == ShortenName::Never ? name : ShortenZoneName( ShortenName::OnlyNormalize, name );
+                TextFocused( "Name:", normalized );
+                if( sym->isInline )
+                {
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "[inline]" );
+                }
+                const bool isKernel = symAddr >> 63 != 0;
+                if( isKernel )
+                {
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( ICON_FA_HAT_WIZARD " kernel" );
+                }
+                ImGui::SameLine();
+                ImGui::PushFont( m_smallFont );
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextDisabled( "0x%" PRIx64, symAddr );
+                ImGui::PopFont();
+                if( normalized != name && strcmp( normalized, name ) != 0 )
+                {
+                    ImGui::PushFont( m_smallFont );
+                    TextDisabledUnformatted( name );
+                    ImGui::PopFont();
+                }
+                ImGui::Separator();
+                const char* file;
+                uint32_t line;
+                if( sym->isInline )
+                {
+                    file = m_worker.GetString( sym->callFile );
+                    line = sym->callLine;
+                }
+                else
+                {
+                    file = m_worker.GetString( sym->file );
+                    line = sym->line;
+                }
+                if( file[0] != '[' )
+                {
+                    ImGui::TextDisabled( "Location:" );
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted( LocationToString( file, line ) );
+                }
+                TextFocused( "Image:", m_worker.GetString( sym->imageName ) );
+                ImGui::Separator();
+                const auto period = m_worker.GetSamplingPeriod();
+                TextFocused( "Execution time:", TimeToString( item.time * period ) );
+                if( !item.children.empty() )
+                {
+                    TextFocused( "Self time:", TimeToString( self * period ) );
+                    char buf[64];
+                    PrintStringPercent( buf, 100.f * self / item.time );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( buf );
+                }
+            }
+            ImGui::EndTooltip();
         }
-        ImGui::TextUnformatted( m_worker.GetString( srcloc->function ) );
-        ImGui::Separator();
-        SmallColorBox( GetSrcLocColor( *srcloc, 0 ) );
-        ImGui::SameLine();
-        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc->file ), srcloc->line ) );
-        ImGui::Separator();
-        TextFocused( "Execution time:", TimeToString( item.time ) );
-        if( !item.children.empty() )
+        else
         {
-            TextFocused( "Self time:", TimeToString( self ) );
-            char buf[64];
-            PrintStringPercent( buf, 100.f * self / item.time );
+            if( srcloc->name.active )
+            {
+                ImGui::TextUnformatted( m_worker.GetString( srcloc->name ) );
+            }
+            ImGui::TextUnformatted( m_worker.GetString( srcloc->function ) );
+            ImGui::Separator();
+            SmallColorBox( GetSrcLocColor( *srcloc, 0 ) );
             ImGui::SameLine();
-            TextDisabledUnformatted( buf );
-        }
-        ImGui::EndTooltip();
+            ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc->file ), srcloc->line ) );
+            ImGui::Separator();
+            TextFocused( "Execution time:", TimeToString( item.time ) );
+            if( !item.children.empty() )
+            {
+                TextFocused( "Self time:", TimeToString( self ) );
+                char buf[64];
+                PrintStringPercent( buf, 100.f * self / item.time );
+                ImGui::SameLine();
+                TextDisabledUnformatted( buf );
+            }
+            ImGui::EndTooltip();
 
-        if( ImGui::IsMouseClicked( 0 ) )
-        {
-            m_findZone.ShowZone( item.srcloc, slName );
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                m_findZone.ShowZone( item.srcloc, slName );
+            }
         }
     }
 

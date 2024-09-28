@@ -318,6 +318,11 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                     ImGui::SameLine();
                     TextDisabledUnformatted( buf );
                 }
+
+                if( IsMouseClicked( 0 ) )
+                {
+                    ViewDispatch( file, line, symAddr );
+                }
             }
             ImGui::EndTooltip();
         }

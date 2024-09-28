@@ -17,6 +17,11 @@ project(
     VERSION ${TRACY_VERSION_STRING}
 )
 
+if(SELF_PROFILE)
+    add_definitions(-DTRACY_ENABLE)
+    add_compile_options(-g -O3 -fno-omit-frame-pointer)
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
@@ -158,8 +163,6 @@ include_directories(${INCLUDES})
 link_libraries(${LIBS})
 
 if(SELF_PROFILE)
-    add_definitions(-DTRACY_ENABLE)
-    add_compile_options(-g -O3 -fno-omit-frame-pointer)
     set(PROFILER_FILES ${PROFILER_FILES}
         ../public/TracyClient.cpp
     )

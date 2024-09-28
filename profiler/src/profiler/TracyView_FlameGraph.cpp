@@ -13,13 +13,6 @@
 namespace tracy
 {
 
-struct FlameGraphItem
-{
-    int64_t srcloc;
-    int64_t time;
-    std::vector<FlameGraphItem> children;
-};
-
 void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones )
 {
     FlameGraphItem* cache;
@@ -540,26 +533,26 @@ void View::DrawFlameGraph()
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
-    ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_flameMode, 0 );
+    if( ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_flameMode, 0 ) ) m_flameGraphInvariant.Reset();
 
     if( m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0 )
     {
         ImGui::SameLine();
-        ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 );
+        if( ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_flameMode, 1 ) ) m_flameGraphInvariant.Reset();
     }
 
     ImGui::SameLine();
     ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
     ImGui::SameLine();
 
-    ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort );
+    if( ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort ) ) m_flameGraphInvariant.Reset();
 
     if( m_flameMode == 0 )
     {
         if( m_worker.HasContextSwitches() )
         {
             ImGui::SameLine();
-            ImGui::Checkbox( "Running time", &m_flameRunningTime );
+            if( ImGui::Checkbox( "Running time", &m_flameRunningTime ) ) m_flameGraphInvariant.Reset();
         }
         else
         {
@@ -593,6 +586,7 @@ void View::DrawFlameGraph()
             {
                 FlameGraphThread( t->id ) = true;
             }
+            m_flameGraphInvariant.Reset();
         }
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
@@ -601,6 +595,7 @@ void View::DrawFlameGraph()
             {
                 FlameGraphThread( t->id ) = false;
             }
+            m_flameGraphInvariant.Reset();
         }
 
         int idx = 0;
@@ -610,7 +605,7 @@ void View::DrawFlameGraph()
             const auto threadColor = GetThreadColor( t->id, 0 );
             SmallColorBox( threadColor );
             ImGui::SameLine();
-            SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) );
+            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) ) m_flameGraphInvariant.Reset();
             ImGui::PopID();
             if( t->isFiber )
             {
@@ -624,73 +619,82 @@ void View::DrawFlameGraph()
     ImGui::Separator();
     ImGui::PopStyleVar();
 
-    size_t sz = 0;
-    for( auto& thread : m_threadOrder ) if( FlameGraphThread( thread->id ) ) sz++;
-
-    std::vector<std::vector<FlameGraphItem>> threadData;
-    threadData.resize( sz );
-
-    size_t idx = 0;
-    if( m_flameMode == 0 )
+    if( m_flameMode == 0 && ( m_flameGraphInvariant.count != m_worker.GetZoneCount() || m_flameGraphInvariant.lastTime != m_worker.GetLastTime() ) ||
+        m_flameMode == 1 && ( m_flameGraphInvariant.count != m_worker.GetCallstackSampleCount() ) )
     {
-        for( auto& thread : m_worker.GetThreadData() )
+        size_t sz = 0;
+        for( auto& thread : m_threadOrder ) if( FlameGraphThread( thread->id ) ) sz++;
+
+        std::vector<std::vector<FlameGraphItem>> threadData;
+        threadData.resize( sz );
+
+        size_t idx = 0;
+        if( m_flameMode == 0 )
         {
-            if( FlameGraphThread( thread->id ) )
+            for( auto& thread : m_worker.GetThreadData() )
             {
-                if( m_flameRunningTime )
+                if( FlameGraphThread( thread->id ) )
                 {
-                    const auto ctx = m_worker.GetContextSwitchData( thread->id );
-                    if( ctx )
+                    if( m_flameRunningTime )
                     {
-                        m_td.Queue( [this, idx, ctx, thread, &threadData] {
-                            BuildFlameGraph( m_worker, threadData[idx], thread->timeline, ctx );
+                        const auto ctx = m_worker.GetContextSwitchData( thread->id );
+                        if( ctx )
+                        {
+                            m_td.Queue( [this, idx, ctx, thread, &threadData] {
+                                BuildFlameGraph( m_worker, threadData[idx], thread->timeline, ctx );
+                            } );
+                        }
+                    }
+                    else
+                    {
+                        m_td.Queue( [this, idx, thread, &threadData] {
+                            BuildFlameGraph( m_worker, threadData[idx], thread->timeline );
                         } );
                     }
+                    idx++;
                 }
-                else
+            }
+
+            m_flameGraphInvariant.count = m_worker.GetZoneCount();
+            m_flameGraphInvariant.lastTime = m_worker.GetLastTime();
+        }
+        else
+        {
+            for( auto& thread : m_worker.GetThreadData() )
+            {
+                if( FlameGraphThread( thread->id ) )
                 {
                     m_td.Queue( [this, idx, thread, &threadData] {
-                        BuildFlameGraph( m_worker, threadData[idx], thread->timeline );
+                        BuildFlameGraph( m_worker, threadData[idx], thread->samples );
                     } );
+                    idx++;
                 }
-                idx++;
             }
+
+            m_flameGraphInvariant.count = m_worker.GetCallstackSampleCount();
         }
-    }
-    else
-    {
-        for( auto& thread : m_worker.GetThreadData() )
+        m_td.Sync();
+
+        m_flameGraphData.clear();
+        if( !threadData.empty() )
         {
-            if( FlameGraphThread( thread->id ) )
+            std::swap( m_flameGraphData, threadData[0] );
+            for( size_t i=1; i<threadData.size(); i++ )
             {
-                m_td.Queue( [this, idx, thread, &threadData] {
-                    BuildFlameGraph( m_worker, threadData[idx], thread->samples );
-                } );
-                idx++;
+                MergeFlameGraph( m_flameGraphData, std::move( threadData[i] ) );
             }
         }
-    }
-    m_td.Sync();
 
-    std::vector<FlameGraphItem> data;
-    if( !threadData.empty() )
-    {
-        std::swap( data, threadData[0] );
-        for( size_t i=1; i<threadData.size(); i++ )
-        {
-            MergeFlameGraph( data, std::move( threadData[i] ) );
-        }
+        if( m_flameSort ) SortFlameGraph( m_flameGraphData );
     }
-
-    if( m_flameSort ) SortFlameGraph( data );
 
     int64_t zsz = 0;
-    for( auto& v : data ) zsz += v.time;
+    for( auto& v : m_flameGraphData ) zsz += v.time;
 
     ImGui::BeginChild( "##flameGraph" );
     const auto region = ImGui::GetContentRegionAvail();
 
-    if( data.empty() )
+    if( m_flameGraphData.empty() )
     {
         ImGui::PushFont( m_bigFont );
         ImGui::Dummy( ImVec2( 0, ( region.y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
@@ -713,7 +717,7 @@ void View::DrawFlameGraph()
 
         ImGui::ItemSize( region );
         uint64_t ts = 0;
-        for( auto& v : data )
+        for( auto& v : m_flameGraphData )
         {
             DrawFlameGraphItem( v, ctx, ts, 0, m_flameMode == 1 );
             ts += v.time;

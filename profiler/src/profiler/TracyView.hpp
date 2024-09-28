@@ -53,7 +53,6 @@ struct CpuUsageDraw;
 struct CpuCtxDraw;
 struct LockDraw;
 struct PlotDraw;
-struct FlameGraphItem;
 struct FlameGraphContext;
 
 
@@ -902,6 +901,18 @@ private:
     bool m_achievements = false;
 
     TaskDispatch m_td;
+    std::vector<FlameGraphItem> m_flameGraphData;
+    struct
+    {
+        uint64_t count = 0;
+        uint64_t lastTime = 0;
+
+        void Reset()
+        {
+            count = 0;
+            lastTime = 0;
+        }
+    } m_flameGraphInvariant;
 };
 
 }

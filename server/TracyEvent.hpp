@@ -845,6 +845,14 @@ struct SymbolStats
 
 enum { SymbolStatsSize = sizeof( SymbolStats ) };
 
+
+struct FlameGraphItem
+{
+    int64_t srcloc;
+    int64_t time;
+    std::vector<FlameGraphItem> children;
+};
+
 }
 
 #endif

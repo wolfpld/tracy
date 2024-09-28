@@ -228,7 +228,6 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         return EM_TRUE;
     } );
 
-    s_prevScale = GetDpiScale();
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 }
 

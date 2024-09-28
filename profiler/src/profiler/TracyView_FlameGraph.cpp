@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <inttypes.h>
 
 #include "TracyColor.hpp"
@@ -444,6 +445,19 @@ void View::DrawFlameGraph()
     ImGui::SameLine();
 
     ImGui::Checkbox( ICON_FA_ARROW_UP_WIDE_SHORT " Sort by time", &m_flameSort );
+
+    if( m_flameMode == 0 )
+    {
+        if( m_worker.HasContextSwitches() )
+        {
+            ImGui::SameLine();
+            ImGui::Checkbox( "Running time", &m_flameRunningTime );
+        }
+        else
+        {
+            assert( !m_flameRunningTime );
+        }
+    }
 
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();

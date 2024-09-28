@@ -513,6 +513,7 @@ private:
     int m_statMode = 0;
     int m_flameMode = 0;
     bool m_flameSort = false;
+    bool m_flameRunningTime = false;
     int m_statSampleLocation = 2;
     bool m_statHideUnknown = true;
     bool m_showAllSymbols = false;

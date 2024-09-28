@@ -272,6 +272,8 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     const char* name;
     const char* slName;
 
+    uint32_t textColor = 0xFFFFFFFF;
+
     if( !samples )
     {
         srcloc = &m_worker.GetSourceLocation( item.srcloc );
@@ -280,7 +282,8 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     }
     else
     {
-        auto sym = m_worker.GetSymbolData( (uint64_t)item.srcloc );
+        const auto symAddr = (uint64_t)item.srcloc;
+        auto sym = m_worker.GetSymbolData( symAddr );
         if( sym )
         {
             name = m_worker.GetString( sym->name );
@@ -296,6 +299,10 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         {
             name = "???";
             color = 0xFF888888;
+        }
+        if( symAddr >> 63 != 0 )
+        {
+            textColor = 0xFF8888FF;
         }
     }
 
@@ -326,12 +333,12 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     if( tsz.x < zsz )
     {
         const auto x = ( x1 + x0 - tsz.x ) * 0.5;
-        DrawTextContrast( ctx.draw, ImVec2( x, y0 ), 0xFFFFFFFF, name );
+        DrawTextContrast( ctx.draw, ImVec2( x, y0 ), textColor, name );
     }
     else
     {
         ImGui::PushClipRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ), true );
-        DrawTextContrast( ctx.draw, ImVec2( x0, y0 ), 0xFFFFFFFF, name );
+        DrawTextContrast( ctx.draw, ImVec2( x0, y0 ), textColor, name );
         ImGui::PopClipRect();
     }
 

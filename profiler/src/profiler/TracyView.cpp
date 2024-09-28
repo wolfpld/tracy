@@ -56,6 +56,11 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( config.achievements )
+#ifdef __EMSCRIPTEN__
+    , m_td( 2, "ViewMt" )
+#else
+    , m_td( std::thread::hardware_concurrency(), "ViewMt" )
+#endif
 {
     InitTextEditor();
     SetupConfig( config );
@@ -80,6 +85,11 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
     , m_achievements( config.achievements )
+#ifdef __EMSCRIPTEN__
+    , m_td( 2, "ViewMt" )
+#else
+    , m_td( std::thread::hardware_concurrency(), "ViewMt" )
+#endif
 {
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );

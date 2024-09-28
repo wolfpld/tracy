@@ -3,6 +3,7 @@
 #include "TracyColor.hpp"
 #include "TracyEvent.hpp"
 #include "TracyImGui.hpp"
+#include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyVector.hpp"
 #include "TracyView.hpp"
@@ -343,7 +344,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             }
             ImGui::EndTooltip();
 
-            if( ImGui::IsMouseClicked( 0 ) )
+            if( IsMouseClicked( 0 ) )
             {
                 m_findZone.ShowZone( item.srcloc, slName );
             }

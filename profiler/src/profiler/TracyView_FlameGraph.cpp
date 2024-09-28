@@ -229,8 +229,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             {
                 for( uint8_t j=frame->size; j>0; j-- )
                 {
-                    const auto ip = frame->data[j-1].symAddr;
-                    const auto symaddr = worker.GetInlineSymbolForAddress( ip );
+                    const auto symaddr = frame->data[j-1].symAddr;
                     if( symaddr != 0 )
                     {
                         auto it = std::find_if( vec->begin(), vec->end(), [symaddr]( const auto& v ) { return v.srcloc == symaddr; } );

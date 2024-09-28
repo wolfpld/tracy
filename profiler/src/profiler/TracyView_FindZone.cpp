@@ -275,6 +275,16 @@ void View::DrawFindZone()
         ImGui::End();
         return;
     }
+    if( m_worker.GetZoneCount() == 0 )
+    {
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_CROW );
+        TextCentered( "No zones were collected" );
+        ImGui::PopFont();
+        ImGui::End();
+        return;
+    }
 
     bool findClicked = false;
 

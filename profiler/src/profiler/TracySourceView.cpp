@@ -1990,10 +1990,8 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
                     if( !widthSet )
                     {
                         widthSet = true;
-                        const auto w = ImGui::GetWindowWidth();
                         const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
                         ImGui::SetColumnWidth( 0, c0 );
-                        ImGui::SetColumnWidth( 1, w - c0 );
                     }
                 }
                 for( auto& v : fileCountsVec )

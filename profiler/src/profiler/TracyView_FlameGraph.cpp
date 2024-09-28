@@ -207,6 +207,10 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             name = "???";
             color = 0xFF888888;
         }
+        if( sym->isInline )
+        {
+            color = DarkenColorHalf( color );
+        }
     }
 
     const auto hiColor = HighlightColor( color );

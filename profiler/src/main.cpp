@@ -394,12 +394,11 @@ int main( int argc, char** argv )
         {
             dpiScale = cnv;
             dpiScaleOverriddenFromEnv = true;
+            SetupDPIScale();
         }
     }
 
     s_achievements->Achieve( "achievementsIntro" );
-
-    SetupDPIScale();
 
     tracy::UpdateTextureRGBAMips( zigzagTex, (void**)zigzagPx, zigzagX, zigzagY, 6 );
     for( auto& v : zigzagPx ) free( v );

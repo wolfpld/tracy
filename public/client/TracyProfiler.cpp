@@ -1473,8 +1473,7 @@ Profiler::Profiler()
     m_pipeBufSize = 16384;
 #  else
     m_pipeBufSize = (int)(ptrdiff_t)m_safeSendBufferSize;
-    while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) < 0 && errno == EPERM )
-        m_pipeBufSize /= 2; // too big; reduce
+    while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) < 0 && errno == EPERM ) m_pipeBufSize /= 2; // too big; reduce
     m_pipeBufSize = fcntl( m_pipe[0], F_GETPIPE_SZ );
 #  endif
     fcntl( m_pipe[1], F_SETFL, O_NONBLOCK );
@@ -1522,19 +1521,17 @@ void Profiler::RemoveCrashHandler()
     if( m_crashHandlerInstalled )
     {
         auto prev = SetUnhandledExceptionFilter( (LPTOP_LEVEL_EXCEPTION_FILTER)m_prevHandler );
-        if( prev != CrashFilter )
-            SetUnhandledExceptionFilter( prev ); // A different exception filter was installed over ours => put it back
+        if( prev != CrashFilter ) SetUnhandledExceptionFilter( prev ); // A different exception filter was installed over ours => put it back
     }
 #endif
 
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled )
     {
-        auto restore = [this]( int signum, struct sigaction* prev ) {
+        auto restore = [ this ]( int signum, struct sigaction* prev ) {
             struct sigaction old;
             sigaction( signum, prev, &old );
-            if( old.sa_sigaction != CrashHandler )
-                sigaction( signum, &old, nullptr ); // A different signal handler was installed over ours => put it back
+            if( old.sa_sigaction != CrashHandler ) sigaction( signum, &old, nullptr ); // A different signal handler was installed over ours => put it back
         };
         restore( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr );
         restore( SIGILL, &m_prevSignal.ill );
@@ -3108,10 +3105,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     assert( !m_inUse.exchange(true) );
 #endif
 
-    if( size > m_safeSendBufferSize )
-    {
-        buf = (char*)tracy_malloc( size );
-    }
+    if( size > m_safeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
 #ifdef _WIN32
     __try
@@ -3128,15 +3122,13 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     {
         size_t sendsize = size - offset;
         ssize_t result1, result2;
-        while( ( result1 = write( m_pipe[1], data + offset, sendsize ) ) < 0 && errno == EINTR )
-            /* retry */;
+        while( ( result1 = write( m_pipe[1], data + offset, sendsize ) ) < 0 && errno == EINTR ) { /* retry */ }
         if( result1 < 0 )
         {
             success = false;
             break;
         }
-        while( ( result2 = read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno == EINTR )
-            /* retry */;
+        while( ( result2 = read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno == EINTR ) { /* retry */ }
         if( result2 != result1 )
         {
             success = false;
@@ -3146,8 +3138,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     }
 #endif
 
-    if( success )
-        return buf;
+    if( success ) return buf;
 
     SafeCopyEpilog( buf );
     return nullptr;
@@ -3155,8 +3146,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 
 void Profiler::SafeCopyEpilog( char* buf )
 {
-    if( buf != m_safeSendBuffer )
-        tracy_free( buf );
+    if( buf != m_safeSendBuffer ) tracy_free( buf );
     
 #ifndef NDEBUG
     m_inUse.store( false );
@@ -4117,13 +4107,12 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
     else
     {
-        // 'symbol' may have come from a module that has since unloaded, perform a safe copy before sending
-        if( WithSafeCopy( (const char*)symbol, size, [this, symbol]( const char* buf, size_t size ) {
+        auto&& lambda = [ this, symbol ]( const char* buf, size_t size ) { 
             SendLongString( symbol, buf, size, QueueType::SymbolCode );
-        }))
-            return;
-        
-        AckSymbolCodeNotAvailable();
+        };
+
+        // 'symbol' may have come from a module that has since unloaded, perform a safe copy before sending
+        if( !WithSafeCopy( (const char*)symbol, size, lambda ) ) AckSymbolCodeNotAvailable();
     }
 }
 

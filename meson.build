@@ -205,8 +205,8 @@ tracy = library('tracy', tracy_src, tracy_header_files,
     install             : true)
 
 install_headers(includes, subdir : 'tracy')
-install_headers(common_includes, subdir : 'common')
-install_headers(client_includes, subdir : 'client')
+install_headers(common_includes, subdir : 'tracy/common')
+install_headers(client_includes, subdir : 'tracy/client')
 
 tracy_dep_compile_args = tracy_common_args
 

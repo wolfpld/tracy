@@ -1010,7 +1010,6 @@ private:
     std::atomic_bool m_inUse{ false };
 #endif
     char* m_safeSendBuffer;
-    constexpr static size_t m_safeSendBufferSize = 65536;
 
 #if defined _WIN32
     void* m_prevHandler;

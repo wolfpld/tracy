@@ -1390,6 +1390,8 @@ TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
 TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
 TRACY_API bool ProfilerAllocatorAvailable() { return !RpThreadShutdown; }
 
+constexpr static size_t SafeSendBufferSize = 65536;
+
 Profiler::Profiler()
     : m_timeBegin( 0 )
     , m_mainThread( detail::GetThreadHandleImpl() )
@@ -1463,7 +1465,7 @@ Profiler::Profiler()
         m_userPort = atoi( userPort );
     }
 
-    m_safeSendBuffer = (char*)tracy_malloc( m_safeSendBufferSize );
+    m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
 #ifndef _WIN32
     pipe(m_pipe);
@@ -1471,7 +1473,7 @@ Profiler::Profiler()
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default 
     m_pipeBufSize = 16384;
 #  else
-    m_pipeBufSize = (int)(ptrdiff_t)m_safeSendBufferSize;
+    m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
     while( fcntl( m_pipe[0], F_SETPIPE_SZ, m_pipeBufSize ) < 0 && errno == EPERM ) m_pipeBufSize /= 2; // too big; reduce
     m_pipeBufSize = fcntl( m_pipe[0], F_GETPIPE_SZ );
 #  endif
@@ -3104,7 +3106,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     assert( !m_inUse.exchange(true) );
 #endif
 
-    if( size > m_safeSendBufferSize ) buf = (char*)tracy_malloc( size );
+    if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
 #ifdef _WIN32
     __try

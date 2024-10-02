@@ -833,6 +833,21 @@ private:
         m_bufferOffset += int( len );
     }
 
+    char* SafeCopyProlog( const char* p, size_t size );
+    void SafeCopyEpilog( char* buf );
+
+    template<class Callable> // must be void( const char* buf, size_t size )
+    bool WithSafeCopy( const char* p, size_t size, Callable&& callable )
+    {
+        if( char* buf = SafeCopyProlog( p, size ) )
+        {
+            callable( buf, size );
+            SafeCopyEpilog( buf );
+            return true;
+        }
+        return false;
+    }
+
     bool SendData( const char* data, size_t len );
     void SendLongString( uint64_t ptr, const char* str, size_t len, QueueType type );
     void SendSourceLocation( uint64_t ptr );
@@ -990,9 +1005,19 @@ private:
     char* m_queryData;
     char* m_queryDataPtr;
 
-#if defined _WIN32
-    void* m_exceptionHandler;
+#ifndef NDEBUG
+    // m_safeSendBuffer and m_pipe should only be used by the Tracy Profiler thread; this ensures that in debug builds.
+    std::atomic_bool m_inUse{ false };
 #endif
+    char* m_safeSendBuffer;
+
+#if defined _WIN32
+    void* m_prevHandler;
+#else
+    int m_pipe[2];
+    int m_pipeBufSize;
+#endif
+
 #ifdef __linux__
     struct {
         struct sigaction pwr, ill, fpe, segv, pipe, bus, abrt;

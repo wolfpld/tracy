@@ -1463,7 +1463,6 @@ Profiler::Profiler()
         m_userPort = atoi( userPort );
     }
 
-    m_safeSendBufferSize = 65536;
     m_safeSendBuffer = (char*)tracy_malloc( m_safeSendBufferSize );
 
 #ifndef _WIN32
@@ -1528,7 +1527,7 @@ void Profiler::RemoveCrashHandler()
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
     if( m_crashHandlerInstalled )
     {
-        auto restore = [ this ]( int signum, struct sigaction* prev ) {
+        auto restore = []( int signum, struct sigaction* prev ) {
             struct sigaction old;
             sigaction( signum, prev, &old );
             if( old.sa_sigaction != CrashHandler ) sigaction( signum, &old, nullptr ); // A different signal handler was installed over ours => put it back

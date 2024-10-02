@@ -184,13 +184,13 @@ install(FILES ${common_includes}
 install(EXPORT TracyConfig
         NAMESPACE Tracy::
         FILE TracyTargets.cmake
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 include(CMakePackageConfigHelpers)
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/TracyConfig.cmake
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tracy)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 
 option(TRACY_CLIENT_PYTHON "Whether to build Tracy python client library" OFF)
 

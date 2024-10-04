@@ -3950,14 +3950,15 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 SetFont();
                 if( ImGui::IsItemClicked( 0 ) )
                 {
-                    m_targetLine = srcline;
                     if( m_source.filename() == fileName )
                     {
+                        m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
                     else if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
                     {
+                        m_targetLine = srcline;
                         ParseSource( fileName, worker, view );
                         SelectLine( srcline, &worker, false );
                         SelectViewMode();

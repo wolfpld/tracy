@@ -25,6 +25,26 @@ else()
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
         GIT_TAG 6.0.0-Alpha1
+        OPTIONS
+            "CAPSTONE_X86_ATT_DISABLE ON"
+            "CAPSTONE_ALPHA_SUPPORT OFF"
+            "CAPSTONE_HPPA_SUPPORT OFF"
+            "CAPSTONE_LOONGARCH_SUPPORT OFF"
+            "CAPSTONE_M680X_SUPPORT OFF"
+            "CAPSTONE_M68K_SUPPORT OFF"
+            "CAPSTONE_MIPS_SUPPORT OFF"
+            "CAPSTONE_MOS65XX_SUPPORT OFF"
+            "CAPSTONE_PPC_SUPPORT OFF"
+            "CAPSTONE_SPARC_SUPPORT OFF"
+            "CAPSTONE_SYSTEMZ_SUPPORT OFF"
+            "CAPSTONE_XCORE_SUPPORT OFF"
+            "CAPSTONE_TRICORE_SUPPORT OFF"
+            "CAPSTONE_TMS320C64X_SUPPORT OFF"
+            "CAPSTONE_M680X_SUPPORT OFF"
+            "CAPSTONE_EVM_SUPPORT OFF"
+            "CAPSTONE_WASM_SUPPORT OFF"
+            "CAPSTONE_BPF_SUPPORT OFF"
+            "CAPSTONE_RISCV_SUPPORT OFF"
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyCapstone INTERFACE)

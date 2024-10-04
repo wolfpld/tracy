@@ -2870,6 +2870,9 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
         if( ImGui::BeginPopup( "localCallstackPopup" ) )
         {
+            ImGui::PushFont( m_smallFont );
+            TextDisabledUnformatted( "Local call stack:" );
+            ImGui::PopFont();
             const auto lcs = m_localCallstackPopup;
             for( uint8_t i=0; i<lcs->size; i++ )
             {

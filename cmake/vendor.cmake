@@ -24,7 +24,7 @@ else()
     CPMAddPackage(
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
-        GIT_TAG 5.0.3
+        GIT_TAG 6.0.0-Alpha1
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyCapstone INTERFACE)

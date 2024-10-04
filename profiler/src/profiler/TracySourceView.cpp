@@ -712,7 +712,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         rval = cs_open( CS_ARCH_ARM, CS_MODE_ARM, &handle );
         break;
     case CpuArchArm64:
-        rval = cs_open( CS_ARCH_ARM64, CS_MODE_ARM, &handle );
+        rval = cs_open( CS_ARCH_AARCH64, CS_MODE_ARM, &handle );
         break;
     default:
         assert( false );
@@ -777,9 +777,9 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     }
                     break;
                 case CpuArchArm64:
-                    if( detail.arm64.op_count == 1 && detail.arm64.operands[0].type == ARM64_OP_IMM )
+                    if( detail.aarch64.op_count == 1 && detail.aarch64.operands[0].type == AARCH64_OP_IMM )
                     {
-                        jumpAddr = (uint64_t)detail.arm64.operands[0].imm;
+                        jumpAddr = (uint64_t)detail.aarch64.operands[0].imm;
                     }
                     break;
                 default:
@@ -864,18 +864,18 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 }
                 break;
             case CpuArchArm64:
-                for( uint8_t i=0; i<detail.arm64.op_count; i++ )
+                for( uint8_t i=0; i<detail.aarch64.op_count; i++ )
                 {
                     uint8_t type = 0;
-                    switch( detail.arm64.operands[i].type )
+                    switch( detail.aarch64.operands[i].type )
                     {
-                    case ARM64_OP_IMM:
+                    case AARCH64_OP_IMM:
                         type = 0;
                         break;
-                    case ARM64_OP_REG:
+                    case AARCH64_OP_REG:
                         type = 1;
                         break;
-                    case ARM64_OP_MEM:
+                    case AARCH64_OP_MEM:
                         type = 2;
                         break;
                     default:

@@ -109,7 +109,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
     if( data.empty() )
     {
-        ImGui::TextUnformatted( "No entries to be displayed." );
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_HIPPO );
+        TextCentered( "No entries to be displayed" );
+        ImGui::PopFont();
     }
     else
     {

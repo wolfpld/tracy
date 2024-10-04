@@ -424,7 +424,33 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                             ImGui::TextUnformatted( normalized );
                             TooltipNormalizedName( name, normalized );
                         }
-                        if( clicked ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
+                        if( clicked ) ImGui::OpenPopup( "menuPopup" );
+                        if( ImGui::BeginPopup( "menuPopup" ) )
+                        {
+                            uint32_t len;
+                            const bool sfv = SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) || ( symlen != 0 && m_worker.GetSymbolCode( codeAddr, len ) );
+                            if( !sfv ) ImGui::BeginDisabled();
+                            if( ImGui::MenuItem( " " ICON_FA_FILE_LINES " View symbol" ) )
+                            {
+                                if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                {
+                                    ViewSymbol( file, line, codeAddr, v.symAddr );
+                                    if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                                }
+                                else if( symlen != 0 )
+                                {
+                                    uint32_t len;
+                                    if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                    {
+                                        ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
+                                        if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                                    }
+                                }
+                            }
+                            if( !sfv ) ImGui::EndDisabled();
+                            if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry call stacks" ) ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
+                            ImGui::EndPopup();
+                        }
                         ImGui::PopID();
                     }
                     if( parentName )
@@ -618,7 +644,33 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                         ImGui::TextUnformatted( normalized );
                                         TooltipNormalizedName( sn, normalized );
                                     }
-                                    if( clicked ) ShowSampleParents( iv.symAddr, false );
+                                    if( clicked ) ImGui::OpenPopup( "menuPopup" );
+                                    if( ImGui::BeginPopup( "menuPopup" ) )
+                                    {
+                                        uint32_t len;
+                                        const bool sfv = SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) || ( symlen != 0 && m_worker.GetSymbolCode( codeAddr, len ) );
+                                        if( !sfv ) ImGui::BeginDisabled();
+                                        if( ImGui::MenuItem( " " ICON_FA_FILE_LINES " View symbol" ) )
+                                        {
+                                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                            {
+                                                ViewSymbol( file, line, codeAddr, iv.symAddr );
+                                                if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
+                                            }
+                                            else if( symlen != 0 )
+                                            {
+                                                uint32_t len;
+                                                if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                                {
+                                                    ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
+                                                    if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
+                                                }
+                                            }
+                                        }
+                                        if( !sfv ) ImGui::EndDisabled();
+                                        if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry call stacks" ) ) ShowSampleParents( iv.symAddr, false );
+                                        ImGui::EndPopup();
+                                    }
                                     ImGui::PopID();
                                 }
                                 if( sn == parentName )

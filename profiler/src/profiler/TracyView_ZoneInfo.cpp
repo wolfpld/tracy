@@ -930,7 +930,25 @@ void View::DrawZoneInfoWindow()
                         SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
                         ImGui::SameLine();
                         SmallCheckbox( "Exclude children", &m_messagesExcludeChildren );
-                        if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
+                        int64_t viewSize;
+                        if( !m_messagesExcludeChildren )
+                        {
+                            viewSize = std::min<int64_t>( msgend - msgit + 1, 15 );
+                        }
+                        else
+                        {
+                            viewSize = 0;
+                            for( auto it = msgit; it < msgend; ++it )
+                            {
+                                if( !GetZoneChild( ev, (*it)->time ) )
+                                {
+                                    viewSize++;
+                                    if( viewSize == 15 ) break;
+                                }
+                            }
+                            if( viewSize < 15 ) viewSize++;
+                        }
+                        if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * viewSize ) ) )
                         {
                             ImGui::TableSetupScrollFreeze( 0, 1 );
                             ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );

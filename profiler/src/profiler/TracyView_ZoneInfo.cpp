@@ -971,7 +971,19 @@ void View::DrawZoneInfoWindow()
                                 ImGui::PopID();
                                 ImGui::TableNextColumn();
                                 ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
-                                ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
+                                const auto text = m_worker.GetString( (*msgit)->ref );
+                                auto tend = text;
+                                while( *tend != '\0' && *tend != '\n' ) tend++;
+                                const auto cw = ImGui::GetContentRegionAvail().x;
+                                const auto tw = ImGui::CalcTextSize( text, tend ).x;
+                                ImGui::TextUnformatted( text, tend );
+                                if( tw > cw && ImGui::IsItemHovered() )
+                                {
+                                    ImGui::SetNextWindowSize( ImVec2( 1000 * GetScale(), 0 ) );
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextWrapped( "%s", text );
+                                    ImGui::EndTooltip();
+                                }
                                 ImGui::PopStyleColor();
                             }
                             while( ++msgit != msgend );

@@ -45,6 +45,8 @@ else()
             "CAPSTONE_WASM_SUPPORT OFF"
             "CAPSTONE_BPF_SUPPORT OFF"
             "CAPSTONE_RISCV_SUPPORT OFF"
+            "CAPSTONE_SH_SUPPORT OFF"
+            "CAPSTONE_XTENSA_SUPPORT OFF"
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyCapstone INTERFACE)

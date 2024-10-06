@@ -810,6 +810,20 @@ The build directory can be reused if you want to compile the program in the futu
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
+logo=\bcattention
+]{Caveats}
+Tracy requires network connectivity and \texttt{git} to be available during the build configuration step in order to download the necessary libraries. By default, this is done for each build directory you configure with CMake. To make this requirement more reasonable, it is recommended to set a cache directory, for example:
+
+\begin{lstlisting}[language=sh]
+export CPM_SOURCE_CACHE=~/.cache/cpm
+\end{lstlisting}
+
+With this environment variable set, the library download will be performed only once, and the cached checkouts will be used in all future CMake build directory setups, allowing offline builds. Access to the network will then only be needed if the cache directory is cleared, or if the requirements for the libraries change, for example after an upgrade to a different version of Tracy.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
 logo=\bcbombe
 ]{Important}
 Due to the memory requirements for data storage, the Tracy server is only supposed to run on 64-bit platforms. While nothing prevents the program from building and executing in a 32-bit environment, doing so is not supported.
@@ -817,37 +831,15 @@ Due to the memory requirements for data storage, the Tracy server is only suppos
 
 \subsubsection{Required libraries}
 
-The core libraries necessary for the building of Tracy utilities are:
-
-\begin{itemize}
-\item capstone
-\item glfw
-\item freetype
-\end{itemize}
-
-The capstone library will always be downloaded from GitHub when the CMake build directory is created, unless you have it installed on your system and set the specific build option. You must have git installed for this download to work. Using the capstone library provided by package managers is not recommended, as these packages are typically slow to provide up-to-date versions of the library, and the API may be incompatible.
-
-It is recommended that you install the glfw and freetype libraries on your system so that Tracy can find them with \texttt{pkg-config}. However, if these libraries are not available, they will be downloaded from GitHub.
-
-\paragraph{Windows}
-
-There is no need to install external libraries (e.g. with vcpkg). All libraries are downloaded automatically by CMake. You still need git, though.
+In most cases it is possible to build Tracy without manually installing additional libraries. All requirements are automatically downloaded by CMake.
 
 \paragraph{Unix}
 
-On Unix systems (including Linux), you will need to install the \texttt{pkg-config} utility to provide information about libraries.
+On Unix systems, such as Linux or macOS, it is possible to link with certain common system libraries to reduce build times and resource usage through shared objects. This is optional and will be done automatically if all requirements are met. If it's not possible, there is no loss of functionality as Tracy will build and statically link these libraries anyway.
+
+You will need to install the \texttt{pkg-config} utility to provide information about libraries. Then you will need to install \texttt{freetype} and \texttt{glfw} libraries.
 
 Installation of the libraries on OSX can be facilitated using the \texttt{brew} package manager.
-
-\paragraph{Linux}
-
-There are some Linux-specific libraries that you need to have installed on your system. These won't be downloaded automatically.
-
-For XDG Portal support in the file selector, you need to install the \texttt{dbus} library. If you're one of those weird people who doesn't like modern things, you can install \texttt{gtk3} instead and force the GTK file selector with a build option.
-
-Linux builds of Tracy use the Wayland protocol by default, which allows proper support for Hi-DPI scaling and high-precision input devices such as touchpads. As such, the \texttt{glfw} library is no longer needed, but you will need to install \texttt{libxkbcommon}, \texttt{wayland}, \texttt{wayland-protocols}, \texttt{libglvnd} (or \texttt{libegl} on some distributions).
-
-If you want to use X11 instead, you can enable the \texttt{LEGACY} option in CMake build settings.
 
 \begin{bclogo}[
 noborder=true,
@@ -858,6 +850,16 @@ Some Linux distributions require you to add a \texttt{lib} prefix and a \texttt{
 
 Some Linux distributions ship outdated versions of libraries that are too old for Tracy to build, and do not provide new versions by design. Please reconsider your choice of distribution in this case, as the only function of a Linux distribution is to provide packages, and the one you have chosen is clearly failing at this task.
 \end{bclogo}
+
+\paragraph{Linux}
+
+There are some Linux-specific libraries that you need to have installed on your system. These won't be downloaded automatically.
+
+For XDG Portal support in the file selector, you need to install the \texttt{dbus} library (and a portal appropriate for your desktop environment). If you're one of those weird people who doesn't like modern things, you can install \texttt{gtk3} instead and force the GTK file selector with a build option.
+
+Linux builds of Tracy use the Wayland protocol by default, which allows proper support for Hi-DPI scaling, high-precision input devices such as touchpads, proper handling of mouse cursors, and so on. As such, the \texttt{glfw} library is no longer needed, but you will need to install \texttt{libxkbcommon}, \texttt{wayland}, \texttt{wayland-protocols}, \texttt{libglvnd} (or \texttt{libegl} on some distributions).
+
+If you want to use X11 instead, you can enable the \texttt{LEGACY} option in CMake build settings. Going this way is discouraged.
 
 \begin{bclogo}[
 noborder=true,

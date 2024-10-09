@@ -3298,7 +3298,7 @@ int16_t Worker::ShrinkSourceLocationReal( uint64_t srcloc )
 
 int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
 {
-    assert( m_data.sourceLocationExpand.size() < std::numeric_limits<int16_t>::max() );
+    assert( m_data.sourceLocationExpand.size() < std::numeric_limits<uint16_t>::max() );
     const auto sz = int16_t( m_data.sourceLocationExpand.size() );
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS

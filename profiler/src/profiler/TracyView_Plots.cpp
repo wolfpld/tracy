@@ -11,7 +11,7 @@
 namespace tracy
 {
 
-bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset )
+bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vector<uint32_t>& plotDraw, int& offset, bool rightEnd )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto& wpos = ctx.wpos;
@@ -169,6 +169,34 @@ bool View::DrawPlot( const TimelineContext& ctx, PlotData& plot, const std::vect
                         ImGui::TextDisabled( "(%s)", FormatPlotValue( vmax - vmin, plot.format ) );
                         ImGui::EndTooltip();
                     }
+                }
+            }
+        }
+
+        if( rightEnd )
+        {
+            const auto lastTime = m_worker.GetLastTime();
+            if( lastTime > m_vd.zvStart )
+            {
+                double y;
+                double x0 = 0;
+                const auto x1 = std::min<double>( ( lastTime - m_vd.zvStart ) * pxns, w );
+
+                if( plotDraw.empty() )
+                {
+                    y = PlotHeight * 0.5;
+                    DrawLine( draw, dpos + ImVec2( 0, offset + y ), dpos + ImVec2( x1, offset + y ), color );
+                }
+                else
+                {
+                    x0 = ( plot.data.back().time.Val() - m_vd.zvStart ) * pxns;
+                    y = PlotHeight - ( plot.data.back().val - min ) * revrange * PlotHeight;
+                    DrawLine( draw, dpos + ImVec2( x0, offset + y ), dpos + ImVec2( x1, offset + y ), color );
+                }
+
+                if( plot.fill )
+                {
+                    draw->AddRectFilled( dpos + ImVec2( x0, offset + PlotHeight ), dpos + ImVec2( x1, offset + y ), fill );
                 }
             }
         }

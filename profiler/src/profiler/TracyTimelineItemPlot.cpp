@@ -112,7 +112,7 @@ int64_t TimelineItemPlot::RangeEnd() const
 
 bool TimelineItemPlot::DrawContents( const TimelineContext& ctx, int& offset )
 {
-    return m_view.DrawPlot( ctx, *m_plot, m_draw, offset );
+    return m_view.DrawPlot( ctx, *m_plot, m_draw, offset, m_rightEnd );
 }
 
 void TimelineItemPlot::DrawFinished()
@@ -138,16 +138,29 @@ void TimelineItemPlot::Preprocess( const TimelineContext& ctx, TaskDispatch& td,
 
         auto& vec = m_plot->data;
         vec.ensure_sorted();
-        if( vec.front().time.Val() > vEnd || vec.back().time.Val() < vStart )
+        if( vec.front().time.Val() > vEnd )
         {
             m_plot->rMin = 0;
             m_plot->rMax = 0;
             m_plot->num = 0;
+            m_rightEnd = false;
+            return;
+        }
+        else if( vec.back().time.Val() < vStart )
+        {
+            const auto lastTime = m_worker.GetLastTime();
+            const auto val = vec.back().val;
+            m_plot->rMin = val - 1;
+            m_plot->rMax = val + 1;
+            m_plot->num = lastTime < vStart ? 0 : 1;
+            m_rightEnd = vec.back().time.Val() < lastTime;
             return;
         }
 
         auto it = std::lower_bound( vec.begin(), vec.end(), vStart, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
         auto end = std::lower_bound( it, vec.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+
+        m_rightEnd = end == vec.end() && vec.back().time.Val() < m_worker.GetLastTime();
 
         if( end != vec.end() ) end++;
         if( it != vec.begin() ) it--;

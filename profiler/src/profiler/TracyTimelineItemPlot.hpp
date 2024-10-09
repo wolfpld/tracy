@@ -36,6 +36,7 @@ private:
     PlotData* m_plot;
 
     std::vector<uint32_t> m_draw;
+    bool m_rightEnd;
 };
 
 }

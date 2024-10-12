@@ -567,11 +567,12 @@ void View::DrawFlameGraph()
         }
     }
 
+    auto& td = m_worker.GetThreadData();
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     size_t visibleThreads = 0;
     size_t tsz = 0;
-    for( const auto& t : m_threadOrder )
+    for( const auto& t : td )
     {
         if( FlameGraphThread( t->id ) ) visibleThreads++;
         tsz++;
@@ -589,7 +590,7 @@ void View::DrawFlameGraph()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
-            for( const auto& t : m_threadOrder )
+            for( const auto& t : td )
             {
                 FlameGraphThread( t->id ) = true;
             }
@@ -598,7 +599,7 @@ void View::DrawFlameGraph()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
         {
-            for( const auto& t : m_threadOrder )
+            for( const auto& t : td )
             {
                 FlameGraphThread( t->id ) = false;
             }
@@ -606,7 +607,7 @@ void View::DrawFlameGraph()
         }
 
         int idx = 0;
-        for( const auto& t : m_threadOrder )
+        for( const auto& t : td )
         {
             ImGui::PushID( idx++ );
             const auto threadColor = GetThreadColor( t->id, 0 );
@@ -630,7 +631,7 @@ void View::DrawFlameGraph()
         m_flameMode == 1 && ( m_flameGraphInvariant.count != m_worker.GetCallstackSampleCount() ) )
     {
         size_t sz = 0;
-        for( auto& thread : m_threadOrder ) if( FlameGraphThread( thread->id ) ) sz++;
+        for( auto& thread : td ) if( FlameGraphThread( thread->id ) ) sz++;
 
         std::vector<std::vector<FlameGraphItem>> threadData;
         threadData.resize( sz );
@@ -638,7 +639,7 @@ void View::DrawFlameGraph()
         size_t idx = 0;
         if( m_flameMode == 0 )
         {
-            for( auto& thread : m_worker.GetThreadData() )
+            for( auto& thread : td )
             {
                 if( FlameGraphThread( thread->id ) )
                 {
@@ -667,7 +668,7 @@ void View::DrawFlameGraph()
         }
         else
         {
-            for( auto& thread : m_worker.GetThreadData() )
+            for( auto& thread : td )
             {
                 if( FlameGraphThread( thread->id ) )
                 {

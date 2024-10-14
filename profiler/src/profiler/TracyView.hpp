@@ -641,6 +641,7 @@ private:
             int64_t time = 0;
         };
 
+        bool hasResults = false;
         bool show = false;
         bool ignoreCase = false;
         std::vector<int16_t> match;
@@ -698,6 +699,7 @@ private:
             selGroup = Unselected;
             highlight.active = false;
             samples.counts.clear();
+            hasResults = false;
         }
 
         void ResetMatch()

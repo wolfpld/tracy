@@ -508,7 +508,11 @@ void View::DrawWaitStacks()
     ImGui::BeginChild( "##waitstacks" );
     if( stacks.empty() )
     {
-        ImGui::TextUnformatted( "No wait stacks to display." );
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_KIWI_BIRD );
+        TextCentered( "No wait stacks to display" );
+        ImGui::PopFont();
     }
     else
     {

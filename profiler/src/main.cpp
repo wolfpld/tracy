@@ -931,13 +931,15 @@ static void DrawContents()
         if( s_isElevated )
         {
             ImGui::Separator();
-            ImGui::TextColored( ImVec4( 1, 0.25f, 0.25f, 1 ), ICON_FA_TRIANGLE_EXCLAMATION " Profiler has elevated privileges! " ICON_FA_TRIANGLE_EXCLAMATION );
+            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
+            tracy::TextCentered( ICON_FA_TRIANGLE_EXCLAMATION " Profiler has elevated privileges! " ICON_FA_TRIANGLE_EXCLAMATION );
             ImGui::PushFont( s_smallFont );
-            ImGui::TextColored( ImVec4( 1, 0.25f, 0.25f, 1 ), "You are running the profiler interface with admin privileges. This is" );
-            ImGui::TextColored( ImVec4( 1, 0.25f, 0.25f, 1 ), "most likely a mistake, as there is no reason to do so. Instead, you" );
-            ImGui::TextColored( ImVec4( 1, 0.25f, 0.25f, 1 ), "probably wanted to run the client (the application you are profiling)" );
-            ImGui::TextColored( ImVec4( 1, 0.25f, 0.25f, 1 ), "with elevated privileges." );
+            tracy::TextCentered( "You are running the profiler interface with admin privileges. This is" );
+            tracy::TextCentered( "most likely a mistake, as there is no reason to do so. Instead, you" );
+            tracy::TextCentered( "probably wanted to run the client (the application you are profiling)" );
+            tracy::TextCentered( "with elevated privileges." );
             ImGui::PopFont();
+            ImGui::PopStyleColor();
         }
         ImGui::Separator();
         ImGui::TextUnformatted( "Client address" );

@@ -152,7 +152,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         ImGui::TableSetupColumn( "Image" );
         ImGui::TableHeadersRow();
 
-        bool external = false;
+        int external = 0;
         int fidx = 0;
         int bidx = 0;
         for( auto& entry : cs )
@@ -162,7 +162,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
             {
                 if( !m_showExternalFrames )
                 {
-                    external = true;
+                    external++;
                     continue;
                 }
                 ImGui::TableNextRow();
@@ -209,22 +209,29 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                         if( !m_showExternalFrames )
                         {
                             if( f == fsz-1 ) fidx++;
-                            external = true;
+                            external++;
                             continue;
                         }
                     }
                     else
                     {
-                        if( external )
+                        if( external != 0 )
                         {
                             ImGui::TableNextRow();
                             ImGui::TableNextColumn();
                             ImGui::PushFont( m_smallFont );
                             TextDisabledUnformatted( "external" );
-                            ImGui::PopFont();
                             ImGui::TableNextColumn();
-                            TextDisabledUnformatted( "\xe2\x80\xa6" );
-                            external = false;
+                            if( external == 1 )
+                            {
+                                TextDisabledUnformatted( "1 frame" );
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled( "%i frames", external );
+                            }
+                            ImGui::PopFont();
+                            external = 0;
                         }
                     }
 
@@ -399,9 +406,16 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
             ImGui::TableNextColumn();
             ImGui::PushFont( m_smallFont );
             TextDisabledUnformatted( "external" );
-            ImGui::PopFont();
             ImGui::TableNextColumn();
-            TextDisabledUnformatted( "\xe2\x80\xa6" );
+            if( external == 1 )
+            {
+                TextDisabledUnformatted( "1 frame" );
+            }
+            else
+            {
+                ImGui::TextDisabled( "%i frames", external );
+            }
+            ImGui::PopFont();
         }
         ImGui::EndTable();
     }

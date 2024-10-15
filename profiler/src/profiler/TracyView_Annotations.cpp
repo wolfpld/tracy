@@ -80,16 +80,22 @@ void View::DrawAnnotationList()
         AddAnnotation( m_vd.zvStart, m_vd.zvEnd );
     }
 
-    ImGui::SameLine();
-    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
-    ImGui::SameLine();
-
     if( m_annotations.empty() )
     {
-        ImGui::TextWrapped( "No annotations." );
         ImGui::Separator();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_HORSE );
+        TextCentered( "No annotations" );
+        ImGui::PopFont();
         ImGui::End();
         return;
+    }
+    else
+    {
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
     }
 
     TextFocused( "Annotations:", RealToString( m_annotations.size() ) );

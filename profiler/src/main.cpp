@@ -729,6 +729,13 @@ static void DrawContents()
                     ImGui::SetClipboardText( tracy::GitRef );
                 }
             }
+#ifndef NDEBUG
+            ImGui::PushFont( s_smallFont );
+            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.5f, 0.5f, 1.f ) );
+            tracy::TextCentered( "Debug build" );
+            ImGui::PopStyleColor();
+            ImGui::PopFont();
+#endif
             ImGui::Spacing();
             ImGui::TextUnformatted( "A real time, nanosecond resolution, remote telemetry, hybrid\nframe and sampling profiler for games and other applications." );
             ImGui::Spacing();

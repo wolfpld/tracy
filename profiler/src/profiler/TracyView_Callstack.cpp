@@ -213,26 +213,23 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                             continue;
                         }
                     }
-                    else
+                    else if( external != 0 )
                     {
-                        if( external != 0 )
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::PushFont( m_smallFont );
+                        TextDisabledUnformatted( "external" );
+                        ImGui::TableNextColumn();
+                        if( external == 1 )
                         {
-                            ImGui::TableNextRow();
-                            ImGui::TableNextColumn();
-                            ImGui::PushFont( m_smallFont );
-                            TextDisabledUnformatted( "external" );
-                            ImGui::TableNextColumn();
-                            if( external == 1 )
-                            {
-                                TextDisabledUnformatted( "1 frame" );
-                            }
-                            else
-                            {
-                                ImGui::TextDisabled( "%i frames", external );
-                            }
-                            ImGui::PopFont();
-                            external = 0;
+                            TextDisabledUnformatted( "1 frame" );
                         }
+                        else
+                        {
+                            ImGui::TextDisabled( "%i frames", external );
+                        }
+                        ImGui::PopFont();
+                        external = 0;
                     }
 
                     ImGui::TableNextRow();

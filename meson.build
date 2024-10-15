@@ -119,6 +119,10 @@ if get_option('debuginfod')
   tracy_public_deps += dependency('libdebuginfod')
 endif
 
+if get_option('ignore_memory_faults')
+  tracy_common_args += ['-DTRACY_IGNORE_MEMORY_FAULTS']
+endif
+
 tracy_shared_libs = get_option('default_library') == 'shared'
 
 if tracy_shared_libs

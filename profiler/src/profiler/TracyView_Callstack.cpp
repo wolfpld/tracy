@@ -397,7 +397,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 }
             }
         }
-        if( external )
+        if( external != 0 )
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();

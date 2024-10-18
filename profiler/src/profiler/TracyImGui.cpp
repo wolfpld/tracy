@@ -4,7 +4,7 @@
 #include "TracyPrint.hpp"
 #include "TracyImGui.hpp"
 
-extern void* zigzagTex;
+extern ImTextureID zigzagTex;
 
 namespace tracy
 {

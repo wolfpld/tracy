@@ -597,10 +597,10 @@ private:
     std::atomic<size_t> m_srcFileBytes { 0 };
     std::atomic<size_t> m_dstFileBytes { 0 };
 
-    void* m_frameTexture = nullptr;
+    ImTextureID m_frameTexture = 0;
     const void* m_frameTexturePtr = nullptr;
 
-    void* m_frameTextureConn = nullptr;
+    ImTextureID m_frameTextureConn = 0;
     const void* m_frameTextureConnPtr = nullptr;
 
     std::vector<std::unique_ptr<Annotation>> m_annotations;
@@ -859,7 +859,7 @@ private:
     } m_cache;
 
     struct {
-        void* texture = nullptr;
+        ImTextureID texture = 0;
         float timeLeft = 0;
         float speed = 1;
         uint32_t frame = 0;

@@ -39,7 +39,7 @@ void InitTexture()
 #endif
 }
 
-void* MakeTexture( bool zigzag )
+ImTextureID MakeTexture( bool zigzag )
 {
     GLuint tex;
     glGenTextures( 1, &tex );
@@ -48,12 +48,12 @@ void* MakeTexture( bool zigzag )
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, zigzag ? GL_REPEAT : GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    return (void*)(intptr_t)tex;
+    return tex;
 }
 
-void FreeTexture( void* _tex, void(*runOnMainThread)(const std::function<void()>&, bool) )
+void FreeTexture( ImTextureID _tex, void(*runOnMainThread)(const std::function<void()>&, bool) )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = (GLuint)_tex;
     runOnMainThread( [tex] { glDeleteTextures( 1, &tex ); }, false );
 }
 
@@ -139,9 +139,9 @@ static tracy_force_inline void DecodeDxt1Part( uint64_t d, uint32_t* dst, uint32
     memcpy( dst+3, dict + (idx & 0x3), 4 );
 }
 
-void UpdateTexture( void* _tex, const char* data, int w, int h )
+void UpdateTexture( ImTextureID _tex, const char* data, int w, int h )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = (GLuint)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
     if( s_hardwareS3tc )
     {
@@ -167,16 +167,16 @@ void UpdateTexture( void* _tex, const char* data, int w, int h )
     }
 }
 
-void UpdateTextureRGBA( void* _tex, void* data, int w, int h )
+void UpdateTextureRGBA( ImTextureID _tex, void* data, int w, int h )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = (GLuint)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 }
 
-void UpdateTextureRGBAMips( void* _tex, void** data, int* w, int* h, size_t mips )
+void UpdateTextureRGBAMips( ImTextureID _tex, void** data, int* w, int* h, size_t mips )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = (GLuint)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
     for( size_t i=0; i<mips; i++ )
     {

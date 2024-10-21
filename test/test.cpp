@@ -315,6 +315,28 @@ void DeadlockTest2()
     deadlockMutex1.lock();
 }
 
+void ArenaAllocatorTest()
+{
+    tracy::SetThreadName( "Arena allocator test" );
+
+    auto arena = (char*)0x12345678;
+    auto aptr = arena;
+
+    for( int i=0; i<10; i++ )
+    {
+        for( int j=0; j<10; j++ )
+        {
+            const auto allocSize = 1024 + j * 128 - i * 64;
+            TracyAllocN( aptr, allocSize, "Arena alloc" );
+            aptr += allocSize;
+            std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        }
+        TracyMemoryDiscard( "Arena alloc" );
+        aptr = arena;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
 int main()
 {
 #ifdef _WIN32
@@ -355,6 +377,7 @@ int main()
     auto t20 = std::thread( OnlyMemory );
     auto t21 = std::thread( DeadlockTest1 );
     auto t22 = std::thread( DeadlockTest2 );
+    auto t23 = std::thread( ArenaAllocatorTest );
 
     int x, y;
     auto image = stbi_load( "image.jpg", &x, &y, nullptr, 4 );

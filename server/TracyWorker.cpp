@@ -4625,6 +4625,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MemFreeCallstackNamed:
         ProcessMemFreeCallstackNamed( ev.memFree );
         break;
+    case QueueType::MemDiscard:
+        ProcessMemDiscard( ev.memDiscard );
+        break;
+    case QueueType::MemDiscardCallstack:
+        ProcessMemDiscardCallstack( ev.memDiscard );
+        break;
     case QueueType::CallstackSerial:
         ProcessCallstackSerial();
         break;
@@ -6152,6 +6158,65 @@ void Worker::ProcessMemFreeCallstackNamed( const QueueMemFree& ev )
     assert( m_serialNextCallstack != 0 );
     if( mem ) mem->csFree.SetVal( m_serialNextCallstack );
     m_serialNextCallstack = 0;
+}
+
+void Worker::ProcessMemDiscard( const QueueMemDiscard& ev )
+{
+    assert( m_memNamePayload == 0 );
+    auto it = m_data.memNameMap.find( ev.name );
+    if( it == m_data.memNameMap.end() ) return;
+
+    const auto refTime = RefTime( m_refTimeSerial, ev.time );
+    auto& memdata = *it->second;
+
+    const auto time = TscTime( refTime );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
+    NoticeThread( ev.thread );
+    const auto thread = CompressThread( ev.thread );
+
+    for( auto& v : memdata.active )
+    {
+        memdata.frees.push_back( v.second );
+        auto& mem = memdata.data[v.second];
+        mem.SetTimeThreadFree( time, thread );
+        memdata.usage -= mem.Size();
+        MemAllocChanged( memdata, time );
+    }
+
+    memdata.active.clear();
+    assert( memdata.usage == 0 );
+}
+
+void Worker::ProcessMemDiscardCallstack( const QueueMemDiscard& ev )
+{
+    assert( m_serialNextCallstack != 0 );
+    auto cs = m_serialNextCallstack;
+    m_serialNextCallstack = 0;
+
+    assert( m_memNamePayload == 0 );
+    auto it = m_data.memNameMap.find( ev.name );
+    if( it == m_data.memNameMap.end() ) return;
+
+    const auto refTime = RefTime( m_refTimeSerial, ev.time );
+    auto& memdata = *it->second;
+
+    const auto time = TscTime( refTime );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
+    NoticeThread( ev.thread );
+    const auto thread = CompressThread( ev.thread );
+
+    for( auto& v : memdata.active )
+    {
+        memdata.frees.push_back( v.second );
+        auto& mem = memdata.data[v.second];
+        mem.SetTimeThreadFree( time, thread );
+        mem.csFree.SetVal( cs );
+        memdata.usage -= mem.Size();
+        MemAllocChanged( memdata, time );
+    }
+
+    memdata.active.clear();
+    assert( memdata.usage == 0 );
 }
 
 void Worker::ProcessCallstackSerial()

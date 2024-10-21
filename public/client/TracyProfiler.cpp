@@ -2862,6 +2862,15 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     MemWrite( &item->memFree.time, dt );
                     break;
                 }
+                case QueueType::MemDiscard:
+                case QueueType::MemDiscardCallstack:
+                {
+                    int64_t t = MemRead<int64_t>( &item->memDiscard.time );
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
+                    MemWrite( &item->memDiscard.time, dt );
+                    break;
+                }
                 case QueueType::GpuZoneBeginSerial:
                 case QueueType::GpuZoneBeginCallstackSerial:
                 {

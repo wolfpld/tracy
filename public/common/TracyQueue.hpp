@@ -42,6 +42,8 @@ enum class QueueType : uint8_t
     MemAllocCallstackNamed,
     MemFreeCallstack,
     MemFreeCallstackNamed,
+    MemDiscard,
+    MemDiscardCallstack,
     GpuZoneBegin,
     GpuZoneBeginCallstack,
     GpuZoneBeginAllocSrcLoc,
@@ -502,6 +504,13 @@ struct QueueMemFree
     uint64_t ptr;
 };
 
+struct QueueMemDiscard
+{
+    int64_t time;
+    uint32_t thread;
+    uint64_t name;
+};
+
 struct QueueCallstackFat
 {
     uint64_t ptr;
@@ -742,6 +751,7 @@ struct QueueItem
         QueueGpuContextNameFat gpuContextNameFat;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
+        QueueMemDiscard memDiscard;
         QueueMemNamePayload memName;
         QueueThreadGroupHint threadGroupHint;
         QueueCallstackFat callstackFat;
@@ -813,6 +823,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack, named
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack, named
+    sizeof( QueueHeader ) + sizeof( QueueMemDiscard ),
+    sizeof( QueueHeader ) + sizeof( QueueMemDiscard ),      // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBeginLean ),// allocated source location

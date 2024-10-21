@@ -633,6 +633,40 @@ public:
 #endif
     }
 
+    static tracy_force_inline void MemDiscard( const char* name, bool secure )
+    {
+        if( secure && !ProfilerAvailable() ) return;
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        const auto thread = GetThreadHandle();
+
+        GetProfiler().m_serialLock.lock();
+        SendMemDiscard( QueueType::MemDiscard, thread, name );
+        GetProfiler().m_serialLock.unlock();
+    }
+
+    static tracy_force_inline void MemDiscardCallstack( const char* name, bool secure, int depth )
+    {
+        if( secure && !ProfilerAvailable() ) return;
+#ifdef TRACY_HAS_CALLSTACK
+#  ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#  endif
+        const auto thread = GetThreadHandle();
+
+        auto callstack = Callstack( depth );
+
+        GetProfiler().m_serialLock.lock();
+        SendCallstackSerial( callstack );
+        SendMemDiscard( QueueType::MemDiscard, thread, name );
+        GetProfiler().m_serialLock.unlock();
+#else
+        static_cast<void>(depth); // unused
+        MemDiscard( name, secure );
+#endif
+    }
+
     static tracy_force_inline void SendCallstack( int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
@@ -919,6 +953,18 @@ private:
         MemWrite( &item->memFree.time, GetTime() );
         MemWrite( &item->memFree.thread, thread );
         MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        GetProfiler().m_serialQueue.commit_next();
+    }
+
+    static tracy_force_inline void SendMemDiscard( QueueType type, const uint32_t thread, const char* name )
+    {
+        assert( type == QueueType::MemDiscard || type == QueueType::MemDiscardCallstack );
+
+        auto item = GetProfiler().m_serialQueue.prepare_next();
+        MemWrite( &item->hdr.type, type );
+        MemWrite( &item->memDiscard.time, GetTime() );
+        MemWrite( &item->memDiscard.thread, thread );
+        MemWrite( &item->memDiscard.name, (uint64_t)name );
         GetProfiler().m_serialQueue.commit_next();
     }
 

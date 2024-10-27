@@ -13,6 +13,8 @@
 namespace tracy
 {
 
+constexpr float MinVisSize = 3;
+
 void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<short_ptr<ZoneEvent>>& zones )
 {
     FlameGraphItem* cache;
@@ -258,13 +260,54 @@ struct FlameGraphContext
     float ostep;
     double pxns;
     double nspx;
+    int64_t vStart;
+    int64_t vEnd;
 };
 
 void View::DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples )
 {
-    for( auto& v : data )
+    const auto vStart = ctx.vStart;
+    const auto vEnd = ctx.vEnd;
+    const auto nspx = ctx.nspx;
+    const auto pxns = ctx.pxns;
+    const auto draw = ctx.draw;
+    const auto ostep = ctx.ostep;
+    const auto& wpos = ctx.wpos;
+
+    const auto MinVisNs = int64_t( round( GetScale() * MinVisSize * nspx ) );
+
+    auto it = std::lower_bound( data.begin(), data.end(), vStart, [] ( const auto& l, const auto& r ) { return l.begin + l.time < r; } );
+    if( it == data.end() ) return;
+
+    const auto zitend = std::lower_bound( it, data.end(), vEnd, [] ( const auto& l, const auto& r ) { return l.begin < r; } );
+    if( it == zitend ) return;
+
+    while( it < zitend )
     {
-        DrawFlameGraphItem( v, ctx, depth, samples );
+        const auto end = it->begin + it->time;
+        const auto zsz = it->time;
+        if( zsz < MinVisNs )
+        {
+            auto nextTime = end + MinVisNs;
+            auto next = it + 1;
+            for(;;)
+            {
+                next = std::lower_bound( next, zitend, nextTime, [] ( const auto& l, const auto& r ) { return l.begin + l.time < r; } );
+                if( next == zitend ) break;
+                if( next->time >= MinVisNs ) break;
+                nextTime = next->begin + next->time + MinVisNs;
+            }
+            const auto px0 = ( it->begin - vStart ) * pxns;
+            const auto px1 = ( (next-1)->begin + (next-1)->time - vStart ) * pxns;
+            draw->AddRectFilled( ImVec2( wpos.x + px0, wpos.y + depth * ostep ), ImVec2( wpos.x + px1, wpos.y + ( depth + 1 ) * ostep ), 0xFF666666 );
+            DrawZigZag( draw, ImVec2( wpos.x, wpos.y + ( depth + 0.5f ) * ostep ), px0, px1, ctx.ty / 4, 0xFF444444 );
+            it = next;
+        }
+        else
+        {
+            DrawFlameGraphItem( *it, ctx, depth, samples );
+            ++it;
+        }
     }
 }
 
@@ -737,6 +780,8 @@ void View::DrawFlameGraph()
         ctx.ostep = ctx.ty + 1;
         ctx.pxns = region.x / zsz;
         ctx.nspx = 1.0 / ctx.pxns;
+        ctx.vStart = 0;
+        ctx.vEnd = zsz;
 
         ImGui::ItemSize( region );
         DrawFlameGraphLevel( m_flameGraphData, ctx, 0, m_flameMode == 1 );

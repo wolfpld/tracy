@@ -300,8 +300,8 @@ void View::DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGr
             }
             const auto px0 = ( it->begin - vStart ) * pxns;
             const auto px1 = ( (next-1)->begin + (next-1)->time - vStart ) * pxns;
-            draw->AddRectFilled( ImVec2( wpos.x + px0, wpos.y + depth * ostep ), ImVec2( wpos.x + px1, wpos.y + ( depth + 1 ) * ostep ), 0xFF666666 );
-            DrawZigZag( draw, ImVec2( wpos.x, wpos.y + ( depth + 0.5f ) * ostep ), px0, px1, ctx.ty / 4, 0xFF444444 );
+            draw->AddRectFilled( ImVec2( wpos.x + px0, wpos.y + depth * ostep ), ImVec2( wpos.x + std::max( px1, px0 + MinVisSize ), wpos.y + ( depth + 1 ) * ostep ), 0xFF666666 );
+            DrawZigZag( draw, ImVec2( wpos.x, wpos.y + ( depth + 0.5f ) * ostep ), px0, std::max( px1, px0 + MinVisSize ), ctx.ty / 4, 0xFF444444 );
             it = next;
         }
         else

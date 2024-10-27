@@ -257,7 +257,7 @@ struct FlameGraphContext
     float ty;
     float ostep;
     double pxns;
-    double nxps;
+    double nspx;
 };
 
 void View::DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples )
@@ -727,7 +727,7 @@ void View::DrawFlameGraph()
         ctx.ty = ImGui::GetTextLineHeight();
         ctx.ostep = ctx.ty + 1;
         ctx.pxns = region.x / zsz;
-        ctx.nxps = 1.0 / ctx.pxns;
+        ctx.nspx = 1.0 / ctx.pxns;
 
         ImGui::ItemSize( region );
         DrawFlameGraphLevel( m_flameGraphData, ctx, 0, 0, m_flameMode == 1 );

@@ -260,6 +260,15 @@ struct FlameGraphContext
     double nxps;
 };
 
+void View::DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples )
+{
+    for( auto& v : data )
+    {
+        DrawFlameGraphItem( v, ctx, ts, depth, samples );
+        ts += v.time;
+    }
+}
+
 void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples )
 {
     const auto x0 = ctx.dpos.x + ts * ctx.pxns;
@@ -448,12 +457,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         }
     }
 
-    uint64_t cts = ts;
-    for( auto& v : item.children )
-    {
-        DrawFlameGraphItem( v, ctx, cts, depth+1, samples );
-        cts += v.time;
-    }
+    DrawFlameGraphLevel( item.children, ctx, ts, depth+1, samples );
 }
 
 void View::DrawFlameGraphHeader( uint64_t timespan )
@@ -531,6 +535,8 @@ static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<Flame
         }
     }
 }
+
+
 
 void View::DrawFlameGraph()
 {
@@ -724,12 +730,7 @@ void View::DrawFlameGraph()
         ctx.nxps = 1.0 / ctx.pxns;
 
         ImGui::ItemSize( region );
-        uint64_t ts = 0;
-        for( auto& v : m_flameGraphData )
-        {
-            DrawFlameGraphItem( v, ctx, ts, 0, m_flameMode == 1 );
-            ts += v.time;
-        }
+        DrawFlameGraphLevel( m_flameGraphData, ctx, 0, 0, m_flameMode == 1 );
     }
 
     ImGui::EndChild();

@@ -260,18 +260,17 @@ struct FlameGraphContext
     double nspx;
 };
 
-void View::DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples )
+void View::DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples )
 {
     for( auto& v : data )
     {
-        DrawFlameGraphItem( v, ctx, ts, depth, samples );
-        ts += v.time;
+        DrawFlameGraphItem( v, ctx, depth, samples );
     }
 }
 
-void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, uint64_t ts, int depth, bool samples )
+void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ctx, int depth, bool samples )
 {
-    const auto x0 = ctx.dpos.x + ts * ctx.pxns;
+    const auto x0 = ctx.dpos.x + item.begin * ctx.pxns;
     const auto x1 = x0 + item.time * ctx.pxns;
     const auto y0 = ctx.dpos.y + depth * ctx.ostep;
     const auto y1 = y0 + ctx.ty;
@@ -457,7 +456,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         }
     }
 
-    DrawFlameGraphLevel( item.children, ctx, ts, depth+1, samples );
+    DrawFlameGraphLevel( item.children, ctx, depth+1, samples );
 }
 
 void View::DrawFlameGraphHeader( uint64_t timespan )
@@ -740,7 +739,7 @@ void View::DrawFlameGraph()
         ctx.nspx = 1.0 / ctx.pxns;
 
         ImGui::ItemSize( region );
-        DrawFlameGraphLevel( m_flameGraphData, ctx, 0, 0, m_flameMode == 1 );
+        DrawFlameGraphLevel( m_flameGraphData, ctx, 0, m_flameMode == 1 );
     }
 
     ImGui::EndChild();

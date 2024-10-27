@@ -536,6 +536,15 @@ static void MergeFlameGraph( std::vector<FlameGraphItem>& dst, std::vector<Flame
     }
 }
 
+static void FixupTime( std::vector<FlameGraphItem>& data, uint64_t t = 0 )
+{
+    for( auto& v : data )
+    {
+        v.begin = t;
+        if( !v.children.empty() ) FixupTime( v.children, t );
+        t += v.time;
+    }
+}
 
 
 void View::DrawFlameGraph()
@@ -700,6 +709,7 @@ void View::DrawFlameGraph()
         }
 
         if( m_flameSort ) SortFlameGraph( m_flameGraphData );
+        FixupTime( m_flameGraphData );
     }
 
     int64_t zsz = 0;

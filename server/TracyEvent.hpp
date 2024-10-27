@@ -850,6 +850,7 @@ struct FlameGraphItem
 {
     int64_t srcloc;
     int64_t time;
+    int64_t begin;
     std::vector<FlameGraphItem> children;
 };
 

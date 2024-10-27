@@ -322,6 +322,7 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     const SourceLocation* srcloc;
     uint32_t color;
     const char* name;
+    const char* normalized;
     const char* slName;
 
     uint32_t textColor = 0xFFFFFFFF;
@@ -363,9 +364,26 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     const auto zsz = x1 - x0;
 
     auto tsz = ImGui::CalcTextSize( name );
-    if( m_vd.shortenName == ShortenName::Always || ( ( m_vd.shortenName == ShortenName::NoSpace || m_vd.shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
+    if( m_vd.shortenName == ShortenName::Never )
     {
-        name = ShortenZoneName( m_vd.shortenName, name, tsz, zsz );
+        normalized = name;
+    }
+    else if( samples )
+    {
+        normalized = ShortenZoneName( ShortenName::OnlyNormalize, name );
+        tsz = ImGui::CalcTextSize( normalized );
+        if( tsz.x > zsz && ( m_vd.shortenName == ShortenName::NoSpace || m_vd.shortenName == ShortenName::NoSpaceAndNormalize ) )
+        {
+            normalized = ShortenZoneName( m_vd.shortenName, normalized, tsz, zsz );
+        }
+    }
+    else if( m_vd.shortenName == ShortenName::Always || ( ( m_vd.shortenName == ShortenName::NoSpace || m_vd.shortenName == ShortenName::NoSpaceAndNormalize ) && tsz.x > zsz ) )
+    {
+        normalized = ShortenZoneName( m_vd.shortenName, name, tsz, zsz );
+    }
+    else
+    {
+        normalized = name;
     }
 
     const bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ) );
@@ -384,12 +402,12 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     if( tsz.x < zsz )
     {
         const auto x = ( x1 + x0 - tsz.x ) * 0.5;
-        DrawTextContrast( ctx.draw, ImVec2( x, y0 ), textColor, name );
+        DrawTextContrast( ctx.draw, ImVec2( x, y0 ), textColor, normalized );
     }
     else
     {
         ImGui::PushClipRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ), true );
-        DrawTextContrast( ctx.draw, ImVec2( x0, y0 ), textColor, name );
+        DrawTextContrast( ctx.draw, ImVec2( x0, y0 ), textColor, normalized );
         ImGui::PopClipRect();
     }
 
@@ -405,7 +423,6 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             auto sym = m_worker.GetSymbolData( symAddr );
             if( sym )
             {
-                auto normalized = m_vd.shortenName == ShortenName::Never ? name : ShortenZoneName( ShortenName::OnlyNormalize, name );
                 TextFocused( "Name:", normalized );
                 if( sym->isInline )
                 {

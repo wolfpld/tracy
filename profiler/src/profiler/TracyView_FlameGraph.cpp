@@ -219,18 +219,19 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
         const auto csz = callstack.size();
         for( size_t i=csz; i>0; i--)
         {
-            auto frame = worker.GetCallstackFrame( callstack[i-1] );
-            if( frame )
+            auto frameData = worker.GetCallstackFrame( callstack[i-1] );
+            if( frameData )
             {
-                for( uint8_t j=frame->size; j>0; j-- )
+                for( uint8_t j=frameData->size; j>0; j-- )
                 {
-                    const auto symaddr = frame->data[j-1].symAddr;
+                    const auto frame = frameData->data[j-1];
+                    const auto symaddr = frame.symAddr;
                     if( symaddr != 0 )
                     {
                         auto it = std::find_if( vec->begin(), vec->end(), [symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
                         if( it == vec->end() )
                         {
-                            vec->emplace_back( FlameGraphItem { (int64_t)symaddr, 1 } );
+                            vec->emplace_back( FlameGraphItem { (int64_t)symaddr, 1, frame.name } );
                             vec = &vec->back().children;
                         }
                         else
@@ -333,11 +334,11 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
     }
     else
     {
+        name = m_worker.GetString( item.name );
         const auto symAddr = (uint64_t)item.srcloc;
         auto sym = m_worker.GetSymbolData( symAddr );
         if( sym )
         {
-            name = m_worker.GetString( sym->name );
             auto namehash = charutil::hash( name );
             if( namehash == 0 ) namehash++;
             color = GetHsvColor( namehash, depth );
@@ -348,7 +349,6 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
         }
         else
         {
-            name = "???";
             color = 0xFF888888;
         }
         if( symAddr >> 63 != 0 )
@@ -405,7 +405,6 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
             auto sym = m_worker.GetSymbolData( symAddr );
             if( sym )
             {
-                auto name = m_worker.GetString( sym->name );
                 auto normalized = m_vd.shortenName == ShortenName::Never ? name : ShortenZoneName( ShortenName::OnlyNormalize, name );
                 TextFocused( "Name:", normalized );
                 if( sym->isInline )

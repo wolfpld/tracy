@@ -47,6 +47,7 @@ else()
             "CAPSTONE_RISCV_SUPPORT OFF"
             "CAPSTONE_SH_SUPPORT OFF"
             "CAPSTONE_XTENSA_SUPPORT OFF"
+            "CAPSTONE_BUILD_MACOS_THIN ON"
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyCapstone INTERFACE)

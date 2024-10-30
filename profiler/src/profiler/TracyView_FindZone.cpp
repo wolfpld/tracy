@@ -549,10 +549,13 @@ void View::DrawFindZone()
                 std::inplace_merge( vec.begin(), mid, vec.end() );
 
                 const auto vsz = vec.size();
+                const auto vszQuarter = vsz / 4;
                 if( vsz != 0 )
                 {
                     m_findZone.average = float( total ) / vsz;
                     m_findZone.median = vec[vsz/2];
+                    m_findZone.p75 = vec[3 * vszQuarter];
+                    m_findZone.p90 = vec[vsz / 10 * 9];
                     m_findZone.total = total;
                     m_findZone.sortedNum = i;
                     m_findZone.tmin = tmin;
@@ -970,6 +973,12 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Median:", TimeToString( m_findZone.median ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        TextFocused( "P90:", TimeToString( m_findZone.p90 ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();

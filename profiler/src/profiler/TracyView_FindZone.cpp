@@ -974,9 +974,11 @@ void View::DrawFindZone()
                         TextFocused( "Median:", TimeToString( m_findZone.median ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
+                        ImGui::SameLine();
                         TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
+                        ImGui::SameLine();
                         TextFocused( "P90:", TimeToString( m_findZone.p90 ) );
                         ImGui::SameLine();
                         ImGui::Spacing();

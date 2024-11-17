@@ -549,12 +549,11 @@ void View::DrawFindZone()
                 std::inplace_merge( vec.begin(), mid, vec.end() );
 
                 const auto vsz = vec.size();
-                const auto vszQuarter = vsz / 4;
                 if( vsz != 0 )
                 {
                     m_findZone.average = float( total ) / vsz;
                     m_findZone.median = vec[vsz/2];
-                    m_findZone.p75 = vec[3 * vszQuarter];
+                    m_findZone.p75 = vec[3 * (vsz / 4)];
                     m_findZone.p90 = vec[vsz / 10 * 9];
                     m_findZone.total = total;
                     m_findZone.sortedNum = i;

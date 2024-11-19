@@ -498,11 +498,11 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
         if( _GetThreadDescription )
         {
             PWSTR tmp;
-            _GetThreadDescription( hnd, &tmp );
-            char buf[256];
-            if( tmp )
+            if ( SUCCEEDED( _GetThreadDescription( hnd, &tmp ) ) )
             {
+                char buf[256];
                 auto ret = wcstombs( buf, tmp, 256 );
+                LocalFree(tmp);
                 if( ret != 0 )
                 {
                     threadName = CopyString( buf, ret );

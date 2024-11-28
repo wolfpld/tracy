@@ -1467,7 +1467,7 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
     pipe(m_pipe);
 #  if defined __APPLE__ || defined BSD
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default 
@@ -1480,7 +1480,7 @@ Profiler::Profiler()
     fcntl( m_pipe[1], F_SETFL, O_NONBLOCK );
 #endif
 
-#if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME)
+#if !defined(__EMSCRIPTEN__) && (!defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME))
     SpawnWorkerThreads();
 #endif
 }

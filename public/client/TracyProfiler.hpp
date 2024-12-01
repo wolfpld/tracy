@@ -114,11 +114,11 @@ struct LuaZoneState
 
 
 #define TracyLfqPrepare( _type ) \
-    moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
-    auto __token = GetToken(); \
+    tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+    auto __token = tracy::GetToken(); \
     auto& __tail = __token->get_tail_index(); \
     auto item = __token->enqueue_begin( __magic ); \
-    MemWrite( &item->hdr.type, _type );
+    tracy::MemWrite( &item->hdr.type, _type );
 
 #define TracyLfqCommit \
     __tail.store( __magic + 1, std::memory_order_release );
@@ -136,11 +136,11 @@ struct LuaZoneState
 
 #ifdef TRACY_FIBERS
 #  define TracyQueuePrepare( _type ) \
-    auto item = Profiler::QueueSerial(); \
-    MemWrite( &item->hdr.type, _type );
+    auto item = tracy::Profiler::QueueSerial(); \
+    tracy::MemWrite( &item->hdr.type, _type );
 #  define TracyQueueCommit( _name ) \
-    MemWrite( &item->_name.thread, GetThreadHandle() ); \
-    Profiler::QueueSerialFinish();
+    tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
+    tracy::Profiler::QueueSerialFinish();
 #  define TracyQueuePrepareC( _type ) \
     auto item = tracy::Profiler::QueueSerial(); \
     tracy::MemWrite( &item->hdr.type, _type );

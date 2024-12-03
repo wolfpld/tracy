@@ -752,11 +752,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
         if( m_allowStringModification )
         {
-            m_data.stringData.push_back( { dst, ssz } );
+            m_data.stringData.push_back( StringData(dst, ssz) );
         }
         else
         {
-            m_data.stringData[i] = { dst, ssz };
+            m_data.stringData[i] = StringData(dst, ssz );
         }
 
         pointerMap.emplace( ptr, dst );

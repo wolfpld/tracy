@@ -900,6 +900,8 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
     ImGui::SameLine();
+    ToggleButton( ICON_FA_CUBE " Blobs", m_showBlobs );
+    ImGui::SameLine();
     ToggleButton( ICON_FA_MAGNIFYING_GLASS " Find", m_findZone.show );
     ImGui::SameLine();
     ToggleButton( ICON_FA_ARROW_UP_WIDE_SHORT " Statistics", m_showStatistics );
@@ -1132,6 +1134,7 @@ bool View::DrawImpl()
 
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
+    if( m_showBlobs ) DrawBlobs();
     if( m_showFlameGraph ) DrawFlameGraph();
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();

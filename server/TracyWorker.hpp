@@ -275,6 +275,12 @@ private:
         bool isInline;
     };
 
+    struct StringData
+    {
+        const char *c;
+        size_t sz;
+    };
+
     struct DataBlock
     {
         std::mutex lock;
@@ -282,6 +288,7 @@ private:
         FrameData* framesBase;
         Vector<GpuCtxData*> gpuData;
         Vector<short_ptr<MessageData>> messages;
+        Vector<short_ptr<BlobData>> blobs;
         StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         Vector<ZoneExtra> zoneExtra;
@@ -299,7 +306,7 @@ private:
         char cpuManufacturer[13];
 
         unordered_flat_map<uint64_t, const char*> strings;
-        Vector<const char*> stringData;
+        Vector<StringData> stringData;
         unordered_flat_map<charutil::StringKey, uint32_t, charutil::StringKey::Hasher, charutil::StringKey::Comparator> stringMap;
         unordered_flat_map<uint64_t, const char*> threadNames;
         unordered_flat_map<uint64_t, std::pair<const char*, const char*>> externalNames;
@@ -535,6 +542,7 @@ public:
 
     const unordered_flat_map<uint32_t, LockMap*>& GetLockMap() const { return m_data.lockMap; }
     const Vector<short_ptr<MessageData>>& GetMessages() const { return m_data.messages; }
+    const Vector<short_ptr<BlobData>>& GetBlobs() const { return m_data.blobs; }
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
@@ -583,6 +591,7 @@ public:
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadName( uint64_t id ) const;
+    const char* GetData( const StringRef& ref, size_t *sz ) const;
     bool IsThreadLocal( uint64_t id );
     bool IsThreadFiber( uint64_t id );
     const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
@@ -731,6 +740,8 @@ private:
     tracy_force_inline void ProcessMessageColorCallstack( const QueueMessageColor& ev );
     tracy_force_inline void ProcessMessageLiteralColorCallstack( const QueueMessageColorLiteral& ev );
     tracy_force_inline void ProcessMessageAppInfo( const QueueMessage& ev );
+    tracy_force_inline void ProcessBlob( const QueueBlobData& ev );
+    tracy_force_inline void ProcessBlobCallstack( const QueueBlobData& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
     tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev, bool serial );
     tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool serial );
@@ -822,6 +833,8 @@ private:
     void ReconstructMemAllocPlot( MemData& memdata );
 
     void InsertMessageData( MessageData* msg );
+
+    void InsertBlobData( BlobData* blob );
 
     ThreadData* NoticeThreadReal( uint64_t thread );
     ThreadData* NewThread( uint64_t thread, bool fiber, int32_t groupHint );

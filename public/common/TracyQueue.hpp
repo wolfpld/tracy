@@ -16,6 +16,8 @@ enum class QueueType : uint8_t
     MessageCallstack,
     MessageColorCallstack,
     MessageAppInfo,
+    Blob,
+    BlobCallstack,
     ZoneBeginAllocSrcLoc,
     ZoneBeginAllocSrcLocCallstack,
     CallstackSerial,
@@ -395,6 +397,23 @@ struct QueueMessageColorFatThread : public QueueMessageColorFat
     uint32_t thread;
 };
 
+struct QueueBlob
+{
+    int64_t time;
+};
+
+struct QueueBlobData : public QueueBlob
+{
+    uint64_t encoding;
+    uint64_t data;      // ptr
+    uint16_t size;
+};
+
+struct QueueBlobDataThread : public QueueBlobData
+{
+    uint32_t thread;
+};
+
 // Don't change order, only add new entries at the end, this is also used on trace dumps!
 enum class GpuContextType : uint8_t
 {
@@ -740,6 +759,9 @@ struct QueueItem
         QueueMessageFatThread messageFatThread;
         QueueMessageColorFat messageColorFat;
         QueueMessageColorFatThread messageColorFatThread;
+        QueueBlob blob;
+        QueueBlobData blobData;
+        QueueBlobDataThread blobDataThread;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneBeginLean gpuZoneBeginLean;
@@ -797,6 +819,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // app info
+    sizeof( QueueHeader ) + sizeof( QueueBlobData ),
+    sizeof( QueueHeader ) + sizeof( QueueBlobData ),            // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location, callstack
     sizeof( QueueHeader ),                                  // callstack memory

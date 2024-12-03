@@ -2273,6 +2273,11 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.messageFat.text );
         tracy_free( (void*)ptr );
         break;
+    case QueueType::Blob:
+    case QueueType::BlobCallstack:
+        ptr = MemRead<uint64_t>( &item.blobData.data );
+        tracy_free( (void*)ptr );
+        break;
     case QueueType::ZoneBeginAllocSrcLoc:
     case QueueType::ZoneBeginAllocSrcLocCallstack:
         ptr = MemRead<uint64_t>( &item.zoneBegin.srcloc );
@@ -2454,6 +2459,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 #ifndef TRACY_ON_DEMAND
                         tracy_free_fast( (void*)ptr );
 #endif
+                        break;
+                    case QueueType::Blob:
+                    case QueueType::BlobCallstack:
+                        ptr = MemRead<uint64_t>( &item->blobData.data );
+                        size = MemRead<uint16_t>( &item->blobData.size );
+                        SendSingleString( (const char*)ptr, size );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::ZoneBeginAllocSrcLoc:
                     case QueueType::ZoneBeginAllocSrcLocCallstack:
@@ -2977,6 +2989,16 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     ThreadCtxCheckSerial( messageColorFatThread );
                     ptr = MemRead<uint64_t>( &item->messageColorFat.text );
                     uint16_t size = MemRead<uint16_t>( &item->messageColorFat.size );
+                    SendSingleString( (const char*)ptr, size );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
+                case QueueType::Blob:
+                case QueueType::BlobCallstack:
+                {
+                    ThreadCtxCheckSerial( blobDataThread );
+                    ptr = MemRead<uint64_t>( &item->blobData.data );
+                    uint16_t size = MemRead<uint16_t>( &item->blobData.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
                     break;

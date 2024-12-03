@@ -253,6 +253,8 @@ private:
     void DrawOptions();
     void DrawMessages();
     void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
+    void DrawBlobs();
+    void DrawBlobLine( const BlobData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
     void AccumulationModeComboBox();
     void DrawStatistics();
@@ -387,6 +389,7 @@ private:
     void UpdateTitle();
 
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
+    unordered_flat_map<uint64_t, bool> m_visibleBlobThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;
     unordered_flat_map<uint64_t, bool> m_flameGraphThread;
     unordered_flat_map<const void*, int> m_gpuDrift;
@@ -401,6 +404,16 @@ private:
         if( it == m_visibleMsgThread.end() )
         {
             it = m_visibleMsgThread.emplace( thread, true ).first;
+        }
+        return it->second;
+    }
+
+    tracy_force_inline bool& VisibleBlobThread( uint64_t thread )
+    {
+        auto it = m_visibleBlobThread.find( thread );
+        if( it == m_visibleBlobThread.end() )
+        {
+            it = m_visibleBlobThread.emplace( thread, true ).first;
         }
         return it->second;
     }
@@ -460,8 +473,11 @@ private:
     LockHighlight m_lockHighlight { -1 };
     LockHighlight m_nextLockHighlight;
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
+    DecayValue<const BlobData*> m_blobHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
     DecayValue<const MessageData*> m_msgToFocus = nullptr;
+    DecayValue<const BlobData*> m_blobToFocus = nullptr;
+    DecayValue<const BlobData*> m_blobSelected = nullptr;
     const GpuEvent* m_gpuInfoWindow = nullptr;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
@@ -478,11 +494,17 @@ private:
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
+    bool m_blobsScrollBottom;
+    ImGuiTextFilter m_blobFilter;
     bool m_showMessageImages = false;
     int m_visibleMessages = 0;
     size_t m_prevMessages = 0;
     bool m_messagesShowCallstack = false;
     Vector<uint32_t> m_msgList;
+    int m_visibleBlobs = 0;
+    size_t m_prevBlobs = 0;
+    bool m_blobsShowCallstack = false;
+    Vector<uint32_t> m_blobList;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;
@@ -505,6 +527,7 @@ private:
 
     bool m_showOptions = false;
     bool m_showMessages = false;
+    bool m_showBlobs = false;
     bool m_showStatistics = false;
     bool m_showInfo = false;
     bool m_showPlayback = false;

@@ -484,6 +484,28 @@ public:
         TracyLfqCommit;
     }
 
+    static tracy_force_inline void Blob( uint64_t encoding, const void* data, size_t size, int callstack )
+    {
+        assert( size < (std::numeric_limits<uint16_t>::max)() );
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        if( callstack != 0 )
+        {
+            tracy::GetProfiler().SendCallstack( callstack );
+        }
+
+        auto ptr = tracy_malloc( size );
+        memcpy( ptr, data, size );
+
+        TracyQueuePrepare( callstack == 0 ? QueueType::Blob : QueueType::BlobCallstack );
+        MemWrite( &item->blobData.time, GetTime() );
+        MemWrite( &item->blobData.encoding, encoding );
+        MemWrite( &item->blobData.data, (uint64_t)ptr );
+        MemWrite( &item->blobData.size, (uint16_t)size );
+        TracyQueueCommit( blobDataThread );
+    }
+
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size, bool secure )
     {
         if( secure && !ProfilerAvailable() ) return;

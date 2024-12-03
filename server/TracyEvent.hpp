@@ -613,6 +613,14 @@ struct MessageData
 
 enum { MessageDataSize = sizeof( MessageData ) };
 
+struct BlobData
+{
+    int64_t time;
+    int64_t encoding;
+    StringRef ref;
+    uint16_t thread;
+    Int24 callstack;
+};
 
 struct PlotItem
 {
@@ -673,6 +681,7 @@ struct ThreadData
     Vector<short_ptr<ZoneEvent>> timeline;
     Vector<short_ptr<ZoneEvent>> stack;
     Vector<short_ptr<MessageData>> messages;
+    Vector<short_ptr<BlobData>> blobs;
     uint32_t nextZoneId;
     Vector<uint32_t> zoneIdStack;
 #ifndef TRACY_NO_STATISTICS

@@ -53,6 +53,7 @@ set(SERVER_FILES
     TracyUtility.cpp
     TracyView.cpp
     TracyView_Annotations.cpp
+    TracyView_Blobs.cpp
     TracyView_Callstack.cpp
     TracyView_Compare.cpp
     TracyView_ConnectionState.cpp

@@ -126,6 +126,7 @@ enum class QueueType : uint8_t
     SymbolCode,
     SourceCode,
     FiberName,
+    BlobFragment,
     NUM_TYPES
 };
 
@@ -931,6 +932,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // symbol code
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // source code
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // fiber name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // blob fragment
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

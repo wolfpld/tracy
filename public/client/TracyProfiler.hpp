@@ -790,6 +790,8 @@ public:
     void SendSecondString( const char* ptr ) { SendSecondString( ptr, strlen( ptr ) ); }
     void SendSecondString( const char* ptr, size_t len );
 
+    void SendBlob( const char* ptr, size_t len );
+
 
     // Allocated source location data layout:
     //  2b  payload size

@@ -2464,7 +2464,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     case QueueType::BlobCallstack:
                         ptr = MemRead<uint64_t>( &item->blobData.data );
                         size = MemRead<uint16_t>( &item->blobData.size );
-                        SendSingleString( (const char*)ptr, size );
+                        SendBlob( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::ZoneBeginAllocSrcLoc:
@@ -2999,7 +2999,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     ThreadCtxCheckSerial( blobDataThread );
                     ptr = MemRead<uint64_t>( &item->blobData.data );
                     uint16_t size = MemRead<uint16_t>( &item->blobData.size );
-                    SendSingleString( (const char*)ptr, size );
+                    SendBlob( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
                     break;
                 }
@@ -3265,6 +3265,23 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
     AppendDataUnsafe( &item, QueueDataSize[(int)type] );
     AppendDataUnsafe( &l32, sizeof( l32 ) );
     AppendDataUnsafe( ptr, l32 );
+}
+
+void Profiler::SendBlob( const char* ptr, size_t len )
+{
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::BlobFragment );
+    while (len)
+    {
+        uint32_t fragment_size = len > TargetFrameSize ? TargetFrameSize : len;
+        len -= fragment_size;
+
+        NeedDataSize( QueueDataSize[(int)QueueType::BlobFragment] + sizeof( fragment_size ) + fragment_size );
+
+        AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::BlobFragment] );
+        AppendDataUnsafe( &fragment_size, sizeof( fragment_size ) );
+        AppendDataUnsafe( ptr, fragment_size );
+    }
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )

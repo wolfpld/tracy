@@ -3273,7 +3273,8 @@ void Profiler::SendBlob( const char* ptr, size_t len )
     MemWrite( &item.hdr.type, QueueType::BlobFragment );
     while (len)
     {
-        uint32_t fragment_size = len > TargetFrameSize ? TargetFrameSize : len;
+        const uint32_t max_fragment_size = TargetFrameSize - QueueDataSize[(int)QueueType::BlobFragment] - sizeof( uint32_t );
+        uint32_t fragment_size = len > max_fragment_size ? max_fragment_size : len;
         len -= fragment_size;
 
         NeedDataSize( QueueDataSize[(int)QueueType::BlobFragment] + sizeof( fragment_size ) + fragment_size );

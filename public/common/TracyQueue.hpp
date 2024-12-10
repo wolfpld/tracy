@@ -407,12 +407,7 @@ struct QueueBlobData : public QueueBlob
 {
     uint64_t encoding;
     uint64_t data;      // ptr
-    uint16_t size;
-};
-
-struct QueueBlobDataThread : public QueueBlobData
-{
-    uint32_t thread;
+    uint32_t size;
 };
 
 // Don't change order, only add new entries at the end, this is also used on trace dumps!
@@ -762,7 +757,6 @@ struct QueueItem
         QueueMessageColorFatThread messageColorFatThread;
         QueueBlob blob;
         QueueBlobData blobData;
-        QueueBlobDataThread blobDataThread;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneBeginLean gpuZoneBeginLean;

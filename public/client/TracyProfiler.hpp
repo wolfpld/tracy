@@ -502,7 +502,7 @@ public:
         MemWrite( &item->blobData.time, GetTime() );
         MemWrite( &item->blobData.encoding, encoding );
         MemWrite( &item->blobData.data, (uint64_t)ptr );
-        MemWrite( &item->blobData.size, (uint16_t)size );
+        MemWrite( &item->blobData.size, (uint32_t)size );
         TracyQueueCommit( blobDataThread );
     }
 

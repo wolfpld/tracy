@@ -1,4 +1,4 @@
-project('tracy', ['cpp'], version: '0.11.0', meson_version: '>=1.1.0')
+project('tracy', ['cpp'], version: '0.11.1', meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
 
 # internal compiler flags
 tracy_compile_args = []
@@ -189,8 +189,9 @@ tracy_public_include_dirs = include_directories('public')
 
 compiler = meson.get_compiler('cpp')
 override_options = []
-if compiler.get_id() != 'msvc' and compiler.get_id() != 'clang-cl'
-  override_options += 'cpp_std=c++11'
+# MSVC c++ lib does not work properly with C++11 and compilation may fail
+if compiler.has_define('_MSC_VER') and get_option('cpp_std') == 'c++11'
+  override_options += 'cpp_std=c++14'
 endif
 
 tracy_compile_args += tracy_common_args

@@ -1057,6 +1057,8 @@ private:
     DataBlock m_data;
     MbpsBlock m_mbpsData;
 
+    unsigned char *m_blob;
+
     int m_traceVersion;
     std::atomic<uint8_t> m_handshake { 0 };
 

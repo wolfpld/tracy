@@ -275,6 +275,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
+    , m_blob( nullptr )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
@@ -3063,6 +3064,9 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 AddFiberName( ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
+            case QueueType::BlobFragment:
+                m_serverQuerySpaceLeft++;
+                break;
             case QueueType::PlotName:
             case QueueType::FrameName:
             case QueueType::ExternalName:
@@ -3093,6 +3097,33 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             AddSecondString( ptr, sz );
             ptr += sz;
             break;
+        case QueueType::BlobFragment:
+        {
+            ptr += sizeof( QueueHeader );
+            uint32_t full_size;
+            memcpy( &full_size, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            uint32_t offset;
+            memcpy( &offset, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            if ( offset == 0 )
+            {
+                assert( m_blob == nullptr );
+                m_blob = (unsigned char *)malloc( full_size );
+            }
+            assert( m_blob != nullptr );
+            memcpy( m_blob, ptr, sz);
+            if (offset + sz > full_size)
+            {
+                AddSingleString( (const char*)m_blob, full_size );
+                free( m_blob );
+                m_blob = nullptr;
+            }
+            ptr += sz;
+            break;
+        }
         default:
             ptr += QueueDataSize[ev.hdr.idx];
             switch( ev.hdr.type )
@@ -3218,6 +3249,34 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             }
             ptr += sz;
         }
+        else if( ev.hdr.type == QueueType::BlobFragment )
+        {
+            uint32_t full_size;
+            memcpy( &full_size, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            uint32_t offset;
+            memcpy( &offset, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            uint32_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            if ( offset == 0 )
+            {
+                assert( m_blob == nullptr );
+                m_blob = (unsigned char *)malloc( full_size );
+            }
+            assert( m_blob != nullptr );
+            memcpy( m_blob, ptr, sz);
+            if (offset + sz >= full_size)
+            {
+                AddSingleString((const char*)m_blob, full_size );
+                free( m_blob );
+                m_blob = nullptr;
+            }
+            m_serverQuerySpaceLeft++;
+            ptr += sz;
+        }
+
         else
         {
             uint16_t sz;
@@ -3272,6 +3331,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
     else
     {
         uint16_t sz;
+        uint32_t sz32;
         switch( ev.hdr.type )
         {
         case QueueType::SingleStringData:
@@ -3287,6 +3347,12 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( sz );
             AddSecondString( ptr, sz );
             ptr += sz;
+            return true;
+        case QueueType::BlobFragment:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz32, ptr, sizeof( sz32 ) );
+            ptr += sizeof( sz32 );
+            ptr += sz32;
             return true;
         default:
             ptr += QueueDataSize[ev.hdr.idx];

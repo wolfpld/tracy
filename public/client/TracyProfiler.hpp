@@ -486,7 +486,6 @@ public:
 
     static tracy_force_inline void Blob( uint64_t encoding, const void* data, size_t size, int callstack )
     {
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif

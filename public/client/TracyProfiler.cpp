@@ -2462,11 +2462,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         break;
                     case QueueType::Blob:
                     case QueueType::BlobCallstack:
+                    {
                         ptr = MemRead<uint64_t>( &item->blobData.data );
-                        size = MemRead<uint16_t>( &item->blobData.size );
+                        auto size = MemRead<uint32_t>( &item->blobData.size );
                         SendBlob( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
                         break;
+                    }
                     case QueueType::ZoneBeginAllocSrcLoc:
                     case QueueType::ZoneBeginAllocSrcLocCallstack:
                     {
@@ -2998,7 +3000,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 {
                     ThreadCtxCheckSerial( blobDataThread );
                     ptr = MemRead<uint64_t>( &item->blobData.data );
-                    uint16_t size = MemRead<uint16_t>( &item->blobData.size );
+                    uint32_t size = MemRead<uint32_t>( &item->blobData.size );
                     SendBlob( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
                     break;
@@ -3270,18 +3272,23 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
 void Profiler::SendBlob( const char* ptr, size_t len )
 {
     QueueItem item;
+    uint32_t offset = 0;
+    uint32_t full_size = len;
     MemWrite( &item.hdr.type, QueueType::BlobFragment );
     while (len)
     {
-        const uint32_t max_fragment_size = TargetFrameSize - QueueDataSize[(int)QueueType::BlobFragment] - sizeof( uint32_t );
+        const uint32_t max_fragment_size = TargetFrameSize - QueueDataSize[(int)QueueType::BlobFragment] - 3 * sizeof ( uint32_t );
         uint32_t fragment_size = len > max_fragment_size ? max_fragment_size : len;
         len -= fragment_size;
 
-        NeedDataSize( QueueDataSize[(int)QueueType::BlobFragment] + sizeof( fragment_size ) + fragment_size );
+        NeedDataSize( QueueDataSize[(int)QueueType::BlobFragment] + 2 * sizeof ( uint32_t ) + sizeof( fragment_size ) + fragment_size );
 
         AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::BlobFragment] );
+        AppendDataUnsafe( &full_size, sizeof(uint32_t) );
+        AppendDataUnsafe( &offset, sizeof(uint32_t) );
         AppendDataUnsafe( &fragment_size, sizeof( fragment_size ) );
-        AppendDataUnsafe( ptr, fragment_size );
+        AppendDataUnsafe( ptr + offset, fragment_size );
+        offset += fragment_size;
     }
 }
 

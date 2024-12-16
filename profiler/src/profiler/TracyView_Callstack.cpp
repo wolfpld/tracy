@@ -107,7 +107,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( "External frames", &m_showExternalFrames );
+    SmallCheckbox( ICON_FA_SHIELD_HALVED " External frames", &m_showExternalFrames );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();

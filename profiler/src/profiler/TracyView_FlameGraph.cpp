@@ -210,50 +210,78 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
 
 void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& data, const Vector<SampleData>& samples )
 {
+    struct FrameCache
+    {
+        uint64_t symaddr;
+        StringIdx name;
+    };
+
+    std::vector<FrameCache> cache;
+
     for( auto& v : samples )
     {
+        cache.clear();
+
         const auto cs = v.callstack.Val();
         const auto& callstack = worker.GetCallstack( cs );
-
-        auto vec = &data;
         const auto csz = callstack.size();
-        for( size_t i=csz; i>0; i--)
+        if( m_flameExternal )
         {
-            auto frameData = worker.GetCallstackFrame( callstack[i-1] );
-            if( frameData )
+            for( size_t i=csz; i>0; i-- )
             {
-                for( uint8_t j=frameData->size; j>0; j-- )
+                auto frameData = worker.GetCallstackFrame( callstack[i-1] );
+                if( frameData )
                 {
-                    const auto frame = frameData->data[j-1];
-                    const auto symaddr = frame.symAddr;
-                    if( symaddr != 0 )
+                    for( uint8_t j=frameData->size; j>0; j-- )
                     {
-                        bool active = true;
-                        if( !m_flameExternal )
+                        const auto frame = frameData->data[j-1];
+                        const auto symaddr = frame.symAddr;
+                        if( symaddr != 0 )
+                        {
+                            cache.emplace_back( FrameCache { symaddr, frame.name } );
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for( size_t i=csz; i>0; i-- )
+            {
+                auto frameData = worker.GetCallstackFrame( callstack[i-1] );
+                if( frameData )
+                {
+                    for( uint8_t j=frameData->size; j>0; j-- )
+                    {
+                        const auto frame = frameData->data[j-1];
+                        const auto symaddr = frame.symAddr;
+                        if( symaddr != 0 )
                         {
                             auto filename = m_worker.GetString( frame.file );
                             auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-                            if( IsFrameExternal( filename, image ) )
+                            if( !IsFrameExternal( filename, image ) )
                             {
-                                active = false;
-                            }
-                        }
-                        if( active )
-                        {
-                            auto it = std::find_if( vec->begin(), vec->end(), [symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
-                            if( it == vec->end() )
-                            {
-                                vec->emplace_back( FlameGraphItem { (int64_t)symaddr, 1, frame.name } );
-                                vec = &vec->back().children;
-                            }
-                            else
-                            {
-                                it->time++;
-                                vec = &it->children;
+                                cache.emplace_back( FrameCache { symaddr, frame.name } );
                             }
                         }
                     }
                 }
+            }
+        }
+
+        auto vec = &data;
+        for( auto& v : cache )
+        {
+            auto it = std::find_if( vec->begin(), vec->end(), [symaddr = v.symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
+            if( it == vec->end() )
+            {
+                vec->emplace_back( FlameGraphItem { (int64_t)v.symaddr, 1, v.name } );
+                vec = &vec->back().children;
+            }
+            else
+            {
+                it->time++;
+                vec = &it->children;
             }
         }
     }

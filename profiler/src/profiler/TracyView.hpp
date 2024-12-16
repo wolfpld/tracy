@@ -519,6 +519,8 @@ private:
     int m_flameMode = 0;
     bool m_flameSort = false;
     bool m_flameRunningTime = false;
+    bool m_flameExternal = true;
+    bool m_flameExternalTail = true;
     int m_statSampleLocation = 2;
     bool m_statHideUnknown = true;
     bool m_showAllSymbols = false;

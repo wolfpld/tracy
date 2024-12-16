@@ -639,6 +639,19 @@ void View::DrawFlameGraph()
             assert( !m_flameRunningTime );
         }
     }
+    else
+    {
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+        ImGui::Text( ICON_FA_SHIELD_HALVED "External" );
+        ImGui::SameLine();
+        if( ImGui::Checkbox( "Frames", &m_flameExternal ) ) m_flameGraphInvariant.Reset();
+        ImGui::SameLine();
+        if( m_flameExternal ) ImGui::BeginDisabled();
+        if( ImGui::Checkbox( "Tails", &m_flameExternalTail ) ) m_flameGraphInvariant.Reset();
+        if( m_flameExternal ) ImGui::EndDisabled();
+    }
 
     auto& td = m_worker.GetThreadData();
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );

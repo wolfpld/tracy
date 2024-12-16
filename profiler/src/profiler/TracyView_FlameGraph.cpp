@@ -228,16 +228,29 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                     const auto symaddr = frame.symAddr;
                     if( symaddr != 0 )
                     {
-                        auto it = std::find_if( vec->begin(), vec->end(), [symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
-                        if( it == vec->end() )
+                        bool active = true;
+                        if( !m_flameExternal )
                         {
-                            vec->emplace_back( FlameGraphItem { (int64_t)symaddr, 1, frame.name } );
-                            vec = &vec->back().children;
+                            auto filename = m_worker.GetString( frame.file );
+                            auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+                            if( IsFrameExternal( filename, image ) )
+                            {
+                                active = false;
+                            }
                         }
-                        else
+                        if( active )
                         {
-                            it->time++;
-                            vec = &it->children;
+                            auto it = std::find_if( vec->begin(), vec->end(), [symaddr]( const auto& v ) { return v.srcloc == symaddr; } );
+                            if( it == vec->end() )
+                            {
+                                vec->emplace_back( FlameGraphItem { (int64_t)symaddr, 1, frame.name } );
+                                vec = &vec->back().children;
+                            }
+                            else
+                            {
+                                it->time++;
+                                vec = &it->children;
+                            }
                         }
                     }
                 }

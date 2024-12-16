@@ -214,6 +214,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
     {
         uint64_t symaddr;
         StringIdx name;
+        bool external;
     };
 
     std::vector<FrameCache> cache;
@@ -244,7 +245,7 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                 }
             }
         }
-        else
+        else if( !m_flameExternalTail )
         {
             for( size_t i=csz; i>0; i-- )
             {
@@ -265,6 +266,41 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
                             }
                         }
                     }
+                }
+            }
+        }
+        else
+        {
+            for( size_t i=csz; i>0; i-- )
+            {
+                auto frameData = worker.GetCallstackFrame( callstack[i-1] );
+                if( frameData )
+                {
+                    for( uint8_t j=frameData->size; j>0; j-- )
+                    {
+                        const auto frame = frameData->data[j-1];
+                        const auto symaddr = frame.symAddr;
+                        if( symaddr != 0 )
+                        {
+                            auto filename = m_worker.GetString( frame.file );
+                            auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+                            cache.emplace_back( FrameCache { symaddr, frame.name, IsFrameExternal( filename, image ) } );
+                        }
+                    }
+                }
+            }
+
+            bool tail = true;
+            for( size_t i=cache.size(); i>0; i-- )
+            {
+                const auto idx = i-1;
+                if( !cache[idx].external )
+                {
+                    tail = false;
+                }
+                else if( !tail )
+                {
+                    cache.erase( cache.begin() + idx );
                 }
             }
         }

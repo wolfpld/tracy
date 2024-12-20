@@ -23,7 +23,9 @@ else()
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    add_compile_options(-fexperimental-library)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        add_compile_options(-fexperimental-library)
+    endif()
 endif()
 
 if(WIN32)

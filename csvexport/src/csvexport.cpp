@@ -30,6 +30,7 @@ void print_usage_exit(int e)
     fprintf(stderr, "  -e, --self        Get self times\n");
     fprintf(stderr, "  -u, --unwrap      Report each zone event\n");
     fprintf(stderr, "  -m, --messages    Report only messages\n");
+    fprintf(stderr, "  -p, --plot        Report plot data (only with -u)\n");
 
     exit(e);
 }
@@ -42,6 +43,7 @@ struct Args {
     bool self_time;
     bool unwrap;
     bool unwrapMessages;
+    bool plot;
 };
 
 Args parse_args(int argc, char** argv)
@@ -61,11 +63,12 @@ Args parse_args(int argc, char** argv)
         { "self", no_argument, NULL, 'e' },
         { "unwrap", no_argument, NULL, 'u' },
         { "messages", no_argument, NULL, 'm' },
+        { "plot", no_argument, NULL, 'p' },
         { NULL, 0, NULL, 0 }
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "hf:s:ceum", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "hf:s:ceump", long_opts, NULL)) != -1)
     {
         switch (c)
         {
@@ -89,6 +92,9 @@ Args parse_args(int argc, char** argv)
             break;
         case 'm':
             args.unwrapMessages = true;
+            break;
+        case 'p':
+            args.plot = true;
             break;
         default:
             print_usage_exit(1);
@@ -270,7 +276,7 @@ int main(int argc, char** argv)
     if (args.unwrap)
     {
         columns = {
-            "name", "src_file", "src_line", "ns_since_start", "exec_time_ns", "thread"
+            "name", "src_file", "src_line", "ns_since_start", "exec_time_ns", "thread", "value"
         };
     }
     else
@@ -346,6 +352,27 @@ int main(int argc, char** argv)
 
             std::string row = join(values, args.separator);
             printf("%s\n", row.data());
+        }
+    }
+
+    if(args.plot && args.unwrap)
+    {
+        auto& plots = worker.GetPlots();
+        for(const auto& plot : plots)
+        {
+            std::vector<std::string> values(columns.size());
+            values[0] = worker.GetString(plot->name);
+
+            for(const auto& val : plot->data)
+            {
+                if (args.unwrap)
+                {
+                    values[3] = std::to_string(val.time.Val());
+                    values[6] = std::to_string(val.val);
+                }
+                std::string row = join(values, args.separator);
+                printf("%s\n", row.data());
+            }
         }
     }
 

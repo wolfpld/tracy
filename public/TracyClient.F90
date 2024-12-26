@@ -75,10 +75,22 @@ module tracy
 
   ! tracy_lockable_context_data and related stuff is missed since Fortran does not have support of mutexes
 
+  interface
+    subroutine tracy_startup_profiler() bind(C, name="___tracy_startup_profiler")
+    end subroutine tracy_startup_profiler
+    subroutine tracy_shutdown_profiler() bind(C, name="___tracy_shutdown_profiler")
+    end subroutine tracy_shutdown_profiler
+    function impl_tracy_profiler_started() bind(C, name="___tracy_profiler_started")
+      import
+      integer(c_int32_t) :: impl_tracy_profiler_started
+    end function impl_tracy_profiler_started
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
   public :: tracy_set_thread_name
+  public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -87,4 +99,8 @@ contains
     alloc_name = name // c_null_char
     call impl_tracy_set_thread_name(c_loc(alloc_name))
   end subroutine tracy_set_thread_name
+
+  logical(1) function tracy_profiler_started()
+    tracy_profiler_started = impl_tracy_profiler_started() /= 0_c_int
+  end function tracy_profiler_started
 end module tracy

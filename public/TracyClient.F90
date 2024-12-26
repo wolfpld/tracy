@@ -1,5 +1,6 @@
 module tracy
-  use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char, &
+    & c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float
   implicit none
   private
   ! skipped: TracyPlotFormatEnum
@@ -9,6 +10,73 @@ module tracy
       type(c_ptr) :: name
     end subroutine impl_tracy_set_thread_name
   end interface
+
+  type, bind(C) :: tracy_source_location_data
+    type(c_ptr) :: name
+    type(c_ptr) :: function
+    type(c_ptr) :: file
+    integer(c_int32_t) :: line
+    integer(c_int32_t) :: color
+  end type
+
+  type, bind(C) :: tracy_c_zone_context
+    integer(c_int32_t) :: id
+    integer(c_int32_t) :: active
+  end type
+
+  type, bind(C) :: tracy_gpu_time_data
+    integer(c_int64_t) :: gpuTime
+    integer(c_int16_t) :: queryId
+    integer(c_int8_t) :: context
+  end type
+
+  type, bind(C) :: tracy_gpu_zone_begin_data
+    integer(c_int64_t) :: srcloc
+    integer(c_int16_t) :: queryId
+    integer(c_int8_t) :: context
+  end type
+
+  type, bind(C) :: tracy_gpu_zone_begin_callstack_data
+    integer(c_int64_t) :: srcloc
+    integer(c_int32_t) :: depth
+    integer(c_int16_t) :: queryId
+    integer(c_int8_t) :: context
+  end type
+
+  type, bind(C) :: tracy_gpu_zone_end_data
+    integer(c_int16_t) :: queryId
+    integer(c_int8_t) :: context
+  end type
+
+  type, bind(C) :: tracy_gpu_new_context_data
+    integer(c_int64_t) :: gpuTime
+    real(c_float) :: period
+    integer(c_int8_t) :: context
+    integer(c_int8_t) :: flags
+    integer(c_int8_t) :: type
+  end type
+
+  type, bind(C) :: tracy_gpu_context_name_data
+    integer(c_int8_t) :: context
+    type(c_ptr) :: name
+    integer(c_int16_t) :: len
+  end type
+
+  type, bind(C) :: tracy_gpu_calibration_data
+    integer(c_int64_t) :: gpuTime
+    integer(c_int64_t) :: cpuDelta
+    integer(c_int8_t) :: context
+  end type
+
+  type, bind(C) :: tracy_gpu_time_sync_data
+    integer(c_int64_t) :: gpuTime
+    integer(c_int8_t) :: context
+  end type
+
+  ! tracy_lockable_context_data and related stuff is missed since Fortran does not have support of mutexes
+
+  !
+  public :: tracy_c_zone_context
   !
   public :: tracy_set_thread_name
 contains

@@ -113,12 +113,40 @@ module tracy
     end function impl_tracy_alloc_srcloc_name
   end interface
 
+  interface
+    type(tracy_c_zone_context) function impl_tracy_emit_zone_begin_callstack(srcloc, depth, active) &
+            bind(C, name="___tracy_emit_zone_begin_callstack")
+      import
+      type(tracy_source_location_data), intent(in) :: srcloc
+      integer(c_int32_t), intent(in), value :: depth
+      integer(c_int32_t), intent(in), value :: active
+    end function impl_tracy_emit_zone_begin_callstack
+    type(tracy_c_zone_context) function impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth, active) &
+            bind(C, name="___tracy_emit_zone_begin_alloc_callstack")
+      import
+      integer(c_int64_t), intent(in), value :: srcloc
+      integer(c_int32_t), intent(in), value :: depth
+      integer(c_int32_t), intent(in), value :: active
+    end function impl_tracy_emit_zone_begin_alloc_callstack
+  end interface
+  interface tracy_zone_begin
+    module procedure tracy_emit_zone_begin_id, tracy_emit_zone_begin_type
+  end interface tracy_zone_begin
+
+  interface
+    subroutine tracy_zone_end(ctx) bind(C, name="___tracy_emit_zone_end")
+      import
+      type(tracy_c_zone_context), intent(in), value :: ctx
+    end subroutine tracy_zone_end
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
   public :: tracy_alloc_srcloc
+  public :: tracy_zone_begin, tracy_zone_end
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -155,4 +183,43 @@ contains
             color_)
     endif
   end function tracy_alloc_srcloc
+
+  type(tracy_c_zone_context) function tracy_emit_zone_begin_id(srcloc, depth, active)
+    integer(c_int64_t), intent(in) :: srcloc
+    integer(c_int32_t), intent(in), optional :: depth
+    logical(1), intent(in), optional :: active
+    !
+    integer(c_int32_t) :: depth_
+    integer(c_int32_t) :: active_
+    active_ = 1_c_int32_t
+    depth_ = 0_c_int32_t
+    if (present(active)) then
+      if (active) then
+        active_ = 1_c_int32_t
+      else
+        active_ = 0_c_int32_t
+      end if
+    end if
+    if (present(depth)) depth_ = depth
+    tracy_emit_zone_begin_id = impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth_, active_)
+  end function tracy_emit_zone_begin_id
+  type(tracy_c_zone_context) function tracy_emit_zone_begin_type(srcloc, depth, active)
+    type(tracy_source_location_data), intent(in) :: srcloc
+    integer(c_int32_t), intent(in), optional :: depth
+    logical(1), intent(in), optional :: active
+    !
+    integer(c_int32_t) :: depth_
+    integer(c_int32_t) :: active_
+    active_ = 1_c_int32_t
+    depth_ = 0_c_int32_t
+    if (present(active)) then
+      if (active) then
+        active_ = 1_c_int32_t
+      else
+        active_ = 0_c_int32_t
+      end if
+    end if
+    if (present(depth)) depth_ = depth
+    tracy_emit_zone_begin_type = impl_tracy_emit_zone_begin_callstack(srcloc, depth_, active_)
+  end function tracy_emit_zone_begin_type
 end module tracy

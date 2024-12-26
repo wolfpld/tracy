@@ -1,6 +1,6 @@
 module tracy
   use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char, &
-    & c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float
+    & c_size_t, c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float
   implicit none
   private
   ! skipped: TracyPlotFormatEnum
@@ -86,11 +86,39 @@ module tracy
     end function impl_tracy_profiler_started
   end interface
 
+  interface
+    function impl_tracy_alloc_srcloc(line, source, sourceSz, function_name, functionSz, color) &
+            bind(C, name="___tracy_alloc_srcloc")
+      import
+      integer(c_int64_t) :: impl_tracy_alloc_srcloc
+      integer(c_int32_t), intent(in), value :: line
+      type(c_ptr), intent(in) :: source
+      integer(c_size_t), intent(in), value :: sourceSz
+      type(c_ptr), intent(in) :: function_name
+      integer(c_size_t), intent(in), value :: functionSz
+      integer(c_int32_t), intent(in), value :: color
+    end function impl_tracy_alloc_srcloc
+    function impl_tracy_alloc_srcloc_name(line, source, sourceSz, function_name, functionSz, zone_name, nameSz, color) &
+            bind(C, name="___tracy_alloc_srcloc_name")
+      import
+      integer(c_int64_t) :: impl_tracy_alloc_srcloc_name
+      integer(c_int32_t), intent(in), value :: line
+      type(c_ptr), intent(in) :: source
+      integer(c_size_t), intent(in), value :: sourceSz
+      type(c_ptr), intent(in) :: function_name
+      integer(c_size_t), intent(in), value :: functionSz
+      type(c_ptr), intent(in) :: zone_name
+      integer(c_size_t), intent(in), value :: nameSz
+      integer(c_int32_t), intent(in), value :: color
+    end function impl_tracy_alloc_srcloc_name
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
+  public :: tracy_alloc_srcloc
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -103,4 +131,28 @@ contains
   logical(1) function tracy_profiler_started()
     tracy_profiler_started = impl_tracy_profiler_started() /= 0_c_int
   end function tracy_profiler_started
+
+  integer(c_int64_t) function tracy_alloc_srcloc(line, source, function_name, zone_name, color)
+    integer(c_int32_t), intent(in) :: line
+    character(kind=c_char, len=*), target, intent(in) :: source, function_name
+    character(kind=c_char, len=*), target, intent(in), optional :: zone_name
+    integer(c_int32_t), intent(in), optional :: color
+    !
+    integer(c_int32_t) :: color_
+    !
+    color_ = 0_c_int32_t
+    if (present(color)) color_ = color
+    if (present(zone_name)) then
+      tracy_alloc_srcloc = impl_tracy_alloc_srcloc_name(line, &
+            c_loc(source), len(source, kind=c_size_t), &
+            c_loc(function_name), len(function_name, kind=c_size_t), &
+            c_loc(zone_name), len(zone_name, kind=c_size_t), &
+            color_)
+    else
+      tracy_alloc_srcloc = impl_tracy_alloc_srcloc(line, &
+            c_loc(source), len(source, kind=c_size_t), &
+            c_loc(function_name), len(function_name, kind=c_size_t), &
+            color_)
+    endif
+  end function tracy_alloc_srcloc
 end module tracy

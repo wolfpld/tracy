@@ -1470,7 +1470,7 @@ Profiler::Profiler()
 #ifndef _WIN32
     pipe(m_pipe);
 #  if defined __APPLE__ || defined BSD
-    // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default 
+    // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
     m_pipeBufSize = 16384;
 #  else
     m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
@@ -3157,7 +3157,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 void Profiler::SafeCopyEpilog( char* buf )
 {
     if( buf != m_safeSendBuffer ) tracy_free( buf );
-    
+
 #ifndef NDEBUG
     m_inUse.store( false );
 #endif
@@ -4117,7 +4117,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
     }
     else
     {
-        auto&& lambda = [ this, symbol ]( const char* buf, size_t size ) { 
+        auto&& lambda = [ this, symbol ]( const char* buf, size_t size ) {
             SendLongString( symbol, buf, size, QueueType::SymbolCode );
         };
 
@@ -4291,9 +4291,16 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    tracy::GetProfiler().SendCallstack( depth );
-    {
-        TracyQueuePrepareC( tracy::QueueType::ZoneBeginCallstack );
+    if (depth > 0 && tracy::has_stacktrace()) {
+        tracy::GetProfiler().SendCallstack( depth );
+        {
+            TracyQueuePrepareC( tracy::QueueType::ZoneBeginCallstack );
+            tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
+            tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+            TracyQueueCommitC( zoneBeginThread );
+        }
+    } else {
+        TracyQueuePrepareC( tracy::QueueType::ZoneBegin );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         TracyQueueCommitC( zoneBeginThread );
@@ -4356,9 +4363,16 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    tracy::GetProfiler().SendCallstack( depth );
-    {
-        TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
+    if (depth > 0 && tracy::has_stacktrace()) {
+        tracy::GetProfiler().SendCallstack( depth );
+        {
+            TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
+            tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
+            tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
+            TracyQueueCommitC( zoneBeginThread );
+        }
+    } else {
+        TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLoc );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
         TracyQueueCommitC( zoneBeginThread );

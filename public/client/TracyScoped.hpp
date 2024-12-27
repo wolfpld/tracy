@@ -34,7 +34,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
 #endif
-        if (depth > 0 && has_stacktrace()) {
+        if (depth > 0 && has_callstack()) {
             GetProfiler().SendCallstack( depth );
 
             TracyQueuePrepare( QueueType::ZoneBeginCallstack );
@@ -60,7 +60,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
 #endif
-        if (depth > 0 && has_stacktrace()) {
+        if (depth > 0 && has_callstack()) {
             GetProfiler().SendCallstack( depth );
 
             TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLocCallstack );

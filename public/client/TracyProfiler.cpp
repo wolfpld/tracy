@@ -4291,7 +4291,7 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    if (depth > 0 && tracy::has_stacktrace()) {
+    if (depth > 0 && tracy::has_callstack()) {
         tracy::GetProfiler().SendCallstack( depth );
         {
             TracyQueuePrepareC( tracy::QueueType::ZoneBeginCallstack );
@@ -4363,7 +4363,7 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    if (depth > 0 && tracy::has_stacktrace()) {
+    if (depth > 0 && tracy::has_callstack()) {
         tracy::GetProfiler().SendCallstack( depth );
         {
             TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
@@ -4477,7 +4477,7 @@ TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value )
 TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int secure ) { tracy::Profiler::MemAlloc( ptr, size, secure != 0 ); }
 TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth, int secure )
 {
-    if( depth > 0 && tracy::has_stacktrace() )
+    if( depth > 0 && tracy::has_callstack() )
     {
         tracy::Profiler::MemAllocCallstack( ptr, size, depth, secure != 0 );
     }
@@ -4489,7 +4489,7 @@ TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t siz
 TRACY_API void ___tracy_emit_memory_free( const void* ptr, int secure ) { tracy::Profiler::MemFree( ptr, secure != 0 ); }
 TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, int secure )
 {
-    if( depth > 0 && tracy::has_stacktrace() )
+    if( depth > 0 && tracy::has_callstack() )
     {
         tracy::Profiler::MemFreeCallstack( ptr, depth, secure != 0 );
     }
@@ -4501,7 +4501,7 @@ TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, 
 TRACY_API void ___tracy_emit_memory_discard( const char* name, int secure ) { tracy::Profiler::MemDiscard( name, secure != 0 ); }
 TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int secure, int depth )
 {
-    if( depth > 0 && tracy::has_stacktrace() )
+    if( depth > 0 && tracy::has_callstack() )
     {
         tracy::Profiler::MemDiscardCallstack( name, secure != 0, depth );
     }
@@ -4513,7 +4513,7 @@ TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int sec
 TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int secure, const char* name ) { tracy::Profiler::MemAllocNamed( ptr, size, secure != 0, name ); }
 TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int depth, int secure, const char* name )
 {
-    if( depth > 0 && tracy::has_stacktrace() )
+    if( depth > 0 && tracy::has_callstack() )
     {
         tracy::Profiler::MemAllocCallstackNamed( ptr, size, depth, secure != 0, name );
     }
@@ -4525,7 +4525,7 @@ TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size
 TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int secure, const char* name ) { tracy::Profiler::MemFreeNamed( ptr, secure != 0, name ); }
 TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int depth, int secure, const char* name )
 {
-    if( depth > 0 && tracy::has_stacktrace() )
+    if( depth > 0 && tracy::has_callstack() )
     {
         tracy::Profiler::MemFreeCallstackNamed( ptr, depth, secure != 0, name );
     }

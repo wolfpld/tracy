@@ -106,6 +106,11 @@ mark_as_advanced(TRACY_VERBOSE)
 set_option(TRACY_DEMANGLE "[advanced] Don't use default demangling function - You'll need to provide your own" OFF)
 mark_as_advanced(TRACY_DEMANGLE)
 
+# handle incompatible combinations
+if(TRACY_MANUAL_LIFETIME AND NOT TRACY_DELAYED_INIT)
+    message(FATAL_ERROR "TRACY_MANUAL_LIFETIME can not be activated with disabled TRACY_DELAYED_INIT")
+endif()
+
 if(NOT TRACY_STATIC)
     target_compile_definitions(TracyClient PRIVATE TRACY_EXPORTS)
     target_compile_definitions(TracyClient PUBLIC TRACY_IMPORTS)

@@ -136,7 +136,6 @@
 
 #ifndef TRACY_CALLSTACK
 #define TRACY_CALLSTACK 0
-#define TRACY_CALLSTACK_SET
 #endif
 
 #define TracyNoop tracy::ProfilerAvailable()
@@ -248,11 +247,6 @@
 #  define TracyFiberEnter( fiber ) tracy::Profiler::EnterFiber( fiber, 0 )
 #  define TracyFiberEnterHint( fiber, groupHint ) tracy::Profiler::EnterFiber( fiber, groupHint )
 #  define TracyFiberLeave tracy::Profiler::LeaveFiber()
-#endif
-
-#ifdef TRACY_CALLSTACK_SET
-#undef TRACY_CALLSTACK_SET
-#undef TRACY_CALLSTACK
 #endif
 
 #endif

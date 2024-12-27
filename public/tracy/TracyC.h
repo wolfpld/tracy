@@ -250,7 +250,6 @@ TRACY_API int ___tracy_connected(void);
 
 #ifndef TRACY_CALLSTACK
 #define TRACY_CALLSTACK 0
-#define TRACY_CALLSTACK_SET
 #endif
 
 #define TracyCZone( ctx, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,TracyLine) = { NULL, __func__,  TracyFile, (uint32_t)TracyLine, 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active );
@@ -374,11 +373,6 @@ TRACY_API void ___tracy_fiber_leave( void );
 
 #  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
-#endif
-
-#ifdef TRACY_CALLSTACK_SET
-#undef TRACY_CALLSTACK_SET
-#undef TRACY_CALLSTACK
 #endif
 
 #endif

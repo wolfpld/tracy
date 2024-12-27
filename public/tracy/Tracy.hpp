@@ -191,41 +191,22 @@
 
 #define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size )
 
-#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, TRACY_CALLSTACK )
-#  define TracyMessageL( txt ) tracy::Profiler::Message( txt, TRACY_CALLSTACK )
-#  define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK )
-#  define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, TRACY_CALLSTACK )
+#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, TRACY_CALLSTACK )
+#define TracyMessageL( txt ) tracy::Profiler::Message( txt, TRACY_CALLSTACK )
+#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK )
+#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, TRACY_CALLSTACK )
 
-#  define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, false )
-#  define TracyFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK, false )
-#  define TracySecureAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, true )
-#  define TracySecureFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK, true )
+#define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, false )
+#define TracyFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK, false )
+#define TracySecureAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, true )
+#define TracySecureFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK, true )
 
-#  define TracyAllocN( ptr, size, name ) tracy::Profiler::MemAllocCallstackNamed( ptr, size, TRACY_CALLSTACK, false, name )
-#  define TracyFreeN( ptr, name ) tracy::Profiler::MemFreeCallstackNamed( ptr, TRACY_CALLSTACK, false, name )
-#  define TracyMemoryDiscard( name ) tracy::Profiler::MemDiscardCallstack( name, false, TRACY_CALLSTACK )
-#  define TracySecureAllocN( ptr, size, name ) tracy::Profiler::MemAllocCallstackNamed( ptr, size, TRACY_CALLSTACK, true, name )
-#  define TracySecureFreeN( ptr, name ) tracy::Profiler::MemFreeCallstackNamed( ptr, TRACY_CALLSTACK, true, name )
-#  define TracySecureMemoryDiscard( name ) tracy::Profiler::MemDiscardCallstack( name, true, TRACY_CALLSTACK )
-#else
-#  define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, 0 )
-#  define TracyMessageL( txt ) tracy::Profiler::Message( txt, 0 )
-#  define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, 0 )
-#  define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, 0 )
-
-#  define TracyAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size, false )
-#  define TracyFree( ptr ) tracy::Profiler::MemFree( ptr, false )
-#  define TracySecureAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size, true )
-#  define TracySecureFree( ptr ) tracy::Profiler::MemFree( ptr, true )
-
-#  define TracyAllocN( ptr, size, name ) tracy::Profiler::MemAllocNamed( ptr, size, false, name )
-#  define TracyFreeN( ptr, name ) tracy::Profiler::MemFreeNamed( ptr, false, name )
-#  define TracyMemoryDiscard( name ) tracy::Profiler::MemDiscard( name, false )
-#  define TracySecureAllocN( ptr, size, name ) tracy::Profiler::MemAllocNamed( ptr, size, true, name )
-#  define TracySecureFreeN( ptr, name ) tracy::Profiler::MemFreeNamed( ptr, true, name )
-#  define TracySecureMemoryDiscard( name ) tracy::Profiler::MemDiscard( name, true )
-#endif
+#define TracyAllocN( ptr, size, name ) tracy::Profiler::MemAllocCallstackNamed( ptr, size, TRACY_CALLSTACK, false, name )
+#define TracyFreeN( ptr, name ) tracy::Profiler::MemFreeCallstackNamed( ptr, TRACY_CALLSTACK, false, name )
+#define TracyMemoryDiscard( name ) tracy::Profiler::MemDiscardCallstack( name, false, TRACY_CALLSTACK )
+#define TracySecureAllocN( ptr, size, name ) tracy::Profiler::MemAllocCallstackNamed( ptr, size, TRACY_CALLSTACK, true, name )
+#define TracySecureFreeN( ptr, name ) tracy::Profiler::MemFreeCallstackNamed( ptr, TRACY_CALLSTACK, true, name )
+#define TracySecureMemoryDiscard( name ) tracy::Profiler::MemDiscardCallstack( name, true, TRACY_CALLSTACK )
 
 #ifdef TRACY_HAS_CALLSTACK
 #  define ZoneNamedS( varname, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), depth, active )

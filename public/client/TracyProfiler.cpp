@@ -81,6 +81,10 @@
 #include "TracySysTrace.hpp"
 #include "../tracy/TracyC.h"
 
+#if defined TRACY_MANUAL_LIFETIME && !defined(TRACY_DELAYED_INIT)
+#  error "TRACY_MANUAL_LIFETIME requires enabled TRACY_DELAYED_INIT"
+#endif
+
 #ifdef TRACY_PORT
 #  ifndef TRACY_DATA_PORT
 #    define TRACY_DATA_PORT TRACY_PORT
@@ -4907,7 +4911,7 @@ TRACY_API void ___tracy_fiber_enter( const char* fiber ){ tracy::Profiler::Enter
 TRACY_API void ___tracy_fiber_leave( void ){ tracy::Profiler::LeaveFiber(); }
 #endif
 
-#  ifdef TRACY_MANUAL_LIFETIME
+#  if defined TRACY_MANUAL_LIFETIME && defined TRACY_DELAYED_INIT
 TRACY_API void ___tracy_startup_profiler( void )
 {
     tracy::StartupProfiler();

@@ -73,6 +73,8 @@
 #define TracyMessageLC(x,y)
 #define TracyAppInfo(x,y)
 
+#define TracyBlob(x,y,z)
+
 #define TracyAlloc(x,y)
 #define TracyFree(x)
 #define TracyMemoryDiscard(x)
@@ -114,6 +116,8 @@
 #define TracyMessageLS(x,y)
 #define TracyMessageCS(x,y,z,w)
 #define TracyMessageLCS(x,y,z)
+
+#define TracyBlobS(x,y,z,w)
 
 #define TracySourceCallbackRegister(x,y)
 #define TracyParameterRegister(x,y)
@@ -203,6 +207,8 @@
 #  define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK )
 #  define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, TRACY_CALLSTACK )
 
+#  define TracyBlob( encoding, data, size ) tracy::Profiler::Blob( encoding, data, size, TRACY_CALLSTACK )
+
 #  define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, false )
 #  define TracyFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK, false )
 #  define TracySecureAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, true )
@@ -219,6 +225,8 @@
 #  define TracyMessageL( txt ) tracy::Profiler::Message( txt, 0 )
 #  define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, 0 )
 #  define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, 0 )
+
+#  define TracyBlob( encoding, data, size ) tracy::Profiler::Blob( encoding, data, size, 0 )
 
 #  define TracyAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size, false )
 #  define TracyFree( ptr ) tracy::Profiler::MemFree( ptr, false )
@@ -263,6 +271,8 @@
 #  define TracyMessageLS( txt, depth ) tracy::Profiler::Message( txt, depth )
 #  define TracyMessageCS( txt, size, color, depth ) tracy::Profiler::MessageColor( txt, size, color, depth )
 #  define TracyMessageLCS( txt, color, depth ) tracy::Profiler::MessageColor( txt, color, depth )
+
+#  define TracyBlobS( encoding, data, size, depth ) tracy::Profiler::Blob( encoding, data, size, depth )
 #else
 #  define ZoneNamedS( varname, depth, active ) ZoneNamed( varname, active )
 #  define ZoneNamedNS( varname, name, depth, active ) ZoneNamedN( varname, name, active )
@@ -293,6 +303,8 @@
 #  define TracyMessageLS( txt, depth ) TracyMessageL( txt )
 #  define TracyMessageCS( txt, size, color, depth ) TracyMessageC( txt, size, color )
 #  define TracyMessageLCS( txt, color, depth ) TracyMessageLC( txt, color )
+
+#  define TracyBlobS( encoding, data, size, depth ) TracyBlob( encoding, data, size )
 #endif
 
 #define TracySourceCallbackRegister( cb, data ) tracy::Profiler::SourceCallbackRegister( cb, data )

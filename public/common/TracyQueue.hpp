@@ -16,6 +16,8 @@ enum class QueueType : uint8_t
     MessageCallstack,
     MessageColorCallstack,
     MessageAppInfo,
+    Blob,
+    BlobCallstack,
     ZoneBeginAllocSrcLoc,
     ZoneBeginAllocSrcLocCallstack,
     CallstackSerial,
@@ -124,6 +126,7 @@ enum class QueueType : uint8_t
     SymbolCode,
     SourceCode,
     FiberName,
+    BlobFragment,
     NUM_TYPES
 };
 
@@ -391,6 +394,23 @@ struct QueueMessageColorFat : public QueueMessageColor
 };
 
 struct QueueMessageColorFatThread : public QueueMessageColorFat
+{
+    uint32_t thread;
+};
+
+struct QueueBlob
+{
+    int64_t time;
+};
+
+struct QueueBlobData : public QueueBlob
+{
+    uint32_t encoding;
+    uint64_t data;      // ptr
+    uint32_t size;
+};
+
+struct QueueBlobDataThread : public QueueBlobData
 {
     uint32_t thread;
 };
@@ -740,6 +760,9 @@ struct QueueItem
         QueueMessageFatThread messageFatThread;
         QueueMessageColorFat messageColorFat;
         QueueMessageColorFatThread messageColorFatThread;
+        QueueBlob blob;
+        QueueBlobData blobData;
+        QueueBlobDataThread blobDataThread;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneBeginLean gpuZoneBeginLean;
@@ -797,6 +820,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // app info
+    sizeof( QueueHeader ) + sizeof( QueueBlobData ),
+    sizeof( QueueHeader ) + sizeof( QueueBlobData ),            // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location, callstack
     sizeof( QueueHeader ),                                  // callstack memory
@@ -907,6 +932,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // symbol code
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // source code
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // fiber name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // blob fragment
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

@@ -484,6 +484,27 @@ public:
         TracyLfqCommit;
     }
 
+    static tracy_force_inline void Blob( uint64_t encoding, const void* data, size_t size, int callstack )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        if( callstack != 0 )
+        {
+            tracy::GetProfiler().SendCallstack( callstack );
+        }
+
+        auto ptr = tracy_malloc( size );
+        memcpy( ptr, data, size );
+
+        TracyQueuePrepare( callstack == 0 ? QueueType::Blob : QueueType::BlobCallstack );
+        MemWrite( &item->blobData.time, GetTime() );
+        MemWrite( &item->blobData.encoding, encoding );
+        MemWrite( &item->blobData.data, (uint64_t)ptr );
+        MemWrite( &item->blobData.size, (uint32_t)size );
+        TracyQueueCommit( blobDataThread );
+    }
+
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size, bool secure )
     {
         if( secure && !ProfilerAvailable() ) return;
@@ -767,6 +788,8 @@ public:
     void SendSingleString( const char* ptr, size_t len );
     void SendSecondString( const char* ptr ) { SendSecondString( ptr, strlen( ptr ) ); }
     void SendSecondString( const char* ptr, size_t len );
+
+    void SendBlob( const char* ptr, size_t len );
 
 
     // Allocated source location data layout:

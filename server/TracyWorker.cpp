@@ -275,6 +275,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
+    , m_blob( nullptr )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
@@ -752,11 +753,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
         if( m_allowStringModification )
         {
-            m_data.stringData.push_back( dst );
+            m_data.stringData.push_back( StringData(dst, ssz) );
         }
         else
         {
-            m_data.stringData[i] = ( dst );
+            m_data.stringData[i] = StringData(dst, ssz );
         }
 
         pointerMap.emplace( ptr, dst );
@@ -2382,7 +2383,7 @@ const char* Worker::GetString( const StringRef& ref ) const
     if( ref.isidx )
     {
         assert( ref.active );
-        return m_data.stringData[ref.str];
+        return m_data.stringData[ref.str].c;
     }
     else
     {
@@ -2400,7 +2401,15 @@ const char* Worker::GetString( const StringRef& ref ) const
 const char* Worker::GetString( const StringIdx& idx ) const
 {
     assert( idx.Active() );
-    return m_data.stringData[idx.Idx()];
+    return m_data.stringData[idx.Idx()].c;
+}
+
+const char* Worker::GetData( const StringRef& ref, size_t *sz ) const
+{
+    assert ( ref.isidx );
+    assert( ref.active );
+    *sz = m_data.stringData[ref.str].sz;
+    return m_data.stringData[ref.str].c;
 }
 
 static const char* BadExternalThreadNames[] = {
@@ -3055,6 +3064,9 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
                 AddFiberName( ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
                 break;
+            case QueueType::BlobFragment:
+                m_serverQuerySpaceLeft++;
+                break;
             case QueueType::PlotName:
             case QueueType::FrameName:
             case QueueType::ExternalName:
@@ -3085,6 +3097,33 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             AddSecondString( ptr, sz );
             ptr += sz;
             break;
+        case QueueType::BlobFragment:
+        {
+            ptr += sizeof( QueueHeader );
+            uint32_t full_size;
+            memcpy( &full_size, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            uint32_t offset;
+            memcpy( &offset, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            if ( offset == 0 )
+            {
+                assert( m_blob == nullptr );
+                m_blob = (unsigned char *)malloc( full_size );
+            }
+            assert( m_blob != nullptr );
+            memcpy( m_blob, ptr, sz);
+            if (offset + sz > full_size)
+            {
+                AddSingleString( (const char*)m_blob, full_size );
+                free( m_blob );
+                m_blob = nullptr;
+            }
+            ptr += sz;
+            break;
+        }
         default:
             ptr += QueueDataSize[ev.hdr.idx];
             switch( ev.hdr.type )
@@ -3210,6 +3249,34 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             }
             ptr += sz;
         }
+        else if( ev.hdr.type == QueueType::BlobFragment )
+        {
+            uint32_t full_size;
+            memcpy( &full_size, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            uint32_t offset;
+            memcpy( &offset, ptr, sizeof( uint32_t ) );
+            ptr += sizeof( uint32_t );
+            uint32_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            if ( offset == 0 )
+            {
+                assert( m_blob == nullptr );
+                m_blob = (unsigned char *)malloc( full_size );
+            }
+            assert( m_blob != nullptr );
+            memcpy( m_blob, ptr, sz);
+            if (offset + sz >= full_size)
+            {
+                AddSingleString((const char*)m_blob, full_size );
+                free( m_blob );
+                m_blob = nullptr;
+            }
+            m_serverQuerySpaceLeft++;
+            ptr += sz;
+        }
+
         else
         {
             uint16_t sz;
@@ -3264,6 +3331,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
     else
     {
         uint16_t sz;
+        uint32_t sz32;
         switch( ev.hdr.type )
         {
         case QueueType::SingleStringData:
@@ -3279,6 +3347,12 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( sz );
             AddSecondString( ptr, sz );
             ptr += sz;
+            return true;
+        case QueueType::BlobFragment:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz32, ptr, sizeof( sz32 ) );
+            ptr += sizeof( sz32 );
+            ptr += sz32;
             return true;
         default:
             ptr += QueueDataSize[ev.hdr.idx];
@@ -3381,6 +3455,39 @@ void Worker::InsertMessageData( MessageData* msg )
     {
         auto tmit = std::lower_bound( vec->begin(), vec->end(), msg->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
         vec->insert( tmit, msg );
+    }
+}
+
+void Worker::InsertBlobData( BlobData* blob )
+{
+    if( m_data.blobs.empty() )
+    {
+        m_data.blobs.push_back( blob );
+    }
+    else if( m_data.blobs.back()->time < blob->time )
+    {
+        m_data.blobs.push_back_non_empty( blob );
+    }
+    else
+    {
+        auto mit = std::lower_bound( m_data.blobs.begin(), m_data.blobs.end(), blob->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        m_data.blobs.insert( mit, blob );
+    }
+
+    auto td = GetCurrentThreadData();
+    auto vec = &td->blobs;
+    if( vec->empty() )
+    {
+        vec->push_back( blob );
+    }
+    else if( vec->back()->time < blob->time )
+    {
+        vec->push_back_non_empty( blob );
+    }
+    else
+    {
+        auto tmit = std::lower_bound( vec->begin(), vec->end(), blob->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        vec->insert( tmit, blob );
     }
 }
 
@@ -4421,7 +4528,7 @@ StringLocation Worker::StoreString( const char* str, size_t sz )
         ret.ptr = ptr;
         ret.idx = m_data.stringData.size();
         m_data.stringMap.emplace( charutil::StringKey { ptr, sz }, m_data.stringData.size() );
-        m_data.stringData.push_back( ptr );
+        m_data.stringData.push_back( { ptr, sz } );
     }
     else
     {
@@ -4555,6 +4662,12 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::MessageAppInfo:
         ProcessMessageAppInfo( ev.message );
+        break;
+    case QueueType::Blob:
+        ProcessBlob( ev.blobData );
+        break;
+    case QueueType::BlobCallstack:
+        ProcessBlobCallstack( ev.blobData );
         break;
     case QueueType::GpuNewContext:
         ProcessGpuNewContext( ev.gpuNewContext );
@@ -5662,6 +5775,30 @@ void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
     m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, GetSingleStringIdx() ) );
     const auto time = TscTime( ev.time );
     if( m_data.lastTime < time ) m_data.lastTime = time;
+}
+
+void Worker::ProcessBlob( const QueueBlobData& ev )
+{
+    auto td = GetCurrentThreadData();
+    auto blob = m_slab.Alloc<BlobData>();
+    const auto time = TscTime( ev.time );
+    blob->time = time;
+    blob->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
+    blob->encoding = ev.encoding;
+    blob->thread = CompressThread( td->id );
+    blob->callstack.SetVal( 0 );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
+    InsertBlobData( blob );
+}
+
+void Worker::ProcessBlobCallstack( const QueueBlobData& ev )
+{
+    auto td = GetCurrentThreadData();
+    ProcessBlob( ev );
+    auto it = m_nextCallstack.find( td->id );
+    assert( it != m_nextCallstack.end() );
+    td->blobs.back()->callstack.SetVal( it->second );
+    it->second = 0;
 }
 
 void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
@@ -7844,11 +7981,10 @@ void Worker::Write( FileWrite& f, bool fiDict )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.stringData )
     {
-        uint64_t ptr = (uint64_t)v;
+        uint64_t ptr = (uint64_t)v.c;
         f.Write( &ptr, sizeof( ptr ) );
-        sz = strlen( v );
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( v, sz );
+        f.Write( &v.sz, sizeof( v.sz ) );
+        f.Write( v.c, sz );
     }
 
     sz = m_data.strings.size();

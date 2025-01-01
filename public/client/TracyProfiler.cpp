@@ -2277,6 +2277,11 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.messageFat.text );
         tracy_free( (void*)ptr );
         break;
+    case QueueType::Blob:
+    case QueueType::BlobCallstack:
+        ptr = MemRead<uint64_t>( &item.blobData.data );
+        tracy_free( (void*)ptr );
+        break;
     case QueueType::ZoneBeginAllocSrcLoc:
     case QueueType::ZoneBeginAllocSrcLocCallstack:
         ptr = MemRead<uint64_t>( &item.zoneBegin.srcloc );
@@ -2459,6 +2464,15 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         tracy_free_fast( (void*)ptr );
 #endif
                         break;
+                    case QueueType::Blob:
+                    case QueueType::BlobCallstack:
+                    {
+                        ptr = MemRead<uint64_t>( &item->blobData.data );
+                        auto size = MemRead<uint32_t>( &item->blobData.size );
+                        SendBlob( (const char*)ptr, size );
+                        tracy_free_fast( (void*)ptr );
+                        break;
+                    }
                     case QueueType::ZoneBeginAllocSrcLoc:
                     case QueueType::ZoneBeginAllocSrcLocCallstack:
                     {
@@ -2985,6 +2999,16 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
                     break;
                 }
+                case QueueType::Blob:
+                case QueueType::BlobCallstack:
+                {
+                    ThreadCtxCheckSerial( blobDataThread );
+                    ptr = MemRead<uint64_t>( &item->blobData.data );
+                    uint32_t size = MemRead<uint32_t>( &item->blobData.size );
+                    SendBlob( (const char*)ptr, size );
+                    tracy_free_fast( (void*)ptr );
+                    break;
+                }
                 case QueueType::Callstack:
                 {
                     ThreadCtxCheckSerial( callstackFatThread );
@@ -3247,6 +3271,29 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
     AppendDataUnsafe( &item, QueueDataSize[(int)type] );
     AppendDataUnsafe( &l32, sizeof( l32 ) );
     AppendDataUnsafe( ptr, l32 );
+}
+
+void Profiler::SendBlob( const char* ptr, size_t len )
+{
+    QueueItem item;
+    uint32_t offset = 0;
+    uint32_t full_size = len;
+    MemWrite( &item.hdr.type, QueueType::BlobFragment );
+    while (len)
+    {
+        const uint32_t max_fragment_size = TargetFrameSize - QueueDataSize[(int)QueueType::BlobFragment] - 3 * sizeof ( uint32_t );
+        uint32_t fragment_size = len > max_fragment_size ? max_fragment_size : len;
+        len -= fragment_size;
+
+        NeedDataSize( QueueDataSize[(int)QueueType::BlobFragment] + 2 * sizeof ( uint32_t ) + sizeof( fragment_size ) + fragment_size );
+
+        AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::BlobFragment] );
+        AppendDataUnsafe( &full_size, sizeof(uint32_t) );
+        AppendDataUnsafe( &offset, sizeof(uint32_t) );
+        AppendDataUnsafe( &fragment_size, sizeof( fragment_size ) );
+        AppendDataUnsafe( ptr + offset, fragment_size );
+        offset += fragment_size;
+    }
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )

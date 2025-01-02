@@ -3,7 +3,12 @@ module tracy
     & c_size_t, c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float, c_double, c_null_ptr
   implicit none
   private
-  ! skipped: TracyPlotFormatEnum
+
+  integer(c_int32_t), parameter, public :: TRACY_PLOTFORMAT_NUMBER = 0
+  integer(c_int32_t), parameter, public :: TRACY_PLOTFORMAT_MEMORY = 1
+  integer(c_int32_t), parameter, public :: TRACY_PLOTFORMAT_PERCENTAGE = 2
+  integer(c_int32_t), parameter, public :: TRACY_PLOTFORMAT_WATT = 3
+
   interface
     subroutine impl_tracy_set_thread_name(name) bind(C, name="___tracy_set_thread_name")
       import

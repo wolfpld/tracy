@@ -513,7 +513,7 @@ public:
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth, bool secure )
     {
         if( secure && !ProfilerAvailable() ) return;
-        if (depth > 0 && has_callstack()) {
+        if( depth > 0 && has_callstack() ) {
             auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
             if( !profiler.IsConnected() ) return;
@@ -539,7 +539,7 @@ public:
             MemFree( ptr, secure );
             return;
         }
-        if (depth > 0 && has_callstack()) {
+        if( depth > 0 && has_callstack() ) {
             auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
             if( !profiler.IsConnected() ) return;
@@ -588,7 +588,7 @@ public:
     static tracy_force_inline void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name )
     {
         if( secure && !ProfilerAvailable() ) return;
-        if (depth > 0 && has_callstack()) {
+        if( depth > 0 && has_callstack() ) {
             auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
             if( !profiler.IsConnected() ) return;
@@ -610,7 +610,7 @@ public:
     static tracy_force_inline void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name )
     {
         if( secure && !ProfilerAvailable() ) return;
-        if (depth > 0 && has_callstack()) {
+        if( depth > 0 && has_callstack() ) {
             auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
             if( !profiler.IsConnected() ) return;
@@ -645,7 +645,7 @@ public:
     static tracy_force_inline void MemDiscardCallstack( const char* name, bool secure, int depth )
     {
         if( secure && !ProfilerAvailable() ) return;
-        if (depth > 0 && has_callstack()) {
+        if( depth > 0 && has_callstack() ) {
 #  ifdef TRACY_ON_DEMAND
             if( !GetProfiler().IsConnected() ) return;
 #  endif
@@ -664,7 +664,7 @@ public:
 
     static tracy_force_inline void SendCallstack( int depth )
     {
-        if (depth > 0 && has_callstack()) {
+        if( depth > 0 && has_callstack() ) {
             auto ptr = Callstack( depth );
             TracyQueuePrepare( QueueType::Callstack );
             MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
@@ -904,7 +904,7 @@ private:
 
     static tracy_force_inline void SendCallstackSerial( void* ptr )
     {
-        if (has_callstack()) {
+        if ( has_callstack() ) {
             auto item = GetProfiler().m_serialQueue.prepare_next();
             MemWrite( &item->hdr.type, QueueType::CallstackSerial );
             MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );

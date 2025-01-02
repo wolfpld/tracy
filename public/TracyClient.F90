@@ -216,6 +216,24 @@ module tracy
     end subroutine impl_tracy_emit_memory_discard_callstack
   end interface
 
+  interface
+    subroutine impl_tracy_emit_message(txt, size, depth) &
+            bind(C, name="___tracy_emit_message")
+        import
+        type(c_ptr), intent(in) :: txt
+        integer(c_size_t), value :: size
+        integer(c_int32_t), value :: depth
+    end subroutine impl_tracy_emit_message
+    subroutine impl_tracy_emit_messageC(txt, size, color, depth) &
+            bind(C, name="___tracy_emit_messageC")
+        import
+        type(c_ptr), intent(in) :: txt
+        integer(c_size_t), value :: size
+        integer(c_int32_t), value :: color
+        integer(c_int32_t), value :: depth
+    end subroutine impl_tracy_emit_messageC
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
@@ -226,6 +244,7 @@ module tracy
   public :: tracy_zone_begin, tracy_zone_end
   public :: tracy_zone_set_properties
   public :: tracy_memory_alloc, tracy_memory_free, tracy_memory_discard
+  public :: tracy_message
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -379,4 +398,19 @@ contains
     if (present(depth)) depth_ = depth
     call impl_tracy_emit_memory_discard_callstack(c_loc(name), depth_, secure_)
   end subroutine tracy_memory_discard
+
+  subroutine tracy_message(msg, color, depth)
+    character(kind=c_char, len=*), target, intent(in) :: msg
+    integer(c_int32_t), intent(in), optional :: color
+    integer(c_int32_t), intent(in), optional :: depth
+    !
+    integer(c_int32_t) :: depth_
+    depth_ = 0_c_int32_t
+    if (present(depth)) depth_ = depth
+    if (present(color)) then
+      call impl_tracy_emit_messageC(c_loc(msg), len(msg, kind=c_size_t), color, depth_)
+    else
+      call impl_tracy_emit_message(c_loc(msg), len(msg, kind=c_size_t), depth_)
+    end if
+  end subroutine tracy_message
 end module tracy

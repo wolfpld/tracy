@@ -174,6 +174,48 @@ module tracy
     end function impl_tracy_connected
   end interface
 
+  interface
+    subroutine impl_tracy_emit_memory_alloc_callstack(ptr, size, depth, secure) &
+            bind(C, name="___tracy_emit_memory_alloc_callstack")
+        import
+        type(c_ptr), intent(in) :: ptr
+        integer(c_size_t), intent(in), value :: size
+        integer(c_int32_t), intent(in), value :: depth
+        integer(c_int32_t), intent(in), value :: secure
+    end subroutine impl_tracy_emit_memory_alloc_callstack
+    subroutine impl_tracy_emit_memory_alloc_callstack_named(ptr, size, depth, secure, name) &
+            bind(C, name="___tracy_emit_memory_alloc_callstack_named")
+        import
+        type(c_ptr), intent(in) :: ptr
+        integer(c_size_t), intent(in), value :: size
+        integer(c_int32_t), intent(in), value :: depth
+        integer(c_int32_t), intent(in), value :: secure
+        type(c_ptr), intent(in) :: name
+    end subroutine impl_tracy_emit_memory_alloc_callstack_named
+    subroutine impl_tracy_emit_memory_free_callstack(ptr, depth, secure) &
+            bind(C, name="___tracy_emit_memory_free_callstack")
+        import
+        type(c_ptr), intent(in) :: ptr
+        integer(c_int32_t), intent(in), value :: depth
+        integer(c_int32_t), intent(in), value :: secure
+    end subroutine impl_tracy_emit_memory_free_callstack
+    subroutine impl_tracy_emit_memory_free_callstack_named(ptr, depth, secure, name) &
+            bind(C, name="___tracy_emit_memory_free_callstack_named")
+        import
+        type(c_ptr), intent(in) :: ptr
+        integer(c_int32_t), intent(in), value :: depth
+        integer(c_int32_t), intent(in), value :: secure
+        type(c_ptr), intent(in) :: name
+    end subroutine impl_tracy_emit_memory_free_callstack_named
+    subroutine impl_tracy_emit_memory_discard_callstack(name, secure, depth) &
+            bind(C, name="___tracy_emit_memory_discard_callstack")
+        import
+        type(c_ptr), intent(in) :: name
+        integer(c_int32_t), intent(in), value :: secure
+        integer(c_int32_t), intent(in), value :: depth
+    end subroutine impl_tracy_emit_memory_discard_callstack
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
@@ -183,6 +225,7 @@ module tracy
   public :: tracy_alloc_srcloc
   public :: tracy_zone_begin, tracy_zone_end
   public :: tracy_zone_set_properties
+  public :: tracy_memory_alloc, tracy_memory_free, tracy_memory_discard
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -282,4 +325,58 @@ contains
   logical(1) function tracy_connected()
     tracy_connected = impl_tracy_connected() /= 0_c_int32_t
   end function tracy_connected
+
+  subroutine tracy_memory_alloc(ptr, size, name, depth, secure)
+    type(c_ptr), intent(in) :: ptr
+    integer(c_size_t), intent(in) :: size
+    character(kind=c_char, len=*), target, intent(in), optional :: name
+    integer(c_int32_t), intent(in), optional :: depth
+    logical(1), intent(in), optional :: secure
+    !
+    integer(c_int32_t) :: depth_, secure_
+    secure_ = 0_c_int32_t
+    depth_ = 0_c_int32_t
+    if (present(secure)) then
+      if (secure) secure_ = 1_c_int32_t
+    end if
+    if (present(depth)) depth_ = depth
+    if (present(name)) then
+      call impl_tracy_emit_memory_alloc_callstack_named(ptr, size, depth_, secure_, c_loc(name))
+    else
+      call impl_tracy_emit_memory_alloc_callstack(ptr, size, depth_, secure_)
+    end if
+  end subroutine tracy_memory_alloc
+  subroutine tracy_memory_free(ptr, name, depth, secure)
+    type(c_ptr), intent(in) :: ptr
+    character(kind=c_char, len=*), target, intent(in), optional :: name
+    integer(c_int32_t), intent(in), optional :: depth
+    logical(1), intent(in), optional :: secure
+    !
+    integer(c_int32_t) :: depth_, secure_
+    secure_ = 0_c_int32_t
+    depth_ = 0_c_int32_t
+    if (present(secure)) then
+      if (secure) secure_ = 1_c_int32_t
+    end if
+    if (present(depth)) depth_ = depth
+    if (present(name)) then
+      call impl_tracy_emit_memory_free_callstack_named(ptr, depth_, secure_, c_loc(name))
+    else
+      call impl_tracy_emit_memory_free_callstack(ptr, depth_, secure_)
+    end if
+  end subroutine tracy_memory_free
+  subroutine tracy_memory_discard(name, depth, secure)
+    character(kind=c_char, len=*), target, intent(in) :: name
+    integer(c_int32_t), intent(in), optional :: depth
+    logical(1), intent(in), optional :: secure
+    !
+    integer(c_int32_t) :: depth_, secure_
+    secure_ = 0_c_int32_t
+    depth_ = 0_c_int32_t
+    if (present(secure)) then
+      if (secure) secure_ = 1_c_int32_t
+    end if
+    if (present(depth)) depth_ = depth
+    call impl_tracy_emit_memory_discard_callstack(c_loc(name), depth_, secure_)
+  end subroutine tracy_memory_discard
 end module tracy

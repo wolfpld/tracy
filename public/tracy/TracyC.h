@@ -265,16 +265,16 @@ TRACY_API int ___tracy_connected(void);
 #define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
 
 
-TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int secure );
-TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth, int secure );
-TRACY_API void ___tracy_emit_memory_free( const void* ptr, int secure );
-TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, int secure );
-TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int depth, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int depth, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_discard( const char* name, int secure );
-TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int secure, int size );
+TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int32_t secure );
+TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth, int32_t secure );
+TRACY_API void ___tracy_emit_memory_free( const void* ptr, int32_t secure );
+TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, int32_t secure );
+TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int depth, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int depth, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_discard( const char* name, int32_t secure );
+TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int size );
 
 TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack );
 TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack );

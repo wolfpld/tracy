@@ -140,7 +140,7 @@ struct ___tracy_source_location_data
 struct ___tracy_c_zone_context
 {
     uint32_t id;
-    int active;
+    int32_t active;
 };
 
 struct ___tracy_gpu_time_data
@@ -158,7 +158,7 @@ struct ___tracy_gpu_zone_begin_data {
 
 struct ___tracy_gpu_zone_begin_callstack_data {
     uint64_t srcloc;
-    int depth;
+    int32_t depth;
     uint16_t queryId;
     uint8_t context;
 };

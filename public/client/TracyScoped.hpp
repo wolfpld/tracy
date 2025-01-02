@@ -23,7 +23,7 @@ public:
     ScopedZone& operator=( const ScopedZone& ) = delete;
     ScopedZone& operator=( ScopedZone&& ) = delete;
 
-    tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth = -1, bool is_active = true )
+    tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int32_t depth = -1, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -46,7 +46,7 @@ public:
         TracyQueueCommit( zoneBeginThread );
     }
 
-    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color, int depth = -1, bool is_active = true )
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color, int32_t depth = -1, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -71,7 +71,7 @@ public:
         TracyQueueCommit( zoneBeginThread );
     }
 
-    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true ) : ScopedZone( line, source, sourceSz, function, functionSz, name, nameSz, 0, depth, is_active ) {}
+    tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int32_t depth, bool is_active = true ) : ScopedZone( line, source, sourceSz, function, functionSz, name, nameSz, 0, depth, is_active ) {}
 
     tracy_force_inline ~ScopedZone()
     {

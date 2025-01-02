@@ -307,7 +307,7 @@ public:
         WriteQueueItem(item, QueueType::GpuZoneBeginSerial, reinterpret_cast<uint64_t>(srcloc));
     }
 
-    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, const SourceLocationData* srcloc, int depth, bool active )
+    tracy_force_inline D3D11ZoneScope( D3D11Ctx* ctx, const SourceLocationData* srcloc, int32_t depth, bool active )
         : D3D11ZoneScope(ctx, active)
     {
         if( !m_active ) return;
@@ -327,7 +327,7 @@ public:
         WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocSerial, sourceLocation);
     }
 
-    tracy_force_inline D3D11ZoneScope(D3D11Ctx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool active)
+    tracy_force_inline D3D11ZoneScope(D3D11Ctx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int32_t depth, bool active)
         : D3D11ZoneScope(ctx, active)
     {
         if( !m_active ) return;

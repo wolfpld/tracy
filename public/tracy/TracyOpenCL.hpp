@@ -255,7 +255,7 @@ namespace tracy {
             Profiler::QueueSerialFinish();
         }
 
-        tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, const SourceLocationData* srcLoc, int depth, bool is_active)
+        tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, const SourceLocationData* srcLoc, int32_t depth, bool is_active)
 #ifdef TRACY_ON_DEMAND
             : m_active(is_active&& GetProfiler().IsConnected())
 #else
@@ -304,7 +304,7 @@ namespace tracy {
             Profiler::QueueSerialFinish();
         }
 
-        tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active)
+        tracy_force_inline OpenCLCtxScope(OpenCLCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int32_t depth, bool is_active)
 #ifdef TRACY_ON_DEMAND
             : m_active(is_active && GetProfiler().IsConnected())
 #else

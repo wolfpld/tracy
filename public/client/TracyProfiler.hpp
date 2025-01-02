@@ -510,7 +510,7 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth, bool secure )
+    static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int32_t depth, bool secure )
     {
         if( secure && !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
@@ -534,7 +534,7 @@ public:
         }
     }
 
-    static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth, bool secure )
+    static tracy_force_inline void MemFreeCallstack( const void* ptr, int32_t depth, bool secure )
     {
         if( secure && !ProfilerAvailable() ) return;
         if( !ProfilerAllocatorAvailable() )
@@ -591,7 +591,7 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name )
+    static tracy_force_inline void MemAllocCallstackNamed( const void* ptr, size_t size, int32_t depth, bool secure, const char* name )
     {
         if( secure && !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
@@ -616,7 +616,7 @@ public:
         }
     }
 
-    static tracy_force_inline void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name )
+    static tracy_force_inline void MemFreeCallstackNamed( const void* ptr, int32_t depth, bool secure, const char* name )
     {
         if( secure && !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
@@ -654,7 +654,7 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void MemDiscardCallstack( const char* name, bool secure, int depth )
+    static tracy_force_inline void MemDiscardCallstack( const char* name, bool secure, int32_t depth )
     {
         if( secure && !ProfilerAvailable() ) return;
         if( depth > 0 && has_callstack() )
@@ -677,7 +677,7 @@ public:
         }
     }
 
-    static tracy_force_inline void SendCallstack( int depth )
+    static tracy_force_inline void SendCallstack( int32_t depth )
     {
         if( depth > 0 && has_callstack() )
         {
@@ -735,7 +735,7 @@ public:
     }
 #endif
 
-    void SendCallstack( int depth, const char* skipBefore );
+    void SendCallstack( int32_t depth, const char* skipBefore );
     static void CutCallstack( void* callstack, const char* skipBefore );
 
     static bool ShouldExit();

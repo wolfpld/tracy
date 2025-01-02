@@ -215,9 +215,9 @@ TRACY_API uint64_t ___tracy_alloc_srcloc( uint32_t line, const char* source, siz
 TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color );
 
 TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int32_t active );
-TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int depth, int32_t active );
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int32_t depth, int32_t active );
 TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int32_t active );
-TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srcloc, int depth, int32_t active );
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srcloc, int32_t depth, int32_t active );
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx );
 TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size );
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size );
@@ -266,15 +266,15 @@ TRACY_API int ___tracy_connected(void);
 
 
 TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int32_t secure );
-TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth, int32_t secure );
+TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int32_t depth, int32_t secure );
 TRACY_API void ___tracy_emit_memory_free( const void* ptr, int32_t secure );
-TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, int32_t secure );
+TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int32_t depth, int32_t secure );
 TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int32_t secure, const char* name );
-TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int depth, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int32_t depth, int32_t secure, const char* name );
 TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int32_t secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int depth, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int32_t depth, int32_t secure, const char* name );
 TRACY_API void ___tracy_emit_memory_discard( const char* name, int32_t secure );
-TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int size );
+TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int32_t depth );
 
 TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int32_t callstack_depth );
 TRACY_API void ___tracy_emit_messageL( const char* txt, int32_t callstack_depth );

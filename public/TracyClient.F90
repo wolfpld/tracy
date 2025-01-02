@@ -1,6 +1,6 @@
 module tracy
   use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char, &
-    & c_size_t, c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float
+    & c_size_t, c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float, c_null_ptr
   implicit none
   private
   ! skipped: TracyPlotFormatEnum
@@ -234,6 +234,36 @@ module tracy
     end subroutine impl_tracy_emit_messageC
   end interface
 
+  interface
+    subroutine impl_tracy_emit_frame_mark(name) &
+            bind(C, name="___tracy_emit_frame_mark")
+        import
+        type(c_ptr), intent(in) :: name
+    end subroutine impl_tracy_emit_frame_mark
+    subroutine impl_tracy_emit_frame_mark_start(name) &
+            bind(C, name="___tracy_emit_frame_mark_start")
+        import
+        type(c_ptr), intent(in) :: name
+    end subroutine impl_tracy_emit_frame_mark_start
+    subroutine impl_tracy_emit_frame_mark_end(name) &
+            bind(C, name="___tracy_emit_frame_mark_end")
+        import
+        type(c_ptr), intent(in) :: name
+    end subroutine impl_tracy_emit_frame_mark_end
+  end interface
+
+  interface
+    subroutine impl_tracy_emit_frame_image(image, w, h, offset, flip) &
+            bind(C, name="___tracy_emit_frame_image")
+        import
+        type(c_ptr), intent(in) :: image
+        integer(c_int16_t), intent(in), value :: w
+        integer(c_int16_t), intent(in), value :: h
+        integer(c_int8_t), intent(in), value :: offset
+        integer(c_int32_t), intent(in), value :: flip
+    end subroutine impl_tracy_emit_frame_image
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
@@ -243,8 +273,10 @@ module tracy
   public :: tracy_alloc_srcloc
   public :: tracy_zone_begin, tracy_zone_end
   public :: tracy_zone_set_properties
+  public :: tracy_frame_mark, tracy_frame_start, tracy_frame_end
   public :: tracy_memory_alloc, tracy_memory_free, tracy_memory_discard
   public :: tracy_message
+  public :: tracy_image
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -413,4 +445,46 @@ contains
       call impl_tracy_emit_message(c_loc(msg), len(msg, kind=c_size_t), depth_)
     end if
   end subroutine tracy_message
+
+  subroutine tracy_frame_mark(name)
+    character(kind=c_char, len=*), target, intent(in), optional :: name
+    if (present(name)) then
+      call impl_tracy_emit_frame_mark(c_loc(name))
+    else
+      call impl_tracy_emit_frame_mark(c_null_ptr)
+    end if
+  end subroutine tracy_frame_mark
+  subroutine tracy_frame_start(name)
+    character(kind=c_char, len=*), target, intent(in), optional :: name
+    if (present(name)) then
+      call impl_tracy_emit_frame_mark_start(c_loc(name))
+    else
+      call impl_tracy_emit_frame_mark_start(c_null_ptr)
+    end if
+  end subroutine tracy_frame_start
+  subroutine tracy_frame_end(name)
+    character(kind=c_char, len=*), target, intent(in), optional :: name
+    if (present(name)) then
+      call impl_tracy_emit_frame_mark_end(c_loc(name))
+    else
+      call impl_tracy_emit_frame_mark_end(c_null_ptr)
+    end if
+  end subroutine tracy_frame_end
+
+  subroutine tracy_image(image, w, h, offset, flip)
+    type(c_ptr), intent(in) :: image
+    integer(c_int16_t), intent(in) :: w, h
+    integer(c_int8_t), intent(in), optional :: offset
+    logical(1), intent(in), optional :: flip
+    !
+    integer(c_int32_t) :: flip_
+    integer(c_int8_t) :: offset_
+    flip_ = 0_c_int32_t
+    offset_ = 0_c_int8_t
+    if (present(flip)) then
+      if (flip) flip_ = 1_c_int32_t
+    end if
+    if (present(offset)) offset_ = offset
+    call impl_tracy_emit_frame_image(image, w, h, offset_, flip_)
+  end subroutine tracy_image
 end module tracy

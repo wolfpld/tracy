@@ -4959,9 +4959,9 @@ TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_contex
     tracy::Profiler::QueueSerialFinish();
 }
 
-TRACY_API int ___tracy_connected( void )
+TRACY_API int32_t ___tracy_connected( void )
 {
-    return tracy::GetProfiler().IsConnected();
+    return static_cast<int32_t>( tracy::GetProfiler().IsConnected() );
 }
 
 #ifdef TRACY_FIBERS

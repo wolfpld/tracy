@@ -246,7 +246,7 @@ TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_
 TRACY_API void ___tracy_emit_gpu_calibration_serial( const struct ___tracy_gpu_calibration_data );
 TRACY_API void ___tracy_emit_gpu_time_sync_serial( const struct ___tracy_gpu_time_sync_data );
 
-TRACY_API int ___tracy_connected(void);
+TRACY_API int32_t ___tracy_connected(void);
 
 #ifndef TRACY_CALLSTACK
 #define TRACY_CALLSTACK 0

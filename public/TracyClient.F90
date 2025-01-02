@@ -1,6 +1,6 @@
 module tracy
   use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char, &
-    & c_size_t, c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float, c_null_ptr
+    & c_size_t, c_int8_t, c_int16_t, c_int32_t, c_int64_t, c_int, c_float, c_double, c_null_ptr
   implicit none
   private
   ! skipped: TracyPlotFormatEnum
@@ -270,6 +270,41 @@ module tracy
     end subroutine impl_tracy_emit_frame_image
   end interface
 
+  interface
+    subroutine impl_tracy_emit_plot_int8(name, val) &
+            bind(C, name="___tracy_emit_plot_int")
+        import
+        type(c_ptr), intent(in) :: name
+        integer(c_int64_t), value :: val
+    end subroutine impl_tracy_emit_plot_int8
+    subroutine impl_tracy_emit_plot_real4(name, val) &
+            bind(C, name="___tracy_emit_plot_float")
+        import
+        type(c_ptr), intent(in) :: name
+        real(c_float), value :: val
+    end subroutine impl_tracy_emit_plot_real4
+    subroutine impl_tracy_emit_plot_real8(name, val) &
+            bind(C, name="___tracy_emit_plot")
+        import
+        type(c_ptr), intent(in) :: name
+        real(c_double), value :: val
+    end subroutine impl_tracy_emit_plot_real8
+  end interface
+  interface tracy_plot
+    module procedure tracy_plot_int8, tracy_plot_real4, tracy_plot_real8
+  end interface tracy_plot
+  interface
+    subroutine impl_tracy_emit_plot_config(name, type, step, fill, color) &
+            bind(C, name="___tracy_emit_plot_config")
+        import
+        type(c_ptr), intent(in) :: name
+        integer(c_int32_t), intent(in), value :: type
+        integer(c_int32_t), intent(in), value :: step
+        integer(c_int32_t), intent(in), value :: fill
+        integer(c_int32_t), intent(in), value :: color
+    end subroutine impl_tracy_emit_plot_config
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
@@ -284,6 +319,7 @@ module tracy
   public :: tracy_memory_alloc, tracy_memory_free, tracy_memory_discard
   public :: tracy_message
   public :: tracy_image
+  public :: tracy_plot_config, tracy_plot
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -499,4 +535,43 @@ contains
     if (present(offset)) offset_ = offset
     call impl_tracy_emit_frame_image(image, w, h, offset_, flip_)
   end subroutine tracy_image
+
+  subroutine tracy_plot_int8(name, val)
+    character(kind=c_char, len=*), target, intent(in) :: name
+    integer(c_int64_t) :: val
+    call impl_tracy_emit_plot_int8(c_loc(name), val)
+  end subroutine tracy_plot_int8
+  subroutine tracy_plot_real4(name, val)
+    character(kind=c_char, len=*), target, intent(in) :: name
+    real(c_float) :: val
+    call impl_tracy_emit_plot_real4(c_loc(name), val)
+  end subroutine tracy_plot_real4
+  subroutine tracy_plot_real8(name, val)
+    character(kind=c_char, len=*), target, intent(in) :: name
+    real(c_double) :: val
+    call impl_tracy_emit_plot_real8(c_loc(name), val)
+  end subroutine tracy_plot_real8
+
+  subroutine tracy_plot_config(name, type, step, fill, color)
+    character(kind=c_char, len=*), target, intent(in) :: name
+    integer(c_int32_t), intent(in), optional :: type
+    logical(1), intent(in), optional :: step
+    logical(1), intent(in), optional :: fill
+    integer(c_int32_t), intent(in), optional :: color
+    !
+    integer(c_int32_t) :: type_, step_, fill_, color_
+    type_ = 0_c_int32_t
+    step_ = 0_c_int32_t
+    fill_ = 1_c_int32_t
+    color_ = 0_c_int32_t
+    if (present(type)) type_ = type
+    if (present(step)) then
+      if (step) step_ = 1_c_int32_t
+    end if
+    if (present(fill)) then
+      if (.not. fill) fill_ = 0_c_int32_t
+    end if
+    if (present(color)) color_ = color
+    call impl_tracy_emit_plot_config(c_loc(name), type_, step_, fill_, color_)
+  end subroutine tracy_plot_config
 end module tracy

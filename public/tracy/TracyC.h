@@ -276,10 +276,10 @@ TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int d
 TRACY_API void ___tracy_emit_memory_discard( const char* name, int32_t secure );
 TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int size );
 
-TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack );
-TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack );
-TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int callstack );
-TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int callstack );
+TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_messageL( const char* txt, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int32_t callstack_depth );
 
 #define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK, 0 )
 #define TracyCFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK, 0 )

@@ -387,58 +387,58 @@ public:
         TracyLfqCommit;
     }
 
-    static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
+    static tracy_force_inline void Message( const char* txt, size_t size, int32_t callstack_depth )
     {
         assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 )
+        if( callstack_depth != 0 && has_callstack() )
         {
-            tracy::GetProfiler().SendCallstack( callstack );
+            tracy::GetProfiler().SendCallstack( callstack_depth );
         }
 
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
 
-        TracyQueuePrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
+        TracyQueuePrepare( callstack_depth == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->messageFat.time, GetTime() );
         MemWrite( &item->messageFat.text, (uint64_t)ptr );
         MemWrite( &item->messageFat.size, (uint16_t)size );
         TracyQueueCommit( messageFatThread );
     }
 
-    static tracy_force_inline void Message( const char* txt, int callstack )
+    static tracy_force_inline void Message( const char* txt, int32_t callstack_depth )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 )
+        if( callstack_depth != 0 && has_callstack() )
         {
-            tracy::GetProfiler().SendCallstack( callstack );
+            tracy::GetProfiler().SendCallstack( callstack_depth );
         }
 
-        TracyQueuePrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
+        TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->messageLiteral.time, GetTime() );
         MemWrite( &item->messageLiteral.text, (uint64_t)txt );
         TracyQueueCommit( messageLiteralThread );
     }
 
-    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
+    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int32_t callstack_depth )
     {
         assert( size < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 )
+        if( callstack_depth != 0 && has_callstack() )
         {
-            tracy::GetProfiler().SendCallstack( callstack );
+            tracy::GetProfiler().SendCallstack( callstack_depth );
         }
 
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
 
-        TracyQueuePrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
+        TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColorFat.time, GetTime() );
         MemWrite( &item->messageColorFat.text, (uint64_t)ptr );
         MemWrite( &item->messageColorFat.b, uint8_t( ( color       ) & 0xFF ) );
@@ -448,17 +448,17 @@ public:
         TracyQueueCommit( messageColorFatThread );
     }
 
-    static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int callstack )
+    static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int32_t callstack_depth )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        if( callstack != 0 )
+        if( callstack_depth != 0 && has_callstack() )
         {
-            tracy::GetProfiler().SendCallstack( callstack );
+            tracy::GetProfiler().SendCallstack( callstack_depth );
         }
 
-        TracyQueuePrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
+        TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColorLiteral.time, GetTime() );
         MemWrite( &item->messageColorLiteral.text, (uint64_t)txt );
         MemWrite( &item->messageColorLiteral.b, uint8_t( ( color       ) & 0xFF ) );

@@ -314,7 +314,7 @@ TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_
 TRACY_API void ___tracy_emit_plot( const char* name, double val );
 TRACY_API void ___tracy_emit_plot_float( const char* name, float val );
 TRACY_API void ___tracy_emit_plot_int( const char* name, int64_t val );
-TRACY_API void ___tracy_emit_plot_config( const char* name, int type, int step, int fill, uint32_t color );
+TRACY_API void ___tracy_emit_plot_config( const char* name, int32_t type, int32_t step, int32_t fill, uint32_t color );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );

@@ -305,6 +305,18 @@ module tracy
     end subroutine impl_tracy_emit_plot_config
   end interface
 
+#ifdef TRACY_FIBERS
+  interface
+    subroutine impl_tracy_fiber_enter(fiber_name) &
+            bind(C, name="___tracy_fiber_enter")
+        import
+        type(c_ptr), intent(in) :: fiber_name
+    end subroutine impl_tracy_fiber_enter
+    subroutine tracy_fiber_leave() &
+            bind(C, name="___tracy_fiber_leave") &
+    end subroutine tracy_fiber_leave
+  end interface
+#endif
   !
   public :: tracy_zone_context
   !
@@ -320,6 +332,9 @@ module tracy
   public :: tracy_message
   public :: tracy_image
   public :: tracy_plot_config, tracy_plot
+#ifdef TRACY_FIBERS
+  public :: tracy_fiber_enter, tracy_fiber_leave
+#endif
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -574,4 +589,11 @@ contains
     if (present(color)) color_ = color
     call impl_tracy_emit_plot_config(c_loc(name), type_, step_, fill_, color_)
   end subroutine tracy_plot_config
+
+#ifdef TRACY_FIBERS
+  subroutine tracy_fiber_enter(fiber_name)
+    character(kind=c_char, len=*), target, intent(in) :: fiber_name
+    call impl_tracy_fiber_enter(c_loc(fiber_name))
+  end subroutine tracy_fiber_enter
+#endif
 end module tracy

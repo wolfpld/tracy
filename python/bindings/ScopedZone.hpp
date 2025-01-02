@@ -27,7 +27,7 @@ bool SetText(const std::string& text, tracy::ScopedZone* zone) {
 class PyScopedZone {
  public:
   PyScopedZone(const std::optional<std::string>& name, uint32_t color,
-               std::optional<int> depth, bool active,
+               std::optional<int32_t> depth, bool active,
                const std::string& function, const std::string& source,
                uint32_t line)
       : m_name(name),
@@ -88,7 +88,7 @@ class PyScopedZone {
  private:
   std::optional<std::string> m_name;
   uint32_t m_color;
-  std::optional<int> m_depth;
+  std::optional<int32_t> m_depth;
   bool m_active;
 
   std::string m_function;
@@ -101,7 +101,7 @@ class PyScopedZone {
 
 class PyScopedZone {
  public:
-  PyScopedZone(const std::optional<std::string>&, uint32_t, std::optional<int>,
+  PyScopedZone(const std::optional<std::string>&, uint32_t, std::optional<int32_t>,
                bool, const std::string&, const std::string&, uint32_t line) {}
   virtual ~PyScopedZone(){};
 

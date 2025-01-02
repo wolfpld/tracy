@@ -7,7 +7,7 @@ namespace py = pybind11;
 #include "tracy/Tracy.hpp"
 
 using OptionalString = std::optional<std::string>;
-using OptionalInt = std::optional<int>;
+using OptionalInt = std::optional<int32_t>;
 
 #ifdef TRACY_ENABLE
 template <typename Type = uint64_t>

@@ -140,6 +140,33 @@ module tracy
     end subroutine tracy_zone_end
   end interface
 
+  interface
+    subroutine tracy_emit_zone_text(ctx, txt, size) bind(C, name="___tracy_emit_zone_text")
+      import
+      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(c_ptr), intent(in) :: txt
+      integer(c_size_t), intent(in), value :: size
+    end subroutine tracy_emit_zone_text
+    subroutine tracy_emit_zone_name(ctx, txt, size) bind(C, name="___tracy_emit_zone_name")
+      import
+      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(c_ptr), intent(in) :: txt
+      integer(c_size_t), intent(in), value :: size
+    end subroutine tracy_emit_zone_name
+    subroutine tracy_emit_zone_color(ctx, color) bind(C, name="___tracy_emit_zone_color")
+      import
+      type(tracy_c_zone_context), intent(in), value :: ctx
+      integer(c_int32_t), intent(in), value :: color
+    end subroutine tracy_emit_zone_color
+    subroutine tracy_emit_zone_value(ctx, value) bind(C, name="___tracy_emit_zone_value")
+      import
+      type(tracy_c_zone_context), intent(in), value :: ctx
+      integer(c_int64_t), intent(in), value :: value
+    end subroutine tracy_emit_zone_value
+  end interface
+
+  ! GPU is not supported yet
+
   !
   public :: tracy_c_zone_context
   !
@@ -147,6 +174,7 @@ module tracy
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
   public :: tracy_alloc_srcloc
   public :: tracy_zone_begin, tracy_zone_end
+  public :: tracy_zone_set_properties
 contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
@@ -222,4 +250,24 @@ contains
     if (present(depth)) depth_ = depth
     tracy_emit_zone_begin_type = impl_tracy_emit_zone_begin_callstack(srcloc, depth_, active_)
   end function tracy_emit_zone_begin_type
+
+  subroutine tracy_zone_set_properties(ctx, text, name, color, value)
+    type(tracy_c_zone_context), intent(in), value :: ctx
+    character(kind=c_char, len=*), target, intent(in), optional :: text
+    character(kind=c_char, len=*), target, intent(in), optional :: name
+    integer(c_int32_t), target, intent(in), optional :: color
+    integer(c_int64_t), target, intent(in), optional :: value
+    if (present(text)) then
+      call tracy_emit_zone_text(ctx, c_loc(text), len(text, kind=c_size_t))
+    end if
+    if (present(name)) then
+      call tracy_emit_zone_name(ctx, c_loc(name), len(name, kind=c_size_t))
+    end if
+    if (present(color)) then
+      call tracy_emit_zone_color(ctx, color)
+    end if
+    if (present(value)) then
+      call tracy_emit_zone_value(ctx, value)
+    end if
+  end subroutine tracy_zone_set_properties
 end module tracy

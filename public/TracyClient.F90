@@ -167,11 +167,19 @@ module tracy
 
   ! GPU is not supported yet
 
+  interface
+    function impl_tracy_connected() bind(C, name="___tracy_connected")
+      import
+      integer(c_int32_t) :: impl_tracy_connected
+    end function impl_tracy_connected
+  end interface
+
   !
   public :: tracy_c_zone_context
   !
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
+  public :: tracy_connected
   public :: tracy_alloc_srcloc
   public :: tracy_zone_begin, tracy_zone_end
   public :: tracy_zone_set_properties
@@ -270,4 +278,8 @@ contains
       call tracy_emit_zone_value(ctx, value)
     end if
   end subroutine tracy_zone_set_properties
+
+  logical(1) function tracy_connected()
+    tracy_connected = impl_tracy_connected() /= 0_c_int32_t
+  end function tracy_connected
 end module tracy

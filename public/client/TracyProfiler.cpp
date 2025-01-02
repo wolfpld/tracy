@@ -4980,9 +4980,9 @@ TRACY_API void ___tracy_shutdown_profiler( void )
     tracy::ShutdownProfiler();
 }
 
-TRACY_API int ___tracy_profiler_started( void )
+TRACY_API int32_t ___tracy_profiler_started( void )
 {
-    return tracy::s_isProfilerStarted.load( std::memory_order_seq_cst );
+    return static_cast<int32_t>( tracy::s_isProfilerStarted.load( std::memory_order_seq_cst ) );
 }
 #  endif
 

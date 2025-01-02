@@ -204,7 +204,7 @@ typedef struct __tracy_lockable_context_data* TracyCLockCtx;
 #ifdef TRACY_MANUAL_LIFETIME
 TRACY_API void ___tracy_startup_profiler(void);
 TRACY_API void ___tracy_shutdown_profiler(void);
-TRACY_API int ___tracy_profiler_started(void);
+TRACY_API int32_t ___tracy_profiler_started(void);
 
 #  define TracyCIsStarted ___tracy_profiler_started()
 #else

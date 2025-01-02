@@ -34,19 +34,15 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
 #endif
-        if (depth > 0 && has_callstack()) {
+        auto zoneQueue = QueueType::ZoneBegin;
+        if( depth > 0 && has_callstack() ) {
             GetProfiler().SendCallstack( depth );
-
-            TracyQueuePrepare( QueueType::ZoneBeginCallstack );
-            MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-            MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-            TracyQueueCommit( zoneBeginThread );
-        } else {
-            TracyQueuePrepare( QueueType::ZoneBegin );
-            MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-            MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-            TracyQueueCommit( zoneBeginThread );
+            zoneQueue = QueueType::ZoneBeginCallstack;
         }
+        TracyQueuePrepare( zoneQueue );
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
+        MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+        TracyQueueCommit( zoneBeginThread );
     }
 
     tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color, int depth = -1, bool is_active = true )
@@ -60,21 +56,16 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_connectionId = GetProfiler().ConnectionId();
 #endif
-        if (depth > 0 && has_callstack()) {
+        auto zoneQueue = QueueType::ZoneBeginAllocSrcLoc;
+        if( depth > 0 && has_callstack() ) {
             GetProfiler().SendCallstack( depth );
-
-            TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
-            const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
-            MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-            MemWrite( &item->zoneBegin.srcloc, srcloc );
-            TracyQueueCommit( zoneBeginThread );
-        } else {
-            TracyQueuePrepare( QueueType::ZoneBeginAllocSrcLoc );
-            const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
-            MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-            MemWrite( &item->zoneBegin.srcloc, srcloc );
-            TracyQueueCommit( zoneBeginThread );
+            zoneQueue = QueueType::ZoneBeginAllocSrcLocCallstack;
         }
+        TracyQueuePrepare( zoneQueue );
+        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
+        MemWrite( &item->zoneBegin.srcloc, srcloc );
+        TracyQueueCommit( zoneBeginThread );
     }
 
     tracy_force_inline ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true ) : ScopedZone( line, source, sourceSz, function, functionSz, name, nameSz, 0, depth, is_active ) {}

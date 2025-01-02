@@ -4291,20 +4291,16 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    if (depth > 0 && tracy::has_callstack()) {
+    auto zoneQueue = tracy::QueueType::ZoneBegin;
+    if( depth > 0 && tracy::has_callstack() ) {
         tracy::GetProfiler().SendCallstack( depth );
-        {
-            TracyQueuePrepareC( tracy::QueueType::ZoneBeginCallstack );
-            tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
-            tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-            TracyQueueCommitC( zoneBeginThread );
-        }
-    } else {
-        TracyQueuePrepareC( tracy::QueueType::ZoneBegin );
-        tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
-        tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        TracyQueueCommitC( zoneBeginThread );
+        zoneQueue = tracy::QueueType::ZoneBeginCallstack;
     }
+    TracyQueuePrepareC( zoneQueue );
+    tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
+    tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+    TracyQueueCommitC( zoneBeginThread );
+
     return ctx;
 }
 
@@ -4363,20 +4359,16 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
         TracyQueueCommitC( zoneValidationThread );
     }
 #endif
-    if (depth > 0 && tracy::has_callstack()) {
+    auto zoneQueue = tracy::QueueType::ZoneBeginAllocSrcLoc;
+    if( depth > 0 && tracy::has_callstack() ) {
         tracy::GetProfiler().SendCallstack( depth );
-        {
-            TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
-            tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
-            tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-            TracyQueueCommitC( zoneBeginThread );
-        }
-    } else {
-        TracyQueuePrepareC( tracy::QueueType::ZoneBeginAllocSrcLoc );
-        tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
-        tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        TracyQueueCommitC( zoneBeginThread );
+        zoneQueue = tracy::QueueType::ZoneBeginAllocSrcLocCallstack;
     }
+    TracyQueuePrepareC( zoneQueue );
+    tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
+    tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
+    TracyQueueCommitC( zoneBeginThread );
+
     return ctx;
 }
 

@@ -9,6 +9,8 @@ module tracy
   integer(c_int32_t), parameter, public :: TRACY_PLOTFORMAT_PERCENTAGE = 2
   integer(c_int32_t), parameter, public :: TRACY_PLOTFORMAT_WATT = 3
 
+  character(c_char), parameter, public :: tracy_null_char = c_null_char
+
   interface
     subroutine impl_tracy_set_thread_name(name) bind(C, name="___tracy_set_thread_name")
       import

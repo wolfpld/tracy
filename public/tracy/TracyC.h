@@ -352,7 +352,7 @@ TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_
 TRACY_API int32_t ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
-TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int acquired );
+TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API void ___tracy_mark_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
 TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const char* name, size_t nameSz );
 

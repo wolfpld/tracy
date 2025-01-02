@@ -4894,7 +4894,7 @@ TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_conte
     tracy::Profiler::QueueSerialFinish();
 }
 
-TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int acquired )
+TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int32_t acquired )
 {
 #ifdef TRACY_ON_DEMAND
     if( !acquired ) return;

@@ -232,6 +232,12 @@ module tracy
         integer(c_int32_t), value :: color
         integer(c_int32_t), value :: depth
     end subroutine impl_tracy_emit_messageC
+    subroutine impl_tracy_emit_message_appinfo(txt, size) &
+            bind(C, name="___tracy_emit_message_appinfo")
+        import
+        type(c_ptr), intent(in) :: txt
+        integer(c_size_t), value :: size
+    end subroutine impl_tracy_emit_message_appinfo
   end interface
 
   interface
@@ -270,6 +276,7 @@ module tracy
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
   public :: tracy_connected
+  public :: tracy_appinfo
   public :: tracy_alloc_srcloc
   public :: tracy_zone_begin, tracy_zone_end
   public :: tracy_zone_set_properties
@@ -445,6 +452,11 @@ contains
       call impl_tracy_emit_message(c_loc(msg), len(msg, kind=c_size_t), depth_)
     end if
   end subroutine tracy_message
+
+  subroutine tracy_appinfo(info)
+    character(kind=c_char, len=*), target, intent(in) :: info
+    call impl_tracy_emit_message_appinfo(c_loc(info), len(info, kind=c_size_t))
+  end subroutine tracy_appinfo
 
   subroutine tracy_frame_mark(name)
     character(kind=c_char, len=*), target, intent(in), optional :: name

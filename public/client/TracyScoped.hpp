@@ -35,7 +35,8 @@ public:
         m_connectionId = GetProfiler().ConnectionId();
 #endif
         auto zoneQueue = QueueType::ZoneBegin;
-        if( depth > 0 && has_callstack() ) {
+        if( depth > 0 && has_callstack() )
+        {
             GetProfiler().SendCallstack( depth );
             zoneQueue = QueueType::ZoneBeginCallstack;
         }
@@ -57,12 +58,14 @@ public:
         m_connectionId = GetProfiler().ConnectionId();
 #endif
         auto zoneQueue = QueueType::ZoneBeginAllocSrcLoc;
-        if( depth > 0 && has_callstack() ) {
+        if( depth > 0 && has_callstack() )
+        {
             GetProfiler().SendCallstack( depth );
             zoneQueue = QueueType::ZoneBeginAllocSrcLocCallstack;
         }
         TracyQueuePrepare( zoneQueue );
-        const auto srcloc = Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
+        const auto srcloc =
+            Profiler::AllocSourceLocation( line, source, sourceSz, function, functionSz, name, nameSz, color );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, srcloc );
         TracyQueueCommit( zoneBeginThread );

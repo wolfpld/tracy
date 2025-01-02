@@ -4292,7 +4292,8 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
     }
 #endif
     auto zoneQueue = tracy::QueueType::ZoneBegin;
-    if( depth > 0 && tracy::has_callstack() ) {
+    if( depth > 0 && tracy::has_callstack() )
+    {
         tracy::GetProfiler().SendCallstack( depth );
         zoneQueue = tracy::QueueType::ZoneBeginCallstack;
     }
@@ -4360,7 +4361,8 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
     }
 #endif
     auto zoneQueue = tracy::QueueType::ZoneBeginAllocSrcLoc;
-    if( depth > 0 && tracy::has_callstack() ) {
+    if( depth > 0 && tracy::has_callstack() )
+    {
         tracy::GetProfiler().SendCallstack( depth );
         zoneQueue = tracy::QueueType::ZoneBeginAllocSrcLocCallstack;
     }

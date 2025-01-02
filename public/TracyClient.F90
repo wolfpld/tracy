@@ -19,7 +19,7 @@ module tracy
     integer(c_int32_t) :: color
   end type
 
-  type, bind(C) :: tracy_c_zone_context
+  type, bind(C) :: tracy_zone_context
     integer(c_int32_t) :: id
     integer(c_int32_t) :: active
   end type
@@ -114,14 +114,14 @@ module tracy
   end interface
 
   interface
-    type(tracy_c_zone_context) function impl_tracy_emit_zone_begin_callstack(srcloc, depth, active) &
+    type(tracy_zone_context) function impl_tracy_emit_zone_begin_callstack(srcloc, depth, active) &
             bind(C, name="___tracy_emit_zone_begin_callstack")
       import
       type(tracy_source_location_data), intent(in) :: srcloc
       integer(c_int32_t), intent(in), value :: depth
       integer(c_int32_t), intent(in), value :: active
     end function impl_tracy_emit_zone_begin_callstack
-    type(tracy_c_zone_context) function impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth, active) &
+    type(tracy_zone_context) function impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth, active) &
             bind(C, name="___tracy_emit_zone_begin_alloc_callstack")
       import
       integer(c_int64_t), intent(in), value :: srcloc
@@ -136,31 +136,31 @@ module tracy
   interface
     subroutine tracy_zone_end(ctx) bind(C, name="___tracy_emit_zone_end")
       import
-      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(tracy_zone_context), intent(in), value :: ctx
     end subroutine tracy_zone_end
   end interface
 
   interface
     subroutine tracy_emit_zone_text(ctx, txt, size) bind(C, name="___tracy_emit_zone_text")
       import
-      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(tracy_zone_context), intent(in), value :: ctx
       type(c_ptr), intent(in) :: txt
       integer(c_size_t), intent(in), value :: size
     end subroutine tracy_emit_zone_text
     subroutine tracy_emit_zone_name(ctx, txt, size) bind(C, name="___tracy_emit_zone_name")
       import
-      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(tracy_zone_context), intent(in), value :: ctx
       type(c_ptr), intent(in) :: txt
       integer(c_size_t), intent(in), value :: size
     end subroutine tracy_emit_zone_name
     subroutine tracy_emit_zone_color(ctx, color) bind(C, name="___tracy_emit_zone_color")
       import
-      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(tracy_zone_context), intent(in), value :: ctx
       integer(c_int32_t), intent(in), value :: color
     end subroutine tracy_emit_zone_color
     subroutine tracy_emit_zone_value(ctx, value) bind(C, name="___tracy_emit_zone_value")
       import
-      type(tracy_c_zone_context), intent(in), value :: ctx
+      type(tracy_zone_context), intent(in), value :: ctx
       integer(c_int64_t), intent(in), value :: value
     end subroutine tracy_emit_zone_value
   end interface
@@ -306,7 +306,7 @@ module tracy
   end interface
 
   !
-  public :: tracy_c_zone_context
+  public :: tracy_zone_context
   !
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
@@ -357,7 +357,7 @@ contains
     endif
   end function tracy_alloc_srcloc
 
-  type(tracy_c_zone_context) function tracy_emit_zone_begin_id(srcloc, depth, active)
+  type(tracy_zone_context) function tracy_emit_zone_begin_id(srcloc, depth, active)
     integer(c_int64_t), intent(in) :: srcloc
     integer(c_int32_t), intent(in), optional :: depth
     logical(1), intent(in), optional :: active
@@ -376,7 +376,7 @@ contains
     if (present(depth)) depth_ = depth
     tracy_emit_zone_begin_id = impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth_, active_)
   end function tracy_emit_zone_begin_id
-  type(tracy_c_zone_context) function tracy_emit_zone_begin_type(srcloc, depth, active)
+  type(tracy_zone_context) function tracy_emit_zone_begin_type(srcloc, depth, active)
     type(tracy_source_location_data), intent(in) :: srcloc
     integer(c_int32_t), intent(in), optional :: depth
     logical(1), intent(in), optional :: active
@@ -397,7 +397,7 @@ contains
   end function tracy_emit_zone_begin_type
 
   subroutine tracy_zone_set_properties(ctx, text, name, color, value)
-    type(tracy_c_zone_context), intent(in), value :: ctx
+    type(tracy_zone_context), intent(in), value :: ctx
     character(kind=c_char, len=*), target, intent(in), optional :: text
     character(kind=c_char, len=*), target, intent(in), optional :: name
     integer(c_int32_t), target, intent(in), optional :: color

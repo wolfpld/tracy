@@ -95,7 +95,7 @@ module tracy
 
   interface
     function impl_tracy_alloc_srcloc(line, source, sourceSz, function_name, functionSz, color) &
-            bind(C, name="___tracy_alloc_srcloc")
+      bind(C, name="___tracy_alloc_srcloc")
       import
       integer(c_int64_t) :: impl_tracy_alloc_srcloc
       integer(c_int32_t), intent(in), value :: line
@@ -106,7 +106,7 @@ module tracy
       integer(c_int32_t), intent(in), value :: color
     end function impl_tracy_alloc_srcloc
     function impl_tracy_alloc_srcloc_name(line, source, sourceSz, function_name, functionSz, zone_name, nameSz, color) &
-            bind(C, name="___tracy_alloc_srcloc_name")
+      bind(C, name="___tracy_alloc_srcloc_name")
       import
       integer(c_int64_t) :: impl_tracy_alloc_srcloc_name
       integer(c_int32_t), intent(in), value :: line
@@ -122,14 +122,14 @@ module tracy
 
   interface
     type(tracy_zone_context) function impl_tracy_emit_zone_begin_callstack(srcloc, depth, active) &
-            bind(C, name="___tracy_emit_zone_begin_callstack")
+      bind(C, name="___tracy_emit_zone_begin_callstack")
       import
       type(tracy_source_location_data), intent(in) :: srcloc
       integer(c_int32_t), intent(in), value :: depth
       integer(c_int32_t), intent(in), value :: active
     end function impl_tracy_emit_zone_begin_callstack
     type(tracy_zone_context) function impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth, active) &
-            bind(C, name="___tracy_emit_zone_begin_alloc_callstack")
+      bind(C, name="___tracy_emit_zone_begin_alloc_callstack")
       import
       integer(c_int64_t), intent(in), value :: srcloc
       integer(c_int32_t), intent(in), value :: depth
@@ -183,118 +183,118 @@ module tracy
 
   interface
     subroutine impl_tracy_emit_memory_alloc_callstack(ptr, size, depth, secure) &
-            bind(C, name="___tracy_emit_memory_alloc_callstack")
-        import
-        type(c_ptr), intent(in) :: ptr
-        integer(c_size_t), intent(in), value :: size
-        integer(c_int32_t), intent(in), value :: depth
-        integer(c_int32_t), intent(in), value :: secure
+      bind(C, name="___tracy_emit_memory_alloc_callstack")
+      import
+      type(c_ptr), intent(in) :: ptr
+      integer(c_size_t), intent(in), value :: size
+      integer(c_int32_t), intent(in), value :: depth
+      integer(c_int32_t), intent(in), value :: secure
     end subroutine impl_tracy_emit_memory_alloc_callstack
     subroutine impl_tracy_emit_memory_alloc_callstack_named(ptr, size, depth, secure, name) &
-            bind(C, name="___tracy_emit_memory_alloc_callstack_named")
-        import
-        type(c_ptr), intent(in) :: ptr
-        integer(c_size_t), intent(in), value :: size
-        integer(c_int32_t), intent(in), value :: depth
-        integer(c_int32_t), intent(in), value :: secure
-        type(c_ptr), intent(in) :: name
+      bind(C, name="___tracy_emit_memory_alloc_callstack_named")
+      import
+      type(c_ptr), intent(in) :: ptr
+      integer(c_size_t), intent(in), value :: size
+      integer(c_int32_t), intent(in), value :: depth
+      integer(c_int32_t), intent(in), value :: secure
+      type(c_ptr), intent(in) :: name
     end subroutine impl_tracy_emit_memory_alloc_callstack_named
     subroutine impl_tracy_emit_memory_free_callstack(ptr, depth, secure) &
-            bind(C, name="___tracy_emit_memory_free_callstack")
-        import
-        type(c_ptr), intent(in) :: ptr
-        integer(c_int32_t), intent(in), value :: depth
-        integer(c_int32_t), intent(in), value :: secure
+      bind(C, name="___tracy_emit_memory_free_callstack")
+      import
+      type(c_ptr), intent(in) :: ptr
+      integer(c_int32_t), intent(in), value :: depth
+      integer(c_int32_t), intent(in), value :: secure
     end subroutine impl_tracy_emit_memory_free_callstack
     subroutine impl_tracy_emit_memory_free_callstack_named(ptr, depth, secure, name) &
-            bind(C, name="___tracy_emit_memory_free_callstack_named")
-        import
-        type(c_ptr), intent(in) :: ptr
-        integer(c_int32_t), intent(in), value :: depth
-        integer(c_int32_t), intent(in), value :: secure
-        type(c_ptr), intent(in) :: name
+      bind(C, name="___tracy_emit_memory_free_callstack_named")
+      import
+      type(c_ptr), intent(in) :: ptr
+      integer(c_int32_t), intent(in), value :: depth
+      integer(c_int32_t), intent(in), value :: secure
+      type(c_ptr), intent(in) :: name
     end subroutine impl_tracy_emit_memory_free_callstack_named
     subroutine impl_tracy_emit_memory_discard_callstack(name, secure, depth) &
-            bind(C, name="___tracy_emit_memory_discard_callstack")
-        import
-        type(c_ptr), intent(in) :: name
-        integer(c_int32_t), intent(in), value :: secure
-        integer(c_int32_t), intent(in), value :: depth
+      bind(C, name="___tracy_emit_memory_discard_callstack")
+      import
+      type(c_ptr), intent(in) :: name
+      integer(c_int32_t), intent(in), value :: secure
+      integer(c_int32_t), intent(in), value :: depth
     end subroutine impl_tracy_emit_memory_discard_callstack
   end interface
 
   interface
     subroutine impl_tracy_emit_message(txt, size, depth) &
-            bind(C, name="___tracy_emit_message")
-        import
-        type(c_ptr), intent(in) :: txt
-        integer(c_size_t), value :: size
-        integer(c_int32_t), value :: depth
+      bind(C, name="___tracy_emit_message")
+      import
+      type(c_ptr), intent(in) :: txt
+      integer(c_size_t), value :: size
+      integer(c_int32_t), value :: depth
     end subroutine impl_tracy_emit_message
     subroutine impl_tracy_emit_messageC(txt, size, color, depth) &
-            bind(C, name="___tracy_emit_messageC")
-        import
-        type(c_ptr), intent(in) :: txt
-        integer(c_size_t), value :: size
-        integer(c_int32_t), value :: color
-        integer(c_int32_t), value :: depth
+      bind(C, name="___tracy_emit_messageC")
+      import
+      type(c_ptr), intent(in) :: txt
+      integer(c_size_t), value :: size
+      integer(c_int32_t), value :: color
+      integer(c_int32_t), value :: depth
     end subroutine impl_tracy_emit_messageC
     subroutine impl_tracy_emit_message_appinfo(txt, size) &
-            bind(C, name="___tracy_emit_message_appinfo")
-        import
-        type(c_ptr), intent(in) :: txt
-        integer(c_size_t), value :: size
+      bind(C, name="___tracy_emit_message_appinfo")
+      import
+      type(c_ptr), intent(in) :: txt
+      integer(c_size_t), value :: size
     end subroutine impl_tracy_emit_message_appinfo
   end interface
 
   interface
     subroutine impl_tracy_emit_frame_mark(name) &
-            bind(C, name="___tracy_emit_frame_mark")
-        import
-        type(c_ptr), intent(in) :: name
+      bind(C, name="___tracy_emit_frame_mark")
+      import
+      type(c_ptr), intent(in) :: name
     end subroutine impl_tracy_emit_frame_mark
     subroutine impl_tracy_emit_frame_mark_start(name) &
-            bind(C, name="___tracy_emit_frame_mark_start")
-        import
-        type(c_ptr), intent(in) :: name
+      bind(C, name="___tracy_emit_frame_mark_start")
+      import
+      type(c_ptr), intent(in) :: name
     end subroutine impl_tracy_emit_frame_mark_start
     subroutine impl_tracy_emit_frame_mark_end(name) &
-            bind(C, name="___tracy_emit_frame_mark_end")
-        import
-        type(c_ptr), intent(in) :: name
+      bind(C, name="___tracy_emit_frame_mark_end")
+      import
+      type(c_ptr), intent(in) :: name
     end subroutine impl_tracy_emit_frame_mark_end
   end interface
 
   interface
     subroutine impl_tracy_emit_frame_image(image, w, h, offset, flip) &
-            bind(C, name="___tracy_emit_frame_image")
-        import
-        type(c_ptr), intent(in) :: image
-        integer(c_int16_t), intent(in), value :: w
-        integer(c_int16_t), intent(in), value :: h
-        integer(c_int8_t), intent(in), value :: offset
-        integer(c_int32_t), intent(in), value :: flip
+      bind(C, name="___tracy_emit_frame_image")
+      import
+      type(c_ptr), intent(in) :: image
+      integer(c_int16_t), intent(in), value :: w
+      integer(c_int16_t), intent(in), value :: h
+      integer(c_int8_t), intent(in), value :: offset
+      integer(c_int32_t), intent(in), value :: flip
     end subroutine impl_tracy_emit_frame_image
   end interface
 
   interface
     subroutine impl_tracy_emit_plot_int8(name, val) &
-            bind(C, name="___tracy_emit_plot_int")
-        import
-        type(c_ptr), intent(in) :: name
-        integer(c_int64_t), value :: val
+      bind(C, name="___tracy_emit_plot_int")
+      import
+      type(c_ptr), intent(in) :: name
+      integer(c_int64_t), value :: val
     end subroutine impl_tracy_emit_plot_int8
     subroutine impl_tracy_emit_plot_real4(name, val) &
-            bind(C, name="___tracy_emit_plot_float")
-        import
-        type(c_ptr), intent(in) :: name
-        real(c_float), value :: val
+      bind(C, name="___tracy_emit_plot_float")
+      import
+      type(c_ptr), intent(in) :: name
+      real(c_float), value :: val
     end subroutine impl_tracy_emit_plot_real4
     subroutine impl_tracy_emit_plot_real8(name, val) &
-            bind(C, name="___tracy_emit_plot")
-        import
-        type(c_ptr), intent(in) :: name
-        real(c_double), value :: val
+      bind(C, name="___tracy_emit_plot")
+      import
+      type(c_ptr), intent(in) :: name
+      real(c_double), value :: val
     end subroutine impl_tracy_emit_plot_real8
   end interface
   interface tracy_plot
@@ -302,25 +302,25 @@ module tracy
   end interface tracy_plot
   interface
     subroutine impl_tracy_emit_plot_config(name, type, step, fill, color) &
-            bind(C, name="___tracy_emit_plot_config")
-        import
-        type(c_ptr), intent(in) :: name
-        integer(c_int32_t), intent(in), value :: type
-        integer(c_int32_t), intent(in), value :: step
-        integer(c_int32_t), intent(in), value :: fill
-        integer(c_int32_t), intent(in), value :: color
+      bind(C, name="___tracy_emit_plot_config")
+      import
+      type(c_ptr), intent(in) :: name
+      integer(c_int32_t), intent(in), value :: type
+      integer(c_int32_t), intent(in), value :: step
+      integer(c_int32_t), intent(in), value :: fill
+      integer(c_int32_t), intent(in), value :: color
     end subroutine impl_tracy_emit_plot_config
   end interface
 
 #ifdef TRACY_FIBERS
   interface
     subroutine impl_tracy_fiber_enter(fiber_name) &
-            bind(C, name="___tracy_fiber_enter")
-        import
-        type(c_ptr), intent(in) :: fiber_name
+      bind(C, name="___tracy_fiber_enter")
+      import
+      type(c_ptr), intent(in) :: fiber_name
     end subroutine impl_tracy_fiber_enter
     subroutine tracy_fiber_leave() &
-            bind(C, name="___tracy_fiber_leave") &
+      bind(C, name="___tracy_fiber_leave")
     end subroutine tracy_fiber_leave
   end interface
 #endif
@@ -346,8 +346,8 @@ contains
   subroutine tracy_set_thread_name(name)
     character(kind=c_char, len=*), intent(in) :: name
     character(kind=c_char, len=:), allocatable, target :: alloc_name
-    allocate(character(kind=c_char, len=len(name) + 1) :: alloc_name)
-    alloc_name = name // c_null_char
+    allocate (character(kind=c_char, len=len(name) + 1) :: alloc_name)
+    alloc_name = name//c_null_char
     call impl_tracy_set_thread_name(c_loc(alloc_name))
   end subroutine tracy_set_thread_name
 
@@ -367,16 +367,16 @@ contains
     if (present(color)) color_ = color
     if (present(zone_name)) then
       tracy_alloc_srcloc = impl_tracy_alloc_srcloc_name(line, &
-            c_loc(source), len(source, kind=c_size_t), &
-            c_loc(function_name), len(function_name, kind=c_size_t), &
-            c_loc(zone_name), len(zone_name, kind=c_size_t), &
-            color_)
+                                                        c_loc(source), len(source, kind=c_size_t), &
+                                                        c_loc(function_name), len(function_name, kind=c_size_t), &
+                                                        c_loc(zone_name), len(zone_name, kind=c_size_t), &
+                                                        color_)
     else
       tracy_alloc_srcloc = impl_tracy_alloc_srcloc(line, &
-            c_loc(source), len(source, kind=c_size_t), &
-            c_loc(function_name), len(function_name, kind=c_size_t), &
-            color_)
-    endif
+                                                   c_loc(source), len(source, kind=c_size_t), &
+                                                   c_loc(function_name), len(function_name, kind=c_size_t), &
+                                                   color_)
+    end if
   end function tracy_alloc_srcloc
 
   type(tracy_zone_context) function tracy_emit_zone_begin_id(srcloc, depth, active)

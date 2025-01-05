@@ -381,7 +381,7 @@ contains
   end function tracy_alloc_srcloc
 
   type(tracy_zone_context) function tracy_emit_zone_begin_id(srcloc, depth, active)
-    integer(c_int64_t), intent(in) :: srcloc
+    integer(c_int64_t), intent(inout) :: srcloc
     integer(c_int32_t), intent(in), optional :: depth
     logical(1), intent(in), optional :: active
     !
@@ -398,9 +398,10 @@ contains
     end if
     if (present(depth)) depth_ = depth
     tracy_emit_zone_begin_id = impl_tracy_emit_zone_begin_alloc_callstack(srcloc, depth_, active_)
+    srcloc = 0_c_int64_t
   end function tracy_emit_zone_begin_id
   type(tracy_zone_context) function tracy_emit_zone_begin_type(srcloc, depth, active)
-    type(tracy_source_location_data), intent(in) :: srcloc
+    type(tracy_source_location_data), intent(inout) :: srcloc
     integer(c_int32_t), intent(in), optional :: depth
     logical(1), intent(in), optional :: active
     !
@@ -417,6 +418,7 @@ contains
     end if
     if (present(depth)) depth_ = depth
     tracy_emit_zone_begin_type = impl_tracy_emit_zone_begin_callstack(srcloc, depth_, active_)
+    srcloc = tracy_source_location_data(c_null_ptr, c_null_ptr, c_null_ptr, 0_c_int32_t, 0_c_int32_t)
   end function tracy_emit_zone_begin_type
 
   subroutine tracy_zone_set_properties(ctx, text, name, color, value)

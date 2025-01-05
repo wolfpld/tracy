@@ -226,8 +226,13 @@ install(FILES ${client_includes}
 install(FILES ${common_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy/common)
 if(TRACY_Fortran)
-    install(FILES ${PROJECT_BINARY_DIR}/tracy.mod
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
+    if(${CMAKE_Fortran_COMPILER_ID} MATCHES "Cray")
+        install(FILES ${PROJECT_BINARY_DIR}/TRACY.mod
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
+    else()
+        install(FILES ${PROJECT_BINARY_DIR}/tracy.mod
+                DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
+    endif()
 endif()
 install(EXPORT TracyConfig
         NAMESPACE Tracy::

@@ -1007,7 +1007,9 @@ module tracy
   public :: tracy_zone_context
   public :: tracy_source_location_data
   !
+#ifndef __SUNPRO_F90
   type(TracyColors_t), public, parameter :: TracyColors = TracyColors_t()
+#endif
   !
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started

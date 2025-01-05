@@ -326,6 +326,7 @@ module tracy
 #endif
   !
   public :: tracy_zone_context
+  public :: tracy_source_location_data
   !
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started

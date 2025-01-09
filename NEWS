@@ -22,6 +22,34 @@ vx.xx.x (xxxx-xx-xx)
   installed. CMake will download the required version from GitHub.
 - Added option to show the top inline in symbol statistics list in stead of
   the symbol name.
+- Parallel sorting is now performed with PPQSort (which removes potential
+  dependency on TBB).
+- Added CMake option TRACY_DEBUGINFOD to enable use of libdebuginfod to
+  retrieve symbols on Linux clients.
+- Added a "custom" label as an option to select for GPU context type.
+- Symbol code retrieval is now protected against reading no longer available
+  memory.
+- Clicking on a symbol in the symbol statistics list will now open a popup
+  with two options. This change intends to make the useful but quite hidden
+  disassembly view more discoverable.
+  - "View symbol" shows the symbol code disassembly. It was previously
+    available by right-click on the source file name.
+  - "Sample entry call stacks" shows the list window that was previously
+    opened when the symbol entry was clicked.
+- Plots are now extended to the end of the trace, instead of ending at the
+  last data point.
+- Added TracyMemoryDiscard macros to mark that all allocations made in a
+  certain memory pool were freed. This enables better support for arena
+  allocators.
+- It is now possible to fine-tune horizontal and vertical mouse wheel scroll
+  sensitivity.
+- Added p75 and p90 percentiles in the Find zone window.
+- Zone info window will now display (approximate) wall-clock time of when
+  the zone appeared, in addition to the previously displayed time from the
+  start of the program.
+- Zone values passed via ZoneValue macro will be now also displayed in hex.
+- The csvexport utility can now export plots.
+- Fortran integration is now available.
 
 
 v0.11.1 (2024-08-22)

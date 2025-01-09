@@ -1675,7 +1675,7 @@ At the moment, the Metal back-end in Tracy operates differently than other GPU b
 
 You may also use \texttt{TracyMetalZoneC(name, encoderDescriptor, color)} to specify a zone color. There is no interface for callstack or transient Metal zones at the moment.
 
-You are required to periodically collect the GPU events using the \texttt{TracyMetalCollect(ctx)} macro. Good places for collection are: after synchronous waits, after present drawable calls, and inside the completion handler of command buffers. 
+You are required to periodically collect the GPU events using the \texttt{TracyMetalCollect(ctx)} macro. Good places for collection are: after synchronous waits, after present drawable calls, and inside the completion handler of command buffers.
 
 \subsubsection{OpenCL}
 
@@ -2119,6 +2119,7 @@ TracyCLockAfterUnlock(tracy_lock_ctx);
 You can optionally mark the location of where the lock is held by using the \texttt{TracyCLockMark} macro, this should be done after acquiring the lock.
 
 \subsubsection{Memory profiling}
+\label{cmemoryprofiling}
 
 Use the following macros in your implementations of \texttt{malloc} and \texttt{free}:
 
@@ -2365,6 +2366,229 @@ python3 setup.py bdist_wheel
 \end{lstlisting}
 
 The created package will be in the folder \texttt{python/dist}.
+
+\subsection{Fortran API}
+\label{fortranapi}
+
+To profile code written in Fortran programming language, you will need to use the \texttt{tracy} module, which exposes the Fortran API.
+
+At the moment, there's no support for Fortran API based markup of locks (as well as Fortran lacks them) and GPU zones.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Tracy is written in C++, so you will need to have a C++ compiler and link with C++ standard library, even if your program is strictly pure Fortran.
+For mixed Fortran/C++ applications, be sure that the same compiler is used both for Tracy and for C++-part of application.
+\end{bclogo}
+
+\subsubsection{First steps}
+
+\paragraph{CMake integration}
+
+You can integrate Tracy with CMake by adding the git submodule folder as a subdirectory.
+
+\begin{lstlisting}
+# set options before add_subdirectory
+# available options: TRACY_ENABLE, TRACY_ON_DEMAND, TRACY_NO_BROADCAST, TRACY_NO_CODE_TRANSFER, ...
+option(TRACY_ENABLE "" ON)
+# must be enabled
+option(TRACY_Fortran "" ON)
+option(TRACY_DELAYED_INIT "" ON)
+option(TRACY_MANUAL_LIFETIME "" ON)
+add_subdirectory(3rdparty/tracy)  # target: TracyClientF90 or alias Tracy::TracyClientF90
+\end{lstlisting}
+
+Link \texttt{Tracy::TracyClientF90} to any target where you use Tracy for profiling:
+
+\begin{lstlisting}
+target_link_libraries(<TARGET> PUBLIC Tracy::TracyClientF90)
+\end{lstlisting}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{CMake FetchContent}
+When using CMake 3.11 or newer, you can use Tracy via CMake FetchContent. In this case, you do not need to add a git submodule for Tracy manually. Add this to your CMakeLists.txt:
+
+\begin{lstlisting}
+option(TRACY_Fortran "" ON)
+option(TRACY_DELAYED_INIT "" ON)
+option(TRACY_MANUAL_LIFETIME "" ON)
+
+FetchContent_Declare(
+    tracy
+    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+    GIT_TAG        master
+    GIT_SHALLOW    TRUE
+    GIT_PROGRESS   TRUE
+)
+
+FetchContent_MakeAvailable(tracy)
+\end{lstlisting}
+
+Then add this to any target where you use tracy for profiling:
+
+\begin{lstlisting}
+target_link_libraries(<TARGET> PUBLIC TracyClientF90)
+\end{lstlisting}
+\end{bclogo}
+
+\paragraph{\texttt{tracy} module}
+
+Fortran API is available \textit{via} \texttt{tracy} module. FORTRAN 77 is not supported.
+
+\paragraph{Manual start and stop}
+
+To start profiling, you need to call \texttt{tracy\_startup\_profiler()} manually.
+At the end of profiling, you need to call \texttt{tracy\_shutdown\_profiler()} manually.
+Be sure that it is called in all possible exit branches.
+To check profiler status, you may use \texttt{tracy\_profiler\_started()} function.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Tip}
+\texttt{stop} and \texttt{error stop} statements can be intercept at \texttt{exit} system call on UNIX systems.
+\end{bclogo}
+
+\paragraph{Example usage}
+
+A simple example of Fortran API usage is presented below:
+
+\begin{lstlisting}
+program main
+#ifdef TRACY_ENABLE
+    use tracy
+#endif
+    implicit none
+
+#ifdef TRACY_ENABLE
+    if (.not.tracy_profiler_started()) call tracy_startup_profiler()
+    ! wait connection
+    do while (.not.tracy_connected())
+        call sleep(1) ! GNU extension
+    end do
+#endif
+
+    ! do something useful
+
+#ifdef TRACY_ENABLE
+    call tracy_shutdown_profiler()
+#endif
+end program main
+\end{lstlisting}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Since you are directly calling the profiler functions here, you will need to take care of manually disabling the code if the \texttt{TRACY\_ENABLE} macro is not defined.
+\end{bclogo}
+
+\subsubsection{Setting thread names}
+
+To set thread names (section~\ref{namingthreads}) using the Fortran API you should use the \texttt{tracy\_set\_thread\_name(name)} call.
+\texttt{zone\_name} is any Fortran strings.
+
+\subsubsection{Zone markup}
+
+The \texttt{tracy\_zone\_begin} call mark the beginning of a zone and returns \texttt{type(tracy\_zone\_context)} context.
+As a source location data, it can accept \texttt{type(tracy\_source\_location\_data)} or ID (\texttt{integer(c\_int64\_t)}) of source location data.
+This ID can be obtained \textit{via} \texttt{tracy\_alloc\_srcloc(line, source, function\_name, zone\_name, color)} call.
+\texttt{source}, \texttt{function\_name} and \texttt{zone\_name} are any Fortran strings.
+For using \texttt{type(tracy\_source\_location\_data)}, strings must be null-terminated.
+
+Like C++, Fortran has an automatic destruction mechanism which unfortunately was not implemented prior GCC 10 (which are still popular as of beginning of 2025) and therefore context must be destroyed manually.
+To do so use the \texttt{tracy\_zone\_end(ctx)} call.
+
+Zone text and name, as well as color and value, may be set by using the \texttt{tracy\_zone\_set\_properties(ctx, text, name, color, value)} call.
+\texttt{text} and \texttt{name} are any Fortran strings.
+Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
+
+\paragraph{Zone validation}
+
+Since all Fortran API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section~\ref{instrumentationfailures} for more information.
+
+However, the validation comes with a performance cost, which you may not want to pay. Therefore, if you are \emph{entirely sure} that the instrumentation is not broken in any way, you may use the \texttt{TRACY\_NO\_VERIFY} macro, which will disable the validation code.
+
+\subsubsection{Frame markup}
+
+To mark frames, as described in section~\ref{markingframes}, use the following calls:
+
+\begin{itemize}
+\item \texttt{tracy\_frame\_mark(name)}
+\item \texttt{tracy\_frame\_start(name)}
+\item \texttt{tracy\_frame\_end(name)}
+\end{itemize}
+
+\texttt{name} can be omitted as optional argument or must be a null-terminated constant string.
+
+To collect frame images, use \texttt{tracy\_image(image, w, h, offset, flip)} call.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Collecting matrices}
+\texttt{tracy\_image} can also collect matrix after a proper encoding it as \texttt{integer(c\_int32\_t)} 2D matrix.
+\end{bclogo}
+
+\subsubsection{Memory profiling}
+
+Use the following calls in your implementations of allocator/deallocator:
+
+\begin{itemize}
+\item \texttt{tracy\_memory\_alloc(ptr, size, name, depth, secure)}
+\item \texttt{tracy\_memory\_free(ptr, name, depth, secure)}
+\end{itemize}
+
+Correctly using this functionality can be pretty tricky especially in Fortran.
+In Fortran, you can not redefine \texttt{allocate} statement (as well as \texttt{deallocate} statement) to profile memory usage by \texttt{allocatable} variables.
+However, many applications\footnote{Examples from Quantum Chemistry: GAMESS(US), MRCC} uses stack allocator on memory tape where these calls can be useful.
+
+Memory pools (section~\ref{memorypools}) are supported through optional argument \texttt{name} which must be a null-terminated constant string.
+
+For more information about memory profiling, refer to section~\ref{memoryprofiling}.
+For memory allocations implemented in C++/C,  refer to section~\ref{memoryprofiling} and section~\ref{cmemoryprofiling}, respectively.
+
+\subsubsection{Plots and messages}
+
+To send additional markup in form of plot data points or messages use the following calls:
+
+\begin{itemize}
+\item \texttt{tracy\_message(msg, color, depth)}
+\item \texttt{tracy\_plot(name, val)}
+\item \texttt{tracy\_plot\_config(name, type, step, fill, color)}
+\item \texttt{tracy\_appinfo(info)}
+\end{itemize}
+
+Note, \texttt{name} must be a null-terminated constant string, while \texttt{msg} and \texttt{info} are any Fortran strings.
+
+Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
+
+\subsubsection{Fibers}
+
+Fibers are available in the Fortran API through the \texttt{tracy\_fiber\_enter(name)} and \texttt{tracy\_fiber\_leave()} calls. To use them, you should observe the requirements listed in section~\ref{fibers}.
+Note, \texttt{name} must be a null-terminated constant string.
+
+\subsubsection{Connection Status}
+
+To query the connection status (section~\ref{connectionstatus}) using the Fortran API you should use the \texttt{tracy\_connected()} function.
+
+\subsubsection{Call stacks}
+
+You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using optional \texttt{depth} argument in functions/subroutines calls.
+
+\subsubsection{Colors}
+
+A set of predefined colors is available with \texttt{TracyColors} variable inside of \texttt{tracy} module.
+To get a specific color, use \texttt{TracyColors\%COLOR} where \texttt{COLOR} is a specific one like \texttt{Red} or \texttt{Blue}.
+
 
 \subsection{Automated data collection}
 \label{automated}

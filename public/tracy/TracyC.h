@@ -140,7 +140,7 @@ struct ___tracy_source_location_data
 struct ___tracy_c_zone_context
 {
     uint32_t id;
-    int active;
+    int32_t active;
 };
 
 struct ___tracy_gpu_time_data
@@ -158,7 +158,7 @@ struct ___tracy_gpu_zone_begin_data {
 
 struct ___tracy_gpu_zone_begin_callstack_data {
     uint64_t srcloc;
-    int depth;
+    int32_t depth;
     uint16_t queryId;
     uint8_t context;
 };
@@ -204,7 +204,7 @@ typedef struct __tracy_lockable_context_data* TracyCLockCtx;
 #ifdef TRACY_MANUAL_LIFETIME
 TRACY_API void ___tracy_startup_profiler(void);
 TRACY_API void ___tracy_shutdown_profiler(void);
-TRACY_API int ___tracy_profiler_started(void);
+TRACY_API int32_t ___tracy_profiler_started(void);
 
 #  define TracyCIsStarted ___tracy_profiler_started()
 #else
@@ -214,10 +214,10 @@ TRACY_API int ___tracy_profiler_started(void);
 TRACY_API uint64_t ___tracy_alloc_srcloc( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, uint32_t color );
 TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color );
 
-TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int active );
-TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int depth, int active );
-TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int active );
-TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srcloc, int depth, int active );
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int32_t active );
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int32_t depth, int32_t active );
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int32_t active );
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srcloc, int32_t depth, int32_t active );
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx );
 TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size );
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size );
@@ -246,7 +246,7 @@ TRACY_API void ___tracy_emit_gpu_context_name_serial( const struct ___tracy_gpu_
 TRACY_API void ___tracy_emit_gpu_calibration_serial( const struct ___tracy_gpu_calibration_data );
 TRACY_API void ___tracy_emit_gpu_time_sync_serial( const struct ___tracy_gpu_time_sync_data );
 
-TRACY_API int ___tracy_connected(void);
+TRACY_API int32_t ___tracy_connected(void);
 
 #ifndef TRACY_CALLSTACK
 #define TRACY_CALLSTACK 0
@@ -265,21 +265,21 @@ TRACY_API int ___tracy_connected(void);
 #define TracyCZoneValue( ctx, value ) ___tracy_emit_zone_value( ctx, value );
 
 
-TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int secure );
-TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth, int secure );
-TRACY_API void ___tracy_emit_memory_free( const void* ptr, int secure );
-TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth, int secure );
-TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int depth, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int depth, int secure, const char* name );
-TRACY_API void ___tracy_emit_memory_discard( const char* name, int secure );
-TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int secure, int size );
+TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size, int32_t secure );
+TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int32_t depth, int32_t secure );
+TRACY_API void ___tracy_emit_memory_free( const void* ptr, int32_t secure );
+TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int32_t depth, int32_t secure );
+TRACY_API void ___tracy_emit_memory_alloc_named( const void* ptr, size_t size, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_alloc_callstack_named( const void* ptr, size_t size, int32_t depth, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_named( const void* ptr, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int32_t depth, int32_t secure, const char* name );
+TRACY_API void ___tracy_emit_memory_discard( const char* name, int32_t secure );
+TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int32_t depth );
 
-TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack );
-TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack );
-TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int callstack );
-TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int callstack );
+TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_messageL( const char* txt, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int32_t callstack_depth );
 
 #define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK, 0 )
 #define TracyCFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK, 0 )
@@ -302,7 +302,7 @@ TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int cal
 TRACY_API void ___tracy_emit_frame_mark( const char* name );
 TRACY_API void ___tracy_emit_frame_mark_start( const char* name );
 TRACY_API void ___tracy_emit_frame_mark_end( const char* name );
-TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_t h, uint8_t offset, int flip );
+TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_t h, uint8_t offset, int32_t flip );
 
 #define TracyCFrameMark ___tracy_emit_frame_mark( 0 );
 #define TracyCFrameMarkNamed( name ) ___tracy_emit_frame_mark( name );
@@ -314,7 +314,7 @@ TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_
 TRACY_API void ___tracy_emit_plot( const char* name, double val );
 TRACY_API void ___tracy_emit_plot_float( const char* name, float val );
 TRACY_API void ___tracy_emit_plot_int( const char* name, int64_t val );
-TRACY_API void ___tracy_emit_plot_config( const char* name, int type, int step, int fill, uint32_t color );
+TRACY_API void ___tracy_emit_plot_config( const char* name, int32_t type, int32_t step, int32_t fill, uint32_t color );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
@@ -349,10 +349,10 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx( const struct ___tracy_source_location_data* srcloc );
 TRACY_API void ___tracy_terminate_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
-TRACY_API int ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
+TRACY_API int32_t ___tracy_before_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
 TRACY_API void ___tracy_after_unlock_lockable_ctx( struct __tracy_lockable_context_data* lockdata );
-TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int acquired );
+TRACY_API void ___tracy_after_try_lock_lockable_ctx( struct __tracy_lockable_context_data* lockdata, int32_t acquired );
 TRACY_API void ___tracy_mark_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const struct ___tracy_source_location_data* srcloc );
 TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_context_data* lockdata, const char* name, size_t nameSz );
 

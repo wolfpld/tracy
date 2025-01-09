@@ -25,7 +25,7 @@ class GpuCtxScope
 {
 public:
     GpuCtxScope( const SourceLocationData*, bool ) {}
-    GpuCtxScope( const SourceLocationData*, int, bool ) {}
+    GpuCtxScope( const SourceLocationData*, int32_t, bool ) {}
 };
 }
 
@@ -222,7 +222,7 @@ public:
         TracyLfqCommit;
     }
 
-    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int depth, bool is_active )
+    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int32_t depth, bool is_active )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
 #else
@@ -271,7 +271,7 @@ public:
         TracyLfqCommit;
     }
 
-    tracy_force_inline GpuCtxScope( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active )
+    tracy_force_inline GpuCtxScope( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int32_t depth, bool is_active )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
 #else

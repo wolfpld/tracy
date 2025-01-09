@@ -820,7 +820,7 @@ PYBIND11_MODULE(TracyClientBindings, m) {
 
   m.def(
       "_plot_config",
-      [](const std::string &name, int type, bool step, bool fill,
+      [](const std::string &name, int32_t type, bool step, bool fill,
          uint32_t color = 0) {
         if (!tracy::IsEnabled()) return static_cast<OptionalNumber>(0ul);
         auto entry = NameBuffer::Add(name);

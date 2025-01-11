@@ -15,17 +15,30 @@ endif()
 
 option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATIC})
 option(TRACY_Fortran "Build Fortran bindings" OFF)
+option(TRACY_LTO "Enable Link-Time optimization" OFF)
 
 if(TRACY_Fortran)
   enable_language(Fortran)
   set(CMAKE_Fortran_VERSION 2003)
 endif()
 
+if(TRACY_LTO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT LTO_SUPPORTED)
+    if(NOT LTO_SUPPORTED)
+        message(WARNING "LTO is not supported!")
+    endif()
+else()
+    set(LTO_SUPPORTED OFF)
+endif()
+
 find_package(Threads REQUIRED)
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
-if(TRACY_STATIC)
+if(LTO_SUPPORTED)
+    set(TRACY_VISIBILITY "OBJECT")
+elseif(TRACY_STATIC)
     set(TRACY_VISIBILITY "STATIC")
 else()
     set(TRACY_VISIBILITY "SHARED")
@@ -33,6 +46,7 @@ endif()
 
 add_library(TracyClient ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
 target_compile_features(TracyClient PUBLIC cxx_std_11)
+set_target_properties(TracyClient PROPERTIES INTERPROCEDURAL_OPTIMIZATION ${LTO_SUPPORTED})
 target_include_directories(TracyClient SYSTEM PUBLIC
     $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>
     $<INSTALL_INTERFACE:include>)
@@ -53,7 +67,8 @@ if(TRACY_Fortran)
         PUBLIC
             TracyClient
     )
-    set_target_properties(TracyClientF90 PROPERTIES Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR})
+    set_target_properties(TracyClientF90 PROPERTIES Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}
+                                                    INTERPROCEDURAL_OPTIMIZATION ${LTO_SUPPORTED})
 endif()
 
 # Public dependency on some libraries required when using Mingw

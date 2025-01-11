@@ -22,7 +22,7 @@ if(TRACY_Fortran)
   set(CMAKE_Fortran_VERSION 2003)
 endif()
 
-if(TRACY_LTO)
+if(TRACY_LTO OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     include(CheckIPOSupported)
     check_ipo_supported(RESULT LTO_SUPPORTED)
     if(NOT LTO_SUPPORTED)

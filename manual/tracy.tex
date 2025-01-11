@@ -479,6 +479,9 @@ target_link_libraries(<TARGET> PUBLIC TracyClient)
 \end{lstlisting}
 \end{bclogo}
 
+While using \texttt{set(CMAKE\_INTERPROCEDURAL\_OPTIMIZATION ON)} is a convenient way to enable Link-Time Optimization (LTO) for an entire project, there are situations in which this may not work due to excessive compilation times, linking issues, compiler bugs, or other reasons.
+For such cases, Tracy provides an option to enable Link-Time Optimization for itself using the \texttt{TRACY\_LTO} variable during the CMake configuration stage.
+
 \subsubsection{Meson integration}
 
 If you are using the Meson build system, you can add Tracy using the Wrap dependency system. To do this, place the \texttt{tracy.wrap} file in the \texttt{subprojects} directory of your project, with the following content. The \texttt{head} \texttt{revision} field tracks Tracy's \texttt{master} branch. If you want to lock to a specific version of Tracy instead, you can just set the \texttt{revision} field to an appropriate git tag.

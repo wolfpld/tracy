@@ -8,9 +8,9 @@ project(Tracy LANGUAGES CXX VERSION ${TRACY_VERSION_STRING})
 file(GENERATE OUTPUT .gitignore CONTENT "*")
 
 if(${BUILD_SHARED_LIBS})
-	set(DEFAULT_STATIC OFF)
+    set(DEFAULT_STATIC OFF)
 else()
-	set(DEFAULT_STATIC ON)
+    set(DEFAULT_STATIC ON)
 endif()
 
 option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATIC})
@@ -26,9 +26,9 @@ find_package(Threads REQUIRED)
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
 if(TRACY_STATIC)
-	set(TRACY_VISIBILITY "STATIC")
+    set(TRACY_VISIBILITY "STATIC")
 else()
-	set(TRACY_VISIBILITY "SHARED")
+    set(TRACY_VISIBILITY "SHARED")
 endif()
 
 add_library(TracyClient ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.cpp")

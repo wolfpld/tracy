@@ -441,7 +441,7 @@ You can integrate Tracy with CMake by adding the git submodule folder as a subdi
 
 \begin{lstlisting}
 # set options before add_subdirectory
-# available options: TRACY_ENABLE, TRACY_ON_DEMAND, TRACY_NO_BROADCAST, TRACY_NO_CODE_TRANSFER, ...
+# available options: TRACY_ENABLE, TRACY_LTO, TRACY_ON_DEMAND, TRACY_NO_BROADCAST, TRACY_NO_CODE_TRANSFER, ...
 option(TRACY_ENABLE "" ON)
 option(TRACY_ON_DEMAND "" ON)
 add_subdirectory(3rdparty/tracy)  # target: TracyClient or alias Tracy::TracyClient
@@ -478,6 +478,9 @@ Then add this to any target where you use tracy for profiling:
 target_link_libraries(<TARGET> PUBLIC TracyClient)
 \end{lstlisting}
 \end{bclogo}
+
+While using \texttt{set(CMAKE\_INTERPROCEDURAL\_OPTIMIZATION ON)} is a convenient way to enable Link-Time Optimization (LTO) for an entire project, there are situations in which this may not work due to excessive compilation times, linking issues, compiler bugs, or other reasons.
+For such cases, Tracy provides an option to enable Link-Time Optimization for itself using the \texttt{TRACY\_LTO} variable during the CMake configuration stage.
 
 \subsubsection{Meson integration}
 
@@ -2406,6 +2409,20 @@ Link \texttt{Tracy::TracyClientF90} to any target where you use Tracy for profil
 target_link_libraries(<TARGET> PUBLIC Tracy::TracyClientF90)
 \end{lstlisting}
 
+For using Link-Time optimizations, link both \texttt{Tracy::TracyClient} and \texttt{Tracy::TracyClientF90} to any target where you use Tracy for profiling:
+
+\begin{lstlisting}
+target_link_libraries(<TARGET> PUBLIC Tracy::TracyClient Tracy::TracyClientF90)
+\end{lstlisting}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+The same compiler (vendor + version) must be used for LTO for \textbf{ALL} languages in project.
+\end{bclogo}
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -2433,6 +2450,12 @@ Then add this to any target where you use tracy for profiling:
 
 \begin{lstlisting}
 target_link_libraries(<TARGET> PUBLIC TracyClientF90)
+\end{lstlisting}
+
+For using Link-Time optimizations (LTO), you also need to link with \texttt{TracyClient}:
+
+\begin{lstlisting}
+target_link_libraries(<TARGET> PUBLIC TracyClient TracyClientF90)
 \end{lstlisting}
 \end{bclogo}
 

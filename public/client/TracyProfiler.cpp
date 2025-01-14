@@ -4987,6 +4987,16 @@ TRACY_API int32_t ___tracy_profiler_started( void )
 }
 #  endif
 
+TRACY_API void ___tracy_suspend( void ) {
+    tracy::GetProfiler().Suspend();
+}
+TRACY_API void ___tracy_resume( void ) {
+    tracy::GetProfiler().Resume();
+}
+TRACY_API int32_t ___tracy_is_active( void ) {
+    return static_cast<int32_t>( tracy::GetProfiler().IsActive() );
+}
+
 #ifdef __cplusplus
 }
 #endif

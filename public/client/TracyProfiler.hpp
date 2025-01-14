@@ -114,39 +114,47 @@ struct LuaZoneState
 
 
 #define TracyLfqPrepare( _type ) \
-    tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
-    auto __token = tracy::GetToken(); \
-    auto& __tail = __token->get_tail_index(); \
-    auto item = __token->enqueue_begin( __magic ); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+        auto __token = tracy::GetToken(); \
+        auto& __tail = __token->get_tail_index(); \
+        auto item = __token->enqueue_begin( __magic ); \
+        tracy::MemWrite( &item->hdr.type, _type );
 
 #define TracyLfqCommit \
-    __tail.store( __magic + 1, std::memory_order_release );
+        __tail.store( __magic + 1, std::memory_order_release ); \
+    }
 
 #define TracyLfqPrepareC( _type ) \
-    tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
-    auto __token = tracy::GetToken(); \
-    auto& __tail = __token->get_tail_index(); \
-    auto item = __token->enqueue_begin( __magic ); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+        auto __token = tracy::GetToken(); \
+        auto& __tail = __token->get_tail_index(); \
+        auto item = __token->enqueue_begin( __magic ); \
+        tracy::MemWrite( &item->hdr.type, _type );
 
 #define TracyLfqCommitC \
-    __tail.store( __magic + 1, std::memory_order_release );
+        __tail.store( __magic + 1, std::memory_order_release ); \
+    }
 
 
 #ifdef TRACY_FIBERS
 #  define TracyQueuePrepare( _type ) \
-    auto item = tracy::Profiler::QueueSerial(); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        auto item = tracy::Profiler::QueueSerial(); \
+        tracy::MemWrite( &item->hdr.type, _type );
 #  define TracyQueueCommit( _name ) \
-    tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
-    tracy::Profiler::QueueSerialFinish();
+        tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
+        tracy::Profiler::QueueSerialFinish(); \
+    }
 #  define TracyQueuePrepareC( _type ) \
-    auto item = tracy::Profiler::QueueSerial(); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        auto item = tracy::Profiler::QueueSerial(); \
+        tracy::MemWrite( &item->hdr.type, _type );
 #  define TracyQueueCommitC( _name ) \
-    tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
-    tracy::Profiler::QueueSerialFinish();
+        tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
+        tracy::Profiler::QueueSerialFinish(); \
+    }
 #else
 #  define TracyQueuePrepare( _type ) TracyLfqPrepare( _type )
 #  define TracyQueueCommit( _name ) TracyLfqCommit

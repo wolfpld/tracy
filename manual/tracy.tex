@@ -1924,6 +1924,24 @@ Beware that \texttt{update} will use any matching symbol file to the path it res
 Also note that in the case of using offline symbol resolving, even after running the \texttt{update} tool to resolve symbols, the symbols statistics are not updated and will still report the unresolved symbols.
 \end{bclogo}
 
+\subsection{Suspend/Resume profiler}
+\label{suspendandresume}
+
+The Tracy profiler generates a lot of data, especially when used with long-running applications.
+For example, a one-hour application run can produce a trace exceeding 16 Gb!
+To minimize unnecessary memory consumption, you can suspend Tracy's profiling using the macro \texttt{TracySuspend} until you reach the section of code you wish to profile.
+When profiling needs to resume, use the macro \texttt{TracyResume}.
+To determine whether Tracy is currently active, use the macro \texttt{TracyIsActive}.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+The macros \texttt{TracySuspend} and \texttt{TracyResume} must be used within the same zones or frames (ideally outside of them). Otherwise, the trace may become incorrect.
+\end{bclogo}
+
+
 \subsection{Lua support}
 
 To profile Lua code using Tracy, include the \texttt{public/tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.
@@ -2194,6 +2212,10 @@ To query the connection status (section~\ref{connectionstatus}) using the C API 
 \subsubsection{Call stacks}
 
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using macros with \texttt{S} postfix, such as: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, and so on.
+
+\subsubsection{Suspend/Resume profiler}
+
+You can suspend and resume Tracy profiler as described in section~\ref{suspendandresume}.
 
 \subsubsection{Using the C API to implement bindings}
 \label{capibindings}
@@ -2583,6 +2605,10 @@ To query the connection status (section~\ref{connectionstatus}) using the Fortra
 \subsubsection{Call stacks}
 
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using optional \texttt{depth} argument in functions/subroutines calls.
+
+\subsubsection{Suspend/Resume profiler}
+
+You can suspend and resume profile, as described in section~\ref{suspendandresume}, by using \texttt{tracy\_suspend} and \texttt{tracy\_resume} subroutines and \texttt{tracy\_is\_active} function.
 
 \subsubsection{Colors}
 

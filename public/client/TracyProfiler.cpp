@@ -2178,6 +2178,11 @@ void Profiler::Worker()
                 return;
             }
         }
+        else
+        {
+            m_shutdownFinished.store( true, std::memory_order_relaxed );
+            return;
+        }
     }
 }
 
@@ -2200,7 +2205,7 @@ void Profiler::CompressWorker()
             bool lockHeld = true;
             while( !m_fiLock.try_lock() )
             {
-                if( m_shutdownManual.load( std::memory_order_relaxed ) )
+                if( m_shutdownManual.load( std::memory_order_relaxed ) || m_shutdown.load( std::memory_order_relaxed ) )
                 {
                     lockHeld = false;
                     break;

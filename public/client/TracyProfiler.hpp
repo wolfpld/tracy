@@ -770,6 +770,10 @@ public:
     void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
+    void Suspend() { m_isActive.store( false, std::memory_order_relaxed ); }
+    void Resume() { m_isActive.store( true, std::memory_order_relaxed ); }
+    tracy_force_inline bool IsActive() const { return m_isActive.load( std::memory_order_relaxed ); }
+
     void SendString( uint64_t str, const char* ptr, QueueType type ) { SendString( str, ptr, strlen( ptr ), type ); }
     void SendString( uint64_t str, const char* ptr, size_t len, QueueType type );
     void SendSingleString( const char* ptr ) { SendSingleString( ptr, strlen( ptr ) ); }
@@ -998,6 +1002,7 @@ private:
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_shutdownManual;
     std::atomic<bool> m_shutdownFinished;
+    std::atomic<bool> m_isActive;
     Socket* m_sock;
     UdpBroadcast* m_broadcast;
     bool m_noExit;

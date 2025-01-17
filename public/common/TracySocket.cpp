@@ -515,9 +515,11 @@ Socket* ListenSocket::Accept()
     struct sockaddr_storage remote;
     socklen_t sz = sizeof( remote );
 
-    struct pollfd fd;
-    fd.fd = (socket_t)m_sock;
-    fd.events = POLLIN;
+    struct pollfd fd
+    {
+        .fd = (socket_t)m_sock,
+        .events = POLLIN
+    };
 
     if( poll( &fd, 1, 10 ) > 0 )
     {

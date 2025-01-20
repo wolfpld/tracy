@@ -26,7 +26,9 @@
 #  include <fcntl.h>
 #elif defined __FreeBSD__
 #  include <sys/thr.h>
-#elif defined __NetBSD__ || defined __DragonFly__
+#elif defined __NetBSD__
+#  include <lwp.h>
+#elif defined __DragonFly__
 #  include <sys/lwp.h>
 #elif defined __QNX__
 #  include <process.h>

@@ -28,7 +28,8 @@ void print_usage_exit(int e)
     fprintf(stderr, "  -s, --sep arg     CSV separator (default: ,)\n");
     fprintf(stderr, "  -c, --case        Case sensitive filtering\n");
     fprintf(stderr, "  -e, --self        Get self times\n");
-    fprintf(stderr, "  -u, --unwrap      Report each zone event\n");
+    fprintf(stderr, "  -u, --unwrap      Report each cpu zone event\n");
+    fprintf(stderr, "  -g, --gpu         Report each gpu zone event\n" );
     fprintf(stderr, "  -m, --messages    Report only messages\n");
     fprintf(stderr, "  -p, --plot        Report plot data (only with -u)\n");
 
@@ -42,6 +43,7 @@ struct Args {
     bool case_sensitive;
     bool self_time;
     bool unwrap;
+    bool show_gpu;
     bool unwrapMessages;
     bool plot;
 };
@@ -53,7 +55,7 @@ Args parse_args(int argc, char** argv)
         print_usage_exit(1);
     }
 
-    Args args = { "", ",", "", false, false, false, false };
+    Args args = { "", ",", "", false, false, false, false, false, false };
 
     struct option long_opts[] = {
         { "help", no_argument, NULL, 'h' },
@@ -62,13 +64,14 @@ Args parse_args(int argc, char** argv)
         { "case", no_argument, NULL, 'c' },
         { "self", no_argument, NULL, 'e' },
         { "unwrap", no_argument, NULL, 'u' },
+        { "gpu", no_argument, NULL, 'g' },
         { "messages", no_argument, NULL, 'm' },
         { "plot", no_argument, NULL, 'p' },
         { NULL, 0, NULL, 0 }
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "hf:s:ceump", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "hf:s:ceugmp", long_opts, NULL)) != -1)
     {
         switch (c)
         {
@@ -89,6 +92,9 @@ Args parse_args(int argc, char** argv)
             break;
         case 'u':
             args.unwrap = true;
+            break;
+        case 'g':
+            args.show_gpu = true;
             break;
         case 'm':
             args.unwrapMessages = true;
@@ -247,131 +253,188 @@ int main(int argc, char** argv)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    auto& slz = worker.GetSourceLocationZones();
-    tracy::Vector<decltype(slz.begin())> slz_selected;
-    slz_selected.reserve(slz.size());
+   if(!args.show_gpu)
+   {
+        auto& slz = worker.GetSourceLocationZones();
+        tracy::Vector<decltype( slz.begin() )> slz_selected;
+        slz_selected.reserve( slz.size() );
 
-    uint32_t total_cnt = 0;
-    for(auto it = slz.begin(); it != slz.end(); ++it)
-    {
-        if(it->second.total != 0)
+        uint32_t total_cnt = 0;
+        for( auto it = slz.begin(); it != slz.end(); ++it )
         {
-            ++total_cnt;
-            if(args.filter[0] == '\0')
+            if( it->second.total != 0 )
             {
-                slz_selected.push_back_no_space_check(it);
-            }
-            else
-            {
-                auto name = get_name(it->first, worker);
-                if(is_substring(args.filter, name, args.case_sensitive))
+                ++total_cnt;
+                if( args.filter[0] == '\0' )
                 {
-                    slz_selected.push_back_no_space_check(it);
+                    slz_selected.push_back_no_space_check( it );
+                }
+                else
+                {
+                    auto name = get_name( it->first, worker );
+                    if( is_substring( args.filter, name, args.case_sensitive ) )
+                    {
+                        slz_selected.push_back_no_space_check( it );
+                    }
                 }
             }
         }
-    }
 
-    std::vector<const char*> columns;
-    if (args.unwrap)
-    {
-        columns = {
-            "name", "src_file", "src_line", "ns_since_start", "exec_time_ns", "thread", "value"
-        };
-    }
-    else
-    {
-        columns = {
-            "name", "src_file", "src_line", "total_ns", "total_perc",
-            "counts", "mean_ns", "min_ns", "max_ns", "std_ns"
-        };
-    }
-    std::string header = join(columns, args.separator);
-    printf("%s\n", header.data());
-
-    const auto last_time = worker.GetLastTime();
-    for(auto& it : slz_selected)
-    {
-        std::vector<std::string> values(columns.size());
-
-        values[0] = get_name(it->first, worker);
-
-        const auto& srcloc = worker.GetSourceLocation(it->first);
-        values[1] = worker.GetString(srcloc.file);
-        values[2] = std::to_string(srcloc.line);
-
-        const auto& zone_data = it->second;
-
-        if (args.unwrap)
+        std::vector<const char*> columns;
+        if( args.unwrap )
         {
-            int i = 0;
-            for (const auto& zone_thread_data : zone_data.zones) {
-                const auto zone_event = zone_thread_data.Zone();
-                const auto tId = zone_thread_data.Thread();
-                const auto start = zone_event->Start();
-                const auto end = zone_event->End();
-
-                values[3] = std::to_string(start);
-
-                auto timespan = end - start;
-                if (args.self_time) {
-                    timespan -= GetZoneChildTimeFast(worker, *zone_event);
-                }
-                values[4] = std::to_string(timespan);
-                values[5] = std::to_string(tId);
-
-                std::string row = join(values, args.separator);
-                printf("%s\n", row.data());
-            }
+            columns = { "name", "src_file", "src_line", "ns_since_start", "exec_time_ns", "thread", "value" };
         }
         else
         {
-            const auto time = args.self_time ? zone_data.selfTotal : zone_data.total;
-            values[3] = std::to_string(time);
-            values[4] = std::to_string(100. * time / last_time);
+            columns = { "name",   "src_file", "src_line", "total_ns", "total_perc",
+                        "counts", "mean_ns",  "min_ns",   "max_ns",   "std_ns" };
+        }
+        std::string header = join( columns, args.separator );
+        printf( "%s\n", header.data() );
 
-            values[5] = std::to_string(zone_data.zones.size());
+        const auto last_time = worker.GetLastTime();
+        for( auto& it : slz_selected )
+        {
+            std::vector<std::string> values( columns.size() );
 
-            const auto avg = (args.self_time ? zone_data.selfTotal : zone_data.total)
-                / zone_data.zones.size();
-            values[6] = std::to_string(avg);
+            values[0] = get_name( it->first, worker );
 
-            const auto tmin = args.self_time ? zone_data.selfMin : zone_data.min;
-            const auto tmax = args.self_time ? zone_data.selfMax : zone_data.max;
-            values[7] = std::to_string(tmin);
-            values[8] = std::to_string(tmax);
+            const auto& srcloc = worker.GetSourceLocation( it->first );
+            values[1] = worker.GetString( srcloc.file );
+            values[2] = std::to_string( srcloc.line );
 
-            const auto sz = zone_data.zones.size();
-            const auto ss = zone_data.sumSq
-                - 2. * zone_data.total * avg
-                + avg * avg * sz;
-            double std = 0;
-            if( sz > 1 )
-                std = sqrt(ss / (sz - 1));
-            values[9] = std::to_string(std);
+            const auto& zone_data = it->second;
 
-            std::string row = join(values, args.separator);
-            printf("%s\n", row.data());
+            if( args.unwrap )
+            {
+                int i = 0;
+                for( const auto& zone_thread_data : zone_data.zones )
+                {
+                    const auto zone_event = zone_thread_data.Zone();
+                    const auto tId = zone_thread_data.Thread();
+                    const auto start = zone_event->Start();
+                    const auto end = zone_event->End();
+
+                    values[3] = std::to_string( start );
+
+                    auto timespan = end - start;
+                    if( args.self_time )
+                    {
+                        timespan -= GetZoneChildTimeFast( worker, *zone_event );
+                    }
+                    values[4] = std::to_string( timespan );
+                    values[5] = std::to_string( tId );
+
+                    std::string row = join( values, args.separator );
+                    printf( "%s\n", row.data() );
+                }
+            }
+            else
+            {
+                const auto time = args.self_time ? zone_data.selfTotal : zone_data.total;
+                values[3] = std::to_string( time );
+                values[4] = std::to_string( 100. * time / last_time );
+
+                values[5] = std::to_string( zone_data.zones.size() );
+
+                const auto avg = ( args.self_time ? zone_data.selfTotal : zone_data.total ) / zone_data.zones.size();
+                values[6] = std::to_string( avg );
+
+                const auto tmin = args.self_time ? zone_data.selfMin : zone_data.min;
+                const auto tmax = args.self_time ? zone_data.selfMax : zone_data.max;
+                values[7] = std::to_string( tmin );
+                values[8] = std::to_string( tmax );
+
+                const auto sz = zone_data.zones.size();
+                const auto ss = zone_data.sumSq - 2. * zone_data.total * avg + avg * avg * sz;
+                double std = 0;
+                if( sz > 1 ) std = sqrt( ss / ( sz - 1 ) );
+                values[9] = std::to_string( std );
+
+                std::string row = join( values, args.separator );
+                printf( "%s\n", row.data() );
+            }
+        }
+
+        if( args.plot && args.unwrap )
+        {
+            auto& plots = worker.GetPlots();
+            for( const auto& plot : plots )
+            {
+                std::vector<std::string> values( columns.size() );
+                values[0] = worker.GetString( plot->name );
+
+                for( const auto& val : plot->data )
+                {
+                    if( args.unwrap )
+                    {
+                        values[3] = std::to_string( val.time.Val() );
+                        values[6] = std::to_string( val.val );
+                    }
+                    std::string row = join( values, args.separator );
+                    printf( "%s\n", row.data() );
+                }
+            }
         }
     }
-
-    if(args.plot && args.unwrap)
+    else // only show gpu event statistics
     {
-        auto& plots = worker.GetPlots();
-        for(const auto& plot : plots)
-        {
-            std::vector<std::string> values(columns.size());
-            values[0] = worker.GetString(plot->name);
+        auto& gpu_slz = worker.GetGpuSourceLocationZones();
+        tracy::Vector<decltype( gpu_slz.begin() )> gpu_slz_selected;
+        gpu_slz_selected.reserve( gpu_slz.size() );
 
-            for(const auto& val : plot->data)
+        uint32_t total_cnt = 0;
+        for( auto it = gpu_slz.begin(); it != gpu_slz.end(); ++it )
+        {
+            if( it->second.total != 0 )
             {
-                if (args.unwrap)
+                ++total_cnt;
+                if( args.filter[0] == '\0' )
                 {
-                    values[3] = std::to_string(val.time.Val());
-                    values[6] = std::to_string(val.val);
+                    gpu_slz_selected.push_back_no_space_check( it );
                 }
-                std::string row = join(values, args.separator);
-                printf("%s\n", row.data());
+                else
+                {
+                    auto name = get_name( it->first, worker );
+                    if( is_substring( args.filter, name, args.case_sensitive ) )
+                    {
+                        gpu_slz_selected.push_back_no_space_check( it );
+                    }
+                }
+            }
+        }
+
+        std::vector<const char*> columns;
+        columns = { "name", "src_file", "Time from start of program", "GPU execution time"};
+
+        std::string header = join( columns, args.separator );
+        printf( "%s\n", header.data() );
+
+        const auto last_time = worker.GetLastTime();
+        for( auto& it : gpu_slz_selected )
+        {
+            std::vector<std::string> values( columns.size() );
+
+            values[0] = get_name( it->first, worker );
+
+            const auto& srcloc = worker.GetSourceLocation( it->first );
+            values[1] = worker.GetString( srcloc.file );
+
+            const auto& zone_data = it->second;
+            for( const auto& zone_thread_data : zone_data.zones )
+            {
+                tracy::GpuEvent* gpu_event = zone_thread_data.Zone();
+                const auto start = gpu_event->GpuStart();
+                const auto end = gpu_event->GpuEnd();
+
+                values[2] = std::to_string( start );
+
+                auto timespan = end - start;
+                values[3] = std::to_string( timespan );
+
+                std::string row = join( values, args.separator );
+                printf( "%s\n", row.data() );
             }
         }
     }

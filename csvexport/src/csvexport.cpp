@@ -28,7 +28,8 @@ void print_usage_exit(int e)
     fprintf(stderr, "  -s, --sep arg     CSV separator (default: ,)\n");
     fprintf(stderr, "  -c, --case        Case sensitive filtering\n");
     fprintf(stderr, "  -e, --self        Get self times\n");
-    fprintf(stderr, "  -u, --unwrap      Report each zone event\n");
+    fprintf(stderr, "  -u, --unwrap      Report each cpu zone event\n");
+    fprintf(stderr, "  -g, --gpu         Report each gpu zone event\n" );
     fprintf(stderr, "  -m, --messages    Report only messages\n");
     fprintf(stderr, "  -p, --plot        Report plot data (only with -u)\n");
 
@@ -42,6 +43,7 @@ struct Args {
     bool case_sensitive;
     bool self_time;
     bool unwrap;
+    bool show_gpu;
     bool unwrapMessages;
     bool plot;
 };
@@ -53,7 +55,7 @@ Args parse_args(int argc, char** argv)
         print_usage_exit(1);
     }
 
-    Args args = { "", ",", "", false, false, false, false };
+    Args args = { "", ",", "", false, false, false, false, false, false };
 
     struct option long_opts[] = {
         { "help", no_argument, NULL, 'h' },
@@ -62,13 +64,14 @@ Args parse_args(int argc, char** argv)
         { "case", no_argument, NULL, 'c' },
         { "self", no_argument, NULL, 'e' },
         { "unwrap", no_argument, NULL, 'u' },
+        { "gpu", no_argument, NULL, 'g' },
         { "messages", no_argument, NULL, 'm' },
         { "plot", no_argument, NULL, 'p' },
         { NULL, 0, NULL, 0 }
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "hf:s:ceump", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "hf:s:ceugmp", long_opts, NULL)) != -1)
     {
         switch (c)
         {
@@ -89,6 +92,9 @@ Args parse_args(int argc, char** argv)
             break;
         case 'u':
             args.unwrap = true;
+            break;
+        case 'g':
+            args.show_gpu = true;
             break;
         case 'm':
             args.unwrapMessages = true;
@@ -245,6 +251,68 @@ int main(int argc, char** argv)
     while (!worker.AreSourceLocationZonesReady())
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    if (args.show_gpu)
+    {
+        auto& gpu_slz = worker.GetGpuSourceLocationZones();
+        tracy::Vector<decltype( gpu_slz.begin() )> gpu_slz_selected;
+        gpu_slz_selected.reserve( gpu_slz.size() );
+
+        uint32_t total_cnt = 0;
+        for (auto it = gpu_slz.begin(); it != gpu_slz.end(); ++it)
+        {
+            if (it->second.total != 0)
+            {
+                ++total_cnt;
+                if (args.filter[0] == '\0')
+                {
+                    gpu_slz_selected.push_back_no_space_check( it );
+                }
+                else
+                {
+                    auto name = get_name( it->first, worker );
+                    if (is_substring( args.filter, name, args.case_sensitive))
+                    {
+                        gpu_slz_selected.push_back_no_space_check( it );
+                    }
+                }
+            }
+        }
+
+        std::vector<const char*> columns;
+        columns = {"name", "src_file", "Time from start of program", "GPU execution time"};
+
+        std::string header = join(columns, args.separator);
+        printf("%s\n", header.data());
+
+        const auto last_time = worker.GetLastTime();
+        for (auto& it : gpu_slz_selected)
+        {
+            std::vector<std::string> values( columns.size() );
+
+            values[0] = get_name( it->first, worker );
+
+            const auto& srcloc = worker.GetSourceLocation( it->first );
+            values[1] = worker.GetString( srcloc.file );
+
+            const auto& zone_data = it->second;
+            for (const auto& zone_thread_data : zone_data.zones)
+            {
+                tracy::GpuEvent* gpu_event = zone_thread_data.Zone();
+                const auto start = gpu_event->GpuStart();
+                const auto end = gpu_event->GpuEnd();
+
+                values[2] = std::to_string( start );
+
+                auto timespan = end - start;
+                values[3] = std::to_string( timespan );
+
+                std::string row = join( values, args.separator );
+                printf( "%s\n", row.data() );
+            }
+        }
+        return 0;
     }
 
     auto& slz = worker.GetSourceLocationZones();

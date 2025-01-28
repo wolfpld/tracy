@@ -77,7 +77,7 @@ class PyScopedZone {
       m_zone = new tracy::ScopedZone(
           m_line, m_source.c_str(), m_source.size(), m_function.c_str(),
           m_function.size(), m_name ? m_name->c_str() : nullptr,
-          m_name ? m_name->size() : 0ul, m_color, m_active);
+          m_name ? m_name->size() : 0ul, m_color, -1, m_active);
   }
 
   void Exit() {

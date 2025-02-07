@@ -103,6 +103,10 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
+    SmallCheckbox( ICON_FA_SCISSORS " Short images", &m_shortImageNames );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -385,7 +389,28 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                     ImGui::PopTextWrapPos();
                     ImGui::TableNextColumn();
-                    if( image ) TextDisabledUnformatted( image );
+                    if( image )
+                    {
+                        const char* end = image + strlen( image );
+
+                        if( m_shortImageNames )
+                        {
+                            const char* ptr = end - 1;
+                            while( ptr > image && *ptr != '/' && *ptr != '\\' ) ptr--;
+                            if( *ptr == '/' || *ptr == '\\' ) ptr++;
+                            const auto cw = ImGui::GetContentRegionAvail().x;
+                            const auto tw = ImGui::CalcTextSize( image, end ).x;
+                            TextDisabledUnformatted( ptr );
+                            if( ptr != image || tw > cw ) TooltipIfHovered( image );
+                        }
+                        else
+                        {
+                            const auto cw = ImGui::GetContentRegionAvail().x;
+                            const auto tw = ImGui::CalcTextSize( image, end ).x;
+                            TextDisabledUnformatted( image );
+                            if( tw > cw ) TooltipIfHovered( image );
+                        }
+                    }
                 }
             }
         }

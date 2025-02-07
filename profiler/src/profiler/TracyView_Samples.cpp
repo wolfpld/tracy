@@ -959,6 +959,10 @@ void View::DrawSampleParents()
             ImGui::Spacing();
             ImGui::SameLine();
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ImGui::Checkbox( ICON_FA_SCISSORS " Short images", &m_shortImageNames );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
             ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
             ImGui::SameLine();
             ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
@@ -1181,7 +1185,26 @@ void View::DrawSampleParents()
                         ImGui::TableNextColumn();
                         if( frameData->imageName.Active() )
                         {
-                            TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                            const char* imageName = m_worker.GetString( frameData->imageName );
+                            const char* end = imageName + strlen( imageName );
+
+                            if( m_shortImageNames )
+                            {
+                                const char* ptr = end - 1;
+                                while( ptr > imageName && *ptr != '/' && *ptr != '\\' ) ptr--;
+                                if( *ptr == '/' || *ptr == '\\' ) ptr++;
+                                const auto cw = ImGui::GetContentRegionAvail().x;
+                                const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                                TextDisabledUnformatted( ptr );
+                                if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
+                            }
+                            else
+                            {
+                                const auto cw = ImGui::GetContentRegionAvail().x;
+                                const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                                TextDisabledUnformatted( imageName );
+                                if( tw > cw ) TooltipIfHovered( imageName );
+                            }
                         }
                     }
                 }

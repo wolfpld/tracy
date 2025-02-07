@@ -524,11 +524,14 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     ImGui::TableNextColumn();
                     if( m_shortImageNames )
                     {
-                        const char* end = imageName + strlen( imageName ) - 1;
-                        while( end > imageName && *end != '/' && *end != '\\' ) end--;
-                        if( *end == '/' || *end == '\\' ) end++;
-                        TextDisabledUnformatted( end );
-                        TooltipIfHovered( imageName );
+                        const char* end = imageName + strlen( imageName );
+                        const char* ptr = end - 1;
+                        while( ptr > imageName && *ptr != '/' && *ptr != '\\' ) ptr--;
+                        if( *ptr == '/' || *ptr == '\\' ) ptr++;
+                        const auto cw = ImGui::GetContentRegionAvail().x;
+                        const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                        TextDisabledUnformatted( ptr );
+                        if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
                     }
                     else
                     {

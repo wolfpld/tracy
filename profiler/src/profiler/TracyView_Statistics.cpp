@@ -474,6 +474,8 @@ void View::DrawStatistics()
     {
         TextDisabledUnformatted( "Image" );
         ImGui::SameLine();
+        ToggleButton( ICON_FA_SCISSORS, m_shortImageNames );
+        ImGui::SameLine();
         m_statisticsImageFilter.Draw( ICON_FA_FILTER "###imageFilter", 200 );
         ImGui::SameLine();
         if( ImGui::BeginCombo( "###imageCombo", nullptr, ImGuiComboFlags_NoPreview | ImGuiComboFlags_HeightLarge ) )

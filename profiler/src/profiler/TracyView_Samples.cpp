@@ -522,7 +522,17 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         ImGui::Unindent( indentVal );
                     }
                     ImGui::TableNextColumn();
-                    TextDisabledUnformatted( imageName );
+                    if( m_shortImageNames )
+                    {
+                        const char* end = imageName + strlen( imageName ) - 1;
+                        while( end > imageName && *end != '/' && *end != '\\' ) end--;
+                        if( *end == '/' || *end == '\\' ) end++;
+                        TextDisabledUnformatted( end );
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( imageName );
+                    }
                     ImGui::TableNextColumn();
                     const auto baseCnt = cnt;
                     if( cnt > 0 )

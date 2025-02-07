@@ -517,6 +517,7 @@ private:
     AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
     bool m_statSampleTime = true;
     int m_statMode = 0;
+    bool m_shortImageNames = false;
     int m_flameMode = 0;
     bool m_flameSort = false;
     bool m_flameRunningTime = false;

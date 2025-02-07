@@ -34,7 +34,7 @@ vx.xx.x (xxxx-xx-xx)
   disassembly view more discoverable.
   - "View symbol" shows the symbol code disassembly. It was previously
     available by right-click on the source file name.
-  - "Sample entry call stacks" shows the list window that was previously
+  - "Sample entry stacks" shows the list window that was previously
     opened when the symbol entry was clicked.
 - Plots are now extended to the end of the trace, instead of ending at the
   last data point.

@@ -3728,9 +3728,9 @@ First and foremost, the presented information is constructed from many call stac
 
 The sample statistics list symbols, not functions. These terms are similar, but not exactly the same. A symbol always has a base function that gives it its name. In most cases, a symbol will also contain a number of inlined functions. In some cases, the same function may be inlined more than once within the same symbol.
 
-The \emph{Name} column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the \emph{\faPuzzlePiece{}~Show all} option is disabled due to lack of sampling data). Clicking the \LMB{}~left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section~\ref{symbolview}), or the sample entry call stacks window (see chapter~\ref{sampleparents})\footnote{Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, preventing, or limiting the capability to display the data.}.
+The \emph{Name} column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the \emph{\faPuzzlePiece{}~Show all} option is disabled due to lack of sampling data). Clicking the \LMB{}~left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section~\ref{symbolview}), or the sample entry stacks window (see chapter~\ref{sampleparents})\footnote{Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, preventing, or limiting the capability to display the data.}.
 
-By default, each inlining of a function is listed separately. If you prefer to combine the measurements for functions that are inlined multiple times within a function, you can do so by enabling the \emph{\faLayerGroup{}~Aggregate} option. You cannot view sample entry call stacks of inlined functions when this grouping method is enabled.
+By default, each inlining of a function is listed separately. If you prefer to combine the measurements for functions that are inlined multiple times within a function, you can do so by enabling the \emph{\faLayerGroup{}~Aggregate} option. You cannot view sample entry stacks of inlined functions when this grouping method is enabled.
 
 In some cases it may be more interesting to see the most time consuming inline within the symbol rather than the symbol name. If you enable the \emph{\faFire*~Top inline} option, the name of the busiest inline function will be displayed in the \emph{Name} column.
 
@@ -4130,7 +4130,7 @@ Stack frame location may be displayed in the following number of ways, depending
 
 In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if the profiler cannot retrieve even this information. Additionally, '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system's internal routines.
 
-If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Global entry statistics}. Clicking it will open the sample entry call stacks window (chapter~\ref{sampleparents}) for the current call stack.
+If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Global entry statistics}. Clicking it will open the sample entry stacks window (chapter~\ref{sampleparents}) for the current call stack.
 
 Clicking on the \emph{\faClipboard{}~Copy to clipboard} button will copy call stack to the clipboard.
 
@@ -4162,7 +4162,7 @@ At the first glance it may look like \texttt{unique\_ptr::reset} was the \emph{c
 
 Moreover, the linker may determine in some rare cases that any two functions in your program are identical\footnote{For example, if all they do is zero-initialize a region of memory. As some constructors would do.}. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart in the resulting machine code. In effect, some call stacks may look nonsensical until you perform a small investigation.
 
-\subsection{Sample entry call stacks window}
+\subsection{Sample entry stacks window}
 \label{sampleparents}
 
 This window displays statistical information about the selected symbol. All sampled call stacks (chapter~\ref{sampling}) leading to the symbol are counted and displayed in descending order. You can choose the displayed call stack using the \emph{entry call stack} controls, which also display time spent in the selected call stack. Alternatively, sample counts may be shown by disabling the \emph{\faStopwatch{}~Show time} option, which is described in more detail in chapter~\ref{statisticssampling}.

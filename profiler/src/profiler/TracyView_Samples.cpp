@@ -448,7 +448,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                 }
                             }
                             if( !sfv ) ImGui::EndDisabled();
-                            if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry call stacks" ) ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
+                            if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry stacks" ) ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
                             ImGui::EndPopup();
                         }
                         ImGui::PopID();
@@ -683,7 +683,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                             }
                                         }
                                         if( !sfv ) ImGui::EndDisabled();
-                                        if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry call stacks" ) ) ShowSampleParents( iv.symAddr, false );
+                                        if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry stacks" ) ) ShowSampleParents( iv.symAddr, false );
                                         ImGui::EndPopup();
                                     }
                                     ImGui::PopID();
@@ -801,7 +801,7 @@ void View::DrawSampleParents()
     bool show = true;
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Sample entry call stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    ImGui::Begin( "Sample entry stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
         auto ss = m_worker.GetSymbolStats( m_sampleParents.symAddr );

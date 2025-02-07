@@ -1235,10 +1235,10 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         if( m_calcInlineStats )
         {
-                ImGui::SameLine();
-                ImGui::AlignTextToFramePadding();
-                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
-                TooltipIfHovered( "Context is limited to an inline function" );
+            ImGui::SameLine();
+            ImGui::AlignTextToFramePadding();
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
+            TooltipIfHovered( "Context is limited to an inline function" );
         }
     }
 

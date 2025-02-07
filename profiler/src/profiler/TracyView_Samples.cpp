@@ -901,18 +901,19 @@ void View::DrawSampleParents()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-        if( m_sampleParents.mode == 1 )
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( m_sampleParents.mode == 0 )
         {
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
+            ImGui::Checkbox( ICON_FA_SHIELD_HALVED " External frames", &m_showExternalFrames );
+        }
+        else if( m_sampleParents.mode == 1 )
+        {
             ImGui::Checkbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupBottomUp );
         }
         else if( m_sampleParents.mode == 2 )
         {
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
             ImGui::Checkbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupTopDown );
         }
         ImGui::PopStyleVar();
@@ -980,6 +981,7 @@ void View::DrawSampleParents()
                 ImGui::TableSetupColumn( "Image" );
                 ImGui::TableHeadersRow();
 
+                int external = 0;
                 int fidx = 0;
                 int bidx = 0;
                 for( auto& entry : cs )
@@ -990,10 +992,40 @@ void View::DrawSampleParents()
                     for( uint8_t f=0; f<fsz; f++ )
                     {
                         const auto& frame = frameData->data[f];
-                        auto txt = m_worker.GetString( frame.name );
-                        bidx++;
+                        auto filename = m_worker.GetString( frame.file );
+                        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+
+                        if( IsFrameExternal( filename, image ) )
+                        {
+                            if( !m_showExternalFrames )
+                            {
+                                if( f == fsz-1 ) fidx++;
+                                external++;
+                                continue;
+                            }
+                        }
+                        else if( external != 0 )
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::PushFont( m_smallFont );
+                            TextDisabledUnformatted( "external" );
+                            ImGui::TableNextColumn();
+                            if( external == 1 )
+                            {
+                                TextDisabledUnformatted( "1 frame" );
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled( "%i frames", external );
+                            }
+                            ImGui::PopFont();
+                            external = 0;
+                        }
+
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
+                        bidx++;
                         if( f == fsz-1 )
                         {
                             ImGui::Text( "%i", fidx++ );
@@ -1005,6 +1037,7 @@ void View::DrawSampleParents()
                             ImGui::PopFont();
                         }
                         ImGui::TableNextColumn();
+                        auto txt = m_worker.GetString( frame.name );
                         {
                             ImGui::PushTextWrapPos( 0.0f );
                             if( txt[0] == '[' )
@@ -1151,6 +1184,23 @@ void View::DrawSampleParents()
                             TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
                         }
                     }
+                }
+                if( external != 0 )
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::PushFont( m_smallFont );
+                    TextDisabledUnformatted( "external" );
+                    ImGui::TableNextColumn();
+                    if( external == 1 )
+                    {
+                        TextDisabledUnformatted( "1 frame" );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%i frames", external );
+                    }
+                    ImGui::PopFont();
                 }
                 ImGui::EndTable();
             }

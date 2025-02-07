@@ -901,6 +901,20 @@ void View::DrawSampleParents()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+        if( m_sampleParents.mode == 1 )
+        {
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::Checkbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupBottomUp );
+        }
+        else if( m_sampleParents.mode == 2 )
+        {
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            ImGui::Checkbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupTopDown );
+        }
         ImGui::PopStyleVar();
         ImGui::Separator();
         ImGui::BeginChild( "##sampleParents" );
@@ -1144,7 +1158,6 @@ void View::DrawSampleParents()
         }
         case 1:
         {
-            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupBottomUp );
             auto tree = GetParentsCallstackFrameTreeBottomUp( stats, m_sampleParents.groupBottomUp );
             if( !tree.empty() )
             {
@@ -1160,7 +1173,6 @@ void View::DrawSampleParents()
         }
         case 2:
         {
-            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupTopDown );
             auto tree = GetParentsCallstackFrameTreeTopDown( stats, m_sampleParents.groupTopDown );
             if( !tree.empty() )
             {

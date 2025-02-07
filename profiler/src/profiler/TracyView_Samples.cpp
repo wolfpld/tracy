@@ -528,10 +528,15 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         while( end > imageName && *end != '/' && *end != '\\' ) end--;
                         if( *end == '/' || *end == '\\' ) end++;
                         TextDisabledUnformatted( end );
+                        TooltipIfHovered( imageName );
                     }
                     else
                     {
+                        const char* end = imageName + strlen( imageName );
+                        const auto cw = ImGui::GetContentRegionAvail().x;
+                        const auto tw = ImGui::CalcTextSize( imageName, end ).x;
                         TextDisabledUnformatted( imageName );
+                        if( tw > cw ) TooltipIfHovered( imageName );
                     }
                     ImGui::TableNextColumn();
                     const auto baseCnt = cnt;

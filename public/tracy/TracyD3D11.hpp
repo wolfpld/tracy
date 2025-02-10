@@ -95,6 +95,10 @@ public:
 
             int64_t tcpu0 = Profiler::GetTime();
             WaitForQuery(m_disjointQuery);
+            // NOTE: one would expect that by waiting for the enclosing disjoint query to finish,
+            // all timestamp queries within would also be readily available, but that does not
+            // seem to be the case here... See https://github.com/wolfpld/tracy/issues/947
+            WaitForQuery(m_queries[0]);
             int64_t tcpu1 = Profiler::GetTime();
 
             D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint = { };
@@ -109,7 +113,7 @@ public:
 
             UINT64 timestamp = 0;
             if (m_immediateDevCtx->GetData(m_queries[0], &timestamp, sizeof(timestamp), 0) != S_OK)
-                continue;   // this should never happen, since the enclosing disjoint query succeeded
+                continue;   // this should never happen (we waited for the query to finish above)
 
             tcpu = tcpu0 + (tcpu1 - tcpu0) * 1 / 2;
             tgpu = timestamp * (1000000000 / disjoint.Frequency);

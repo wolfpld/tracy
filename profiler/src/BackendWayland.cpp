@@ -25,8 +25,10 @@
 #include "wayland-fractional-scale-client-protocol.h"
 #include "wayland-viewporter-client-protocol.h"
 #include "wayland-cursor-shape-client-protocol.h"
+#include "wayland-xdg-toplevel-icon-client-protocol.h"
 
 #include "profiler/TracyImGui.hpp"
+#include "stb_image_resize.h"
 
 #include "Backend.hpp"
 #include "RunQueue.hpp"
@@ -213,6 +215,8 @@ static std::string s_clipboard, s_clipboardIncoming;
 static struct wl_data_offer* s_dataOffer;
 static struct wl_data_offer* s_newDataOffer;
 static bool s_newDataOfferValid;
+static struct xdg_toplevel_icon_manager_v1* s_iconMgr;
+static std::vector<int> s_iconSizes;
 
 struct Output
 {
@@ -566,6 +570,21 @@ constexpr struct zxdg_toplevel_decoration_v1_listener decorationListener = {
 };
 
 
+static void IconMgrSize( void*, struct xdg_toplevel_icon_manager_v1*, int32_t size )
+{
+    s_iconSizes.push_back( size );
+}
+
+static void IconMgrDone( void*, struct xdg_toplevel_icon_manager_v1* )
+{
+}
+
+constexpr struct xdg_toplevel_icon_manager_v1_listener iconMgrListener = {
+    .icon_size = IconMgrSize,
+    .done = IconMgrDone
+};
+
+
 static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const char* interface, uint32_t version )
 {
     if( strcmp( interface, wl_compositor_interface.name ) == 0 )
@@ -618,6 +637,11 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
     else if( strcmp( interface, wl_data_device_manager_interface.name ) == 0 )
     {
         s_dataDevMgr = (wl_data_device_manager*)wl_registry_bind( reg, name, &wl_data_device_manager_interface, 2 );
+    }
+    else if( strcmp( interface, xdg_toplevel_icon_manager_v1_interface.name ) == 0 )
+    {
+        s_iconMgr = (xdg_toplevel_icon_manager_v1*)wl_registry_bind( reg, name, &xdg_toplevel_icon_manager_v1_interface, 1 );
+        xdg_toplevel_icon_manager_v1_add_listener( s_iconMgr, &iconMgrListener, nullptr );
     }
 }
 
@@ -1017,6 +1041,7 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    if( s_iconMgr ) xdg_toplevel_icon_manager_v1_destroy( s_iconMgr );
     if( s_dataOffer ) wl_data_offer_destroy( s_dataOffer );
     if( s_dataSource ) wl_data_source_destroy( s_dataSource );
     if( s_dataDev ) wl_data_device_destroy( s_dataDev );
@@ -1215,6 +1240,61 @@ void Backend::EndFrame()
 
 void Backend::SetIcon( uint8_t* data, int w, int h )
 {
+    if( !s_iconMgr ) return;
+    if( s_iconSizes.empty() ) return;
+
+    size_t size = 0;
+    for( auto sz : s_iconSizes )
+    {
+        size += sz * sz;
+    }
+    size *= 4;
+
+    auto path = getenv( "XDG_RUNTIME_DIR" );
+    if( !path ) return;
+
+    std::string shmPath = path;
+    shmPath += "/tracy_icon-XXXXXX";
+    int fd = mkstemp( shmPath.data() );
+    if( fd < 0 ) return;
+    unlink( shmPath.data() );
+    ftruncate( fd, size );
+    auto membuf = (char*)mmap( nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
+    if( membuf == MAP_FAILED )
+    {
+        close( fd );
+        return;
+    }
+
+    auto pool = wl_shm_create_pool( s_shm, fd, size );
+    close( fd );
+    auto icon = xdg_toplevel_icon_manager_v1_create_icon( s_iconMgr );
+
+    auto rgb = new uint32_t[w * h];
+    auto bgr = (uint32_t*)data;
+    for( int i=0; i<w*h; i++ )
+    {
+        rgb[i] = ( bgr[i] & 0xff00ff00 ) | ( ( bgr[i] & 0xff ) << 16 ) | ( ( bgr[i] >> 16 ) & 0xff );
+    }
+
+    std::vector<wl_buffer*> bufs;
+    int32_t offset = 0;
+    for( auto sz : s_iconSizes )
+    {
+        auto buffer = wl_shm_pool_create_buffer( pool, offset, sz, sz, sz * 4, WL_SHM_FORMAT_ARGB8888 );
+        bufs.push_back( buffer );
+
+        auto ptr = membuf + offset;
+        offset += sz * sz * 4;
+
+        stbir_resize_uint8( (uint8_t*)rgb, w, h, 0, (uint8_t*)ptr, sz, sz, 0, 4 );
+        xdg_toplevel_icon_v1_add_buffer( icon, buffer, sz );
+    }
+
+    xdg_toplevel_icon_manager_v1_set_icon( s_iconMgr, s_toplevel, icon );
+    xdg_toplevel_icon_v1_destroy( icon );
+    for( auto buf : bufs ) wl_buffer_destroy( buf );
+    wl_shm_pool_destroy( pool );
 }
 
 void Backend::SetTitle( const char* title )

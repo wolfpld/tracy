@@ -235,7 +235,7 @@ if(TRACY_Fortran)
            FILE ${CMAKE_BINARY_DIR}/TracyTargets.cmake)
 endif()
 install(FILES ${tracy_includes}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy/tracy)
 install(FILES ${client_includes}
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy/client)
 install(FILES ${common_includes}

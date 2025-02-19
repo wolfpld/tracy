@@ -14,13 +14,13 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <zstd.h>
 
 #include "TracyFileHeader.hpp"
 #include "TracyFileMeta.hpp"
 #include "../public/common/tracy_lz4.hpp"
 #include "../public/common/tracy_lz4hc.hpp"
 #include "../public/common/TracyForceInline.hpp"
-#include "../zstd/zstd.h"
 
 namespace tracy
 {

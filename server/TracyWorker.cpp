@@ -24,7 +24,7 @@
 #include <capstone.h>
 
 #define ZDICT_STATIC_LINKING_ONLY
-#include "../zstd/zdict.h"
+#include <zdict.h>
 
 #include "../public/common/TracyProtocol.hpp"
 #include "../public/common/TracySystem.hpp"

@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unordered_map>
+#include <zstd.h>
 
 #include "../../server/TracyWorker.hpp"
-#include "../../zstd/zstd.h"
 
 #include "OfflineSymbolResolver.h"
 

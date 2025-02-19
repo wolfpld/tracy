@@ -101,50 +101,17 @@ else()
     target_link_libraries(TracyFreetype INTERFACE freetype)
 endif()
 
-# zstd
+# Zstd
 
-set(ZSTD_DIR "${ROOT_DIR}/zstd")
-
-set(ZSTD_SOURCES
-    decompress/zstd_ddict.c
-    decompress/zstd_decompress_block.c
-    decompress/huf_decompress.c
-    decompress/zstd_decompress.c
-    common/zstd_common.c
-    common/error_private.c
-    common/xxhash.c
-    common/entropy_common.c
-    common/debug.c
-    common/threading.c
-    common/pool.c
-    common/fse_decompress.c
-    compress/zstd_ldm.c
-    compress/zstd_compress_superblock.c
-    compress/zstd_opt.c
-    compress/zstd_compress_sequences.c
-    compress/fse_compress.c
-    compress/zstd_double_fast.c
-    compress/zstd_compress.c
-    compress/zstd_compress_literals.c
-    compress/hist.c
-    compress/zstdmt_compress.c
-    compress/zstd_lazy.c
-    compress/huf_compress.c
-    compress/zstd_fast.c
-    dictBuilder/zdict.c
-    dictBuilder/cover.c
-    dictBuilder/divsufsort.c
-    dictBuilder/fastcover.c
+CPMAddPackage(
+    NAME zstd
+    GITHUB_REPOSITORY facebook/zstd
+    GIT_TAG v1.5.7
+    OPTIONS
+        "ZSTD_BUILD_SHARED OFF"
+    EXCLUDE_FROM_ALL TRUE
+    SOURCE_SUBDIR build/cmake
 )
-
-list(TRANSFORM ZSTD_SOURCES PREPEND "${ZSTD_DIR}/")
-
-set_property(SOURCE ${ZSTD_DIR}/decompress/huf_decompress_amd64.S APPEND PROPERTY COMPILE_OPTIONS "-x" "assembler-with-cpp")
-
-add_library(TracyZstd STATIC EXCLUDE_FROM_ALL ${ZSTD_SOURCES})
-target_include_directories(TracyZstd PUBLIC ${ZSTD_DIR})
-target_compile_definitions(TracyZstd PRIVATE ZSTD_DISABLE_ASM)
-
 
 # Diff Template Library
 

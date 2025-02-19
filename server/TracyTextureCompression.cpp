@@ -1,4 +1,4 @@
-#include "../zstd/zstd.h"
+#include <zstd.h>
 
 #include "TracyEvent.hpp"
 #include "TracyTextureCompression.hpp"

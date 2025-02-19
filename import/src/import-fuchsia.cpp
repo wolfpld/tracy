@@ -15,10 +15,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unordered_map>
 #include <variant>
-
-#include <sys/stat.h>
+#include <zstd.h>
 
 #ifdef _MSC_VER
 #define stat64 _stat64
@@ -30,7 +30,6 @@
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMmap.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "../../zstd/zstd.h"
 
 void Usage() {
   printf("Usage: import-fuchsia input.json output.tracy\n\n");

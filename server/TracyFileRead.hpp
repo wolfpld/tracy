@@ -9,11 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <sys/stat.h>
 #include <thread>
 #include <utility>
 #include <vector>
-
-#include <sys/stat.h>
+#include <zstd.h>
 
 #ifdef _MSC_VER
 #  define stat64 _stat64
@@ -28,7 +28,6 @@
 #include "../public/common/TracyYield.hpp"
 #include "../public/common/tracy_lz4.hpp"
 #include "../public/common/TracyForceInline.hpp"
-#include "../zstd/zstd.h"
 
 namespace tracy
 {

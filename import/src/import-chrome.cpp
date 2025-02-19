@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unordered_map>
-
 #include <sys/stat.h>
+#include <unordered_map>
+#include <zstd.h>
 
 #ifdef _MSC_VER
 #  define stat64 _stat64
@@ -23,7 +23,6 @@
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMmap.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "../../zstd/zstd.h"
 
 using json = nlohmann::json;
 

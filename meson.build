@@ -206,7 +206,7 @@ tracy = library('tracy', tracy_src, tracy_header_files,
     override_options    : override_options,
     install             : true)
 
-install_headers(includes, subdir : 'tracy')
+install_headers(includes, subdir : 'tracy/tracy')
 install_headers(common_includes, subdir : 'tracy/common')
 install_headers(client_includes, subdir : 'tracy/client')
 

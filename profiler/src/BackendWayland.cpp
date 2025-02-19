@@ -1294,6 +1294,7 @@ void Backend::SetIcon( uint8_t* data, int w, int h )
     xdg_toplevel_icon_manager_v1_set_icon( s_iconMgr, s_toplevel, icon );
     xdg_toplevel_icon_v1_destroy( icon );
     for( auto buf : bufs ) wl_buffer_destroy( buf );
+    munmap( membuf, size );
     wl_shm_pool_destroy( pool );
 }
 

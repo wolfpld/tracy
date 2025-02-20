@@ -13,7 +13,7 @@
 #endif
 
 #ifndef TracyLine
-#  define TracyLine __LINE__
+#  define TracyLine TracyConcat(__LINE__,U) // MSVC Edit and continue __LINE__ is non-constant. See https://developercommunity.visualstudio.com/t/-line-cannot-be-used-as-an-argument-for-constexpr/195665
 #endif
 
 #ifndef TRACY_ENABLE
@@ -215,7 +215,7 @@
 #define ZoneTransientS( varname, depth, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), nullptr, 0, depth, active )
 #define ZoneTransientNS( varname, name, depth, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), depth, active )
 
-#define ZoneScopedS( depth ) ZoneNamedS( ___tracy_scoped_zone, depth, true )
+#define ZoneScopedS( depth ) ZoneNamedS( ___tracy_scoped_zone, depth, true )	
 #define ZoneScopedNS( name, depth ) ZoneNamedNS( ___tracy_scoped_zone, name, depth, true )
 #define ZoneScopedCS( color, depth ) ZoneNamedCS( ___tracy_scoped_zone, color, depth, true )
 #define ZoneScopedNCS( name, color, depth ) ZoneNamedNCS( ___tracy_scoped_zone, name, color, depth, true )

@@ -56,6 +56,9 @@ public:
     T& operator[]( size_t idx ) { return m_ptr[idx]; }
     const T& operator[]( size_t idx ) const { return m_ptr[idx]; }
 
+    T& at( size_t idx ) { return m_ptr[idx]; }
+    const T& at( size_t idx ) const { return m_ptr[idx]; }
+
     T* push_next()
     {
         if( m_write == m_end ) AllocMore();

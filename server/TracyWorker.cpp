@@ -26,11 +26,17 @@
 #define ZDICT_STATIC_LINKING_ONLY
 #include <zdict.h>
 
+#include "../client/TracyCallstack.hpp"
+#include "TracyDebugModulesHeaderFile.hpp"
+
 #include "../public/common/TracyProtocol.hpp"
-#include "../public/common/TracySystem.hpp"
-#include "../public/common/TracyYield.hpp"
 #include "../public/common/TracyStackFrames.hpp"
+#include "../public/common/TracySystem.hpp"
 #include "../public/common/TracyVersion.hpp"
+#include "../public/common/TracyYield.hpp"
+
+
+#include "TracyAlign.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyPrint.hpp"
@@ -38,6 +44,10 @@
 #include "TracyTaskDispatch.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_pdqsort.h"
+
+
+#define LOCAL_RESOLVE 1 
+
 
 namespace tracy
 {
@@ -1643,6 +1653,81 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         }
     }
 
+    auto DeserializeDebugField = [&](DegugModuleField* debugField)
+        {
+            DebugFormat debugFormat;
+            f.Read(debugFormat);
+            
+            if (debugFormat == DebugFormat::NoDebugFormat)
+            {
+                debugField->debugDataSize = -1;
+                debugField->debugData = nullptr;
+                return;
+            }
+           
+            f.Read(debugField->debugDataSize);
+            debugField->debugData = (uint8_t*)tracy_malloc(debugField->debugDataSize);
+            f.Read(debugField->debugData, debugField->debugDataSize);
+        };
+
+    auto DeserializeMallocedString = [&](char** s)
+        {
+            int sLenght = -1;
+            f.Read(sLenght);
+            if (sLenght == -1)
+                return;
+
+            *s = (char*)tracy_malloc(sLenght);
+
+            f.Read(*s, sLenght);
+
+        };
+
+    uint32_t moduleCount = -1;
+    f.Read(moduleCount);
+
+    if (moduleCount != -1)
+    {
+        for (size_t i = 0; i < moduleCount; i++)
+        {
+            ModuleCacheEntry moduleEntry;
+            f.Read(moduleEntry.start);
+            f.Read(moduleEntry.end);
+            DeserializeMallocedString(&moduleEntry.name);
+            DeserializeMallocedString(&moduleEntry.path);
+
+            DeserializeDebugField(&moduleEntry.degugModuleField);
+
+            CacheModuleAndLoadExternal(moduleEntry);
+        }
+    }
+
+    f.Read(moduleCount);
+
+    if (moduleCount != -1)
+    {
+        for (size_t i = 0; i < moduleCount; i++)
+        {
+            ModuleCacheEntry driver;
+            f.Read(driver.start);
+            driver.end = 0;
+            char* name = nullptr;
+            DeserializeMallocedString(&name);
+            driver.name = name;
+
+            char* path = nullptr;
+            DeserializeMallocedString(&path);
+            driver.path = path;
+
+            DeserializeDebugField(&driver.degugModuleField);
+
+            CacheModuleKernelAndLoadExternal(driver);
+
+        }
+    }
+
+    // Post read processing
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -2275,6 +2360,16 @@ uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset )
     return it->addr;
 }
 
+SymbolLocation Worker::GetSymbolLocFromSysAdrees( uint64_t address )
+{
+    DoPostponedSymbols();
+    auto it = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), address,
+                                []( const auto& l, const auto& r ) { return l.addr + l.len < r; } );
+    if( it == m_data.symbolLoc.end() || address < it->addr ) return {};
+
+    return *it;
+}
+
 uint64_t Worker::GetInlineSymbolForAddress( uint64_t address ) const
 {
     auto it = m_data.codeSymbolMap.find( address );
@@ -2625,7 +2720,8 @@ const SymbolStats* Worker::GetSymbolStats( uint64_t symAddr ) const
     }
 }
 
-const unordered_flat_map<CallstackFrameId, uint32_t, Worker::CallstackFrameIdHash, Worker::CallstackFrameIdCompare>* Worker::GetSymbolInstructionPointers( uint64_t symAddr ) const
+const unordered_flat_map<CallstackFrameId, uint32_t, Worker::CallstackFrameIdHash, Worker::CallstackFrameIdCompare>*
+Worker::GetSymbolInstructionPointers( uint64_t symAddr ) const
 {
     assert( AreCallstackSamplesReady() );
     auto it = m_data.instructionPointersMap.find( symAddr );
@@ -2708,6 +2804,11 @@ void Worker::Exec()
     switch( handshake )
     {
     case HandshakeWelcome:
+
+#ifdef LOCAL_RESOLVE
+        InitCallstack();
+#endif // LOCAL_RESOLVE
+
         break;
     case HandshakeProtocolMismatch:
     case HandshakeNotAvailable:
@@ -2902,6 +3003,11 @@ void Worker::Exec()
     }
 
 close:
+
+#ifdef LOCAL_RESOLVE 
+    EndCallstack();
+#endif // LOCAL_RESOLVE 
+
     Shutdown();
     m_netWriteCv.notify_one();
     m_sock.Close();
@@ -3085,6 +3191,15 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             AddSecondString( ptr, sz );
             ptr += sz;
             break;
+        case QueueType::DataPacket:
+        {
+            const QueueDataPacket* packet = reinterpret_cast<const QueueDataPacket*>( ptr );
+            ptr += sizeof( QueueHeader );
+            ptr += sizeof( QueueDataPacket );
+            AddDataPacket( reinterpret_cast<const void*>( ptr ), packet->packetSize, packet->packetDataType );
+            ptr += packet->packetSize;
+        }
+        break;
         default:
             ptr += QueueDataSize[ev.hdr.idx];
             switch( ev.hdr.type )
@@ -3280,6 +3395,15 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             AddSecondString( ptr, sz );
             ptr += sz;
             return true;
+        case QueueType::DataPacket:
+        {
+            ptr += sizeof(QueueHeader);
+            const QueueDataPacket* packet = reinterpret_cast<const QueueDataPacket*>(ptr);
+            ptr += sizeof(QueueDataPacket);
+            AddDataPacket(reinterpret_cast<const void*>(ptr), packet->packetSize, packet->packetDataType);
+            ptr += packet->packetSize;
+            return true;
+        }
         default:
             ptr += QueueDataSize[ev.hdr.idx];
             return Process( ev );
@@ -3782,6 +3906,30 @@ void Worker::AddSecondString( const char* str, size_t sz )
     m_pendingSecondString = StoreString( str, sz );
 }
 
+void Worker::AddDataPacketFailure( const void* data, size_t size, PacketDataType dataType )
+{
+    m_pendingDataPacket.type = dataType;
+    m_pendingDataPacket.data.resize( size );
+    memcpy( m_pendingDataPacket.data.data(), data, size );
+}
+
+void Worker::AddDataPacket( const void* data, size_t size, PacketDataType dataType )
+{
+    assert( m_pendingDataPacket.type == PacketDataType::EMPTY && m_pendingDataPacket.data.size() == 0 &&
+            dataType != PacketDataType::EMPTY );
+
+    m_pendingDataPacket.type = dataType;
+    m_pendingDataPacket.data.resize( size );
+    memcpy( m_pendingDataPacket.data.data(), data, size );
+
+#if 0
+    int d[100];
+    for( size_t i = 0; i < size / sizeof( int ); i++ )
+        d[i] = *reinterpret_cast<int*>( &m_pendingDataPacket.data[i * 4] );
+
+#endif
+}
+
 void Worker::AddExternalName( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingExternalNames > 0 );
@@ -3862,11 +4010,8 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         {
             const auto& op = insn[i];
             const auto addr = op.address;
-            if( m_data.callstackFrameMap.find( PackPointer( addr ) ) == m_data.callstackFrameMap.end() )
-            {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, addr );
-            }
+            TryResolveCallStackIfNeeded(PackPointer(addr));
+            
 
             uint64_t callAddr = 0;
             const auto& detail = *op.detail;
@@ -3902,10 +4047,9 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
                     if( callAddr != 0 ) break;
                 }
             }
-            if( callAddr != 0 && m_data.callstackFrameMap.find( PackPointer( callAddr ) ) == m_data.callstackFrameMap.end() )
+            if( callAddr != 0)
             {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, callAddr );
+                TryResolveCallStackIfNeeded(PackPointer(addr));
             }
         }
         cs_free( insn, cnt );
@@ -3942,6 +4086,58 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
+void Worker::TryResolveCallStackIfNeeded(CallstackFrameId frameId)
+{
+    if (m_data.callstackFrameMap.count(frameId) != 0)
+    {
+        return;
+    }
+
+	m_pendingCallstackFrames++;
+    uint64_t symbolAddress = GetCanonicalPointer(frameId);
+    if (!m_resolveSymbolLocally)
+    {
+        Query(ServerQueryCallstackFrame, symbolAddress);
+        return;
+    }
+
+	
+    DecodeCallStackPtrStatus status;
+    CallstackEntryData outCallStack = DecodeCallstackPtr(symbolAddress, &status);
+
+    if (status != DecodeCallStackPtrStatus::Success)
+    {
+        //Query(ServerQueryModuleUpdate, symbolAddress, 0);
+    }
+
+
+	const uint32_t imageNameIdx = StoreString(outCallStack.imageName).idx;
+    assert(outCallStack.size <= 255);
+    const QueueCallstackFrameSize queueCallstackFrameSize =
+    {
+        .ptr = symbolAddress,
+        .size = outCallStack.size,
+    };
+
+    ProcessCallstackFrameSize(queueCallstackFrameSize, imageNameIdx);
+
+    // we know that for the best we have inline information
+    for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
+    {
+        const auto& frame = outCallStack.data[i];
+        ProcessCallstackFrame(frame.line, frame.symAddr, frame.symLen,
+            StoreString(frame.name).idx, StoreString(frame.file).idx, true);
+        
+        // We copied it, now free the content
+        tracy_free_fast((void*)frame.name);
+        tracy_free_fast((void*)frame.file);
+    }
+
+    assert(m_pendingCallstackSubframes == 0);
+
+
+}
+
 void Worker::AddCallstackPayload( const char* _data, size_t _sz )
 {
     assert( m_pendingCallstackId == 0 );
@@ -3969,14 +4165,10 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
         m_data.callstackMap.emplace( arr, idx );
         m_data.callstackPayload.push_back( arr );
 
-        for( auto& frame : *arr )
+
+        for (CallstackFrameId frameId : *arr)
         {
-            auto fit = m_data.callstackFrameMap.find( frame );
-            if( fit == m_data.callstackFrameMap.end() )
-            {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, GetCanonicalPointer( frame ) );
-            }
+            TryResolveCallStackIfNeeded(frameId);
         }
     }
     else
@@ -4064,12 +4256,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
 
         for( auto& frame : *arr )
         {
-            auto fit = m_data.callstackFrameMap.find( frame );
-            if( fit == m_data.callstackFrameMap.end() )
-            {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, GetCanonicalPointer( frame ) );
-            }
+            TryResolveCallStackIfNeeded(frame);
         }
     }
     else
@@ -4408,6 +4595,21 @@ uint32_t Worker::GetSecondStringIdx()
     return idx;
 }
 
+void Worker::AccessPendingData( uint8_t** ptr, size_t* sz, PacketDataType* type )
+{
+    assert( m_pendingDataPacket.type != PacketDataType::EMPTY && m_pendingDataPacket.data.size() != 0 );
+
+    *ptr = m_pendingDataPacket.data.data();
+    *sz = m_pendingDataPacket.data.size();
+    *type = m_pendingDataPacket.type;
+}
+
+void Worker::FreePendingData()
+{
+    m_pendingDataPacket.data.clear();
+    m_pendingDataPacket.type = PacketDataType::EMPTY;
+}
+
 StringLocation Worker::StoreString( const char* str, size_t sz )
 {
     StringLocation ret;
@@ -4431,10 +4633,18 @@ StringLocation Worker::StoreString( const char* str, size_t sz )
     return ret;
 }
 
+StringLocation Worker::StoreString(const char* str)
+{
+    return StoreString(str, strlen(str));
+}
+
 bool Worker::Process( const QueueItem& ev )
 {
     switch( ev.hdr.type )
     {
+    case QueueType::ModuleUpdate:
+        DispatchModuleInfo( ev.moduleInfo );
+        break;
     case QueueType::ThreadContext:
         ProcessThreadContext( ev.threadCtx );
         break;
@@ -6488,7 +6698,7 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
     td.ctxSwitchSamples.push_back( sd );
 }
 
-void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
+void Worker::ProcessCallstackFrameSize(const QueueCallstackFrameSize& ev, uint32_t imageNameIdx)
 {
     assert( !m_callstackFrameStaging );
     assert( m_pendingCallstackSubframes == 0 );
@@ -6499,27 +6709,35 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     m_data.newFramesWereReceived = true;
 #endif
 
-    const auto idx = GetSingleStringIdx();
-
     // Frames may be duplicated due to recursion
-    auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
-    if( fmit == m_data.callstackFrameMap.end() )
+    auto fmit = m_data.callstackFrameMap.find(PackPointer(ev.ptr));
+    if (fmit == m_data.callstackFrameMap.end())
     {
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
         m_callstackFrameStaging->size = ev.size;
-        m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>( ev.size );
-        m_callstackFrameStaging->imageName = StringIdx( idx );
+        m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>(ev.size);
+        m_callstackFrameStaging->imageName = StringIdx(imageNameIdx);
 
         m_callstackFrameStagingPtr = ev.ptr;
     }
 }
 
-void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols )
+void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
+{
+    ProcessCallstackFrameSize(ev, GetSingleStringIdx());
+}
+
+void Worker::ProcessCallstackFrame(const QueueCallstackFrame& ev, bool querySymbols)
+{
+    const uint32_t nitidx = GetSingleStringIdx();
+    const uint32_t fitidx = GetSecondStringIdx();
+
+    ProcessCallstackFrame(ev.line, ev.symAddr, ev.symLen, nitidx, fitidx, querySymbols);
+}
+
+void Worker::ProcessCallstackFrame(uint32_t line, uint64_t symAddr, uint32_t symLen, uint32_t nitidx, uint32_t fitidx, bool querySymbols)
 {
     assert( m_pendingCallstackSubframes > 0 );
-
-    const auto nitidx = GetSingleStringIdx();
-    const auto fitidx = GetSecondStringIdx();
 
     if( m_callstackFrameStaging )
     {
@@ -6550,13 +6768,18 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
         const auto name = StringIdx( nitidx );
         m_callstackFrameStaging->data[idx].name = name;
         m_callstackFrameStaging->data[idx].file = file;
-        m_callstackFrameStaging->data[idx].line = ev.line;
-        m_callstackFrameStaging->data[idx].symAddr = ev.symAddr;
+        m_callstackFrameStaging->data[idx].line = line;
+        m_callstackFrameStaging->data[idx].symAddr = symAddr;
 
-        if( querySymbols && ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
+        if(querySymbols && symAddr!= 0 && m_data.symbolMap.find(symAddr) == m_data.symbolMap.end() &&
+            m_pendingSymbols.find(symAddr) == m_pendingSymbols.end())
         {
-            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, ev.symLen, idx < m_callstackFrameStaging->size - 1 } );
-            Query( ServerQuerySymbol, ev.symAddr );
+            m_pendingSymbols.emplace(symAddr,
+                                      SymbolPending{ name, m_callstackFrameStaging->imageName, file, line, symLen,
+                                                     idx < m_callstackFrameStaging->size - 1 } );
+
+           
+          Query( ServerQuerySymbol, symAddr );
         }
 
         StringRef ref( StringRef::Idx, fitidx );
@@ -6564,16 +6787,22 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
         if( cit == m_checkedFileStrings.end() ) CacheSource( ref, m_callstackFrameStaging->imageName );
 
         const auto frameId = PackPointer( m_callstackFrameStagingPtr );
+
 #ifndef TRACY_NO_STATISTICS
+
+
         auto it = m_data.pendingInstructionPointers.find( frameId );
         if( it != m_data.pendingInstructionPointers.end() )
         {
-            if( ev.symAddr != 0 )
+            if( symAddr != 0 )
             {
-                auto sit = m_data.instructionPointersMap.find( ev.symAddr );
+                auto sit = m_data.instructionPointersMap.find( symAddr );
                 if( sit == m_data.instructionPointersMap.end() )
                 {
-                    m_data.instructionPointersMap.emplace( ev.symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { it->first, it->second } } );
+                    m_data.instructionPointersMap.emplace(
+                        symAddr,
+                        unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>{
+                            { it->first, it->second } } );
                 }
                 else
                 {
@@ -6583,16 +6812,19 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
             }
             m_data.pendingInstructionPointers.erase( it );
         }
+
+
         auto pit = m_data.pendingSymbolSamples.find( frameId );
         if( pit != m_data.pendingSymbolSamples.end() )
         {
-            if( ev.symAddr != 0 )
+            if( symAddr != 0 )
             {
-                auto sit = m_data.symbolSamples.find( ev.symAddr );
+                auto sit = m_data.symbolSamples.find( symAddr );
                 if( sit == m_data.symbolSamples.end() )
-                {
-                    pdqsort_branchless( pit->second.begin(), pit->second.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
-                    m_data.symbolSamples.emplace( ev.symAddr, std::move( pit->second ) );
+                {               
+                    pdqsort_branchless( pit->second.begin(), pit->second.end(), []( const auto& lhs, const auto& rhs )
+                                        { return lhs.time.Val() < rhs.time.Val(); } );
+                    m_data.symbolSamples.emplace( symAddr, std::move( pit->second ) );
                 }
                 else
                 {
@@ -8364,6 +8596,64 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &v.second.len, sizeof( v.second.len ) );
         f.Write( v.second.data, v.second.len );
     }
+
+
+
+    auto SerializeDebugModuleField = [&](const DegugModuleField& debugField)
+        {
+            f.Write(&debugField.debugFormat, sizeof(debugField.debugFormat));
+            if (debugField.debugFormat == DebugFormat::NoDebugFormat)
+               return;
+           
+
+            f.Write(&debugField.debugDataSize, sizeof(debugField.debugDataSize));
+            f.Write(debugField.debugData, debugField.debugDataSize);
+
+        };
+
+    auto SerializeString = [&](const char* s)
+        {
+           int sLenght = s != nullptr ? strlen(s) + 1 : -1;
+           f.Write(&sLenght, sizeof(sLenght));
+
+            if (sLenght == -1)
+                return;
+           
+            f.Write(s, sLenght);
+        };
+
+	const FastVector<ModuleCacheEntry>& cacheModule = GetModuleData();
+	uint32_t moduleCount = static_cast<uint32_t>(cacheModule.size());
+	f.Write(&moduleCount, sizeof(moduleCount));
+
+	for (const ModuleCacheEntry& it : cacheModule)
+	{
+		const ModuleCacheEntry& moduleCacheEntry = it;
+		f.Write(&moduleCacheEntry.start, sizeof(moduleCacheEntry.start));
+		f.Write(&moduleCacheEntry.end, sizeof(moduleCacheEntry.end));
+
+		SerializeString(moduleCacheEntry.name);
+        SerializeString(moduleCacheEntry.path);
+
+		SerializeDebugModuleField(moduleCacheEntry.degugModuleField);
+	}
+
+
+	const FastVector<ModuleCacheEntry>& kernelDrivers = GetKernelDriver();
+    moduleCount = static_cast<uint32_t>(kernelDrivers.size());
+	f.Write(&moduleCount, sizeof(moduleCount));
+
+	for (const ModuleCacheEntry& it : kernelDrivers)
+	{
+		f.Write(&it.start, sizeof(it.start));
+        assert(it.end == 0 && "kernel end should be zero");
+
+		SerializeString(it.name);
+		SerializeString(it.path);
+
+		SerializeDebugModuleField(it.degugModuleField);
+	}
+    
 }
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<ZoneEvent>>& vec, int64_t& refTime )
@@ -8611,5 +8901,84 @@ void Worker::CacheSourceFiles()
         }
     }
 }
+
+void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
+{
+    uint8_t* ptrToData = nullptr;
+    size_t s = 0;
+    PacketDataType dataType;
+    AccessPendingData( &ptrToData, &s, &dataType );
+
+    switch( dataType )
+    {
+    case PacketDataType::ModuleInfo:
+    {
+        uint64_t baseAddress = MemRead<uint64_t>( ptrToData );
+        ptrToData += sizeof( baseAddress );
+
+        uint64_t end = MemRead<uint64_t>(ptrToData);
+        ptrToData += sizeof(end);
+
+        uint32_t moduleNameSize = MemRead<uint32_t>( ptrToData );
+        ptrToData += sizeof(moduleNameSize);
+
+        char* moduleName = (char*)tracy_malloc(moduleNameSize);
+        memcpy(moduleName, ptrToData, moduleNameSize);
+        ptrToData += moduleNameSize;
+        StringLocation moduleNameStringLocation = StoreString(moduleName);
+        assert((char)(moduleName[moduleNameSize - 1]) == '\0' && "missing end of string");
+
+        uint32_t modulePathSize = MemRead<uint32_t>(ptrToData);
+        ptrToData += sizeof(modulePathSize);
+
+        char* modulePath = (char*)tracy_malloc(modulePathSize);
+        memcpy( modulePath, ptrToData, modulePathSize );
+        ptrToData += modulePathSize;
+        StringLocation modulePathStringLocation = StoreString(modulePath);
+        assert((char)(modulePath[modulePathSize - 1]) == '\0' && "missing end of string");
+
+
+        DebugFormat debugFormat = MemRead<DebugFormat>( ptrToData );
+        ptrToData += sizeof( DebugFormat );
+
+        ModuleCacheEntry moduleCacheEntry =
+        {
+            .start = baseAddress,
+            .end = end,
+            .name = moduleName,
+            .path = modulePath,
+        };
+        moduleCacheEntry.degugModuleField.debugFormat = debugFormat;
+
+        if (debugFormat == DebugFormat::PdbDebugFormat)
+        {
+
+            uint32_t debugFormatSize = MemRead<uint32_t>( ptrToData );
+            ptrToData += sizeof( debugFormatSize );
+
+            uint8_t* debugData = (uint8_t*)tracy_malloc(debugFormatSize);
+            memcpy(debugData, ptrToData, debugFormatSize );
+            ptrToData += debugFormatSize;
+
+            DegugModuleField& degugModuleField = moduleCacheEntry.degugModuleField;
+
+            degugModuleField.debugData = debugData;
+            degugModuleField.debugDataSize = debugFormatSize;
+            
+            assert((char)(debugData[debugFormatSize - 1]) == '\0' && "missing end of string");
+
+        }
+
+        CacheModuleAndLoadExternal(moduleCacheEntry);
+
+        break;
+    }
+    default:
+        break;
+    }
+
+    FreePendingData();
+}
+
 
 }

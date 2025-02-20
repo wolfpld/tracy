@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include <vector>
 
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
@@ -777,6 +778,7 @@ public:
     void SendSecondString( const char* ptr ) { SendSecondString( ptr, strlen( ptr ) ); }
     void SendSecondString( const char* ptr, size_t len );
 
+    void SendSingleDataPacket(void* ptr, size_t totalSize, PacketDataType type);
 
     // Allocated source location data layout:
     //  2b  payload size
@@ -917,6 +919,12 @@ private:
     void CalibrateTimer();
     void CalibrateDelay();
     void ReportTopology();
+
+    void sendModulesCaches();
+
+    void WriteDebugFieldToPacket(uint8_t** ptr, int* currentPacketSize, const DegugModuleField& degugModuleField);
+    void SendModuleInfo(const ModuleCacheEntry& moduleCacheEntry, std::vector<uint8_t>* queuBuffer);
+
 
     static tracy_force_inline void SendCallstackSerial( void* ptr )
     {

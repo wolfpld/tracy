@@ -33,13 +33,26 @@ static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr;
 
 #include <assert.h>
 #include <stdint.h>
+#include <mutex>
 
 #include "../common/TracyAlloc.hpp"
+#include "TracyFastVector.hpp"
 
 namespace tracy
 {
 
 static constexpr bool has_callstack() { return true; }
+
+enum struct DecodeCallStackPtrStatus
+{
+    Success,
+    ModuleMissing,
+    SymbolMissing,
+
+    Count
+};
+
+enum struct DebugFormat : uint8_t;
 
 struct CallstackSymbolData
 {
@@ -55,7 +68,7 @@ struct CallstackEntry
     const char* file;
     uint32_t line;
     uint32_t symLen;
-    uint64_t symAddr;
+    uint64_t symAddr; // Relative address
 };
 
 struct CallstackEntryData
@@ -65,13 +78,47 @@ struct CallstackEntryData
     const char* imageName;
 };
 
+struct DegugModuleField
+{
+    DebugFormat debugFormat;
+    uint8_t* debugData;
+    uint32_t debugDataSize;
+};
+
+struct ModuleCacheEntry
+{
+    uint64_t start;
+    uint64_t end;
+    char* name;
+    char* path;
+ 
+    DegugModuleField degugModuleField;
+};
+
+
+std::recursive_mutex& GetModuleCacheMutexForRead();
+
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
-CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr , DecodeCallStackPtrStatus* _decodeCallStackPtrStatus);
+
+
 void InitCallstack();
 void InitCallstackCritical();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
+void FindModuleFromAddr(uint64_t addr, const ModuleCacheEntry** outModule);
+void FindKernelDriverFromAddr(uint64_t addr, const ModuleCacheEntry** outDrive);
+
+
+void CacheModuleAndLoadExternal(const ModuleCacheEntry& moduleCacheEntry);
+void CacheModuleKernelAndLoadExternal(const ModuleCacheEntry& kernelDriver);
+const FastVector<ModuleCacheEntry>& GetModuleData();
+const FastVector<ModuleCacheEntry>& GetKernelDriver();
+
+
+//
+//void AddModuleToCache()
 
 #ifdef TRACY_DEBUGINFOD
 const uint8_t* GetBuildIdForImage( const char* image, size_t& size );

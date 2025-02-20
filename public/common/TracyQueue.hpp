@@ -68,6 +68,8 @@ enum class QueueType : uint8_t
     SourceCodeMetadata,
     FiberEnter,
     FiberLeave,
+    ModuleUpdate,
+    DataPacket,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -693,6 +695,28 @@ struct QueueHeader
     };
 };
 
+static constexpr size_t MaxModule = 1024;
+
+
+struct QueuModuleInfo
+{
+   
+};
+
+enum struct PacketDataType : int
+{
+    EMPTY = 0,
+    ModuleInfo,
+};
+
+static_assert( PacketDataType::EMPTY == (PacketDataType)0, "Empty must be First" );
+
+struct QueueDataPacket
+{
+    PacketDataType packetDataType;
+    uint16_t packetSize;
+};
+
 struct QueueItem
 {
     QueueHeader hdr;
@@ -782,6 +806,8 @@ struct QueueItem
         QueueSourceCodeNotAvailable sourceCodeNotAvailable;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
+        QueuModuleInfo moduleInfo;  
+        QueueDataPacket packet;
     };
 };
 #pragma pack( pop )
@@ -850,6 +876,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first
+    sizeof( QueueItem ),                                  // client modules base address,
+    sizeof( QueueHeader ) + sizeof( QueueDataPacket ),      // DataPacket
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
     sizeof( QueueHeader ) + sizeof( QueueThreadContext ),

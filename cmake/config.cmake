@@ -51,6 +51,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
     endif()
 endif()
 
+find_program(CCACHE ccache)
+if(CCACHE)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache) 
+endif()
+
 file(GENERATE OUTPUT .gitignore CONTENT "*")
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)

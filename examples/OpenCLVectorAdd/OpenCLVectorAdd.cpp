@@ -1,9 +1,9 @@
-#include <algorithm>
 #include <iostream>
 #include <cassert>
 #include <string>
 #include <vector>
 #include <numeric>
+#include <cmath>
 
 #include <CL/cl.h>
 

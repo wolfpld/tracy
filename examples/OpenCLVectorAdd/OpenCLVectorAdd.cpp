@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <numeric>
-#include <cmath>
+#include <math.h>
 
 #include <CL/cl.h>
 

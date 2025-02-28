@@ -2000,6 +2000,18 @@ Cost of performing Lua call stack capture is presented in table~\ref{CallstackTi
 
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that, you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if the profiler is enabled.
 
+\subsubsection{Automatic instrumentation}
+
+Lua code can be automatically instrumented by using the \texttt{tracy::LuaHook(lua\_State*, lua\_Debug*)} function as or within a lua hook.
+The Lua hook must have the \texttt{LUA\_HOOKCALL} and \texttt{LUA\_HOOKRET} event mask set.
+You may either directly set the function as your hook or chain it to your existing hook.
+
+Use \texttt{lua\_sethook(L, tracy::LuaHook, LUA\_MASKCALL | LUA\_MASKRET, 0)} if you do not already have a Lua hook set.
+
+If you already have a Lua hook, directly use \texttt{tracy::LuaHook(L, ar)} within the hook.
+
+Note that since lua will have to invoke the hook for every function call and return. There may be a small performance penalty.
+
 \subsection{C API}
 \label{capi}
 

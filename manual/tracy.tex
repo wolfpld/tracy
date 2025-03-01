@@ -2002,15 +2002,11 @@ Even if Tracy is disabled, you still have to pay the no-op function call cost. T
 
 \subsubsection{Automatic instrumentation}
 
-Lua code can be automatically instrumented by using the \texttt{tracy::LuaHook(lua\_State*, lua\_Debug*)} function as or within a lua hook.
-The Lua hook must have the \texttt{LUA\_HOOKCALL} and \texttt{LUA\_HOOKRET} event mask set.
-You may either directly set the function as your hook or chain it to your existing hook.
+Lua code can be automatically instrumented by using Lua hooks. The \texttt{tracy::LuaHook(lua\_State*, lua\_Debug*)} function may be used as or within a Lua hook. There is a small performance impact from using Lua hooks since the Lua VM will be required to invoke the hook function.
 
-Use \texttt{lua\_sethook(L, tracy::LuaHook, LUA\_MASKCALL | LUA\_MASKRET, 0)} if you do not already have a Lua hook set.
+The Lua hook must have the \texttt{LUA\_HOOKCALL} and \texttt{LUA\_HOOKRET} event mask set. You may either directly set the function as your hook or chain it to your existing hook.
 
-If you already have a Lua hook, directly use \texttt{tracy::LuaHook(L, ar)} within the hook.
-
-Note that since lua will have to invoke the hook for every function call and return. There may be a small performance penalty.
+Use \texttt{lua\_sethook(L, tracy::LuaHook, LUA\_MASKCALL | LUA\_MASKRET, 0)} if you do not already have a Lua hook set or directly call \texttt{tracy::LuaHook(L, ar)} within your hook if you already have one set.
 
 \subsection{C API}
 \label{capi}

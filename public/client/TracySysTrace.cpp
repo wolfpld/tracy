@@ -768,11 +768,16 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
 
     int switchId = -1, wakeupId = -1, vsyncId = -1;
-    const auto switchIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_switch/id" );
+    auto switchIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_switch/id" );
+    if( !switchIdStr) switchIdStr = ReadFile( "/sys/kernel/tracing/events/sched/sched_switch/id" );
     if( switchIdStr ) switchId = atoi( switchIdStr );
-    const auto wakeupIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_wakeup/id" );
+
+    auto wakeupIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_wakeup/id" );
+    if( !wakeupIdStr) wakeupIdStr = ReadFile( "/sys/kernel/tracing/events/sched/sched_wakeup/id" );
     if( wakeupIdStr ) wakeupId = atoi( wakeupIdStr );
-    const auto vsyncIdStr = ReadFile( "/sys/kernel/debug/tracing/events/drm/drm_vblank_event/id" );
+    
+    auto vsyncIdStr = ReadFile( "/sys/kernel/debug/tracing/events/drm/drm_vblank_event/id" );
+    if( !vsyncIdStr) vsyncIdStr = ReadFile( "/sys/kernel/tracing/events/drm/drm_vblank_event/id" );
     if( vsyncIdStr ) vsyncId = atoi( vsyncIdStr );
 
     TracyDebug( "sched_switch id: %i\n", switchId );

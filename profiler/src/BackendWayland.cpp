@@ -1014,6 +1014,16 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     xdg_toplevel_set_title( s_toplevel, title );
     xdg_toplevel_set_app_id( s_toplevel, "tracy" );
 
+    if( s_activation )
+    {
+        const char* token = getenv( "XDG_ACTIVATION_TOKEN" );
+        if( token )
+        {
+            xdg_activation_v1_activate( s_activation, token, s_surf );
+            unsetenv( "XDG_ACTIVATION_TOKEN" );
+        }
+    }
+
     if( s_decoration )
     {
         s_tldec = zxdg_decoration_manager_v1_get_toplevel_decoration( s_decoration, s_toplevel );

@@ -111,7 +111,7 @@ void FindModuleFromAddr(uint64_t addr, const ModuleCacheEntry** outModule);
 void FindKernelDriverFromAddr(uint64_t addr, const ModuleCacheEntry** outDrive);
 
 
-void CacheModuleAndLoadExternal(const ModuleCacheEntry& moduleCacheEntry);
+void CacheModuleAndLoadExternal(ModuleCacheEntry& moduleCacheEntry);
 void CacheModuleKernelAndLoadExternal(const ModuleCacheEntry& kernelDriver);
 const FastVector<ModuleCacheEntry>& GetModuleData();
 const FastVector<ModuleCacheEntry>& GetKernelDriver();

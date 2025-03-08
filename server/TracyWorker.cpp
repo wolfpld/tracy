@@ -1670,14 +1670,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             f.Read(debugField->debugData, debugField->debugDataSize);
         };
 
-    auto DeserializeMallocedString = [&](char** s)
+    auto DeserializeMallocedFastString = [&](char** s)
         {
             int sLenght = -1;
             f.Read(sLenght);
             if (sLenght == -1)
                 return;
 
-            *s = (char*)tracy_malloc(sLenght);
+            *s = (char*)tracy_malloc_fast(sLenght);
 
             f.Read(*s, sLenght);
 
@@ -1693,8 +1693,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             ModuleCacheEntry moduleEntry;
             f.Read(moduleEntry.start);
             f.Read(moduleEntry.end);
-            DeserializeMallocedString(&moduleEntry.name);
-            DeserializeMallocedString(&moduleEntry.path);
+            DeserializeMallocedFastString(&moduleEntry.name);
+            DeserializeMallocedFastString(&moduleEntry.path);
 
             DeserializeDebugField(&moduleEntry.degugModuleField);
 
@@ -1712,11 +1712,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             f.Read(driver.start);
             driver.end = 0;
             char* name = nullptr;
-            DeserializeMallocedString(&name);
+            DeserializeMallocedFastString(&name);
             driver.name = name;
 
             char* path = nullptr;
-            DeserializeMallocedString(&path);
+            DeserializeMallocedFastString(&path);
             driver.path = path;
 
             DeserializeDebugField(&driver.degugModuleField);
@@ -8922,7 +8922,7 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
         uint32_t moduleNameSize = MemRead<uint32_t>( ptrToData );
         ptrToData += sizeof(moduleNameSize);
 
-        char* moduleName = (char*)tracy_malloc(moduleNameSize);
+        char* moduleName = (char*)tracy_malloc_fast(moduleNameSize);
         memcpy(moduleName, ptrToData, moduleNameSize);
         ptrToData += moduleNameSize;
         StringLocation moduleNameStringLocation = StoreString(moduleName);
@@ -8931,7 +8931,7 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
         uint32_t modulePathSize = MemRead<uint32_t>(ptrToData);
         ptrToData += sizeof(modulePathSize);
 
-        char* modulePath = (char*)tracy_malloc(modulePathSize);
+        char* modulePath = (char*)tracy_malloc_fast(modulePathSize);
         memcpy( modulePath, ptrToData, modulePathSize );
         ptrToData += modulePathSize;
         StringLocation modulePathStringLocation = StoreString(modulePath);

@@ -1984,6 +1984,8 @@ void Profiler::Worker()
         }
         m_deferredLock.unlock();
 #endif
+        // Send all known modules information.
+        SendModulesCaches();
 
         // Main communications loop
         int keepAlive = 0;
@@ -4065,7 +4067,7 @@ void Profiler::ReportTopology()
 #    endif
 }
 
-void Profiler::sendModulesCaches()
+void Profiler::SendModulesCaches()
 {
     // We are retrieving modules information from the Tracy Profiler thread
     // But the Symbol Worker has ownership. Make sure it is not writing to the cache while we read it.
@@ -4075,6 +4077,12 @@ void Profiler::sendModulesCaches()
     size_t moduleCount = -1;
     
 
+    const FastVector<ModuleCacheEntry>& kernelDrivers = GetKernelDriver();
+    for (auto& it : kernelDrivers)
+    {
+        SendModuleInfo(it, &sendQueuBuffer);
+    }
+
 	const FastVector<ModuleCacheEntry>& cacheModule = GetModuleData();
 	// Sennd all moduleInfo
 	for (auto& it : cacheModule)
@@ -4083,11 +4091,6 @@ void Profiler::sendModulesCaches()
 	}
 
 
-	const FastVector<ModuleCacheEntry>& kernelDrivers = GetKernelDriver();
-	for (auto& it : kernelDrivers)
-	{
-        SendModuleInfo(it, &sendQueuBuffer);
-    }
 
 }
 

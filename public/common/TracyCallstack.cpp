@@ -11,9 +11,18 @@
 #include "TracySystem.hpp"
 #include "TracyDebugModulesHeaderFile.hpp"
 
+
+
+#    pragma optimize( "", off )
+
+
+
+
+
+
 #ifdef TRACY_HAS_CALLSTACK
 
-constexpr uint32_t ImageCacheAllocSize = 512;
+constexpr uint32_t ImageCacheBaseCapacity = 512;
 
 #define CLIENT_SEND_IMAGES_INFO "CLIENT_SEND_IMAGES_INFO"
 #define SERVER_LOCAL_RESOLVE "SERVER_LOCAL_RESOLVE"
@@ -95,6 +104,16 @@ namespace tracy
         return s_cacheMutex;
     }
 
+    void DestroyModuleCacheEntry(ModuleCacheEntry& entry)
+    {
+        tracy_free_fast(entry.path);
+        entry.path = nullptr;
+        tracy_free_fast(entry.name);
+        entry.name = nullptr;
+        tracy_free(entry.degugModuleField.debugData);
+        entry.degugModuleField.debugData = nullptr;
+    }
+
     class ImageCache
     {
     public:
@@ -116,11 +135,6 @@ namespace tracy
             return nullptr;
         }
 
-        ModuleCacheEntry* PushBack()
-        {
-            return m_modCache.push_next();
-        }
-
 
         void MapModuleData(const ModuleCacheEntry** moduleCacheEntries, size_t* moduleCount)
         {
@@ -137,31 +151,16 @@ namespace tracy
 
         ModuleCacheEntry* CacheModuleWithDebugInfo(const ModuleCacheEntry& entry)
         {
-            ModuleCacheEntry* it = PushBack();
-            *it = entry;
-            return it;
+            ModuleCacheEntry* newEntry = m_modCache.push_next();
+            *newEntry = entry;
+            return newEntry;
         }
 
         void Clear()
         {
-            size_t mCacheS = 0;
-
-            for (ModuleCacheEntry& cache : m_modCache)
+            for (ModuleCacheEntry& cacheEntry : m_modCache)
             {
-                if (cache.name != nullptr)
-                {
-                    tracy_free(cache.name);
-                    cache.name = nullptr;
-                }
-
-                DegugModuleField& dbf = cache.degugModuleField;
-
-                if (dbf.debugData != nullptr)
-                {
-                    tracy_free(dbf.debugData);
-                    dbf.debugData = nullptr;
-                }
-                mCacheS++;
+                DestroyModuleCacheEntry(cacheEntry);
             }
             m_modCache.clear();
         }
@@ -240,7 +239,6 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #   define TRACY_USE_IMAGE_CACHE
 #   include <link.h>
 #endif
-#include <codecvt>
 
 namespace tracy
 {
@@ -412,7 +410,7 @@ enum { MaxNameSize = 8*1024 };
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 
-HANDLE symHandle = 0;
+HANDLE s_DbgHelpSymHandle = 0;
 #pragma comment( lib, "dbghelp.lib" )
 
 extern "C"
@@ -447,114 +445,21 @@ FastVector<ModuleCacheEntry>* s_krnlCache = nullptr;
 
 
 
-class ImageCacheWindows : public ImageCache
-{
-public:
-
-    ImageCacheWindows(size_t moduleAllocationSize) : ImageCache(moduleAllocationSize)
-    {
-
-    }
-
-    ~ImageCacheWindows() = default;
-
-private:
-
-};
-
-ImageCacheWindows* s_imageCacheWindows = nullptr;
-
-
+ImageCache* s_imageCacheWindows = nullptr;
 
 uint64_t DbgHelpLoadSymbolsForModule(const char* imageName, uint64_t baseOfDll, uint32_t dllSize)
 {
-    auto d = SymLoadModuleEx(symHandle, nullptr, imageName, nullptr, baseOfDll, dllSize, nullptr, 0);
+    auto d = SymLoadModuleEx(s_DbgHelpSymHandle, nullptr, imageName, nullptr, baseOfDll, dllSize, nullptr, 0);
 
     IMAGEHLP_MODULEW64 moduleInfo{};
     moduleInfo.SizeOfStruct = sizeof(IMAGEHLP_MODULEW64);
-    if (TRUE == SymGetModuleInfoW64(symHandle, (uintptr_t)baseOfDll, &moduleInfo))
+    if (TRUE == SymGetModuleInfoW64(s_DbgHelpSymHandle, (uintptr_t)baseOfDll, &moduleInfo))
     {
         wprintf(L"- ImageName=%s\n", moduleInfo.ImageName);
         wprintf(L"- LoadedPdbName=%s\n", moduleInfo.LoadedPdbName);
     }
 
     return d;
-}
-
-
-
-ModuleCacheEntry* LoadSymbolsForModuleAndCache(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
-{
-
-    DbgHelpLoadSymbolsForModule(imageName, baseOfDll, dllSize);
-    
-    std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
-
-    ModuleCacheEntry* cachedModuleEntry = s_imageCacheWindows->PushBack();
-    cachedModuleEntry->start = baseOfDll;
-    cachedModuleEntry->end = baseOfDll + dllSize;
-
-    // when doing offline symbol resolution, we must store the full path of the dll for the resolving to work
-    if (s_shouldResolveSymbolsOffline)
-    {
-        cachedModuleEntry->name = (char*)tracy_malloc_fast(imageNameLength + 1);
-        memcpy(cachedModuleEntry->name, imageName, imageNameLength);
-        cachedModuleEntry->name[imageNameLength] = '\0';
-    }
-    else
-    {
-        FormatImageName(&cachedModuleEntry->name, imageName, imageNameLength);
-    }
-
-    return cachedModuleEntry;
-}
-
-void CacheKernelModule(const char* imageName, uint64_t baseOfDll, uint32_t dllSize, DebugFormat* debugFormat , uint8_t** debugData, uint32_t* debugSize)
-{
-    auto d = SymLoadModuleEx(symHandle, nullptr, imageName, nullptr, baseOfDll, dllSize, nullptr, 0);
-
-    IMAGEHLP_MODULEW64 moduleInfo{};
-    moduleInfo.SizeOfStruct = sizeof(IMAGEHLP_MODULEW64);
-    if (TRUE == SymGetModuleInfoW64(symHandle, (uintptr_t)baseOfDll, &moduleInfo))
-    {
-        *debugFormat = DebugFormat::PdbDebugFormat;
-
-        static constexpr int endofString = 1;
-        const uint32_t signatureLenght = static_cast<uint32_t>(wcslen(reinterpret_cast<const wchar_t*>(moduleInfo.CVData)));
-
-        const uint32_t debugFormatSize = sizeof(WindowsDebugData) + signatureLenght + endofString;
-
-        *debugData = (uint8_t*)tracy_malloc(debugFormatSize);
-        *debugSize = debugFormatSize;
-        WindowsDebugData* ptrToWindowsDebugData = reinterpret_cast<WindowsDebugData*>(*debugData);
-        ptrToWindowsDebugData->majorVersion = 0;
-        ptrToWindowsDebugData->minorVersion = 0;
-        ptrToWindowsDebugData->exeDataTimeStamp = moduleInfo.TimeDateStamp;
-
-        TracyPdbInfo* pdbInfo = &ptrToWindowsDebugData->cvInfo;
-
-        pdbInfo->Age = moduleInfo.PdbAge;
-        pdbInfo->CvSignature = moduleInfo.CVSig;
-
-        static_assert(sizeof(pdbInfo->Signature) == sizeof(moduleInfo.PdbSig70), "GUID size must match");
-        memcpy(&pdbInfo->Signature, &moduleInfo.PdbSig70, sizeof(moduleInfo.PdbSig70));
-
-        const GUID* guidd = reinterpret_cast<const GUID*>(&pdbInfo->Signature);
-
-        using convert_type = std::codecvt_utf8<wchar_t>;
-
-        std::wstring s = moduleInfo.CVData;
-        std::wstring_convert<convert_type, wchar_t> converter;
-        std::string converted_str = converter.to_bytes(s);
-
-        char* outSingature = (char*)memcpy((*debugData) + sizeof(WindowsDebugData)
-            , converted_str.data(), signatureLenght + endofString);
-
-        const CV_INFO_PDB70* pData = reinterpret_cast<const CV_INFO_PDB70*>(pdbInfo);
-
-        SymUnloadModule(symHandle, baseOfDll);
-    }
-
 }
 
 
@@ -588,9 +493,11 @@ bool GetModulePDBData(uint64_t baseOfDll, DebugFormat* debugFormat, uint8_t** de
 
         if (debugDirectory[i].Type != IMAGE_DEBUG_TYPE_CODEVIEW) continue;
 
-        CV_INFO_PDB70* pData =
-            (CV_INFO_PDB70*)(uintptr_t(BaseAddress) + (MappedAsImage ? debugDirectory[i].AddressOfRawData
-                : debugDirectory[i].PointerToRawData));
+        CV_INFO_PDB70* pData = (CV_INFO_PDB70*)(uintptr_t(BaseAddress) + 
+            (MappedAsImage 
+            ? debugDirectory[i].AddressOfRawData
+            : debugDirectory[i].PointerToRawData)
+            );
 
         if (pData->CvSignature != CV_SIGNATURE_RSDS) continue;
 
@@ -620,6 +527,87 @@ bool GetModulePDBData(uint64_t baseOfDll, DebugFormat* debugFormat, uint8_t** de
     }
     return false;
 }
+
+ModuleCacheEntry* CacheModuleInfo(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
+{
+
+    ModuleCacheEntry moduleEntry = {};
+    moduleEntry.start = baseOfDll;
+    moduleEntry.end = baseOfDll + dllSize;
+    moduleEntry.path = CopyStringFast(imageName, imageNameLength);
+    FormatImageName(&moduleEntry.name, imageName, imageNameLength);
+
+    DebugFormat debugFormat = DebugFormat::NoDebugFormat;
+    uint8_t* debugData = nullptr;
+    uint32_t debugDataSize = 0;
+
+    if (GetModulePDBData(moduleEntry.start, &debugFormat, &debugData, &debugDataSize))
+    {
+        DegugModuleField& dmf = moduleEntry.degugModuleField;
+
+        dmf.debugFormat = debugFormat;
+        dmf.debugData = debugData;
+        dmf.debugDataSize = debugDataSize;
+    }
+
+    std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
+    return s_imageCacheWindows->CacheModuleWithDebugInfo(moduleEntry);
+}
+
+ModuleCacheEntry* LoadSymbolsForModuleAndCache(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
+{
+    DbgHelpLoadSymbolsForModule(imageName, baseOfDll, dllSize);
+ 
+    return CacheModuleInfo(imageName, imageNameLength, baseOfDll, dllSize);
+}
+
+void GetModuleInfoFromDbgHelp(const char* imageName, ModuleCacheEntry* moduleEntry)
+{
+    IMAGEHLP_MODULE64 moduleInfo{};
+    moduleInfo.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
+    if (TRUE == SymGetModuleInfo64(s_DbgHelpSymHandle, moduleEntry->start, &moduleInfo))
+    {
+        if (moduleInfo.SymType == SymDeferred) // If symbol loading was deferred, force load it so that we can retrieve the debug informations
+        {
+            DWORD prevOptions = SymGetOptions();
+            SymSetOptions(prevOptions & (~SYMOPT_DEFERRED_LOADS));
+            DWORD64 loadedAddr = SymLoadModuleEx(s_DbgHelpSymHandle, nullptr, imageName, nullptr, moduleEntry->start, moduleEntry->end ? (moduleEntry->end - moduleEntry->start) : 0, nullptr, 0);
+            SymSetOptions(prevOptions);
+            if(!SymGetModuleInfo64(s_DbgHelpSymHandle, moduleEntry->start, &moduleInfo))
+            {
+                return;
+            }
+        }
+
+        if (moduleInfo.CVSig != CV_SIGNATURE_RSDS) // Do we have a pdb ?
+            return;
+
+        DegugModuleField& debugInfo = moduleEntry->degugModuleField;
+        debugInfo.debugFormat = DebugFormat::PdbDebugFormat;
+
+        const uint32_t pdbFileNameLen = static_cast<uint32_t>(strlen(moduleInfo.CVData));
+        debugInfo.debugDataSize = sizeof(WindowsDebugData) + (pdbFileNameLen + 1);
+        debugInfo.debugData = (uint8_t*)tracy_malloc(debugInfo.debugDataSize);
+        WindowsDebugData* ptrToWindowsDebugData = reinterpret_cast<WindowsDebugData*>(debugInfo.debugData);
+        ptrToWindowsDebugData->majorVersion = 0;
+        ptrToWindowsDebugData->minorVersion = 0;
+        ptrToWindowsDebugData->exeDataTimeStamp = moduleInfo.TimeDateStamp;
+
+        TracyPdbInfo* pdbInfo = &ptrToWindowsDebugData->cvInfo;
+
+        pdbInfo->Age = moduleInfo.PdbAge;
+        pdbInfo->CvSignature = moduleInfo.CVSig;
+
+        static_assert(sizeof(pdbInfo->Signature) == sizeof(moduleInfo.PdbSig70), "GUID size must match");
+        memcpy(&pdbInfo->Signature, &moduleInfo.PdbSig70, sizeof(moduleInfo.PdbSig70));
+
+        const GUID* guidd = reinterpret_cast<const GUID*>(&pdbInfo->Signature);
+
+        char* pdbFileName = (char*)debugInfo.debugData + sizeof(WindowsDebugData);
+        memcpy(pdbFileName, moduleInfo.CVData, pdbFileNameLen + 1);
+    }
+}
+
 
 ModuleNameAndBaseAddress OnFailedFindAddress(uint64_t address)
 {
@@ -692,31 +680,40 @@ void InitCallstackCritical()
     ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlWalkFrameChain");
 }
 
-void DbgHelpInit(bool invadeProcess)
+void DbgHelpInit(HANDLE symHandle, bool invadeProcess)
 {
-    _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymAddrIncludeInlineTrace");
-    _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymQueryInlineTrace");
-    _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymFromInlineContext");
-    _SymGetLineFromInlineContext = (t_SymGetLineFromInlineContext)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymGetLineFromInlineContext");
+    assert(s_DbgHelpSymHandle == 0);
+    s_DbgHelpSymHandle = symHandle;
+    
+    HMODULE DbgHelpHdl = GetModuleHandleA("dbghelp.dll");
+    if (!DbgHelpHdl) {
+        TracyDebug("Couldn't load DbgHelp.dll\n");
+        return;
+    }
+
+    _SymAddrIncludeInlineTrace = (t_SymAddrIncludeInlineTrace)GetProcAddress(DbgHelpHdl, "SymAddrIncludeInlineTrace");
+    _SymQueryInlineTrace = (t_SymQueryInlineTrace)GetProcAddress(DbgHelpHdl, "SymQueryInlineTrace");
+    _SymFromInlineContext = (t_SymFromInlineContext)GetProcAddress(DbgHelpHdl, "SymFromInlineContext");
+    _SymGetLineFromInlineContext = (t_SymGetLineFromInlineContext)GetProcAddress(DbgHelpHdl, "SymGetLineFromInlineContext");
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_INIT;
     DBGHELP_LOCK;
 #endif
 
-    assert(SymInitialize(symHandle, nullptr, false) && "Failed to Init SymInitialize");
-
-    //if (s_serverLocalResolve)
-       // SymSetSearchPath(symHandle, R"(srv*C:\Users\Gabriel\AppData\Local\Temp\SymbolCache*https://msdl.microsoft.com/download/symbols)");
-
-    SymSetOptions(SYMOPT_LOAD_LINES
+    SymSetOptions(
+        SYMOPT_LOAD_LINES
         | SYMOPT_UNDNAME // TODO: check if tracy doesn't rely on this to find decorated names in the dissassembler
-       /* | SYMOPT_DEFERRED_LOADS*/
+        | SYMOPT_DEFERRED_LOADS
 #ifndef NDEBUG
         | SYMOPT_DEBUG
 #endif
     );
 
+    if (!SymInitialize(symHandle, nullptr, false))
+    {
+        TracyDebug("Failed to initalize DbgHelp %x\n", GetLastError());
+    }
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
@@ -724,7 +721,7 @@ void DbgHelpInit(bool invadeProcess)
 }
 
 
-void CacheProcessDrivers()
+static void CacheProcessDrivers()
 {
     DWORD needed;
     LPVOID dev[4096];
@@ -767,17 +764,16 @@ void CacheProcessDrivers()
                         path = full;
                     }
 
-                    if (!s_clientSendImageInfo)
-                        DbgHelpLoadSymbolsForModule(path, (DWORD64)dev[i], 0);
-                    else
-                        CacheKernelModule(path, kernelDriver->start, 0, &kernelDriver->degugModuleField.debugFormat, &kernelDriver->degugModuleField.debugData,
-                            &kernelDriver->degugModuleField.debugDataSize);
+                    kernelDriver->path = CopyStringFast(path);
 
-                    const auto psz = strlen( path );
-                    auto pptr = (char*)tracy_malloc_fast( psz+1 );
-                    memcpy( pptr, path, psz );
-                    pptr[psz] = '\0';
-                    kernelDriver->path = pptr;
+                    if (SymLoadModuleEx(s_DbgHelpSymHandle, nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0))
+                    {
+                        GetModuleInfoFromDbgHelp(path, kernelDriver);
+                        // We no longer need it if we resolve symbols offline, unload it.
+                        if (s_shouldResolveSymbolsOffline) {
+                            SymUnloadModule64(s_DbgHelpSymHandle, (DWORD64)dev[i]);
+                        }
+                    }
                 }
 
                 assert(kernelDriver->end == 0 && "kernel end should be zero");
@@ -788,7 +784,7 @@ void CacheProcessDrivers()
     }
 }
 
-void CacheProcessModule()
+static void CacheProcessModules()
 {
     DWORD needed;
     HANDLE proc = GetCurrentProcess();
@@ -807,6 +803,7 @@ void CacheProcessModule()
                 {
                     // This may be a new module loaded since our call to SymInitialize.
                     // Just in case, force DbgHelp to load its pdb !
+
                     if (!s_shouldResolveSymbolsOffline)
                     {
                         auto moduleCache = LoadSymbolsForModuleAndCache(name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage);
@@ -816,27 +813,6 @@ void CacheProcessModule()
                     {
                         uint64_t baseAdd = (DWORD64)info.lpBaseOfDll;
 
-                        ModuleCacheEntry* cachedModule = s_imageCacheWindows->PushBack();
-                        cachedModule->start = (DWORD64)info.lpBaseOfDll;
-                        cachedModule->end = baseAdd + info.SizeOfImage;
-                        cachedModule->path = (char*)tracy_malloc(nameLength);
-                        memcpy(cachedModule->path, name, nameLength);
-
-                        FormatImageName(&cachedModule->name, name, nameLength);
-
-                        DebugFormat debugFormat = DebugFormat::NoDebugFormat;
-                        uint8_t* debugData = nullptr;
-                        uint32_t debugDataSize = 0;
-
-                        if (GetModulePDBData(cachedModule->start, &debugFormat, &debugData, &debugDataSize))
-                        {
-                            DegugModuleField& dmf = cachedModule->degugModuleField;
-
-                            dmf.debugFormat = debugFormat;
-                            dmf.debugData = debugData;
-                            dmf.debugDataSize = debugDataSize;
-                        }
-
                     }
 
                 }
@@ -844,40 +820,6 @@ void CacheProcessModule()
         }
     }
 }
-
-
-void CacheDriverAndModuleData()
-{
-    symHandle = GetCurrentProcess();
-    DbgHelpInit(true);
-
-    // use TRACY_NO_DBGHELP_INIT_LOAD=1 to disable preloading of driver
-    // and process module symbol loading at startup time - they will be loaded on demand later
-    // Sometimes this process can take a very long time and prevent resolving callstack frames
-    // symbols during that time.
-    const char* noInitLoadEnv = GetEnvVar("TRACY_NO_DBGHELP_INIT_LOAD");
-    const bool initTimeModuleLoad = !(noInitLoadEnv && noInitLoadEnv[0] == '1');
-    if (!initTimeModuleLoad)
-    {
-        TracyDebug("TRACY: skipping init time dbghelper module load\n");
-    }
-    
-    std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
-
-    s_imageCacheWindows = (ImageCacheWindows*)tracy_malloc(sizeof(ImageCacheWindows));
-    new(s_imageCacheWindows) ImageCacheWindows(ImageCacheAllocSize);
-
-    s_krnlCache = (FastVector<ModuleCacheEntry>*)tracy_malloc(sizeof(FastVector<ModuleCacheEntry>));
-    new(s_krnlCache) FastVector<ModuleCacheEntry>(ImageCacheAllocSize);
-
-
-    if (initTimeModuleLoad)
-    {
-        CacheProcessDrivers();
-        CacheProcessModule();
-    }
-}
-
 
 void InitCallstack()
 {
@@ -893,36 +835,44 @@ void InitCallstack()
         TracyDebug("TRACY: enabling offline symbol resolving!\n");
     }
 
-    if (!s_shouldResolveSymbolsOffline && !s_clientSendImageInfo && !s_serverLocalResolve)
+#ifdef TRACY_ENABLE // Client or self-profiling server
+    // Use GetCurrentProcess() as this is used by default in most apps, but we should probably be using a fake handle to avoid collisions?
+    DbgHelpInit(GetCurrentProcess(), true /*Invade process, even though it should be unnecessary since we'll preload all modules and drivers*/);
+#else
+    DbgHelpInit((HANDLE)42/*This is our fake DbgHelp Handle*/, false /* Don't invade the process, we're going to resolve symbols for another one*/);
+#endif
+
+    s_imageCacheWindows = (ImageCache*)tracy_malloc(sizeof(ImageCache));
+    new(s_imageCacheWindows) ImageCache(ImageCacheBaseCapacity);
+    s_krnlCache = (FastVector<ModuleCacheEntry>*)tracy_malloc(sizeof(FastVector<ModuleCacheEntry>));
+    new(s_krnlCache) FastVector<ModuleCacheEntry>(ImageCacheBaseCapacity);
+
+#ifdef TRACY_ENABLE // Client or self-profiling server
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
+    // use TRACY_NO_DBGHELP_INIT_LOAD=1 to disable preloading of driver
+    // and process module symbol loading at startup time - they will be loaded on demand later
+    // Sometimes this process can take a very long time and prevent resolving callstack frames
+    // symbols during that time.
+    const char* noInitLoadEnv = GetEnvVar("TRACY_NO_DBGHELP_INIT_LOAD");
+    const bool initTimeModuleLoad = !(noInitLoadEnv && noInitLoadEnv[0] == '1');
+    if (!initTimeModuleLoad)
     {
-        CacheDriverAndModuleData();
-        return;
+        TracyDebug("TRACY: skipping init time dbghelper module load\n");
+    }
+    
+    std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
+
+    if (initTimeModuleLoad)
+    {
+        CacheProcessDrivers();
+        CacheProcessModules();
     }
 
-
-    // the client will send all of his moduleData
-    if (s_clientSendImageInfo)
-    {
-        CacheDriverAndModuleData();
-    }
-
-    if (s_serverLocalResolve)
-    {
-        // Init debg and allocate moduleCache 
-        // waiting for client sending his module datas
-        symHandle = (HANDLE)42;
-        static constexpr bool shoulInvadeProcess = false;
-
-        DbgHelpInit(shoulInvadeProcess);
-        s_imageCacheWindows = (ImageCacheWindows*)tracy_malloc(sizeof(ImageCacheWindows));
-        new(s_imageCacheWindows) ImageCacheWindows(ImageCacheAllocSize);
-        s_krnlCache = (FastVector<ModuleCacheEntry>*)tracy_malloc(sizeof(FastVector<ModuleCacheEntry>));
-        new(s_krnlCache) FastVector<ModuleCacheEntry>(ImageCacheAllocSize);
-    }
-
-    // TO DO FIX IT MAY BE BROKEN
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
+#endif
 #endif
 }
 
@@ -935,23 +885,10 @@ void FreeKernelCache()
 
 	for (auto& it : *s_krnlCache)
 	{
-
-		if (it.name != nullptr)
-		{
-			tracy_free((void*)it.name);
-			it.name = nullptr;
-		}
-
-		if (it.path != nullptr)
-		{
-			tracy_free((void*)it.path);
-			it.path = nullptr;
-		}
-
+        DestroyModuleCacheEntry(it);
 	}
     tracy_free((void*)s_krnlCache);
 	s_krnlCache = nullptr;
-    
 }
 
 void EndCallstack()
@@ -960,9 +897,14 @@ void EndCallstack()
 
     if (s_imageCacheWindows != nullptr)
     {
-        s_imageCacheWindows->~ImageCacheWindows();
+        s_imageCacheWindows->~ImageCache();
         tracy_free(s_imageCacheWindows);
         s_imageCacheWindows = nullptr;
+    }
+    if (s_DbgHelpSymHandle)
+    {
+        SymCleanup(s_DbgHelpSymHandle);
+        s_DbgHelpSymHandle = 0;
     }
 }
 
@@ -1054,14 +996,14 @@ bool LoadFromPdb(const char* moduleName, uint64_t baseAddress, uint64_t dllSize,
     const CV_INFO_PDB70* dummie = reinterpret_cast<const CV_INFO_PDB70*>(&windowsDebugData->cvInfo);
 
 
-    DWORD64 loaddedModule = SymLoadModuleEx(symHandle, NULL, moduleName, NULL, baseAddress,
+    DWORD64 loaddedModule = SymLoadModuleEx(s_DbgHelpSymHandle, NULL, moduleName, NULL, baseAddress,
         dllSize, &module_load_info, 0);
 
     IMAGEHLP_MODULEW64 modulInfoDebug{};
 
     modulInfoDebug.SizeOfStruct = sizeof(IMAGEHLP_MODULEW64);
 
-    if (SymGetModuleInfoW64(symHandle, loaddedModule, &modulInfoDebug) == TRUE)
+    if (SymGetModuleInfoW64(s_DbgHelpSymHandle, loaddedModule, &modulInfoDebug) == TRUE)
     {
         if (modulInfoDebug.SymType != SymNone)
         {
@@ -1075,11 +1017,15 @@ bool IsKernelAddress(uint64_t addr) {
     return (addr >> 63) != 0;
 }
 
-// Called from the profiler only, we received data from the client.
-void CacheModuleAndLoadExternal(const ModuleCacheEntry& moduleCacheEntry)
+// Called from the profiler (server) only, we received data from the client.
+void CacheModuleAndLoadExternal(ModuleCacheEntry& moduleCacheEntry)
 {
+    
     if (!s_serverLocalResolve)
+    {
+        DestroyModuleCacheEntry(moduleCacheEntry);
         return;
+    }
 
 #if 1 // windows
     if (IsKernelAddress(moduleCacheEntry.start))
@@ -1146,7 +1092,7 @@ CallstackSymbolData DecodeSymbolAddress(uint64_t ptr)
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif
-    const auto res = SymGetLineFromAddr64(symHandle, ptr, &displacement, &line);
+    const auto res = SymGetLineFromAddr64(s_DbgHelpSymHandle, ptr, &displacement, &line);
     if (res == 0 || line.LineNumber >= 0xF00000)
     {
         sym.file = "[unknown]";
@@ -1209,7 +1155,7 @@ CallstackEntryData DecodeCallstackPtr(uint64_t ptr, DecodeCallStackPtrStatus* _d
     }
 
     int write;
-    const auto proc = symHandle;
+    const auto proc = s_DbgHelpSymHandle;
 
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;

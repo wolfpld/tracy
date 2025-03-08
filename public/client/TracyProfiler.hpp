@@ -920,7 +920,7 @@ private:
     void CalibrateDelay();
     void ReportTopology();
 
-    void sendModulesCaches();
+    void SendModulesCaches();
 
     void WriteDebugFieldToPacket(uint8_t** ptr, int* currentPacketSize, const DegugModuleField& degugModuleField);
     void SendModuleInfo(const ModuleCacheEntry& moduleCacheEntry, std::vector<uint8_t>* queuBuffer);

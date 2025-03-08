@@ -189,8 +189,9 @@ if(NOT DEFINED GIT_REV)
     set(GIT_REV "HEAD")
 endif()
 
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
 add_custom_target(git-ref
-    COMMAND python3 ${CMAKE_CURRENT_LIST_DIR}/../extra/git-ref.py ${GIT_REV}
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/../extra/git-ref.py ${GIT_REV}
     BYPRODUCTS GitRef.hpp
 )
 add_dependencies(${PROJECT_NAME} git-ref)

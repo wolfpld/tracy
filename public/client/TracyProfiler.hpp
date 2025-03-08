@@ -10,11 +10,11 @@
 
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
-#include "TracyCallstack.hpp"
 #include "TracyKCore.hpp"
 #include "TracySysPower.hpp"
 #include "TracySysTime.hpp"
-#include "TracyFastVector.hpp"
+#include "../common/TracyCallstack.hpp"
+#include "../common/TracyFastVector.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"

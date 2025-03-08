@@ -37,7 +37,7 @@ public:
 
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 

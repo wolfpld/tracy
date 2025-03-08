@@ -26,7 +26,7 @@
 #define ZDICT_STATIC_LINKING_ONLY
 #include <zdict.h>
 
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 #include "TracyDebugModulesHeaderFile.hpp"
 
 #include "../public/common/TracyProtocol.hpp"

@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "TracyDebug.hpp"
+#include "../common/TracyDebug.hpp"
 
 namespace tracy
 {

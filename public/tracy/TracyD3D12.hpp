@@ -34,7 +34,7 @@ using TracyD3D12Ctx = void*;
 
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 
 #include <cstdlib>
 #include <cassert>

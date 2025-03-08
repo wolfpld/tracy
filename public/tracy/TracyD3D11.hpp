@@ -38,7 +38,7 @@ using TracyD3D11Ctx = void*;
 
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 #include "../common/TracyYield.hpp"
 
 #include <d3d11.h>

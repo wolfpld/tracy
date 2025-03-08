@@ -36,7 +36,7 @@ static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr;
 #include <mutex>
 
 #include "../common/TracyAlloc.hpp"
-#include "TracyFastVector.hpp"
+#include "../common/TracyFastVector.hpp"
 
 namespace tracy
 {

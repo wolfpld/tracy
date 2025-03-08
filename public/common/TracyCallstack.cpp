@@ -7,10 +7,9 @@
 #include "TracyCallstack.hpp"
 #include "TracyDebug.hpp"
 #include "TracyStringHelpers.hpp"
-#include "../common/TracyAlloc.hpp"
-#include "../common/TracySystem.hpp"
-#include "../common/TracyDebugModulesHeaderFile.hpp"
-
+#include "TracyAlloc.hpp"
+#include "TracySystem.hpp"
+#include "TracyDebugModulesHeaderFile.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -413,6 +412,9 @@ enum { MaxNameSize = 8*1024 };
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 
+HANDLE symHandle = 0;
+#pragma comment( lib, "dbghelp.lib" )
+
 extern "C"
 {
     typedef DWORD (__stdcall *t_SymAddrIncludeInlineTrace)( HANDLE hProcess, DWORD64 Address );
@@ -702,7 +704,7 @@ void DbgHelpInit(bool invadeProcess)
     DBGHELP_LOCK;
 #endif
 
-    assert(SymInitialize(symHandle, nullptr, false), "Failed to Init SymInitialize");
+    assert(SymInitialize(symHandle, nullptr, false) && "Failed to Init SymInitialize");
 
     //if (s_serverLocalResolve)
        // SymSetSearchPath(symHandle, R"(srv*C:\Users\Gabriel\AppData\Local\Temp\SymbolCache*https://msdl.microsoft.com/download/symbols)");

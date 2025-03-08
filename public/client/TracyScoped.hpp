@@ -10,7 +10,7 @@
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "TracyProfiler.hpp"
-#include "TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 
 namespace tracy
 {

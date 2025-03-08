@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyForceInline.hpp"

@@ -21,7 +21,7 @@
 
 #include "common/tracy_lz4.cpp"
 #include "client/TracyProfiler.cpp"
-#include "client/TracyCallstack.cpp"
+#include "common/TracyCallstack.cpp"
 #include "client/TracySysPower.cpp"
 #include "client/TracySysTime.cpp"
 #include "client/TracySysTrace.cpp"
@@ -31,7 +31,6 @@
 #include "client/TracyAlloc.cpp"
 #include "client/TracyOverride.cpp"
 #include "client/TracyKCore.cpp"
-#include "common/TracyModulesPdbSeacher.cpp"
 
 #if defined(TRACY_HAS_CALLSTACK)
 #  if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6

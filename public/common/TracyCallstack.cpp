@@ -78,11 +78,11 @@ namespace tracy
 
     bool s_serverLocalResolve = true; // Should the profiler try to resolve symbols before querying the client for symbols.
 
-    inline bool IsEnv(const char* environementVariableName)
+    inline bool IsEnv(const char* environementVariableName, bool defaultValue)
     {
         const char* v = GetEnvVar(environementVariableName);
-
-        return (v && v[0] == '1');
+        if (v) return v[0] == '1';
+        else return defaultValue;
     }
 
     struct ModuleNameAndBaseAddress
@@ -393,7 +393,7 @@ void FormatImageName(char** moduleCacheName, const char* imageName, uint32_t ima
 
 bool ShouldResolveSymbolsOffline()
 {
-    return IsEnv("TRACY_SYMBOL_OFFLINE_RESOLVE");
+    return IsEnv("TRACY_SYMBOL_OFFLINE_RESOLVE", false);
 }
 #endif // #ifdef TRACY_SYMBOL_OFFLINE_RESOLVE
 
@@ -815,7 +815,7 @@ static void CacheProcessModules()
 
 void InitCallstack()
 {
-    s_serverLocalResolve = IsEnv("SERVER_LOCAL_RESOLVE");
+    s_serverLocalResolve = IsEnv("SERVER_LOCAL_RESOLVE", true);
 
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE

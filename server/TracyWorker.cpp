@@ -4086,56 +4086,60 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
+// TODO: handle properly
+extern bool s_serverLocalResolve;
+
 void Worker::TryResolveCallStackIfNeeded(CallstackFrameId frameId)
 {
+    // If we already have the information
     if (m_data.callstackFrameMap.count(frameId) != 0)
     {
         return;
     }
 
-	m_pendingCallstackFrames++;
     uint64_t symbolAddress = GetCanonicalPointer(frameId);
-    if (!m_resolveSymbolLocally)
+    
+    DecodeCallStackPtrStatus status = DecodeCallStackPtrStatus::Count;
+    if (s_serverLocalResolve)
     {
+        // TODO: offload to a worker thread
+        CallstackEntryData outCallStack = DecodeCallstackPtr(symbolAddress, &status);
+        if (status == DecodeCallStackPtrStatus::Success)
+        {
+            const uint32_t imageNameIdx = StoreString(outCallStack.imageName).idx;
+            assert(outCallStack.size <= 255);
+            const QueueCallstackFrameSize queueCallstackFrameSize =
+            {
+                .ptr = symbolAddress,
+                .size = outCallStack.size,
+            };
+
+            m_pendingCallstackFrames++;
+            ProcessCallstackFrameSize(queueCallstackFrameSize, imageNameIdx);
+
+            // we know that for the best we have inline information
+            for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
+            {
+                const auto& frame = outCallStack.data[i];
+                ProcessCallstackFrame(frame.line, frame.symAddr, frame.symLen,
+                    StoreString(frame.name).idx, StoreString(frame.file).idx, true);
+
+                // We copied it, now free the content
+                tracy_free_fast((void*)frame.name);
+                tracy_free_fast((void*)frame.file);
+            }
+
+            assert(m_pendingCallstackSubframes == 0);
+        }
+    }
+    // Fallback to asking the client.
+    // TODO: Only do this if client does not have TRACY_SYMBOL_OFFLINE_RESOLVE
+    if (status != DecodeCallStackPtrStatus::Success)
+    {
+        m_pendingCallstackFrames++;
         Query(ServerQueryCallstackFrame, symbolAddress);
         return;
     }
-
-	
-    DecodeCallStackPtrStatus status;
-    CallstackEntryData outCallStack = DecodeCallstackPtr(symbolAddress, &status);
-
-    if (status != DecodeCallStackPtrStatus::Success)
-    {
-        //Query(ServerQueryModuleUpdate, symbolAddress, 0);
-    }
-
-
-	const uint32_t imageNameIdx = StoreString(outCallStack.imageName).idx;
-    assert(outCallStack.size <= 255);
-    const QueueCallstackFrameSize queueCallstackFrameSize =
-    {
-        .ptr = symbolAddress,
-        .size = outCallStack.size,
-    };
-
-    ProcessCallstackFrameSize(queueCallstackFrameSize, imageNameIdx);
-
-    // we know that for the best we have inline information
-    for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
-    {
-        const auto& frame = outCallStack.data[i];
-        ProcessCallstackFrame(frame.line, frame.symAddr, frame.symLen,
-            StoreString(frame.name).idx, StoreString(frame.file).idx, true);
-        
-        // We copied it, now free the content
-        tracy_free_fast((void*)frame.name);
-        tracy_free_fast((void*)frame.file);
-    }
-
-    assert(m_pendingCallstackSubframes == 0);
-
-
 }
 
 void Worker::AddCallstackPayload( const char* _data, size_t _sz )
@@ -8922,20 +8926,20 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
         uint32_t moduleNameSize = MemRead<uint32_t>( ptrToData );
         ptrToData += sizeof(moduleNameSize);
 
+        assert((char)(ptrToData[moduleNameSize - 1]) == '\0' && "missing end of string");
         char* moduleName = (char*)tracy_malloc_fast(moduleNameSize);
         memcpy(moduleName, ptrToData, moduleNameSize);
         ptrToData += moduleNameSize;
         StringLocation moduleNameStringLocation = StoreString(moduleName);
-        assert((char)(moduleName[moduleNameSize - 1]) == '\0' && "missing end of string");
 
         uint32_t modulePathSize = MemRead<uint32_t>(ptrToData);
         ptrToData += sizeof(modulePathSize);
 
+        assert((char)(ptrToData[modulePathSize - 1]) == '\0' && "missing end of string");
         char* modulePath = (char*)tracy_malloc_fast(modulePathSize);
         memcpy( modulePath, ptrToData, modulePathSize );
         ptrToData += modulePathSize;
         StringLocation modulePathStringLocation = StoreString(modulePath);
-        assert((char)(modulePath[modulePathSize - 1]) == '\0' && "missing end of string");
 
 
         DebugFormat debugFormat = MemRead<DebugFormat>( ptrToData );

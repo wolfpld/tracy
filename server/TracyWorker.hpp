@@ -1029,7 +1029,6 @@ private:
     bool m_identifySamples = false;
     bool m_inconsistentSamples;
     bool m_allowStringModification = false;
-    bool m_resolveSymbolLocally = true;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint32_t m_pendingCallstackId = 0;

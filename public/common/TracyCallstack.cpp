@@ -458,7 +458,7 @@ uint64_t DbgHelpLoadSymbolsForModule(const char* imageName, uint64_t baseOfDll, 
 }
 
 
-bool GetModulePDBData(uint64_t baseOfDll, DebugFormat* debugFormat, uint8_t** debugInformationData, uint32_t* debugInformationSize)
+bool GetModuleInfoFromPEHeaders(uint64_t baseOfDll, DebugFormat* debugFormat, uint8_t** debugInformationData, uint32_t* debugInformationSize)
 {
     static constexpr bool MappedAsImage = true;
 
@@ -520,39 +520,6 @@ bool GetModulePDBData(uint64_t baseOfDll, DebugFormat* debugFormat, uint8_t** de
     return false;
 }
 
-ModuleCacheEntry* CacheModuleInfo(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
-{
-
-    ModuleCacheEntry moduleEntry = {};
-    moduleEntry.start = baseOfDll;
-    moduleEntry.end = baseOfDll + dllSize;
-    moduleEntry.path = CopyStringFast(imageName, imageNameLength);
-    FormatImageName(&moduleEntry.name, imageName, imageNameLength);
-
-    DebugFormat debugFormat = DebugFormat::NoDebugFormat;
-    uint8_t* debugData = nullptr;
-    uint32_t debugDataSize = 0;
-
-    if (GetModulePDBData(moduleEntry.start, &debugFormat, &debugData, &debugDataSize))
-    {
-        DegugModuleField& dmf = moduleEntry.degugModuleField;
-
-        dmf.debugFormat = debugFormat;
-        dmf.debugData = debugData;
-        dmf.debugDataSize = debugDataSize;
-    }
-
-    std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
-    return s_imageCacheWindows->CacheModuleWithDebugInfo(moduleEntry);
-}
-
-ModuleCacheEntry* LoadSymbolsForModuleAndCache(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
-{
-    DbgHelpLoadSymbolsForModule(imageName, baseOfDll, dllSize);
- 
-    return CacheModuleInfo(imageName, imageNameLength, baseOfDll, dllSize);
-}
-
 void GetModuleInfoFromDbgHelp(const char* imageName, ModuleCacheEntry* moduleEntry)
 {
     IMAGEHLP_MODULE64 moduleInfo{};
@@ -600,6 +567,38 @@ void GetModuleInfoFromDbgHelp(const char* imageName, ModuleCacheEntry* moduleEnt
     }
 }
 
+ModuleCacheEntry* CacheModuleInfo(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
+{
+
+    ModuleCacheEntry moduleEntry = {};
+    moduleEntry.start = baseOfDll;
+    moduleEntry.end = baseOfDll + dllSize;
+    moduleEntry.path = CopyStringFast(imageName, imageNameLength);
+    FormatImageName(&moduleEntry.name, imageName, imageNameLength);
+
+    DebugFormat debugFormat = DebugFormat::NoDebugFormat;
+    uint8_t* debugData = nullptr;
+    uint32_t debugDataSize = 0;
+
+    if (GetModuleInfoFromPEHeaders(moduleEntry.start, &debugFormat, &debugData, &debugDataSize))
+    {
+        DegugModuleField& dmf = moduleEntry.degugModuleField;
+
+        dmf.debugFormat = debugFormat;
+        dmf.debugData = debugData;
+        dmf.debugDataSize = debugDataSize;
+    }
+
+    std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
+    return s_imageCacheWindows->CacheModuleWithDebugInfo(moduleEntry);
+}
+
+ModuleCacheEntry* LoadSymbolsForModuleAndCache(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
+{
+    DbgHelpLoadSymbolsForModule(imageName, baseOfDll, dllSize);
+ 
+    return CacheModuleInfo(imageName, imageNameLength, baseOfDll, dllSize);
+}
 
 ModuleNameAndBaseAddress OnFailedFindAddress(uint64_t address)
 {
@@ -760,6 +759,7 @@ static void CacheProcessDrivers()
 
                     if (SymLoadModuleEx(s_DbgHelpSymHandle, nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0))
                     {
+                        // Kernel drivers PE headers are not accessible from userland, use DbgHelp to retrieve debug info.
                         GetModuleInfoFromDbgHelp(path, kernelDriver);
                         // We no longer need it if we resolve symbols offline, unload it.
                         if (s_shouldResolveSymbolsOffline) {
@@ -990,13 +990,14 @@ bool LoadFromPdb(const char* moduleName, uint64_t baseAddress, uint64_t dllSize,
     DWORD64 loaddedModule = SymLoadModuleEx(s_DbgHelpSymHandle, NULL, moduleName, NULL, baseAddress,
         dllSize, &module_load_info, 0);
 
-    IMAGEHLP_MODULEW64 modulInfoDebug{};
+    IMAGEHLP_MODULEW64 moduleInfoDebug{};
 
-    modulInfoDebug.SizeOfStruct = sizeof(IMAGEHLP_MODULEW64);
+    moduleInfoDebug.SizeOfStruct = sizeof(IMAGEHLP_MODULEW64);
 
     if (SymGetModuleInfoW64(s_DbgHelpSymHandle, loaddedModule, &modulInfoDebug) == TRUE)
     {
-        if (modulInfoDebug.SymType != SymNone)
+        // Consider deferred to be failing too as it may fail later. We might want to handle failure in the UI.
+        if( moduleInfoDebug.SymType != SymNone && moduleInfoDebug.SymType != SymDeferred )
         {
             return true;
         }
@@ -1033,13 +1034,27 @@ void CacheModuleAndLoadExternal(ModuleCacheEntry& moduleCacheEntry)
     bool hasSymbolInfo = false;
     if (moduleCacheEntry.degugModuleField.debugFormat == DebugFormat::PdbDebugFormat)
     {
-        hasSymbolInfo = LoadFromPdb(moduleCacheEntry.name, moduleCacheEntry.start, moduleCacheEntry.end - moduleCacheEntry.start,
+        char* nameFixed = nullptr;
+        if (IsKernelAddress(moduleCacheEntry.start))
+        {
+            const size_t nameLen = strlen(moduleCacheEntry.name);
+            if (nameLen > 3 && moduleCacheEntry.name[0] == '<' && moduleCacheEntry.name[nameLen - 1] == '>')
+            {
+                char* kernelName = CopyStringFast(moduleCacheEntry.name + 1);
+                kernelName[nameLen - 2] = 0; // replace >
+                nameFixed = kernelName;
+            }
+        }
+        hasSymbolInfo = LoadFromPdb(nameFixed ? nameFixed : moduleCacheEntry.name, moduleCacheEntry.start, moduleCacheEntry.end - moduleCacheEntry.start,
             moduleCacheEntry.degugModuleField.debugFormat, moduleCacheEntry.degugModuleField.debugData, moduleCacheEntry.degugModuleField.debugDataSize);
+
+        if (nameFixed) tracy_free_fast(nameFixed);
     }
 
     if (!hasSymbolInfo)
     {
         // TODO: load from path only if we can check we got the correct binary (check timestamp / guid ?)
+        //       That would however require to disable deferred symbol loading or use FindExecutableImageEx
         //DbgHelpLoadSymbolsForModule(moduleCacheEntry.path, moduleCacheEntry.start, moduleCacheEntry.end - moduleCacheEntry.start);
     }
    
@@ -1179,7 +1194,11 @@ CallstackEntryData DecodeCallstackPtr(uint64_t ptr, DecodeCallStackPtrStatus* _d
 
     const auto symValid = SymFromAddr(proc, ptr, nullptr, si) != 0;
 
-    if (!symValid)
+    if (symValid)
+    {
+        *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
+    }
+    else
     {
         *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::SymbolMissing;
     }

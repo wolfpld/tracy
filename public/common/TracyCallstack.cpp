@@ -24,10 +24,6 @@
 
 constexpr uint32_t ImageCacheBaseCapacity = 512;
 
-#define CLIENT_SEND_IMAGES_INFO "CLIENT_SEND_IMAGES_INFO"
-#define SERVER_LOCAL_RESOLVE "SERVER_LOCAL_RESOLVE"
-
-
 #if TRACY_HAS_CALLSTACK == 1
 #  ifndef NOMINMAX
 #    define NOMINMAX
@@ -80,8 +76,7 @@ namespace tracy
 #else
     static bool s_shouldResolveSymbolsOffline = false;
 
-    static bool s_clientSendImageInfo = false;
-    static bool s_serverLocalResolve = false; // Should the profiler try to resolve symbols before querying the client for symbols.
+    bool s_serverLocalResolve = true; // Should the profiler try to resolve symbols before querying the client for symbols.
 
     inline bool IsEnv(const char* environementVariableName)
     {
@@ -138,7 +133,7 @@ namespace tracy
 
         void MapModuleData(const ModuleCacheEntry** moduleCacheEntries, size_t* moduleCount)
         {
-            if (!s_clientSendImageInfo && m_modCache.empty())
+            if (m_modCache.empty())
             {
                 *moduleCacheEntries = nullptr;
                 *moduleCount = 0;
@@ -465,9 +460,6 @@ uint64_t DbgHelpLoadSymbolsForModule(const char* imageName, uint64_t baseOfDll, 
 
 bool GetModulePDBData(uint64_t baseOfDll, DebugFormat* debugFormat, uint8_t** debugInformationData, uint32_t* debugInformationSize)
 {
-    if (!s_clientSendImageInfo)
-        return false;
-
     static constexpr bool MappedAsImage = true;
 
     PVOID BaseAddress = (void*)baseOfDll;
@@ -823,8 +815,7 @@ static void CacheProcessModules()
 
 void InitCallstack()
 {
-    s_serverLocalResolve = IsEnv(SERVER_LOCAL_RESOLVE);
-    s_clientSendImageInfo = IsEnv(CLIENT_SEND_IMAGES_INFO);
+    s_serverLocalResolve = IsEnv("SERVER_LOCAL_RESOLVE");
 
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE

@@ -1690,15 +1690,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         for (size_t i = 0; i < moduleCount; i++)
         {
-            ModuleCacheEntry moduleEntry;
-            f.Read(moduleEntry.start);
-            f.Read(moduleEntry.end);
-            DeserializeMallocedFastString(&moduleEntry.name);
-            DeserializeMallocedFastString(&moduleEntry.path);
+            ImageEntry imageEntry;
+            f.Read(imageEntry.start);
+            f.Read(imageEntry.end);
+            DeserializeMallocedFastString(&imageEntry.name);
+            DeserializeMallocedFastString(&imageEntry.path);
 
-            DeserializeDebugField(&moduleEntry.degugModuleField);
+            DeserializeDebugField(&imageEntry.degugModuleField);
 
-            CacheModuleAndLoadExternal(moduleEntry);
+            CacheModuleAndLoadExternal(imageEntry);
         }
     }
 
@@ -1708,20 +1708,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         for (size_t i = 0; i < moduleCount; i++)
         {
-            ModuleCacheEntry driver;
-            f.Read(driver.start);
-            driver.end = 0;
+            ImageEntry kernelImageEntry;
+            f.Read(kernelImageEntry.start);
+            kernelImageEntry.end = 0;
             char* name = nullptr;
             DeserializeMallocedFastString(&name);
-            driver.name = name;
+            kernelImageEntry.name = name;
 
             char* path = nullptr;
             DeserializeMallocedFastString(&path);
-            driver.path = path;
+            kernelImageEntry.path = path;
 
-            DeserializeDebugField(&driver.degugModuleField);
+            DeserializeDebugField(&kernelImageEntry.degugModuleField);
 
-            CacheModuleKernelAndLoadExternal(driver);
+            CacheModuleAndLoadExternal(kernelImageEntry);
 
         }
     }
@@ -4647,7 +4647,7 @@ bool Worker::Process( const QueueItem& ev )
     switch( ev.hdr.type )
     {
     case QueueType::ModuleUpdate:
-        DispatchModuleInfo( ev.moduleInfo );
+        DispatchImageEntry( ev.imageEntry );
         break;
     case QueueType::ThreadContext:
         ProcessThreadContext( ev.threadCtx );
@@ -8626,13 +8626,12 @@ void Worker::Write( FileWrite& f, bool fiDict )
             f.Write(s, sLenght);
         };
 
-	const FastVector<ModuleCacheEntry>& cacheModule = GetModuleData();
-	uint32_t moduleCount = static_cast<uint32_t>(cacheModule.size());
+	const FastVector<ImageEntry>* cacheModule = GetUserImageInfos();
+    uint32_t moduleCount = static_cast<uint32_t>(cacheModule ? cacheModule->size() : 0);
 	f.Write(&moduleCount, sizeof(moduleCount));
 
-	for (const ModuleCacheEntry& it : cacheModule)
+	for (const ImageEntry& moduleCacheEntry : *cacheModule)
 	{
-		const ModuleCacheEntry& moduleCacheEntry = it;
 		f.Write(&moduleCacheEntry.start, sizeof(moduleCacheEntry.start));
 		f.Write(&moduleCacheEntry.end, sizeof(moduleCacheEntry.end));
 
@@ -8643,11 +8642,11 @@ void Worker::Write( FileWrite& f, bool fiDict )
 	}
 
 
-	const FastVector<ModuleCacheEntry>& kernelDrivers = GetKernelDriver();
-    moduleCount = static_cast<uint32_t>(kernelDrivers.size());
+	const FastVector<ImageEntry>* kernelDrivers = GetKernelImageInfos();
+    moduleCount = static_cast<uint32_t>(kernelDrivers ? kernelDrivers->size() : 0);
 	f.Write(&moduleCount, sizeof(moduleCount));
 
-	for (const ModuleCacheEntry& it : kernelDrivers)
+	for (const ImageEntry& it : *kernelDrivers)
 	{
 		f.Write(&it.start, sizeof(it.start));
         assert(it.end == 0 && "kernel end should be zero");
@@ -8906,7 +8905,7 @@ void Worker::CacheSourceFiles()
     }
 }
 
-void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
+void Worker::DispatchImageEntry( const QueueImageEntry& ev )
 {
     uint8_t* ptrToData = nullptr;
     size_t s = 0;
@@ -8915,7 +8914,7 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
 
     switch( dataType )
     {
-    case PacketDataType::ModuleInfo:
+    case PacketDataType::ImageEntry:
     {
         uint64_t baseAddress = MemRead<uint64_t>( ptrToData );
         ptrToData += sizeof( baseAddress );
@@ -8945,7 +8944,7 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
         DebugFormat debugFormat = MemRead<DebugFormat>( ptrToData );
         ptrToData += sizeof( DebugFormat );
 
-        ModuleCacheEntry moduleCacheEntry =
+        ImageEntry moduleCacheEntry =
         {
             .start = baseAddress,
             .end = end,
@@ -8954,7 +8953,7 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
         };
         moduleCacheEntry.degugModuleField.debugFormat = debugFormat;
 
-        if (debugFormat == DebugFormat::PdbDebugFormat)
+        if (debugFormat != DebugFormat::NoDebugFormat)
         {
 
             uint32_t debugFormatSize = MemRead<uint32_t>( ptrToData );
@@ -8968,8 +8967,6 @@ void Worker::DispatchModuleInfo( const QueuModuleInfo& ev )
 
             degugModuleField.debugData = debugData;
             degugModuleField.debugDataSize = debugFormatSize;
-            
-            assert((char)(debugData[debugFormatSize - 1]) == '\0' && "missing end of string");
 
         }
 

@@ -793,7 +793,7 @@ private:
     tracy_force_inline void ProcessFiberEnter( const QueueFiberEnter& ev );
     tracy_force_inline void ProcessFiberLeave( const QueueFiberLeave& ev );
 
-    tracy_force_inline void DispatchModuleInfo( const QueuModuleInfo& ev);
+    tracy_force_inline void DispatchImageEntry( const QueueImageEntry& ev);
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

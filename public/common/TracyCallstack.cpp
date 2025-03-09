@@ -11,15 +11,6 @@
 #include "TracySystem.hpp"
 #include "TracyDebugModulesHeaderFile.hpp"
 
-
-
-#    pragma optimize( "", off )
-
-
-
-
-
-
 #ifdef TRACY_HAS_CALLSTACK
 
 constexpr uint32_t ImageCacheBaseCapacity = 512;
@@ -36,15 +27,32 @@ constexpr uint32_t ImageCacheBaseCapacity = 512;
 #    pragma warning( disable : 4091 )
 #  endif
 #  include <dbghelp.h>
+#  pragma comment( lib, "dbghelp.lib" )
 #  ifdef _MSC_VER
 #    pragma warning( pop )
 #  endif
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
+#elif defined(TRACY_USE_LIBBACKTRACE)
+
 #  include "../libbacktrace/backtrace.hpp"
 #  include <algorithm>
 #  include <dlfcn.h>
 #  include <cxxabi.h>
 #  include <stdlib.h>
+
+#  include "../libbacktrace/alloc.cpp"
+#  include "../libbacktrace/dwarf.cpp"
+#  include "../libbacktrace/fileline.cpp"
+#  include "../libbacktrace/mmapio.cpp"
+#  include "../libbacktrace/posix.cpp"
+#  include "../libbacktrace/sort.cpp"
+#  include "../libbacktrace/state.cpp"
+#  if TRACY_HAS_CALLSTACK == 4
+#    include "../libbacktrace/macho.cpp"
+#  else
+#    include "../libbacktrace/elf.cpp"
+#  endif
+#  include "TracyStackFrames.cpp"
+
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>
@@ -65,134 +73,7 @@ extern "C"
 };
 #endif
 
-//#define TRACY_USE_IMAGE_CACHE
-
-namespace tracy 
-{
-    // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
-// simply resolve the offset and image name (which will be enough the resolving to be done offline)
-#ifdef TRACY_SYMBOL_OFFLINE_RESOLVE
-    constexpr bool s_shouldResolveSymbolsOffline = true;
-#else
-    static bool s_shouldResolveSymbolsOffline = false;
-
-    bool s_serverLocalResolve = true; // Should the profiler try to resolve symbols before querying the client for symbols.
-
-    inline bool IsEnv(const char* environementVariableName, bool defaultValue)
-    {
-        const char* v = GetEnvVar(environementVariableName);
-        if (v) return v[0] == '1';
-        else return defaultValue;
-    }
-
-    struct ModuleNameAndBaseAddress
-    {
-        const char* name;
-        uint64_t baseAddr;
-    };
-
-    // The only threads that access the cache are the Symbol Worker and the Tracy Thread
-    // Only the symbol worker may write, but the Tracy Thread needs to be able to read the cache safely
-    // Since only the SymbolWorker is allowed to write the cache, it does not need to lock when reading.
-    static std::recursive_mutex s_cacheMutex;
-    std::recursive_mutex& GetModuleCacheMutexForRead() {
-        return s_cacheMutex;
-    }
-
-    void DestroyModuleCacheEntry(ModuleCacheEntry& entry)
-    {
-        tracy_free_fast(entry.path);
-        entry.path = nullptr;
-        tracy_free_fast(entry.name);
-        entry.name = nullptr;
-        tracy_free(entry.degugModuleField.debugData);
-        entry.degugModuleField.debugData = nullptr;
-    }
-
-    class ImageCache
-    {
-    public:
-        const ModuleCacheEntry* FindEntryFromAddr(uint64_t addr) const
-        {
-            for (size_t i = 0; i < m_modCache.size(); i++)
-            {
-                auto& it = m_modCache[i];
-
-                if (addr >= it.start && addr < it.end)
-                    return &it;
-
-            }
-
-            auto it = std::lower_bound(m_modCache.begin(), m_modCache.end(), addr, [](const ModuleCacheEntry& lhs, const uint64_t& rhs) { return lhs.start > rhs; });
-            if (it != m_modCache.end() && (addr < it->end))
-                return &(*it);
-
-            return nullptr;
-        }
-
-
-        void MapModuleData(const ModuleCacheEntry** moduleCacheEntries, size_t* moduleCount)
-        {
-            if (m_modCache.empty())
-            {
-                *moduleCacheEntries = nullptr;
-                *moduleCount = 0;
-                return;
-            }
-
-            *moduleCacheEntries = m_modCache.data();
-            *moduleCount = m_modCache.size();
-        }
-
-        ModuleCacheEntry* CacheModuleWithDebugInfo(const ModuleCacheEntry& entry)
-        {
-            ModuleCacheEntry* newEntry = m_modCache.push_next();
-            *newEntry = entry;
-            return newEntry;
-        }
-
-        void Clear()
-        {
-            for (ModuleCacheEntry& cacheEntry : m_modCache)
-            {
-                DestroyModuleCacheEntry(cacheEntry);
-            }
-            m_modCache.clear();
-        }
-
-        bool Contain(const ModuleCacheEntry& moduleCacheEntry)
-        {
-            return std::find_if(m_modCache.begin(), m_modCache.end(), [moduleCacheEntry](const ModuleCacheEntry& module)->bool
-                {
-                    return moduleCacheEntry.start == moduleCacheEntry.start;
-                }) != m_modCache.end();
-        }
-
-        const FastVector<ModuleCacheEntry>& GetModuleData() const 
-        {
-            return m_modCache;
-        }
-
-        ImageCache(size_t moduleCacheCapacity) : m_modCache(moduleCacheCapacity)
-        {
-
-        }
-
-
-        ~ImageCache()
-        {
-            Clear();
-        }
-
-
-    protected:
-        FastVector<ModuleCacheEntry> m_modCache;
-
-    };
-}
-
-
-#if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 5 || TRACY_HAS_CALLSTACK == 6
+#if defined(TRACY_USE_LIBBACKTRACE) || TRACY_HAS_CALLSTACK == 5
 // If you want to use your own demangling functionality (e.g. for another language),
 // define TRACY_DEMANGLE and provide your own implementation of the __tracy_demangle
 // function. The input parameter is a function name. The demangle function must
@@ -230,7 +111,7 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #endif
 #endif
 
-#if TRACY_HAS_CALLSTACK == 3
+#if defined(TRACY_USE_LIBBACKTRACE) && TRACY_HAS_CALLSTACK != 4 // dl_iterate_phdr is required for the current image cache. Need to move it to libbacktrace?
 #   define TRACY_USE_IMAGE_CACHE
 #   include <link.h>
 #endif
@@ -238,34 +119,143 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 namespace tracy
 {
 
-#ifdef TRACY_USE_IMAGE_CACHE
+    inline bool GetEnvBool(const char* environementVariableName, bool defaultValue)
+    {
+        const char* v = GetEnvVar(environementVariableName);
+        if (v) return v[0] == '1';
+        else return defaultValue;
+    }
+
+    // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
+    // simply resolve the offset and image name (which will be enough the resolving to be done offline)
+#ifdef TRACY_SYMBOL_OFFLINE_RESOLVE
+    constexpr bool s_shouldResolveSymbolsOffline = true;
+#else
+    static bool s_shouldResolveSymbolsOffline = false;
+
+    bool ShouldResolveSymbolsOffline()
+    {
+        return GetEnvBool("TRACY_SYMBOL_OFFLINE_RESOLVE", false);
+    }
+#endif // TRACY_SYMBOL_OFFLINE_RESOLVE
+
+    bool s_serverLocalResolve = true; // Should the profiler try to resolve symbols before querying the client for symbols.
+
+    inline bool IsKernelAddress(uint64_t addr) {
+        return (addr >> 63) != 0;
+    }
+
+    void DestroyImageEntry(ImageEntry& entry)
+    {
+        tracy_free_fast(entry.path);
+        entry.path = nullptr;
+        tracy_free_fast(entry.name);
+        entry.name = nullptr;
+        tracy_free(entry.degugModuleField.debugData);
+        entry.degugModuleField.debugData = nullptr;
+    }
+
+    class ImageCache
+    {
+    public:
+        ImageCache(size_t moduleCacheCapacity = ImageCacheBaseCapacity) : m_modCache(moduleCacheCapacity) {}
+        ~ImageCache() { Clear(); }
+
+        ImageEntry* CacheModuleWithDebugInfo(const ImageEntry& entry)
+        {
+            m_sorted &= m_modCache.empty() ? true : (entry.start < m_modCache.back().start);
+            ImageEntry* newEntry = m_modCache.push_next();
+            *newEntry = entry;
+            return newEntry;
+        }
+
+        const ImageEntry* FindEntryFromAddr(uint64_t addr) const
+        {
+            if (m_sorted)
+            {
+                auto it = std::lower_bound(m_modCache.begin(), m_modCache.end(), addr, [](const ImageEntry& lhs, const uint64_t& rhs) { return lhs.start > rhs; });
+                if (it != m_modCache.end() && (addr < it->end || it->end == 0))
+                    return &(*it);
+            }
+            else
+            {
+                auto it = std::find_if(m_modCache.begin(), m_modCache.end(), [addr](const ImageEntry& module) { return addr >= module.start && (addr < module.end || module.end == 0); });
+                if (it != m_modCache.end())
+                    return &(*it);
+            }
+            return nullptr;
+        }
+
+        void Sort()
+        {
+            if (!m_sorted)
+            {
+                std::sort(m_modCache.begin(), m_modCache.end(), [](const ImageEntry& lhs, const ImageEntry& rhs) { return lhs.start > rhs.start; });
+                m_sorted = true;
+            }
+        }
+
+        void Clear()
+        {
+            for (ImageEntry& cacheEntry : m_modCache)
+            {
+                DestroyImageEntry(cacheEntry);
+            }
+            m_modCache.clear();
+            m_sorted = true;
+        }
+
+        bool ContainsModule(uint64_t startAddress)
+        {
+            const ImageEntry* moduleInfo = FindEntryFromAddr(startAddress);
+            return moduleInfo && moduleInfo->start == startAddress;
+        }
+
+        const FastVector<ImageEntry>& GetModuleData() const
+        {
+            return m_modCache;
+        }
+    protected:
+        FastVector<ImageEntry> m_modCache;
+        bool m_sorted = true;
+    };
+
+
+    // The only threads that access the cache are the Symbol Worker and the Tracy Thread
+    // Only the symbol worker may write, but the Tracy Thread needs to be able to read the cache safely
+    // Since only the SymbolWorker is allowed to write the cache, it does not need to lock when reading.
+    static std::recursive_mutex s_cacheMutex;
+    std::recursive_mutex& GetModuleCacheMutexForRead() {
+        return s_cacheMutex;
+    }
+
+#if defined(TRACY_USE_IMAGE_CACHE)
 // when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
 // so we can quickly determine which image an address falls into.
 // We refresh this cache only when we hit an address that doesn't fall into any known range.
-class ImageCacheLinux : public ImageCache
+class ImageCacheLibbacktrace : public ImageCache
 {
 public:
-    ImageCacheLinux()
-        : ImageCache(ImageCacheAllocSize)
+    ImageCacheLibbacktrace()
+        : ImageCache()
     {
-        // ??
         Refresh();
     }
 
-    ~ImageCacheLinux()
+    ~ImageCacheLibbacktrace()
     {
         m_haveMainImageName = false;
     }
 
-    const ModuleCacheEntry* GetImageForAddress( void* address )
+    const ImageEntry* GetImageForAddress( uint64_t address )
     {
-        const ModuleCacheEntry* entry = FindEntryFromAddr( (uint64_t)address );
+        const ImageEntry* entry = FindEntryFromAddr( address );
 
-        /*if (!entry)
+        if (!entry)
         {
             Refresh();
-            return GetImageForAddressImpl( address );
-        }*/
+            return FindEntryFromAddr( address );
+        }
         return entry;
     }
 
@@ -273,42 +263,34 @@ private:
     bool m_updated = false;
     bool m_haveMainImageName = false;
 
-    bool Contains(void* startAddress) const
-    {
-        uint64_t address = (uint64_t)startAddress;
-        return std::any_of(m_modCache.begin(), m_modCache.end(), [address](const ModuleCacheEntry& entry) { return address == entry.start; });
-    }
-
     static int Callback( struct dl_phdr_info* info, size_t size, void* data )
     {
-        // SCARY
-        ImageCacheLinux* cache = reinterpret_cast<ImageCacheLinux*>( data );
+        ImageCacheLibbacktrace* cache = reinterpret_cast<ImageCacheLibbacktrace*>( data );
 
-        const auto startAddress = reinterpret_cast<void*>( info->dlpi_addr );
-        if( cache->Contains( startAddress ) ) return 0;
+        const uint64_t startAddress = reinterpret_cast<uint64_t>( info->dlpi_addr );
+        if( cache->ContainsModule( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
         assert( headerCount > 0);
-        const auto endAddress = reinterpret_cast<void*>( info->dlpi_addr +
+        const uint64_t endAddress = reinterpret_cast<uint64_t>( info->dlpi_addr +
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
 
-        ImageEntry* image = cache->m_images.push_next();
-        image->m_startAddress = startAddress;
-        image->m_endAddress = endAddress;
+        ImageEntry image{};
+        image.start = startAddress;
+        image.end = endAddress;
 
         // the base executable name isn't provided when iterating with dl_iterate_phdr,
         // we will have to patch the executable image name outside this callback
         if( info->dlpi_name && info->dlpi_name[0] != '\0' )
         {
-            size_t sz = strlen( info->dlpi_name ) + 1;
-            image->m_name = (char*)tracy_malloc( sz );
-            memcpy( image->m_name,  info->dlpi_name, sz );
+            image.name = CopyStringFast(info->dlpi_name);
         }
         else
         {
-            image->m_name = nullptr;
+            image.name = nullptr;
         }
 
+        cache->CacheModuleWithDebugInfo(image);
         cache->m_updated = true;
 
         return 0;
@@ -323,9 +305,7 @@ private:
 
         if( m_updated )
         {
-            std::sort( m_modCache.begin(), m_modCache.end(),
-                []( const ModuleCacheEntry& lhs, const ModuleCacheEntry& rhs ) { return lhs.start > rhs.start; } );
-
+            Sort();
             // patch the main executable image name here, as calling dl_* functions inside the dl_iterate_phdr callback might cause deadlocks
             UpdateMainImageName();
         }
@@ -338,7 +318,7 @@ private:
             return;
         }
 
-        for(ModuleCacheEntry& entry : m_modCache)
+        for(ImageEntry& entry : m_modCache)
         {
             if( entry.name == nullptr )
             {
@@ -347,9 +327,7 @@ private:
                 {
                     if( dlInfo.dli_fname )
                     {
-                        size_t sz = strlen( dlInfo.dli_fname ) + 1;
-                        entry.name = (char*)tracy_malloc( sz );
-                        memcpy( entry.name, dlInfo.dli_fname, sz );
+                        entry.name = CopyStringFast(dlInfo.dli_fname);
                     }
                 }
 
@@ -363,20 +341,60 @@ private:
 
     void Clear()
     {
-        for( ImageEntry& entry : m_images )
-        {
-            tracy_free( entry.m_name );
-        }
-
-        m_images.clear();
+        ImageCache::Clear();
         m_haveMainImageName = false;
     }
 };
+#endif // defined(TRACY_USE_IMAGE_CACHE)
+
+
+#ifdef TRACY_USE_IMAGE_CACHE
+typedef ImageCacheLibbacktrace UserlandImageCache;
+#else
+typedef ImageCache UserlandImageCache;
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 
+static UserlandImageCache* s_imageCache = nullptr;
+static ImageCache* s_krnlCache = nullptr;
 
+#ifdef __linux
+static ImageCache* s_krnlSymbolsCache = nullptr;
+#endif
 
+void CreateImageCaches()
+{
+    assert(s_imageCache == nullptr && s_krnlCache == nullptr);
+    s_imageCache = new(tracy_malloc(sizeof(UserlandImageCache))) UserlandImageCache();
+    s_krnlCache = new(tracy_malloc(sizeof(ImageCache))) ImageCache();
+}
 
+void DestroyImageCaches()
+{
+    if (s_krnlCache != nullptr)
+    {
+        s_krnlCache->~ImageCache();
+        tracy_free((void*)s_krnlCache);
+        s_krnlCache = nullptr;
+    }
+
+    if (s_imageCache != nullptr)
+    {
+        s_imageCache->~UserlandImageCache();
+        tracy_free(s_imageCache);
+        s_imageCache = nullptr;
+    }
+
+}
+
+const FastVector<ImageEntry>* GetUserImageInfos()
+{
+    return &s_imageCache->GetModuleData();
+}
+
+const FastVector<ImageEntry>* GetKernelImageInfos()
+{
+    return &s_krnlCache->GetModuleData();
+}
 
 void FormatImageName(char** moduleCacheName, const char* imageName, uint32_t imageNameLength)
 {
@@ -391,12 +409,6 @@ void FormatImageName(char** moduleCacheName, const char* imageName, uint32_t ima
     (*moduleCacheName)[namelen + 2] = '\0';
 }
 
-bool ShouldResolveSymbolsOffline()
-{
-    return IsEnv("TRACY_SYMBOL_OFFLINE_RESOLVE", false);
-}
-#endif // #ifdef TRACY_SYMBOL_OFFLINE_RESOLVE
-
 #if TRACY_HAS_CALLSTACK == 1
 
 enum { MaxCbTrace = 64 };
@@ -406,7 +418,6 @@ int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 
 HANDLE s_DbgHelpSymHandle = 0;
-#pragma comment( lib, "dbghelp.lib" )
 
 extern "C"
 {
@@ -433,14 +444,6 @@ struct CV_INFO_PDB70
 
 static constexpr auto mandatoryAlignment = 8;
 static constexpr DWORD CV_SIGNATURE_RSDS = 'SDSR'; // 'SDSR'
-
-
-
-FastVector<ModuleCacheEntry>* s_krnlCache = nullptr;
-
-
-
-ImageCache* s_imageCacheWindows = nullptr;
 
 uint64_t DbgHelpLoadSymbolsForModule(const char* imageName, uint64_t baseOfDll, uint32_t dllSize)
 {
@@ -520,7 +523,7 @@ bool GetModuleInfoFromPEHeaders(uint64_t baseOfDll, DebugFormat* debugFormat, ui
     return false;
 }
 
-void GetModuleInfoFromDbgHelp(const char* imageName, ModuleCacheEntry* moduleEntry)
+void GetModuleInfoFromDbgHelp(const char* imageName, ImageEntry* moduleEntry)
 {
     IMAGEHLP_MODULE64 moduleInfo{};
     moduleInfo.SizeOfStruct = sizeof(IMAGEHLP_MODULE64);
@@ -567,10 +570,10 @@ void GetModuleInfoFromDbgHelp(const char* imageName, ModuleCacheEntry* moduleEnt
     }
 }
 
-ModuleCacheEntry* CacheModuleInfo(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
+ImageEntry* CacheModuleInfo(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
 {
 
-    ModuleCacheEntry moduleEntry = {};
+    ImageEntry moduleEntry = {};
     moduleEntry.start = baseOfDll;
     moduleEntry.end = baseOfDll + dllSize;
     moduleEntry.path = CopyStringFast(imageName, imageNameLength);
@@ -590,15 +593,21 @@ ModuleCacheEntry* CacheModuleInfo(const char* imageName, uint32_t imageNameLengt
     }
 
     std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
-    return s_imageCacheWindows->CacheModuleWithDebugInfo(moduleEntry);
+    return s_imageCache->CacheModuleWithDebugInfo(moduleEntry);
 }
 
-ModuleCacheEntry* LoadSymbolsForModuleAndCache(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
+ImageEntry* LoadSymbolsForModuleAndCache(const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize)
 {
     DbgHelpLoadSymbolsForModule(imageName, baseOfDll, dllSize);
  
     return CacheModuleInfo(imageName, imageNameLength, baseOfDll, dllSize);
 }
+
+struct ModuleNameAndBaseAddress
+{
+    const char* name;
+    uint64_t baseAddr;
+};
 
 ModuleNameAndBaseAddress OnFailedFindAddress(uint64_t address)
 {
@@ -623,8 +632,8 @@ ModuleNameAndBaseAddress OnFailedFindAddress(uint64_t address)
                     if (nameLength > 0)
                     {
                         // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
-                        ModuleCacheEntry* moduleCacheEntry = LoadSymbolsForModuleAndCache(name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage);
-                        return ModuleNameAndBaseAddress{ moduleCacheEntry->name, moduleCacheEntry->start };
+                        ImageEntry* ImageEntry = LoadSymbolsForModuleAndCache(name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage);
+                        return ModuleNameAndBaseAddress{ ImageEntry->name, ImageEntry->start };
                     }
                 }
             }
@@ -635,20 +644,20 @@ ModuleNameAndBaseAddress OnFailedFindAddress(uint64_t address)
 
 ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols(uint64_t addr, bool* failed)
 {
-    if ((addr >> 63) != 0)
+    if (IsKernelAddress(addr))
     {
         if (s_krnlCache)
         {
-            auto it = std::lower_bound(s_krnlCache->begin(), s_krnlCache->end(), addr, [](const ModuleCacheEntry& lhs, const uint64_t& rhs) { return lhs.start > rhs; });
-            if (it != s_krnlCache->end())
+            const ImageEntry* entry = s_krnlCache->FindEntryFromAddr(addr);
+            if (entry)
             {
-                return ModuleNameAndBaseAddress{ it->name, it->start };
+                return ModuleNameAndBaseAddress{ entry->name, entry->start };
             }
         }
         return ModuleNameAndBaseAddress{ "<kernel>", addr };
     }
 
-    const ModuleCacheEntry* entry = s_imageCacheWindows->FindEntryFromAddr(addr);
+    const ImageEntry* entry = s_imageCache->FindEntryFromAddr(addr);
 
     if (entry != nullptr)
         return ModuleNameAndBaseAddress{ entry->name, entry->start };
@@ -734,13 +743,13 @@ static void CacheProcessDrivers()
                 buf[0] = '<';
                 memcpy(buf + 1, fn, len);
                 memcpy(buf + len + 1, ">", 2);
-                ModuleCacheEntry* kernelDriver = s_krnlCache->push_next();
+                ImageEntry kernelDriver{};
 
-                kernelDriver->start = (uint64_t)dev[i];
-                kernelDriver->end = 0;
-                kernelDriver->name = buf;
-                kernelDriver->path = nullptr;
-                kernelDriver->degugModuleField = {};
+                kernelDriver.start = (uint64_t)dev[i];
+                kernelDriver.end = 0;
+                kernelDriver.name = buf;
+                kernelDriver.path = nullptr;
+                kernelDriver.degugModuleField = {};
 
                 const auto len = GetDeviceDriverFileNameA( dev[i], fn, sizeof( fn ) );
                 if( len != 0 )
@@ -755,7 +764,7 @@ static void CacheProcessDrivers()
                         path = full;
                     }
 
-                    kernelDriver->path = CopyStringFast(path);
+                    kernelDriver.path = CopyStringFast(path);
 
                     if (SymLoadModuleEx(s_DbgHelpSymHandle, nullptr, path, nullptr, (DWORD64)dev[i], 0, nullptr, 0))
                     {
@@ -768,11 +777,12 @@ static void CacheProcessDrivers()
                     }
                 }
 
-                assert(kernelDriver->end == 0 && "kernel end should be zero");
+                s_krnlCache->CacheModuleWithDebugInfo(kernelDriver);
+                assert(kernelDriver.end == 0 && "kernel end should be zero");
                 cnt++;
             }
         }
-        std::sort(s_krnlCache->begin(), s_krnlCache->end(), [](const ModuleCacheEntry& lhs, const ModuleCacheEntry& rhs) { return lhs.start > rhs.start; });
+        s_krnlCache->Sort();
     }
 }
 
@@ -795,27 +805,17 @@ static void CacheProcessModules()
                 {
                     // This may be a new module loaded since our call to SymInitialize.
                     // Just in case, force DbgHelp to load its pdb !
-
-                    if (!s_shouldResolveSymbolsOffline)
-                    {
-                        auto moduleCache = LoadSymbolsForModuleAndCache(name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage);
-
-                    }
-                    else
-                    {
-                        uint64_t baseAdd = (DWORD64)info.lpBaseOfDll;
-
-                    }
-
+                    LoadSymbolsForModuleAndCache(name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage);
                 }
             }
         }
+        s_imageCache->Sort();
     }
 }
 
 void InitCallstack()
 {
-    s_serverLocalResolve = IsEnv("SERVER_LOCAL_RESOLVE", true);
+    s_serverLocalResolve = GetEnvBool("SERVER_LOCAL_RESOLVE", true);
 
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
@@ -833,11 +833,8 @@ void InitCallstack()
     DbgHelpInit((HANDLE)42/*This is our fake DbgHelp Handle*/, false /* Don't invade the process, we're going to resolve symbols for another one*/);
 #endif
 
-    s_imageCacheWindows = (ImageCache*)tracy_malloc(sizeof(ImageCache));
-    new(s_imageCacheWindows) ImageCache(ImageCacheBaseCapacity);
-    s_krnlCache = (FastVector<ModuleCacheEntry>*)tracy_malloc(sizeof(FastVector<ModuleCacheEntry>));
-    new(s_krnlCache) FastVector<ModuleCacheEntry>(ImageCacheBaseCapacity);
-
+    CreateImageCaches();
+    
 #ifdef TRACY_ENABLE // Client or self-profiling server
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
@@ -867,31 +864,9 @@ void InitCallstack()
 #endif
 }
 
-void FreeKernelCache()
-{
-	if (s_krnlCache == nullptr)
-	{
-		return;
-	}
-
-	for (auto& it : *s_krnlCache)
-	{
-        DestroyModuleCacheEntry(it);
-	}
-    tracy_free((void*)s_krnlCache);
-	s_krnlCache = nullptr;
-}
-
 void EndCallstack()
 {
-    FreeKernelCache();
-
-    if (s_imageCacheWindows != nullptr)
-    {
-        s_imageCacheWindows->~ImageCache();
-        tracy_free(s_imageCacheWindows);
-        s_imageCacheWindows = nullptr;
-    }
+    DestroyImageCaches();
     if (s_DbgHelpSymHandle)
     {
         SymCleanup(s_DbgHelpSymHandle);
@@ -933,11 +908,13 @@ const char* GetKernelModulePath(uint64_t addr)
 {
     assert(addr >> 63 != 0);
     if (!s_krnlCache) return nullptr;
-    auto it = std::lower_bound(s_krnlCache->begin(), s_krnlCache->end(), addr, [](const ModuleCacheEntry& lhs, const uint64_t& rhs) { return lhs.start > rhs; });
-    if (it == s_krnlCache->end()) return nullptr;
-    return it->path;
 
+    const ImageEntry* imageEntry = s_krnlCache->FindEntryFromAddr(addr);
+    if (imageEntry) 
+        return imageEntry->path;
+    return nullptr;
 }
+
 bool LoadFromPdb(const char* moduleName, uint64_t baseAddress, uint64_t dllSize, DebugFormat debugFormat, const uint8_t* debugData, uint32_t debugDataSize)
 {
     assert(debugFormat == DebugFormat::PdbDebugFormat);
@@ -1005,48 +982,41 @@ bool LoadFromPdb(const char* moduleName, uint64_t baseAddress, uint64_t dllSize,
     return false;
 }
 
-bool IsKernelAddress(uint64_t addr) {
-    return (addr >> 63) != 0;
-}
-
 // Called from the profiler (server) only, we received data from the client.
-void CacheModuleAndLoadExternal(ModuleCacheEntry& moduleCacheEntry)
+void CacheModuleAndLoadExternal(ImageEntry& imageEntry)
 {
     
     if (!s_serverLocalResolve)
     {
-        DestroyModuleCacheEntry(moduleCacheEntry);
+        DestroyImageEntry(imageEntry);
         return;
     }
 
-#if 1 // windows
-    if (IsKernelAddress(moduleCacheEntry.start))
+    if (IsKernelAddress(imageEntry.start))
     {
-        ModuleCacheEntry& newKernel = *s_krnlCache->push_next();
-        newKernel = moduleCacheEntry;
+        s_krnlCache->CacheModuleWithDebugInfo(imageEntry);
     }
     else
     {
-        s_imageCacheWindows->CacheModuleWithDebugInfo(moduleCacheEntry);
+        s_imageCache->CacheModuleWithDebugInfo(imageEntry);
     }
-#endif
 
     bool hasSymbolInfo = false;
-    if (moduleCacheEntry.degugModuleField.debugFormat == DebugFormat::PdbDebugFormat)
+    if (imageEntry.degugModuleField.debugFormat == DebugFormat::PdbDebugFormat)
     {
         char* nameFixed = nullptr;
-        if (IsKernelAddress(moduleCacheEntry.start))
+        if (IsKernelAddress(imageEntry.start))
         {
-            const size_t nameLen = strlen(moduleCacheEntry.name);
-            if (nameLen > 3 && moduleCacheEntry.name[0] == '<' && moduleCacheEntry.name[nameLen - 1] == '>')
+            const size_t nameLen = strlen(imageEntry.name);
+            if (nameLen > 3 && imageEntry.name[0] == '<' && imageEntry.name[nameLen - 1] == '>')
             {
-                char* kernelName = CopyStringFast(moduleCacheEntry.name + 1);
+                char* kernelName = CopyStringFast(imageEntry.name + 1);
                 kernelName[nameLen - 2] = 0; // replace >
                 nameFixed = kernelName;
             }
         }
-        hasSymbolInfo = LoadFromPdb(nameFixed ? nameFixed : moduleCacheEntry.name, moduleCacheEntry.start, moduleCacheEntry.end - moduleCacheEntry.start,
-            moduleCacheEntry.degugModuleField.debugFormat, moduleCacheEntry.degugModuleField.debugData, moduleCacheEntry.degugModuleField.debugDataSize);
+        hasSymbolInfo = LoadFromPdb(nameFixed ? nameFixed : imageEntry.name, imageEntry.start, imageEntry.end - imageEntry.start,
+            imageEntry.degugModuleField.debugFormat, imageEntry.degugModuleField.debugData, imageEntry.degugModuleField.debugDataSize);
 
         if (nameFixed) tracy_free_fast(nameFixed);
     }
@@ -1055,29 +1025,9 @@ void CacheModuleAndLoadExternal(ModuleCacheEntry& moduleCacheEntry)
     {
         // TODO: load from path only if we can check we got the correct binary (check timestamp / guid ?)
         //       That would however require to disable deferred symbol loading or use FindExecutableImageEx
-        //DbgHelpLoadSymbolsForModule(moduleCacheEntry.path, moduleCacheEntry.start, moduleCacheEntry.end - moduleCacheEntry.start);
+        //DbgHelpLoadSymbolsForModule(ImageEntry.path, ImageEntry.start, ImageEntry.end - ImageEntry.start);
     }
    
-}
-
-void CacheModuleKernelAndLoadExternal(const ModuleCacheEntry& kernelDriver)
-{
-    if(!s_serverLocalResolve)
-        return;
-
-    
-    bool hasSymbolInfo = false;
-    if (kernelDriver.degugModuleField.debugFormat == DebugFormat::PdbDebugFormat)
-    {
-        hasSymbolInfo = LoadFromPdb(kernelDriver.path, kernelDriver.start, 0, kernelDriver.degugModuleField.debugFormat, kernelDriver.degugModuleField.debugData, kernelDriver.degugModuleField.debugDataSize);
-    }
-
-    if (!hasSymbolInfo)
-    {
-        // TODO: load from path only if we can check we got the correct binary (check timestamp / guid ?)
-        //DbgHelpLoadSymbolsForModule(kernelDriver.path, kernelDriver.start, 0);
-    }
-
 }
 
 CallstackSymbolData DecodeSymbolAddress(uint64_t ptr)
@@ -1115,16 +1065,6 @@ CallstackSymbolData DecodeSymbolAddress(uint64_t ptr)
     DBGHELP_UNLOCK;
 #endif
     return sym;
-}
-
-const FastVector<ModuleCacheEntry>& GetModuleData()
-{
-    return s_imageCacheWindows->GetModuleData();
-}
-
-const FastVector<ModuleCacheEntry>& GetKernelDriver()
-{
-    return *s_krnlCache;
 }
 
 CallstackEntryData DecodeCallstackPtr(uint64_t ptr, DecodeCallStackPtrStatus* _decodeCallStackPtrStatus)
@@ -1280,23 +1220,7 @@ CallstackEntryData DecodeCallstackPtr(uint64_t ptr, DecodeCallStackPtrStatus* _d
     return { cb_data, uint8_t(cb_num), moduleNameAndAddress.name };
 }
 
-void FindModuleFromAddr(uint64_t addr, const ModuleCacheEntry** entry)
-{
-    *entry = s_imageCacheWindows->FindEntryFromAddr(addr);
-}
-
-void FindKernelDriverFromAddr(uint64_t addr, const ModuleCacheEntry** outDrive)
-{
-    auto it = std::lower_bound(s_krnlCache->begin(), s_krnlCache->end(), addr, [](const ModuleCacheEntry& lhs, const uint64_t& rhs) { return lhs.start > rhs; });
-    if (it != s_krnlCache->end())
-    {
-        *outDrive = it;
-    }
-}
-
-
-
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
+#elif defined(TRACY_USE_LIBBACKTRACE)
 
 enum { MaxCbTrace = 64 };
 
@@ -1305,9 +1229,8 @@ struct backtrace_state* cb_bts = nullptr;
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
-#ifdef TRACY_USE_IMAGE_CACHE
-static ImageCache* s_imageCache = nullptr;
-#endif //#ifdef TRACY_USE_IMAGE_CACHE
+
+void CacheModuleAndLoadExternal(ImageEntry& ImageEntry) {}
 
 #ifdef TRACY_DEBUGINFOD
 debuginfod_client* s_debuginfod;
@@ -1324,22 +1247,17 @@ static FastVector<DebugInfo>* s_di_known;
 #endif
 
 #ifdef __linux
-struct KernelSymbol
-{
-    uint64_t addr;
-    uint32_t size;
-    const char* name;
-    const char* mod;
-};
-
-KernelSymbol* s_kernelSym = nullptr;
-size_t s_kernelSymCnt;
 
 static void InitKernelSymbols()
 {
+    if (s_krnlSymbolsCache == nullptr)
+    {
+        s_krnlSymbolsCache = new(tracy_malloc(sizeof(ImageCache))) ImageCache(ImageCacheBaseCapacity);
+    }
+
     FILE* f = fopen( "/proc/kallsyms", "rb" );
     if( !f ) return;
-    tracy::FastVector<KernelSymbol> tmpSym( 512 * 1024 );
+    tracy::FastVector<ImageEntry> tmpSym( 512 * 1024 );
     size_t linelen = 16 * 1024;     // linelen must be big enough to prevent reallocs in getline()
     auto linebuf = (char*)tracy_malloc( linelen );
     ssize_t sz;
@@ -1410,30 +1328,20 @@ static void InitKernelSymbols()
             }
         }
 
-        auto sym = tmpSym.push_next();
-        sym->addr = addr;
-        sym->size = 0;
-        sym->name = strname;
-        sym->mod = strmod;
+        // Note: This uses the image cache as a symbol cache.
+        ImageEntry kernelSymbol{};
+        kernelSymbol.start = addr;
+        kernelSymbol.end = 0;
+        kernelSymbol.name = strname;
+        kernelSymbol.path = strmod;
+
+        s_krnlSymbolsCache->CacheModuleWithDebugInfo(kernelSymbol);
+
     }
     tracy_free_fast( linebuf );
     fclose( f );
-    if( tmpSym.empty() ) return;
 
-    std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr < rhs.addr; } );
-    for( size_t i=0; i<tmpSym.size()-1; i++ )
-    {
-        if( tmpSym[i].name ) tmpSym[i].size = tmpSym[i+1].addr - tmpSym[i].addr;
-    }
-
-    s_kernelSymCnt = validCnt;
-    s_kernelSym = (KernelSymbol*)tracy_malloc_fast( sizeof( KernelSymbol ) * validCnt );
-    auto dst = s_kernelSym;
-    for( auto& v : tmpSym )
-    {
-        if( v.name ) *dst++ = v;
-    }
-    assert( dst == s_kernelSym + validCnt );
+    s_krnlSymbolsCache->Sort();
 
     TracyDebug( "Loaded %zu kernel symbols (%zu code sections)\n", tmpSym.size(), validCnt );
 }
@@ -1503,8 +1411,7 @@ void InitCallstack()
     InitRpmalloc();
 
 #ifdef TRACY_USE_IMAGE_CACHE
-    s_imageCache = (ImageCache*)tracy_malloc( sizeof( ImageCache ) );
-    new(s_imageCache) ImageCache();
+    CreateImageCaches();
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
@@ -1600,11 +1507,7 @@ debuginfod_client* GetDebuginfodClient()
 void EndCallstack()
 {
 #ifdef TRACY_USE_IMAGE_CACHE
-    if( s_imageCache )
-    {
-        s_imageCache->~ImageCache();
-        tracy_free( s_imageCache );
-    }
+    DestroyImageCaches();
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 #ifndef TRACY_DEMANGLE
     ___tracy_free_demangle_buffer();
@@ -1792,20 +1695,23 @@ void GetSymbolForOfflineResolve(void* address, uint64_t imageBaseAddress, Callst
     cbEntry.line = 0;
 }
 
-CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _decodeCallStackPtrStatus)
 {
     InitRpmalloc();
+
+#ifdef TRACY_ENABLE // Only works on the current process. Profiler does not have TRACY_ENABLE, or is self profiling
+
     if( ptr >> 63 == 0 )
     {
         const char* imageName = nullptr;
         uint64_t imageBaseAddress = 0x0;
 
 #ifdef TRACY_USE_IMAGE_CACHE
-        const auto* image = s_imageCache->GetImageForAddress((void*)ptr);
+        const auto* image = s_imageCache->GetImageForAddress(ptr);
         if( image )
         {
-            imageName = image->m_name;
-            imageBaseAddress = uint64_t(image->m_startAddress);
+            imageName = image->name;
+            imageBaseAddress = uint64_t(image->start);
         }
 #else
         Dl_info dlinfo;
@@ -1830,33 +1736,39 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
         }
 
+        *_decodeCallStackPtrStatus = imageName ? DecodeCallStackPtrStatus::Success : DecodeCallStackPtrStatus::SymbolMissing;
         return { cb_data, uint8_t( cb_num ), imageName ? imageName : "[unknown]" };
     }
 #ifdef __linux
-    else if( s_kernelSym )
+    else if(s_krnlSymbolsCache)
     {
-        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr + lhs.size < rhs; } );
-        if( it != s_kernelSym + s_kernelSymCnt )
+        // This is a symbol cache, kernel image cache is currently unused
+        const ImageEntry* symbolEntry = s_krnlSymbolsCache->FindEntryFromAddr((uint64_t)ptr);
+        if (symbolEntry)
         {
-            cb_data[0].name = CopyStringFast( it->name );
+            cb_data[0].name = CopyStringFast(symbolEntry->name );
             cb_data[0].file = CopyStringFast( "<kernel>" );
             cb_data[0].line = 0;
-            cb_data[0].symLen = it->size;
-            cb_data[0].symAddr = it->addr;
-            return { cb_data, 1, it->mod ? it->mod : "<kernel>" };
+            cb_data[0].symLen = symbolEntry->end - symbolEntry->start;
+            cb_data[0].symAddr = symbolEntry->start;
+            *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
+            return { cb_data, 1, symbolEntry->path ? symbolEntry->path : "<kernel>" };
         }
     }
 #endif
-
+#endif
     cb_data[0].name = CopyStringFast( "[unknown]" );
     cb_data[0].file = CopyStringFast( "<kernel>" );
     cb_data[0].line = 0;
     cb_data[0].symLen = 0;
     cb_data[0].symAddr = 0;
+    *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
     return { cb_data, 1, "<kernel>" };
 }
 
 #elif TRACY_HAS_CALLSTACK == 5
+
+void CacheModuleAndLoadExternal(ImageEntry& ImageEntry) {}
 
 void InitCallstackCritical()
 {
@@ -1902,7 +1814,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     return CallstackSymbolData { symloc, 0, false, 0 };
 }
 
-CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _decodeCallStackPtrStatus)
 {
     static CallstackEntry cb;
     cb.line = 0;
@@ -1948,6 +1860,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     cb.symLen = 0;
     cb.symAddr = (uint64_t)symaddr;
 
+    *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
     return { &cb, 1, symloc };
 }
 

@@ -698,7 +698,7 @@ struct QueueHeader
 static constexpr size_t MaxModule = 1024;
 
 
-struct QueuModuleInfo
+struct QueueImageEntry
 {
    
 };
@@ -706,7 +706,7 @@ struct QueuModuleInfo
 enum struct PacketDataType : int
 {
     EMPTY = 0,
-    ModuleInfo,
+    ImageEntry,
 };
 
 static_assert( PacketDataType::EMPTY == (PacketDataType)0, "Empty must be First" );
@@ -806,7 +806,7 @@ struct QueueItem
         QueueSourceCodeNotAvailable sourceCodeNotAvailable;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
-        QueuModuleInfo moduleInfo;  
+        QueueImageEntry imageEntry;
         QueueDataPacket packet;
     };
 };

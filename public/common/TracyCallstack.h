@@ -30,6 +30,10 @@
 #    define TRACY_HAS_CALLSTACK 6
 #  endif
 
+#if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
+#define TRACY_USE_LIBBACKTRACE
+#endif
+
 #endif
 
 #endif

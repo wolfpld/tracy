@@ -85,7 +85,7 @@ struct DegugModuleField
     uint32_t debugDataSize;
 };
 
-struct ModuleCacheEntry
+struct ImageEntry
 {
     uint64_t start;
     uint64_t end;
@@ -107,14 +107,13 @@ void InitCallstack();
 void InitCallstackCritical();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
-void FindModuleFromAddr(uint64_t addr, const ModuleCacheEntry** outModule);
-void FindKernelDriverFromAddr(uint64_t addr, const ModuleCacheEntry** outDrive);
+void FindModuleFromAddr(uint64_t addr, const ImageEntry** outModule);
+void FindKernelDriverFromAddr(uint64_t addr, const ImageEntry** outDrive);
 
 
-void CacheModuleAndLoadExternal(ModuleCacheEntry& moduleCacheEntry);
-void CacheModuleKernelAndLoadExternal(const ModuleCacheEntry& kernelDriver);
-const FastVector<ModuleCacheEntry>& GetModuleData();
-const FastVector<ModuleCacheEntry>& GetKernelDriver();
+void CacheModuleAndLoadExternal(ImageEntry& moduleCacheEntry);
+const FastVector<ImageEntry>* GetUserImageInfos();
+const FastVector<ImageEntry>* GetKernelImageInfos();
 
 
 //

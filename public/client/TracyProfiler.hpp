@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
-#include <vector>
 
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
@@ -922,9 +921,10 @@ private:
 
     void SendModulesCaches();
 
+#ifdef TRACY_HAS_CALLSTACK
     void WriteDebugFieldToPacket(uint8_t** ptr, int* currentPacketSize, const DegugModuleField& degugModuleField);
-    void SendModuleInfo(const ModuleCacheEntry& moduleCacheEntry, std::vector<uint8_t>* queuBuffer);
-
+    void SendModuleInfo(const ImageEntry& moduleCacheEntry);
+#endif
 
     static tracy_force_inline void SendCallstackSerial( void* ptr )
     {

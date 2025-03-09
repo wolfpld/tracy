@@ -4069,32 +4069,33 @@ void Profiler::ReportTopology()
 
 void Profiler::SendModulesCaches()
 {
+#ifdef TRACY_HAS_CALLSTACK
     // We are retrieving modules information from the Tracy Profiler thread
     // But the Symbol Worker has ownership. Make sure it is not writing to the cache while we read it.
     std::lock_guard<std::recursive_mutex> mutexguard{ GetModuleCacheMutexForRead() };
 
-    std::vector<uint8_t> sendQueuBuffer;
-    size_t moduleCount = -1;
-    
-
-    const FastVector<ModuleCacheEntry>& kernelDrivers = GetKernelDriver();
-    for (auto& it : kernelDrivers)
+    const FastVector<ImageEntry>* kernelDrivers = GetKernelImageInfos();
+    if(kernelDrivers)
     {
-        SendModuleInfo(it, &sendQueuBuffer);
+        for (auto& it : *kernelDrivers)
+        {
+            SendModuleInfo(it);
+        }
     }
 
-	const FastVector<ModuleCacheEntry>& cacheModule = GetModuleData();
-	// Sennd all moduleInfo
-	for (auto& it : cacheModule)
+	const FastVector<ImageEntry>* moduleCache = GetUserImageInfos();
+	if(moduleCache)
 	{
-		SendModuleInfo(it, &sendQueuBuffer);
-	}
-
-
-
+        for (auto& it : *moduleCache)
+        {
+            SendModuleInfo(it);
+        }
+    }
+#endif
 }
 
 
+#ifdef TRACY_HAS_CALLSTACK
 void Profiler::WriteDebugFieldToPacket(uint8_t** ptr, int* currentPacketSize, const DegugModuleField& degugModuleField)
 {
     MemWrite(*ptr, degugModuleField.debugFormat);
@@ -4107,50 +4108,50 @@ void Profiler::WriteDebugFieldToPacket(uint8_t** ptr, int* currentPacketSize, co
     *ptr += sizeof(dataSize);
     *currentPacketSize += sizeof(dataSize);
 
-    const uint8_t* data =  degugModuleField.debugData;
-
-    memcpy(*ptr, data, dataSize);
+    memcpy(*ptr, degugModuleField.debugData, dataSize);
     *ptr += dataSize;
     *currentPacketSize += dataSize;
 
 }
 
-void Profiler::SendModuleInfo(const ModuleCacheEntry& moduleCacheEntry, std::vector<uint8_t>* queuBuffer)
+void Profiler::SendModuleInfo(const ImageEntry& imageEntry)
 {
     static constexpr int EndOfString = 1;
 
-    const uint32_t moduleNameLength = strlen(moduleCacheEntry.name) + EndOfString;
-    const uint32_t modulePathLength = strlen(moduleCacheEntry.path) + EndOfString;
+    const uint32_t moduleNameLength = (imageEntry.name ? strlen(imageEntry.name) : 0) + EndOfString;
+    const uint32_t modulePathLength = (imageEntry.path ? strlen(imageEntry.path) : 0) + EndOfString;
 
     QueueItem item;
     tracy::MemWrite(&item.hdr.type, (int)QueueType::DataPacket);
-    const size_t baseModuleInfo =  sizeof(moduleCacheEntry.start) + sizeof(moduleCacheEntry.end) +
+    const size_t baseModuleInfo =  sizeof(imageEntry.start) + sizeof(imageEntry.end) +
         sizeof(moduleNameLength) + moduleNameLength +
         sizeof(modulePathLength) + modulePathLength +
-        sizeof(moduleCacheEntry.degugModuleField.debugFormat);
+        sizeof(imageEntry.degugModuleField.debugFormat);
 
     const uint32_t debugFormatSize = 0 + sizeof(uint32_t) // DebugDataSize
-        + static_cast<uint32_t>(moduleCacheEntry.degugModuleField.debugDataSize);
+        + static_cast<uint32_t>(imageEntry.degugModuleField.debugDataSize);
 
-    queuBuffer->resize(baseModuleInfo + debugFormatSize);
+    const size_t bufferSize = baseModuleInfo + debugFormatSize;
+    void* queueBuffer = tracy_malloc(bufferSize);
+
     int size = 0;
 
-    uint8_t* ptr = queuBuffer->data();
+    uint8_t* ptr = (uint8_t*)queueBuffer;
 
     // baseModuleInfo
-    MemWrite(ptr, moduleCacheEntry.start);
-    ptr += sizeof(moduleCacheEntry.start);
-    size += sizeof(moduleCacheEntry.start);
+    MemWrite(ptr, imageEntry.start);
+    ptr += sizeof(imageEntry.start);
+    size += sizeof(imageEntry.start);
 
-    MemWrite(ptr, moduleCacheEntry.end);
-    ptr += sizeof(moduleCacheEntry.end);
-    size += sizeof(moduleCacheEntry.end);
+    MemWrite(ptr, imageEntry.end);
+    ptr += sizeof(imageEntry.end);
+    size += sizeof(imageEntry.end);
 
     MemWrite(ptr, moduleNameLength);
     ptr += sizeof(moduleNameLength);
     size += sizeof(moduleNameLength);
 
-    memcpy(ptr, moduleCacheEntry.name, moduleNameLength);
+    memcpy(ptr, imageEntry.name ? imageEntry.name : "", moduleNameLength);
     ptr += moduleNameLength;
     size += moduleNameLength;
 
@@ -4158,16 +4159,16 @@ void Profiler::SendModuleInfo(const ModuleCacheEntry& moduleCacheEntry, std::vec
     ptr += sizeof(modulePathLength);
     size += sizeof(modulePathLength);
 
-    memcpy(ptr, moduleCacheEntry.path, modulePathLength);
+    memcpy(ptr, imageEntry.path ? imageEntry.path : "", modulePathLength);
     ptr += modulePathLength;
     size += modulePathLength;
 
-    WriteDebugFieldToPacket(&ptr, &size, moduleCacheEntry.degugModuleField);
+    WriteDebugFieldToPacket(&ptr, &size, imageEntry.degugModuleField);
 
 
-    assert(size == queuBuffer->size());
+    assert(size == bufferSize);
 
-    SendSingleDataPacket(queuBuffer->data(), queuBuffer->size(), PacketDataType::ModuleInfo);
+    SendSingleDataPacket(queueBuffer, bufferSize, PacketDataType::ImageEntry);
 
     QueueItem item2;
     tracy::MemWrite(&item2.hdr.type, (int)QueueType::ModuleUpdate);
@@ -4176,7 +4177,10 @@ void Profiler::SendModuleInfo(const ModuleCacheEntry& moduleCacheEntry, std::vec
 
     NeedDataSize(sizeof(item2));
     AppendData(&item2, sizeof(item2));
+
+    tracy_free(queueBuffer);
 }
+#endif
 
 void Profiler::SendCallstack( int32_t depth, const char* skipBefore )
 {

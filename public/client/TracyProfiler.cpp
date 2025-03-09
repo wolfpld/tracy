@@ -1942,6 +1942,15 @@ void Profiler::Worker()
         LZ4_resetStream( (LZ4_stream_t*)m_stream );
         m_sock->Send( &welcome, sizeof( welcome ) );
 
+        uint32_t serverFlags = 0;
+        if (m_sock->ReadRaw(&serverFlags, sizeof(serverFlags), 2000))
+        {
+            if (serverFlags & ServerFlags::PreventSymbolResolution)
+            {
+                PreventSymbolResolution();
+            }
+        }
+
         m_threadCtx = 0;
         m_refTimeSerial = 0;
         m_refTimeCtx = 0;

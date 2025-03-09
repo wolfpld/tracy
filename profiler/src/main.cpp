@@ -237,6 +237,8 @@ static void LoadConfig()
     if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
     if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
     if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
+    if( ini_sget( ini, "symbols", "attemptResolutionByServer", "%d", &v ) ) s_config.symbolsAttemptResolutionByServer = v;
+    if( ini_sget( ini, "symbols", "preventResolutionByClient", "%d", &v ) ) s_config.symbolsPreventResolutionByClient = v;
 
     ini_free( ini );
 }
@@ -266,6 +268,10 @@ static bool SaveConfig()
     fprintf( f, "\n[achievements]\n" );
     fprintf( f, "enabled = %i\n", (int)s_config.achievements );
     fprintf( f, "asked = %i\n", (int)s_config.achievementsAsked );
+
+    fprintf(f, "\n[symbols]\n");
+    fprintf(f, "attemptResolutionByServer = %i\n", (int)s_config.symbolsAttemptResolutionByServer);
+    fprintf(f, "preventResolutionByClient = %i\n", (int)s_config.symbolsPreventResolutionByClient);
 
     fclose( f );
     return true;
@@ -839,6 +845,18 @@ static void DrawContents()
 
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
+
+                ImGui::TextUnformatted("Symbol resolution");
+                ImGui::Indent();
+                if (ImGui::Checkbox("Attempt resolution by profiler", &s_config.symbolsAttemptResolutionByServer)) SaveConfig();
+                ImGui::SameLine();
+                tracy::DrawHelpMarker("When enabled, the profiler will attempt to resolve symbols first before querying the application.");
+
+                if (ImGui::Checkbox("Prevent resolution by application", &s_config.symbolsPreventResolutionByClient)) SaveConfig();
+                ImGui::SameLine();
+                tracy::DrawHelpMarker("When enabled, the application will not attempt to resolve symbols at all. The profiler can do the resolution, or it will require to use the `update` tool.");
+
+                ImGui::Unindent();
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();

@@ -462,9 +462,15 @@ public:
         NUM_FAILURES
     };
 
-    Worker( const char* addr, uint16_t port, int64_t memoryLimit );
-    Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames );
-    Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true, bool allowStringModification = false);
+    struct SymbolResolutionConfig
+    {
+        bool m_attemptResolutionByWorker;
+        bool m_preventResolutionByClient;
+    };
+
+    Worker(const char* addr, uint16_t port, int64_t memoryLimit, const SymbolResolutionConfig& symbolResConfig);
+    Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig);
+    Worker(FileRead& f, const SymbolResolutionConfig& symbolResConfig, EventType::Type eventMask = EventType::All, bool bgTasks = true, bool allowStringModification = false);
     ~Worker();
 
     const std::string& GetAddr() const { return m_addr; }
@@ -1029,6 +1035,7 @@ private:
     bool m_identifySamples = false;
     bool m_inconsistentSamples;
     bool m_allowStringModification = false;
+    SymbolResolutionConfig m_symbolConfig;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint32_t m_pendingCallstackId = 0;

@@ -170,7 +170,11 @@ int main( int argc, char** argv )
             const auto t0 = std::chrono::high_resolution_clock::now();
             const bool allowBgThreads = false;
             const bool allowStringModification = resolveSymbols;
-            tracy::Worker worker( *f, (tracy::EventType::Type)events, allowBgThreads, allowStringModification );
+            tracy::Worker::SymbolResolutionConfig symConfig{};
+            // TODO: Use the same mechanism everywhere
+            // Current offline resolution does not check if symbols match which can lead to invalid data.
+            symConfig.m_attemptResolutionByWorker = false; // resolveSymbols;
+            tracy::Worker worker( *f, symConfig, (tracy::EventType::Type)events, allowBgThreads, allowStringModification );
 
 #ifndef TRACY_NO_STATISTICS
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );

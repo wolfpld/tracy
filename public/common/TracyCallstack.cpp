@@ -129,17 +129,11 @@ namespace tracy
     // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
     // simply resolve the offset and image name (which will be enough the resolving to be done offline)
 #ifdef TRACY_SYMBOL_OFFLINE_RESOLVE
-    constexpr bool s_shouldResolveSymbolsOffline = true;
+    static bool s_shouldResolveSymbolsOffline = true;
 #else
     static bool s_shouldResolveSymbolsOffline = false;
-
-    bool ShouldResolveSymbolsOffline()
-    {
-        return GetEnvBool("TRACY_SYMBOL_OFFLINE_RESOLVE", false);
-    }
 #endif // TRACY_SYMBOL_OFFLINE_RESOLVE
-
-    bool s_serverLocalResolve = true; // Should the profiler try to resolve symbols before querying the client for symbols.
+    void PreventSymbolResolution() { s_shouldResolveSymbolsOffline = true; }
 
     inline bool IsKernelAddress(uint64_t addr) {
         return (addr >> 63) != 0;
@@ -639,7 +633,7 @@ ModuleNameAndBaseAddress OnFailedFindAddress(uint64_t address)
             }
         }
     }
-    return ModuleNameAndBaseAddress{ "[unknown]", address };
+    return {};
 }
 
 ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols(uint64_t addr, bool* failed)
@@ -663,13 +657,8 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols(uint64_t addr, bool* fai
         return ModuleNameAndBaseAddress{ entry->name, entry->start };
 
 
-    if (s_serverLocalResolve)
-    {
-        *failed = true;
-        return ModuleNameAndBaseAddress{ "[unknown]", addr };
-    }
-
-   return OnFailedFindAddress(addr);
+    *failed = true;
+    return ModuleNameAndBaseAddress{ "[unknown]", addr };
 }
 
 
@@ -815,11 +804,8 @@ static void CacheProcessModules()
 
 void InitCallstack()
 {
-    s_serverLocalResolve = GetEnvBool("SERVER_LOCAL_RESOLVE", true);
-
-
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
-    s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
+    s_shouldResolveSymbolsOffline = GetEnvBool("TRACY_SYMBOL_OFFLINE_RESOLVE", s_shouldResolveSymbolsOffline);
 #endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     if (s_shouldResolveSymbolsOffline)
     {
@@ -985,13 +971,6 @@ bool LoadFromPdb(const char* moduleName, uint64_t baseAddress, uint64_t dllSize,
 // Called from the profiler (server) only, we received data from the client.
 void CacheModuleAndLoadExternal(ImageEntry& imageEntry)
 {
-    
-    if (!s_serverLocalResolve)
-    {
-        DestroyImageEntry(imageEntry);
-        return;
-    }
-
     if (IsKernelAddress(imageEntry.start))
     {
         s_krnlCache->CacheModuleWithDebugInfo(imageEntry);
@@ -1075,16 +1054,31 @@ CallstackEntryData DecodeCallstackPtr(uint64_t ptr, DecodeCallStackPtrStatus* _d
 
     InitRpmalloc();
 
-    bool reseachFailed = false;
-    const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols(ptr, &reseachFailed);
+    bool moduleNotFound = false;
+    ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols(ptr, &moduleNotFound);
 
-
-    if (reseachFailed)
+    if (moduleNotFound)
     {
-        *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::ModuleMissing;
+        if (s_DbgHelpSymHandle == GetCurrentProcess())
+        {
+            // We're on the client or self profiling, try to load a potentially new module.
+            moduleNameAndAddress = OnFailedFindAddress(ptr);
+            if (moduleNameAndAddress.baseAddr == 0)
+            {
+                // Failed to find the module information.
+                // Set base address to ptr so that cb_data[0].symAddr=0
+                moduleNameAndAddress = { "[unknown]", ptr };
+            }
+            else moduleNotFound = false; // We managed to load the module information
+        }
+        else
+        {
+            // We're on the server, it does not have a way to get information about the module
+            *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::ModuleMissing;
+        }
     }
 
-    if (s_shouldResolveSymbolsOffline || reseachFailed)
+    if (s_shouldResolveSymbolsOffline || moduleNotFound)
     {
 #ifdef TRACY_DBGHELP_LOCK
         DBGHELP_UNLOCK;
@@ -1415,7 +1409,7 @@ void InitCallstack()
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
-    s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
+    s_shouldResolveSymbolsOffline = GetEnvBool("TRACY_SYMBOL_OFFLINE_RESOLVE", s_shouldResolveSymbolsOffline);
 #endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     if( s_shouldResolveSymbolsOffline )
     {

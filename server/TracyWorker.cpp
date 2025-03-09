@@ -265,7 +265,7 @@ static bool IsQueryPrio( ServerQuery type )
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
+Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const SymbolResolutionConfig& symbolResConfig)
     : m_addr( addr )
     , m_port( port )
     , m_hasData( false )
@@ -273,6 +273,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
     , m_inconsistentSamples( false )
+    , m_symbolConfig(symbolResConfig)
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
     , m_pendingFibers( 0 )
@@ -309,7 +310,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
-Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames )
+Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig)
     : m_hasData( true )
     , m_delay( 0 )
     , m_resolution( 0 )
@@ -323,6 +324,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_buffer( nullptr )
     , m_onDemand( false )
     , m_inconsistentSamples( false )
+    , m_symbolConfig(symbolResConfig)
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
@@ -561,13 +563,14 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     }
 }
 
-Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allowStringModification )
+Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, EventType::Type eventMask, bool bgTasks, bool allowStringModification )
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_inconsistentSamples( false )
     , m_memoryLimit( -1 )
     , m_allowStringModification( allowStringModification )
+    , m_symbolConfig(symbolResConfig)
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
@@ -1683,11 +1686,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
         };
 
-    uint32_t moduleCount = -1;
-    f.Read(moduleCount);
-
-    if (moduleCount != -1)
+    if ( CurrentVersion >= FileVersion( 0, 11, 3 ) )
     {
+        uint32_t moduleCount = -1;
+        f.Read(moduleCount);
         for (size_t i = 0; i < moduleCount; i++)
         {
             ImageEntry imageEntry;
@@ -1698,14 +1700,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
             DeserializeDebugField(&imageEntry.degugModuleField);
 
-            CacheModuleAndLoadExternal(imageEntry);
+            if (m_symbolConfig.m_attemptResolutionByWorker)
+                CacheModuleAndLoadExternal(imageEntry);
         }
-    }
 
-    f.Read(moduleCount);
-
-    if (moduleCount != -1)
-    {
+        f.Read(moduleCount);
         for (size_t i = 0; i < moduleCount; i++)
         {
             ImageEntry kernelImageEntry;
@@ -1721,7 +1720,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
             DeserializeDebugField(&kernelImageEntry.degugModuleField);
 
-            CacheModuleAndLoadExternal(kernelImageEntry);
+            if (m_symbolConfig.m_attemptResolutionByWorker)
+                CacheModuleAndLoadExternal(kernelImageEntry);
 
         }
     }
@@ -2794,6 +2794,7 @@ void Worker::Exec()
     m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
     uint32_t protocolVersion = ProtocolVersion;
     m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
+    
     HandshakeStatus handshake;
     if( !m_sock.Read( &handshake, sizeof( handshake ), 10, ShouldExit ) )
     {
@@ -2867,6 +2868,16 @@ void Worker::Exec()
         m_captureName = tmp;
 
         m_hostInfo = welcome.hostInfo;
+
+        uint32_t serverFlags = 0;
+        if (m_symbolConfig.m_preventResolutionByClient)
+        {
+            // We could probably enable this automatically on windows when connected to localhost
+            // or based on some platform filter? For now, simply honor the config.
+            serverFlags |= ServerFlags::PreventSymbolResolution;
+        }
+        m_sock.Send(&serverFlags, sizeof(serverFlags));
+
 
         if( m_onDemand )
         {
@@ -4086,9 +4097,6 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
-// TODO: handle properly
-extern bool s_serverLocalResolve;
-
 void Worker::TryResolveCallStackIfNeeded(CallstackFrameId frameId)
 {
     // If we already have the information
@@ -4100,7 +4108,7 @@ void Worker::TryResolveCallStackIfNeeded(CallstackFrameId frameId)
     uint64_t symbolAddress = GetCanonicalPointer(frameId);
     
     DecodeCallStackPtrStatus status = DecodeCallStackPtrStatus::Count;
-    if (s_serverLocalResolve)
+    if (m_symbolConfig.m_attemptResolutionByWorker)
     {
         // TODO: offload to a worker thread
         CallstackEntryData outCallStack = DecodeCallstackPtr(symbolAddress, &status);
@@ -8626,36 +8634,41 @@ void Worker::Write( FileWrite& f, bool fiDict )
             f.Write(s, sLenght);
         };
 
-	const FastVector<ImageEntry>* cacheModule = GetUserImageInfos();
-    uint32_t moduleCount = static_cast<uint32_t>(cacheModule ? cacheModule->size() : 0);
+	const FastVector<ImageEntry>* userlandImages = GetUserImageInfos();
+    uint32_t moduleCount = static_cast<uint32_t>(userlandImages ? userlandImages->size() : 0);
 	f.Write(&moduleCount, sizeof(moduleCount));
+    
+    if (userlandImages)
+    {
+        for (const ImageEntry& moduleCacheEntry : *userlandImages)
+        {
+            f.Write(&moduleCacheEntry.start, sizeof(moduleCacheEntry.start));
+            f.Write(&moduleCacheEntry.end, sizeof(moduleCacheEntry.end));
 
-	for (const ImageEntry& moduleCacheEntry : *cacheModule)
-	{
-		f.Write(&moduleCacheEntry.start, sizeof(moduleCacheEntry.start));
-		f.Write(&moduleCacheEntry.end, sizeof(moduleCacheEntry.end));
+            SerializeString(moduleCacheEntry.name);
+            SerializeString(moduleCacheEntry.path);
 
-		SerializeString(moduleCacheEntry.name);
-        SerializeString(moduleCacheEntry.path);
+            SerializeDebugModuleField(moduleCacheEntry.degugModuleField);
+        }
+    }
 
-		SerializeDebugModuleField(moduleCacheEntry.degugModuleField);
-	}
-
-
-	const FastVector<ImageEntry>* kernelDrivers = GetKernelImageInfos();
-    moduleCount = static_cast<uint32_t>(kernelDrivers ? kernelDrivers->size() : 0);
+	const FastVector<ImageEntry>* kernelImages = GetKernelImageInfos();
+    moduleCount = static_cast<uint32_t>(kernelImages ? kernelImages->size() : 0);
 	f.Write(&moduleCount, sizeof(moduleCount));
+    
+    if (kernelImages)
+    {
+        for (const ImageEntry& it : *kernelImages)
+        {
+            f.Write(&it.start, sizeof(it.start));
+            assert(it.end == 0 && "kernel end should be zero");
 
-	for (const ImageEntry& it : *kernelDrivers)
-	{
-		f.Write(&it.start, sizeof(it.start));
-        assert(it.end == 0 && "kernel end should be zero");
+            SerializeString(it.name);
+            SerializeString(it.path);
 
-		SerializeString(it.name);
-		SerializeString(it.path);
-
-		SerializeDebugModuleField(it.degugModuleField);
-	}
+            SerializeDebugModuleField(it.degugModuleField);
+        }
+    }
     
 }
 
@@ -8970,7 +8983,8 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
 
         }
 
-        CacheModuleAndLoadExternal(moduleCacheEntry);
+        if (m_symbolConfig.m_attemptResolutionByWorker)
+            CacheModuleAndLoadExternal(moduleCacheEntry);
 
         break;
     }

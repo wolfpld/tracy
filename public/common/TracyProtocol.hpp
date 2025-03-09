@@ -9,7 +9,7 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 72 };
+enum : uint32_t { ProtocolVersion = 73 };
 enum : uint16_t { BroadcastVersion = 3 };
 
 using lz4sz_t = uint32_t;
@@ -21,6 +21,7 @@ static_assert( TargetFrameSize * 2 >= 64 * 1024, "Not enough space for LZ4 strea
 
 enum { HandshakeShibbolethSize = 8 };
 static const char HandshakeShibboleth[HandshakeShibbolethSize] = { 'T', 'r', 'a', 'c', 'y', 'P', 'r', 'f' };
+
 
 enum HandshakeStatus : uint8_t
 {
@@ -112,6 +113,13 @@ struct WelcomeMessage
 
 enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
 
+struct ServerFlags
+{
+    enum _t : uint32_t
+    {
+        PreventSymbolResolution = 1 << 0,
+    };
+};
 
 struct OnDemandPayloadMessage
 {

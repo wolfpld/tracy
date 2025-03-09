@@ -11,6 +11,7 @@ namespace tracy
 {
 static constexpr bool has_callstack() { return false; }
 static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr; }
+void PreventSymbolResolution() { }
 }
 
 #else
@@ -96,6 +97,7 @@ struct ImageEntry
 };
 
 
+void PreventSymbolResolution();
 std::recursive_mutex& GetModuleCacheMutexForRead();
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );

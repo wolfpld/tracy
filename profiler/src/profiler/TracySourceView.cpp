@@ -1157,7 +1157,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
 
     const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
-    if (sym == nullptr) return; // Might no have received symbol info yet
+    if( sym == nullptr ) return; // Might no have received symbol info yet
 
     ImGui::PushFont( m_bigFont );
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );

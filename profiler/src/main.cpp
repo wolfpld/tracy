@@ -846,15 +846,15 @@ static void DrawContents()
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
 
-                ImGui::TextUnformatted("Symbol resolution");
+                ImGui::TextUnformatted( "Symbol resolution" );
                 ImGui::Indent();
-                if (ImGui::Checkbox("Attempt resolution by profiler", &s_config.symbolsAttemptResolutionByServer)) SaveConfig();
+                if( ImGui::Checkbox( "Attempt resolution by profiler", &s_config.symbolsAttemptResolutionByServer ) ) SaveConfig();
                 ImGui::SameLine();
-                tracy::DrawHelpMarker("When enabled, the profiler will attempt to resolve symbols first before querying the application.");
+                tracy::DrawHelpMarker( "When enabled, the profiler will attempt to resolve symbols first before querying the application." );
 
-                if (ImGui::Checkbox("Prevent resolution by application", &s_config.symbolsPreventResolutionByClient)) SaveConfig();
+                if( ImGui::Checkbox( "Prevent resolution by application", &s_config.symbolsPreventResolutionByClient ) ) SaveConfig();
                 ImGui::SameLine();
-                tracy::DrawHelpMarker("When enabled, the application will not attempt to resolve symbols at all. The profiler can do the resolution, or it will require to use the `update` tool.");
+                tracy::DrawHelpMarker( "When enabled, the application will not attempt to resolve symbols at all. The profiler can do the resolution, or it will require to use the `update` tool." );
 
                 ImGui::Unindent();
 

@@ -45,10 +45,6 @@
 #include "TracyWorker.hpp"
 #include "tracy_pdqsort.h"
 
-
-#define LOCAL_RESOLVE 1 
-
-
 namespace tracy
 {
 
@@ -265,7 +261,7 @@ static bool IsQueryPrio( ServerQuery type )
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const SymbolResolutionConfig& symbolResConfig)
+Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const SymbolResolutionConfig& symbolResConfig )
     : m_addr( addr )
     , m_port( port )
     , m_hasData( false )
@@ -273,7 +269,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
     , m_inconsistentSamples( false )
-    , m_symbolConfig(symbolResConfig)
+    , m_symbolConfig( symbolResConfig )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
     , m_pendingFibers( 0 )
@@ -310,7 +306,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
-Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig)
+Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig )
     : m_hasData( true )
     , m_delay( 0 )
     , m_resolution( 0 )
@@ -324,7 +320,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_buffer( nullptr )
     , m_onDemand( false )
     , m_inconsistentSamples( false )
-    , m_symbolConfig(symbolResConfig)
+    , m_symbolConfig( symbolResConfig )
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
@@ -570,7 +566,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
     , m_inconsistentSamples( false )
     , m_memoryLimit( -1 )
     , m_allowStringModification( allowStringModification )
-    , m_symbolConfig(symbolResConfig)
+    , m_symbolConfig( symbolResConfig )
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
@@ -1656,74 +1652,62 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
         }
     }
 
-    auto DeserializeDebugField = [&](DegugModuleField* debugField)
+    auto DeserializeDebugField = [&]( ImageDebugInfo* debugField )
         {
-            DebugFormat debugFormat;
-            f.Read(debugFormat);
+            ImageDebugFormat debugFormat;
+            f.Read( debugFormat );
             
-            if (debugFormat == DebugFormat::NoDebugFormat)
+            if( debugFormat == ImageDebugFormat::NoDebugFormat )
             {
-                debugField->debugDataSize = -1;
+                debugField->debugDataSize = 0;
                 debugField->debugData = nullptr;
                 return;
             }
            
-            f.Read(debugField->debugDataSize);
-            debugField->debugData = (uint8_t*)tracy_malloc(debugField->debugDataSize);
-            f.Read(debugField->debugData, debugField->debugDataSize);
+            f.Read( debugField->debugDataSize );
+            debugField->debugData = (uint8_t*)tracy_malloc( debugField->debugDataSize );
+            f.Read( debugField->debugData, debugField->debugDataSize );
         };
 
-    auto DeserializeMallocedFastString = [&](char** s)
+    auto DeserializeMallocedFastString = [&]( char** s )
         {
-            int sLenght = -1;
-            f.Read(sLenght);
-            if (sLenght == -1)
+            int sLength = -1;
+            f.Read( sLength );
+            if (sLength == -1)
+            {
+                *s = nullptr;
                 return;
+            }
 
-            *s = (char*)tracy_malloc_fast(sLenght);
+            *s = (char*)tracy_malloc_fast( sLength );
 
-            f.Read(*s, sLenght);
+            f.Read( *s, sLength );
+        };
 
+    auto DeseriliazeImageEntries = [&]()
+        {
+            uint32_t moduleCount = 0;
+            f.Read( moduleCount );
+
+            for( size_t i=0; i<moduleCount; i++ )
+            {
+                ImageEntry imageEntry;
+                f.Read( imageEntry.start );
+                f.Read( imageEntry.end );
+                DeserializeMallocedFastString( &imageEntry.name );
+                DeserializeMallocedFastString( &imageEntry.path );
+
+                DeserializeDebugField( &imageEntry.imageDebugInfo );
+
+                if( m_symbolConfig.m_attemptResolutionByWorker )
+                    CacheModuleAndLoadExternal( imageEntry );
+            }
         };
 
     if ( CurrentVersion >= FileVersion( 0, 11, 3 ) )
     {
-        uint32_t moduleCount = -1;
-        f.Read(moduleCount);
-        for (size_t i = 0; i < moduleCount; i++)
-        {
-            ImageEntry imageEntry;
-            f.Read(imageEntry.start);
-            f.Read(imageEntry.end);
-            DeserializeMallocedFastString(&imageEntry.name);
-            DeserializeMallocedFastString(&imageEntry.path);
-
-            DeserializeDebugField(&imageEntry.degugModuleField);
-
-            if (m_symbolConfig.m_attemptResolutionByWorker)
-                CacheModuleAndLoadExternal(imageEntry);
-        }
-
-        f.Read(moduleCount);
-        for (size_t i = 0; i < moduleCount; i++)
-        {
-            ImageEntry kernelImageEntry;
-            f.Read(kernelImageEntry.start);
-            kernelImageEntry.end = 0;
-            char* name = nullptr;
-            DeserializeMallocedFastString(&name);
-            kernelImageEntry.name = name;
-
-            char* path = nullptr;
-            DeserializeMallocedFastString(&path);
-            kernelImageEntry.path = path;
-
-            DeserializeDebugField(&kernelImageEntry.degugModuleField);
-
-            if (m_symbolConfig.m_attemptResolutionByWorker)
-                CacheModuleAndLoadExternal(kernelImageEntry);
-
-        }
+        DeseriliazeImageEntries(); // UserLandModules
+        DeseriliazeImageEntries(); // KernelModules
     }
 
     // Post read processing
@@ -2360,16 +2344,6 @@ uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset )
     return it->addr;
 }
 
-SymbolLocation Worker::GetSymbolLocFromSysAdrees( uint64_t address )
-{
-    DoPostponedSymbols();
-    auto it = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), address,
-                                []( const auto& l, const auto& r ) { return l.addr + l.len < r; } );
-    if( it == m_data.symbolLoc.end() || address < it->addr ) return {};
-
-    return *it;
-}
-
 uint64_t Worker::GetInlineSymbolForAddress( uint64_t address ) const
 {
     auto it = m_data.codeSymbolMap.find( address );
@@ -2806,10 +2780,7 @@ void Worker::Exec()
     {
     case HandshakeWelcome:
 
-#ifdef LOCAL_RESOLVE
         InitCallstack();
-#endif // LOCAL_RESOLVE
-
         break;
     case HandshakeProtocolMismatch:
     case HandshakeNotAvailable:
@@ -2870,13 +2841,13 @@ void Worker::Exec()
         m_hostInfo = welcome.hostInfo;
 
         uint32_t serverFlags = 0;
-        if (m_symbolConfig.m_preventResolutionByClient)
+        if( m_symbolConfig.m_preventResolutionByClient )
         {
             // We could probably enable this automatically on windows when connected to localhost
             // or based on some platform filter? For now, simply honor the config.
             serverFlags |= ServerFlags::PreventSymbolResolution;
         }
-        m_sock.Send(&serverFlags, sizeof(serverFlags));
+        m_sock.Send( &serverFlags, sizeof(serverFlags) );
 
 
         if( m_onDemand )
@@ -3015,9 +2986,7 @@ void Worker::Exec()
 
 close:
 
-#ifdef LOCAL_RESOLVE 
     EndCallstack();
-#endif // LOCAL_RESOLVE 
 
     Shutdown();
     m_netWriteCv.notify_one();
@@ -3408,10 +3377,10 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             return true;
         case QueueType::DataPacket:
         {
-            ptr += sizeof(QueueHeader);
-            const QueueDataPacket* packet = reinterpret_cast<const QueueDataPacket*>(ptr);
-            ptr += sizeof(QueueDataPacket);
-            AddDataPacket(reinterpret_cast<const void*>(ptr), packet->packetSize, packet->packetDataType);
+            ptr += sizeof( QueueHeader );
+            const QueueDataPacket* packet = reinterpret_cast<const QueueDataPacket*>( ptr );
+            ptr += sizeof( QueueDataPacket );
+            AddDataPacket( reinterpret_cast<const void*>( ptr ), packet->packetSize, packet->packetDataType );
             ptr += packet->packetSize;
             return true;
         }
@@ -3917,28 +3886,13 @@ void Worker::AddSecondString( const char* str, size_t sz )
     m_pendingSecondString = StoreString( str, sz );
 }
 
-void Worker::AddDataPacketFailure( const void* data, size_t size, PacketDataType dataType )
-{
-    m_pendingDataPacket.type = dataType;
-    m_pendingDataPacket.data.resize( size );
-    memcpy( m_pendingDataPacket.data.data(), data, size );
-}
-
 void Worker::AddDataPacket( const void* data, size_t size, PacketDataType dataType )
 {
-    assert( m_pendingDataPacket.type == PacketDataType::EMPTY && m_pendingDataPacket.data.size() == 0 &&
-            dataType != PacketDataType::EMPTY );
+    assert( m_pendingDataPacket.type == PacketDataType::EMPTY && m_pendingDataPacket.data == nullptr && dataType != PacketDataType::EMPTY );
 
     m_pendingDataPacket.type = dataType;
-    m_pendingDataPacket.data.resize( size );
-    memcpy( m_pendingDataPacket.data.data(), data, size );
-
-#if 0
-    int d[100];
-    for( size_t i = 0; i < size / sizeof( int ); i++ )
-        d[i] = *reinterpret_cast<int*>( &m_pendingDataPacket.data[i * 4] );
-
-#endif
+    m_pendingDataPacket.data = static_cast<uint8_t*>( tracy_malloc( size ) );
+    memcpy( m_pendingDataPacket.data, data, size );
 }
 
 void Worker::AddExternalName( uint64_t ptr, const char* str, size_t sz )
@@ -4021,8 +3975,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         {
             const auto& op = insn[i];
             const auto addr = op.address;
-            TryResolveCallStackIfNeeded(PackPointer(addr));
-            
+            TryResolveCallStackIfNeeded( PackPointer( addr ) );            
 
             uint64_t callAddr = 0;
             const auto& detail = *op.detail;
@@ -4058,9 +4011,9 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
                     if( callAddr != 0 ) break;
                 }
             }
-            if( callAddr != 0)
+            if( callAddr != 0 )
             {
-                TryResolveCallStackIfNeeded(PackPointer(addr));
+                TryResolveCallStackIfNeeded( PackPointer( addr ) );
             }
         }
         cs_free( insn, cnt );
@@ -4097,24 +4050,24 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
-void Worker::TryResolveCallStackIfNeeded(CallstackFrameId frameId)
+void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId )
 {
     // If we already have the information
-    if (m_data.callstackFrameMap.count(frameId) != 0)
+    if (m_data.callstackFrameMap.count( frameId ) != 0)
     {
         return;
     }
 
-    uint64_t symbolAddress = GetCanonicalPointer(frameId);
+    uint64_t symbolAddress = GetCanonicalPointer( frameId );
     
     DecodeCallStackPtrStatus status = DecodeCallStackPtrStatus::Count;
-    if (m_symbolConfig.m_attemptResolutionByWorker)
+    if( m_symbolConfig.m_attemptResolutionByWorker )
     {
         // TODO: offload to a worker thread
-        CallstackEntryData outCallStack = DecodeCallstackPtr(symbolAddress, &status);
-        if (status == DecodeCallStackPtrStatus::Success)
+        CallstackEntryData outCallStack = DecodeCallstackPtr( symbolAddress, &status );
+        if ( status == DecodeCallStackPtrStatus::Success )
         {
-            const uint32_t imageNameIdx = StoreString(outCallStack.imageName).idx;
+            const uint32_t imageNameIdx = StoreString( outCallStack.imageName , strlen( outCallStack.imageName ) ).idx;
             assert(outCallStack.size <= 255);
             const QueueCallstackFrameSize queueCallstackFrameSize =
             {
@@ -4123,30 +4076,44 @@ void Worker::TryResolveCallStackIfNeeded(CallstackFrameId frameId)
             };
 
             m_pendingCallstackFrames++;
-            ProcessCallstackFrameSize(queueCallstackFrameSize, imageNameIdx);
+            ProcessCallstackFrameSize( queueCallstackFrameSize, imageNameIdx );
 
             // we know that for the best we have inline information
             for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
             {
                 const auto& frame = outCallStack.data[i];
-                ProcessCallstackFrame(frame.line, frame.symAddr, frame.symLen,
-                    StoreString(frame.name).idx, StoreString(frame.file).idx, true);
+                ProcessCallstackFrame( frame.line, frame.symAddr, frame.symLen,
+                    StoreString( frame.name, strlen( frame.name ) ).idx, StoreString( frame.file, strlen( frame.file ) ).idx, true );
 
                 // We copied it, now free the content
-                tracy_free_fast((void*)frame.name);
-                tracy_free_fast((void*)frame.file);
+                tracy_free_fast( (void*)frame.name );
+                tracy_free_fast( (void*)frame.file );
             }
 
-            assert(m_pendingCallstackSubframes == 0);
+            assert( m_pendingCallstackSubframes == 0 );
         }
     }
-    // Fallback to asking the client.
-    // TODO: Only do this if client does not have TRACY_SYMBOL_OFFLINE_RESOLVE
-    if (status != DecodeCallStackPtrStatus::Success)
+
+    switch (status)
     {
+        break;
+    case tracy::DecodeCallStackPtrStatus::ModuleMissing:
+        // TODO: actually only query module info, and then try to resolve again locally.
+        //       Or we could just rely on the user triggering a new symbol resolution manually.
         m_pendingCallstackFrames++;
-        Query(ServerQueryCallstackFrame, symbolAddress);
-        return;
+        Query( ServerQueryCallstackFrame, symbolAddress );
+        break;
+    case tracy::DecodeCallStackPtrStatus::Count:
+        assert( false && "Missing error handling ?" );
+        [[fallthrough]];
+    case tracy::DecodeCallStackPtrStatus::SymbolMissing:
+        // Fallback to asking the client for the symbol since we couldn't find it.
+        m_pendingCallstackFrames++;
+        Query( ServerQueryCallstackFrame, symbolAddress );
+        break;
+    case tracy::DecodeCallStackPtrStatus::Success:
+    default:
+        break;
     }
 }
 
@@ -4178,9 +4145,9 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
         m_data.callstackPayload.push_back( arr );
 
 
-        for (CallstackFrameId frameId : *arr)
+        for ( CallstackFrameId frameId : *arr )
         {
-            TryResolveCallStackIfNeeded(frameId);
+            TryResolveCallStackIfNeeded( frameId );
         }
     }
     else
@@ -4268,7 +4235,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
 
         for( auto& frame : *arr )
         {
-            TryResolveCallStackIfNeeded(frame);
+            TryResolveCallStackIfNeeded( frame );
         }
     }
     else
@@ -4609,16 +4576,18 @@ uint32_t Worker::GetSecondStringIdx()
 
 void Worker::AccessPendingData( uint8_t** ptr, size_t* sz, PacketDataType* type )
 {
-    assert( m_pendingDataPacket.type != PacketDataType::EMPTY && m_pendingDataPacket.data.size() != 0 );
+    assert( m_pendingDataPacket.type != PacketDataType::EMPTY && m_pendingDataPacket.data != nullptr );
 
-    *ptr = m_pendingDataPacket.data.data();
-    *sz = m_pendingDataPacket.data.size();
+    *ptr = m_pendingDataPacket.data;
+    *sz = m_pendingDataPacket.dataSize;
     *type = m_pendingDataPacket.type;
 }
 
 void Worker::FreePendingData()
 {
-    m_pendingDataPacket.data.clear();
+    tracy_free( m_pendingDataPacket.data );
+    m_pendingDataPacket.data = nullptr;
+    m_pendingDataPacket.dataSize = 0;
     m_pendingDataPacket.type = PacketDataType::EMPTY;
 }
 
@@ -4645,18 +4614,10 @@ StringLocation Worker::StoreString( const char* str, size_t sz )
     return ret;
 }
 
-StringLocation Worker::StoreString(const char* str)
-{
-    return StoreString(str, strlen(str));
-}
-
 bool Worker::Process( const QueueItem& ev )
 {
     switch( ev.hdr.type )
     {
-    case QueueType::ModuleUpdate:
-        DispatchImageEntry( ev.imageEntry );
-        break;
     case QueueType::ThreadContext:
         ProcessThreadContext( ev.threadCtx );
         break;
@@ -4950,6 +4911,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::FiberLeave:
         ProcessFiberLeave( ev.fiberLeave );
         break;
+    case QueueType::ModuleUpdate:
+        DispatchImageEntry(ev.imageEntry);
+        break;  
     default:
         assert( false );
         break;
@@ -6710,7 +6674,7 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
     td.ctxSwitchSamples.push_back( sd );
 }
 
-void Worker::ProcessCallstackFrameSize(const QueueCallstackFrameSize& ev, uint32_t imageNameIdx)
+void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev, uint32_t imageNameIdx )
 {
     assert( !m_callstackFrameStaging );
     assert( m_pendingCallstackSubframes == 0 );
@@ -6722,13 +6686,13 @@ void Worker::ProcessCallstackFrameSize(const QueueCallstackFrameSize& ev, uint32
 #endif
 
     // Frames may be duplicated due to recursion
-    auto fmit = m_data.callstackFrameMap.find(PackPointer(ev.ptr));
-    if (fmit == m_data.callstackFrameMap.end())
+    auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
+    if( fmit == m_data.callstackFrameMap.end() )
     {
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
         m_callstackFrameStaging->size = ev.size;
-        m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>(ev.size);
-        m_callstackFrameStaging->imageName = StringIdx(imageNameIdx);
+        m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>( ev.size );
+        m_callstackFrameStaging->imageName = StringIdx( imageNameIdx );
 
         m_callstackFrameStagingPtr = ev.ptr;
     }
@@ -6736,18 +6700,18 @@ void Worker::ProcessCallstackFrameSize(const QueueCallstackFrameSize& ev, uint32
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
 {
-    ProcessCallstackFrameSize(ev, GetSingleStringIdx());
+    ProcessCallstackFrameSize( ev, GetSingleStringIdx() );
 }
 
-void Worker::ProcessCallstackFrame(const QueueCallstackFrame& ev, bool querySymbols)
+void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols )
 {
     const uint32_t nitidx = GetSingleStringIdx();
     const uint32_t fitidx = GetSecondStringIdx();
 
-    ProcessCallstackFrame(ev.line, ev.symAddr, ev.symLen, nitidx, fitidx, querySymbols);
+    ProcessCallstackFrame( ev.line, ev.symAddr, ev.symLen, nitidx, fitidx, querySymbols );
 }
 
-void Worker::ProcessCallstackFrame(uint32_t line, uint64_t symAddr, uint32_t symLen, uint32_t nitidx, uint32_t fitidx, bool querySymbols)
+void Worker::ProcessCallstackFrame( uint32_t line, uint64_t symAddr, uint32_t symLen, uint32_t nitidx, uint32_t fitidx, bool querySymbols )
 {
     assert( m_pendingCallstackSubframes > 0 );
 
@@ -8611,64 +8575,48 @@ void Worker::Write( FileWrite& f, bool fiDict )
 
 
 
-    auto SerializeDebugModuleField = [&](const DegugModuleField& debugField)
+    auto SerializeDebugModuleField = [&]( const ImageDebugInfo& debugField )
         {
-            f.Write(&debugField.debugFormat, sizeof(debugField.debugFormat));
-            if (debugField.debugFormat == DebugFormat::NoDebugFormat)
+            f.Write( &debugField.debugFormat, sizeof( debugField.debugFormat ) );
+            if( debugField.debugFormat == ImageDebugFormat::NoDebugFormat )
                return;
            
-
-            f.Write(&debugField.debugDataSize, sizeof(debugField.debugDataSize));
-            f.Write(debugField.debugData, debugField.debugDataSize);
-
+            f.Write( &debugField.debugDataSize, sizeof( debugField.debugDataSize ) );
+            f.Write( debugField.debugData, debugField.debugDataSize );
         };
 
-    auto SerializeString = [&](const char* s)
+    auto SerializeString = [&]( const char* s )
         {
-           int sLenght = s != nullptr ? strlen(s) + 1 : -1;
-           f.Write(&sLenght, sizeof(sLenght));
+           int sLength = s != nullptr ? strlen( s ) + 1 : -1;
+           f.Write( &sLength, sizeof( sLength ) );
 
-            if (sLenght == -1)
+            if ( sLength == -1 )
                 return;
            
-            f.Write(s, sLenght);
+            f.Write( s, sLength );
         };
 
-	const FastVector<ImageEntry>* userlandImages = GetUserImageInfos();
-    uint32_t moduleCount = static_cast<uint32_t>(userlandImages ? userlandImages->size() : 0);
-	f.Write(&moduleCount, sizeof(moduleCount));
-    
-    if (userlandImages)
-    {
-        for (const ImageEntry& moduleCacheEntry : *userlandImages)
+    auto SerializeImageEntries = [&]( const FastVector<ImageEntry>* imagesEntries )
         {
-            f.Write(&moduleCacheEntry.start, sizeof(moduleCacheEntry.start));
-            f.Write(&moduleCacheEntry.end, sizeof(moduleCacheEntry.end));
+            uint32_t moduleCount = static_cast<uint32_t>( imagesEntries ? imagesEntries->size() : 0 );
+            f.Write( &moduleCount, sizeof( moduleCount ) );
 
-            SerializeString(moduleCacheEntry.name);
-            SerializeString(moduleCacheEntry.path);
+            if( imagesEntries )
+            {
+                for (const auto& m : *imagesEntries)
+                {
+                    f.Write( &m.start, sizeof( m.start ) );
+                    f.Write( &m.end, sizeof( m.end ) );
+                    SerializeString( m.name );
+                    SerializeString( m.path );
 
-            SerializeDebugModuleField(moduleCacheEntry.degugModuleField);
-        }
-    }
+                    SerializeDebugModuleField( m.imageDebugInfo );
+                }
+            }
+        };
 
-	const FastVector<ImageEntry>* kernelImages = GetKernelImageInfos();
-    moduleCount = static_cast<uint32_t>(kernelImages ? kernelImages->size() : 0);
-	f.Write(&moduleCount, sizeof(moduleCount));
-    
-    if (kernelImages)
-    {
-        for (const ImageEntry& it : *kernelImages)
-        {
-            f.Write(&it.start, sizeof(it.start));
-            assert(it.end == 0 && "kernel end should be zero");
-
-            SerializeString(it.name);
-            SerializeString(it.path);
-
-            SerializeDebugModuleField(it.degugModuleField);
-        }
-    }
+    SerializeImageEntries( GetUserImageInfos() );
+    SerializeImageEntries( GetKernelImageInfos() );
     
 }
 
@@ -8933,29 +8881,29 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
         ptrToData += sizeof( baseAddress );
 
         uint64_t end = MemRead<uint64_t>(ptrToData);
-        ptrToData += sizeof(end);
+        ptrToData += sizeof( end );
 
         uint32_t moduleNameSize = MemRead<uint32_t>( ptrToData );
-        ptrToData += sizeof(moduleNameSize);
+        ptrToData += sizeof( moduleNameSize );
 
-        assert((char)(ptrToData[moduleNameSize - 1]) == '\0' && "missing end of string");
-        char* moduleName = (char*)tracy_malloc_fast(moduleNameSize);
-        memcpy(moduleName, ptrToData, moduleNameSize);
+        assert( (char)(ptrToData[moduleNameSize - 1]) == '\0' && "missing end of string" );
+        char* moduleName = (char*)tracy_malloc_fast( moduleNameSize );
+        memcpy( moduleName, ptrToData, moduleNameSize );
         ptrToData += moduleNameSize;
-        StringLocation moduleNameStringLocation = StoreString(moduleName);
+        StringLocation moduleNameStringLocation = StoreString( moduleName, strlen( moduleName ) );
 
-        uint32_t modulePathSize = MemRead<uint32_t>(ptrToData);
+        uint32_t modulePathSize = MemRead<uint32_t>( ptrToData );
         ptrToData += sizeof(modulePathSize);
 
-        assert((char)(ptrToData[modulePathSize - 1]) == '\0' && "missing end of string");
-        char* modulePath = (char*)tracy_malloc_fast(modulePathSize);
+        assert( (char)(ptrToData[modulePathSize - 1]) == '\0' && "missing end of string" );
+        char* modulePath = (char*)tracy_malloc_fast( modulePathSize );
         memcpy( modulePath, ptrToData, modulePathSize );
         ptrToData += modulePathSize;
-        StringLocation modulePathStringLocation = StoreString(modulePath);
+        StringLocation modulePathStringLocation = StoreString( modulePath , strlen( modulePath ));
 
 
-        DebugFormat debugFormat = MemRead<DebugFormat>( ptrToData );
-        ptrToData += sizeof( DebugFormat );
+        ImageDebugFormat debugFormat = MemRead<ImageDebugFormat>( ptrToData );
+        ptrToData += sizeof( ImageDebugFormat );
 
         ImageEntry moduleCacheEntry =
         {
@@ -8964,27 +8912,27 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
             .name = moduleName,
             .path = modulePath,
         };
-        moduleCacheEntry.degugModuleField.debugFormat = debugFormat;
+        moduleCacheEntry.imageDebugInfo.debugFormat = debugFormat;
 
-        if (debugFormat != DebugFormat::NoDebugFormat)
+        if ( debugFormat != ImageDebugFormat::NoDebugFormat )
         {
 
             uint32_t debugFormatSize = MemRead<uint32_t>( ptrToData );
             ptrToData += sizeof( debugFormatSize );
 
-            uint8_t* debugData = (uint8_t*)tracy_malloc(debugFormatSize);
-            memcpy(debugData, ptrToData, debugFormatSize );
+            uint8_t* debugData = (uint8_t*)tracy_malloc( debugFormatSize );
+            memcpy( debugData, ptrToData, debugFormatSize );
             ptrToData += debugFormatSize;
 
-            DegugModuleField& degugModuleField = moduleCacheEntry.degugModuleField;
+            ImageDebugInfo& imageDebugInfo = moduleCacheEntry.imageDebugInfo;
 
-            degugModuleField.debugData = debugData;
-            degugModuleField.debugDataSize = debugFormatSize;
+            imageDebugInfo.debugData = debugData;
+            imageDebugInfo.debugDataSize = debugFormatSize;
 
         }
 
-        if (m_symbolConfig.m_attemptResolutionByWorker)
-            CacheModuleAndLoadExternal(moduleCacheEntry);
+        if( m_symbolConfig.m_attemptResolutionByWorker )
+            CacheModuleAndLoadExternal( moduleCacheEntry );
 
         break;
     }
@@ -8994,6 +8942,5 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
 
     FreePendingData();
 }
-
 
 }

@@ -53,7 +53,12 @@ enum struct DecodeCallStackPtrStatus
     Count
 };
 
-enum struct DebugFormat : uint8_t;
+enum struct ImageDebugFormat : uint8_t
+{
+    NoDebugFormat,
+    PdbDebugFormat,
+    DwarfDebugFormat,
+};
 
 struct CallstackSymbolData
 {
@@ -79,9 +84,9 @@ struct CallstackEntryData
     const char* imageName;
 };
 
-struct DegugModuleField
+struct ImageDebugInfo
 {
-    DebugFormat debugFormat;
+    ImageDebugFormat debugFormat;
     uint8_t* debugData;
     uint32_t debugDataSize;
 };
@@ -93,7 +98,7 @@ struct ImageEntry
     char* name;
     char* path;
  
-    DegugModuleField degugModuleField;
+    ImageDebugInfo imageDebugInfo;
 };
 
 
@@ -102,24 +107,19 @@ std::recursive_mutex& GetModuleCacheMutexForRead();
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
-CallstackEntryData DecodeCallstackPtr( uint64_t ptr , DecodeCallStackPtrStatus* _decodeCallStackPtrStatus);
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr , DecodeCallStackPtrStatus* _decodeCallStackPtrStatus );
 
 
 void InitCallstack();
 void InitCallstackCritical();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
-void FindModuleFromAddr(uint64_t addr, const ImageEntry** outModule);
-void FindKernelDriverFromAddr(uint64_t addr, const ImageEntry** outDrive);
 
 
 void CacheModuleAndLoadExternal(ImageEntry& moduleCacheEntry);
 const FastVector<ImageEntry>* GetUserImageInfos();
 const FastVector<ImageEntry>* GetKernelImageInfos();
 
-
-//
-//void AddModuleToCache()
 
 #ifdef TRACY_DEBUGINFOD
 const uint8_t* GetBuildIdForImage( const char* image, size_t& size );

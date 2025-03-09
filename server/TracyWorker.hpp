@@ -438,7 +438,8 @@ private:
     struct PendingDataPacket
     {
         PacketDataType type;
-        std::vector<uint8_t> data;
+        size_t dataSize;
+        uint8_t* data;
     };
 
 public:
@@ -568,7 +569,6 @@ public:
     const char* GetSymbolCode( uint64_t sym, uint32_t& len ) const;
     uint64_t GetSymbolForAddress( uint64_t address );
     uint64_t GetSymbolForAddress( uint64_t address, uint32_t& offset );
-    SymbolLocation GetSymbolLocFromSysAdrees( uint64_t address);
 
     uint64_t GetInlineSymbolForAddress( uint64_t address ) const;
     bool HasInlineSymbolAddresses() const { return !m_data.codeSymbolMap.empty(); }
@@ -695,7 +695,6 @@ public:
     void CacheSourceFiles();
 
     StringLocation StoreString(const char* str, size_t sz);
-    StringLocation StoreString(const char* str);
 
     std::vector<uint32_t>& GetPendingThreadHints() { return m_pendingThreadHints; }
     void ClearPendingThreadHints() { m_pendingThreadHints.clear(); }
@@ -773,7 +772,7 @@ private:
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev );
-    tracy_force_inline void ProcessCallstackFrameSize(const QueueCallstackFrameSize& ev, uint32_t imageNameIdx);
+    tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev, uint32_t imageNameIdx );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols );
     tracy_force_inline void ProcessCallstackFrame(uint32_t line, uint64_t symAddr, uint32_t symLen, uint32_t nitidx, uint32_t fitidx, bool querySymbols);
@@ -910,14 +909,14 @@ private:
     void AddSingleString( const char* str, size_t sz );
     void AddSingleStringFailure( const char* str, size_t sz );
     void AddSecondString( const char* str, size_t sz );
-    void AddDataPacket( const void* data, size_t size , PacketDataType dataType);
+    void AddDataPacket( const void* data, size_t size , PacketDataType dataType );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( const char* data, size_t sz );
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
     void AddSourceCode( uint32_t id, const char* data, size_t sz );
 
-    void TryResolveCallStackIfNeeded(CallstackFrameId frameId);
+    void TryResolveCallStackIfNeeded( CallstackFrameId frameId );
     tracy_force_inline void AddCallstackPayload( const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( const char* data );
     uint32_t MergeCallstacks( uint32_t first, uint32_t second );

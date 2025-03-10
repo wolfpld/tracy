@@ -916,7 +916,7 @@ private:
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
     void AddSourceCode( uint32_t id, const char* data, size_t sz );
 
-    void TryResolveCallStackIfNeeded( CallstackFrameId frameId );
+    void TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySymbols = true );
     tracy_force_inline void AddCallstackPayload( const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( const char* data );
     uint32_t MergeCallstacks( uint32_t first, uint32_t second );

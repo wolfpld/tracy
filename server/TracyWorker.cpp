@@ -4048,7 +4048,7 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
-void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId )
+void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySymbols )
 {
     // If we already have the information
     if (m_data.callstackFrameMap.count( frameId ) != 0)
@@ -4076,12 +4076,11 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId )
             m_pendingCallstackFrames++;
             ProcessCallstackFrameSize( queueCallstackFrameSize, imageNameIdx );
 
-            // we know that for the best we have inline information
             for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
             {
                 const auto& frame = outCallStack.data[i];
                 ProcessCallstackFrame( frame.line, frame.symAddr, frame.symLen,
-                    StoreString( frame.name, strlen( frame.name ) ).idx, StoreString( frame.file, strlen( frame.file ) ).idx, true );
+                    StoreString( frame.name, strlen( frame.name ) ).idx, StoreString( frame.file, strlen( frame.file ) ).idx, querySymbols );
 
                 // We copied it, now free the content
                 tracy_free_fast( (void*)frame.name );
@@ -4091,27 +4090,34 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId )
             assert( m_pendingCallstackSubframes == 0 );
         }
     }
-
-    switch (status)
+    else
     {
-        break;
-    case tracy::DecodeCallStackPtrStatus::ModuleMissing:
-        // TODO: actually only query module info, and then try to resolve again locally.
-        //       Or we could just rely on the user triggering a new symbol resolution manually.
-        m_pendingCallstackFrames++;
-        Query( ServerQueryCallstackFrame, symbolAddress );
-        break;
-    case tracy::DecodeCallStackPtrStatus::Count:
-        assert( false && "Missing error handling ?" );
-        [[fallthrough]];
-    case tracy::DecodeCallStackPtrStatus::SymbolMissing:
-        // Fallback to asking the client for the symbol since we couldn't find it.
-        m_pendingCallstackFrames++;
-        Query( ServerQueryCallstackFrame, symbolAddress );
-        break;
-    case tracy::DecodeCallStackPtrStatus::Success:
-    default:
-        break;
+        status = DecodeCallStackPtrStatus::SymbolMissing;
+    }
+
+    if(querySymbols)
+    {
+        switch (status)
+        {
+            break;
+        case DecodeCallStackPtrStatus::ModuleMissing:
+            // TODO: actually only query module info, and then try to resolve again locally.
+            //       Or we could just rely on the user triggering a new symbol resolution manually.
+            m_pendingCallstackFrames++;
+            Query( ServerQueryCallstackFrame, symbolAddress );
+            break;
+        case DecodeCallStackPtrStatus::Count:
+            assert( false && "Missing error handling ?" );
+            [[fallthrough]];
+        case DecodeCallStackPtrStatus::SymbolMissing:
+            // Fallback to asking the client for the symbol since we couldn't find it.
+            m_pendingCallstackFrames++;
+            Query( ServerQueryCallstackFrame, symbolAddress );
+            break;
+        case tracy::DecodeCallStackPtrStatus::Success:
+        default:
+            break;
+        }
     }
 }
 

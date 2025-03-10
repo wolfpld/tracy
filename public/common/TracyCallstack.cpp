@@ -1106,7 +1106,20 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
     if( symValid ) *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
-    else *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::SymbolMissing;
+    else {
+        *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::SymbolMissing;
+#ifdef TRACY_VERBOSE
+        static bool doOnce = true;
+        if(doOnce)
+        {
+            if( GetModuleHandleA( "symsrv.dll" ) == NULL )
+            {
+                TracyDebug( "symsrv.dll was not loaded. Symbol resolution may fail.\n" );
+            }
+            doOnce = false;
+        }
+#endif
+    }
 
 
     IMAGEHLP_LINE64 line;

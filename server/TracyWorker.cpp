@@ -1702,8 +1702,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
                 DeserializeDebugField( &imageEntry.imageDebugInfo );
 
-                if( m_symbolConfig.m_attemptResolutionByWorker )
-                    CacheModuleAndLoadExternal( imageEntry );
+                CacheImageAndLoadDebugInfo( imageEntry, m_symbolConfig.m_attemptResolutionByWorker );
             }
         };
 
@@ -8930,8 +8929,7 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
 
         }
 
-        if( m_symbolConfig.m_attemptResolutionByWorker )
-            CacheModuleAndLoadExternal( moduleCacheEntry );
+        CacheImageAndLoadDebugInfo( moduleCacheEntry, m_symbolConfig.m_attemptResolutionByWorker );
 
         break;
     }

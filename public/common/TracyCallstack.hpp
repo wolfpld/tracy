@@ -115,8 +115,7 @@ void InitCallstackCritical();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
 
-
-void CacheModuleAndLoadExternal(ImageEntry& moduleCacheEntry);
+void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo );
 const FastVector<ImageEntry>* GetUserImageInfos();
 const FastVector<ImageEntry>* GetKernelImageInfos();
 

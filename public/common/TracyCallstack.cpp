@@ -947,7 +947,7 @@ bool LoadFromPdb( const char* moduleName, uint64_t baseAddress, uint64_t dllSize
 }
 
 // Called from the profiler (server) only, we received data from the client.
-void CacheModuleAndLoadExternal( ImageEntry& imageEntry )
+void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo )
 {
     if ( IsKernelAddress( imageEntry.start ) )
     {
@@ -1195,7 +1195,7 @@ int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
 
-void CacheModuleAndLoadExternal( ImageEntry& ImageEntry ) {}
+void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo ) {}
 
 #ifdef TRACY_DEBUGINFOD
 debuginfod_client* s_debuginfod;
@@ -1733,7 +1733,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
 #elif TRACY_HAS_CALLSTACK == 5
 
-void CacheModuleAndLoadExternal( ImageEntry& ImageEntry ) {}
+void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo ) {}
 
 void InitCallstackCritical()
 {

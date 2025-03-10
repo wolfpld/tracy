@@ -5223,6 +5223,53 @@ void Worker::SourceLocationOverflowFailure()
     m_failure = Failure::SourceLocationOverflow;
 }
 
+void Worker::ResolveSymbolLocal()
+{
+    const char * unresolvedStr = "[unresolved]";
+    StringIdx unresolvedStrIdx = StoreString(unresolvedStr, strlen(unresolvedStr) ).idx;
+
+    if(!m_symbolConfig.m_attemptResolutionByWorker)
+    {
+        // TODO: Load debug info.
+    }
+    
+    for (auto& it : m_data.callstackFrameMap)
+    {
+        CallstackFrameData& toResolveData = *it.second;
+        if(toResolveData.data[0].name.Idx() == unresolvedStrIdx.Idx())
+        {            
+            uint64_t symbolAddress = GetCanonicalPointer( it.first );
+            DecodeCallStackPtrStatus status;
+            CallstackEntryData outCallStack = DecodeCallstackPtr( symbolAddress, &status );
+            if ( status == DecodeCallStackPtrStatus::Success )
+            {
+                assert( outCallStack.size <= 255 );
+                assert( toResolveData.imageName.Idx() == StoreString( outCallStack.imageName, strlen(outCallStack.imageName)).idx);
+                if( toResolveData.size != outCallStack.size )
+                {
+                    // We're "leaking" the unresolved data until slab is reset
+                    toResolveData.data = m_slab.Alloc<CallstackFrame>( outCallStack.size );
+                }
+
+                for( size_t idx=0; idx<outCallStack.size ; idx++ )
+                {
+                    const auto& frameData = outCallStack.data[idx];
+                    toResolveData.data[idx].name = StoreString( frameData.name, strlen(frameData.name) ).idx;
+                    toResolveData.data[idx].file = StoreString( frameData.file, strlen(frameData.file) ).idx;
+                    toResolveData.data[idx].line = frameData.line;
+                    toResolveData.data[idx].symAddr = frameData.symAddr;
+
+                    // TODO: source code / binary.
+
+                    // We copied it, now free the content
+                    tracy_free_fast( (void*)frameData.name );
+                    tracy_free_fast( (void*)frameData.file );
+                }
+            }
+        }
+    }
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = GetCurrentThreadData();

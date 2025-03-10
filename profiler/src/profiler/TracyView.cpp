@@ -913,6 +913,18 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
     ImGui::SameLine();
+
+    if( m_filename.empty() ) // Can't modify when loading from file
+    {
+        ImGui::SameLine();
+        if (ImGui::Button( ICON_FA_USER_SECRET " Resolve Symbols"))
+        {
+            // TODO: Make it async ?
+            m_worker.ResolveSymbolLocally();        
+        }
+     
+    }
+
     if( ImGui::Button( ICON_FA_SCREWDRIVER_WRENCH ) ) ImGui::OpenPopup( "ToolsPopup" );
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {

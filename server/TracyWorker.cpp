@@ -283,6 +283,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
 {
+    InitCallstack();
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -324,6 +325,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
+    InitCallstack();
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -568,6 +570,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
     , m_allowStringModification( allowStringModification )
     , m_symbolConfig( symbolResConfig )
 {
+    InitCallstack();
     auto loadStart = std::chrono::high_resolution_clock::now();
 
     int fileVer = 0;
@@ -1962,6 +1965,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
 Worker::~Worker()
 {
+    EndCallstack();
     Shutdown();
 
     if( m_threadNet.joinable() ) m_threadNet.join();
@@ -2779,8 +2783,6 @@ void Worker::Exec()
     switch( handshake )
     {
     case HandshakeWelcome:
-
-        InitCallstack();
         break;
     case HandshakeProtocolMismatch:
     case HandshakeNotAvailable:
@@ -2985,9 +2987,6 @@ void Worker::Exec()
     }
 
 close:
-
-    EndCallstack();
-
     Shutdown();
     m_netWriteCv.notify_one();
     m_sock.Close();

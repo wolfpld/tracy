@@ -316,8 +316,16 @@ public:
     {
         if( !m_active ) return;
 
-        auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-        WriteQueueItem(item, QueueType::GpuZoneBeginCallstackSerial, reinterpret_cast<uint64_t>(srcloc));
+        if( depth > 0 && has_callstack() )
+        {
+            auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
+            WriteQueueItem(item, QueueType::GpuZoneBeginCallstackSerial, reinterpret_cast<uint64_t>(srcloc));
+        }
+        else
+        {
+            auto* item = Profiler::QueueSerial();
+            WriteQueueItem(item, QueueType::GpuZoneBeginSerial, reinterpret_cast<uint64_t>(srcloc));
+        }
     }
 
     tracy_force_inline D3D11ZoneScope(D3D11Ctx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool active)
@@ -338,8 +346,16 @@ public:
 
         const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
 
-        auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-        WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial, sourceLocation);
+        if ( depth > 0 && has_callstack() )
+        {
+            auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
+            WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial, sourceLocation);
+        }
+        else
+        {
+            auto* item = Profiler::QueueSerial();
+            WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocSerial, sourceLocation);
+        }
     }
 
     tracy_force_inline ~D3D11ZoneScope()

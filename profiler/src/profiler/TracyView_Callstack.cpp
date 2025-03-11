@@ -37,7 +37,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
             auto frameData = m_worker.GetCallstackFrame( entry );
             if( !frameData )
             {
-                sprintf( buf, "%3i. %p\n", fidx++, (void*)m_worker.GetCanonicalPointer( entry ) );
+                snprintf( buf, sizeof(buf), "%3i. %p\n", fidx++, (void*)m_worker.GetCanonicalPointer( entry ) );
             }
             else
             {
@@ -66,29 +66,29 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
 
                     if( f == fsz-1 )
                     {
-                        ptr += sprintf( ptr, "%3i. ", fidx++ );
+                        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "%3i. ", fidx++ );
                     }
                     else
                     {
-                        ptr += sprintf( ptr, "inl. " );
+                        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "inl. " );
                     }
-                    ptr += sprintf( ptr, "%s  ", txt );
+                    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "%s  ", txt );
                     txt = m_worker.GetString( frame.file );
                     if( frame.line == 0 )
                     {
-                        ptr += sprintf( ptr, "(%s)", txt );
+                        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "(%s)", txt );
                     }
                     else
                     {
-                        ptr += sprintf( ptr, "(%s:%" PRIu32 ")", txt, frame.line );
+                        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "(%s:%" PRIu32 ")", txt, frame.line );
                     }
                     if( frameData->imageName.Active() )
                     {
-                        ptr += sprintf( ptr, " %s\n", m_worker.GetString( frameData->imageName ) );
+                        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), " %s\n", m_worker.GetString( frameData->imageName ) );
                     }
                     else
                     {
-                        ptr += sprintf( ptr, "\n" );
+                        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "\n" );
                     }
                 }
             }
@@ -166,7 +166,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 ImGui::Text( "%i", fidx++ );
                 ImGui::TableNextColumn();
                 char buf[32];
-                sprintf( buf, "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
+                snprintf( buf, sizeof(buf), "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
                 ImGui::TextUnformatted( buf );
                 if( ImGui::IsItemClicked() )
                 {
@@ -294,7 +294,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                             if( ImGui::IsItemClicked() )
                             {
                                 char tmp[32];
-                                sprintf( tmp, "0x%" PRIx64, addr );
+                                snprintf( tmp, sizeof(tmp), "0x%" PRIx64, addr );
                                 ImGui::SetClipboardText( tmp );
                             }
                         }
@@ -310,7 +310,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                             if( ImGui::IsItemClicked() )
                             {
                                 char tmp[32];
-                                sprintf( tmp, "0x%" PRIx64, frame.symAddr );
+                                snprintf( tmp, sizeof(tmp), "0x%" PRIx64, frame.symAddr );
                                 ImGui::SetClipboardText( tmp );
                             }
                         }

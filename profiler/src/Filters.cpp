@@ -77,7 +77,7 @@ bool Filters::FailPort( uint16_t port )
 {
     if( !m_portFilter.IsActive() ) return false;
     char buf[32];
-    sprintf( buf, "%" PRIu16, port );
+    snprintf( buf, sizeof(buf), "%" PRIu16, port );
     return !m_portFilter.PassFilter( buf );
 }
 

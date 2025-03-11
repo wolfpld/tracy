@@ -343,16 +343,16 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
             auto& topo = m_worker.GetCpuTopology();
             if( topo.size() > 1 )
             {
-                sprintf( buf, "[%i:%i:%i] CPU %i", tt->package, tt->die, tt->core, i );
+                snprintf( buf, sizeof(buf), "[%i:%i:%i] CPU %i", tt->package, tt->die, tt->core, i );
             }
             else
             {
-                sprintf( buf, "[%i:%i] CPU %i", tt->die, tt->core, i );
+                snprintf( buf, sizeof(buf), "[%i:%i] CPU %i", tt->die, tt->core, i );
             }
         }
         else
         {
-            sprintf( buf, "CPU %i", i );
+            snprintf( buf, sizeof(buf), "CPU %i", i );
         }
         const auto txtx = ImGui::CalcTextSize( buf ).x;
         DrawTextSuperContrast( draw, wpos + ImVec2( ty, offset-1 ), 0xFFDD88DD, buf );

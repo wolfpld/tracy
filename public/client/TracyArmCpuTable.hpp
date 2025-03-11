@@ -29,7 +29,7 @@ static const char* DecodeArmImplementer( uint32_t v )
     case 0xc0: return "Ampere Computing";
     default: break;
     }
-    sprintf( buf, "0x%x", v );
+    snprintf( buf, sizeof(buf), "0x%x", v );
     return buf;
 }
 
@@ -249,7 +249,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         }
     default: break;
     }
-    sprintf( buf, " 0x%x", part );
+    snprintf( buf, sizeof(buf), " 0x%x", part );
     return buf;
 }
 

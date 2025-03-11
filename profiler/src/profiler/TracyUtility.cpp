@@ -175,10 +175,10 @@ const char* FormatPlotValue( double val, PlotValueFormatting format )
         return MemSizeToString( val );
         break;
     case PlotValueFormatting::Percentage:
-        sprintf( buf, "%.2f%%", val );
+        snprintf( buf, sizeof(buf), "%.2f%%", val );
         break;
     case PlotValueFormatting::Watt:
-        sprintf( buf, "%s W", RealToString( val ) );
+        snprintf( buf, sizeof(buf), "%s W", RealToString( val ) );
         break;
     default:
         assert( false );

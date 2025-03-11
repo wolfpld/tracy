@@ -460,7 +460,7 @@ bool View::Draw()
                             ImGui::Text( "%i", fidx++ );
                             ImGui::TableNextColumn();
                             char buf[32];
-                            sprintf( buf, "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
+                            snprintf( buf, sizeof(buf), "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
                             ImGui::TextUnformatted( buf );
                             if( ImGui::IsItemHovered() )
                             {
@@ -685,7 +685,7 @@ bool View::DrawImpl()
     {
         bool keepOpen = true;
         char tmp[2048];
-        sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
+        snprintf( tmp, sizeof(tmp), "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, &keepOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse );
         ImGui::PushFont( m_bigFont );
         TextCentered( ICON_FA_WIFI );
@@ -721,7 +721,7 @@ bool View::DrawImpl()
         const auto dst = m_dstFileBytes.load( std::memory_order_relaxed );
         m_notificationTime = 4;
         char buf[1024];
-        sprintf( buf, "Trace size %s (%.2f%% ratio)", MemSizeToString( dst ), 100.f * dst / src );
+        snprintf( buf, sizeof(buf), "Trace size %s (%.2f%% ratio)", MemSizeToString( dst ), 100.f * dst / src );
         m_notificationText = buf;
         m_acb();
     }
@@ -805,7 +805,7 @@ bool View::DrawImpl()
     }
 #else
     char tmp[2048];
-    sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
+    snprintf( tmp, sizeof(tmp), "%s###Profiler", m_worker.GetCaptureName().c_str() );
     ImGui::SetNextWindowSize( ImVec2( 1550, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif

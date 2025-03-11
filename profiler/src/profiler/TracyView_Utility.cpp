@@ -785,20 +785,20 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime ) con
     {
         if( i == 0 )
         {
-            sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
+            snprintf( buf, sizeof(buf), "Tracy init (%s)", TimeToString( ftime ) );
         }
         else if( i != 1 || !m_worker.IsOnDemand() )
         {
-            sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
+            snprintf( buf, sizeof(buf), "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
         }
         else
         {
-            sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
+            snprintf( buf, sizeof(buf), "Missed frames (%s)", TimeToString( ftime ) );
         }
     }
     else
     {
-        sprintf( buf, "%s %s (%s)", GetFrameSetName( fd ), RealToString( fnum ), TimeToString( ftime ) );
+        snprintf( buf, sizeof(buf), "%s %s (%s)", GetFrameSetName( fd ), RealToString( fnum ), TimeToString( ftime ) );
     }
     return buf;
 }
@@ -822,7 +822,7 @@ const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
     {
         char* buf = bufpool[bufsel];
         bufsel = ( bufsel + 1 ) % Pool;
-        sprintf( buf, "[%" PRIu32 "] Vsync", uint32_t( fd.name ) );
+        snprintf( buf, sizeof(buf), "[%" PRIu32 "] Vsync", uint32_t( fd.name ) );
         return buf;
     }
     else

@@ -20,11 +20,11 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
     char buf[1024];
     if( lockmap.customName.Active() )
     {
-        sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( lockmap.customName ) );
+        snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", id, m_worker.GetString( lockmap.customName ) );
     }
     else
     {
-        sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
+        snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
     }
     ImGui::PushFont( m_smallFont );
     DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );

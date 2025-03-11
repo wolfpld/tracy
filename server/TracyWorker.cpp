@@ -522,11 +522,11 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             int len;
             if( t.first <= std::numeric_limits<uint32_t>::max() )
             {
-                len = sprintf( buf, "%" PRIu64, t.first );
+                len = snprintf( buf, sizeof(buf), "%" PRIu64, t.first );
             }
             else
             {
-                len = sprintf( buf, "PID %" PRIu64 " TID %" PRIu64, t.first >> 32, t.first & 0xFFFFFFFF );
+                len = snprintf( buf, sizeof(buf), "PID %" PRIu64 " TID %" PRIu64, t.first >> 32, t.first & 0xFFFFFFFF );
             }
             AddThreadString( t.first, buf, len );
         }
@@ -807,7 +807,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         s_loadProgress.total.store( 0, std::memory_order_relaxed );
         char buf[256];
-        sprintf( buf, "Too many static source locations (%s)", RealToString( sz ) );
+        snprintf( buf, sizeof(buf), "Too many static source locations (%s)", RealToString( sz ) );
         throw LoadFailure( buf );
     }
     for( uint64_t i=0; i<sz; i++ )
@@ -830,7 +830,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         s_loadProgress.total.store( 0, std::memory_order_relaxed );
         char buf[256];
-        sprintf( buf, "Too many dynamic source locations (%s)", RealToString( sz ) );
+        snprintf( buf, sizeof(buf), "Too many dynamic source locations (%s)", RealToString( sz ) );
         throw LoadFailure( buf );
     }
     m_data.sourceLocationPayload.reserve_exact( sz, m_slab );
@@ -2762,7 +2762,7 @@ void Worker::Exec()
         auto lt = localtime( &date );
         strftime( dtmp, 64, "%F %T", lt );
         char tmp[1024];
-        sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
+        snprintf( tmp, sizeof(tmp), "%s @ %s", welcome.programName, dtmp );
         m_captureName = tmp;
 
         m_hostInfo = welcome.hostInfo;
@@ -4970,11 +4970,11 @@ void Worker::ZoneValueFailure( uint64_t thread, uint64_t value )
     char buf[128];
     if( (int64_t)value < 0 )
     {
-        sprintf( buf, "Zone value was: %" PRIu64 " (unsigned), %" PRIi64 " (signed)", value, (int64_t)value );
+        snprintf( buf, sizeof(buf), "Zone value was: %" PRIu64 " (unsigned), %" PRIi64 " (signed)", value, (int64_t)value );
     }
     else
     {
-        sprintf( buf, "Zone value was: %" PRIu64, value );
+        snprintf( buf, sizeof(buf), "Zone value was: %" PRIu64, value );
     }
 
     m_failure = Failure::ZoneValue;
@@ -5309,7 +5309,7 @@ void Worker::ProcessZoneColor( const QueueZoneColor& ev )
 void Worker::ProcessZoneValue( const QueueZoneValue& ev )
 {
     char tmp[32];
-    const auto tsz = sprintf( tmp, "%" PRIu64 " [0x%" PRIx64 "]", ev.value, ev.value );
+    const auto tsz = snprintf( tmp, sizeof(tmp), "%" PRIu64 " [0x%" PRIx64 "]", ev.value, ev.value );
 
     auto td = RetrieveThread( m_threadCtx );
     if( !td )

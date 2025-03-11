@@ -362,7 +362,7 @@ const char* MemSizeToString( int64_t val )
 
     if( aval < 10000ll )
     {
-        sprintf( buf, "%" PRIi64 " bytes", val );
+        snprintf( buf, sizeof(bufpool[0]), "%" PRIi64 " bytes", val );
         return buf;
     }
 
@@ -436,7 +436,7 @@ const char* LocationToString( const char* fn, uint32_t line )
     char* buf = bufpool[bufsel];
     bufsel = ( bufsel + 1 ) % Pool;
 
-    sprintf( buf, "%s:%i", fn, line );
+    snprintf( buf, sizeof(bufpool[0]), "%s:%i", fn, line );
     return buf;
 }
 

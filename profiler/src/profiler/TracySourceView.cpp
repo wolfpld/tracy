@@ -973,7 +973,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 if( sit == m_sourceFiles.end() ) m_sourceFiles.emplace( idx, srcline );
             }
             char tmp[16];
-            sprintf( tmp, "%" PRIu32, mLineMax );
+            snprintf( tmp, sizeof(tmp), "%" PRIu32, mLineMax );
             m_maxLine = strlen( tmp ) + 1;
         }
         cs_free( insn, cnt );
@@ -1197,7 +1197,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         else
         {
             char tmp[16];
-            sprintf( tmp, "0x%" PRIx64, m_baseAddr );
+            snprintf( tmp, sizeof(tmp), "0x%" PRIx64, m_baseAddr );
             TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", tmp );
         }
     }
@@ -2107,13 +2107,13 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         const auto ts = ImGui::CalcTextSize( " " ).x;
         const auto lineCount = lines.size();
         char buf[32];
-        sprintf( buf, "%zu", lineCount );
+        snprintf( buf, sizeof(buf), "%zu", lineCount );
         const auto maxLine = strlen( buf );
         auto lx = ts * maxLine + ty + round( ts*0.4f );
         if( as.ipTotalSrc.local + as.ipTotalSrc.ext != 0 ) lx += ts * 7 + ty;
         if( !m_asm.empty() )
         {
-            sprintf( buf, "%zu", m_asm.size() );
+            snprintf( buf, sizeof(buf), "%zu", m_asm.size() );
             const auto maxAsm = strlen( buf ) + 1;
             lx += ts * maxAsm + ty;
         }
@@ -2509,10 +2509,10 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
     int maxAddrLenRel;
     {
         char tmp[32], tmp2[32];
-        sprintf( tmp, "%" PRIx64, m_baseAddr + m_codeLen );
+        snprintf( tmp, sizeof(tmp), "%" PRIx64, m_baseAddr + m_codeLen );
         maxAddrLen = strlen( tmp );
-        sprintf( tmp, "%zu", m_asm.size() );
-        sprintf( tmp2, "+%" PRIu32, m_codeLen );
+        snprintf( tmp, sizeof(tmp), "%zu", m_asm.size() );
+        snprintf( tmp2, sizeof(tmp2), "+%" PRIu32, m_codeLen );
         maxAddrLenRel = std::max( strlen( tmp ) + 3, strlen( tmp2 ) );      // +3: [-123]
     }
 
@@ -2605,14 +2605,14 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         UnsetFont();
                         ImGui::BeginTooltip();
                         char tmp[32];
-                        sprintf( tmp, "+%" PRIu64, v.first - m_baseAddr );
+                        snprintf( tmp, sizeof(tmp), "+%" PRIu64, v.first - m_baseAddr );
                         TextFocused( "Jump target:", tmp );
                         ImGui::SameLine();
-                        sprintf( tmp, "(0x%" PRIx64 ")", v.first );
+                        snprintf( tmp, sizeof(tmp), "(0x%" PRIx64 ")", v.first );
                         TextDisabledUnformatted( tmp );
                         auto lit = m_locMap.find( v.first );
                         assert( lit != m_locMap.end() );
-                        sprintf( tmp, ".L%" PRIu32, lit->second );
+                        snprintf( tmp, sizeof(tmp), ".L%" PRIu32, lit->second );
                         TextFocused( "Jump label:", tmp );
                         uint32_t srcline;
                         const auto srcidx = worker.GetLocationForAddress( v.first, srcline );
@@ -2771,7 +2771,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         SmallColorBox( 0 );
                         ImGui::SameLine();
                         char buf[32];
-                        sprintf( buf, "0x%" PRIx64, src );
+                        snprintf( buf, sizeof(buf), "0x%" PRIx64, src );
                         if( ImGui::MenuItem( buf ) )
                         {
                             m_targetAddr = src;
@@ -3447,9 +3447,9 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     {
         char tmp[32], buf[32];
         const auto lineCount = m_source.get().size();
-        sprintf( tmp, "%zu", lineCount );
+        snprintf( tmp, sizeof(tmp), "%zu", lineCount );
         const auto maxLine = strlen( tmp );
-        sprintf( tmp, "%i", lineNum );
+        snprintf( tmp, sizeof(tmp), "%i", lineNum );
         const auto linesz = strlen( tmp );
         memset( buf, ' ', maxLine - linesz );
         memcpy( buf + maxLine - linesz, tmp, linesz+1 );
@@ -3460,11 +3460,11 @@ void SourceView::RenderLine( const Tokenizer::Line& line, int lineNum, const Add
     if( !m_asm.empty() )
     {
         char buf[32];
-        sprintf( buf, "%zu", m_asm.size() );
+        snprintf( buf, sizeof(buf), "%zu", m_asm.size() );
         const auto maxAsm = strlen( buf ) + 1;
         if( match > 0 )
         {
-            sprintf( buf, "@%" PRIu32, match );
+            snprintf( buf, sizeof(buf), "@%" PRIu32, match );
             const auto asmsz = strlen( buf );
             TextDisabledUnformatted( buf );
             ImGui::SameLine( 0, 0 );
@@ -3800,15 +3800,15 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
     char buf[256];
     if( m_asmCountBase >= 0 )
     {
-        sprintf( buf, "[%i]", int( asmIdx - m_asmCountBase ) );
+        snprintf( buf, sizeof(buf), "[%i]", int( asmIdx - m_asmCountBase ) );
     }
     else if( m_asmRelative )
     {
-        sprintf( buf, "+%" PRIu64, line.addr - m_baseAddr );
+        snprintf( buf, sizeof(buf), "+%" PRIu64, line.addr - m_baseAddr );
     }
     else
     {
-        sprintf( buf, "%" PRIx64, line.addr );
+        snprintf( buf, sizeof(buf), "%" PRIx64, line.addr );
     }
     const auto asz = strlen( buf );
     if( m_asmRelative )
@@ -3889,11 +3889,11 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto fnsz = strlen( fileName );
             if( fnsz < MaxSourceLength - m_maxLine )
             {
-                sprintf( buf, "%s:%i", fileName, srcline );
+                snprintf( buf, sizeof(buf), "%s:%i", fileName, srcline );
             }
             else
             {
-                sprintf( buf, "\xe2\x80\xa6%s:%i", fileName+fnsz-(MaxSourceLength-1-1-m_maxLine), srcline );
+                snprintf( buf, sizeof(buf), "\xe2\x80\xa6%s:%i", fileName+fnsz-(MaxSourceLength-1-1-m_maxLine), srcline );
             }
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemHovered() )
@@ -4577,7 +4577,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     ImGui::TextUnformatted( jumpName );
                 }
                 char tmp[32];
-                sprintf( tmp, "+%" PRIu32, jumpOffset );
+                snprintf( tmp, sizeof(tmp), "+%" PRIu32, jumpOffset );
                 TextFocused( "Jump target:", tmp );
                 uint32_t srcline;
                 const auto srcidx = worker.GetLocationForAddress( line.jumpAddr, srcline );
@@ -5657,7 +5657,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
         if( sz < 5 || memcmp( fn + sz - 4, ".asm", 4 ) != 0 )
         {
             char tmp[1024];
-            sprintf( tmp, "%s.asm", fn );
+            snprintf( tmp, sizeof(tmp), "%s.asm", fn );
             f = fopen( tmp, "wb" );
         }
         else
@@ -5678,7 +5678,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             }
             else
             {
-                sprintf( tmp, "0x%" PRIx64, m_baseAddr );
+                snprintf( tmp, sizeof(tmp), "0x%" PRIx64, m_baseAddr );
                 symName = tmp;
             }
         }

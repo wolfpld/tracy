@@ -273,7 +273,7 @@ TRACY_API const char* GetThreadName( uint32_t id )
   int cs, fd;
   char path[32];
   snprintf( path, sizeof( path ), "/proc/self/task/%d/comm", id );
-  sprintf( buf, "%" PRIu32, id );
+  snprintf( buf, sizeof(buf), "%" PRIu32, id );
 # ifndef __ANDROID__
    pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &cs );
 # endif
@@ -300,7 +300,7 @@ TRACY_API const char* GetThreadName( uint32_t id )
     };
 #endif
 
-  sprintf( buf, "%" PRIu32, id );
+  snprintf( buf, sizeof(buf), "%" PRIu32, id );
   return buf;
 }
 

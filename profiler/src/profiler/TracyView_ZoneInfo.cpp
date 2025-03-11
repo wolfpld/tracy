@@ -394,7 +394,7 @@ void View::DrawZoneInfoWindow()
                 if( srcloc.name.active )
                 {
                     char tmp[1024];
-                    sprintf( tmp, "%s (%s)", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ), m_worker.GetString( srcloc.name ) );
+                    snprintf( tmp, sizeof(tmp), "%s (%s)", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ), m_worker.GetString( srcloc.name ) );
                     ImGui::SetClipboardText( tmp );
                 }
                 else

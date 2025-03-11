@@ -29,9 +29,9 @@ static const char* GetOsInfo()
     if( !RtlGetVersion )
     {
 #  ifdef __MINGW32__
-        sprintf( buf, "Windows (MingW)" );
+        snprintf( buf, sizeof(buf), "Windows (MingW)" );
 #  else
-        sprintf( buf, "Windows" );
+        snprintf( buf, sizeof(buf), "Windows" );
 #  endif
     }
     else
@@ -40,17 +40,17 @@ static const char* GetOsInfo()
         RtlGetVersion( &ver );
 
 #  ifdef __MINGW32__
-        sprintf( buf, "Windows %i.%i.%i (MingW)", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
+        snprintf( buf, sizeof(buf), "Windows %i.%i.%i (MingW)", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
         auto WineGetVersion = (t_WineGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "wine_get_version" );
         auto WineGetBuildId = (t_WineGetBuildId)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "wine_get_build_id" );
         if( WineGetVersion && WineGetBuildId )
         {
-            sprintf( buf, "Windows %i.%i.%i (Wine %s [%s])", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber, WineGetVersion(), WineGetBuildId() );
+            snprintf( buf, sizeof(buf), "Windows %i.%i.%i (Wine %s [%s])", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber, WineGetVersion(), WineGetBuildId() );
         }
         else
         {
-            sprintf( buf, "Windows %i.%i.%i", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+            snprintf( buf, sizeof(buf), "Windows %i.%i.%i", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
         }
 #  endif
     }
@@ -58,30 +58,30 @@ static const char* GetOsInfo()
     struct utsname utsName;
     uname( &utsName );
 #  if defined __ANDROID__
-    sprintf( buf, "Linux %s (Android)", utsName.release );
+    snprintf( buf, sizeof(buf), "Linux %s (Android)", utsName.release );
 #  else
-    sprintf( buf, "Linux %s", utsName.release );
+    snprintf( buf, sizeof(buf), "Linux %s", utsName.release );
 #  endif
 #elif defined __APPLE__
 #  if TARGET_OS_IPHONE == 1
-    sprintf( buf, "Darwin (iOS)" );
+    snprintf( buf, sizeof(buf), "Darwin (iOS)" );
 #  elif TARGET_OS_MAC == 1
-    sprintf( buf, "Darwin (OSX)" );
+    snprintf( buf, sizeof(buf), "Darwin (OSX)" );
 #  else
-    sprintf( buf, "Darwin (unknown)" );
+    snprintf( buf, sizeof(buf), "Darwin (unknown)" );
 #  endif
 #elif defined __DragonFly__
-    sprintf( buf, "BSD (DragonFly)" );
+    snprintf( buf, sizeof(buf), "BSD (DragonFly)" );
 #elif defined __FreeBSD__
-    sprintf( buf, "BSD (FreeBSD)" );
+    snprintf( buf, sizeof(buf), "BSD (FreeBSD)" );
 #elif defined __NetBSD__
-    sprintf( buf, "BSD (NetBSD)" );
+    snprintf( buf, sizeof(buf), "BSD (NetBSD)" );
 #elif defined __OpenBSD__
-    sprintf( buf, "BSD (OpenBSD)" );
+    snprintf( buf, sizeof(buf), "BSD (OpenBSD)" );
 #elif defined __QNX__
-    sprintf( buf, "QNX" );
+    snprintf( buf, sizeof(buf), "QNX" );
 #else
-    sprintf( buf, "unknown" );
+    snprintf( buf, sizeof(buf), "unknown" );
 #endif
     return buf;
 }
@@ -91,10 +91,10 @@ void HttpRequest( const char* server, const char* resource, int port, const std:
     tracy::Socket sock;
     if( !sock.ConnectBlocking( server, port ) ) return;
     char request[4096];
-    const auto len = sprintf( request, "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Tracy Profiler %i.%i.%i (%s) [%s]\r\nConnection: close\r\nCache-Control: no-cache, no-store, must-revalidate\r\n\r\n", resource, server, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, GetOsInfo(), tracy::GitRef );
+    const auto len = snprintf( request, sizeof(request), "GET %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: Tracy Profiler %i.%i.%i (%s) [%s]\r\nConnection: close\r\nCache-Control: no-cache, no-store, must-revalidate\r\n\r\n", resource, server, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, GetOsInfo(), tracy::GitRef );
     sock.Send( request, len );
     char response[4096];
-    const auto sz = sock.ReadUpTo( response, 4096 );
+    const auto sz = sock.ReadUpTo( response, sizeof(response) );
     if( sz < 13 ) return;
     if( memcmp( response, "HTTP/1.1 200", 12 ) != 0 ) return;
     auto hdr = response + 13;

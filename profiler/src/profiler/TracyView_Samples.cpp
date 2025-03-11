@@ -1095,7 +1095,7 @@ void View::DrawSampleParents()
                                 if( ImGui::IsItemClicked() )
                                 {
                                     char tmp[32];
-                                    sprintf( tmp, "0x%" PRIx64, addr );
+                                    snprintf( tmp, sizeof(tmp), "0x%" PRIx64, addr );
                                     ImGui::SetClipboardText( tmp );
                                 }
                             }
@@ -1109,7 +1109,7 @@ void View::DrawSampleParents()
                             if( ImGui::IsItemClicked() )
                             {
                                 char tmp[32];
-                                sprintf( tmp, "0x%" PRIx64, frame.symAddr );
+                                snprintf( tmp, sizeof(tmp), "0x%" PRIx64, frame.symAddr );
                                 ImGui::SetClipboardText( tmp );
                             }
                             break;

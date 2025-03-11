@@ -85,7 +85,7 @@ static inline char* PrintFloat( char* begin, char* end, T value, int precision )
 #ifndef NO_CHARCONV
     return std::to_chars( begin, end, value, std::chars_format::fixed, precision ).ptr;
 #else
-    return begin + sprintf( begin, "%.*f", precision, value );
+    return begin + snprintf( begin, end - begin, "%.*f", precision, value );
 #endif
 }
 
@@ -95,7 +95,7 @@ static inline char* PrintFloat( char* begin, char* end, T value )
 #ifndef NO_CHARCONV
     return std::to_chars( begin, end, value, std::chars_format::fixed ).ptr;
 #else
-    return begin + sprintf( begin, "%f", value );
+    return begin + snprintf( begin, end - begin, "%f", value );
 #endif
 }
 

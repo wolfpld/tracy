@@ -27,11 +27,11 @@ bool View::DrawConnection()
         char buf[64];
         if( mbps < 0.1f )
         {
-            sprintf( buf, "%6.2f Kbps", mbps * 1000.f );
+            snprintf( buf, sizeof(buf), "%6.2f Kbps", mbps * 1000.f );
         }
         else
         {
-            sprintf( buf, "%6.2f Mbps", mbps );
+            snprintf( buf, sizeof(buf), "%6.2f Mbps", mbps );
         }
         ImGui::Dummy( ImVec2( cs, 0 ) );
         ImGui::SameLine();
@@ -126,7 +126,7 @@ bool View::DrawConnection()
             if( sz < 7 || memcmp( fn + sz - 6, ".tracy", 6 ) != 0 )
             {
                 char tmp[1024];
-                sprintf( tmp, "%s.tracy", fn );
+                snprintf( tmp, sizeof(tmp), "%s.tracy", fn );
                 m_filenameStaging = tmp;
             }
             else

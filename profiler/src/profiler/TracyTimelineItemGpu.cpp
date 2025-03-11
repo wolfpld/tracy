@@ -27,11 +27,11 @@ const char* TimelineItemGpu::HeaderLabel() const
     static char buf[4096];
     if( m_gpu->name.Active() )
     {
-        sprintf( buf, "%s", m_worker.GetString( m_gpu->name ) );
+        snprintf( buf, sizeof(buf), "%s", m_worker.GetString( m_gpu->name ) );
     }
     else
     {
-        sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+        snprintf( buf, sizeof(buf), "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
     }
     return buf;
 }
@@ -46,7 +46,7 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
         ( m_gpu->type == GpuContextType::Metal );
 
     char buf[64];
-    sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+    snprintf( buf, sizeof(buf), "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
 
     ImGui::BeginTooltip();
     if( m_gpu->name.Active() ) TextFocused( "Name:", m_worker.GetString( m_gpu->name ) );
@@ -134,7 +134,7 @@ void TimelineItemGpu::HeaderExtraContents( const TimelineContext& ctx, int offse
         const auto ty = ImGui::GetTextLineHeight();
 
         char buf[64];
-        sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+        snprintf( buf, sizeof(buf), "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
         draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), HeaderColorInactive(), buf );
     }
 }

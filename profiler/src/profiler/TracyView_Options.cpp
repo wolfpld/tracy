@@ -119,7 +119,7 @@ void View::DrawOptions()
                 {
                     char buf[64];
                     auto& item = (TimelineItemGpu&)( m_tc.GetItem( gpuData[i] ) );
-                    sprintf( buf, "%s context %i", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
+                    snprintf( buf, sizeof(buf), "%s context %i", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
                     ImGui::PushFont( m_smallFont );
                     ImGui::TextUnformatted( buf );
                     ImGui::PopFont();
@@ -360,11 +360,11 @@ void View::DrawOptions()
                         char buf[1024];
                         if( l.second->customName.Active() )
                         {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
+                            snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
                         }
                         else
                         {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                            snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
                         }
                         SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
@@ -447,11 +447,11 @@ void View::DrawOptions()
                         char buf[1024];
                         if( l.second->customName.Active() )
                         {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
+                            snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
                         }
                         else
                         {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                            snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
                         }
                         SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )
@@ -534,11 +534,11 @@ void View::DrawOptions()
                         char buf[1024];
                         if( l.second->customName.Active() )
                         {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
+                            snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
                         }
                         else
                         {
-                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                            snprintf( buf, sizeof(buf), "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
                         }
                         SmallCheckbox( buf, &Vis( l.second ) );
                         if( ImGui::IsItemHovered() )

@@ -710,7 +710,7 @@ void View::DrawInfo()
             float ttsz = 0;
             for( auto& package : topology )
             {
-                sprintf( buf, ICON_FA_BOX " Package %" PRIu32, package.first );
+                snprintf( buf, sizeof(buf), ICON_FA_BOX " Package %" PRIu32, package.first );
                 ImGui::PushFont( m_smallFont );
                 const auto psz = ImGui::CalcTextSize( buf ).x;
                 if( psz > ptsz ) ptsz = psz;
@@ -719,13 +719,13 @@ void View::DrawInfo()
                 size_t mt = 0;
                 for( auto& die : package.second )
                 {
-                    sprintf( buf, ICON_FA_DICE_D6 " Die %" PRIu32, die.first );
+                    snprintf( buf, sizeof(buf), ICON_FA_DICE_D6 " Die %" PRIu32, die.first );
                     const auto dsz = ImGui::CalcTextSize( buf ).x;
                     if( dsz > dtsz ) dtsz = dsz;
 
                     for( auto& core : die.second )
                     {
-                        sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core.first );
+                        snprintf( buf, sizeof(buf), ICON_FA_MICROCHIP "%" PRIu32, core.first );
                         const auto csz = ImGui::CalcTextSize( buf ).x;
                         if( csz > ctsz ) ctsz = csz;
 
@@ -734,7 +734,7 @@ void View::DrawInfo()
 
                         for( auto& thread : core.second )
                         {
-                            sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, thread );
+                            snprintf( buf, sizeof(buf), ICON_FA_SHUFFLE "%" PRIu32, thread );
                             const auto tsz = ImGui::CalcTextSize( buf ).x;
                             if( tsz > ttsz ) ttsz = tsz;
                         }
@@ -757,7 +757,7 @@ void View::DrawInfo()
             for( auto& package : tsort )
             {
                 if( package->first != 0 ) dpos.y += ty;
-                sprintf( buf, ICON_FA_BOX " Package %" PRIu32, package->first );
+                snprintf( buf, sizeof(buf), ICON_FA_BOX " Package %" PRIu32, package->first );
                 draw->AddText( dpos, 0xFFFFFFFF, buf );
                 dpos.y += ty;
 
@@ -768,7 +768,7 @@ void View::DrawInfo()
                 for( auto& die : dsort )
                 {
                     dpos.y += small;
-                    sprintf( buf, ICON_FA_DICE_D6 " Die %" PRIu32, die->first );
+                    snprintf( buf, sizeof(buf), ICON_FA_DICE_D6 " Die %" PRIu32, die->first );
                     draw->AddText( dpos, 0xFFFFFFFF, buf );
                     dpos.y += ty;
 
@@ -792,13 +792,13 @@ void View::DrawInfo()
                     int ll = cpl;
                     for( auto& core : csort )
                     {
-                        sprintf( buf, ICON_FA_MICROCHIP "%" PRIu32, core->first );
+                        snprintf( buf, sizeof(buf), ICON_FA_MICROCHIP "%" PRIu32, core->first );
                         draw->AddText( cpos, 0xFFFFFFFF, buf );
                         draw->AddRect( cpos + ImVec2( 0, ty ), cpos + ImVec2( inCoreWidth + small, inCoreHeight + small ), 0xFFFFFFFF );
 
                         for( int i=0; i<core->second.size(); i++ )
                         {
-                            sprintf( buf, ICON_FA_SHUFFLE "%" PRIu32, core->second[i] );
+                            snprintf( buf, sizeof(buf), ICON_FA_SHUFFLE "%" PRIu32, core->second[i] );
                             draw->AddText( cpos + ImVec2( margin + i * ( margin + ttsz ), ty + small ), 0xFFFFFFFF, buf );
                         }
 

@@ -648,7 +648,7 @@ static bool CurrentProcOwnsThread( uint32_t tid )
     if( hv == -tid ) return false;
 
     char path[256];
-    sprintf( path, "/proc/self/task/%d", tid );
+    snprintf( path, sizeof(path), "/proc/self/task/%d", tid );
     struct stat st;
     if( stat( path, &st ) == 0 )
     {
@@ -1541,7 +1541,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
 {
     FILE* f;
     char fn[256];
-    sprintf( fn, "/proc/%" PRIu64 "/comm", thread );
+    snprintf( fn, sizeof(fn), "/proc/%" PRIu64 "/comm", thread );
     f = fopen( fn, "rb" );
     if( f )
     {
@@ -1556,7 +1556,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
         threadName = CopyString( "???", 3 );
     }
 
-    sprintf( fn, "/proc/%" PRIu64 "/status", thread );
+    snprintf( fn, sizeof(fn), "/proc/%" PRIu64 "/status", thread );
     f = fopen( fn, "rb" );
     if( f )
     {
@@ -1588,7 +1588,7 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
                 MemWrite( &item->tidToPid.pid, _pid );
                 TracyLfqCommit;
             }
-            sprintf( fn, "/proc/%i/comm", pid );
+            snprintf( fn, sizeof(fn), "/proc/%i/comm", pid );
             f = fopen( fn, "rb" );
             if( f )
             {

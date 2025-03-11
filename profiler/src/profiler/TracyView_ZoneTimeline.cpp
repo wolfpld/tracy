@@ -427,7 +427,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             if( !frame )
             {
                 char symName[64];
-                sprintf( symName, "0x%" PRIx64, m_worker.GetCanonicalPointer( ghostKey.frame ) );
+                snprintf( symName, sizeof(symName), "0x%" PRIx64, m_worker.GetCanonicalPointer( ghostKey.frame ) );
                 const auto tsz = ImGui::CalcTextSize( symName );
 
                 const auto accentColor = HighlightColor( color );

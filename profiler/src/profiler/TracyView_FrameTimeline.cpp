@@ -59,7 +59,7 @@ void View::DrawTimelineFramesHeader()
             auto txt = TimeToStringExact( m_vd.zvStart );
             if( m_vd.zvStart >= 0 )
             {
-                sprintf( buf, "+%s", txt );
+                snprintf( buf, sizeof(buf), "+%s", txt );
                 txt = buf;
             }
             draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
@@ -253,7 +253,7 @@ void View::DrawTimelineFrames( const FrameData& frames )
         if( fsz - 7 <= tx )
         {
             static char tmp[256];
-            sprintf( tmp, "%s (%s)", RealToString( i ), TimeToString( ftime ) );
+            snprintf( tmp, sizeof(tmp), "%s (%s)", RealToString( i ), TimeToString( ftime ) );
             buf = tmp;
             tx = ImGui::CalcTextSize( buf ).x;
         }

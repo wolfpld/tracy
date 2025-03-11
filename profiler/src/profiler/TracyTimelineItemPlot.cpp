@@ -39,13 +39,13 @@ const char* TimelineItemPlot::HeaderLabel() const
         }
         else
         {
-            sprintf( tmp, ICON_FA_MEMORY " %s", m_worker.GetString( m_plot->name ) );
+            snprintf( tmp, sizeof(tmp), ICON_FA_MEMORY " %s", m_worker.GetString( m_plot->name ) );
             return tmp;
         }
     case PlotType::SysTime:
         return ICON_FA_GAUGE_HIGH " CPU usage";
     case PlotType::Power:
-        sprintf( tmp, ICON_FA_BOLT " %s", m_worker.GetString( m_plot->name ) );
+        snprintf( tmp, sizeof(tmp), ICON_FA_BOLT " %s", m_worker.GetString( m_plot->name ) );
         return tmp;
     default:
         assert( false );
@@ -96,7 +96,7 @@ void TimelineItemPlot::HeaderExtraContents( const TimelineContext& ctx, int offs
     const auto ty = ImGui::GetTextLineHeight();
 
     char tmp[128];
-    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( m_plot->rMax - m_plot->rMin, m_plot->format ), RealToString( m_plot->num ) );
+    snprintf( tmp, sizeof(tmp), "(y-range: %s, visible data points: %s)", FormatPlotValue( m_plot->rMax - m_plot->rMin, m_plot->format ), RealToString( m_plot->num ) );
     draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), 0xFF226E6E, tmp );
 }
 

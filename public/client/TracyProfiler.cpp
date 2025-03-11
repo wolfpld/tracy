@@ -515,9 +515,9 @@ static const char* GetHostInfo()
     if( !GetVersion )
     {
 #  ifdef __MINGW32__
-        ptr += sprintf( ptr, "OS: Windows (MingW)\n" );
+        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Windows (MingW)\n" );
 #  else
-        ptr += sprintf( ptr, "OS: Windows\n" );
+        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Windows\n" );
 #  endif
     }
     else
@@ -526,17 +526,17 @@ static const char* GetHostInfo()
         GetVersion( &ver );
 
 #  ifdef __MINGW32__
-        ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
+        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
 #  else
         auto WineGetVersion = (t_WineGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "wine_get_version" );
         auto WineGetBuildId = (t_WineGetBuildId)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "wine_get_build_id" );
         if( WineGetVersion && WineGetBuildId )
         {
-            ptr += sprintf( ptr, "OS: Windows %lu.%lu.%lu (Wine %s [%s])\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber, WineGetVersion(), WineGetBuildId() );
+            ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Windows %lu.%lu.%lu (Wine %s [%s])\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber, WineGetVersion(), WineGetBuildId() );
         }
         else
         {
-            ptr += sprintf( ptr, "OS: Windows %lu.%lu.%lu\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+            ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Windows %lu.%lu.%lu\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
         }
 #  endif
     }
@@ -544,44 +544,44 @@ static const char* GetHostInfo()
     struct utsname utsName;
     uname( &utsName );
 #  if defined __ANDROID__
-    ptr += sprintf( ptr, "OS: Linux %s (Android)\n", utsName.release );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Linux %s (Android)\n", utsName.release );
 #  else
-    ptr += sprintf( ptr, "OS: Linux %s\n", utsName.release );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Linux %s\n", utsName.release );
 #  endif
 #elif defined __APPLE__
 #  if TARGET_OS_IPHONE == 1
-    ptr += sprintf( ptr, "OS: Darwin (iOS)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Darwin (iOS)\n" );
 #  elif TARGET_OS_MAC == 1
-    ptr += sprintf( ptr, "OS: Darwin (OSX)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Darwin (OSX)\n" );
 #  else
-    ptr += sprintf( ptr, "OS: Darwin (unknown)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: Darwin (unknown)\n" );
 #  endif
 #elif defined __DragonFly__
-    ptr += sprintf( ptr, "OS: BSD (DragonFly)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: BSD (DragonFly)\n" );
 #elif defined __FreeBSD__
-    ptr += sprintf( ptr, "OS: BSD (FreeBSD)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: BSD (FreeBSD)\n" );
 #elif defined __NetBSD__
-    ptr += sprintf( ptr, "OS: BSD (NetBSD)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: BSD (NetBSD)\n" );
 #elif defined __OpenBSD__
-    ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: BSD (OpenBSD)\n" );
 #elif defined __QNX__
-    ptr += sprintf( ptr, "OS: QNX\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: QNX\n" );
 #else
-    ptr += sprintf( ptr, "OS: unknown\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "OS: unknown\n" );
 #endif
 
 #if defined _MSC_VER
 #  if defined __clang__
-    ptr += sprintf( ptr, "Compiler: MSVC clang-cl %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Compiler: MSVC clang-cl %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
 #  else
-    ptr += sprintf( ptr, "Compiler: MSVC %i\n", _MSC_VER );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Compiler: MSVC %i\n", _MSC_VER );
 #  endif
 #elif defined __clang__
-    ptr += sprintf( ptr, "Compiler: clang %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Compiler: clang %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
 #elif defined __GNUC__
-    ptr += sprintf( ptr, "Compiler: gcc %i.%i.%i\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__ );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Compiler: gcc %i.%i.%i\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__ );
 #else
-    ptr += sprintf( ptr, "Compiler: unknown\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Compiler: unknown\n" );
 #endif
 
 #if defined _WIN32
@@ -598,7 +598,7 @@ static const char* GetHostInfo()
     GetUserNameA( user, &userSz );
 #  endif
 
-    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "User: %s@%s\n", user, hostname );
 #else
     char hostname[_POSIX_HOST_NAME_MAX]{};
     char user[_POSIX_LOGIN_NAME_MAX]{};
@@ -618,19 +618,19 @@ static const char* GetHostInfo()
     getlogin_r( user, _POSIX_LOGIN_NAME_MAX );
 #  endif
 
-    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "User: %s@%s\n", user, hostname );
 #endif
 
 #if defined __i386 || defined _M_IX86
-    ptr += sprintf( ptr, "Arch: x86\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Arch: x86\n" );
 #elif defined __x86_64__ || defined _M_X64
-    ptr += sprintf( ptr, "Arch: x64\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Arch: x64\n" );
 #elif defined __aarch64__
-    ptr += sprintf( ptr, "Arch: ARM64\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Arch: ARM64\n" );
 #elif defined __ARM_ARCH
-    ptr += sprintf( ptr, "Arch: ARM\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Arch: ARM\n" );
 #else
-    ptr += sprintf( ptr, "Arch: unknown\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Arch: unknown\n" );
 #endif
 
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
@@ -643,7 +643,7 @@ static const char* GetHostInfo()
         memcpy( modelPtr, regs, sizeof( regs ) ); modelPtr += sizeof( regs );
     }
 
-    ptr += sprintf( ptr, "CPU: %s\n", cpuModel );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "CPU: %s\n", cpuModel );
 #elif defined __linux__ && defined __ARM_ARCH
     bool cpuFound = false;
     FILE* fcpuinfo = fopen( "/proc/cpuinfo", "rb" );
@@ -686,12 +686,12 @@ static const char* GetHostInfo()
         if( impl != 0 || var != 0 || part != 0 || rev != 0 )
         {
             cpuFound = true;
-            ptr += sprintf( ptr, "CPU: %s%s r%ip%i\n", DecodeArmImplementer( impl ), DecodeArmPart( impl, part ), var, rev );
+            ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "CPU: %s%s r%ip%i\n", DecodeArmImplementer( impl ), DecodeArmPart( impl, part ), var, rev );
         }
     }
     if( !cpuFound )
     {
-        ptr += sprintf( ptr, "CPU: unknown\n" );
+        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "CPU: unknown\n" );
     }
 #elif defined __APPLE__ && TARGET_OS_IPHONE == 1
     {
@@ -699,45 +699,45 @@ static const char* GetHostInfo()
         sysctlbyname( "hw.machine", nullptr, &sz, nullptr, 0 );
         auto str = (char*)tracy_malloc( sz );
         sysctlbyname( "hw.machine", str, &sz, nullptr, 0 );
-        ptr += sprintf( ptr, "Device: %s\n", DecodeIosDevice( str ) );
+        ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Device: %s\n", DecodeIosDevice( str ) );
         tracy_free( str );
     }
 #else
-    ptr += sprintf( ptr, "CPU: unknown\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "CPU: unknown\n" );
 #endif
 #ifdef __ANDROID__
     char deviceModel[PROP_VALUE_MAX+1];
     char deviceManufacturer[PROP_VALUE_MAX+1];
     __system_property_get( "ro.product.model", deviceModel );
     __system_property_get( "ro.product.manufacturer", deviceManufacturer );
-    ptr += sprintf( ptr, "Device: %s %s\n", deviceManufacturer, deviceModel );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "Device: %s %s\n", deviceManufacturer, deviceModel );
 #endif
 
-    ptr += sprintf( ptr, "CPU cores: %i\n", std::thread::hardware_concurrency() );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "CPU cores: %i\n", std::thread::hardware_concurrency() );
 
 #if defined _WIN32
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
 #  ifdef _MSC_VER
-    ptr += sprintf( ptr, "RAM: %I64u MB\n", statex.ullTotalPhys / 1024 / 1024 );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: %I64u MB\n", statex.ullTotalPhys / 1024 / 1024 );
 #  else
-    ptr += sprintf( ptr, "RAM: %llu MB\n", statex.ullTotalPhys / 1024 / 1024 );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: %llu MB\n", statex.ullTotalPhys / 1024 / 1024 );
 #  endif
 #elif defined __linux__
     struct sysinfo sysInfo;
     sysinfo( &sysInfo );
-    ptr += sprintf( ptr, "RAM: %lu MB\n", sysInfo.totalram / 1024 / 1024 );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: %lu MB\n", sysInfo.totalram / 1024 / 1024 );
 #elif defined __APPLE__
     size_t memSize;
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
-    ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: %zu MB\n", memSize / 1024 / 1024 );
 #elif defined BSD
     size_t memSize;
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
-    ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: %zu MB\n", memSize / 1024 / 1024 );
 #elif defined __QNX__
     struct asinfo_entry *entries = SYSPAGE_ENTRY(asinfo);
     size_t count = SYSPAGE_ENTRY_SIZE(asinfo) / sizeof(struct asinfo_entry);
@@ -752,9 +752,9 @@ static const char* GetHostInfo()
         }
     }
     memSize = memSize / 1024 / 1024;
-    ptr += sprintf( ptr, "RAM: %llu MB\n", memSize);
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: %llu MB\n", memSize);
 #else
-    ptr += sprintf( ptr, "RAM: unknown\n" );
+    ptr += snprintf( ptr, sizeof(buf) - (ptr - buf), "RAM: unknown\n" );
 #endif
 
     return buf;
@@ -815,45 +815,45 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     switch( ec )
     {
     case EXCEPTION_ACCESS_VIOLATION:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ACCESS_VIOLATION (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_ACCESS_VIOLATION (0x%x). ", ec );
         switch( pExp->ExceptionRecord->ExceptionInformation[0] )
         {
         case 0:
-            msgPtr += sprintf( msgPtr, "Read violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Read violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 1:
-            msgPtr += sprintf( msgPtr, "Write violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Write violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 8:
-            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "DEP violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         default:
             break;
         }
         break;
     case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ARRAY_BOUNDS_EXCEEDED (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_ARRAY_BOUNDS_EXCEEDED (0x%x). ", ec );
         break;
     case EXCEPTION_DATATYPE_MISALIGNMENT:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_DATATYPE_MISALIGNMENT (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_DATATYPE_MISALIGNMENT (0x%x). ", ec );
         break;
     case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_FLT_DIVIDE_BY_ZERO (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_FLT_DIVIDE_BY_ZERO (0x%x). ", ec );
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ILLEGAL_INSTRUCTION (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_ILLEGAL_INSTRUCTION (0x%x). ", ec );
         break;
     case EXCEPTION_IN_PAGE_ERROR:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_IN_PAGE_ERROR (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_IN_PAGE_ERROR (0x%x). ", ec );
         break;
     case EXCEPTION_INT_DIVIDE_BY_ZERO:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_INT_DIVIDE_BY_ZERO (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_INT_DIVIDE_BY_ZERO (0x%x). ", ec );
         break;
     case EXCEPTION_PRIV_INSTRUCTION:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_PRIV_INSTRUCTION (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_PRIV_INSTRUCTION (0x%x). ", ec );
         break;
     case EXCEPTION_STACK_OVERFLOW:
-        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_STACK_OVERFLOW (0x%x). ", ec );
+        msgPtr += snprintf( msgPtr, sizeof(s_crashText) - (msgPtr - s_crashText), "Exception EXCEPTION_STACK_OVERFLOW (0x%x). ", ec );
         break;
     default:
         return EXCEPTION_CONTINUE_SEARCH;
@@ -3989,7 +3989,7 @@ void Profiler::ReportTopology()
     for( int i=0; i<numcpus; i++ )
     {
         char path[1024];
-        sprintf( path, "%s%i/topology/physical_package_id", basePath, i );
+        snprintf( path, sizeof(path), "%s%i/topology/physical_package_id", basePath, i );
         char buf[1024];
         FILE* f = fopen( path, "rb" );
         if( !f )
@@ -4003,7 +4003,7 @@ void Profiler::ReportTopology()
         cpuData[i].package = uint32_t( atoi( buf ) );
         cpuData[i].thread = i;
 
-        sprintf( path, "%s%i/topology/core_id", basePath, i );
+        snprintf( path, sizeof(path), "%s%i/topology/core_id", basePath, i );
         f = fopen( path, "rb" );
         if( f )
         {
@@ -4013,7 +4013,7 @@ void Profiler::ReportTopology()
             cpuData[i].core = uint32_t( atoi( buf ) );
         }
 
-        sprintf( path, "%s%i/topology/die_id", basePath, i );
+        snprintf( path, sizeof(path), "%s%i/topology/die_id", basePath, i );
         f = fopen( path, "rb" );
         if( f )
         {

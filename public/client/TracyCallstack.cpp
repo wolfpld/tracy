@@ -1169,7 +1169,7 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, con
         else
         {
             char buf[32];
-            const auto offlen = sprintf( buf, " + %td", symoff );
+            const auto offlen = snprintf( buf, sizeof(buf), " + %td", symoff );
             const auto namelen = std::min<size_t>( strlen( symname ), std::numeric_limits<uint16_t>::max() - offlen );
             auto name = (char*)tracy_malloc_fast( namelen + offlen + 1 );
             memcpy( name, symname, namelen );
@@ -1392,7 +1392,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     else
     {
         char buf[32];
-        const auto offlen = sprintf( buf, " + %td", symoff );
+        const auto offlen = snprintf( buf, sizeof(buf), " + %td", symoff );
         const auto namelen = std::min<size_t>( strlen( symname ), std::numeric_limits<uint16_t>::max() - offlen );
         auto name = (char*)tracy_malloc( namelen + offlen + 1 );
         memcpy( name, symname, namelen );

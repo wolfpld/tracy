@@ -45,6 +45,10 @@
 #include "TracyWorker.hpp"
 #include "tracy_pdqsort.h"
 
+#ifdef TRACY_ENABLE // The worker should only have TRACY_ENABLE when self profiling
+#define TRACY_SELF_PROFILE
+#endif
+
 namespace tracy
 {
 
@@ -283,7 +287,9 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
 {
+#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
     InitCallstack();
+#endif
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -325,7 +331,9 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
+#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
     InitCallstack();
+#endif
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -570,7 +578,9 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
     , m_allowStringModification( allowStringModification )
     , m_symbolConfig( symbolResConfig )
 {
+#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
     InitCallstack();
+#endif
     auto loadStart = std::chrono::high_resolution_clock::now();
 
     int fileVer = 0;
@@ -1964,7 +1974,9 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
 Worker::~Worker()
 {
+#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
     EndCallstack();
+#endif
     Shutdown();
 
     if( m_threadNet.joinable() ) m_threadNet.join();
@@ -4058,6 +4070,9 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySy
 
     uint64_t symbolAddress = GetCanonicalPointer( frameId );
     
+#ifdef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
+    DecodeCallStackPtrStatus status = DecodeCallStackPtrStatus::SymbolMissing;
+#else
     DecodeCallStackPtrStatus status = DecodeCallStackPtrStatus::Count;
     if( m_symbolConfig.m_attemptResolutionByWorker )
     {
@@ -4094,7 +4109,7 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySy
     {
         status = DecodeCallStackPtrStatus::SymbolMissing;
     }
-
+#endif
     if(querySymbols)
     {
         switch (status)
@@ -5225,6 +5240,7 @@ void Worker::SourceLocationOverflowFailure()
 
 void Worker::ResolveSymbolLocal()
 {
+#ifndef TRACY_SELF_PROFILE // Would be racy by design when self profiling, need to offload this to the Symbol Worker 
     const char * unresolvedStr = "[unresolved]";
     StringIdx unresolvedStrIdx = StoreString(unresolvedStr, strlen(unresolvedStr) ).idx;
 
@@ -5268,6 +5284,7 @@ void Worker::ResolveSymbolLocal()
             }
         }
     }
+#endif
 }
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )

@@ -1895,9 +1895,31 @@ void DbgHelpUnlock() { ReleaseMutex(dbgHelpLock); }
 
 At initilization time, tracy will attempt to preload symbols for device drivers and process modules. As this process can be slow when a lot of pdbs are involved, you can set the \texttt{TRACY\_NO\_DBGHELP\_INIT\_LOAD} environment variable to "1" to disable this behavior and rely on-demand symbol loading.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+
+To be able to fully resolve kernel symbols, you might need to have matching versions of \texttt{dbghelp.dll} and \texttt{symsrv.dll} in your \texttt{PATH} or working directory and use symbol servers. Set the \texttt{\_NT\_SYMBOL\_PATH} environment variable to point to the symbol servers you want. For example:
+\begin{lstlisting}
+_NT\_SYMBOL\_PATH=srv*YourPdbCachePath*https://msdl.microsoft.com/download/symbols
+\end{lstlisting}
+
+To get more information about this topic, check Microsoft's official docs: \url{https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/symbol-path}.
+Note that downloading the kernel drivers symbols can be slow at the first execution of the program, or a Window update.
+\end{bclogo}
+
 \paragraph{Disabling resolution of inline frames}
 
 Inline frames retrieval on Windows can be multiple orders of magnitude slower than just performing essential symbol resolution. This manifests as profiler seemingly being stuck for a long time, having hundreds of thousands of query backlog entries queued, which are slowly trickling down. If your use case requires speed of operation rather than having call stacks with inline frames included, you may define the \texttt{TRACY\_NO\_CALLSTACK\_INLINES} macro, which will make the profiler stick to the basic but fast frame resolution mode.
+
+\paragraph{Server symbol resolution}
+
+Instead of having the client do the resolution, you can configure the server to attempt the symbol resolution.
+This is controlled by the profiler global settings in the "Symbol resolution" section.
+If "Attempt resolution by profiler" is enabled, the server will attempt to resolve symbols locally. For this, the Tracy-Client will send informations about the executable images loaded by the process. If symbol resolution on the server fails, it will query the client for the information as a fallback mechanism.
+However if "Prevent resolution by application" is enabled, Tracy-Client will not resolve any symbols and simply send the minimal images information.
 
 \paragraph{Offline symbol resolution}
 

@@ -876,7 +876,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first
-    sizeof( QueueItem ),                                  // client modules base address,
+    sizeof( QueueItem ),                                    // image datas,
     sizeof( QueueHeader ) + sizeof( QueueDataPacket ),      // DataPacket
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

@@ -1061,7 +1061,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 #ifdef TRACY_DBGHELP_LOCK
         DBGHELP_UNLOCK;
 #endif
-        // may use symLen for base adress
+        
         cb_data[0].symAddr = ptr - moduleNameAndAddress.baseAddr;
         cb_data[0].symLen = 0;
 

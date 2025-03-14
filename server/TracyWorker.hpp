@@ -691,7 +691,7 @@ public:
     void DoPostponedInlineSymbols();
     void DoPostponedWork();
     void DoPostponedWorkAll();
-    void ResolveSymbolLocal();
+    void ResolveSymbolLocally();
 
     void CacheSourceFiles();
 

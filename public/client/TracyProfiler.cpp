@@ -1994,7 +1994,7 @@ void Profiler::Worker()
         m_deferredLock.unlock();
 #endif
         // Send all known modules information.
-        SendModulesCaches();
+        SendCachedModulesInformation();
 
         // Main communications loop
         int keepAlive = 0;
@@ -4076,7 +4076,7 @@ void Profiler::ReportTopology()
 #    endif
 }
 
-void Profiler::SendModulesCaches()
+void Profiler::SendCachedModulesInformation()
 {
 #ifdef TRACY_HAS_CALLSTACK
     // We are retrieving modules information from the Tracy Profiler thread
@@ -4120,7 +4120,6 @@ void Profiler::WriteDebugFieldToPacket( uint8_t** ptr, int* currentPacketSize, c
     memcpy( *ptr, imageDebugInfo.debugData, dataSize );
     *ptr += dataSize;
     *currentPacketSize += dataSize;
-
 }
 
 void Profiler::SendModuleInfo( const ImageEntry& imageEntry )
@@ -4182,7 +4181,7 @@ void Profiler::SendModuleInfo( const ImageEntry& imageEntry )
     QueueItem item2;
     tracy::MemWrite( &item2.hdr.type, (int)QueueType::ModuleUpdate );
 
-    static_assert( tracy::QueueDataSize[(int)QueueType::ModuleUpdate] == sizeof( QueueItem ), "Size missmatch" );
+    static_assert( tracy::QueueDataSize[(int)QueueType::ModuleUpdate] == sizeof( QueueItem ), "Size mismatch" );
 
     NeedDataSize( sizeof( item2 ) );
     AppendData( &item2, sizeof( item2 ) );

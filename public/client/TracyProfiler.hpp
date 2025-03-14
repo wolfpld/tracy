@@ -919,7 +919,7 @@ private:
     void CalibrateDelay();
     void ReportTopology();
 
-    void SendModulesCaches();
+    void SendCachedModulesInformation();
 
 #ifdef TRACY_HAS_CALLSTACK
     void WriteDebugFieldToPacket( uint8_t** ptr, int* currentPacketSize, const ImageDebugInfo& imageDebugInfo );

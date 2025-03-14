@@ -1697,7 +1697,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
             f.Read( *s, sLength );
         };
 
-    auto DeseriliazeImageEntries = [&]()
+    auto DeserializeImageEntries = [&]()
         {
             uint32_t moduleCount = 0;
             f.Read( moduleCount );
@@ -1718,8 +1718,8 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
     if ( CurrentVersion >= FileVersion( 0, 11, 3 ) )
     {
-        DeseriliazeImageEntries(); // UserLandModules
-        DeseriliazeImageEntries(); // KernelModules
+       DeserializeImageEntries(); // UserLandModules
+       DeserializeImageEntries(); // KernelModules
     }
 
     // Post read processing
@@ -5238,7 +5238,7 @@ void Worker::SourceLocationOverflowFailure()
     m_failure = Failure::SourceLocationOverflow;
 }
 
-void Worker::ResolveSymbolLocal()
+void Worker::ResolveSymbolLocally()
 {
 #ifndef TRACY_SELF_PROFILE // Would be racy by design when self profiling, need to offload this to the Symbol Worker 
     const char * unresolvedStr = "[unresolved]";

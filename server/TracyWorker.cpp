@@ -1667,10 +1667,10 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
     auto DeserializeDebugField = [&]( ImageDebugInfo* debugField )
         {
-            ImageDebugFormat debugFormat;
+            ImageDebugFormatId debugFormat;
             f.Read( debugFormat );
             
-            if( debugFormat == ImageDebugFormat::NoDebugFormat )
+            if( debugFormat == ImageDebugFormatId::NoDebugFormat )
             {
                 debugField->debugDataSize = 0;
                 debugField->debugData = nullptr;
@@ -8646,7 +8646,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
     auto SerializeDebugModuleField = [&]( const ImageDebugInfo& debugField )
         {
             f.Write( &debugField.debugFormat, sizeof( debugField.debugFormat ) );
-            if( debugField.debugFormat == ImageDebugFormat::NoDebugFormat )
+            if( debugField.debugFormat == ImageDebugFormatId::NoDebugFormat )
                return;
            
             f.Write( &debugField.debugDataSize, sizeof( debugField.debugDataSize ) );
@@ -8970,8 +8970,8 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
         StringLocation modulePathStringLocation = StoreString( modulePath , strlen( modulePath ));
 
 
-        ImageDebugFormat debugFormat = MemRead<ImageDebugFormat>( ptrToData );
-        ptrToData += sizeof( ImageDebugFormat );
+        ImageDebugFormatId debugFormat = MemRead<ImageDebugFormatId>( ptrToData );
+        ptrToData += sizeof( ImageDebugFormatId );
 
         ImageEntry moduleCacheEntry =
         {
@@ -8982,7 +8982,7 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
         };
         moduleCacheEntry.imageDebugInfo.debugFormat = debugFormat;
 
-        if ( debugFormat != ImageDebugFormat::NoDebugFormat )
+        if ( debugFormat != ImageDebugFormatId::NoDebugFormat )
         {
 
             uint32_t debugFormatSize = MemRead<uint32_t>( ptrToData );

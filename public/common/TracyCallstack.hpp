@@ -53,11 +53,12 @@ enum struct DecodeCallStackPtrStatus
     Count
 };
 
-enum struct ImageDebugFormat : uint8_t
+enum struct ImageDebugFormatId : uint8_t
 {
     NoDebugFormat,
     PdbDebugFormat,
-    DwarfDebugFormat,
+    GNUDebugFormat,
+    ElfDebugFormat
 };
 
 struct CallstackSymbolData
@@ -86,7 +87,7 @@ struct CallstackEntryData
 
 struct ImageDebugInfo
 {
-    ImageDebugFormat debugFormat;
+    ImageDebugFormatId debugFormat;
     uint8_t* debugData;
     uint32_t debugDataSize;
 };

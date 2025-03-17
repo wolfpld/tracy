@@ -1,10 +1,14 @@
+#include <cstddef>
 #include <limits>
 #include <new>
 #include <stdio.h>
 #include <string.h> // for memcpy
 #include <assert.h>
+#include <string_view>
+#include <sys/types.h>
 
 #include "TracyCallstack.hpp"
+#include "TracyAlign.hpp"
 #include "TracyDebug.hpp"
 #include "TracyStringHelpers.hpp"
 #include "TracyAlloc.hpp"
@@ -112,6 +116,12 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #if defined(TRACY_USE_LIBBACKTRACE) && TRACY_HAS_CALLSTACK != 4 // dl_iterate_phdr is required for the current image cache. Need to move it to libbacktrace?
 #   define TRACY_USE_IMAGE_CACHE
 #   include <link.h>
+struct BuildIdNote {
+    ElfW(Nhdr) nhdr;
+
+    char name[4];
+    uint8_t build_id[0];
+};
 #endif
 
 namespace tracy
@@ -150,7 +160,20 @@ namespace tracy
     class ImageCache
     {
     public:
-        ImageCache( size_t moduleCacheCapacity = 512 ) : m_modCache( moduleCacheCapacity ) {}
+        ImageCache( size_t moduleCacheCapacity = 512 ) : m_modCache( moduleCacheCapacity ) 
+        {
+            for (auto& it : m_modCache) 
+            {
+                it.start = 0;
+                it.end = 0;
+                it.name = nullptr;
+                it.path = nullptr;
+
+                it.imageDebugInfo.debugData = nullptr;
+                it.imageDebugInfo.debugDataSize = 0;
+                it.imageDebugInfo.debugFormat = ImageDebugFormatId::NoDebugFormat;
+            }            
+        }
         ~ImageCache() { Clear(); }
 
         ImageEntry* CacheModuleWithDebugInfo( const ImageEntry& entry )
@@ -225,6 +248,8 @@ namespace tracy
 // when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
 // so we can quickly determine which image an address falls into.
 // We refresh this cache only when we hit an address that doesn't fall into any known range.
+
+
 class ImageCacheLibbacktrace : public ImageCache
 {
 public:
@@ -255,6 +280,38 @@ private:
     bool m_updated = false;
     bool m_haveMainImageName = false;
 
+    // success return 0
+    // failed return 1
+    static int GetBuildIdNoteFromNote( ImageEntry* imageEntry, BuildIdNote* note, ptrdiff_t fileLen)
+    {
+        auto& nhdr = note->nhdr;
+
+        while( fileLen >= sizeof(BuildIdNote) )
+        {
+            if (nhdr.n_type == NT_GNU_BUILD_ID &&
+                nhdr.n_descsz != 0 &&
+                nhdr.n_namesz == 4 &&
+                memcmp(note->name, "GNU", 4) == 0)
+            {
+                imageEntry->imageDebugInfo.debugFormat = ImageDebugFormatId::ElfDebugFormat;
+                imageEntry->imageDebugInfo.debugDataSize = nhdr.n_descsz; 
+                imageEntry->imageDebugInfo.debugData = (uint8_t*)tracy_malloc(imageEntry->imageDebugInfo.debugDataSize);
+                memcpy(imageEntry->imageDebugInfo.debugData, &note->build_id[0], imageEntry->imageDebugInfo.debugDataSize);
+
+                return 0;
+            }
+
+            const size_t offset = sizeof(ElfW(Nhdr))
+                + tracy::Align(note->nhdr.n_namesz, 4)
+                + tracy::Align(note->nhdr.n_descsz, 4);
+
+            note = reinterpret_cast<BuildIdNote*>((char *)note + offset);
+            fileLen -= offset;
+        }
+
+        return 1;
+    }
+
     static int Callback( struct dl_phdr_info* info, size_t size, void* data )
     {
         ImageCacheLibbacktrace* cache = reinterpret_cast<ImageCacheLibbacktrace*>( data );
@@ -270,18 +327,28 @@ private:
         ImageEntry image{};
         image.start = startAddress;
         image.end = endAddress;
-
+      
         // the base executable name isn't provided when iterating with dl_iterate_phdr,
         // we will have to patch the executable image name outside this callback
-        if( info->dlpi_name && info->dlpi_name[0] != '\0' )
-        {
-            image.name = CopyStringFast(info->dlpi_name);
-        }
-        else
-        {
-            image.name = nullptr;
-        }
+        image.name = info->dlpi_name && info->dlpi_name[0] != '\0' ? CopyStringFast(info->dlpi_name) :  nullptr;
 
+        
+        for (unsigned i = 0; i < info->dlpi_phnum; i++) 
+        {
+            if (info->dlpi_phdr[i].p_type != PT_NOTE)
+                continue;
+    
+            void* raw =  (void*)(info->dlpi_addr +
+                info->dlpi_phdr[i].p_vaddr);
+
+            ptrdiff_t len = info->dlpi_phdr[i].p_filesz;
+
+            if (GetBuildIdNoteFromNote(&image, static_cast<BuildIdNote*>(raw), len) == 0)
+                break;
+            
+
+        }
+        
         cache->CacheModuleWithDebugInfo(image);
         cache->m_updated = true;
 
@@ -358,6 +425,8 @@ void CreateImageCaches()
     assert( s_imageCache == nullptr && s_krnlCache == nullptr );
     s_imageCache = new ( tracy_malloc( sizeof( UserlandImageCache ) ) ) UserlandImageCache();
     s_krnlCache = new ( tracy_malloc( sizeof( ImageCache ) ) ) ImageCache();
+
+  
 }
 
 void DestroyImageCaches()
@@ -436,7 +505,7 @@ struct CV_INFO_PDB70
 
 static constexpr DWORD CV_SIGNATURE_RSDS = 'SDSR'; // 'SDSR'
 
-bool GetModuleInfoFromPEHeaders( uint64_t baseOfDll, ImageDebugFormat* debugFormat, uint8_t** debugInformationData, uint32_t* debugInformationSize )
+bool GetModuleInfoFromPEHeaders( uint64_t baseOfDll, ImageDebugFormatId* debugFormat, uint8_t** debugInformationData, uint32_t* debugInformationSize )
 {
     static constexpr bool MappedAsImage = true;
 
@@ -471,7 +540,7 @@ bool GetModuleInfoFromPEHeaders( uint64_t baseOfDll, ImageDebugFormat* debugForm
 
         if( pData->CvSignature != CV_SIGNATURE_RSDS ) continue;
 
-        *debugFormat = ImageDebugFormat::PdbDebugFormat;
+        *debugFormat = ImageDebugFormatId::PdbDebugFormat;
 
         const uint32_t pdbFileLength = strlen( (const char*)pData->PdbFileName );
         const uint32_t debugFormatSize = sizeof( PEImageDebugData ) + pdbFileLength + 1;
@@ -519,7 +588,7 @@ void GetModuleInfoFromDbgHelp( const char* imageName, ImageEntry* moduleEntry )
             return;
 
         ImageDebugInfo& debugInfo = moduleEntry->imageDebugInfo;
-        debugInfo.debugFormat = ImageDebugFormat::PdbDebugFormat;
+        debugInfo.debugFormat = ImageDebugFormatId::PdbDebugFormat;
 
         const uint32_t pdbFileNameLen = static_cast<uint32_t>( strlen( moduleInfo.CVData ) );
         debugInfo.debugDataSize = sizeof( PEImageDebugData ) + ( pdbFileNameLen + 1 );
@@ -552,7 +621,7 @@ ImageEntry* CacheModuleInfo( const char* imageName, uint32_t imageNameLength, ui
     moduleEntry.path = CopyStringFast( imageName, imageNameLength );
     FormatImageName( &moduleEntry.name, imageName, imageNameLength );
 
-    ImageDebugFormat debugFormat = ImageDebugFormat::NoDebugFormat;
+    ImageDebugFormatId debugFormat = ImageDebugFormatId::NoDebugFormat;
     uint8_t* debugData = nullptr;
     uint32_t debugDataSize = 0;
 
@@ -881,9 +950,9 @@ const char* GetKernelModulePath( uint64_t addr )
     return nullptr;
 }
 
-bool LoadFromPdb( const char* moduleName, uint64_t baseAddress, uint64_t dllSize, ImageDebugFormat debugFormat, const uint8_t* debugData, uint32_t debugDataSize )
+bool LoadFromPdb( const char* moduleName, uint64_t baseAddress, uint64_t dllSize, ImageDebugFormatId debugFormat, const uint8_t* debugData, uint32_t debugDataSize )
 {
-    assert( debugFormat == ImageDebugFormat::PdbDebugFormat );
+    assert( debugFormat == ImageDebugFormatId::PdbDebugFormat );
 
     const uint32_t DataForDebugSize = static_cast<const uint32_t>( debugDataSize );
     assert( moduleName != nullptr );
@@ -959,7 +1028,7 @@ void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo )
     }
 
     bool hasSymbolInfo = false;
-    if( imageEntry.imageDebugInfo.debugFormat == ImageDebugFormat::PdbDebugFormat )
+    if( imageEntry.imageDebugInfo.debugFormat == ImageDebugFormatId::PdbDebugFormat )
     {
         char* nameFixed = nullptr;
         if( IsKernelAddress( imageEntry.start ) )
@@ -1220,6 +1289,7 @@ struct DebugInfo
     char* filename;
     int fd;
 };
+
 
 static FastVector<DebugInfo>* s_di_known;
 #endif

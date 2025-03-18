@@ -4105,7 +4105,7 @@ void Profiler::SendCachedModulesInformation()
 
 
 #ifdef TRACY_HAS_CALLSTACK
-void Profiler::WriteDebugFieldToPacket( uint8_t** ptr, int* currentPacketSize, const ImageDebugInfo& imageDebugInfo )
+static void WriteDebugFieldToPacket( uint8_t** ptr, int* currentPacketSize, const ImageDebugInfo& imageDebugInfo )
 {
     MemWrite( *ptr, imageDebugInfo.debugFormat );
     *ptr += sizeof( imageDebugInfo.debugFormat );

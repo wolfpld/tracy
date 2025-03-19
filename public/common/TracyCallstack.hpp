@@ -44,14 +44,20 @@ namespace tracy
 
 static constexpr bool has_callstack() { return true; }
 
-enum struct DecodeCallStackPtrStatus
+enum DecodeCallStackPtrStatusFlags : uint8_t
 {
-    Success,
-    ModuleMissing,
-    SymbolMissing,
+    Success = 0,
+    ModuleMissing = 1 << 1,
+    SymbolMissing = 1 << 2,
 
+    ErrorMask = 0b11,
+
+    NewModuleFound = 1 << 3,
+    
     Count
 };
+
+using DecodeCallStackPtrStatus = uint8_t;
 
 enum struct ImageDebugFormatId : uint8_t
 {
@@ -105,6 +111,7 @@ struct ImageEntry
 
 void PreventSymbolResolution();
 std::recursive_mutex& GetModuleCacheMutexForRead();
+const ImageEntry* GetImageEntryFromPtr( uint64_t ptr );
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );

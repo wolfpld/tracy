@@ -68,7 +68,7 @@ enum class QueueType : uint8_t
     SourceCodeMetadata,
     FiberEnter,
     FiberLeave,
-    ModuleUpdate,
+    ImageUpdate,
     DataPacket,
     Terminate,
     KeepAlive,
@@ -700,20 +700,12 @@ static constexpr size_t MaxModule = 1024;
 
 struct QueueImageEntry
 {
-   
+   uint64_t payload;
+   uint64_t payloadSize;
 };
-
-enum struct PacketDataType : int
-{
-    EMPTY = 0,
-    ImageEntry,
-};
-
-static_assert( PacketDataType::EMPTY == (PacketDataType)0, "Empty must be First" );
 
 struct QueueDataPacket
 {
-    PacketDataType packetDataType;
     uint16_t packetSize;
 };
 
@@ -876,7 +868,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first
-    sizeof( QueueItem ),                                    // image datas,
+    sizeof( QueueHeader ) + sizeof( QueueImageEntry ),                                    // image datas,
     sizeof( QueueHeader ) + sizeof( QueueDataPacket ),      // DataPacket
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

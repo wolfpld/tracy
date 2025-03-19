@@ -437,7 +437,6 @@ private:
  
     struct PendingDataPacket
     {
-        PacketDataType type;
         size_t dataSize;
         uint8_t* data;
     };
@@ -910,7 +909,7 @@ private:
     void AddSingleString( const char* str, size_t sz );
     void AddSingleStringFailure( const char* str, size_t sz );
     void AddSecondString( const char* str, size_t sz );
-    void AddDataPacket( const void* data, size_t size , PacketDataType dataType );
+    void AddDataPacket( const void* data, size_t size );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( const char* data, size_t sz );
@@ -939,7 +938,7 @@ private:
     uint32_t GetSingleStringIdx();
     uint32_t GetSecondStringIdx();
 
-    void AccessPendingData( uint8_t** ptr, size_t* sz, PacketDataType* type );
+    void AccessPendingData( uint8_t** ptr, size_t* sz );
     void FreePendingData();
 
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );

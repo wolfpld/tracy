@@ -777,7 +777,7 @@ public:
     void SendSecondString( const char* ptr ) { SendSecondString( ptr, strlen( ptr ) ); }
     void SendSecondString( const char* ptr, size_t len );
 
-    void SendSingleDataPacket( void* ptr, size_t totalSize, PacketDataType type );
+    void SendSingleDataPacket( void* ptr, size_t totalSize );
 
     // Allocated source location data layout:
     //  2b  payload size
@@ -922,7 +922,7 @@ private:
     void SendCachedModulesInformation();
 
 #ifdef TRACY_HAS_CALLSTACK
-    void SendModuleInfo( const ImageEntry& moduleCacheEntry );
+    void SendImageInfo( const ImageEntry& moduleCacheEntry);
 #endif
 
     static tracy_force_inline void SendCallstackSerial( void* ptr )

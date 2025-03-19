@@ -420,6 +420,15 @@ static ImageCache* s_krnlCache = nullptr;
 static ImageCache* s_krnlSymbolsCache = nullptr;
 #endif
 
+const ImageEntry* GetImageEntryFromPtr(uint64_t ptr)
+{
+    if(IsKernelAddress(ptr))
+    {
+        return s_krnlCache->FindEntryFromAddr(ptr);
+    }
+    else return s_imageCache->FindEntryFromAddr(ptr);
+}
+
 void CreateImageCaches()
 {
     assert( s_imageCache == nullptr && s_krnlCache == nullptr );
@@ -881,14 +890,14 @@ void InitCallstack()
     // symbols during that time.
     const char* noInitLoadEnv = GetEnvVar("TRACY_NO_DBGHELP_INIT_LOAD");
     const bool initTimeModuleLoad = !(noInitLoadEnv && noInitLoadEnv[0] == '1');
-    if (!initTimeModuleLoad)
+    if ( !initTimeModuleLoad )
     {
         TracyDebug("TRACY: skipping init time dbghelper module load\n");
     }
     
     std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
 
-    if (initTimeModuleLoad)
+    if ( initTimeModuleLoad )
     {
         CacheProcessDrivers();
         CacheProcessModules();
@@ -903,7 +912,7 @@ void InitCallstack()
 void EndCallstack()
 {
     DestroyImageCaches();
-    if (s_DbgHelpSymHandle)
+    if ( s_DbgHelpSymHandle )
     {
         SymCleanup(s_DbgHelpSymHandle);
         s_DbgHelpSymHandle = 0;
@@ -1103,6 +1112,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
     bool moduleNotFound = false;
     ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr, &moduleNotFound );
+    
+    *_decodeCallStackPtrStatus = DecodeCallStackPtrStatusFlags::Success;
 
     if( moduleNotFound )
     {
@@ -1116,12 +1127,15 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
                 // Set base address to ptr so that cb_data[0].symAddr=0
                 moduleNameAndAddress = { "[unknown]", ptr };
             }
-            else moduleNotFound = false; // We managed to load the module information
+            else {
+                *_decodeCallStackPtrStatus |= DecodeCallStackPtrStatusFlags::NewModuleFound;
+                moduleNotFound = false; // We managed to load the module information
+            }
         }
         else
         {
             // We're on the server, it does not have a way to get information about the module
-            *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::ModuleMissing;
+            *_decodeCallStackPtrStatus |= DecodeCallStackPtrStatusFlags::ModuleMissing;
         }
     }
 
@@ -1174,9 +1188,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
 
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
-    if( symValid ) *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
-    else {
-        *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::SymbolMissing;
+    if( !symValid ) {
+        *_decodeCallStackPtrStatus |= DecodeCallStackPtrStatusFlags::SymbolMissing;
 #ifdef TRACY_VERBOSE
         static bool doOnce = true;
         if(doOnce)

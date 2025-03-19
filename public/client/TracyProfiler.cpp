@@ -2682,6 +2682,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ++item;
                         continue;
                     }
+                    case QueueType::ImageUpdate:
+                    {
+                        void* ptr = (void*)item->imageEntry.payload;
+                        SendSingleDataPacket( ptr, item->imageEntry.payloadSize );
+                        tracy_free( ptr );
+                        break;
+                    }
                     default:
                         assert( false );
                         break;
@@ -3260,22 +3267,25 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
     AppendDataUnsafe( ptr, l32 );
 }
 
-void Profiler::SendSingleDataPacket( void* ptr, size_t totalSize, PacketDataType type )
+void Profiler::SendSingleDataPacket( void* ptr, size_t totalSize )
 {
-    assert( totalSize <= std::numeric_limits<decltype( QueueDataPacket::packetSize )>::max() );
+	assert(totalSize <= std::numeric_limits<decltype(QueueDataPacket::packetSize)>::max());
 
-    static_assert( sizeof( QueueHeader ) + sizeof( QueueDataPacket ) == QueueDataSize[(int)QueueType::DataPacket], "Size mismatch" );
+	static_assert(sizeof(QueueHeader) + sizeof(QueueDataPacket) == QueueDataSize[(int)QueueType::DataPacket], "Size mismatch");
 
-    NeedDataSize( QueueDataSize[(int)QueueType::DataPacket] + totalSize );
 
-    QueueItem item;
-    tracy::MemWrite( &item.hdr.type, (int)QueueType::DataPacket );
-    tracy::MemWrite( &item.packet.packetDataType, type );
-    uint16_t dataSize = uint16_t( totalSize );
-    tracy::MemWrite( &item.packet.packetSize, dataSize );
+	NeedDataSize(QueueDataSize[(int)QueueType::DataPacket] + totalSize);
 
-    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::DataPacket] );
-    AppendDataUnsafe( ptr, dataSize );
+	QueueItem item;
+	tracy::MemWrite(&item.hdr.type, (int)QueueType::DataPacket);
+
+	uint16_t dataSize = uint16_t(totalSize);
+	tracy::MemWrite(&item.packet.packetSize, dataSize);
+
+	AppendDataUnsafe(&item, QueueDataSize[(int)QueueType::DataPacket]);
+	AppendDataUnsafe(ptr, dataSize);
+
+   
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )
@@ -3441,14 +3451,114 @@ void Profiler::QueueSourceCodeQuery( uint32_t id )
 }
 
 #ifdef TRACY_HAS_CALLSTACK
+
+static void WriteDebugFieldToPacket( uint8_t** ptr, const ImageDebugInfo& imageDebugInfo )
+{
+    MemWrite( *ptr, imageDebugInfo.debugFormat );
+    *ptr += sizeof( imageDebugInfo.debugFormat );
+    
+    const uint32_t dataSize = static_cast<uint32_t>( imageDebugInfo.debugDataSize );
+
+    MemWrite( *ptr, dataSize );
+    *ptr += sizeof( dataSize );
+
+    memcpy( *ptr, imageDebugInfo.debugData, dataSize );
+    *ptr += dataSize;
+}
+
+
+static void SerializeImageEntry( const ImageEntry& imageEntry, void** outptr, size_t* outsize )
+{
+    static constexpr int EndOfString = 1;
+
+    const uint32_t moduleNameLength = ( imageEntry.name ? strlen( imageEntry.name ) : 0 ) + EndOfString;
+    const uint32_t modulePathLength = ( imageEntry.path ? strlen( imageEntry.path ) : 0 ) + EndOfString;
+
+   
+    const size_t baseModuleInfo =  sizeof( imageEntry.start ) + sizeof( imageEntry.end ) +
+        sizeof( moduleNameLength ) + moduleNameLength +
+        sizeof( modulePathLength ) + modulePathLength +
+        sizeof( imageEntry.imageDebugInfo.debugFormat );
+
+    const uint32_t debugFormatSize = 0 + sizeof( uint32_t )
+        + static_cast<uint32_t>( imageEntry.imageDebugInfo.debugDataSize );
+
+    const size_t bufferSize = baseModuleInfo + debugFormatSize;
+    void* queueBuffer = tracy_malloc( bufferSize );
+
+    uint8_t* ptr = (uint8_t*)queueBuffer;
+
+    MemWrite( ptr, imageEntry.start );
+    ptr += sizeof( imageEntry.start );
+
+    MemWrite( ptr, imageEntry.end );
+    ptr += sizeof( imageEntry.end );
+
+    MemWrite( ptr, moduleNameLength );
+    ptr += sizeof( moduleNameLength );
+
+    memcpy( ptr, imageEntry.name ? imageEntry.name : "", moduleNameLength );
+    ptr += moduleNameLength;
+
+    MemWrite( ptr, modulePathLength );
+    ptr += sizeof( modulePathLength );
+
+    memcpy( ptr, imageEntry.path ? imageEntry.path : "", modulePathLength );
+    ptr += modulePathLength;
+
+    WriteDebugFieldToPacket( &ptr, imageEntry.imageDebugInfo );
+
+    *outptr = queueBuffer;
+    *outsize = bufferSize;
+}
+void Profiler::SendImageInfo( const ImageEntry& imageEntry )
+{
+    void* serializePtr = nullptr;
+    size_t size = 0;
+    SerializeImageEntry( imageEntry, &serializePtr, &size );
+    
+   // First sending the Data
+     SendSingleDataPacket( serializePtr, size);
+     tracy_free( serializePtr );
+
+     // Then sending that he receveived a image Update 
+     QueueItem item;
+     tracy::MemWrite( &item.hdr.type, (int)QueueType::ImageUpdate);
+     NeedDataSize( QueueDataSize[(int)QueueType::ImageUpdate] );
+
+     AppendData( &item, QueueDataSize[(int)QueueType::ImageUpdate] );
+   
+}
+
 void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 {
     switch( si.type )
     {
     case SymbolQueueItemType::CallstackFrame:
     {
-        DecodeCallStackPtrStatus unusedStatus;
-        const auto frameData = DecodeCallstackPtr( si.ptr, &unusedStatus );
+        DecodeCallStackPtrStatus mask = DecodeCallStackPtrStatusFlags::SymbolMissing;
+        const auto frameData = DecodeCallstackPtr( si.ptr, &mask );
+
+        
+        if ( mask & DecodeCallStackPtrStatusFlags::NewModuleFound )
+        {
+            
+           std::lock_guard<std::recursive_mutex> mutexguard{ GetModuleCacheMutexForRead() };
+
+            const ImageEntry* entry = GetImageEntryFromPtr(si.ptr);
+            assert( entry == nullptr );
+
+            void* imageData = nullptr;
+            size_t dataSize = 0;
+            SerializeImageEntry( *entry, &imageData, &dataSize );
+
+            TracyLfqPrepare( QueueType::ImageUpdate );
+            tracy::MemWrite( &item->imageEntry.payload, (uint64_t)imageData );
+            tracy::MemWrite( &item->imageEntry.payloadSize, (uint64_t)dataSize );
+            TracyLfqCommit;
+        }
+
+
         auto data = tracy_malloc_fast( sizeof( CallstackEntry ) * frameData.size );
         memcpy( data, frameData.data, sizeof( CallstackEntry ) * frameData.size );
         TracyLfqPrepare( QueueType::CallstackFrameSize );
@@ -4088,107 +4198,23 @@ void Profiler::SendCachedModulesInformation()
     {
         for ( auto& it : *kernelDrivers )
         {
-            SendModuleInfo( it );
+            SendImageInfo( it );
         }
     }
 
 	const FastVector<ImageEntry>* moduleCache = GetUserImageInfos();
-	if(moduleCache)
+	if( moduleCache )
 	{
         for ( auto& it : *moduleCache )
         {
-            SendModuleInfo( it );
+            SendImageInfo( it );
         }
     }
 #endif
 }
 
 
-#ifdef TRACY_HAS_CALLSTACK
-static void WriteDebugFieldToPacket( uint8_t** ptr, int* currentPacketSize, const ImageDebugInfo& imageDebugInfo )
-{
-    MemWrite( *ptr, imageDebugInfo.debugFormat );
-    *ptr += sizeof( imageDebugInfo.debugFormat );
-    *currentPacketSize += sizeof( imageDebugInfo.debugFormat );
-    
-    const uint32_t dataSize = static_cast<uint32_t>( imageDebugInfo.debugDataSize );
 
-    MemWrite( *ptr, dataSize );
-    *ptr += sizeof( dataSize );
-    *currentPacketSize += sizeof( dataSize );
-
-    memcpy( *ptr, imageDebugInfo.debugData, dataSize );
-    *ptr += dataSize;
-    *currentPacketSize += dataSize;
-}
-
-void Profiler::SendModuleInfo( const ImageEntry& imageEntry )
-{
-    static constexpr int EndOfString = 1;
-
-    const uint32_t moduleNameLength = ( imageEntry.name ? strlen( imageEntry.name ) : 0 ) + EndOfString;
-    const uint32_t modulePathLength = ( imageEntry.path ? strlen( imageEntry.path ) : 0 ) + EndOfString;
-
-    QueueItem item;
-    tracy::MemWrite( &item.hdr.type, (int)QueueType::DataPacket );
-    const size_t baseModuleInfo =  sizeof( imageEntry.start ) + sizeof( imageEntry.end ) +
-        sizeof( moduleNameLength ) + moduleNameLength +
-        sizeof( modulePathLength ) + modulePathLength +
-        sizeof( imageEntry.imageDebugInfo.debugFormat );
-
-    const uint32_t debugFormatSize = 0 + sizeof( uint32_t ) // DebugDataSize
-        + static_cast<uint32_t>( imageEntry.imageDebugInfo.debugDataSize );
-
-    const size_t bufferSize = baseModuleInfo + debugFormatSize;
-    void* queueBuffer = tracy_malloc( bufferSize );
-
-    int size = 0;
-
-    uint8_t* ptr = (uint8_t*)queueBuffer;
-
-    // baseModuleInfo
-    MemWrite( ptr, imageEntry.start );
-    ptr += sizeof( imageEntry.start );
-    size += sizeof( imageEntry.start );
-
-    MemWrite( ptr, imageEntry.end );
-    ptr += sizeof( imageEntry.end );
-    size += sizeof( imageEntry.end );
-
-    MemWrite( ptr, moduleNameLength );
-    ptr += sizeof( moduleNameLength );
-    size += sizeof( moduleNameLength );
-
-    memcpy( ptr, imageEntry.name ? imageEntry.name : "", moduleNameLength );
-    ptr += moduleNameLength;
-    size += moduleNameLength;
-
-    MemWrite( ptr, modulePathLength );
-    ptr += sizeof( modulePathLength );
-    size += sizeof( modulePathLength );
-
-    memcpy( ptr, imageEntry.path ? imageEntry.path : "", modulePathLength );
-    ptr += modulePathLength;
-    size += modulePathLength;
-
-    WriteDebugFieldToPacket( &ptr, &size, imageEntry.imageDebugInfo );
-
-
-    assert( size == bufferSize );
-
-    SendSingleDataPacket( queueBuffer, bufferSize, PacketDataType::ImageEntry );
-
-    QueueItem item2;
-    tracy::MemWrite( &item2.hdr.type, (int)QueueType::ModuleUpdate );
-
-    static_assert( tracy::QueueDataSize[(int)QueueType::ModuleUpdate] == sizeof( QueueItem ), "Size mismatch" );
-
-    NeedDataSize( sizeof( item2 ) );
-    AppendData( &item2, sizeof( item2 ) );
-
-    tracy_free( queueBuffer );
-}
-#endif
 
 void Profiler::SendCallstack( int32_t depth, const char* skipBefore )
 {

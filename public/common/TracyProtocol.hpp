@@ -49,7 +49,6 @@ enum ServerQuery : uint8_t
     ServerQueryParameter,
     ServerQueryFiberName,
     ServerQueryExternalName,
-    ServerQueryModuleUpdate,
     // Items above are high priority. Split order must be preserved. See IsQueryPrio().
     ServerQueryDisconnect,
     ServerQueryCallstackFrame,

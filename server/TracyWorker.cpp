@@ -26,9 +26,9 @@
 #define ZDICT_STATIC_LINKING_ONLY
 #include <zdict.h>
 
-#include "../common/TracyCallstack.hpp"
-#include "TracyDebugModulesHeaderFile.hpp"
 
+#include "../public/common/TracyCallstack.hpp"
+#include "../public/common/TracyFastVector.hpp"
 #include "../public/common/TracyProtocol.hpp"
 #include "../public/common/TracyStackFrames.hpp"
 #include "../public/common/TracySystem.hpp"
@@ -44,6 +44,7 @@
 #include "TracyTaskDispatch.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_pdqsort.h"
+#include "TracyAlloc.hpp"
 
 #ifdef TRACY_ENABLE // The worker should only have TRACY_ENABLE when self profiling
 #define TRACY_SELF_PROFILE
@@ -287,7 +288,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
 {
-#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
     InitCallstack();
 #endif
     m_data.sourceLocationExpand.push_back( 0 );
@@ -331,7 +332,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
-#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
     InitCallstack();
 #endif
     m_data.sourceLocationExpand.push_back( 0 );
@@ -578,7 +579,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
     , m_allowStringModification( allowStringModification )
     , m_symbolConfig( symbolResConfig )
 {
-#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
     InitCallstack();
 #endif
     auto loadStart = std::chrono::high_resolution_clock::now();
@@ -1711,8 +1712,9 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
                 DeserializeMallocedFastString( &imageEntry.path );
 
                 DeserializeDebugField( &imageEntry.imageDebugInfo );
-
+#ifdef TRACY_HAS_CALLSTACK
                 CacheImageAndLoadDebugInfo( imageEntry, m_symbolConfig.m_attemptResolutionByWorker );
+#endif
             }
         };
 
@@ -1974,7 +1976,7 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
 Worker::~Worker()
 {
-#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
     EndCallstack();
 #endif
     Shutdown();
@@ -4068,7 +4070,7 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySy
     uint64_t symbolAddress = GetCanonicalPointer( frameId );
     
     DecodeCallStackPtrStatus status = DecodeCallStackPtrStatusFlags::SymbolMissing;
-#ifndef TRACY_SELF_PROFILE // Self profiling will use the old path and query symbols
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
     if( m_symbolConfig.m_attemptResolutionByWorker )
     {
         // TODO: offload to a worker thread
@@ -5223,7 +5225,7 @@ void Worker::SourceLocationOverflowFailure()
 
 void Worker::ResolveSymbolLocally()
 {
-#ifndef TRACY_SELF_PROFILE // Would be racy by design when self profiling, need to offload this to the Symbol Worker 
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Would be racy by design when self profiling, need to offload this to the Symbol Worker
     const char * unresolvedStr = "[unresolved]";
     StringIdx unresolvedStrIdx = StoreString(unresolvedStr, strlen(unresolvedStr) ).idx;
 
@@ -8625,7 +8627,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
     }
 
 
-
+#ifdef TRACY_HAS_CALLSTACK
     auto SerializeDebugModuleField = [&]( const ImageDebugInfo& debugField )
         {
             f.Write( &debugField.debugFormat, sizeof( debugField.debugFormat ) );
@@ -8668,6 +8670,11 @@ void Worker::Write( FileWrite& f, bool fiDict )
 
     SerializeImageEntries( GetUserImageInfos() );
     SerializeImageEntries( GetKernelImageInfos() );
+#else
+    uint32_t moduleCount = 0;
+    f.Write( &moduleCount, sizeof( moduleCount ) ); // User images count
+    f.Write( &moduleCount, sizeof( moduleCount ) ); // Kernel images count
+#endif
     
 }
 
@@ -8974,9 +8981,9 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
 		imageDebugInfo.debugDataSize = debugFormatSize;
 
 	}
-
+#ifdef TRACY_HAS_CALLSTACK
 	CacheImageAndLoadDebugInfo(moduleCacheEntry, m_symbolConfig.m_attemptResolutionByWorker);
-
+#endif
 	FreePendingData();
 }
 

@@ -1797,7 +1797,16 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
             backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
         }
 
-        *_decodeCallStackPtrStatus = imageName ? DecodeCallStackPtrStatus::Success : DecodeCallStackPtrStatus::SymbolMissing;
+        if ( imageName )
+        {
+            *_decodeCallStackPtrStatus = DecodeCallStackPtrStatusFlags::Success;
+
+        }
+        else 
+        {
+        
+            *_decodeCallStackPtrStatus |= DecodeCallStackPtrStatusFlags::SymbolMissing;
+        }
         return { cb_data, uint8_t( cb_num ), imageName ? imageName : "[unknown]" };
     }
 #ifdef __linux
@@ -1812,7 +1821,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
             cb_data[0].line = 0;
             cb_data[0].symLen = symbolEntry->end - symbolEntry->start;
             cb_data[0].symAddr = symbolEntry->start;
-            *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
+            *_decodeCallStackPtrStatus = DecodeCallStackPtrStatusFlags::Success;
             return { cb_data, 1, symbolEntry->path ? symbolEntry->path : "<kernel>" };
         }
     }
@@ -1823,7 +1832,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
     cb_data[0].line = 0;
     cb_data[0].symLen = 0;
     cb_data[0].symAddr = 0;
-    *_decodeCallStackPtrStatus = DecodeCallStackPtrStatus::Success;
+    *_decodeCallStackPtrStatus = DecodeCallStackPtrStatusFlags::Success;
     return { cb_data, 1, "<kernel>" };
 }
 

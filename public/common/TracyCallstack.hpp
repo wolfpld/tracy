@@ -5,13 +5,56 @@
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"
 
+namespace tracy
+{
+
+enum DecodeCallStackPtrStatusFlags : uint8_t
+{
+    Success = 0,
+    ModuleMissing = 1 << 1,
+    SymbolMissing = 1 << 2,
+
+    ErrorMask = 0b11,
+
+    NewModuleFound = 1 << 3,
+    
+    Count
+};
+
+using DecodeCallStackPtrStatus = uint8_t;
+enum struct ImageDebugFormatId : uint8_t
+{
+    NoDebugFormat,
+    PdbDebugFormat,
+    GNUDebugFormat,
+    ElfDebugFormat
+};
+
+struct ImageDebugInfo
+{
+    ImageDebugFormatId debugFormat;
+    uint8_t* debugData;
+    uint32_t debugDataSize;
+};
+
+struct ImageEntry
+{
+    uint64_t start;
+    uint64_t end;
+    char* name;
+    char* path;
+ 
+    ImageDebugInfo imageDebugInfo;
+};
+}
+
 #ifndef TRACY_HAS_CALLSTACK
 
 namespace tracy
 {
 static constexpr bool has_callstack() { return false; }
 static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr; }
-void PreventSymbolResolution() { }
+inline void PreventSymbolResolution() { }
 }
 
 #else
@@ -44,28 +87,6 @@ namespace tracy
 
 static constexpr bool has_callstack() { return true; }
 
-enum DecodeCallStackPtrStatusFlags : uint8_t
-{
-    Success = 0,
-    ModuleMissing = 1 << 1,
-    SymbolMissing = 1 << 2,
-
-    ErrorMask = 0b11,
-
-    NewModuleFound = 1 << 3,
-    
-    Count
-};
-
-using DecodeCallStackPtrStatus = uint8_t;
-
-enum struct ImageDebugFormatId : uint8_t
-{
-    NoDebugFormat,
-    PdbDebugFormat,
-    GNUDebugFormat,
-    ElfDebugFormat
-};
 
 struct CallstackSymbolData
 {
@@ -89,23 +110,6 @@ struct CallstackEntryData
     const CallstackEntry* data;
     uint8_t size;
     const char* imageName;
-};
-
-struct ImageDebugInfo
-{
-    ImageDebugFormatId debugFormat;
-    uint8_t* debugData;
-    uint32_t debugDataSize;
-};
-
-struct ImageEntry
-{
-    uint64_t start;
-    uint64_t end;
-    char* name;
-    char* path;
- 
-    ImageDebugInfo imageDebugInfo;
 };
 
 

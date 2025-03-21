@@ -1,6 +1,8 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
+#include <stdint.h>
+
 #include "../common/TracyApi.h"
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"

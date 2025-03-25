@@ -447,7 +447,14 @@ void View::DrawZoneInfoWindow()
         }
         if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
         {
-            TextFocused( "User text:", m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+            TextDisabledUnformatted( "User text:" );
+            ImGui::SameLine();
+            if( ClipboardButton( 4 ) )
+            {
+                ImGui::SetClipboardText( m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted( m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
         }
 
         ImGui::Separator();

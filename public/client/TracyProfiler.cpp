@@ -3142,14 +3142,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
         success = false;
     }
 #  else
-    __try1( CrashFilterExecute )
-    {
-        memcpy( buf, data, size );
-    }
-    __except1
-    {
-        success = false;
-    }
+    memcpy( buf, data, size );
 #  endif
 #else
     // Send through the pipe to ensure safe reads

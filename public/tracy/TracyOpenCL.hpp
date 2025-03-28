@@ -40,7 +40,7 @@ using TracyCLCtx = void*;
 #include <sstream>
 
 #include "Tracy.hpp"
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 #include "../client/TracyProfiler.hpp"
 #include "../common/TracyAlloc.hpp"
 

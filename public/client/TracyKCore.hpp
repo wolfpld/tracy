@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 
-#include "TracyFastVector.hpp"
+#include "../common/TracyFastVector.hpp"
 
 namespace tracy
 {

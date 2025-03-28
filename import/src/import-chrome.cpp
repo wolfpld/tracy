@@ -346,7 +346,9 @@ int main( int argc, char** argv )
         return out;
     };
 
-    tracy::Worker worker( getFilename(output), getFilename(input), timeline, messages, plots, threadNames );
+    tracy::Worker::SymbolResolutionConfig symConfig{};
+    symConfig.m_attemptResolutionByWorker = false;  
+    tracy::Worker worker( getFilename(output), getFilename(input), timeline, messages, plots, threadNames, symConfig );
 
     auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
     if( !w )

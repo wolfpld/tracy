@@ -112,6 +112,8 @@ private:
 class IpAddress
 {
 public:
+    static constexpr size_t TEXT_SIZE = 17;
+
     IpAddress();
     ~IpAddress();
 
@@ -127,7 +129,7 @@ public:
 
 private:
     uint32_t m_number;
-    char m_text[17];
+    char m_text[TEXT_SIZE];
 };
 
 class UdpListen

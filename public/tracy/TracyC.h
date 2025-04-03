@@ -119,6 +119,10 @@ typedef const void* TracyCLockCtx;
 #  define TracyCFiberLeave
 #endif
 
+#define TracySuspend
+#define TracyResume
+#define TracyIsActive
+
 #else
 
 #ifndef TracyConcat
@@ -374,6 +378,14 @@ TRACY_API void ___tracy_fiber_leave( void );
 #  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
+
+TRACY_API void ___tracy_suspend( void );
+TRACY_API void ___tracy_resume( void );
+TRACY_API int32_t ___tracy_is_active( void );
+
+#define TracySuspend ___tracy_suspend( void );
+#define TracyResume ___tracy_resume( void );
+#define TracyIsActive ___tracy_is_active( void );
 
 #endif
 

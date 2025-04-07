@@ -217,6 +217,6 @@ endif()
 CPMAddPackage(
     NAME PPQSort
     GITHUB_REPOSITORY GabTux/PPQSort
-    VERSION 1.0.4
+    VERSION 1.0.5
     EXCLUDE_FROM_ALL TRUE
 )

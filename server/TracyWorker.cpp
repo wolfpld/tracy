@@ -1441,7 +1441,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 uint8_t cpu, wakeupcpu;
                 int8_t reason, state;
                 f.Read7( deltaWakeup, deltaStart, diff, cpu, reason, state, thread );
-                if ( fileVer >= FileVersion( 0, 12, 0 ) )
+                if ( fileVer >= FileVersion( 0, 11, 3 ) )
                 {
                     f.Read(wakeupcpu);
                 }

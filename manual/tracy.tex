@@ -3542,9 +3542,45 @@ Each line in the thread execution display represents a separate logical CPU thre
 \item \emph{Gray} -- Threads assigned to other programs running in the system.
 \end{itemize}
 
-When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores.
+When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores. 
 
-Clicking the \LMB{}~left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before.
+It will also add lines starting with a filed circle to denote wake up events. Those are useful to pinpoint the origin of a thread waking up, especially when holding locks. It may also start from an empty region, denoting the time at which the kernel made chose to schedule or boost the priority of your thread. Wake ups will have a different color based on the reason for which the thread was waiting to be scheduled. 
+
+\begin{figure}[h]
+	\centering\begin{tikzpicture}
+\draw(3,14) node[anchor=east] {Core 0};
+\draw(3,13.5) node[anchor=east] {Core 1};
+\draw(3,13) node[anchor=east] {Core 2};
+\draw(3,12.5) node[anchor=east] {Core 3};
+\draw(3,12) node[anchor=east] {Core 4};
+
+\draw  (3,14.25) rectangle (10,13.75)  node[midway]{Thread A};
+\draw  (10,14.25) rectangle (13,13.75)  node[midway]{Thread C};
+
+\draw  (6,13.75) rectangle (9,13.25)  node[midway]{Thread D};
+\draw  (14,13.75) rectangle (16,13.25) node[midway]{Thread B};
+
+\draw  (7.5,13.25) rectangle (17,12.75) node[midway]{Thread E};
+
+\draw  (5.75,12.75) rectangle (3.5,12.25) node[midway]{Thread B};
+
+\draw  (10.5,12.25) rectangle (12,11.75) node[midway]{Thread B};
+
+\draw (9.25,14) circle (0.15cm) [ fill={rgb,255:red,0; green,0; blue,0} ] ;
+\draw (9.25,14) -- (10.5,12);
+\draw[very thick,double] (10.5,12.25) -- (10.5,11.75);
+
+\draw (5.75,12.5) -- (10.5,12);
+
+\draw (12,12) -- (14,13.5);
+	\end{tikzpicture}
+	\caption{Thread migration and wake up.}
+	\label{plot}
+\end{figure}
+
+In the above picture, \emph{Thread B} migrates from \emph{Core 3} to \emph{Core 4} due to a wake up from \emph{Thread A}. Then it migrates from \emph{Core 4} to \emph{Core 1}.
+
+Clicking the \LMB{}~left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before. It will also lock the selected thread so that you may move explore data while retaining the visualization of thread migrations and wake up events.
 
 Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironmentos}) or give you a hint to add more instrumentation macros.
 

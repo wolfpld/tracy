@@ -242,11 +242,11 @@ void View::DrawTimeline()
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
-    if (!m_freezeCpuDataSelectedThread)
+    if ( !m_freezeCpuDataSelectedThread )
     {
-        m_drawThreadMigrations.Decay(0);
-        m_drawThreadHighlight.Decay(0);
-        m_cpuDataThread.Decay(0);
+        m_drawThreadMigrations.Decay( 0 );
+        m_drawThreadHighlight.Decay( 0 );
+        m_cpuDataThread.Decay( 0 );
     }
     m_zoneHover = nullptr;
     m_zoneHover2.Decay( nullptr );

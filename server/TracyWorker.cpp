@@ -1441,7 +1441,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 uint8_t cpu, wakeupcpu;
                 int8_t reason, state;
                 f.Read7( deltaWakeup, deltaStart, diff, cpu, reason, state, thread );
-                if (fileVer >= FileVersion(0, 12, 0))
+                if ( fileVer >= FileVersion( 0, 12, 0 ) )
                 {
                     f.Read(wakeupcpu);
                 }
@@ -6785,7 +6785,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             //      We should handle this properly in some way, but it is unclear how. We can't even really detect it properly other than when cpu doesn't match.
             assert( item.Cpu() == ev.cpu );
             item.SetEnd( time );
-            item.SetReason( ev.oldThreadWaitReason);
+            item.SetReason( ev.oldThreadWaitReason );
             item.SetState( ev.oldThreadState );
 
             const auto dt = time - item.Start();
@@ -6892,7 +6892,7 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
         it = m_data.ctxSwitch.emplace( ev.thread, ctx ).first;
     }
     auto& data = it->second->v;
-    if (!data.empty() && !data.back().IsEndValid())
+    if( !data.empty() && !data.back().IsEndValid() )
     {
         // We received the wakeup before thread switches out. This can actually happen!
         // So instead of dropping the information, keep the last one around so that we

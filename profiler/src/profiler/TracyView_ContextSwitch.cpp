@@ -266,7 +266,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     {
                         ZoomToRange( prev.End(), ev.WakeupVal() );
                     }
-                    TextFocused("Readied by CPU:", RealToString(ev.WakeupCpu()));
+                    TextFocused( "Readied by CPU:", RealToString( ev.WakeupCpu() ) );
                     tooltip = true;
                 }
                 if( tooltip )

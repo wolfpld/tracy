@@ -1500,8 +1500,8 @@ void SysTraceWorker( void* ptr )
                             TracyLfqPrepare( QueueType::ThreadWakeup );
                             MemWrite( &item->threadWakeup.time, t0 );
                             MemWrite( &item->threadWakeup.thread, pid );
-                            decltype(item->threadWakeup.cpu) cpu = target_cpu;
-                            MemWrite( &item->threadWakeup.cpu,  target_cpu);
+                            uint8_t cpu = target_cpu;
+                            MemWrite( &item->threadWakeup.cpu, target_cpu );
 
                             int8_t adjustReason = -1; // Does not exist on Linux
                             int8_t adjustIncrement = 0; // Should perhaps store the new prio?

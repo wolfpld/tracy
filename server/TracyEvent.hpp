@@ -542,6 +542,7 @@ struct ContextSwitchData
         Fiber = 99,
         NoState = 100,
 
+        // See KWAIT_REASON in the WDK's wdm.h
         Win32_Executive         = 0 ,
         Win32_FreePage          = 1 ,
         Win32_PageIn            = 2 ,

@@ -408,7 +408,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
             const auto lnSize = GetScale() * 2.f;
 
 
-            auto computeScreenPos = [&]( uint64_t t, uint8_t cpu ) {
+            auto computeScreenPos = [&]( int64_t t, uint8_t cpu ) {
                 const auto px = ( t - m_vd.zvStart ) * pxns;
                 return dpos + ImVec2( px, origOffset + sty * 0.5f + cpu * sstep );
             };

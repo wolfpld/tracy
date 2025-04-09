@@ -33,6 +33,7 @@ else()
 endif()
 
 find_package(Threads REQUIRED)
+find_package(rocprofiler-sdk REQUIRED PATHS "/opt/rocm/lib/cmake")
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
@@ -55,6 +56,7 @@ target_link_libraries(
     PUBLIC
         Threads::Threads
         ${CMAKE_DL_LIBS}
+        rocprofiler-sdk::rocprofiler-sdk
 )
 
 if(TRACY_Fortran)

@@ -144,7 +144,7 @@ int64_t TimelineItemThread::RangeEnd() const
 
 void TimelineItemThread::HeaderTooltip( const char* label ) const
 {
-    m_view.HighlightThread( m_thread->id, false );
+    m_view.HighlightThread( m_thread->id );
 
     ImGui::BeginTooltip();
     SmallColorBox( GetThreadColor( m_thread->id, 0, m_view.GetViewData().dynamicColors ) );
@@ -279,7 +279,7 @@ void TimelineItemThread::DrawExtraPopupItems()
 {
     if( m_view.GetViewData().drawCpuUsageGraph && ImGui::MenuItem( ICON_FA_TIMELINE " Select in CPU timeline" ) )
     {
-        m_view.HighlightThread( m_thread->id, true );
+        m_view.SelectThread( m_thread->id );
     }
  }
 

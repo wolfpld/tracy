@@ -1434,17 +1434,15 @@ bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDic
     return true;
 }
 
-void View::HighlightThread( uint64_t thread, bool force )
+void View::HighlightThread( uint64_t thread )
 {
-    if( force || !m_freezeCpuDataSelectedThread )
-    {
-        m_drawThreadMigrations = thread;
-        m_drawThreadHighlight = thread;
-    }
-    if( force )
-    {
-        m_freezeCpuDataSelectedThread = true;
-    }
+    m_drawThreadMigrations = thread;
+    m_drawThreadHighlight = thread;
+}
+
+void View::SelectThread( uint64_t thread )
+{
+    m_selectedThread = thread;
 }
 
 bool View::WasActive() const

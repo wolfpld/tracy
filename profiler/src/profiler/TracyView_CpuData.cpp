@@ -40,9 +40,11 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         const auto cpuUsageHeight = floor( 30.f * GetScale() );
         if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
         {
+            // Clicked anywhere in the CPU timeline => Clear selected thread.
+            // If we actually clicked a thread, it will be set again later on to the new value
             if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
             {
-                m_freezeCpuDataSelectedThread = false;
+                m_selectedThread = 0;
             }
             const float cpuCntRev = 1.f / cpuCnt;
             int pos = 0;
@@ -295,14 +297,12 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(%s)", RealToString( thread ) );
-                            if ( !m_freezeCpuDataSelectedThread )
+                            
+                            m_drawThreadMigrations = thread;
+                            m_cpuDataThread = thread;
+                            if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
                             {
-                                m_drawThreadMigrations = thread;
-                                m_cpuDataThread = thread;
-                                if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
-                                {
-                                    m_freezeCpuDataSelectedThread = true;
-                                }
+                                m_selectedThread = thread;
                             }
                         }
                         else
@@ -456,87 +456,111 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
     if( m_drawThreadMigrations != 0 )
     {
-        auto ctxSwitch = m_worker.GetContextSwitchData( m_drawThreadMigrations );
-        if( ctxSwitch )
-        {
-            const auto color = HighlightColor( GetThreadColor( m_drawThreadMigrations, -8 ) );
+        DrawThreadMigrations( ctx, origOffset, m_drawThreadMigrations );
+    }
 
-            auto& v = ctxSwitch->v;
-            auto it = std::lower_bound( v.begin(), v.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.End() < r; } );
-            if( it != v.begin() ) --it;
-            auto end = std::lower_bound( it, v.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
-            if( end == v.end() ) --end;
-
-            const auto bgSize = GetScale() * 4.f;
-            const auto lnSize = GetScale() * 2.f;
-
-
-            auto computeScreenPos = [&]( int64_t t, uint8_t cpu ) {
-                const auto px = ( t - m_vd.zvStart ) * pxns;
-                return dpos + ImVec2( px, origOffset + sty * 0.5f + cpu * sstep );
-            };
-
-            auto drawWakeUp = [&]( int64_t start, ImVec2 startPos, int64_t wakeup, uint8_t wakeupcpu, uint32_t wakecolor, bool forceDraw ) {
-                if( start != wakeup )
-                {
-                    const auto pw = computeScreenPos( wakeup, wakeupcpu );
-                    const auto wakeupWidthPixels = startPos.x - pw.x;
-                    if( forceDraw || ( wakeupWidthPixels >= 0.5 ) )
-                    {
-
-                        DrawLine( draw, pw, startPos, wakecolor );
-                        draw->AddCircleFilled( pw, bgSize, wakecolor );
-                        
-                        // Vertical line at beginning of thread to emphasize wakeup
-                        if( wakeupWidthPixels >= 3 )
-                        {
-                            DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, 0xFF000000, bgSize );
-                            DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, wakecolor );
-                        }
-                    }
-                }
-            };
-
-            if( it != v.end() && it->Start() > m_vd.zvStart )
-            {
-                drawWakeUp( it->Start(), computeScreenPos( it->Start(), it->Cpu() ), it->WakeupVal(), it->WakeupCpu(), 0xFF444444, true);
-            }
-            while( it < end )
-            {
-                const auto t0 = it->End();
-                const auto cpu0 = it->Cpu();
-                const auto waitReason = it->Reason();
-                const auto waitState = it->State();
-
-                ++it;
-
-                
-                const auto t1 = it->Start();
-                const auto cpu1 = it->Cpu();
-
-                const auto p0 = computeScreenPos( t0, cpu0 );
-                const auto p1 = computeScreenPos( t1, cpu1 );
-
-                const auto migrationWidthPixels = p1.x - p0.x;
-                if( migrationWidthPixels < 2 )
-                {
-                    DrawLine( draw, p0, p1, color );
-                }
-                else
-                {
-                    DrawLine( draw, p0, p1, 0xFF000000, bgSize );
-                    DrawLine( draw, p0, p1, color, lnSize );
-                }
-
-                const auto hue = 0.38f * float(waitReason); // Golden angle, gives new colors for each reason
-                const auto wakecolor = ImColor::HSV(hue, 1.f, 1.f);
-                drawWakeUp( t1, p1, it->WakeupVal(), it->WakeupCpu(), wakecolor, (migrationWidthPixels >= 30) );
-            }
-        }
+    if( m_selectedThread != 0 )
+    {
+        DrawThreadMigrations( ctx, origOffset, m_selectedThread );
     }
 
     ImGui::PopFont();
     return true;
+}
+
+void View::DrawThreadMigrations( const TimelineContext& ctx, const int origOffset, uint64_t thread )
+{
+    const auto& wpos = ctx.wpos;
+    const auto w = ctx.w;
+    const auto ty = ctx.ty;
+    const auto sty = ctx.sty;
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto dpos = wpos + ImVec2(0.5f, 0.5f);
+    const auto yMin = ctx.yMin;
+    const auto yMax = ctx.yMax;
+    const auto hover = ctx.hover;
+    const auto vStart = ctx.vStart;
+    const auto sstep = sty + 1;
+
+    auto draw = ImGui::GetWindowDrawList();
+    auto ctxSwitch = m_worker.GetContextSwitchData( thread );
+    if( ctxSwitch )
+    {
+        const auto color = HighlightColor( GetThreadColor( thread, -8 ) );
+
+        auto& v = ctxSwitch->v;
+        auto it = std::lower_bound( v.begin(), v.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.End() < r; } );
+        if( it != v.begin() ) --it;
+        auto end = std::lower_bound( it, v.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+        if( end == v.end() ) --end;
+
+        const auto bgSize = GetScale() * 4.f;
+        const auto lnSize = GetScale() * 2.f;
+
+
+        auto computeScreenPos = [&]( int64_t t, uint8_t cpu ) {
+            const auto px = ( t - m_vd.zvStart ) * pxns;
+            return dpos + ImVec2( px, origOffset + sty * 0.5f + cpu * sstep );
+        };
+
+        auto drawWakeUp = [&]( int64_t start, ImVec2 startPos, int64_t wakeup, uint8_t wakeupcpu, uint32_t wakecolor, bool forceDraw ) {
+            if( start != wakeup )
+            {
+                const auto pw = computeScreenPos( wakeup, wakeupcpu );
+                const auto wakeupWidthPixels = startPos.x - pw.x;
+                if( forceDraw || ( wakeupWidthPixels >= 0.5 ) )
+                {
+
+                    DrawLine( draw, pw, startPos, wakecolor );
+                    draw->AddCircleFilled( pw, bgSize, wakecolor );
+                        
+                    // Vertical line at beginning of thread to emphasize wakeup
+                    if( wakeupWidthPixels >= 3 )
+                    {
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, 0xFF000000, bgSize );
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, wakecolor );
+                    }
+                }
+            }
+        };
+
+        if( it != v.end() && it->Start() > m_vd.zvStart )
+        {
+            drawWakeUp( it->Start(), computeScreenPos( it->Start(), it->Cpu() ), it->WakeupVal(), it->WakeupCpu(), 0xFF444444, true);
+        }
+        while( it < end )
+        {
+            const auto t0 = it->End();
+            const auto cpu0 = it->Cpu();
+            const auto waitReason = it->Reason();
+            const auto waitState = it->State();
+
+            ++it;
+
+                
+            const auto t1 = it->Start();
+            const auto cpu1 = it->Cpu();
+
+            const auto p0 = computeScreenPos( t0, cpu0 );
+            const auto p1 = computeScreenPos( t1, cpu1 );
+
+            const auto migrationWidthPixels = p1.x - p0.x;
+            if( migrationWidthPixels < 2 )
+            {
+                DrawLine( draw, p0, p1, color );
+            }
+            else
+            {
+                DrawLine( draw, p0, p1, 0xFF000000, bgSize );
+                DrawLine( draw, p0, p1, color, lnSize );
+            }
+
+            const auto hue = 0.38f * float(waitReason); // Golden angle, gives new colors for each reason
+            const auto wakecolor = ImColor::HSV(hue, 1.f, 1.f);
+            drawWakeUp( t1, p1, it->WakeupVal(), it->WakeupCpu(), wakecolor, (migrationWidthPixels >= 30) );
+        }
+    }
 }
 
 void View::DrawCpuDataWindow()

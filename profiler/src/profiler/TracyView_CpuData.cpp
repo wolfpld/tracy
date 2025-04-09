@@ -413,6 +413,31 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 return dpos + ImVec2( px, origOffset + sty * 0.5f + cpu * sstep );
             };
 
+            auto drawWakeUp = [&]( int64_t start, ImVec2 startPos, int64_t wakeup, uint8_t wakeupcpu, uint32_t wakecolor, bool forceDraw ) {
+                if( start != wakeup )
+                {
+                    const auto pw = computeScreenPos( wakeup, wakeupcpu );
+                    const auto wakeupWidthPixels = startPos.x - pw.x;
+                    if( forceDraw || ( wakeupWidthPixels >= 0.5 ) )
+                    {
+
+                        DrawLine( draw, pw, startPos, wakecolor );
+                        draw->AddCircleFilled( pw, bgSize, wakecolor );
+                        
+                        // Vertical line at beginning of thread to emphasize wakeup
+                        if( wakeupWidthPixels >= 3 )
+                        {
+                            DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, 0xFF000000, bgSize );
+                            DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, wakecolor );
+                        }
+                    }
+                }
+            };
+
+            if( it != v.end() && it->Start() > m_vd.zvStart )
+            {
+                drawWakeUp( it->Start(), computeScreenPos( it->Start(), it->Cpu() ), it->WakeupVal(), it->WakeupCpu(), 0xFF444444, true);
+            }
             while( it < end )
             {
                 const auto t0 = it->End();
@@ -440,28 +465,9 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                     DrawLine( draw, p0, p1, color, lnSize );
                 }
 
-                if( t1 != it->WakeupVal() )
-                {
-                    const auto wakeup = it->WakeupVal();
-                    const auto wakeupcpu = it->WakeupCpu();
-                    const auto pw = computeScreenPos( wakeup, wakeupcpu );
-                    const auto wakeupWidthPixels = p1.x - pw.x;
-                    if( ( migrationWidthPixels >= 30 ) || ( wakeupWidthPixels >= 0.5 ) )
-                    {
-                        const auto hue = 0.38f * float( waitReason ); // Golden angle
-                        const auto wakecolor = ImColor::HSV( hue, 1.f, 1.f );
-
-                        DrawLine( draw, pw, p1, wakecolor );
-                        draw->AddCircleFilled( pw, bgSize, wakecolor );
-                        
-                        // Vertical line at beginning of thread to emphasize wakeup
-                        if( wakeupWidthPixels >= 3 )
-                        {
-                            DrawLine( draw, ImVec2{ p1.x ,p1.y - sty * 0.75f }, ImVec2{ p1.x , p1.y + sty * 0.75f }, 0xFF000000, bgSize );
-                            DrawLine( draw, ImVec2{ p1.x ,p1.y - sty * 0.75f }, ImVec2{ p1.x , p1.y + sty * 0.75f }, wakecolor );
-                        }
-                    }
-                }
+                const auto hue = 0.38f * float(waitReason); // Golden angle, gives new colors for each reason
+                const auto wakecolor = ImColor::HSV(hue, 1.f, 1.f);
+                drawWakeUp( t1, p1, it->WakeupVal(), it->WakeupCpu(), wakecolor, (migrationWidthPixels >= 30) );
             }
         }
     }

@@ -216,15 +216,17 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                     const char* txt;
                     auto label = GetThreadContextData( thread, local, untracked, txt );
 
-                    uint32_t color;
-                    if( m_vd.dynamicColors != 0 )
-                    {
-                        color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
-                    }
-                    else
-                    {
-                        color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
-                    }
+                    auto getDisplayThreadColor = [this]( uint64_t thread, bool local, bool untracked ) {
+                        if( m_vd.dynamicColors != 0 )
+                        {
+                            return local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
+                        }
+                        else
+                        {
+                            return local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
+                        }
+                    };
+                    uint32_t color = getDisplayThreadColor( thread, local, untracked );
 
                     draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), color );
                     if( m_drawThreadHighlight == thread )
@@ -330,6 +332,67 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                         TextFocused( "Start time:", TimeToStringExact( ev.Start() ) );
                         TextFocused( "End time:", TimeToStringExact( end ) );
                         TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        
+                        // Display data about the switch in
+                        auto threadCtxSwitches = m_worker.GetContextSwitchData( thread );
+                        if( threadCtxSwitches )
+                        {
+                            auto& v = threadCtxSwitches->v;
+                            auto it = std::lower_bound( v.begin(), v.end(), ev.Start(), [](const auto& l, const auto& r) { return l.End() < r; } );
+                            // We should have the data, or something went wrong.
+                            assert( it != v.end() && it->Start() == ev.Start() );
+
+                            // Do we have information about the previous CSwitch?
+                            if( it != v.begin() )
+                            {
+                                auto& prev = *( it - 1 );
+                                    
+                                ImGui::Separator();
+
+                                TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
+                                ImGui::SameLine();
+                                ImGui::PushFont( m_smallFont );
+                                ImGui::AlignTextToFramePadding();
+                                TextDisabledUnformatted( DecodeContextSwitchReason( prev.Reason() ) );
+                                ImGui::PopFont();
+                                TextFocused( "Wait state:", DecodeContextSwitchStateCode( prev.State() ) );
+                                TextFocused( "Waiting time:", TimeToString( it->WakeupVal() - prev.End() ) );
+                            }
+                            
+                            // Do we have information about the readying thread?
+                            if( it->Start() - it->WakeupVal() )
+                            {
+                                ImGui::Separator();
+                                TextFocused( "WakeUp delay:", TimeToString( it->Start() - it->WakeupVal() ) );
+                                assert( it->WakeupCpu() < cpuCnt );
+                                const auto& wakeUpCpuCSwitches = cpuData[it->WakeupCpu()].cs;
+                                auto wakeupit = std::lower_bound( wakeUpCpuCSwitches.begin(), wakeUpCpuCSwitches.end(), it->WakeupVal(), []( const auto& l, const auto& r ) { return l.End() < r; } );
+                                if( wakeupit != wakeUpCpuCSwitches.end()
+                                    && wakeupit->Start() < it->WakeupVal()
+                                    && it->WakeupVal() < wakeupit->End() )
+                                {
+                                    TextDisabledUnformatted( "Woken up by:" );
+                                    ImGui::SameLine();
+
+                                    const auto wakeupThread = m_worker.DecompressThreadExternal( wakeupit->Thread() );
+                                    bool wakeupThreadLocal, wakeupThreadUntracked;
+                                    const char* wakeUpThreadProgram;
+                                    auto wakeuplabel = GetThreadContextData( wakeupThread, wakeupThreadLocal, wakeupThreadUntracked, wakeUpThreadProgram );
+                                    
+                                    uint32_t wakeupThreadColor = getDisplayThreadColor( wakeupThread, wakeupThreadLocal, wakeupThreadUntracked );
+                                    TextColoredUnformatted( HighlightColor<75>( wakeupThreadColor ), wakeuplabel );
+                                    ImGui::SameLine();
+                                    ImGui::TextDisabled( "(%s)", RealToString( wakeupThread ) );
+                                }
+                                else
+                                {
+                                    TextDisabledUnformatted( "Woken up by Kernel" );
+                                }
+                            }
+
+                        }
+
+
                         ImGui::EndTooltip();
                         ImGui::PushFont( m_smallFont );
 

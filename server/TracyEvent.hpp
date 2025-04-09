@@ -606,9 +606,6 @@ struct ContextSwitchData
     tracy_force_inline uint16_t Thread() const { return _thread; }
     tracy_force_inline void SetThread( uint16_t thread ) { _thread = thread; }
 
-    tracy_force_inline void SetStartCpu( int64_t start, uint8_t cpu ) { assert( start < (int64_t)( 1ull << 47 ) ); _start.SetVal( start ); _cpu = cpu; }
-    tracy_force_inline void SetEndReasonState( int64_t end, int8_t reason, int8_t state ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; _reason = reason; _state = state; }
-
     Int48 _start;
     uint8_t _cpu;
     uint8_t _wakeupcpu;

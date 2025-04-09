@@ -1453,10 +1453,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 ptr->SetWakeup( refTime );
                 ptr->SetWakeupCpu( wakeupcpu );
                 refTime += deltaStart;
-                ptr->SetStartCpu( refTime, cpu );
+                ptr->SetStart( refTime );
+                ptr->SetCpu( cpu );
                 if( diff > 0 ) runningTime += diff;
                 refTime += diff;
-                ptr->SetEndReasonState( refTime, reason, state );
+                ptr->SetEnd( refTime );
+                ptr->SetReason( reason );
+                ptr->SetState( state );
                 ptr->SetThread( CompressThread( thread ) );
                 ptr++;
             }
@@ -7063,10 +7066,13 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
     }
     auto& data = cit->second->v;
     auto& item = data.push_next();
-    item.SetStartCpu( t, 0 );
+    item.SetCpu( t );
+    item.SetCpu( 0 );
     item.SetWakeup( t );
     item.SetWakeupCpu( 0 );
-    item.SetEndReasonState( -1, ContextSwitchData::Fiber, -1 );
+    item.SetEnd( -1 );
+    item.SetReason( ContextSwitchData::Fiber );
+    item.SetState( -1 );
     item.SetThread( CompressThread( ev.thread ) );
 }
 

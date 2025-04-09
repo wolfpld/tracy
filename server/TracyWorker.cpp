@@ -6781,9 +6781,9 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             auto& item = data.back();
             assert( item.Start() <= time );
             assert( item.End() == -1 );
-            //TODO: it may happen that events are being dropped (for example due to breaking in the debugger, or we are simply too slow to handle the events)
-            //      We should handle this properly in some way, but it is unclear how. We can't even really detect it properly other than when cpu doesn't match.
-            assert( item.Cpu() == ev.cpu );
+            //TODO: It may happen that events are being dropped (for example due to breaking in the debugger, or we are simply too slow to handle the events)
+            //      We should handle this properly in some way, but it is unclear how. We can't even really detect it properly here other than when cpu doesn't match.
+            //      Something could be displayed onscreen when gaps are detected at the event ringbuffer level?
             item.SetEnd( time );
             item.SetReason( ev.oldThreadWaitReason );
             item.SetState( ev.oldThreadState );

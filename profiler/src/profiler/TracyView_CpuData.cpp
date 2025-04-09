@@ -429,7 +429,8 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                 const auto p0 = computeScreenPos( t0, cpu0 );
                 const auto p1 = computeScreenPos( t1, cpu1 );
 
-                if( p1.x - p0.x < 2 )
+                const auto migrationWidthPixels = p1.x - p0.x;
+                if( migrationWidthPixels < 2 )
                 {
                     DrawLine( draw, p0, p1, color );
                 }
@@ -444,14 +445,22 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                     const auto wakeup = it->WakeupVal();
                     const auto wakeupcpu = it->WakeupCpu();
                     const auto pw = computeScreenPos( wakeup, wakeupcpu );
-                    
-                    const auto hue = 0.38f * float( waitReason ); // Golden angle
-                    const auto wakecolor = ImColor::HSV( hue, 1.f, 1.f );
+                    const auto wakeupWidthPixels = p1.x - pw.x;
+                    if( ( migrationWidthPixels >= 30 ) || ( wakeupWidthPixels >= 0.5 ) )
+                    {
+                        const auto hue = 0.38f * float( waitReason ); // Golden angle
+                        const auto wakecolor = ImColor::HSV( hue, 1.f, 1.f );
 
-                    DrawLine( draw, pw, p1, wakecolor );
-                    draw->AddCircleFilled( pw, bgSize, wakecolor );
-                    DrawLine( draw, ImVec2{ p1.x ,p1.y - sty * 0.75f }, ImVec2{ p1.x , p1.y + sty * 0.75f }, 0xFF000000, bgSize );
-                    DrawLine( draw, ImVec2{ p1.x ,p1.y - sty * 0.75f }, ImVec2{ p1.x , p1.y + sty * 0.75f }, wakecolor );
+                        DrawLine( draw, pw, p1, wakecolor );
+                        draw->AddCircleFilled( pw, bgSize, wakecolor );
+                        
+                        // Vertical line at beginning of thread to emphasize wakeup
+                        if( wakeupWidthPixels >= 3 )
+                        {
+                            DrawLine( draw, ImVec2{ p1.x ,p1.y - sty * 0.75f }, ImVec2{ p1.x , p1.y + sty * 0.75f }, 0xFF000000, bgSize );
+                            DrawLine( draw, ImVec2{ p1.x ,p1.y - sty * 0.75f }, ImVec2{ p1.x , p1.y + sty * 0.75f }, wakecolor );
+                        }
+                    }
                 }
             }
         }

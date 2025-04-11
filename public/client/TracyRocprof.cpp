@@ -1,6 +1,7 @@
 #include <rocprofiler-sdk/registration.h>
 #include <rocprofiler-sdk/rocprofiler.h>
 #include "TracyProfiler.hpp"
+#include "tracy/TracyC.h"
 
 #include <iostream>
 #include <vector>
@@ -45,7 +46,7 @@ struct ToolData
 };
 
 using namespace tracy;
-const char * name = "SQ_WAVES";
+const char * PLOT_NAME = "SQ_WAVES";
 
 rocprofiler_context_id_t&
 get_client_ctx()
@@ -56,7 +57,7 @@ get_client_ctx()
 
 const char * CTX_NAME = "rocprofv3";
 
-uint8_t iree_tracing_gpu_context_allocate() {
+uint8_t gpu_context_allocate() {
 
     timespec ts;
     clock_gettime(CLOCK_BOOTTIME, &ts);
@@ -113,71 +114,34 @@ uint8_t iree_tracing_gpu_context_allocate() {
     return context_id;
 }
 
-uint32_t get_src_loc() {
-    uint32_t line = 0;
-    
-    const char * FILE_NAME = "<unknown>";
-    const char * FN_NAME = "<unknown>";
-    const char * NAME = "<unknown>";
-
-    size_t file_name_length = strlen(FILE_NAME);
-    // char* file_name = (char*)tracy::tracy_malloc(file_name_length);
-    // memcpy(file_name, FILE_NAME, file_name_length);
-
-    size_t fn_name_length = strlen(FN_NAME);
-    // char* fn_name = (char*)tracy::tracy_malloc(fn_name_length);
-    // memcpy(fn_name, FN_NAME, fn_name_length);
-
-    size_t name_length = strlen(NAME);
-    // char* name = (char*)tracy::tracy_malloc(name_length);
-    // memcpy(name, NAME, name_length);
-
-    const auto src_loc = tracy::Profiler::AllocSourceLocation(
-        line, FILE_NAME, file_name_length, FN_NAME, fn_name_length,
-        NAME, name_length);
+uint64_t kernel_src_loc(ToolData *data, uint64_t kernel_id) {
+    uint64_t src_loc = 0;
+    auto _lk = std::unique_lock{data->mut};
+    rocprofiler_kernel_id_t kid = kernel_id;
+    if (data->client_kernels.count(kid)) {
+        auto &sym_data = data->client_kernels[kid];
+        const char * name = sym_data.kernel_name;
+        size_t name_len = strlen(name);
+        uint32_t line = 0;
+        src_loc = tracy::Profiler::AllocSourceLocation(
+            line, NULL, 0, name, name_len,
+            NULL, 0);
+    }
     return src_loc;
 }
 
-void
-record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
-                rocprofiler_record_counter_t*                record_data,
-                size_t                                       record_count,
-                rocprofiler_user_data_t  user_data ,
-                void* callback_data_args)
-{
-    // std::stringstream ss;
-    // ss << "Dispatch_Id=" << dispatch_data.dispatch_info.dispatch_id
-    //    << ", Kernel_id=" << dispatch_data.dispatch_info.kernel_id
-    //    << ", Corr_Id=" << dispatch_data.correlation_id.internal << ": ";
-    // for(size_t i = 0; i < record_count; ++i)
-    //     ss << "(Id: " << record_data[i].id << " Value [D]: " << record_data[i].counter_value
-    //        << "),";
-
-    // auto* tool = static_cast<tool_data_t*>(callback_data_args);
-    // if(!tool || !tool->output_stream) throw std::runtime_error{"nullptr to output stream"};
-
-    // auto _lk = std::unique_lock{tool->mut};
-    // *tool->output_stream << "[" << __FUNCTION__ << "] " << ss.str() << "\n";
-
-    ToolData * data = static_cast<ToolData*>(callback_data_args);
+void record_interval(ToolData *data, rocprofiler_timestamp_t start_timestamp,
+    rocprofiler_timestamp_t end_timestamp,
+    uint64_t src_loc) {
+        
     uint16_t query_id = 0;
     uint8_t context_id = data->context_id;
-    uint64_t src_loc = 0;
-
+ 
     {
         auto _lk = std::unique_lock{data->mut};
         query_id = data->query_id;
         data->query_id++;
-        rocprofiler_kernel_id_t kid = dispatch_data.dispatch_info.kernel_id;
-        if (data->client_kernels.count(kid)) {
-            auto &sym_data = data->client_kernels[kid];
-            uint32_t line = 0;
-            src_loc = tracy::Profiler::AllocSourceLocation(
-                line, NULL, 0, NULL, 0,
-                sym_data.kernel_name, strlen(sym_data.kernel_name));
-        }
     }
-
 
     if (src_loc != 0) {
         {
@@ -205,21 +169,14 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
         }
     }
 
-
     {
     auto*  item = tracy::Profiler::QueueSerial();
     tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuTime);
-    tracy::MemWrite(&item->gpuTime.gpuTime, dispatch_data.start_timestamp);
+    tracy::MemWrite(&item->gpuTime.gpuTime, start_timestamp);
     tracy::MemWrite(&item->gpuTime.queryId, query_id);
     tracy::MemWrite(&item->gpuTime.context, context_id);
     tracy::Profiler::QueueSerialFinish();
     }
-
-    // {
-    //     auto _lk = std::unique_lock{data->mut};
-    //     query_id = data->query_id;
-    //     data->query_id++;
-    // }
 
     {
     auto* item = tracy::Profiler::QueueSerial();
@@ -234,61 +191,44 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
     {
     auto* item = tracy::Profiler::QueueSerial();
     tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuTime);
-    tracy::MemWrite(&item->gpuTime.gpuTime, dispatch_data.end_timestamp);
+    tracy::MemWrite(&item->gpuTime.gpuTime, end_timestamp);
     tracy::MemWrite(&item->gpuTime.queryId, query_id);
     tracy::MemWrite(&item->gpuTime.context, context_id);
     tracy::Profiler::QueueSerialFinish();
     }
+}
 
-    // for(size_t i = 0; i < record_count; ++i) {
-    //     int64_t profilerTime = Profiler::GetTime();
-    //     TracyLfqPrepare( QueueType::PlotDataDouble );
-    //     MemWrite( &item->plotDataDouble.name, (uint64_t)name );
-    //     MemWrite( &item->plotDataDouble.time, profilerTime );
-    //     MemWrite( &item->plotDataDouble.val, record_data[i].counter_value );
-    //     TracyLfqCommit;
-    // }
+void
+record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
+                rocprofiler_record_counter_t*                record_data,
+                size_t                                       record_count,
+                rocprofiler_user_data_t  /*user_data*/ ,
+                void* callback_data_args)
+{
+    for(size_t i = 0; i < record_count; ++i) {
+        int64_t profilerTime = Profiler::GetTime();
+        TracyLfqPrepare( QueueType::PlotDataDouble );
+        MemWrite( &item->plotDataDouble.name, (uint64_t)PLOT_NAME );
+        MemWrite( &item->plotDataDouble.time, profilerTime );
+        MemWrite( &item->plotDataDouble.val, record_data[i].counter_value );
+        TracyLfqCommit;
+    }
 }
 
 void delay_init(void *user_data) {
     ToolData * data = static_cast<ToolData*>(user_data);
     if (data->init) return;
     data->init = true;
-    data->context_id = iree_tracing_gpu_context_allocate();
+    data->context_id = gpu_context_allocate();
     std::cerr << "ctx = " << (int)data->context_id << std::endl;
 
     TracyLfqPrepare( QueueType::PlotConfig );
-    MemWrite( &item->plotConfig.name, (uint64_t)name);
+    MemWrite( &item->plotConfig.name, (uint64_t)PLOT_NAME);
     MemWrite( &item->plotConfig.type, (uint8_t)PlotFormatType::Number );
     MemWrite( &item->plotConfig.step, (uint8_t)false );
     MemWrite( &item->plotConfig.fill, (uint8_t)true );
     MemWrite( &item->plotConfig.color, 0 );
     TracyLfqCommit;
-
-    // uint16_t query_id = data->query_id;
-    // uint8_t context_id = data->context_id;
-    // uint32_t line = 0;
-    
-    // const char * FILE_NAME = "<unknown>";
-    // const char * FN_NAME = "<unknown>";
-    // const char * NAME = "<unknown>";
-
-    // size_t file_name_length = strlen(FILE_NAME);
-    // // char* file_name = (char*)tracy::tracy_malloc(file_name_length);
-    // // memcpy(file_name, FILE_NAME, file_name_length);
-
-    // size_t fn_name_length = strlen(FN_NAME);
-    // // char* fn_name = (char*)tracy::tracy_malloc(fn_name_length);
-    // // memcpy(fn_name, FN_NAME, fn_name_length);
-
-    // size_t name_length = strlen(NAME);
-    // // char* name = (char*)tracy::tracy_malloc(name_length);
-    // // memcpy(name, NAME, name_length);
-
-    // const auto src_loc = tracy::Profiler::AllocSourceLocation(
-    //     line, FILE_NAME, file_name_length, FN_NAME, fn_name_length,
-    //     NAME, name_length);
-    // data->src_loc = src_loc;
 }
 
 /**
@@ -415,30 +355,80 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
             auto _lk = std::unique_lock{data->mut};
             data->client_kernels.erase(sym_data->kernel_id);
         }
+    } else if (record.kind == ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH &&
+        record.operation == ROCPROFILER_KERNEL_DISPATCH_COMPLETE) {
+        auto* rdata = static_cast<rocprofiler_callback_tracing_kernel_dispatch_data_t*>(record.payload);
+        uint64_t src_loc = kernel_src_loc(data, rdata->dispatch_info.kernel_id);
+        record_interval(data, rdata->start_timestamp, rdata->end_timestamp, src_loc);
+    } else if (record.kind == ROCPROFILER_CALLBACK_TRACING_MEMORY_COPY &&
+        record.operation != ROCPROFILER_MEMORY_COPY_NONE &&
+        record.phase == ROCPROFILER_CALLBACK_PHASE_EXIT) {
+        auto* rdata = static_cast<rocprofiler_callback_tracing_memory_copy_data_t*>(record.payload);
+        const char * name = nullptr;
+        switch(record.operation) {
+        case ROCPROFILER_MEMORY_COPY_DEVICE_TO_DEVICE:
+            name = "DeviceToDeviceCopy";
+            break;
+        case ROCPROFILER_MEMORY_COPY_DEVICE_TO_HOST:
+            name = "DeviceToHostCopy";
+            break;
+        case ROCPROFILER_MEMORY_COPY_HOST_TO_DEVICE:
+            name = "HostToDeviceCopy";
+            break;
+        case ROCPROFILER_MEMORY_COPY_HOST_TO_HOST:
+            name = "HostToHostCopy";
+            break;
+        }
+        size_t name_len = strlen(name);
+        uint64_t src_loc = tracy::Profiler::AllocSourceLocation(
+            0, NULL, 0, name, name_len,
+            NULL, 0);
+        record_interval(data, rdata->start_timestamp, rdata->end_timestamp, src_loc);
     }
 }
 
 int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
 {
-
+    delay_init(user_data);
     ROCPROFILER_CALL( rocprofiler_create_context( &get_client_ctx() ), "context creation failed" );
 
-    ROCPROFILER_CALL( rocprofiler_configure_callback_dispatch_counting_service( get_client_ctx(), dispatch_callback,
-                                                                                user_data, record_callback, user_data ),
-                      "Could not setup counting service" );
+    // ROCPROFILER_CALL( rocprofiler_configure_callback_dispatch_counting_service( get_client_ctx(), dispatch_callback,
+    //                                                                             user_data, record_callback, user_data ),
+    //                   "Could not setup counting service" );
 
 
     // enable the control
     //tool_control_init(client_ctx);
 
+    rocprofiler_tracing_operation_t ops[] = {ROCPROFILER_CODE_OBJECT_DEVICE_KERNEL_SYMBOL_REGISTER};
     ROCPROFILER_CALL(
         rocprofiler_configure_callback_tracing_service(get_client_ctx(),
                                                        ROCPROFILER_CALLBACK_TRACING_CODE_OBJECT,
-                                                       nullptr,
-                                                       0,
+                                                       ops,
+                                                       1,
                                                        tool_callback_tracing_callback,
                                                        user_data),
         "callback tracing service failed to configure");
+
+    rocprofiler_tracing_operation_t ops2[] = {ROCPROFILER_KERNEL_DISPATCH_COMPLETE};
+    ROCPROFILER_CALL(
+        rocprofiler_configure_callback_tracing_service(get_client_ctx(),
+                                                        ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH,
+                                                        ops2,
+                                                        1,
+                                                        tool_callback_tracing_callback,
+                                                        user_data),
+        "callback tracing service failed to configure");
+    
+    ROCPROFILER_CALL(
+        rocprofiler_configure_callback_tracing_service(get_client_ctx(),
+                                                        ROCPROFILER_CALLBACK_TRACING_MEMORY_COPY,
+                                                        nullptr,
+                                                        0,
+                                                        tool_callback_tracing_callback,
+                                                        user_data),
+        "callback tracing service failed to configure");
+        
 
     ROCPROFILER_CALL( rocprofiler_start_context( get_client_ctx() ), "start context" );
     std::cerr << "init" << std::endl;

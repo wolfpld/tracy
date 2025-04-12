@@ -582,6 +582,8 @@ In the case of some programming environments, you may need to take extra steps t
 
 If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, as it makes the compiler non-conformant to some aspects of the C++ standard. In order to do so, open the project properties and go to \menu[,]{C/C++,General,Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
 
+For context, if you experience errors like "error C2131: expression did not evaluate to a constant", "failure was caused by non-constant arguments or reference to a non-constant symbol", and "see usage of '\texttt{\_\_LINE\_\_Var}'", chances are that your project has the \emph{Edit And Continue} feature enabled.
+
 \paragraph{Universal Windows Platform}
 
 Due to a restricted access to Win32 APIs and other sandboxing issues (like network isolation), several limitations apply to using Tracy in a UWP application compared to Windows Desktop:

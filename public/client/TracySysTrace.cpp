@@ -684,7 +684,7 @@ enum TraceEventId
     EventBranchMiss,
     EventVsync,
     EventContextSwitch,
-    EventWakeup,
+    EventWaking,
 };
 
 static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, unsigned long long config1, pid_t pid )
@@ -773,16 +773,16 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "perf_event_paranoid: %i\n", paranoidLevel );
 #endif
 
-    int switchId = -1, wakeupId = -1, vsyncId = -1;
+    int switchId = -1, wakingId = -1, vsyncId = -1;
     const auto switchIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_switch/id" );
     if( switchIdStr ) switchId = atoi( switchIdStr );
-    const auto wakeupIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_wakeup/id" );
-    if( wakeupIdStr ) wakeupId = atoi( wakeupIdStr );
+    const auto wakingIdStr = ReadFile( "/sys/kernel/debug/tracing/events/sched/sched_waking/id" );
+    if( wakingIdStr ) wakingId = atoi( wakingIdStr );
     const auto vsyncIdStr = ReadFile( "/sys/kernel/debug/tracing/events/drm/drm_vblank_event/id" );
     if( vsyncIdStr ) vsyncId = atoi( vsyncIdStr );
 
     TracyDebug( "sched_switch id: %i\n", switchId );
-    TracyDebug( "sched_wakeup id: %i\n", wakeupId );
+    TracyDebug( "sched_waking id: %i\n", wakingId );
     TracyDebug( "drm_vblank_event id: %i\n", vsyncId );
 
 #ifdef TRACY_NO_SAMPLING
@@ -837,7 +837,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         2 +     // CPU cycles + instructions retired
         2 +     // cache reference + miss
         2 +     // branch retired + miss
-        2 +     // context switches + wakeups
+        2 +     // context switches + waking ups
         1       // vsync
     );
     s_ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * maxNumBuffers );
@@ -1082,7 +1082,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             }
         }
 
-        if( wakeupId != -1 )
+        if( wakingId != -1 )
         {
             pe = {};
             pe.type = PERF_TYPE_TRACEPOINT;
@@ -1093,16 +1093,20 @@ bool SysTraceStart( int64_t& samplingPeriod )
             //pe.sample_type |= PERF_SAMPLE_CALLCHAIN;
             pe.disabled = 1;
             pe.inherit = 1;
-            pe.config = wakeupId;
+            pe.config = wakingId;
             pe.read_format = 0;
+#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+            pe.use_clockid = 1;
+            pe.clockid = CLOCK_MONOTONIC_RAW;
+#endif
 
-            TracyDebug( "Setup wakeup capture\n" );
+            TracyDebug( "Setup waking up capture\n" );
             for( int i=0; i<s_numCpus; i++ )
             {
                 const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
                 if( fd != -1 )
                 {
-                    new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventWakeup, i );
+                    new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventWaking, i );
                     if( s_ring[s_numBuffers].IsValid() )
                     {
                         s_numBuffers++;
@@ -1475,9 +1479,9 @@ void SysTraceWorker( void* ptr )
                                 TracyLfqCommit;
                             }
                         }
-                        else if( rid == EventWakeup )
+                        else if( rid == EventWaking)
                         {
-                            // See /sys/kernel/debug/tracing/events/sched/sched_wakeup/format
+                            // See /sys/kernel/debug/tracing/events/sched/sched_waking/format
                             // Layout:
                             //   u64 time // PERF_SAMPLE_TIME
                             //   u32 size
@@ -1493,15 +1497,10 @@ void SysTraceWorker( void* ptr )
                             uint32_t pid;
                             ring.Read( &pid, offset, sizeof( uint32_t ) );
                             
-                            offset += sizeof( uint32_t ) + sizeof( uint32_t );
-                            uint32_t target_cpu;
-                            ring.Read( &target_cpu, offset, sizeof( uint32_t ) );
-
                             TracyLfqPrepare( QueueType::ThreadWakeup );
                             MemWrite( &item->threadWakeup.time, t0 );
                             MemWrite( &item->threadWakeup.thread, pid );
-                            uint8_t cpu = target_cpu;
-                            MemWrite( &item->threadWakeup.cpu, target_cpu );
+                            MemWrite( &item->threadWakeup.cpu, (uint8_t)ring.GetCpu() );
 
                             int8_t adjustReason = -1; // Does not exist on Linux
                             int8_t adjustIncrement = 0; // Should perhaps store the new prio?

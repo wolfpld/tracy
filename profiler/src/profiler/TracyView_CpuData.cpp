@@ -444,13 +444,13 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         offset += sstep;
     }
 
-    if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
+    if( IsMouseClickReleased( ImGuiMouseButton_Left ) && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, offset ) ) )
     {
         if( m_drawThreadHighlight != 0 )
         {
             m_selectedThread = m_drawThreadHighlight;
         }
-        else if( ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, offset ) ) )
+        else
         {
             // Clicked anywhere in the CPUData timeline that is not a thread => Clear selected thread.
             m_selectedThread = 0;

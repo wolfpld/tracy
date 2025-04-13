@@ -272,6 +272,10 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( px1, offset + sty ) ) )
                     {
+                        if( IsMouseClickReleased(ImGuiMouseButton_Left) )
+                        {
+                            m_selectedThread = thread;
+                        }
                         m_drawThreadHighlight = thread;
                         ImGui::PopFont();
                         ImGui::BeginTooltip();
@@ -300,10 +304,6 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             
                             m_drawThreadMigrations = thread;
                             m_cpuDataThread = thread;
-                            if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
-                            {
-                                m_selectedThread = thread;
-                            }
                         }
                         else
                         {

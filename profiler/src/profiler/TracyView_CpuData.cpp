@@ -40,12 +40,6 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         const auto cpuUsageHeight = floor( 30.f * GetScale() );
         if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
         {
-            // Clicked anywhere in the CPU timeline => Clear selected thread.
-            // If we actually clicked a thread, it will be set again later on to the new value
-            if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
-            {
-                m_selectedThread = 0;
-            }
             const float cpuCntRev = 1.f / cpuCnt;
             int pos = 0;
             for( auto& v : cpuDraw )
@@ -272,10 +266,6 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( px1, offset + sty ) ) )
                     {
-                        if( IsMouseClickReleased(ImGuiMouseButton_Left) )
-                        {
-                            m_selectedThread = thread;
-                        }
                         m_drawThreadHighlight = thread;
                         ImGui::PopFont();
                         ImGui::BeginTooltip();
@@ -454,6 +444,18 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         offset += sstep;
     }
 
+    if( IsMouseClickReleased( ImGuiMouseButton_Left ) )
+    {
+        if( m_drawThreadHighlight != 0 )
+        {
+            m_selectedThread = m_drawThreadHighlight;
+        }
+        else if( ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, offset ) ) )
+        {
+            // Clicked anywhere in the CPUData timeline that is not a thread => Clear selected thread.
+            m_selectedThread = 0;
+        }
+    }
     if( m_drawThreadMigrations != 0 )
     {
         DrawThreadMigrations( ctx, origOffset, m_drawThreadMigrations );

@@ -243,7 +243,7 @@ void View::DrawTimeline()
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
 
-    if( !m_vd.drawCpuUsageGraph )
+    if( !m_vd.drawCpuData )
     {
         m_selectedThread = 0;
     }

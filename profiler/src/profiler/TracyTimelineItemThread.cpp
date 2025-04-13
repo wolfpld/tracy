@@ -277,7 +277,14 @@ void TimelineItemThread::DrawOverlay( const ImVec2& ul, const ImVec2& dr )
 
 void TimelineItemThread::DrawExtraPopupItems()
 {
-    if( m_view.GetViewData().drawCpuUsageGraph && ImGui::MenuItem( ICON_FA_TIMELINE " Select in CPU timeline" ) )
+    if( m_view.GetSelectThread() == m_thread->id )
+    {
+        if( ImGui::MenuItem( ICON_FA_TIMELINE " Unselect in CPU timeline" ) )
+        {
+            m_view.SelectThread( 0 );
+        }
+    }
+    else if( m_view.GetViewData().drawCpuData && ImGui::MenuItem( ICON_FA_TIMELINE " Select in CPU timeline" ) )
     {
         m_view.SelectThread( m_thread->id );
     }

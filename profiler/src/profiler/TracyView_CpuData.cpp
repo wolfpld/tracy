@@ -338,7 +338,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                         if( threadCtxSwitches )
                         {
                             auto& v = threadCtxSwitches->v;
-                            auto it = std::lower_bound( v.begin(), v.end(), ev.Start(), [](const auto& l, const auto& r) { return l.End() < r; } );
+                            auto it = std::lower_bound( v.begin(), v.end(), ev.Start(), [](const auto& l, const auto& r) { return l.Start() < r; } );
                             // We should have the data, or something went wrong.
                             assert( it != v.end() && it->Start() == ev.Start() );
 

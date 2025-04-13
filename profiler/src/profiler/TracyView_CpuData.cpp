@@ -499,6 +499,7 @@ void View::DrawThreadMigrations( const TimelineContext& ctx, const int origOffse
 
         const auto bgSize = GetScale() * 4.f;
         const auto lnSize = GetScale() * 2.f;
+        const auto wakeupLineSize = GetScale() * 1.5f;
 
 
         auto computeScreenPos = [&]( int64_t t, uint8_t cpu ) {
@@ -514,14 +515,14 @@ void View::DrawThreadMigrations( const TimelineContext& ctx, const int origOffse
                 if( forceDraw || ( wakeupWidthPixels >= 0.5 ) )
                 {
 
-                    DrawLine( draw, pw, startPos, wakecolor );
+                    DrawLine( draw, pw, startPos, wakecolor, wakeupLineSize );
                     draw->AddCircleFilled( pw, bgSize, wakecolor );
                         
                     // Vertical line at beginning of thread to emphasize wakeup
                     if( wakeupWidthPixels >= 3 )
                     {
-                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, 0xFF000000, bgSize );
-                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f }, wakecolor );
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + 1 }, 0xFF000000, lnSize * 2 );
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + 1 }, wakecolor, lnSize );
                     }
                 }
             }

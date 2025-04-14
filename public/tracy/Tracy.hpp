@@ -13,7 +13,7 @@
 #endif
 
 #ifndef TracyLine
-#  define TracyLine __LINE__
+#  define TracyLine TracyConcat(__LINE__,U) // MSVC Edit and continue __LINE__ is non-constant. See https://developercommunity.visualstudio.com/t/-line-cannot-be-used-as-an-argument-for-constexpr/195665
 #endif
 
 #ifndef TRACY_ENABLE

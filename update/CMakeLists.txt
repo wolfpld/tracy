@@ -21,9 +21,12 @@ set(PROGRAM_FILES
     src/OfflineSymbolResolver.cpp
     src/OfflineSymbolResolverAddr2Line.cpp
     src/OfflineSymbolResolverDbgHelper.cpp
+    src/OfflineSymbolResolverLibdw.cpp
+    src/OfflineSymbolResolverLibBacktrace.cpp
     src/update.cpp
 )
 
 add_executable(${PROJECT_NAME} ${PROGRAM_FILES} ${COMMON_FILES} ${SERVER_FILES})
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyGetOpt)
+# sudo apt-get install libdw
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyGetOpt backtrace dl dw elf)
 set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

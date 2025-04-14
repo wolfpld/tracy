@@ -37,6 +37,9 @@ void Usage()
     printf( "  -c: scan for source files missing in cache and add if found\n" );
     printf( "  -r: resolve symbols and patch callstack frames\n");
     printf( "  -p: substitute symbol resolution path with an alternative: \"REGEX_MATCH;REPLACEMENT\"\n");
+    printf( "  -x: skip resolution for matching path: \"REGEX_MATCH\"\n" );
+    printf( "  -n: choose the symbol resolver to use\n" );
+    printf( "  -m: the max parallelism to run the symbol resolver (-1 to use all cores)\n" );
     printf( "  -j: number of threads to use for compression (-1 to use all cores)\n" );
 
     exit( 1 );
@@ -60,9 +63,12 @@ int main( int argc, char** argv )
     bool cacheSource = false;
     bool resolveSymbols = false;
     std::vector<std::string> pathSubstitutions;
+    std::vector<std::string> skipImageList;
+    std::string resolver;
+    int resolverMaxParallelism = -1;
 
     int c;
-    while( ( c = getopt( argc, argv, "4hez:ds:crp:j:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "4hez:ds:crpx:n:m:j:" ) ) != -1 )
     {
         switch( c )
         {
@@ -138,6 +144,15 @@ int main( int argc, char** argv )
         case 'p':
             pathSubstitutions.push_back(optarg);
             break;
+        case 'x':
+            skipImageList.push_back( optarg );
+            break;
+        case 'n':
+            resolver = optarg;
+            break;
+        case 'm':
+            resolverMaxParallelism = atoi( optarg );
+            break;
         case 'j':
             streams = atoi( optarg );
             break;
@@ -179,7 +194,14 @@ int main( int argc, char** argv )
             const auto t1 = std::chrono::high_resolution_clock::now();
 
             if( cacheSource ) worker.CacheSourceFiles();
-            if( resolveSymbols ) PatchSymbols( worker, pathSubstitutions );
+            if( resolveSymbols ) 
+            {
+                ResolveOptions options = {};
+                options.verbose = false;
+                options.resolver = resolver;
+                options.maxParallelism = resolverMaxParallelism;
+                PatchSymbols( worker, pathSubstitutions, skipImageList, options);
+            }
 
             auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel, streams ) );
             if( !w )

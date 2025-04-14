@@ -69,11 +69,8 @@ public:
             if( SymFromAddr( m_procHandle, address, NULL, symbolInfo ) )
             {
                 newEntry.name = symbolInfo->Name;
+                newEntry.resolved = true;
                 //std::cout << "Resolved symbol to: '" << newEntry.name << "'" << std::endl;
-            }
-            else
-            {
-                newEntry.name = "[unknown] + " + std::to_string(offset);
             }
 
             IMAGEHLP_LINE lineInfo = { 0 };
@@ -122,8 +119,8 @@ private:
 
 char SymbolResolver::s_symbolResolutionBuffer[symbolResolutionBufferSize];
 
-bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
-                    SymbolEntryList& resolvedEntries )
+bool ResolveSymbolsWithWinDBG(const std::string& imagePath, const FrameEntryList& inputEntryList,
+                              SymbolEntryList& resolvedEntries )
 {
     static SymbolResolver resolver;
     return resolver.ResolveSymbolsForModule( imagePath, inputEntryList, resolvedEntries );

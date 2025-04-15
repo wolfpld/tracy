@@ -103,7 +103,7 @@ void processJobsInParallel( size_t maxJobs, size_t maxConcurrent, JobCallback&& 
         results.erase( std::remove_if( results.begin(), results.end(),
             [onJobEnd]( JobEntry& entry )
             { 
-                const bool finished = entry.future.wait_for( std::chrono::milliseconds( 100 ) ) == std::future_status::ready; 
+                const bool finished = entry.future.wait_for( std::chrono::milliseconds(0) ) == std::future_status::ready; 
                 if (finished)
                 {
                     onJobEnd( entry.jobIndex );

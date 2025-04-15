@@ -207,8 +207,13 @@ bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& p
         totalEntries += entries.size();
     }
 
+#ifdef _WIN32
+    // DbgHelper is not thread safe
+    unsigned int maxConcurrent = 1;
+#else
     unsigned int maxConcurrent = 
         (options.maxParallelism <= 0) ? std::thread::hardware_concurrency() : int(options.maxParallelism);
+#endif
 
     std::cout << "* Running " << resolvedResults.size() << " resolution jobs in parallel (batches of " << maxConcurrent << ")" << std::endl;    
     Stopwatch parallelResolveStopwatch;

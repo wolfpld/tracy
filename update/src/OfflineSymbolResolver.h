@@ -50,8 +50,8 @@ bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEn
 
 // for linux we have multiple options:
 #ifdef _WIN32
-    bool ResolveSymbolsWithWinDBG(const std::string& imagePath, const FrameEntryList& inputEntryList,
-                                SymbolEntryList& resolvedEntries );
+    bool ResolveSymbolsWithDbgHelp(const std::string& imagePath, const FrameEntryList& inputEntryList,
+                                   SymbolEntryList& resolvedEntries );
 #else
     bool ResolveSymbolsWithLibBacktrace( const std::string& imagePath, const FrameEntryList& inputEntryList,
                                         SymbolEntryList& resolvedEntries );

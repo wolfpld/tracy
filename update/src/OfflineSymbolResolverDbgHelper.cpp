@@ -119,8 +119,8 @@ private:
 
 char SymbolResolver::s_symbolResolutionBuffer[symbolResolutionBufferSize];
 
-bool ResolveSymbolsWithWinDBG(const std::string& imagePath, const FrameEntryList& inputEntryList,
-                              SymbolEntryList& resolvedEntries )
+bool ResolveSymbolsWithDbgHelp(const std::string& imagePath, const FrameEntryList& inputEntryList,
+                               SymbolEntryList& resolvedEntries )
 {
     static SymbolResolver resolver;
     return resolver.ResolveSymbolsForModule( imagePath, inputEntryList, resolvedEntries );

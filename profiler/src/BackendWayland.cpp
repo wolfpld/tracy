@@ -1139,7 +1139,6 @@ void Backend::NewFrame( int& w, int& h )
         wl_egl_window_resize( s_eglWin, s_width * s_maxScale / 120, s_height * s_maxScale / 120, 0, 0 );
         if( s_fracSurf )
         {
-            wp_viewport_set_source( s_viewport, 0, 0, wl_fixed_from_double( s_width * s_maxScale / 120. ), wl_fixed_from_double( s_height * s_maxScale / 120. ) );
             wp_viewport_set_destination( s_viewport, s_width, s_height );
         }
     }

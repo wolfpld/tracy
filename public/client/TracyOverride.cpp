@@ -1,6 +1,6 @@
 #ifdef TRACY_ENABLE
 #  ifdef __linux__
-#    include "TracyDebug.hpp"
+#    include "../common/TracyDebug.hpp"
 #    ifdef TRACY_VERBOSE
 #      include <dlfcn.h>
 #      include <link.h>

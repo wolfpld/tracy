@@ -47,7 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #include "backtrace.hpp"
 #include "internal.hpp"
 
-#include "../client/TracyFastVector.hpp"
+#include "../common/TracyFastVector.hpp"
 #include "../common/TracyAlloc.hpp"
 
 #ifndef S_ISLNK
@@ -75,7 +75,7 @@ namespace tracy
 {
 
 #ifdef TRACY_DEBUGINFOD
-int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size );
+int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size , const char* file_name );
 #endif
 
 #if !defined(HAVE_DECL_STRNLEN) || !HAVE_DECL_STRNLEN

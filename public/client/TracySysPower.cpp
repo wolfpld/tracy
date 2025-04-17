@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "TracyDebug.hpp"
+#include "../common/TracyDebug.hpp"
 #include "TracyProfiler.hpp"
 #include "../common/TracyAlloc.hpp"
 

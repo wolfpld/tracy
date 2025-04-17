@@ -255,7 +255,9 @@ void View::DrawCompare()
                         m_compare.loadThread = std::thread( [this, f] {
                             try
                             {
-                                m_compare.second = std::make_unique<Worker>( *f, EventType::SourceCache );
+                                tracy::Worker::SymbolResolutionConfig symConfig{};
+                                symConfig.m_attemptResolutionByWorker = false;
+                                m_compare.second = std::make_unique<Worker>( *f, symConfig, EventType::SourceCache );
                                 m_compare.userData = std::make_unique<UserData>( m_compare.second->GetCaptureProgram().c_str(), m_compare.second->GetCaptureTime() );
                                 m_compare.diffDirection = m_worker.GetCaptureTime() < m_compare.second->GetCaptureTime();
                             }

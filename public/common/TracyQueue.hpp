@@ -604,14 +604,20 @@ struct QueueContextSwitch
     uint32_t oldThread;
     uint32_t newThread;
     uint8_t cpu;
-    uint8_t reason;
-    uint8_t state;
+    uint8_t oldThreadWaitReason;
+    uint8_t oldThreadState;
+    uint8_t previousCState;
+    int8_t newThreadPriority;
+    int8_t oldThreadPriority;
 };
 
 struct QueueThreadWakeup
 {
     int64_t time;
     uint32_t thread;
+    uint8_t cpu;
+    int8_t adjustReason;
+    int8_t adjustIncrement;
 };
 
 struct QueueTidToPid

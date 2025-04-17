@@ -1440,6 +1440,11 @@ void View::HighlightThread( uint64_t thread )
     m_drawThreadHighlight = thread;
 }
 
+void View::SelectThread( uint64_t thread )
+{
+    m_selectedThread = thread;
+}
+
 bool View::WasActive() const
 {
     return m_wasActive ||

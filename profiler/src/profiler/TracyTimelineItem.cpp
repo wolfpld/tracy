@@ -121,6 +121,7 @@ void TimelineItem::Draw( bool firstFrame, const TimelineContext& ctx, int yOffse
             SetVisible( false );
             ImGui::CloseCurrentPopup();
         }
+        DrawExtraPopupItems();
         ImGui::EndPopup();
     }
 

@@ -51,6 +51,7 @@ protected:
 
     virtual bool DrawContents( const TimelineContext& ctx, int& offset ) = 0;
     virtual void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) {}
+    virtual void DrawExtraPopupItems() {}
     virtual void DrawFinished() {}
 
     virtual bool IsEmpty() const { return false; }

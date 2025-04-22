@@ -3546,7 +3546,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
            std::lock_guard<std::recursive_mutex> mutexguard{ GetModuleCacheMutexForRead() };
 
             const ImageEntry* entry = GetImageEntryFromPtr(si.ptr);
-            assert( entry == nullptr );
+            assert( entry != nullptr );
 
             void* imageData = nullptr;
             size_t dataSize = 0;

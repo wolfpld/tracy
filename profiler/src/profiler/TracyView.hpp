@@ -57,6 +57,7 @@ struct LockDraw;
 struct PlotDraw;
 struct FlameGraphContext;
 
+static inline const Worker::SymbolResolutionConfig SymbolResolutionConfigFromConfig( const Config& config ) { return { config.symbolsAttemptResolutionByServer, config.symbolsPreventResolutionByClient }; }
 
 class View
 {
@@ -142,6 +143,7 @@ public:
 
     const MessageData* GetMessageHighlight() const { return m_msgHighlight; }
     uint32_t GetLockInfoWindow() const { return m_lockInfoWindow; }
+
 
     tracy_force_inline bool& Vis( const void* ptr )
     {

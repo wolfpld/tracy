@@ -13,13 +13,13 @@ namespace tracy
 enum DecodeCallStackPtrStatusFlags : uint8_t
 {
     Success = 0,
-    ModuleMissing = 1 << 1,
-    SymbolMissing = 1 << 2,
+    ModuleMissing = 1 << 0,
+    SymbolMissing = 1 << 1,
 
     ErrorMask = 0b11,
 
-    NewModuleFound = 1 << 3,
-    
+    NewModuleFound = 1 << 2,
+        
     Count
 };
 

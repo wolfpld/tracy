@@ -35,8 +35,8 @@ enum struct ImageDebugFormatId : uint8_t
 struct ImageDebugInfo
 {
     ImageDebugFormatId debugFormat;
-    uint8_t* debugData;
     uint32_t debugDataSize;
+    uint8_t* debugData;
 };
 
 struct ImageEntry

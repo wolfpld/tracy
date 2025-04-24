@@ -521,8 +521,9 @@ void View::DrawThreadMigrations( const TimelineContext& ctx, const int origOffse
                     // Vertical line at beginning of thread to emphasize wakeup
                     if( wakeupWidthPixels >= 3 )
                     {
-                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + 1 }, 0xFF000000, lnSize * 2 );
-                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + 1 }, wakecolor, lnSize );
+                        const float halfPx = GetScale() * 0.5f;
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f - halfPx }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + halfPx }, 0xFF000000, lnSize * 2 );
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f - halfPx }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + halfPx }, wakecolor, lnSize );
                     }
                 }
             }

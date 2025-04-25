@@ -80,6 +80,9 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 #  if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4 )
     glfwWindowHint( GLFW_WIN32_KEYBOARD_MENU, 1 );
 #  endif
+#  if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
+    glfwWindowHint( GLFW_SCALE_TO_MONITOR, 1 );
+#  endif
 #endif
     s_window = glfwCreateWindow( m_winPos.w, m_winPos.h, title, NULL, NULL );
     if( !s_window ) exit( 1 );
@@ -200,14 +203,10 @@ void Backend::SetTitle( const char* title )
 float Backend::GetDpiScale()
 {
 #if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
-    auto monitor = glfwGetWindowMonitor( s_window );
-    if( !monitor ) monitor = glfwGetPrimaryMonitor();
-    if( monitor )
-    {
-        float x, y;
-        glfwGetMonitorContentScale( monitor, &x, &y );
-        return x;
-    }
-#endif
+    float x, y;
+    glfwGetWindowContentScale( s_window, &x, &y );
+    return x;
+#else
     return 1;
+#endif
 }

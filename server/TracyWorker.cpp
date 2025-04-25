@@ -4101,18 +4101,26 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySy
 
             assert( m_pendingCallstackSubframes == 0 );
         }
+      
+         if( status & DecodeCallStackPtrStatusFlags::SymbolMissing )
+         {
+            tracy_free_fast( (void*)outCallStack.data[0].file );
+            tracy_free_fast( (void*)outCallStack.data[0].name );
+         }
+
     }
 #endif
-    if(querySymbols)
+    if( querySymbols )
     {
-        if ( status & DecodeCallStackPtrStatusFlags::ModuleMissing )
+
+        if( status & DecodeCallStackPtrStatusFlags::ModuleMissing )
         {
                 // TODO: actually only query module info, and then try to resolve again locally.
             //       Or we could just rely on the user triggering a new symbol resolution manually.
             m_pendingCallstackFrames++;
             Query( ServerQueryCallstackFrame, symbolAddress );
         }
-        else if ( status & DecodeCallStackPtrStatusFlags::SymbolMissing )
+        else if( status & DecodeCallStackPtrStatusFlags::SymbolMissing )
         {
             // Fallback to asking the client for the symbol since we couldn't find it.
             m_pendingCallstackFrames++;

@@ -1102,6 +1102,18 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
+static CallstackEntryData MakeUnresolvedCallstackEntryData( uint64_t ptr, ModuleNameAndBaseAddress moduleNameAndBaseAddress )
+{
+	cb_data[0].symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
+	cb_data[0].symLen = 0;
+
+	cb_data[0].name = CopyStringFast( "[unresolved]" );
+	cb_data[0].file = CopyStringFast( "[unknown]" );
+	cb_data[0].line = 0;
+
+	return { cb_data, 1, moduleNameAndBaseAddress.name };
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _decodeCallStackPtrStatus )
 {
 #ifdef TRACY_DBGHELP_LOCK
@@ -1117,6 +1129,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
     if( moduleNotFound )
     {
+        // only the client can have a processHandle as s_DbgHelpSymHandle
         if( s_DbgHelpSymHandle == GetCurrentProcess() )
         {
             // We're on the client or self profiling, try to load a potentially new module.
@@ -1144,15 +1157,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 #ifdef TRACY_DBGHELP_LOCK
         DBGHELP_UNLOCK;
 #endif
-        
-        cb_data[0].symAddr = ptr - moduleNameAndAddress.baseAddr;
-        cb_data[0].symLen = 0;
-
-        cb_data[0].name = CopyStringFast("[unresolved]");
-        cb_data[0].file = CopyStringFast("[unknown]");
-        cb_data[0].line = 0;
-
-        return { cb_data, 1, moduleNameAndAddress.name };
+      
+        return MakeUnresolvedCallstackEntryData(ptr, moduleNameAndAddress);
     }
 
     int write;
@@ -1188,8 +1194,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
 
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
-    if( !symValid ) {
+    if( symValid == FALSE) {
         *_decodeCallStackPtrStatus |= DecodeCallStackPtrStatusFlags::SymbolMissing;
+
 #ifdef TRACY_VERBOSE
         static bool doOnce = true;
         if(doOnce)
@@ -1201,6 +1208,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
             doOnce = false;
         }
 #endif
+       return MakeUnresolvedCallstackEntryData(ptr, moduleNameAndAddress);
     }
 
 

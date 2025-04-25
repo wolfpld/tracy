@@ -1157,8 +1157,16 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
 
     const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
-    if( sym == nullptr ) return; // Might no have received symbol info yet
 
+    if( sym == nullptr )
+    {
+        ImGui::PushFont( m_bigFont );
+        TextCenteredWindow( ICON_FA_PERSON_DIGGING "Waiting for symbol resolution" );
+        ImGui::PopFont();
+        return;
+    }
+
+    
     ImGui::PushFont( m_bigFont );
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     if( ButtonDisablable( " " ICON_FA_CARET_LEFT " ", m_historyCursor <= 1 ) )

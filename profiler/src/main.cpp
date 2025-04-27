@@ -846,7 +846,7 @@ static void DrawContents()
 
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
-                if( ImGui::Checkbox( "save UI scale", &s_config.saveUserScale) ) SaveConfig();
+                if( ImGui::Checkbox( "Save UI scale", &s_config.saveUserScale) ) SaveConfig();
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();

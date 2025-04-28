@@ -101,7 +101,6 @@ static std::atomic<ViewShutdown> viewShutdown { ViewShutdown::False };
 static double animTime = 0;
 static float dpiScale = -1.f;
 static bool dpiScaleOverriddenFromEnv = false;
-static float userScale = 1.f;
 static float prevScale = 1.f;
 static int dpiChanged = 0;
 static bool dpiFirstSetup = true;
@@ -162,7 +161,7 @@ static void ScaleWindow(ImGuiWindow* window, float scale)
 
 static void SetupDPIScale()
 {
-    auto scale = dpiScale * userScale;
+    auto scale = dpiScale * s_config.userScale;
 
     if( !dpiFirstSetup && prevScale == scale ) return;
     dpiFirstSetup = false;
@@ -204,12 +203,6 @@ static void SetupDPIScale()
     for( auto& w : ctx->Windows ) ScaleWindow( w, ratio );
 }
 
-static void SetupScaleCallback( float scale )
-{
-    userScale = scale;
-    RunOnMainThread( []{ SetupDPIScale(); }, true );
-}
-
 static int IsBusy()
 {
     if( loadThread.joinable() ) return 2;
@@ -237,6 +230,9 @@ static void LoadConfig()
     if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
     if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
     if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
+    if( ini_sget( ini, "ui", "saveUserScale", "%d", &v ) ) s_config.saveUserScale = v;
+    if( ini_sget( ini, "ui", "userScale", "%lf", &v1 ) && v1 > 0.0 && s_config.saveUserScale ) s_config.userScale = v1;
+    
 
     ini_free( ini );
 }
@@ -267,8 +263,19 @@ static bool SaveConfig()
     fprintf( f, "enabled = %i\n", (int)s_config.achievements );
     fprintf( f, "asked = %i\n", (int)s_config.achievementsAsked );
 
+    fprintf( f, "\n[ui]\n" );
+    fprintf( f, "saveUserScale = %i\n", (int)s_config.saveUserScale );
+    fprintf( f, "userScale = %lf\n", s_config.userScale );
+
     fclose( f );
     return true;
+}
+
+static void SetupScaleCallback( float scale )
+{
+    s_config.userScale = scale;
+    if ( s_config.saveUserScale ) SaveConfig();
+    RunOnMainThread( []{ SetupDPIScale(); }, true );
 }
 
 static void ScaleChanged( float scale )
@@ -697,7 +704,7 @@ static void DrawContents()
 
         auto& style = ImGui::GetStyle();
         style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
-        ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse );
+        ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings );
         char buf[128];
         sprintf( buf, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
         ImGui::PushFont( s_bigFont );
@@ -839,6 +846,7 @@ static void DrawContents()
 
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
+                if( ImGui::Checkbox( "Save UI scale", &s_config.saveUserScale) ) SaveConfig();
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();
@@ -1267,7 +1275,7 @@ static void DrawContents()
     {
         ImGui::OpenPopup( "Loading trace..." );
     }
-    if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings) )
     {
         ImGui::PushFont( s_bigFont );
         tracy::TextCentered( ICON_FA_HOURGLASS_HALF );

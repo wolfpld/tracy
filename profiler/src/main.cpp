@@ -274,7 +274,6 @@ static bool SaveConfig()
 static void SetupScaleCallback( float scale )
 {
     s_config.userScale = scale;
-    if ( s_config.saveUserScale ) SaveConfig();
     RunOnMainThread( []{ SetupDPIScale(); }, true );
 }
 
@@ -429,6 +428,8 @@ int main( int argc, char** argv )
 
     backend.Show();
     backend.Run();
+
+    SaveConfig();
 
     if( loadThread.joinable() ) loadThread.join();
     if( updateThread.joinable() ) updateThread.join();

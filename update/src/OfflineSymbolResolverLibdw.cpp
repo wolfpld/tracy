@@ -1,4 +1,4 @@
-#ifndef _WIN32
+#if defined(LIBDW_OFFLINE_SYMBOL_RESOLUTION_SUPPORT) && !defined(_WIN32)
 
 #include "OfflineSymbolResolver.h"
 
@@ -386,5 +386,4 @@ bool ResolveSymbolsWithLibDW( const std::string& imagePath, const FrameEntryList
     return LibDWResolver::resolveSymbolsForImage( imagePath, inputEntryList, resolvedEntries );
 }
 
-
-#endif // #ifndef _WIN32
+#endif // #ifdef LIBDW_OFFLINE_SYMBOL_RESOLUTION_SUPPORT && !defined(_WIN32)

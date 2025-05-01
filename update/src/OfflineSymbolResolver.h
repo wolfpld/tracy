@@ -37,6 +37,10 @@ struct ResolveOptions
     int maxParallelism = -1;
 };
 
+int GetOfflineSymbolResolverCount();
+const char* GetOfflineSymbolResolverName(int index);
+const char* GetDefaultOfflineSymbolResolver();
+
 void PatchSymbols( tracy::Worker& worker, const std::vector<std::string>& pathSubstitutionsStrings,
                    const std::vector<std::string>& skipImageList, const ResolveOptions& options);
 

@@ -38,7 +38,16 @@ void Usage()
     printf( "  -r: resolve symbols and patch callstack frames\n");
     printf( "  -p: substitute symbol resolution path with an alternative: \"REGEX_MATCH;REPLACEMENT\"\n");
     printf( "  -x: skip resolution for matching path: \"REGEX_MATCH\"\n" );
-    printf( "  -n: choose the symbol resolver to use\n" );
+
+    printf( "  -n: choose the symbol resolver to use (" );
+    std::string defaultResolver = GetDefaultOfflineSymbolResolver();
+    for(int i = 0; i < GetOfflineSymbolResolverCount(); ++i)
+    {
+        const char* resolverName = GetOfflineSymbolResolverName(i);
+        printf( "%s\"%s\"%s", (i ? ", ":""), resolverName, (defaultResolver == resolverName) ? "*":"");
+    }
+    printf( ")\n" );
+
     printf( "  -m: the max parallelism to run the symbol resolver (-1 to use all cores)\n" );
     printf( "  -j: number of threads to use for compression (-1 to use all cores)\n" );
 
@@ -64,7 +73,7 @@ int main( int argc, char** argv )
     bool resolveSymbols = false;
     std::vector<std::string> pathSubstitutions;
     std::vector<std::string> skipImageList;
-    std::string resolver;
+    std::string resolver = GetDefaultOfflineSymbolResolver();
     int resolverMaxParallelism = -1;
 
     int c;
@@ -200,6 +209,8 @@ int main( int argc, char** argv )
                 options.verbose = false;
                 options.resolver = resolver;
                 options.maxParallelism = resolverMaxParallelism;
+
+                printf( "Attempting to resolve symbols offline with the '%s' resolver...\r", resolver.c_str());
                 PatchSymbols( worker, pathSubstitutions, skipImageList, options);
             }
 

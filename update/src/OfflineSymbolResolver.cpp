@@ -14,20 +14,54 @@
 
 #include "OfflineSymbolResolver.h"
 
+struct OfflineResolverEntry
+{
+    const char* name;
+    bool (*resolveSymbolsCallback)(const std::string& imagePath, const FrameEntryList& inputEntryList,
+                                   SymbolEntryList& resolvedEntries);
+};
+static OfflineResolverEntry offlineResolverConfig[] = 
+{
+   // ordered by preference (default is the first one of the list available)
+#ifdef _WIN32
+    OfflineResolverEntry("dbghelp", &ResolveSymbolsWithDbgHelp),
+#else
+  #ifdef LIBDW_OFFLINE_SYMBOL_RESOLUTION_SUPPORT
+    OfflineResolverEntry("libdw", &ResolveSymbolsWithLibDW),
+  #endif // #ifdef LIBDW_OFFLINE_SYMBOL_RESOLUTION_SUPPORT
+    OfflineResolverEntry("addr2line", &ResolveSymbolsWithAddr2Line),
+  #ifdef LIBBACKTRACE_OFFLINE_SYMBOL_RESOLUTION_SUPPORT
+    OfflineResolverEntry("libacktrace", &ResolveSymbolsWithLibBacktrace),
+  #endif // #ifdef LIBBACKTRACE_OFFLINE_SYMBOL_RESOLUTION_SUPPORT
+#endif //#ifndef _WIN32
+};
+
+int GetOfflineSymbolResolverCount()
+{
+    return sizeof(offlineResolverConfig)/sizeof(offlineResolverConfig[0]);
+}
+const char* GetOfflineSymbolResolverName(int index)
+{
+    return (index < GetOfflineSymbolResolverCount()) ? offlineResolverConfig[index].name : "";
+}
+const char* GetDefaultOfflineSymbolResolver()
+{
+    return GetOfflineSymbolResolverCount() ? offlineResolverConfig[0].name : "";
+}
+
 // main entrypoint to resolving symbols
 bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
                      SymbolEntryList& resolvedEntries, const ResolveOptions& options)
 {
-#ifdef _WIN32
-    return ResolveSymbolsWithWinDBG(imagePath, inputEntryList, resolvedEntries);
-#else
-    if( options.resolver == "addr2line" )
-        return ResolveSymbolsWithAddr2Line(imagePath, inputEntryList, resolvedEntries);
-    else if( options.resolver == "libacktrace" )
-        return ResolveSymbolsWithLibBacktrace(imagePath, inputEntryList, resolvedEntries);
-    else
-        return ResolveSymbolsWithLibDW(imagePath, inputEntryList, resolvedEntries);
-#endif //#ifndef _WIN32
+    for (int i = 0; i < GetOfflineSymbolResolverCount(); ++i)
+    {
+        OfflineResolverEntry& entry = offlineResolverConfig[i];
+        if (options.resolver == entry.name)
+        {
+            return entry.resolveSymbolsCallback(imagePath, inputEntryList, resolvedEntries);
+        }
+    }
+    return false;
 }
 
 bool ApplyPathSubstitutions( std::string& path, const PathSubstitutionList& pathSubstitutionlist )

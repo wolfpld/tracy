@@ -1,4 +1,4 @@
-#ifndef _WIN32
+#if defined(LIBBACKTRACE_OFFLINE_SYMBOL_RESOLUTION_SUPPORT) && !defined(_WIN32)
 
 #include "OfflineSymbolResolver.h"
 
@@ -258,4 +258,4 @@ bool ResolveSymbolsWithLibBacktrace( const std::string& imagePath, const FrameEn
     return BacktraceSoResolver::resolveSymbolsForImage( imagePath, inputEntryList, resolvedEntries );
 }
 
-#endif // #ifndef _WIN32
+#endif // #if defined(LIBBACKTRACE_OFFLINE_SYMBOL_RESOLUTION_SUPPORT) && !defined(_WIN32)

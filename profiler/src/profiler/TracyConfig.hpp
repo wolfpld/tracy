@@ -20,6 +20,8 @@ struct Config
     int dynamicColors = 1;
     bool forceColors = false;
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
+    bool saveUserScale = false;
+    float userScale = 1.0f;
 };
 
 }

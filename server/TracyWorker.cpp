@@ -1419,7 +1419,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::ContextSwitches, std::memory_order_relaxed );
-
+    
+    const bool ctxSwitchesHaveWakeupCpu = fileVer >= FileVersion( 0, 11, 3 );
     if( eventMask & EventType::ContextSwitches )
     {
         f.Read( sz );
@@ -1441,7 +1442,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 uint8_t cpu, wakeupcpu;
                 int8_t reason, state;
                 f.Read7( deltaWakeup, deltaStart, diff, cpu, reason, state, thread );
-                if ( fileVer >= FileVersion( 0, 11, 3 ) )
+                if ( ctxSwitchesHaveWakeupCpu )
                 {
                     f.Read(wakeupcpu);
                 }
@@ -1477,7 +1478,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             f.Skip( sizeof( uint64_t ) );
             uint64_t csz;
             f.Read( csz );
-            f.Skip( csz * ( sizeof( int64_t ) * 4 + sizeof( int8_t ) * 3 ) );
+            f.Skip( csz * ( sizeof( int64_t ) * 4 + sizeof( int8_t ) * ( 3 + int( ctxSwitchesHaveWakeupCpu ) ) ) );
         }
     }
 

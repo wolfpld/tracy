@@ -246,7 +246,11 @@ const char* TimeToStringExact( int64_t _ns )
     bufsel = ( bufsel + 1 ) % Pool;
 
     uint64_t ns;
-    if( _ns < 0 )
+    if( _ns == std::numeric_limits<int64_t>::min() )
+    {
+        ns = -(_ns + 1) + 1;
+    }
+    else if( _ns < 0 )
     {
         *buf = '-';
         buf++;

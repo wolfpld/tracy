@@ -71,7 +71,7 @@ static inline void PrintSmallInt( char*& buf, uint64_t v )
 
 static inline void PrintSmallInt0( char*& buf, uint64_t v )
 {
-    assert( v < 1000 );
+    assert( v < uint64_t(1000ll) );
     if( v >= 100 )
     {
         memcpy( buf, IntTable100 + v/10*2, 2 );
@@ -155,6 +155,22 @@ static inline void PrintSecondsFrac( char*& buf, uint64_t v )
     }
 }
 
+uint64_t _int64_abs( int64_t x )
+{
+    if( x == std::numeric_limits<int64_t>::min() )
+    {
+        return -(x + 1) + 1;
+    }
+    else if( x < 0 )
+    {
+        return -x;
+    }
+    else
+    {
+        return x;
+    }
+}
+
 const char* TimeToString( int64_t _ns )
 {
     enum { Pool = 8 };
@@ -164,16 +180,11 @@ const char* TimeToString( int64_t _ns )
     char* bufstart = buf;
     bufsel = ( bufsel + 1 ) % Pool;
 
-    uint64_t ns;
+    uint64_t ns = _int64_abs(_ns);
     if( _ns < 0 )
     {
         *buf = '-';
         buf++;
-        ns = -_ns;
-    }
-    else
-    {
-        ns = _ns;
     }
 
     if( ns < 1000 )
@@ -245,20 +256,11 @@ const char* TimeToStringExact( int64_t _ns )
     char* bufstart = buf;
     bufsel = ( bufsel + 1 ) % Pool;
 
-    uint64_t ns;
-    if( _ns == std::numeric_limits<int64_t>::min() )
-    {
-        ns = -(_ns + 1) + 1;
-    }
-    else if( _ns < 0 )
+    uint64_t ns = _int64_abs(_ns);
+    if( _ns < 0 )
     {
         *buf = '-';
         buf++;
-        ns = -_ns;
-    }
-    else
-    {
-        ns = _ns;
     }
 
     const char* numStart = buf;

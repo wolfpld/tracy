@@ -444,7 +444,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         offset += sstep;
     }
 
-    if( IsMouseClickReleased( ImGuiMouseButton_Left ) && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, offset ) ) )
+    if( ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, offset ) ) && IsMouseClickReleased( ImGuiMouseButton_Left ) )
     {
         if( m_drawThreadHighlight != 0 )
         {

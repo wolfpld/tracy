@@ -5308,7 +5308,7 @@ void Worker::ProcessZoneColor( const QueueZoneColor& ev )
 
 void Worker::ProcessZoneValue( const QueueZoneValue& ev )
 {
-    char tmp[32];
+    char tmp[64];
     const auto tsz = sprintf( tmp, "%" PRIu64 " [0x%" PRIx64 "]", ev.value, ev.value );
 
     auto td = RetrieveThread( m_threadCtx );

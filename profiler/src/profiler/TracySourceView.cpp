@@ -1196,7 +1196,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         }
         else
         {
-            char tmp[16];
+            char tmp[32];
             sprintf( tmp, "0x%" PRIx64, m_baseAddr );
             TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", tmp );
         }
@@ -5665,7 +5665,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             f = fopen( fn, "wb" );
         }
         if( !f ) return;
-        char tmp[16];
+        char tmp[32];
         auto sym = worker.GetSymbolData( m_symAddr );
         assert( sym );
         const char* symName;

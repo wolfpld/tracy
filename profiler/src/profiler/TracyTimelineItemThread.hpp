@@ -27,6 +27,7 @@ protected:
 
     bool DrawContents( const TimelineContext& ctx, int& offset ) override;
     void DrawOverlay( const ImVec2& ul, const ImVec2& dr ) override;
+    void DrawExtraPopupItems() override;
     void DrawFinished() override;
 
     bool IsEmpty() const override;

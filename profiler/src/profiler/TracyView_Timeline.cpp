@@ -31,7 +31,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
     {
         m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( m_highlight.active )
+    else if( m_highlight.active && !IsMouseDown( 0 ) )
     {
         if( ImGui::GetIO().KeyCtrl && m_highlight.start != m_highlight.end )
         {
@@ -49,7 +49,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
     {
         m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( m_highlightZoom.active )
+    else if( m_highlightZoom.active && !IsMouseDown( 2 )  )
     {
         if( m_highlightZoom.start != m_highlightZoom.end )
         {
@@ -242,6 +242,11 @@ void View::DrawTimeline()
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
+
+    if( !m_vd.drawCpuData )
+    {
+        m_selectedThread = 0;
+    }
     m_drawThreadMigrations.Decay( 0 );
     m_drawThreadHighlight.Decay( 0 );
     m_cpuDataThread.Decay( 0 );

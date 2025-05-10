@@ -15,47 +15,49 @@ const char* View::DecodeContextSwitchReasonCode( uint8_t reason )
 {
     switch( reason )
     {
-    case 0: return "Executive";
-    case 1: return "FreePage";
-    case 2: return "PageIn";
-    case 3: return "PoolAllocation";
-    case 4: return "DelayExecution";
-    case 5: return "Suspended";
-    case 6: return "UserRequest";
-    case 7: return "WrExecutive";
-    case 8: return "WrFreePage";
-    case 9: return "WrPageIn";
-    case 10: return "WrPoolAllocation";
-    case 11: return "WrDelayExecution";
-    case 12: return "WrSuspended";
-    case 13: return "WrUserRequest";
-    case 14: return "WrEventPair";
-    case 15: return "WrQueue";
-    case 16: return "WrLpcReceive";
-    case 17: return "WrLpcReply";
-    case 18: return "WrVirtualMemory";
-    case 19: return "WrPageOut";
-    case 20: return "WrRendezvous";
-    case 21: return "WrKeyedEvent";
-    case 22: return "WrTerminated";
-    case 23: return "WrProcessInSwap";
-    case 24: return "WrCpuRateControl";
-    case 25: return "WrCalloutStack";
-    case 26: return "WrKernel";
-    case 27: return "WrResource";
-    case 28: return "WrPushLock";
-    case 29: return "WrMutex";
-    case 30: return "WrQuantumEnd";
-    case 31: return "WrDispatchInt";
-    case 32: return "WrPreempted";
-    case 33: return "WrYieldExecution";
-    case 34: return "WrFastMutex";
-    case 35: return "WrGuardedMutex";
-    case 36: return "WrRundown";
-    case 37: return "WrAlertByThreadId";
-    case 38: return "WrDeferredPreempt";
-    case 39: return "WrPhysicalFault";
-    case 40: return "MaximumWaitReason";
+    case ContextSwitchData::Win32_Executive: return "Executive";
+    case ContextSwitchData::Win32_FreePage: return "FreePage";
+    case ContextSwitchData::Win32_PageIn: return "PageIn";
+    case ContextSwitchData::Win32_PoolAllocation: return "PoolAllocation";
+    case ContextSwitchData::Win32_DelayExecution: return "DelayExecution";
+    case ContextSwitchData::Win32_Suspended: return "Suspended";
+    case ContextSwitchData::Win32_UserRequest: return "UserRequest";
+    case ContextSwitchData::Win32_WrExecutive: return "WrExecutive";
+    case ContextSwitchData::Win32_WrFreePage: return "WrFreePage";
+    case ContextSwitchData::Win32_WrPageIn: return "WrPageIn";
+    case ContextSwitchData::Win32_WrPoolAllocation: return "WrPoolAllocation";
+    case ContextSwitchData::Win32_WrDelayExecution: return "WrDelayExecution";
+    case ContextSwitchData::Win32_WrSuspended: return "WrSuspended";
+    case ContextSwitchData::Win32_WrUserRequest: return "WrUserRequest";
+    case ContextSwitchData::Win32_WrEventPair: return "WrEventPair";
+    case ContextSwitchData::Win32_WrQueue: return "WrQueue";
+    case ContextSwitchData::Win32_WrLpcReceive: return "WrLpcReceive";
+    case ContextSwitchData::Win32_WrLpcReply: return "WrLpcReply";
+    case ContextSwitchData::Win32_WrVirtualMemory: return "WrVirtualMemory";
+    case ContextSwitchData::Win32_WrPageOut: return "WrPageOut";
+    case ContextSwitchData::Win32_WrRendezvous: return "WrRendezvous";
+    case ContextSwitchData::Win32_WrKeyedEvent: return "WrKeyedEvent";
+    case ContextSwitchData::Win32_WrTerminated: return "WrTerminated";
+    case ContextSwitchData::Win32_WrProcessInSwap: return "WrProcessInSwap";
+    case ContextSwitchData::Win32_WrCpuRateControl: return "WrCpuRateControl";
+    case ContextSwitchData::Win32_WrCalloutStack: return "WrCalloutStack";
+    case ContextSwitchData::Win32_WrKernel: return "WrKernel";
+    case ContextSwitchData::Win32_WrResource: return "WrResource";
+    case ContextSwitchData::Win32_WrPushLock: return "WrPushLock";
+    case ContextSwitchData::Win32_WrMutex: return "WrMutex";
+    case ContextSwitchData::Win32_WrQuantumEnd: return "WrQuantumEnd";
+    case ContextSwitchData::Win32_WrDispatchInt: return "WrDispatchInt";
+    case ContextSwitchData::Win32_WrPreempted: return "WrPreempted";
+    case ContextSwitchData::Win32_WrYieldExecution: return "WrYieldExecution";
+    case ContextSwitchData::Win32_WrFastMutex: return "WrFastMutex";
+    case ContextSwitchData::Win32_WrGuardedMutex: return "WrGuardedMutex";
+    case ContextSwitchData::Win32_WrRundown: return "WrRundown";
+    case ContextSwitchData::Win32_WrAlertByThreadId: return "WrAlertByThreadId";
+    case ContextSwitchData::Win32_WrDeferredPreempt: return "WrDeferredPreempt";
+    case ContextSwitchData::Win32_WrPhysicalFault: return "WrPhysicalFault";
+    case ContextSwitchData::Win32_WrIoRing: return "WrIoRing";
+    case ContextSwitchData::Win32_WrMdlCache: return "WrMdlCache";
+    case ContextSwitchData::Win32_WrRcu: return "WrRcu";
     default: return "unknown";
     }
 }
@@ -64,21 +66,49 @@ const char* View::DecodeContextSwitchReason( uint8_t reason )
 {
     switch( reason )
     {
-    case 0: return "(Thread is waiting for the scheduler)";
-    case 1: return "(Thread is waiting for a free virtual memory page)";
-    case 2: return "(Thread is waiting for a virtual memory page to arrive in memory)";
-    case 4: return "(Thread execution is delayed)";
-    case 5: return "(Thread execution is suspended)";
-    case 6: return "(Thread is waiting on object - WaitForSingleObject, etc.)";
-    case 7: return "(Thread is waiting for the scheduler)";
-    case 8: return "(Thread is waiting for a free virtual memory page)";
-    case 9: return "(Thread is waiting for a virtual memory page to arrive in memory)";
-    case 11: return "(Thread execution is delayed)";
-    case 12: return "(Thread execution is suspended)";
-    case 13: return "(Thread is waiting for window messages)";
-    case 15: return "(Thread is waiting on KQUEUE)";
-    case 24: return "(CPU rate limiting)";
-    case 34: return "(Waiting for a Fast Mutex)";
+    case ContextSwitchData::Win32_Executive: return "(Thread is waiting for the scheduler)";
+    case ContextSwitchData::Win32_FreePage: return "(Thread is waiting for a free virtual memory page)";
+    case ContextSwitchData::Win32_PageIn: return "(Thread is waiting for a virtual memory page to arrive in memory)";    
+    case ContextSwitchData::Win32_PoolAllocation: return "(Thread is waiting for a system allocation)";
+    case ContextSwitchData::Win32_DelayExecution: return "(Thread execution is delayed)";
+    case ContextSwitchData::Win32_Suspended: return "(Thread execution is suspended)";
+    case ContextSwitchData::Win32_UserRequest: return "(Thread is waiting on object - WaitForSingleObject, etc.)";
+    case ContextSwitchData::Win32_WrExecutive: return "(Thread is waiting for the scheduler)";
+    case ContextSwitchData::Win32_WrFreePage: return "(Thread is waiting for a free virtual memory page)";
+    case ContextSwitchData::Win32_WrPageIn: return "(Thread is waiting for a virtual memory page to arrive in memory)";
+    case ContextSwitchData::Win32_WrPoolAllocation: return "(Thread is waiting for a system allocation)";
+    case ContextSwitchData::Win32_WrDelayExecution: return "(Thread execution is delayed)";
+    case ContextSwitchData::Win32_WrSuspended: return "(Thread execution is suspended)";
+    case ContextSwitchData::Win32_WrUserRequest: return "(Thread is waiting for window messages)";
+    case ContextSwitchData::Win32_WrEventPair: return "(Thread is waiting for a client/server event pair)";
+    case ContextSwitchData::Win32_WrQueue: return "(Thread is waiting on KQUEUE, which was empty. Usuall has to do with I/O completion.)";
+    case ContextSwitchData::Win32_WrLpcReceive: return "(Thread is waiting for a local procedure call to arrive)";
+    case ContextSwitchData::Win32_WrLpcReply: return "(Thread is waiting for a local procedure call reply to arrive)";
+    case ContextSwitchData::Win32_WrVirtualMemory: return "(Thread is waiting for the system to allocate virtual memory)";
+    case ContextSwitchData::Win32_WrPageOut: return "(Thread is waiting for a virtual memory page to be written to disk)";
+    case ContextSwitchData::Win32_WrRendezvous: return "(Thread is waiting for a rendezvous.)";
+    case ContextSwitchData::Win32_WrKeyedEvent: return "(Thread is waiting for a keyed event)";
+    case ContextSwitchData::Win32_WrTerminated: return "(Waiting for thread termination.)";
+    case ContextSwitchData::Win32_WrProcessInSwap: return "(Waiting for a process to be swapped in.)";
+    case ContextSwitchData::Win32_WrCpuRateControl: return "(CPU rate limiting)";
+    case ContextSwitchData::Win32_WrCalloutStack: return "(Waiting for the thread callout routine to finish due to stack being resized.)";
+    case ContextSwitchData::Win32_WrKernel: return "(Waiting for a kernel operation)";
+    case ContextSwitchData::Win32_WrResource: return "(Kernel is waiting for a resource, usually related to drivers loading, hardware changes or network connections.)";
+    case ContextSwitchData::Win32_WrPushLock: return "(Waiting for a driver PushLock to be released.)";
+    case ContextSwitchData::Win32_WrMutex: return "(Waiting for a Mutex object. This could be related to Inter Process Synchronization.)";
+    case ContextSwitchData::Win32_WrQuantumEnd: return "(Thread has used up all of its quantum and another thread was ready to be scheduled.)";
+    case ContextSwitchData::Win32_WrDispatchInt: return "(A software interrupt was dispatched and another thread was scheduled while processing DPCs.)";
+    case ContextSwitchData::Win32_WrPreempted: return "(Thread was preempted to run another thread with higher priority.)";
+    case ContextSwitchData::Win32_WrYieldExecution: return "(Thread yielded its quantum, most likely through SwitchToThread or Sleep(0).)";
+    case ContextSwitchData::Win32_WrFastMutex: return "(Waiting for a Fast Mutex held by the driver. Raises the IRQ level.)";
+    case ContextSwitchData::Win32_WrGuardedMutex: return "(Waiting for a Guarded Mutex held by the driver.)";
+    case ContextSwitchData::Win32_WrRundown: return "(Driver waiting for rundown. Some kernel shared object is most likely being reloaded.)";
+    case ContextSwitchData::Win32_WrAlertByThreadId: return "(Waiting for a synchronization primitive that does not use WaitForObject. Most likely from a SRWLock, CRITICAL_SECTION or WaitOnAdress.)";
+    case ContextSwitchData::Win32_WrDeferredPreempt: return "(Thread should be preempting another, but can not due to the other being running uninterruptable code.)";
+    case ContextSwitchData::Win32_WrPhysicalFault: return "(A physical fault needs to be handled.)";
+    case ContextSwitchData::Win32_WrIoRing: return "(Waiting for I/O Ring operations, likely due to a call to SubmitIORing.)";
+    case ContextSwitchData::Win32_WrMdlCache: return "(Waiting for the Memory Descriptor List cache, related to Virtual<>Physical I/O buffers.";
+    case ContextSwitchData::Win32_WrRcu: return "(Waiting for a Read-Copy-Update synchronization.)";
     default: return "";
     }
 }
@@ -236,6 +266,7 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                     {
                         ZoomToRange( prev.End(), ev.WakeupVal() );
                     }
+                    TextFocused( "Readied by CPU:", RealToString( ev.WakeupCpu() ) );
                     tooltip = true;
                 }
                 if( tooltip )

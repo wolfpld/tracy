@@ -212,15 +212,17 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                     const char* txt;
                     auto label = GetThreadContextData( thread, local, untracked, txt );
 
-                    uint32_t color;
-                    if( m_vd.dynamicColors != 0 )
-                    {
-                        color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
-                    }
-                    else
-                    {
-                        color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
-                    }
+                    auto getDisplayThreadColor = [this]( uint64_t thread, bool local, bool untracked ) {
+                        if( m_vd.dynamicColors != 0 )
+                        {
+                            return local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
+                        }
+                        else
+                        {
+                            return local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
+                        }
+                    };
+                    uint32_t color = getDisplayThreadColor( thread, local, untracked );
 
                     draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), color );
                     if( m_drawThreadHighlight == thread )
@@ -289,6 +291,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                             TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(%s)", RealToString( thread ) );
+                            
                             m_drawThreadMigrations = thread;
                             m_cpuDataThread = thread;
                         }
@@ -319,6 +322,67 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                         TextFocused( "Start time:", TimeToStringExact( ev.Start() ) );
                         TextFocused( "End time:", TimeToStringExact( end ) );
                         TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                        
+                        // Display data about the switch in
+                        auto threadCtxSwitches = m_worker.GetContextSwitchData( thread );
+                        if( threadCtxSwitches )
+                        {
+                            auto& v = threadCtxSwitches->v;
+                            auto it = std::lower_bound( v.begin(), v.end(), ev.Start(), [](const auto& l, const auto& r) { return l.Start() < r; } );
+                            // We should have the data, or something went wrong.
+                            assert( it != v.end() && it->Start() == ev.Start() );
+
+                            // Do we have information about the previous CSwitch?
+                            if( it != v.begin() )
+                            {
+                                auto& prev = *( it - 1 );
+                                    
+                                ImGui::Separator();
+
+                                TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
+                                ImGui::SameLine();
+                                ImGui::PushFont( m_smallFont );
+                                ImGui::AlignTextToFramePadding();
+                                TextDisabledUnformatted( DecodeContextSwitchReason( prev.Reason() ) );
+                                ImGui::PopFont();
+                                TextFocused( "Wait state:", DecodeContextSwitchStateCode( prev.State() ) );
+                                TextFocused( "Waiting time:", TimeToString( it->WakeupVal() - prev.End() ) );
+                            }
+                            
+                            // Do we have information about the readying thread?
+                            if( it->Start() - it->WakeupVal() )
+                            {
+                                ImGui::Separator();
+                                TextFocused( "WakeUp delay:", TimeToString( it->Start() - it->WakeupVal() ) );
+                                assert( it->WakeupCpu() < cpuCnt );
+                                const auto& wakeUpCpuCSwitches = cpuData[it->WakeupCpu()].cs;
+                                auto wakeupit = std::lower_bound( wakeUpCpuCSwitches.begin(), wakeUpCpuCSwitches.end(), it->WakeupVal(), []( const auto& l, const auto& r ) { return l.End() < r; } );
+                                if( wakeupit != wakeUpCpuCSwitches.end()
+                                    && wakeupit->Start() < it->WakeupVal()
+                                    && it->WakeupVal() < wakeupit->End() )
+                                {
+                                    TextDisabledUnformatted( "Woken up by:" );
+                                    ImGui::SameLine();
+
+                                    const auto wakeupThread = m_worker.DecompressThreadExternal( wakeupit->Thread() );
+                                    bool wakeupThreadLocal, wakeupThreadUntracked;
+                                    const char* wakeUpThreadProgram;
+                                    auto wakeuplabel = GetThreadContextData( wakeupThread, wakeupThreadLocal, wakeupThreadUntracked, wakeUpThreadProgram );
+                                    
+                                    uint32_t wakeupThreadColor = getDisplayThreadColor( wakeupThread, wakeupThreadLocal, wakeupThreadUntracked );
+                                    TextColoredUnformatted( HighlightColor<75>( wakeupThreadColor ), wakeuplabel );
+                                    ImGui::SameLine();
+                                    ImGui::TextDisabled( "(%s)", RealToString( wakeupThread ) );
+                                }
+                                else
+                                {
+                                    TextDisabledUnformatted( "Woken up by Kernel" );
+                                }
+                            }
+
+                        }
+
+
                         ImGui::EndTooltip();
                         ImGui::PushFont( m_smallFont );
 
@@ -380,50 +444,127 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         offset += sstep;
     }
 
+    if( ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, offset ) ) && IsMouseClickReleased( ImGuiMouseButton_Left ) )
+    {
+        if( m_drawThreadHighlight != 0 )
+        {
+            m_selectedThread = m_drawThreadHighlight;
+        }
+        else
+        {
+            // Clicked anywhere in the CPUData timeline that is not a thread => Clear selected thread.
+            m_selectedThread = 0;
+        }
+    }
     if( m_drawThreadMigrations != 0 )
     {
-        auto ctxSwitch = m_worker.GetContextSwitchData( m_drawThreadMigrations );
-        if( ctxSwitch )
-        {
-            const auto color = HighlightColor( GetThreadColor( m_drawThreadMigrations, -8 ) );
+        DrawThreadMigrations( ctx, origOffset, m_drawThreadMigrations );
+    }
 
-            auto& v = ctxSwitch->v;
-            auto it = std::lower_bound( v.begin(), v.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.End() < r; } );
-            if( it != v.begin() ) --it;
-            auto end = std::lower_bound( it, v.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
-            if( end == v.end() ) --end;
-
-            const auto bgSize = GetScale() * 4.f;
-            const auto lnSize = GetScale() * 2.f;
-
-            while( it < end )
-            {
-                const auto t0 = it->End();
-                const auto cpu0 = it->Cpu();
-
-                ++it;
-
-                const auto t1 = it->Start();
-                const auto cpu1 = it->Cpu();
-
-                const auto px0 = ( t0 - m_vd.zvStart ) * pxns;
-                const auto px1 = ( t1 - m_vd.zvStart ) * pxns;
-
-                if( px1 - px0 < 2 )
-                {
-                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color );
-                }
-                else
-                {
-                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), 0xFF000000, bgSize );
-                    DrawLine( draw, dpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), dpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color, lnSize );
-                }
-            }
-        }
+    if( m_selectedThread != 0 )
+    {
+        DrawThreadMigrations( ctx, origOffset, m_selectedThread );
     }
 
     ImGui::PopFont();
     return true;
+}
+
+void View::DrawThreadMigrations( const TimelineContext& ctx, const int origOffset, uint64_t thread )
+{
+    const auto& wpos = ctx.wpos;
+    const auto w = ctx.w;
+    const auto ty = ctx.ty;
+    const auto sty = ctx.sty;
+    const auto pxns = ctx.pxns;
+    const auto nspx = ctx.nspx;
+    const auto dpos = wpos + ImVec2(0.5f, 0.5f);
+    const auto yMin = ctx.yMin;
+    const auto yMax = ctx.yMax;
+    const auto hover = ctx.hover;
+    const auto vStart = ctx.vStart;
+    const auto sstep = sty + 1;
+
+    auto draw = ImGui::GetWindowDrawList();
+    auto ctxSwitch = m_worker.GetContextSwitchData( thread );
+    if( ctxSwitch )
+    {
+        const auto color = HighlightColor( GetThreadColor( thread, -8 ) );
+
+        auto& v = ctxSwitch->v;
+        auto it = std::lower_bound( v.begin(), v.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.End() < r; } );
+        if( it != v.begin() ) --it;
+        auto end = std::lower_bound( it, v.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+        if( end == v.end() ) --end;
+
+        const auto bgSize = GetScale() * 4.f;
+        const auto lnSize = GetScale() * 2.f;
+        const auto wakeupLineSize = GetScale() * 1.5f;
+
+
+        auto computeScreenPos = [&]( int64_t t, uint8_t cpu ) {
+            const auto px = ( t - m_vd.zvStart ) * pxns;
+            return dpos + ImVec2( px, origOffset + sty * 0.5f + cpu * sstep );
+        };
+
+        auto drawWakeUp = [&]( int64_t start, ImVec2 startPos, int64_t wakeup, uint8_t wakeupcpu, uint32_t wakecolor, bool forceDraw ) {
+            if( start != wakeup )
+            {
+                const auto pw = computeScreenPos( wakeup, wakeupcpu );
+                const auto wakeupWidthPixels = startPos.x - pw.x;
+                if( forceDraw || ( wakeupWidthPixels >= 0.5 ) )
+                {
+
+                    DrawLine( draw, pw, startPos, wakecolor, wakeupLineSize );
+                    draw->AddCircleFilled( pw, bgSize, wakecolor );
+                        
+                    // Vertical line at beginning of thread to emphasize wakeup
+                    if( wakeupWidthPixels >= 3 )
+                    {
+                        const float halfPx = GetScale() * 0.5f;
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f - halfPx }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + halfPx }, 0xFF000000, lnSize * 2 );
+                        DrawLine( draw, ImVec2{ startPos.x, startPos.y - sty * 0.5f - halfPx }, ImVec2{ startPos.x , startPos.y + sty * 0.5f + halfPx }, wakecolor, lnSize );
+                    }
+                }
+            }
+        };
+
+        if( it != v.end() && it->Start() > m_vd.zvStart )
+        {
+            drawWakeUp( it->Start(), computeScreenPos( it->Start(), it->Cpu() ), it->WakeupVal(), it->WakeupCpu(), 0xFF444444, true);
+        }
+        while( it < end )
+        {
+            const auto t0 = it->End();
+            const auto cpu0 = it->Cpu();
+            const auto waitReason = it->Reason();
+            const auto waitState = it->State();
+
+            ++it;
+
+                
+            const auto t1 = it->Start();
+            const auto cpu1 = it->Cpu();
+
+            const auto p0 = computeScreenPos( t0, cpu0 );
+            const auto p1 = computeScreenPos( t1, cpu1 );
+
+            const auto migrationWidthPixels = p1.x - p0.x;
+            if( migrationWidthPixels < 2 )
+            {
+                DrawLine( draw, p0, p1, color );
+            }
+            else
+            {
+                DrawLine( draw, p0, p1, 0xFF000000, bgSize );
+                DrawLine( draw, p0, p1, color, lnSize );
+            }
+
+            const auto hue = 0.38f * float(waitReason); // Golden angle, gives new colors for each reason
+            const auto wakecolor = ImColor::HSV(hue, 1.f, 1.f);
+            drawWakeUp( t1, p1, it->WakeupVal(), it->WakeupCpu(), wakecolor, (migrationWidthPixels >= 30) );
+        }
+    }
 }
 
 void View::DrawCpuDataWindow()

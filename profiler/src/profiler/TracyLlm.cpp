@@ -9,9 +9,12 @@ namespace tracy
 {
 
 TracyLlm::TracyLlm()
-    : m_ollama( std::make_unique<Ollama>( s_config.llmAddress ) )
-    , m_valid( m_ollama->is_running() )
+    : m_valid( false )
 {
+    if( !s_config.llm ) return;
+
+    m_ollama = std::make_unique<Ollama>( s_config.llmAddress );
+    m_valid = m_ollama->is_running();
 }
 
 TracyLlm::~TracyLlm()

@@ -145,9 +145,9 @@ void TracyLlm::Draw()
         ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
         ImGui::TextWrapped( "What I had not realized is that extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people." );
         ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
-        const auto tw = ImGui::CalcTextSize( "-- Joseph Weizenbaum" ).x;
+        const auto tw = ImGui::CalcTextSize( "-- Joseph Weizenbaum, 1976" ).x;
         ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw - 30 * scale ) );
-        ImGui::TextUnformatted( "-- Joseph Weizenbaum" );
+        ImGui::TextUnformatted( "-- Joseph Weizenbaum, 1976" );
         ImGui::PopStyleColor();
     }
     else

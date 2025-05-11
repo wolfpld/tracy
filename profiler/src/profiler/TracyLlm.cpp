@@ -122,7 +122,10 @@ void TracyLlm::Draw()
         m_cv.notify_all();
     }
 
-    if( ImGui::BeginCombo( "Model##model", m_models[m_modelIdx].name.c_str() ) )
+    ImGui::AlignTextToFramePadding();
+    TextDisabledUnformatted( "Model:" );
+    ImGui::SameLine();
+    if( ImGui::BeginCombo( "##model", m_models[m_modelIdx].name.c_str() ) )
     {
         for( size_t i = 0; i < m_models.size(); ++i )
         {
@@ -138,6 +141,16 @@ void TracyLlm::Draw()
         }
         ImGui::EndCombo();
     }
+
+    ImGui::AlignTextToFramePadding();
+    TextDisabledUnformatted( "Context size:" );
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth( 80 * scale );
+    if( ImGui::InputInt( "##contextSize", &m_ctxPercent ) ) { m_ctxPercent = std::clamp( m_ctxPercent, 1, 100 ); }
+    ImGui::SameLine();
+    ImGui::TextUnformatted( "%" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%s)", RealToString( m_models[m_modelIdx].ctxSize * m_ctxPercent / 100 ) );
 
     ImGui::Spacing();
     ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders );
@@ -317,7 +330,7 @@ void TracyLlm::UpdateModels()
 void TracyLlm::SendMessage( ollama::messages&& messages )
 {
     ollama::options options;
-    options["num_ctx"] = m_models[m_modelIdx].ctxSize;
+    options["num_ctx"] = m_models[m_modelIdx].ctxSize * m_ctxPercent / 100;
 
     // The chat() call will fire a callback right away, so the assistant message needs to be there already
     m_chat->emplace_back( ollama::message( "assistant", "" ) );

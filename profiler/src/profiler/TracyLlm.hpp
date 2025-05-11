@@ -76,7 +76,7 @@ private:
     std::vector<LlmModel> m_models;
 
     size_t m_modelIdx;
-    size_t m_ctxSize;
+    int m_ctxPercent = 100;
 
     std::atomic<bool> m_exit;
     std::condition_variable m_cv;

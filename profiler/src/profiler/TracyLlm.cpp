@@ -39,6 +39,8 @@ TracyLlm::TracyLlm()
     m_input = new char[InputBufferSize];
     *m_input = 0;
 
+    m_chat = std::make_unique<ollama::messages>();
+
     m_jobs.emplace_back( WorkItem {
         .task = Task::LoadModels,
         .callback = [this] { UpdateModels(); }
@@ -104,7 +106,7 @@ void TracyLlm::Draw()
     if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
     {
         std::lock_guard lock( m_lock );
-        m_chat.clear();
+        m_chat = std::make_unique<ollama::messages>();
         *m_input = 0;
     }
     ImGui::SameLine();
@@ -137,7 +139,7 @@ void TracyLlm::Draw()
 
     ImGui::Spacing();
     ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders );
-    if( m_chat.empty() )
+    if( m_chat->empty() )
     {
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
         ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
@@ -150,11 +152,11 @@ void TracyLlm::Draw()
     }
     else
     {
-        for( auto& line : m_chat )
+        for( auto& line : *m_chat )
         {
             auto& style = ImGui::GetStyle();
-            ImGui::PushStyleColor( ImGuiCol_Text, line.user ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text] );
-            ImGui::TextWrapped( "%s", line.text.c_str() );
+            ImGui::PushStyleColor( ImGuiCol_Text, line["role"].get<std::string>() == "user" ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text] );
+            ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
             ImGui::PopStyleColor();
         }
     }
@@ -164,7 +166,7 @@ void TracyLlm::Draw()
     ImGui::PushItemWidth( -1 );
     if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
     {
-        m_chat.emplace_back( ChatLine { .text = m_input, .user = true } );
+        m_chat->emplace_back( ollama::message( "user", m_input ) );
         *m_input = 0;
         ImGui::SetKeyboardFocusHere( -1 );
     }

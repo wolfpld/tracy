@@ -14,6 +14,12 @@
 
 class Ollama;
 
+namespace ollama
+{
+class message;
+class messages;
+}
+
 namespace tracy
 {
 
@@ -28,12 +34,6 @@ class TracyLlm
     {
         Task task;
         std::function<void()> callback;
-    };
-
-    struct ChatLine
-    {
-        std::string text;
-        bool user;
     };
 
 public:
@@ -81,7 +81,7 @@ private:
     bool m_busy;
 
     char* m_input;
-    std::vector<ChatLine> m_chat;
+    std::unique_ptr<ollama::messages> m_chat;
 
     ImFont* m_font;
     ImFont* m_smallFont;

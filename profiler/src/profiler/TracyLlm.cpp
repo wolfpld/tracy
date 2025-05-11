@@ -122,35 +122,42 @@ void TracyLlm::Draw()
         m_cv.notify_all();
     }
 
-    ImGui::AlignTextToFramePadding();
-    TextDisabledUnformatted( "Model:" );
     ImGui::SameLine();
-    if( ImGui::BeginCombo( "##model", m_models[m_modelIdx].name.c_str() ) )
+    if( ImGui::TreeNode( "Settings" ) )
     {
-        for( size_t i = 0; i < m_models.size(); ++i )
+        ImGui::Spacing();
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( "Model:" );
+        ImGui::SameLine();
+        if( ImGui::BeginCombo( "##model", m_models[m_modelIdx].name.c_str() ) )
         {
-            const auto& model = m_models[i];
-            if( ImGui::Selectable( model.name.c_str(), i == m_modelIdx ) )
+            for( size_t i = 0; i < m_models.size(); ++i )
             {
-                m_modelIdx = i;
-                s_config.llmModel = model.name;
+                const auto& model = m_models[i];
+                if( ImGui::Selectable( model.name.c_str(), i == m_modelIdx ) )
+                {
+                    m_modelIdx = i;
+                    s_config.llmModel = model.name;
+                }
+                if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( m_models[i].ctxSize ) );
             }
-            if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( m_models[i].ctxSize ) );
+            ImGui::EndCombo();
         }
-        ImGui::EndCombo();
-    }
 
-    ImGui::AlignTextToFramePadding();
-    TextDisabledUnformatted( "Context size:" );
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth( 80 * scale );
-    if( ImGui::InputInt( "##contextSize", &m_ctxPercent ) ) { m_ctxPercent = std::clamp( m_ctxPercent, 1, 100 ); }
-    ImGui::SameLine();
-    ImGui::TextUnformatted( "%" );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( m_models[m_modelIdx].ctxSize * m_ctxPercent / 100 ) );
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( "Context size:" );
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth( 80 * scale );
+        if( ImGui::InputInt( "##contextSize", &m_ctxPercent ) ) { m_ctxPercent = std::clamp( m_ctxPercent, 1, 100 ); }
+        ImGui::SameLine();
+        ImGui::TextUnformatted( "%" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( m_models[m_modelIdx].ctxSize * m_ctxPercent / 100 ) );
+
+        ImGui::TreePop();
+    }
 
     ImGui::Spacing();
     ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders );
@@ -171,34 +178,55 @@ void TracyLlm::Draw()
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
             const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
-            const auto mw = std::max( uw, rw );
+            const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
+            const auto mw = std::max( { uw, rw, ew } );
 
             const auto pos = ImGui::GetCursorPos();
             const auto isUser = line["role"].get<std::string>() == "user";
+            const auto isError = line["role"].get<std::string>() == "error";
+
+            float diff, offset;
             if( isUser )
             {
-                const auto diff = mw - uw;
-                const auto offset = diff / 2;
+                diff = mw - uw;
+                offset = diff / 2;
                 ImGui::Dummy( ImVec2( offset, 0 ) );
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 0.5f, 1.f, 0.5f, 1.f ), ICON_FA_USER );
+            }
+            else if( isError )
+            {
+                diff = mw - ew;
+                offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
                 ImGui::SameLine( 0, 0 );
-                ImGui::Dummy( ImVec2( diff - offset, 0 ) );
+                ImGui::TextColored( ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ICON_FA_CIRCLE_EXCLAMATION );
             }
             else
             {
-                const auto diff = mw - rw;
-                const auto offset = diff / 2;
+                diff = mw - rw;
+                offset = diff / 2;
                 ImGui::Dummy( ImVec2( offset, 0 ) );
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 1.f, 0.5f, 0.5f, 1.f ), ICON_FA_ROBOT );
-                ImGui::SameLine( 0, 0 );
-                ImGui::Dummy( ImVec2( diff - offset, 0 ) );
             }
+            ImGui::SameLine( 0, 0 );
+            ImGui::Dummy( ImVec2( diff - offset, 0 ) );
             ImGui::SameLine();
 
             auto& style = ImGui::GetStyle();
-            ImGui::PushStyleColor( ImGuiCol_Text, isUser ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text] );
+            if( isUser )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
+            }
+            else if( isError )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
+            }
+            else
+            {
+                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_Text] );
+            }
             ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
             ImGui::PopStyleColor();
         }
@@ -336,9 +364,23 @@ void TracyLlm::SendMessage( ollama::messages&& messages )
     m_chat->emplace_back( ollama::message( "assistant", "" ) );
 
     m_lock.unlock();
-    auto res = m_ollama->chat( m_models[m_modelIdx].name, messages, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); }, options );
-    m_lock.lock();
+    bool res;
+    try
+    {
+        res = m_ollama->chat( m_models[m_modelIdx].name, messages, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); }, options );
+    }
+    catch( std::exception& e )
+    {
+        m_lock.lock();
+        if( !m_chat->empty() && m_chat->back()["role"].get<std::string>() == "assistant" ) m_chat->pop_back();
+        m_chat->emplace_back( ollama::message( "error", e.what() ) );
+        m_responding = false;
+        m_stop = false;
+        m_wasUpdated = true;
+        return;
+    }
 
+    m_lock.lock();
     if( !res )
     {
         m_chat->pop_back();

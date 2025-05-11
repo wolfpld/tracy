@@ -163,6 +163,7 @@ void TracyLlm::Draw()
     ImGui::EndChild();
     ImGui::Spacing();
 
+    if( ImGui::IsWindowAppearing() ) ImGui::SetKeyboardFocusHere( 0 );
     ImGui::PushItemWidth( -1 );
     if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
     {

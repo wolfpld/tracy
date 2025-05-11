@@ -864,6 +864,7 @@ static void DrawContents()
                 {
                     static int llmstatus = 0;
                     static std::string llmVersion;
+                    static std::vector<std::string> llmModels;
 
                     ImGui::Indent();
                     ImGui::TextUnformatted( "Ollama URL" );
@@ -876,8 +877,26 @@ static void DrawContents()
                     if( ImGui::InputText( "##ollamaurl", llmAddress, sizeof( llmAddress ) ) )
                     {
                         llmstatus = 0;
+                        llmModels.clear();
                         s_config.llmAddress = llmAddress;
                         SaveConfig();
+                    }
+
+                    if( llmstatus == 1 ) ImGui::BeginDisabled();
+                    const bool doCheck = ImGui::Button( ICON_FA_PLUG " Check connection" );
+                    if( llmstatus == 1 ) ImGui::EndDisabled();
+                    if( doCheck )
+                    {
+                        llmstatus = 1;
+                        // TODO put into a thread?
+                        tracy::TracyLlm llm;
+                        const bool valid = llm.IsValid();
+                        llmstatus = valid ? 2 : 3;
+                        if( valid )
+                        {
+                            llmVersion = llm.GetVersion();
+                            llmModels = llm.GetModels();
+                        }
                     }
 
                     ImGui::TextDisabled( "Connection status:" );
@@ -902,17 +921,37 @@ static void DrawContents()
                         assert( false );
                         break;
                     }
-                    if( llmstatus == 1 ) ImGui::BeginDisabled();
-                    const bool doCheck = ImGui::Button( ICON_FA_PLUG " Check connection" );
-                    if( llmstatus == 1 ) ImGui::EndDisabled();
-                    if( doCheck )
+
+                    if( !llmModels.empty() )
                     {
-                        llmstatus = 1;
-                        // TODO put into a thread?
-                        tracy::TracyLlm llm;
-                        const bool valid = llm.IsValid();
-                        llmstatus = valid ? 2 : 3;
-                        if( valid ) llmVersion = llm.GetVersion();
+                        ImGui::TextDisabled( "Selected model:" );
+                        int sel;
+                        for( sel=0; sel<llmModels.size(); sel++ )
+                        {
+                            if( llmModels[sel] == s_config.llmModel ) break;
+                        }
+                        if( sel == llmModels.size() )
+                        {
+                            sel = 0;
+                            s_config.llmModel = llmModels[0];
+                            SaveConfig();
+                        }
+                        ImGui::SameLine();
+                        ImGui::SetNextItemWidth( 225 * dpiScale );
+                        if( ImGui::BeginCombo( "##llmmodel", llmModels[sel].c_str() ) )
+                        {
+                            for( int i=0; i<llmModels.size(); i++ )
+                            {
+                                bool isSelected = ( i == sel );
+                                if( ImGui::Selectable( llmModels[i].c_str(), isSelected ) )
+                                {
+                                    s_config.llmModel = llmModels[i];
+                                    SaveConfig();
+                                }
+                                if( isSelected ) ImGui::SetItemDefaultFocus();
+                            }
+                            ImGui::EndCombo();
+                        }
                     }
 
                     ImGui::Unindent();

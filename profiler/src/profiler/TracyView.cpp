@@ -1156,7 +1156,11 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
-    if( m_llm.m_show ) m_llm.Draw();
+    if( m_llm.m_show )
+    {
+        m_llm.UpdateFont( m_fixedFont, m_smallFont, m_bigFont );
+        m_llm.Draw();
+    }
 
     if( m_setRangePopup.active )
     {

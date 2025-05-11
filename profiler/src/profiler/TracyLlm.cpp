@@ -10,6 +10,8 @@ extern tracy::Config s_config;
 namespace tracy
 {
 
+extern double s_time;
+
 TracyLlm::TracyLlm()
     : m_exit( false )
 {
@@ -71,6 +73,35 @@ void TracyLlm::Draw()
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Tracy AI", &m_show, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+
+    if( !m_ollama )
+    {
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
+        TextCentered( ICON_FA_PLUG_CIRCLE_XMARK );
+        TextCentered( "Cannot connect to ollama server!" );
+        ImGui::PopFont();
+        ImGui::Dummy( ImVec2( 0, ty * 2 ) );
+        ImGui::PushFont( m_smallFont );
+        TextCentered( "Server address:" );
+        TextCentered( s_config.llmAddress.c_str() );
+        ImGui::PopFont();
+        ImGui::End();
+        return;
+    }
+    if( IsBusy() )
+    {
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_HOURGLASS );
+        TextCentered( "Please wait..." );
+        DrawWaitingDots( s_time );
+        ImGui::PopFont();
+        ImGui::End();
+        return;
+    }
+
     ImGui::End();
 }
 

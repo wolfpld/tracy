@@ -10,6 +10,8 @@
 #include <thread>
 #include <vector>
 
+#include <imgui.h>
+
 class Ollama;
 
 namespace tracy
@@ -37,6 +39,8 @@ public:
 
     TracyLlm();
     ~TracyLlm();
+
+    void UpdateFont( ImFont* fixed, ImFont* small, ImFont* big ) { m_font = fixed; m_smallFont = small; m_bigFont = big; }
 
     [[nodiscard]] bool IsValid() const { return (bool)m_ollama; }
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock); return m_busy; }
@@ -68,6 +72,10 @@ private:
     mutable std::mutex m_lock;
     std::vector<WorkItem> m_jobs;
     bool m_busy;
+
+    ImFont* m_font;
+    ImFont* m_smallFont;
+    ImFont* m_bigFont;
 };
 
 }

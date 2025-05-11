@@ -35,6 +35,7 @@ set(SERVER_FILES
     TracyFileselector.cpp
     TracyFilesystem.cpp
     TracyImGui.cpp
+    TracyLlm.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
     TracyProtoHistory.cpp
@@ -186,6 +187,7 @@ endif()
 
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui Threads::Threads)
+target_include_directories(${PROJECT_NAME} PRIVATE ${ollama-hpp_SOURCE_DIR}/include)
 
 if(NOT DEFINED GIT_REV)
     set(GIT_REV "HEAD")

@@ -191,3 +191,12 @@ CPMAddPackage(
         "${CMAKE_CURRENT_LIST_DIR}/ppqsort-nodebug.patch"
     EXCLUDE_FROM_ALL TRUE
 )
+
+# ollama-hpp
+
+CPMAddPackage(
+    NAME ollama-hpp
+    GITHUB_REPOSITORY jmont-dev/ollama-hpp
+    VERSION 0.9.5 
+    DOWNLOAD_ONLY TRUE
+)

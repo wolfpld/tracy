@@ -10,14 +10,11 @@ namespace tracy
 {
 
 TracyLlm::TracyLlm()
-    : m_valid( false )
 {
     if( !s_config.llm ) return;
 
     m_ollama = std::make_unique<Ollama>( s_config.llmAddress );
-    m_valid = m_ollama->is_running();
-
-    if( !m_valid )
+    if( !m_ollama->is_running() )
     {
         m_ollama.reset();
         return;
@@ -26,7 +23,6 @@ TracyLlm::TracyLlm()
     const auto models = m_ollama->list_models();
     if( models.empty() )
     {
-        m_valid = false;
         m_ollama.reset();
         return;
     }
@@ -37,7 +33,6 @@ TracyLlm::TracyLlm()
     m_ctxSize = GetCtxSize( m_model );
     if( m_ctxSize == 0 )
     {
-        m_valid = false;
         m_ollama.reset();
         return;
     }

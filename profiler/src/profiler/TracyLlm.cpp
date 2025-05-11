@@ -103,16 +103,18 @@ void TracyLlm::Draw()
         return;
     }
 
+    std::lock_guard lock( m_lock );
+
     if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
     {
-        std::lock_guard lock( m_lock );
+        if( m_responding ) m_stop = true;
         m_chat = std::make_unique<ollama::messages>();
         *m_input = 0;
     }
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reload models" ) )
     {
-        std::lock_guard lock( m_lock );
+        if( m_responding ) m_stop = true;
         m_jobs.emplace_back( WorkItem {
             .task = Task::LoadModels,
             .callback = [this] { UpdateModels(); }
@@ -163,13 +165,52 @@ void TracyLlm::Draw()
     ImGui::EndChild();
     ImGui::Spacing();
 
-    if( ImGui::IsWindowAppearing() ) ImGui::SetKeyboardFocusHere( 0 );
-    ImGui::PushItemWidth( -1 );
-    if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
+    if( m_responding )
     {
-        m_chat->emplace_back( ollama::message( "user", m_input ) );
-        *m_input = 0;
-        ImGui::SetKeyboardFocusHere( -1 );
+        if( ImGui::Button( ICON_FA_STOP " Stop" ) ) m_stop = true;
+        ImGui::SameLine();
+        const auto pos = ImGui::GetWindowPos() + ImGui::GetCursorPos();
+        auto draw = ImGui::GetWindowDrawList();
+        const auto ty = ImGui::GetTextLineHeight();
+        draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 0 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+        draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 1 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f        ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+        draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 2 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+        ImGui::Dummy( ImVec2( ty * 3, ty ) );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( "Generating..." );
+        s_wasActive = true;
+    }
+    else
+    {
+        if( ImGui::IsWindowAppearing() ) ImGui::SetKeyboardFocusHere( 0 );
+        ImGui::PushItemWidth( -1 );
+        if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
+        {
+            auto ptr = m_input;
+            while( *ptr )
+            {
+                if( *ptr != ' ' && *ptr != '\t' && *ptr != '\n' ) break;
+                ptr++;
+            }
+            if( *ptr )
+            {
+                m_chat->emplace_back( ollama::message( "user", m_input ) );
+                *m_input = 0;
+                m_responding = true;
+
+                m_jobs.emplace_back( WorkItem {
+                    .task = Task::SendMessage,
+                    .callback = nullptr,
+                    .chat = std::make_unique<ollama::messages>( *m_chat )
+                } );
+                m_cv.notify_all();
+            }
+            else
+            {
+                *m_input = 0;
+            }
+            ImGui::SetKeyboardFocusHere( -1 );
+        }
     }
 
     ImGui::End();
@@ -183,25 +224,26 @@ void TracyLlm::Worker()
         m_cv.wait( lock, [this] { return !m_jobs.empty() || m_exit.load( std::memory_order_acquire ); } );
         if( m_exit.load( std::memory_order_acquire ) ) break;
 
-        auto job = m_jobs.back();
+        auto job = std::move( m_jobs.back() );
         m_jobs.pop_back();
-        m_busy = true;
-        lock.unlock();
 
         switch( job.task )
         {
         case Task::LoadModels:
+            m_busy = true;
+            lock.unlock();
             LoadModels();
+            job.callback();
+            lock.lock();
+            m_busy = false;
+            break;
+        case Task::SendMessage:
+            SendMessage( std::move( *job.chat ) );
             break;
         default:
             assert( false );
             break;
         }
-
-        job.callback();
-
-        lock.lock();
-        m_busy = false;
     }
 };
 
@@ -235,6 +277,51 @@ void TracyLlm::UpdateModels()
     {
         m_modelIdx = std::distance( m_models.begin(), it );
     }
+}
+
+void TracyLlm::SendMessage( ollama::messages&& messages )
+{
+    ollama::options options;
+    options["num_ctx"] = m_models[m_modelIdx].ctxSize;
+
+    // The chat() call will fire a callback right away, so the assistant message needs to be there already
+    m_chat->emplace_back( ollama::message( "assistant", "" ) );
+
+    m_lock.unlock();
+    auto res = m_ollama->chat( m_models[m_modelIdx].name, messages, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); }, options );
+    m_lock.lock();
+
+    if( !res )
+    {
+        m_chat->pop_back();
+        m_responding = false;
+        m_stop = false;
+    }
+}
+
+bool TracyLlm::OnResponse( const ollama::response& response )
+{
+    std::lock_guard lock( m_lock );
+
+    if( m_stop )
+    {
+        m_stop = false;
+        m_responding = false;
+        return false;
+    }
+
+    auto& back = m_chat->back()["content"];
+    const auto str = back.get<std::string>();
+    back = str + response.as_simple_string();
+
+    auto& json = response.as_json();
+    if( json["done"] )
+    {
+        m_responding = false;
+        return false;
+    }
+
+    return true;
 }
 
 }

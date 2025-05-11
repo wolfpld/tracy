@@ -18,6 +18,7 @@ namespace ollama
 {
 class message;
 class messages;
+class response;
 }
 
 namespace tracy
@@ -27,13 +28,15 @@ class TracyLlm
 {
     enum class Task
     {
-        LoadModels
+        LoadModels,
+        SendMessage,
     };
 
     struct WorkItem
     {
         Task task;
         std::function<void()> callback;
+        std::unique_ptr<ollama::messages> chat;
     };
 
 public:
@@ -64,6 +67,9 @@ private:
     void LoadModels();
     void UpdateModels();
 
+    void SendMessage( ollama::messages&& messages );
+    bool OnResponse( const ollama::response& response );
+
     std::unique_ptr<Ollama> m_ollama;
 
     mutable std::mutex m_modelsLock;
@@ -78,7 +84,9 @@ private:
 
     mutable std::mutex m_lock;
     std::vector<WorkItem> m_jobs;
-    bool m_busy;
+    bool m_busy = false;
+    bool m_responding = false;
+    bool m_stop = false;
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;

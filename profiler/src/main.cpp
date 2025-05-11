@@ -125,6 +125,7 @@ tracy::Config s_config;
 tracy::AchievementsMgr* s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 static bool s_switchAchievementCategory = false;
+static std::unique_ptr<tracy::TracyLlm> llmProbe;
 
 static float smoothstep( float x )
 {
@@ -444,6 +445,7 @@ int main( int argc, char** argv )
     if( updateThread.joinable() ) updateThread.join();
     if( updateNotesThread.joinable() ) updateNotesThread.join();
     view.reset();
+    llmProbe.reset();
 
     tracy::FreeTexture( zigzagTex, RunOnMainThread );
     tracy::FreeTexture( iconTex, RunOnMainThread );
@@ -875,6 +877,7 @@ static void DrawContents()
                         llmModels.clear();
                         s_config.llmAddress = "http://localhost:11434";
                         SaveConfig();
+                        llmProbe.reset();
                     }
                     ImGui::SameLine();
                     char llmAddress[1024];
@@ -886,6 +889,7 @@ static void DrawContents()
                         llmModels.clear();
                         s_config.llmAddress = llmAddress;
                         SaveConfig();
+                        llmProbe.reset();
                     }
 
                     if( llmstatus == 1 ) ImGui::BeginDisabled();
@@ -894,14 +898,25 @@ static void DrawContents()
                     if( doCheck )
                     {
                         llmstatus = 1;
-                        // TODO put into a thread?
-                        tracy::TracyLlm llm;
-                        const bool valid = llm.IsValid();
-                        llmstatus = valid ? 2 : 3;
-                        if( valid )
+                        llmProbe = std::make_unique<tracy::TracyLlm>();
+                        activeFrames = 3;
+                    }
+                    else if( llmProbe )
+                    {
+                        activeFrames = 3;
+                        if( llmProbe->IsValid() )
                         {
-                            llmVersion = llm.GetVersion();
-                            llmModels = llm.GetModels();
+                            if( !llmProbe->IsBusy() )
+                            {
+                                llmstatus = 2;
+                                llmVersion = llmProbe->GetVersion();
+                                llmModels = llmProbe->GetModels();
+                            }
+                        }
+                        else
+                        {
+                            llmstatus = 3;
+                            llmProbe.reset();
                         }
                     }
 
@@ -1377,6 +1392,7 @@ static void DrawContents()
             clients.clear();
         }
         if( loadThread.joinable() ) loadThread.join();
+        llmProbe.reset();
         view->NotifyRootWindowSize( display_w, display_h );
         if( !view->Draw() )
         {

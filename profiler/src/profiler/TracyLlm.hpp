@@ -1,8 +1,13 @@
 #ifndef __TRACYLLM_HPP__
 #define __TRACYLLM_HPP__
 
+#include <atomic>
+#include <condition_variable>
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 class Ollama;
@@ -12,6 +17,17 @@ namespace tracy
 
 class TracyLlm
 {
+    enum class Task
+    {
+        LoadModels
+    };
+
+    struct WorkItem
+    {
+        Task task;
+        std::function<void()> callback;
+    };
+
 public:
     struct LlmModel
     {
@@ -23,21 +39,35 @@ public:
     ~TracyLlm();
 
     [[nodiscard]] bool IsValid() const { return (bool)m_ollama; }
+    [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock); return m_busy; }
+
     [[nodiscard]] std::string GetVersion() const;
-    [[nodiscard]] std::vector<LlmModel> GetModels() const { return m_models; }
+    [[nodiscard]] std::vector<LlmModel> GetModels() const { std::lock_guard lock( m_modelsLock ); return m_models; }
 
     void Draw();
 
     bool m_show = false;
 
 private:
+    void Worker();
+
     void LoadModels();
 
     std::unique_ptr<Ollama> m_ollama;
+
+    mutable std::mutex m_modelsLock;
     std::vector<LlmModel> m_models;
 
     size_t m_modelIdx;
     size_t m_ctxSize;
+
+    std::atomic<bool> m_exit;
+    std::condition_variable m_cv;
+    std::thread m_thread;
+
+    mutable std::mutex m_lock;
+    std::vector<WorkItem> m_jobs;
+    bool m_busy;
 };
 
 }

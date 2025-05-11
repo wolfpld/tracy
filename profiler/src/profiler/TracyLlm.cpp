@@ -11,6 +11,7 @@ namespace tracy
 {
 
 TracyLlm::TracyLlm()
+    : m_exit( false )
 {
     if( !s_config.llm ) return;
 
@@ -21,29 +22,34 @@ TracyLlm::TracyLlm()
         return;
     }
 
-    try
-    {
-        LoadModels();
-    }
-    catch( const std::exception& e )
-    {
-        m_ollama.reset();
-        return;
-    }
-
-    auto it = std::ranges::find_if( m_models, []( const auto& model ) { return model.name == s_config.llmModel; } );
-    if( it == m_models.end() )
-    {
-        m_modelIdx = 0;
-    }
-    else
-    {
-        m_modelIdx = std::distance( m_models.begin(), it );
-    }
+    m_jobs.emplace_back( WorkItem {
+        .task = Task::LoadModels,
+        .callback = [this] {
+            auto it = std::ranges::find_if( m_models, []( const auto& model ) { return model.name == s_config.llmModel; } );
+            if( it == m_models.end() )
+            {
+                m_modelIdx = 0;
+            }
+            else
+            {
+                m_modelIdx = std::distance( m_models.begin(), it );
+            }
+        }
+    } );
+    m_thread = std::thread( [this] { Worker(); } );
 }
 
 TracyLlm::~TracyLlm()
 {
+    if( m_thread.joinable() )
+    {
+        {
+            std::lock_guard lock( m_lock );
+            m_exit.store( true, std::memory_order_release );
+            m_cv.notify_all();
+        }
+        m_thread.join();
+    }
 }
 
 std::string TracyLlm::GetVersion() const
@@ -60,9 +66,40 @@ void TracyLlm::Draw()
     ImGui::End();
 }
 
+void TracyLlm::Worker()
+{
+    std::unique_lock lock( m_lock );
+    while( !m_exit.load( std::memory_order_acquire ) )
+    {
+        m_cv.wait( lock, [this] { return !m_jobs.empty() || m_exit.load( std::memory_order_acquire ); } );
+        if( m_exit.load( std::memory_order_acquire ) ) break;
+
+        auto job = m_jobs.back();
+        m_jobs.pop_back();
+        m_busy = true;
+        lock.unlock();
+
+        switch( job.task )
+        {
+        case Task::LoadModels:
+            LoadModels();
+            break;
+        default:
+            assert( false );
+            break;
+        }
+
+        job.callback();
+
+        lock.lock();
+        m_busy = false;
+    }
+};
+
 void TracyLlm::LoadModels()
 {
-    m_models.clear();
+    std::vector<LlmModel> m;
+
     const auto models = m_ollama->list_models();
     for( const auto& model : models )
     {
@@ -70,8 +107,12 @@ void TracyLlm::LoadModels()
         const auto& modelInfo = info["model_info"];
         const auto architecture = modelInfo["general.architecture"].get<std::string>();
         const auto& ctx = modelInfo[architecture + ".context_length"];
-        m_models.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<size_t>() } );
+        m.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<size_t>() } );
     }
+
+    m_modelsLock.lock();
+    std::swap( m_models, m );
+    m_modelsLock.unlock();
 }
 
 }

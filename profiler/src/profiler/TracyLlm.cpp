@@ -101,7 +101,14 @@ void TracyLlm::Draw()
         return;
     }
 
-    if( ImGui::SmallButton( ICON_FA_ARROWS_ROTATE ) )
+    if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
+    {
+        std::lock_guard lock( m_lock );
+        m_chat.clear();
+        *m_input = 0;
+    }
+    ImGui::SameLine();
+    if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reload models" ) )
     {
         std::lock_guard lock( m_lock );
         m_jobs.emplace_back( WorkItem {
@@ -110,11 +117,8 @@ void TracyLlm::Draw()
         } );
         m_cv.notify_all();
     }
-    ImGui::SameLine();
-    ImGui::TextDisabled( "Model:" );
-    ImGui::SameLine();
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    if( ImGui::BeginCombo( "##model", m_models[m_modelIdx].name.c_str() ) )
+
+    if( ImGui::BeginCombo( "Model##model", m_models[m_modelIdx].name.c_str() ) )
     {
         for( size_t i = 0; i < m_models.size(); ++i )
         {
@@ -130,17 +134,39 @@ void TracyLlm::Draw()
         }
         ImGui::EndCombo();
     }
-    ImGui::PopStyleVar();
 
     ImGui::Spacing();
     ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders );
+    if( m_chat.empty() )
+    {
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
+        ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
+        ImGui::TextWrapped( "What I had not realized is that extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people." );
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+        const auto tw = ImGui::CalcTextSize( "-- Joseph Weizenbaum" ).x;
+        ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw - 30 * scale ) );
+        ImGui::TextUnformatted( "-- Joseph Weizenbaum" );
+        ImGui::PopStyleColor();
+    }
+    else
+    {
+        for( auto& line : m_chat )
+        {
+            auto& style = ImGui::GetStyle();
+            ImGui::PushStyleColor( ImGuiCol_Text, line.user ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text] );
+            ImGui::TextWrapped( "%s", line.text.c_str() );
+            ImGui::PopStyleColor();
+        }
+    }
     ImGui::EndChild();
     ImGui::Spacing();
 
     ImGui::PushItemWidth( -1 );
     if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
     {
+        m_chat.emplace_back( ChatLine { .text = m_input, .user = true } );
         *m_input = 0;
+        ImGui::SetKeyboardFocusHere( -1 );
     }
 
     ImGui::End();

@@ -30,6 +30,12 @@ class TracyLlm
         std::function<void()> callback;
     };
 
+    struct ChatLine
+    {
+        std::string text;
+        bool user;
+    };
+
 public:
     struct LlmModel
     {
@@ -75,6 +81,7 @@ private:
     bool m_busy;
 
     char* m_input;
+    std::vector<ChatLine> m_chat;
 
     ImFont* m_font;
     ImFont* m_smallFont;

@@ -35,6 +35,7 @@
 #include "profiler/TracyConfig.hpp"
 #include "profiler/TracyFileselector.hpp"
 #include "profiler/TracyImGui.hpp"
+#include "profiler/TracyLlm.hpp"
 #include "profiler/TracyMouse.hpp"
 #include "profiler/TracyProtoHistory.hpp"
 #include "profiler/TracyStorage.hpp"
@@ -854,6 +855,66 @@ static void DrawContents()
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
                 if( ImGui::Checkbox( "Save UI scale", &s_config.saveUserScale) ) SaveConfig();
+
+                ImGui::Spacing();
+                if( ImGui::Checkbox( "Enable LLM", &s_config.llm ) ) SaveConfig();
+                if( s_config.llm )
+                {
+                    static int llmstatus = 0;
+                    static std::string llmVersion;
+
+                    ImGui::Indent();
+                    ImGui::TextUnformatted( "Ollama URL" );
+                    ImGui::SameLine();
+                    if( ImGui::Button( ICON_FA_HOUSE ) ) s_config.llmAddress = "http://localhost:11434";
+                    ImGui::SameLine();
+                    char llmAddress[1024];
+                    snprintf( llmAddress, sizeof( llmAddress ), "%s", s_config.llmAddress.c_str() );
+                    ImGui::SetNextItemWidth( 225 * dpiScale );
+                    if( ImGui::InputText( "##ollamaurl", llmAddress, sizeof( llmAddress ) ) )
+                    {
+                        llmstatus = 0;
+                        s_config.llmAddress = llmAddress;
+                        SaveConfig();
+                    }
+
+                    ImGui::TextDisabled( "Connection status:" );
+                    ImGui::SameLine();
+                    switch( llmstatus )
+                    {
+                    case 0:
+                        ImGui::TextUnformatted( "Unknown" );
+                        break;
+                    case 1:
+                        ImGui::TextColored( ImVec4( 1, 1, 0.5f, 1 ), "Checking..." );
+                        break;
+                    case 2:
+                        ImGui::TextColored( ImVec4( 0.5f, 1, 0.5f, 1 ), "Valid" );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", llmVersion.c_str() );
+                        break;
+                    case 3:
+                        ImGui::TextColored( ImVec4( 1, 0.5f, 0.5f, 1 ), "Failed" );
+                        break;
+                    default:
+                        assert( false );
+                        break;
+                    }
+                    if( llmstatus == 1 ) ImGui::BeginDisabled();
+                    const bool doCheck = ImGui::Button( ICON_FA_PLUG " Check connection" );
+                    if( llmstatus == 1 ) ImGui::EndDisabled();
+                    if( doCheck )
+                    {
+                        llmstatus = 1;
+                        // TODO put into a thread?
+                        tracy::TracyLlm llm;
+                        const bool valid = llm.IsValid();
+                        llmstatus = valid ? 2 : 3;
+                        if( valid ) llmVersion = llm.GetVersion();
+                    }
+
+                    ImGui::Unindent();
+                }
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();

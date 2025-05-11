@@ -156,8 +156,36 @@ void TracyLlm::Draw()
     {
         for( auto& line : *m_chat )
         {
+            const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
+            const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
+            const auto mw = std::max( uw, rw );
+
+            const auto pos = ImGui::GetCursorPos();
+            const auto isUser = line["role"].get<std::string>() == "user";
+            if( isUser )
+            {
+                const auto diff = mw - uw;
+                const auto offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextColored( ImVec4( 0.5f, 1.f, 0.5f, 1.f ), ICON_FA_USER );
+                ImGui::SameLine( 0, 0 );
+                ImGui::Dummy( ImVec2( diff - offset, 0 ) );
+            }
+            else
+            {
+                const auto diff = mw - rw;
+                const auto offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextColored( ImVec4( 1.f, 0.5f, 0.5f, 1.f ), ICON_FA_ROBOT );
+                ImGui::SameLine( 0, 0 );
+                ImGui::Dummy( ImVec2( diff - offset, 0 ) );
+            }
+            ImGui::SameLine();
+
             auto& style = ImGui::GetStyle();
-            ImGui::PushStyleColor( ImGuiCol_Text, line["role"].get<std::string>() == "user" ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text] );
+            ImGui::PushStyleColor( ImGuiCol_Text, isUser ? style.Colors[ImGuiCol_TextDisabled] : style.Colors[ImGuiCol_Text] );
             ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
             ImGui::PopStyleColor();
         }

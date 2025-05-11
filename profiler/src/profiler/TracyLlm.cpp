@@ -4,6 +4,7 @@
 #include "TracyConfig.hpp"
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
+#include "TracyPrint.hpp"
 
 extern tracy::Config s_config;
 
@@ -34,17 +35,7 @@ TracyLlm::TracyLlm()
 
     m_jobs.emplace_back( WorkItem {
         .task = Task::LoadModels,
-        .callback = [this] {
-            auto it = std::ranges::find_if( m_models, []( const auto& model ) { return model.name == s_config.llmModel; } );
-            if( it == m_models.end() )
-            {
-                m_modelIdx = 0;
-            }
-            else
-            {
-                m_modelIdx = std::distance( m_models.begin(), it );
-            }
-        }
+        .callback = [this] { UpdateModels(); }
     } );
     m_thread = std::thread( [this] { Worker(); } );
 }
@@ -102,6 +93,37 @@ void TracyLlm::Draw()
         return;
     }
 
+    if( ImGui::SmallButton( ICON_FA_ARROWS_ROTATE ) )
+    {
+        std::lock_guard lock( m_lock );
+        m_jobs.emplace_back( WorkItem {
+            .task = Task::LoadModels,
+            .callback = [this] { UpdateModels(); }
+        } );
+        m_cv.notify_all();
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled( "Model:" );
+    ImGui::SameLine();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    if( ImGui::BeginCombo( "##model", m_models[m_modelIdx].name.c_str() ) )
+    {
+        for( size_t i = 0; i < m_models.size(); ++i )
+        {
+            const auto& model = m_models[i];
+            if( ImGui::Selectable( model.name.c_str(), i == m_modelIdx ) )
+            {
+                m_modelIdx = i;
+                s_config.llmModel = model.name;
+            }
+            if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( m_models[i].ctxSize ) );
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopStyleVar();
+
     ImGui::End();
 }
 
@@ -152,6 +174,19 @@ void TracyLlm::LoadModels()
     m_modelsLock.lock();
     std::swap( m_models, m );
     m_modelsLock.unlock();
+}
+
+void TracyLlm::UpdateModels()
+{
+    auto it = std::ranges::find_if( m_models, []( const auto& model ) { return model.name == s_config.llmModel; } );
+    if( it == m_models.end() )
+    {
+        m_modelIdx = 0;
+    }
+    else
+    {
+        m_modelIdx = std::distance( m_models.begin(), it );
+    }
 }
 
 }

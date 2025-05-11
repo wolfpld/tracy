@@ -56,6 +56,7 @@ private:
     void Worker();
 
     void LoadModels();
+    void UpdateModels();
 
     std::unique_ptr<Ollama> m_ollama;
 

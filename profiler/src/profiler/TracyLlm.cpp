@@ -21,21 +21,24 @@ TracyLlm::TracyLlm()
         return;
     }
 
-    const auto models = m_ollama->list_models();
-    if( models.empty() )
+    try
+    {
+        LoadModels();
+    }
+    catch( const std::exception& e )
     {
         m_ollama.reset();
         return;
     }
 
-    m_model = s_config.llmModel;
-    if( std::ranges::find( models, m_model ) == models.end() ) m_model = models[0];
-
-    m_ctxSize = GetCtxSize( m_model );
-    if( m_ctxSize == 0 )
+    auto it = std::ranges::find_if( m_models, []( const auto& model ) { return model.name == s_config.llmModel; } );
+    if( it == m_models.end() )
     {
-        m_ollama.reset();
-        return;
+        m_modelIdx = 0;
+    }
+    else
+    {
+        m_modelIdx = std::distance( m_models.begin(), it );
     }
 }
 
@@ -48,27 +51,6 @@ std::string TracyLlm::GetVersion() const
     return m_ollama->get_version();
 }
 
-std::vector<std::string> TracyLlm::GetModels() const
-{
-    return m_ollama->list_models();
-}
-
-size_t TracyLlm::GetCtxSize( const std::string& model ) const
-{
-    try
-    {
-        const auto info = m_ollama->show_model_info( model );
-        const auto& modelInfo = info["model_info"];
-        const auto architecture = modelInfo["general.architecture"].get<std::string>();
-        const auto& ctx = modelInfo[architecture + ".context_length"];
-        return ctx.get<size_t>();
-    }
-    catch( const std::exception& e )
-    {
-        return 0;
-    }
-}
-
 void TracyLlm::Draw()
 {
     const auto scale = GetScale();
@@ -76,6 +58,20 @@ void TracyLlm::Draw()
     ImGui::Begin( "Tracy AI", &m_show, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
     ImGui::End();
+}
+
+void TracyLlm::LoadModels()
+{
+    m_models.clear();
+    const auto models = m_ollama->list_models();
+    for( const auto& model : models )
+    {
+        const auto info = m_ollama->show_model_info( model );
+        const auto& modelInfo = info["model_info"];
+        const auto architecture = modelInfo["general.architecture"].get<std::string>();
+        const auto& ctx = modelInfo[architecture + ".context_length"];
+        m_models.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<size_t>() } );
+    }
 }
 
 }

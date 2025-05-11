@@ -864,8 +864,7 @@ static void DrawContents()
                 {
                     static int llmstatus = 0;
                     static std::string llmVersion;
-                    static std::vector<std::string> llmModels;
-                    static std::vector<size_t> llmCtxSizes;
+                    static std::vector<tracy::TracyLlm::LlmModel> llmModels;
 
                     ImGui::Indent();
                     ImGui::TextUnformatted( "Ollama URL" );
@@ -897,7 +896,6 @@ static void DrawContents()
                         {
                             llmVersion = llm.GetVersion();
                             llmModels = llm.GetModels();
-                            for( auto& v : llmModels ) llmCtxSizes.push_back( llm.GetCtxSize( v ) );
                         }
                     }
 
@@ -930,29 +928,29 @@ static void DrawContents()
                         int sel;
                         for( sel=0; sel<llmModels.size(); sel++ )
                         {
-                            if( llmModels[sel] == s_config.llmModel ) break;
+                            if( llmModels[sel].name == s_config.llmModel ) break;
                         }
                         if( sel == llmModels.size() )
                         {
                             sel = 0;
-                            s_config.llmModel = llmModels[0];
+                            s_config.llmModel = llmModels[0].name;
                             SaveConfig();
                         }
                         ImGui::SameLine();
                         ImGui::SetNextItemWidth( 225 * dpiScale );
-                        if( ImGui::BeginCombo( "##llmmodel", llmModels[sel].c_str() ) )
+                        if( ImGui::BeginCombo( "##llmmodel", llmModels[sel].name.c_str() ) )
                         {
                             for( int i=0; i<llmModels.size(); i++ )
                             {
                                 bool isSelected = ( i == sel );
-                                if( ImGui::Selectable( llmModels[i].c_str(), isSelected ) )
+                                if( ImGui::Selectable( llmModels[i].name.c_str(), isSelected ) )
                                 {
-                                    s_config.llmModel = llmModels[i];
+                                    s_config.llmModel = llmModels[i].name;
                                     SaveConfig();
                                 }
                                 if( isSelected ) ImGui::SetItemDefaultFocus();
                                 ImGui::SameLine();
-                                ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( llmCtxSizes[i] ) );
+                                ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( llmModels[i].ctxSize ) );
                             }
                             ImGui::EndCombo();
                         }

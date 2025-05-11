@@ -13,22 +13,30 @@ namespace tracy
 class TracyLlm
 {
 public:
+    struct LlmModel
+    {
+        std::string name;
+        size_t ctxSize;
+    };
+
     TracyLlm();
     ~TracyLlm();
 
     [[nodiscard]] bool IsValid() const { return (bool)m_ollama; }
     [[nodiscard]] std::string GetVersion() const;
-    [[nodiscard]] std::vector<std::string> GetModels() const;
-    [[nodiscard]] size_t GetCtxSize( const std::string& model ) const;
+    [[nodiscard]] std::vector<LlmModel> GetModels() const { return m_models; }
 
     void Draw();
 
     bool m_show = false;
 
 private:
-    std::unique_ptr<Ollama> m_ollama;
+    void LoadModels();
 
-    std::string m_model;
+    std::unique_ptr<Ollama> m_ollama;
+    std::vector<LlmModel> m_models;
+
+    size_t m_modelIdx;
     size_t m_ctxSize;
 };
 

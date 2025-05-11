@@ -2,6 +2,8 @@
 #define __TRACYLLM_HPP__
 
 #include <memory>
+#include <string>
+#include <vector>
 
 class Ollama;
 
@@ -16,6 +18,7 @@ public:
 
     [[nodiscard]] bool IsValid() const { return m_valid; }
     [[nodiscard]] std::string GetVersion() const;
+    [[nodiscard]] std::vector<std::string> GetModels() const;
 
 private:
     std::unique_ptr<Ollama> m_ollama;

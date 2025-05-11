@@ -26,4 +26,9 @@ std::string TracyLlm::GetVersion() const
     return m_ollama->get_version();
 }
 
+std::vector<std::string> TracyLlm::GetModels() const
+{
+    return m_ollama->list_models();
+}
+
 }

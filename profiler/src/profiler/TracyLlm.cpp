@@ -189,6 +189,12 @@ void TracyLlm::Draw()
             ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
             ImGui::PopStyleColor();
         }
+
+        if( m_wasUpdated )
+        {
+            ImGui::SetScrollHereY( 1.f );
+            m_wasUpdated = false;
+        }
     }
     ImGui::EndChild();
     ImGui::Spacing();
@@ -225,6 +231,7 @@ void TracyLlm::Draw()
                 m_chat->emplace_back( ollama::message( "user", m_input ) );
                 *m_input = 0;
                 m_responding = true;
+                m_wasUpdated = true;
 
                 m_jobs.emplace_back( WorkItem {
                     .task = Task::SendMessage,
@@ -341,6 +348,7 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     auto& back = m_chat->back()["content"];
     const auto str = back.get<std::string>();
     back = str + response.as_simple_string();
+    m_wasUpdated = true;
 
     auto& json = response.as_json();
     if( json["done"] )

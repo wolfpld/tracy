@@ -87,6 +87,7 @@ private:
     bool m_busy = false;
     bool m_responding = false;
     bool m_stop = false;
+    bool m_wasUpdated = false;
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;

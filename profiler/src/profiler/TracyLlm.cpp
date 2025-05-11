@@ -2,6 +2,7 @@
 #include <ollama.hpp>
 
 #include "TracyConfig.hpp"
+#include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
 
 extern tracy::Config s_config;
@@ -66,6 +67,15 @@ size_t TracyLlm::GetCtxSize( const std::string& model ) const
     {
         return 0;
     }
+}
+
+void TracyLlm::Draw()
+{
+    const auto scale = GetScale();
+    ImGui::SetNextWindowSize( ImVec2( 400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Tracy AI", &m_show, ImGuiWindowFlags_NoScrollbar );
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
+    ImGui::End();
 }
 
 }

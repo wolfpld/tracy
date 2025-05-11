@@ -21,6 +21,10 @@ public:
     [[nodiscard]] std::vector<std::string> GetModels() const;
     [[nodiscard]] size_t GetCtxSize( const std::string& model ) const;
 
+    void Draw();
+
+    bool m_show = false;
+
 private:
     std::unique_ptr<Ollama> m_ollama;
 

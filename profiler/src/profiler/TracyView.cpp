@@ -957,6 +957,11 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
+    if( m_llm.IsValid() )
+    {
+        ImGui::SameLine();
+        ToggleButton( ICON_FA_ROBOT, m_llm.m_show );
+    }
     if( m_worker.AreFramesUsed() )
     {
         ImGui::SameLine();
@@ -1151,6 +1156,7 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
+    if( m_llm.m_show ) m_llm.Draw();
 
     if( m_setRangePopup.active )
     {

@@ -17,6 +17,7 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyLlm.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyUserData.hpp"
@@ -936,6 +937,8 @@ private:
             lastTime = 0;
         }
     } m_flameGraphInvariant;
+
+    TracyLlm m_llm;
 };
 
 }

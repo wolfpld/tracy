@@ -869,7 +869,13 @@ static void DrawContents()
                     ImGui::Indent();
                     ImGui::TextUnformatted( "Ollama URL" );
                     ImGui::SameLine();
-                    if( ImGui::Button( ICON_FA_HOUSE ) ) s_config.llmAddress = "http://localhost:11434";
+                    if( ImGui::Button( ICON_FA_HOUSE ) )
+                    {
+                        llmstatus = 0;
+                        llmModels.clear();
+                        s_config.llmAddress = "http://localhost:11434";
+                        SaveConfig();
+                    }
                     ImGui::SameLine();
                     char llmAddress[1024];
                     snprintf( llmAddress, sizeof( llmAddress ), "%s", s_config.llmAddress.c_str() );

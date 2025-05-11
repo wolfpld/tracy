@@ -197,8 +197,10 @@ add_custom_target(git-ref
 add_dependencies(${PROJECT_NAME} git-ref)
 
 if(NOT EMSCRIPTEN)
-    target_link_libraries(${PROJECT_NAME} PRIVATE TracyNfd)
-    if (NOT USE_WAYLAND)
+    if(NOT NO_FILESELECTOR)
+        target_link_libraries(${PROJECT_NAME} PRIVATE nfd::nfd)
+    endif()
+    if(NOT USE_WAYLAND)
         target_link_libraries(${PROJECT_NAME} PRIVATE TracyGlfw3)
     endif()
 endif()

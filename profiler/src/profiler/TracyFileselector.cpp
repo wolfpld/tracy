@@ -4,7 +4,7 @@
 #  ifdef __EMSCRIPTEN__
 #    include <emscripten.h>
 #  else
-#    include "../nfd/nfd.h"
+#    include <nfd.h>
 #  endif
 #endif
 

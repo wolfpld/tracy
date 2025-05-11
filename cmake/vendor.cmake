@@ -121,7 +121,6 @@ add_library(TracyDtl INTERFACE)
 target_sources(TracyDtl INTERFACE ${DTL_HEADERS})
 target_include_directories(TracyDtl INTERFACE ${DTL_DIR})
 
-
 # Get Opt
 
 set(GETOPT_DIR "${ROOT_DIR}/getopt")
@@ -129,7 +128,6 @@ set(GETOPT_SOURCES ${GETOPT_DIR}/getopt.c)
 set(GETOPT_HEADERS ${GETOPT_DIR}/getopt.h)
 add_library(TracyGetOpt STATIC EXCLUDE_FROM_ALL ${GETOPT_SOURCES} ${GETOPT_HEADERS})
 target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
-
 
 # ImGui
 
@@ -166,50 +164,21 @@ endif()
 
 # NFD
 
-if (NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
-    set(NFD_DIR "${ROOT_DIR}/nfd")
-
-    if (WIN32)
-        set(NFD_SOURCES "${NFD_DIR}/nfd_win.cpp")
-    elseif (APPLE)
-        set(NFD_SOURCES "${NFD_DIR}/nfd_cocoa.m")
+if(NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
+    if(GTK_FILESELECTOR)
+        set(NFD_PORTAL OFF)
     else()
-        if (GTK_FILESELECTOR)
-            set(NFD_SOURCES "${NFD_DIR}/nfd_gtk.cpp")
-        else()
-            set(NFD_SOURCES "${NFD_DIR}/nfd_portal.cpp")
-        endif()
+        set(NFD_PORTAL ON)
     endif()
 
-    file(GLOB_RECURSE NFD_HEADERS CONFIGURE_DEPENDS RELATIVE ${NFD_DIR} "*.h")
-    add_library(TracyNfd STATIC EXCLUDE_FROM_ALL ${NFD_SOURCES} ${NFD_HEADERS})
-    target_include_directories(TracyNfd PUBLIC ${NFD_DIR})
-
-    if (APPLE)
-        find_library(APPKIT_LIBRARY AppKit)
-        find_library(UNIFORMTYPEIDENTIFIERS_LIBRARY UniformTypeIdentifiers)
-        target_link_libraries(TracyNfd PUBLIC ${APPKIT_LIBRARY} ${UNIFORMTYPEIDENTIFIERS_LIBRARY})
-    elseif (UNIX)
-        if (GTK_FILESELECTOR)
-            pkg_check_modules(GTK3 gtk+-3.0)
-            if (NOT GTK3_FOUND)
-                message(FATAL_ERROR "GTK3 not found. Please install it or set GTK_FILESELECTOR to OFF.")
-            endif()
-            add_library(TracyGtk3 INTERFACE)
-            target_include_directories(TracyGtk3 INTERFACE ${GTK3_INCLUDE_DIRS})
-            target_link_libraries(TracyGtk3 INTERFACE ${GTK3_LINK_LIBRARIES})
-            target_link_libraries(TracyNfd PUBLIC TracyGtk3)
-        else()
-            pkg_check_modules(DBUS dbus-1)
-            if (NOT DBUS_FOUND)
-                message(FATAL_ERROR "D-Bus not found. Please install it or set GTK_FILESELECTOR to ON.")
-            endif()
-            add_library(TracyDbus INTERFACE)
-            target_include_directories(TracyDbus INTERFACE ${DBUS_INCLUDE_DIRS})
-            target_link_libraries(TracyDbus INTERFACE ${DBUS_LINK_LIBRARIES})
-            target_link_libraries(TracyNfd PUBLIC TracyDbus)
-        endif()
-    endif()
+    CPMAddPackage(
+        NAME nfd
+        GITHUB_REPOSITORY btzy/nativefiledialog-extended
+        GIT_TAG v1.2.1
+        EXCLUDE_FROM_ALL TRUE
+        OPTIONS
+            "NFD_PORTAL ${NFD_PORTAL}"
+    )
 endif()
 
 # PPQSort

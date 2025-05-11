@@ -1,6 +1,8 @@
 #ifndef __TRACYCONFIG_HPP__
 #define __TRACYCONFIG_HPP__
 
+#include <string>
+
 #include "TracyUtility.hpp"
 
 namespace tracy
@@ -24,6 +26,7 @@ struct Config
     float userScale = 1.0f;
     bool llm = true;
     std::string llmAddress = "http://localhost:11434";
+    std::string llmModel;
 };
 
 }

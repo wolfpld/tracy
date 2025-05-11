@@ -871,7 +871,7 @@ static void DrawContents()
                     ImGui::Indent();
                     ImGui::TextUnformatted( "Ollama URL" );
                     ImGui::SameLine();
-                    if( ImGui::Button( ICON_FA_HOUSE ) )
+                    if( ImGui::Button( ICON_FA_ARROWS_ROTATE ) )
                     {
                         llmstatus = 0;
                         llmModels.clear();

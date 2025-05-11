@@ -13,8 +13,11 @@ namespace tracy
 
 extern double s_time;
 
+constexpr size_t InputBufferSize = 1024;
+
 TracyLlm::TracyLlm()
     : m_exit( false )
+    , m_input( nullptr )
 {
     if( !s_config.llm ) return;
 
@@ -33,6 +36,9 @@ TracyLlm::TracyLlm()
         return;
     }
 
+    m_input = new char[InputBufferSize];
+    *m_input = 0;
+
     m_jobs.emplace_back( WorkItem {
         .task = Task::LoadModels,
         .callback = [this] { UpdateModels(); }
@@ -42,6 +48,8 @@ TracyLlm::TracyLlm()
 
 TracyLlm::~TracyLlm()
 {
+    delete[] m_input;
+
     if( m_thread.joinable() )
     {
         {
@@ -123,6 +131,17 @@ void TracyLlm::Draw()
         ImGui::EndCombo();
     }
     ImGui::PopStyleVar();
+
+    ImGui::Spacing();
+    ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders );
+    ImGui::EndChild();
+    ImGui::Spacing();
+
+    ImGui::PushItemWidth( -1 );
+    if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
+    {
+        *m_input = 0;
+    }
 
     ImGui::End();
 }

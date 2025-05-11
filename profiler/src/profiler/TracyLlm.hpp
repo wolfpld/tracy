@@ -74,6 +74,8 @@ private:
     std::vector<WorkItem> m_jobs;
     bool m_busy;
 
+    char* m_input;
+
     ImFont* m_font;
     ImFont* m_smallFont;
     ImFont* m_bigFont;

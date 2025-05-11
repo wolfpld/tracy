@@ -15,8 +15,16 @@ TracyLlm::TracyLlm()
 {
     if( !s_config.llm ) return;
 
-    m_ollama = std::make_unique<Ollama>( s_config.llmAddress );
-    if( !m_ollama->is_running() )
+    try
+    {
+        m_ollama = std::make_unique<Ollama>( s_config.llmAddress );
+        if( !m_ollama->is_running() )
+        {
+            m_ollama.reset();
+            return;
+        }
+    }
+    catch( const std::exception& e )
     {
         m_ollama.reset();
         return;

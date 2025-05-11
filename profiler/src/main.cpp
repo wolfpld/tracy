@@ -218,6 +218,8 @@ static void LoadConfig()
 
     int v;
     double v1;
+    const char* v2;
+
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
     if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
@@ -232,7 +234,8 @@ static void LoadConfig()
     if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
     if( ini_sget( ini, "ui", "saveUserScale", "%d", &v ) ) s_config.saveUserScale = v;
     if( ini_sget( ini, "ui", "userScale", "%lf", &v1 ) && v1 > 0.0 && s_config.saveUserScale ) s_config.userScale = v1;
-    
+    if( ini_sget( ini, "llm", "enabled", "%d", &v ) ) s_config.llm = v;
+    if( v2 = ini_get( ini, "llm", "address" ); v2 ) s_config.llmAddress = v2;
 
     ini_free( ini );
 }
@@ -266,6 +269,10 @@ static bool SaveConfig()
     fprintf( f, "\n[ui]\n" );
     fprintf( f, "saveUserScale = %i\n", (int)s_config.saveUserScale );
     fprintf( f, "userScale = %lf\n", s_config.userScale );
+
+    fprintf( f, "\n[llm]\n" );
+    fprintf( f, "enabled = %i\n", (int)s_config.llm );
+    fprintf( f, "address = %s\n", s_config.llmAddress.c_str() );
 
     fclose( f );
     return true;

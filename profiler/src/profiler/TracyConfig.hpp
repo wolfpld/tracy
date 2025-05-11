@@ -22,6 +22,8 @@ struct Config
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
     bool saveUserScale = false;
     float userScale = 1.0f;
+    bool llm = true;
+    std::string llmAddress = "http://localhost:11434";
 };
 
 }

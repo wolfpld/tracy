@@ -44,7 +44,7 @@ void LoadFonts( float scale )
     configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
     ImFontConfig configFixed;
     configFixed.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
-    configFixed.GlyphExtraSpacing.x = -1;
+    configFixed.GlyphExtraAdvanceX = -1;
 
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 15.0f * scale ), &configBasic, rangesBasic );

@@ -1,13 +1,26 @@
 #include <ollama.hpp>
 
+#include "TracyConfig.hpp"
 #include "TracyLlm.hpp"
+
+extern tracy::Config s_config;
 
 namespace tracy
 {
 
 TracyLlm::TracyLlm()
+    : m_ollama( std::make_unique<Ollama>( s_config.llmAddress ) )
+    , m_valid( m_ollama->is_running() )
 {
-    m_ollama = std::make_unique<Ollama>();
+}
+
+TracyLlm::~TracyLlm()
+{
+}
+
+std::string TracyLlm::GetVersion() const
+{
+    return m_ollama->get_version();
 }
 
 }

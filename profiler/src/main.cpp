@@ -865,6 +865,7 @@ static void DrawContents()
                     static int llmstatus = 0;
                     static std::string llmVersion;
                     static std::vector<std::string> llmModels;
+                    static std::vector<size_t> llmCtxSizes;
 
                     ImGui::Indent();
                     ImGui::TextUnformatted( "Ollama URL" );
@@ -896,6 +897,7 @@ static void DrawContents()
                         {
                             llmVersion = llm.GetVersion();
                             llmModels = llm.GetModels();
+                            for( auto& v : llmModels ) llmCtxSizes.push_back( llm.GetCtxSize( v ) );
                         }
                     }
 
@@ -949,6 +951,8 @@ static void DrawContents()
                                     SaveConfig();
                                 }
                                 if( isSelected ) ImGui::SetItemDefaultFocus();
+                                ImGui::SameLine();
+                                ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( llmCtxSizes[i] ) );
                             }
                             ImGui::EndCombo();
                         }

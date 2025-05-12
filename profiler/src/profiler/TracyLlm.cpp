@@ -507,6 +507,13 @@ void TracyLlm::UpdateCache( ChatCache& cache, const std::string& str )
     cache.parsedLen = sz;
 }
 
+static bool IsHeading( const char* str )
+{
+    if( *str != '#' ) return false;
+    while( *str == '#' ) str++;
+    return *str == ' ' || *str == '\t';
+}
+
 void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
 {
     if( str.empty() ) return;
@@ -532,7 +539,39 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
     }
     else
     {
-        ImGui::TextWrapped( "%s", str.c_str() );
+        ImGui::PushTextWrapPos( 0 );
+        if( ctx.codeBlock )
+        {
+            ImGui::TextUnformatted( str.c_str() );
+        }
+        else if( str == "---" )
+        {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
+        else if( IsHeading( str.c_str() ) )
+        {
+            ImGui::PushFont( m_bigFont );
+            ImGui::TextUnformatted( str.c_str() );
+            ImGui::PopFont();
+        }
+        else
+        {
+            const auto begin = str.c_str();
+            ptr = begin;
+            while( *ptr == ' ' || *ptr == '\t' ) ptr++;
+            if( ptr[0] == '*' && ptr[1] == ' ' )
+            {
+                ImGui::TextUnformatted( std::string( ptr - begin, ' ' ).c_str() );
+                ImGui::SameLine();
+                ImGui::Bullet();
+                ImGui::SameLine();
+                ptr++;
+            }
+            ImGui::TextUnformatted( ptr );
+        }
+        ImGui::PopTextWrapPos();
     }
 }
 

@@ -183,8 +183,9 @@ void TracyLlm::Draw()
             const auto mw = std::max( { uw, rw, ew } );
 
             const auto posStart = ImGui::GetCursorPos().x;
-            const auto isUser = line["role"].get<std::string>() == "user";
-            const auto isError = line["role"].get<std::string>() == "error";
+            const auto role = line["role"].get<std::string>();
+            const auto isUser = role == "user";
+            const auto isError = role == "error";
 
             float diff, offset;
             if( isUser )

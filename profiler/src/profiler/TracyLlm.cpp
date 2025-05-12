@@ -186,6 +186,7 @@ void TracyLlm::Draw()
             const auto role = line["role"].get<std::string>();
             const auto isUser = role == "user";
             const auto isError = role == "error";
+            const auto isAssistant = role == "assistant";
 
             float diff, offset;
             if( isUser )
@@ -204,7 +205,7 @@ void TracyLlm::Draw()
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ICON_FA_CIRCLE_EXCLAMATION );
             }
-            else
+            else if( isAssistant )
             {
                 diff = mw - rw;
                 offset = diff / 2;
@@ -212,6 +213,11 @@ void TracyLlm::Draw()
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ICON_FA_ROBOT );
             }
+            else
+            {
+                assert( false );
+            }
+
             ImGui::SameLine( 0, 0 );
             ImGui::Dummy( ImVec2( diff - offset, 0 ) );
             ImGui::SameLine();
@@ -227,12 +233,16 @@ void TracyLlm::Draw()
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
             }
-            else
+            else if( isAssistant )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_Text] );
             }
+            else
+            {
+                assert( false );
+            }
 
-            if( !isUser && !isError )
+            if( isAssistant )
             {
                 auto str = line["content"].get<std::string>();
                 if( strncmp( str.c_str(), "<think>", 7 ) == 0 )

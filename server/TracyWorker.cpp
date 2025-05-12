@@ -2478,11 +2478,16 @@ const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
     {
         return *m_data.sourceLocationPayload[-srcloc-1];
     }
-    else
+    else if( srcloc != std::numeric_limits<int16_t>::max() )
     {
         const auto it = m_data.sourceLocation.find( m_data.sourceLocationExpand[srcloc] );
         assert( it != m_data.sourceLocation.end() );
         return it->second;
+    }
+    else
+    {
+        static const SourceLocation emptySourceLoc = {};
+        return emptySourceLoc;
     }
 }
 
@@ -3347,6 +3352,9 @@ int16_t Worker::ShrinkSourceLocationReal( uint64_t srcloc )
 int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
 {
     assert( m_data.sourceLocationExpand.size() < std::numeric_limits<int16_t>::max() );
+    if( ( m_data.sourceLocationExpand.size() + 1 ) == std::numeric_limits<int16_t>::max() )
+        return std::numeric_limits<int16_t>::max();
+
     const auto sz = int16_t( m_data.sourceLocationExpand.size() );
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS

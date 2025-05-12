@@ -39,7 +39,7 @@ TracyLlm::TracyLlm()
     m_input = new char[InputBufferSize];
     *m_input = 0;
 
-    m_chat = std::make_unique<ollama::messages>();
+    ResetChat();
 
     m_jobs.emplace_back( WorkItem {
         .task = Task::LoadModels,
@@ -108,7 +108,7 @@ void TracyLlm::Draw()
     if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
     {
         if( m_responding ) m_stop = true;
-        m_chat = std::make_unique<ollama::messages>();
+        ResetChat();
         m_chatCache.clear();
         *m_input = 0;
     }
@@ -186,6 +186,9 @@ void TracyLlm::Draw()
 
             const auto posStart = ImGui::GetCursorPos().x;
             const auto& role = line["role"].get_ref<const std::string&>();
+
+            if( role == "system" ) continue;
+
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
@@ -423,6 +426,12 @@ void TracyLlm::UpdateModels()
     {
         m_modelIdx = std::distance( m_models.begin(), it );
     }
+}
+
+void TracyLlm::ResetChat()
+{
+    m_chat = std::make_unique<ollama::messages>();
+    m_chat->emplace_back( ollama::message( "system", "You are a helpful assistant operating in context of Tracy Profiler, a C++ real time, nanosecond resolution, remote telemetry, hybrid frame and sampling profiler for games and other applications." ) );
 }
 
 void TracyLlm::SendMessage( ollama::messages&& messages )

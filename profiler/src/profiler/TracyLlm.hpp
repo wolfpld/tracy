@@ -80,6 +80,8 @@ private:
     void LoadModels();
     void UpdateModels();
 
+    void ResetChat();
+
     void SendMessage( ollama::messages&& messages );
     bool OnResponse( const ollama::response& response );
 

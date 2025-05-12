@@ -47,6 +47,11 @@ class TracyLlm
         size_t parsedLen;
     };
 
+    struct LineContext
+    {
+        bool codeBlock;
+    };
+
 public:
     struct LlmModel
     {
@@ -79,6 +84,9 @@ private:
     bool OnResponse( const ollama::response& response );
 
     void UpdateCache( ChatCache& cache, const std::string& str );
+
+    void PrintLine( LineContext& ctx, const std::string& str, int num );
+    void CleanContext( LineContext& ctx);
 
     std::unique_ptr<Ollama> m_ollama;
 

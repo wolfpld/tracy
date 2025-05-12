@@ -176,6 +176,7 @@ void TracyLlm::Draw()
     else
     {
         int idx = 0;
+        int num = 0;
         for( auto& line : *m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
@@ -256,6 +257,7 @@ void TracyLlm::Draw()
                     assert( cache.parsedLen == content.size() );
                 }
 
+                LineContext ctx = {};
                 auto it = cache.lines.begin();
                 while( it != cache.lines.end() )
                 {
@@ -266,11 +268,12 @@ void TracyLlm::Draw()
                         ImGui::PushID( idx );
                         if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
                         {
+                            LineContext thinkCtx = {};
                             while( it != cache.lines.end() && *it != "</think>" )
                             {
-                                if( !it->empty() ) ImGui::TextWrapped( "%s", it->c_str() );
-                                it++;
+                                PrintLine( thinkCtx, *it++, num++ );
                             }
+                            CleanContext( thinkCtx );
                             if( it != cache.lines.end() ) ++it;
                             ImGui::TreePop();
                         }
@@ -284,9 +287,10 @@ void TracyLlm::Draw()
                     }
                     else
                     {
-                        if( !line.empty() ) ImGui::TextWrapped( "%s", line.c_str() );
+                        PrintLine( ctx, line, num++ );
                     }
                 }
+                CleanContext( ctx );
             }
             else
             {
@@ -501,6 +505,44 @@ void TracyLlm::UpdateCache( ChatCache& cache, const std::string& str )
         pos = next + 1;
     }
     cache.parsedLen = sz;
+}
+
+void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
+{
+    if( str.empty() ) return;
+
+    auto ptr = str.c_str();
+    while( *ptr == ' ' || *ptr == '\t' ) ptr++;
+    if( strncmp( ptr, "```", 3 ) == 0 )
+    {
+        if( ctx.codeBlock )
+        {
+            ImGui::PopFont();
+            ImGui::EndChild();
+            ctx.codeBlock = false;
+        }
+        else
+        {
+            char tmp[64];
+            snprintf( tmp, sizeof( tmp ), "##ollama_code_%d", num );
+            ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
+            ImGui::PushFont( m_font );
+            ctx.codeBlock = true;
+        }
+    }
+    else
+    {
+        ImGui::TextWrapped( "%s", str.c_str() );
+    }
+}
+
+void TracyLlm::CleanContext( LineContext& ctx)
+{
+    if( ctx.codeBlock )
+    {
+        ImGui::PopFont();
+        ImGui::EndChild();
+    }
 }
 
 }

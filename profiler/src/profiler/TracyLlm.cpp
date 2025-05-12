@@ -160,7 +160,7 @@ void TracyLlm::Draw()
     }
 
     ImGui::Spacing();
-    ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders );
+    ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
     if( m_chat->empty() )
     {
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );

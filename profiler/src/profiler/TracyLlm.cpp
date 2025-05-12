@@ -174,6 +174,7 @@ void TracyLlm::Draw()
     }
     else
     {
+        int id = 0;
         for( auto& line : *m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
@@ -181,7 +182,7 @@ void TracyLlm::Draw()
             const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
             const auto mw = std::max( { uw, rw, ew } );
 
-            const auto pos = ImGui::GetCursorPos();
+            const auto posStart = ImGui::GetCursorPos().x;
             const auto isUser = line["role"].get<std::string>() == "user";
             const auto isError = line["role"].get<std::string>() == "error";
 
@@ -214,10 +215,12 @@ void TracyLlm::Draw()
             ImGui::Dummy( ImVec2( diff - offset, 0 ) );
             ImGui::SameLine();
 
+            const auto indent = ImGui::GetCursorPos().x - posStart;
+
             auto& style = ImGui::GetStyle();
             if( isUser )
             {
-                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
+                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.65f, 0.65f, 0.65f, 1.f ) );
             }
             else if( isError )
             {
@@ -227,7 +230,45 @@ void TracyLlm::Draw()
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_Text] );
             }
-            ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
+
+            if( !isUser && !isError )
+            {
+                auto str = line["content"].get<std::string>();
+                if( strncmp( str.c_str(), "<think>", 7 ) == 0 )
+                {
+                    int strip = 7;
+                    while( str[strip] == '\n' ) strip++;
+                    str = str.substr( strip );
+                    auto pos = str.find( "</think>\n" );
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
+                    ImGui::PushID( id++ );
+                    if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
+                    {
+                        ImGui::Indent( indent );
+                        ImGui::TextWrapped( "%s", str.substr( 0, pos ).c_str() );
+                        ImGui::Unindent( indent );
+                        ImGui::TreePop();
+                    }
+                    ImGui::PopID();
+                    ImGui::PopStyleColor();
+                    if( pos != std::string::npos )
+                    {
+                        strip = pos + 9;
+                        while( str[strip] == '\n' ) strip++;
+                        ImGui::Indent( indent );
+                        ImGui::TextWrapped( "%s", str.substr( strip ).c_str() );
+                        ImGui::Unindent( indent );
+                    }
+                }
+                else
+                {
+                    ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
+                }
+            }
+            else
+            {
+                ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
+            }
             ImGui::PopStyleColor();
         }
 

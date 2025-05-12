@@ -82,8 +82,7 @@ debuginfod_client* GetDebuginfodClient();
 
 extern "C"
 {
-    typedef unsigned long (__stdcall *___tracy_t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
-    TRACY_API extern ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain;
+    TRACY_API unsigned long ___tracy_RtlWalkFrameChain( void**, unsigned long, unsigned long );
 }
 
 static tracy_force_inline void* Callstack( int32_t depth )

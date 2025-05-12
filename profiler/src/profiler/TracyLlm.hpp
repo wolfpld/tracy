@@ -12,6 +12,8 @@
 
 #include <imgui.h>
 
+#include "tracy_robin_hood.h"
+
 class Ollama;
 
 namespace ollama
@@ -37,6 +39,12 @@ class TracyLlm
         Task task;
         std::function<void()> callback;
         std::unique_ptr<ollama::messages> chat;
+    };
+
+    struct ChatCache
+    {
+        std::vector<std::string> lines;
+        size_t parsedLen;
     };
 
 public:
@@ -70,6 +78,8 @@ private:
     void SendMessage( ollama::messages&& messages );
     bool OnResponse( const ollama::response& response );
 
+    void UpdateCache( ChatCache& cache, const std::string& str );
+
     std::unique_ptr<Ollama> m_ollama;
 
     mutable std::mutex m_modelsLock;
@@ -91,6 +101,7 @@ private:
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;
+    unordered_flat_map<size_t, ChatCache> m_chatCache;
 
     ImFont* m_font;
     ImFont* m_smallFont;

@@ -109,6 +109,7 @@ void TracyLlm::Draw()
     {
         if( m_responding ) m_stop = true;
         m_chat = std::make_unique<ollama::messages>();
+        m_chatCache.clear();
         *m_input = 0;
     }
     ImGui::SameLine();
@@ -221,8 +222,7 @@ void TracyLlm::Draw()
             ImGui::SameLine( 0, 0 );
             ImGui::Dummy( ImVec2( diff - offset, 0 ) );
             ImGui::SameLine();
-
-            const auto indent = ImGui::GetCursorPos().x - posStart;
+            ImGui::BeginGroup();
 
             auto& style = ImGui::GetStyle();
             if( isUser )
@@ -244,36 +244,49 @@ void TracyLlm::Draw()
 
             if( isAssistant )
             {
-                auto str = line["content"].get<std::string>();
-                if( strncmp( str.c_str(), "<think>", 7 ) == 0 )
+                const auto& content = line["content"];
+                const auto contentSize = content.get_ref<const nlohmann::json::string_t&>().size();
+
+                auto cit = m_chatCache.find( idx );
+                if( cit == m_chatCache.end() ) cit = m_chatCache.emplace( idx, ChatCache {} ).first;
+                auto& cache = cit->second;
+
+                if( cache.parsedLen != contentSize )
                 {
-                    int strip = 7;
-                    while( str[strip] == '\n' ) strip++;
-                    str = str.substr( strip );
-                    auto pos = str.find( "</think>\n" );
-                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
-                    ImGui::PushID( idx );
-                    if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
-                    {
-                        ImGui::Indent( indent );
-                        ImGui::TextWrapped( "%s", str.substr( 0, pos ).c_str() );
-                        ImGui::Unindent( indent );
-                        ImGui::TreePop();
-                    }
-                    ImGui::PopID();
-                    ImGui::PopStyleColor();
-                    if( pos != std::string::npos )
-                    {
-                        strip = pos + 9;
-                        while( str[strip] == '\n' ) strip++;
-                        ImGui::Indent( indent );
-                        ImGui::TextWrapped( "%s", str.substr( strip ).c_str() );
-                        ImGui::Unindent( indent );
-                    }
+                    UpdateCache( cache, content.get<std::string>() );
+                    assert( cache.parsedLen == contentSize );
                 }
-                else
+
+                auto it = cache.lines.begin();
+                while( it != cache.lines.end() )
                 {
-                    ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
+                    auto& line = *it++;
+                    if( line == "<think>" )
+                    {
+                        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
+                        ImGui::PushID( idx );
+                        if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
+                        {
+                            while( it != cache.lines.end() && *it != "</think>" )
+                            {
+                                if( !it->empty() ) ImGui::TextWrapped( "%s", it->c_str() );
+                                it++;
+                            }
+                            if( it != cache.lines.end() ) ++it;
+                            ImGui::TreePop();
+                        }
+                        else
+                        {
+                            while( it != cache.lines.end() && *it != "</think>" ) ++it;
+                            if( it != cache.lines.end() ) ++it;
+                        }
+                        ImGui::PopID();
+                        ImGui::PopStyleColor();
+                    }
+                    else
+                    {
+                        if( !line.empty() ) ImGui::TextWrapped( "%s", line.c_str() );
+                    }
                 }
             }
             else
@@ -281,6 +294,7 @@ void TracyLlm::Draw()
                 ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
             }
             ImGui::PopStyleColor();
+            ImGui::EndGroup();
             idx++;
         }
 
@@ -466,6 +480,28 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     }
 
     return true;
+}
+
+void TracyLlm::UpdateCache( ChatCache& cache, const std::string& str )
+{
+    const auto sz = str.size();
+    auto pos = cache.parsedLen;
+    while( pos < sz )
+    {
+        const auto isNewLine = pos == 0 || str[pos - 1] == '\n';
+        auto next = str.find( '\n', pos );
+        if( next == std::string::npos ) next = sz;
+        if( isNewLine )
+        {
+            cache.lines.emplace_back( str.substr( pos, next - pos ) );
+        }
+        else
+        {
+            auto& line = cache.lines.back().append( str, pos, next - pos );
+        }
+        pos = next + 1;
+    }
+    cache.parsedLen = sz;
 }
 
 }

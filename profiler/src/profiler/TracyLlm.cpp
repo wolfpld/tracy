@@ -192,7 +192,7 @@ void TracyLlm::Draw()
                 offset = diff / 2;
                 ImGui::Dummy( ImVec2( offset, 0 ) );
                 ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( ImVec4( 0.5f, 1.f, 0.5f, 1.f ), ICON_FA_USER );
+                ImGui::TextColored( ImVec4( 0.75f, 1.f, 0.25f, 1.f ), ICON_FA_USER );
             }
             else if( isError )
             {
@@ -208,7 +208,7 @@ void TracyLlm::Draw()
                 offset = diff / 2;
                 ImGui::Dummy( ImVec2( offset, 0 ) );
                 ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( ImVec4( 1.f, 0.5f, 0.5f, 1.f ), ICON_FA_ROBOT );
+                ImGui::TextColored( ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ICON_FA_ROBOT );
             }
             ImGui::SameLine( 0, 0 );
             ImGui::Dummy( ImVec2( diff - offset, 0 ) );

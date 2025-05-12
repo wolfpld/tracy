@@ -56,6 +56,7 @@ TracyLlm::~TracyLlm()
     {
         {
             std::lock_guard lock( m_lock );
+            m_stop = true;
             m_exit.store( true, std::memory_order_release );
             m_cv.notify_all();
         }

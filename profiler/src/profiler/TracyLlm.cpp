@@ -174,7 +174,7 @@ void TracyLlm::Draw()
     }
     else
     {
-        int id = 0;
+        int idx = 0;
         for( auto& line : *m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
@@ -252,7 +252,7 @@ void TracyLlm::Draw()
                     str = str.substr( strip );
                     auto pos = str.find( "</think>\n" );
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
-                    ImGui::PushID( id++ );
+                    ImGui::PushID( idx );
                     if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
                     {
                         ImGui::Indent( indent );
@@ -281,6 +281,7 @@ void TracyLlm::Draw()
                 ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
             }
             ImGui::PopStyleColor();
+            idx++;
         }
 
         if( m_wasUpdated )

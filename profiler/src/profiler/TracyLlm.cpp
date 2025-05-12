@@ -184,7 +184,7 @@ void TracyLlm::Draw()
             const auto mw = std::max( { uw, rw, ew } );
 
             const auto posStart = ImGui::GetCursorPos().x;
-            const auto role = line["role"].get<std::string>();
+            const auto& role = line["role"].get_ref<const std::string&>();
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
@@ -244,17 +244,16 @@ void TracyLlm::Draw()
 
             if( isAssistant )
             {
-                const auto& content = line["content"];
-                const auto contentSize = content.get_ref<const nlohmann::json::string_t&>().size();
+                const auto& content = line["content"].get_ref<const std::string&>();
 
                 auto cit = m_chatCache.find( idx );
                 if( cit == m_chatCache.end() ) cit = m_chatCache.emplace( idx, ChatCache {} ).first;
                 auto& cache = cit->second;
 
-                if( cache.parsedLen != contentSize )
+                if( cache.parsedLen != content.size() )
                 {
-                    UpdateCache( cache, content.get<std::string>() );
-                    assert( cache.parsedLen == contentSize );
+                    UpdateCache( cache, content );
+                    assert( cache.parsedLen == content.size() );
                 }
 
                 auto it = cache.lines.begin();
@@ -291,7 +290,7 @@ void TracyLlm::Draw()
             }
             else
             {
-                ImGui::TextWrapped( "%s", line["content"].get<std::string>().c_str() );
+                ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() );
             }
             ImGui::PopStyleColor();
             ImGui::EndGroup();
@@ -399,7 +398,7 @@ void TracyLlm::LoadModels()
     {
         const auto info = m_ollama->show_model_info( model );
         const auto& modelInfo = info["model_info"];
-        const auto architecture = modelInfo["general.architecture"].get<std::string>();
+        const auto& architecture = modelInfo["general.architecture"].get_ref<const std::string&>();
         const auto& ctx = modelInfo[architecture + ".context_length"];
         m.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<size_t>() } );
     }
@@ -439,7 +438,7 @@ void TracyLlm::SendMessage( ollama::messages&& messages )
     catch( std::exception& e )
     {
         m_lock.lock();
-        if( !m_chat->empty() && m_chat->back()["role"].get<std::string>() == "assistant" ) m_chat->pop_back();
+        if( !m_chat->empty() && m_chat->back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat->pop_back();
         m_chat->emplace_back( ollama::message( "error", e.what() ) );
         m_responding = false;
         m_stop = false;
@@ -468,7 +467,7 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     }
 
     auto& back = m_chat->back()["content"];
-    const auto str = back.get<std::string>();
+    const auto& str = back.get_ref<const std::string&>();
     back = str + response.as_simple_string();
     m_wasUpdated = true;
 

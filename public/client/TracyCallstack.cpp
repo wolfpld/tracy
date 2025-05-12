@@ -282,7 +282,12 @@ extern "C"
     t_SymFromInlineContext _SymFromInlineContext = 0;
     t_SymGetLineFromInlineContext _SymGetLineFromInlineContext = 0;
 
-    TRACY_API ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChain = 0;
+    typedef unsigned long (__stdcall *___tracy_t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
+    ___tracy_t_RtlWalkFrameChain ___tracy_RtlWalkFrameChainPtr = nullptr;
+    TRACY_API unsigned long ___tracy_RtlWalkFrameChain( void** callers, unsigned long count, unsigned long flags)
+    {
+        return ___tracy_RtlWalkFrameChainPtr(callers, count, flags);
+    }
 }
 
 struct ModuleCache
@@ -307,7 +312,7 @@ size_t s_krnlCacheCnt;
 
 void InitCallstackCritical()
 {
-    ___tracy_RtlWalkFrameChain = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
+    ___tracy_RtlWalkFrameChainPtr = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
 }
 
 void DbgHelpInit()

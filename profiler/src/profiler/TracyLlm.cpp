@@ -302,7 +302,18 @@ void TracyLlm::Draw()
                 ImGui::PushFont( m_font );
                 for( auto& tool : line["tool_calls"] )
                 {
-                    ImGui::TextWrapped( "%s", tool["function"]["name"].get_ref<const std::string&>().c_str() );
+                    auto& func = tool["function"];
+                    ImGui::TextWrapped( "%s", func["name"].get_ref<const std::string&>().c_str() );
+                    if( func.contains( "arguments" ) )
+                    {
+                        ImGui::PushFont( m_smallFont );
+                        auto& args = func["arguments"];
+                        for( auto& arg : args.items() )
+                        {
+                            ImGui::TextWrapped( "%s: %s", arg.key().c_str(), arg.value().dump( 2 ).c_str() );
+                        }
+                        ImGui::PopFont();
+                    }
                 }
                 ImGui::PopFont();
             }

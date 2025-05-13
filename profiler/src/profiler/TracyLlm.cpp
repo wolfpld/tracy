@@ -2,9 +2,12 @@
 #include <ollama.hpp>
 
 #include "TracyConfig.hpp"
+#include "TracyEmbed.hpp"
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
 #include "TracyPrint.hpp"
+
+#include "data/SystemPrompt.hpp"
 
 extern tracy::Config s_config;
 
@@ -464,8 +467,9 @@ void TracyLlm::UpdateModels()
 
 void TracyLlm::ResetChat()
 {
+    Unembed( SystemPrompt );
     m_chat = std::make_unique<ollama::messages>();
-    m_chat->emplace_back( ollama::message( "system", "You are a helpful assistant operating in context of Tracy Profiler, a C++ real time, nanosecond resolution, remote telemetry, hybrid frame and sampling profiler for games and other applications." ) );
+    m_chat->emplace_back( ollama::message( "system", std::string( SystemPrompt->data(), SystemPrompt->size() ) ) );
 }
 
 void TracyLlm::SendMessage( ollama::messages&& messages )

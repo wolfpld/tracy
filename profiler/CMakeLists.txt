@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.25)
 
 option(NO_FILESELECTOR "Disable the file selector" OFF)
 option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
@@ -119,6 +119,8 @@ set(PROFILER_FILES
     src/winmain.cpp
     src/winmainArchDiscovery.cpp
 )
+
+Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt)
 
 set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")

@@ -84,7 +84,7 @@ private:
 
     void ResetChat();
 
-    void SendMessage( ollama::messages&& messages );
+    void SendMessage( const ollama::messages& messages );
     bool OnResponse( const ollama::response& response );
 
     void UpdateCache( ChatCache& cache, const std::string& str );

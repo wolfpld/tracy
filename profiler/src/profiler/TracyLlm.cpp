@@ -454,7 +454,7 @@ void TracyLlm::Worker()
             m_busy = false;
             break;
         case Task::SendMessage:
-            SendMessage( std::move( *job.chat ) );
+            SendMessage( *job.chat );
             break;
         default:
             assert( false );
@@ -501,7 +501,7 @@ void TracyLlm::ResetChat()
     m_chat->emplace_back( ollama::message( "system", std::string( m_systemPrompt->data(), m_systemPrompt->size() ) ) );
 }
 
-void TracyLlm::SendMessage( ollama::messages&& messages )
+void TracyLlm::SendMessage( const ollama::messages& messages )
 {
     ollama::options options;
     options["num_ctx"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );

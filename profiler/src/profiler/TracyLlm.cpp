@@ -178,6 +178,7 @@ void TracyLlm::Draw()
     {
         int idx = 0;
         int num = 0;
+        bool first = true;
         for( auto& line : *m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
@@ -193,6 +194,15 @@ void TracyLlm::Draw()
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
+
+            if( first )
+            {
+                first = false;
+            }
+            else
+            {
+                ImGui::Spacing();
+            }
 
             float diff, offset;
             if( isUser )

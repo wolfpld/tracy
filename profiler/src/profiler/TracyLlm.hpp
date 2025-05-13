@@ -95,6 +95,7 @@ private:
     void HandleToolCalls( const nlohmann::json& calls );
 
     std::string GetCurrentTime();
+    std::string FetchWebPage( const nlohmann::json& args );
 
     std::unique_ptr<Ollama> m_ollama;
 

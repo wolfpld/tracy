@@ -1,4 +1,7 @@
+#include <curl/curl.h>
 #include <ollama.hpp>
+#include <stdint.h>
+#include <stdlib.h>
 #include <ranges>
 #include <time.h>
 
@@ -701,6 +704,8 @@ void TracyLlm::HandleToolCalls( const nlohmann::json& calls )
         std::string result = "### Result of calling function " + name + ":\n";
 
         if( name == "get_current_time" ) result += GetCurrentTime();
+        else if( name == "fetch_web_page" ) result += FetchWebPage( args );
+
         else result = "### Unknown function: " + name + "\n";
 
         result += "\n\n";
@@ -720,6 +725,58 @@ std::string TracyLlm::GetCurrentTime()
     std::strftime( buffer, sizeof( buffer ), "%Y-%m-%d %H:%M:%S", tm );
 
     return buffer;
+}
+
+static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
+{
+    const auto data = (unsigned char*)_data;
+    const auto sz = size*num;
+    auto& v = *(std::string*)ptr;
+    v.append( (const char*)data, sz );
+    return sz;
+}
+
+std::string TracyLlm::FetchWebPage( const nlohmann::json& args )
+{
+    if( !args.contains( "url" ) ) return "## Error: Missing URL argument";
+    std::string url = args["url"].get_ref<const std::string&>();
+
+    static bool initialized = false;
+    if( !initialized )
+    {
+        initialized = true;
+        curl_global_init( CURL_GLOBAL_ALL );
+        atexit( curl_global_cleanup );
+    }
+
+    auto curl = curl_easy_init();
+    if( !curl ) return "## Error: Failed to initialize cURL";
+
+    std::string buf;
+
+    curl_easy_setopt( curl, CURLOPT_URL, url.c_str() );
+    curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
+    curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
+    curl_easy_setopt( curl, CURLOPT_TIMEOUT, 10 );
+    curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
+    curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
+
+    auto res = curl_easy_perform( curl );
+
+    std::string response;
+    if( res != CURLE_OK )
+    {
+        response = "## Error: " + std::string( curl_easy_strerror( res ) );
+    }
+    else
+    {
+        response = "## Web page '" + url + "' content:\n";
+        response += buf;
+        response += "\n";
+    }
+
+    curl_easy_cleanup( curl );
+    return response;
 }
 
 }

@@ -5,5 +5,22 @@
             "name": "get_current_time",
             "description": "Get the current time formatted as a string."
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_web_page",
+            "description": "Fetch a web page from the given URL.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL of the web page to fetch."
+                    }
+                },
+                "required": ["url"]
+            }
+        }
     }
 ]

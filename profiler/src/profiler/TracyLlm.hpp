@@ -110,6 +110,7 @@ private:
     bool m_stop = false;
     bool m_wasUpdated = false;
     bool m_focusInput = false;
+    bool m_enableTools = true;
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;

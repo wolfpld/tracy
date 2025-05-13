@@ -157,6 +157,8 @@ void TracyLlm::Draw()
             ImGui::EndCombo();
         }
 
+        ImGui::Checkbox( "Enable tools", &m_enableTools );
+
         ImGui::AlignTextToFramePadding();
         ImGui::TextUnformatted( "Context size:" );
         ImGui::SameLine();
@@ -517,7 +519,7 @@ void TracyLlm::SendMessage( ollama::messages&& messages )
         req["stream"] = true;
         req["options"] = options["options"];
         req["keep_alive"] = "5m";
-        req["tools"] = m_tools;     // enabling tools prevents streaming in ollama 0.6.8
+        if( m_enableTools ) req["tools"] = m_tools;         // enabling tools prevents streaming in ollama 0.6.8
 
         res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });
     }

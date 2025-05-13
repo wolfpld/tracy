@@ -484,7 +484,14 @@ void TracyLlm::SendMessage( ollama::messages&& messages )
     bool res;
     try
     {
-        res = m_ollama->chat( m_models[m_modelIdx].name, messages, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); }, options );
+        ollama::request req( ollama::message_type::chat );
+        req["model"] = m_models[m_modelIdx].name;
+        req["messages"] = messages.to_json();
+        req["stream"] = true;
+        req["options"] = options["options"];
+        req["keep_alive"] = "5m";
+
+        res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });
     }
     catch( std::exception& e )
     {

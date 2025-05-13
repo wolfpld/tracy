@@ -26,6 +26,23 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
+add_executable(embed src/helpers/embed.cpp ../public/common/tracy_lz4.cpp ../public/common/tracy_lz4hc.cpp)
+
+add_custom_command(
+    OUTPUT data
+    COMMAND ${CMAKE_COMMAND} -E make_directory data
+)
+
+function(Embed LIST NAME FILE)
+    add_custom_command(
+        OUTPUT data/${NAME}.cpp data/${NAME}.hpp
+        COMMAND embed ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
+        DEPENDS data embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
+    )
+    list(APPEND ${LIST} data/${NAME}.cpp)
+    return(PROPAGATE ${LIST})
+endfunction()
+
 set(SERVER_FILES
     TracyAchievementData.cpp
     TracyAchievements.cpp

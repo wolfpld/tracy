@@ -11,6 +11,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/CPM.cmake)
 option(DOWNLOAD_CAPSTONE "Force download capstone" ON)
 option(DOWNLOAD_GLFW "Force download glfw" OFF)
 option(DOWNLOAD_FREETYPE "Force download freetype" OFF)
+option(DOWNLOAD_LIBCURL "Force download libcURL" OFF)
 
 # capstone
 
@@ -112,6 +113,29 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
     SOURCE_SUBDIR build/cmake
 )
+
+# libcurl
+
+pkg_check_modules(LIBCURL libcurl)
+if (LIBCURL_FOUND AND NOT DOWNLOAD_LIBCURL)
+    add_library(TracyLibcurl INTERFACE)
+    target_include_directories(TracyLibcurl INTERFACE ${LIBCURL_INCLUDE_DIRS})
+    target_link_libraries(TracyLibcurl INTERFACE ${LIBCURL_LINK_LIBRARIES})
+else()
+    CPMAddPackage(
+        NAME libcurl
+        GITHUB_REPOSITORY curl/curl
+        GIT_TAG curl-8_13_0
+        OPTIONS
+            "BUILD_STATIC_LIBS ON"
+            "BUILD_SHARED_LIBS OFF"
+            "HTTP_ONLY ON"
+            "CURL_ZSTD OFF"
+        EXCLUDE_FROM_ALL TRUE
+    )
+    add_library(TracyLibcurl INTERFACE)
+    target_link_libraries(TracyLibcurl INTERFACE curl)
+endif()
 
 # Diff Template Library
 

@@ -261,40 +261,47 @@ void TracyLlm::Draw()
                     assert( cache.parsedLen == content.size() );
                 }
 
-                LineContext ctx = {};
-                auto it = cache.lines.begin();
-                while( it != cache.lines.end() )
+                if( cache.lines.empty() && m_responding )
                 {
-                    auto& line = *it++;
-                    if( line == "<think>" )
+                    tracy::TextDisabledUnformatted( "\xe2\x80\xa6" );
+                }
+                else
+                {
+                    LineContext ctx = {};
+                    auto it = cache.lines.begin();
+                    while( it != cache.lines.end() )
                     {
-                        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
-                        ImGui::PushID( idx );
-                        if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
+                        auto& line = *it++;
+                        if( line == "<think>" )
                         {
-                            LineContext thinkCtx = {};
-                            while( it != cache.lines.end() && *it != "</think>" )
+                            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
+                            ImGui::PushID( idx );
+                            if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
                             {
-                                PrintLine( thinkCtx, *it++, num++ );
+                                LineContext thinkCtx = {};
+                                while( it != cache.lines.end() && *it != "</think>" )
+                                {
+                                    PrintLine( thinkCtx, *it++, num++ );
+                                }
+                                CleanContext( thinkCtx );
+                                if( it != cache.lines.end() ) ++it;
+                                ImGui::TreePop();
                             }
-                            CleanContext( thinkCtx );
-                            if( it != cache.lines.end() ) ++it;
-                            ImGui::TreePop();
+                            else
+                            {
+                                while( it != cache.lines.end() && *it != "</think>" ) ++it;
+                                if( it != cache.lines.end() ) ++it;
+                            }
+                            ImGui::PopID();
+                            ImGui::PopStyleColor();
                         }
                         else
                         {
-                            while( it != cache.lines.end() && *it != "</think>" ) ++it;
-                            if( it != cache.lines.end() ) ++it;
+                            PrintLine( ctx, line, num++ );
                         }
-                        ImGui::PopID();
-                        ImGui::PopStyleColor();
                     }
-                    else
-                    {
-                        PrintLine( ctx, line, num++ );
-                    }
+                    CleanContext( ctx );
                 }
-                CleanContext( ctx );
             }
             else
             {

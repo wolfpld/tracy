@@ -27,6 +27,7 @@ struct Config
     bool llm = true;
     std::string llmAddress = "http://localhost:11434";
     std::string llmModel;
+    int llmContext = 32*1024;
 };
 
 }

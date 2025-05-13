@@ -143,20 +143,32 @@ void TracyLlm::Draw()
                 }
                 if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( m_models[i].ctxSize ) );
+                ImGui::TextDisabled( "(max context: %s)", tracy::RealToString( m_models[i].ctxSize ) );
             }
             ImGui::EndCombo();
         }
 
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Context size:" );
+        ImGui::TextUnformatted( "Context size:" );
         ImGui::SameLine();
-        ImGui::SetNextItemWidth( 80 * scale );
-        if( ImGui::InputInt( "##contextSize", &m_ctxPercent ) ) { m_ctxPercent = std::clamp( m_ctxPercent, 1, 100 ); }
+        ImGui::SetNextItemWidth( 120 * scale );
+        if( ImGui::InputInt( "##contextsize", &s_config.llmContext, 1024, 8192 ) )
+        {
+            s_config.llmContext = std::clamp( s_config.llmContext, 2048, 10240 * 1024 );
+        }
+        ImGui::Indent();
+        if( ImGui::Button( "4K" ) ) s_config.llmContext = 4 * 1024;
         ImGui::SameLine();
-        ImGui::TextUnformatted( "%" );
+        if( ImGui::Button( "8K" ) ) s_config.llmContext = 8 * 1024;
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( m_models[m_modelIdx].ctxSize * m_ctxPercent / 100 ) );
+        if( ImGui::Button( "16K" ) ) s_config.llmContext = 16 * 1024;
+        ImGui::SameLine();
+        if( ImGui::Button( "32K" ) ) s_config.llmContext = 32 * 1024;
+        ImGui::SameLine();
+        if( ImGui::Button( "64K" ) ) s_config.llmContext = 64 * 1024;
+        ImGui::SameLine();
+        if( ImGui::Button( "128K" ) ) s_config.llmContext = 128 * 1024;
+        ImGui::Unindent();
 
         ImGui::TreePop();
     }
@@ -429,7 +441,7 @@ void TracyLlm::LoadModels()
         const auto& modelInfo = info["model_info"];
         const auto& architecture = modelInfo["general.architecture"].get_ref<const std::string&>();
         const auto& ctx = modelInfo[architecture + ".context_length"];
-        m.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<size_t>() } );
+        m.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<int>() } );
     }
 
     m_modelsLock.lock();
@@ -459,7 +471,7 @@ void TracyLlm::ResetChat()
 void TracyLlm::SendMessage( ollama::messages&& messages )
 {
     ollama::options options;
-    options["num_ctx"] = m_models[m_modelIdx].ctxSize * m_ctxPercent / 100;
+    options["num_ctx"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
 
     // The chat() call will fire a callback right away, so the assistant message needs to be there already
     m_chat->emplace_back( ollama::message( "assistant", "" ) );

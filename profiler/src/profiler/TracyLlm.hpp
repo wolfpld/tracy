@@ -56,7 +56,7 @@ public:
     struct LlmModel
     {
         std::string name;
-        size_t ctxSize;
+        int ctxSize;
     };
 
     TracyLlm();
@@ -96,7 +96,6 @@ private:
     std::vector<LlmModel> m_models;
 
     size_t m_modelIdx;
-    int m_ctxPercent = 100;
 
     std::atomic<bool> m_exit;
     std::condition_variable m_cv;

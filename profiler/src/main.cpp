@@ -239,6 +239,7 @@ static void LoadConfig()
     if( ini_sget( ini, "llm", "enabled", "%d", &v ) ) s_config.llm = v;
     if( v2 = ini_get( ini, "llm", "address" ); v2 ) s_config.llmAddress = v2;
     if( v2 = ini_get( ini, "llm", "model" ); v2 ) s_config.llmModel = v2;
+    if( ini_sget( ini, "llm", "context", "%d", &v ) ) s_config.llmContext = v;
 
     ini_free( ini );
 }
@@ -277,6 +278,7 @@ static bool SaveConfig()
     fprintf( f, "enabled = %i\n", (int)s_config.llm );
     fprintf( f, "address = %s\n", s_config.llmAddress.c_str() );
     fprintf( f, "model = %s\n", s_config.llmModel.c_str() );
+    fprintf( f, "context = %i\n", s_config.llmContext );
 
     fclose( f );
     return true;
@@ -973,7 +975,7 @@ static void DrawContents()
                                     }
                                     if( isSelected ) ImGui::SetItemDefaultFocus();
                                     ImGui::SameLine();
-                                    ImGui::TextDisabled( "(ctx: %s)", tracy::RealToString( llmModels[i].ctxSize ) );
+                                    ImGui::TextDisabled( "(max context: %s)", tracy::RealToString( llmModels[i].ctxSize ) );
                                 }
                                 ImGui::EndCombo();
                             }
@@ -983,6 +985,52 @@ static void DrawContents()
                             ImGui::TextColored( ImVec4( 1, 0.5f, 0.5f, 1 ), "No models available! Use ollama to get some." );
                         }
                     }
+
+                    ImGui::TextUnformatted( "Context size" );
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth( 120 * dpiScale );
+                    if( ImGui::InputInt( "##contextsize", &s_config.llmContext, 1024, 8192 ) )
+                    {
+                        s_config.llmContext = std::clamp( s_config.llmContext, 2048, 10240 * 1024 );
+                        SaveConfig();
+                    }
+                    ImGui::Indent();
+                    if( ImGui::Button( "4K" ) )
+                    {
+                        s_config.llmContext = 4 * 1024;
+                        SaveConfig();
+                    }
+                    ImGui::SameLine();
+                    if( ImGui::Button( "8K" ) )
+                    {
+                        s_config.llmContext = 8 * 1024;
+                        SaveConfig();
+                    }
+                    ImGui::SameLine();
+                    if( ImGui::Button( "16K" ) )
+                    {
+                        s_config.llmContext = 16 * 1024;
+                        SaveConfig();
+                    }
+                    ImGui::SameLine();
+                    if( ImGui::Button( "32K" ) )
+                    {
+                        s_config.llmContext = 32 * 1024;
+                        SaveConfig();
+                    }
+                    ImGui::SameLine();
+                    if( ImGui::Button( "64K" ) )
+                    {
+                        s_config.llmContext = 64 * 1024;
+                        SaveConfig();
+                    }
+                    ImGui::SameLine();
+                    if( ImGui::Button( "128K" ) )
+                    {
+                        s_config.llmContext = 128 * 1024;
+                        SaveConfig();
+                    }
+                    ImGui::Unindent();
 
                     ImGui::Unindent();
                 }

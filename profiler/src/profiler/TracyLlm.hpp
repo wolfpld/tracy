@@ -12,6 +12,7 @@
 
 #include <imgui.h>
 
+#include "TracyEmbed.hpp"
 #include "tracy_robin_hood.h"
 
 class Ollama;
@@ -116,6 +117,8 @@ private:
     ImFont* m_font;
     ImFont* m_smallFont;
     ImFont* m_bigFont;
+
+    std::shared_ptr<EmbedData> m_systemPrompt;
 };
 
 }

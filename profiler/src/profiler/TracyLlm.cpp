@@ -2,7 +2,6 @@
 #include <ollama.hpp>
 
 #include "TracyConfig.hpp"
-#include "TracyEmbed.hpp"
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
 #include "TracyPrint.hpp"
@@ -41,6 +40,8 @@ TracyLlm::TracyLlm()
 
     m_input = new char[InputBufferSize];
     *m_input = 0;
+
+    m_systemPrompt = Unembed( SystemPrompt );
 
     ResetChat();
 
@@ -467,9 +468,8 @@ void TracyLlm::UpdateModels()
 
 void TracyLlm::ResetChat()
 {
-    Unembed( SystemPrompt );
     m_chat = std::make_unique<ollama::messages>();
-    m_chat->emplace_back( ollama::message( "system", std::string( SystemPrompt->data(), SystemPrompt->size() ) ) );
+    m_chat->emplace_back( ollama::message( "system", std::string( m_systemPrompt->data(), m_systemPrompt->size() ) ) );
 }
 
 void TracyLlm::SendMessage( ollama::messages&& messages )

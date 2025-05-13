@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define Unembed( name ) auto name = std::make_shared<EmbedData>( Embed::name##Size, Embed::name##Lz4Size, Embed::name##Data )
+#define Unembed( name ) std::make_shared<EmbedData>( Embed::name##Size, Embed::name##Lz4Size, Embed::name##Data )
 
 class EmbedData
 {

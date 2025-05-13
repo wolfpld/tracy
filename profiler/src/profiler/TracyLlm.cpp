@@ -338,7 +338,11 @@ void TracyLlm::Draw()
     }
     else
     {
-        if( ImGui::IsWindowAppearing() ) ImGui::SetKeyboardFocusHere( 0 );
+        if( ImGui::IsWindowAppearing() || m_focusInput )
+        {
+            ImGui::SetKeyboardFocusHere( 0 );
+            m_focusInput = false;
+        }
         ImGui::PushItemWidth( -1 );
         if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
         {
@@ -484,6 +488,7 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     {
         m_stop = false;
         m_responding = false;
+        m_focusInput = true;
         return false;
     }
 
@@ -496,6 +501,7 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     if( json["done"] )
     {
         m_responding = false;
+        m_focusInput = true;
         return false;
     }
 

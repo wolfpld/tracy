@@ -6,6 +6,7 @@
 #include "TracyLlm.hpp"
 #include "TracyPrint.hpp"
 
+#include "data/ToolsJson.hpp"
 #include "data/SystemPrompt.hpp"
 
 extern tracy::Config s_config;
@@ -42,6 +43,9 @@ TracyLlm::TracyLlm()
     *m_input = 0;
 
     m_systemPrompt = Unembed( SystemPrompt );
+
+    auto tools = Unembed( ToolsJson );
+    m_tools = nlohmann::json::parse( tools->data(), tools->data() + tools->size() );
 
     ResetChat();
 
@@ -108,6 +112,7 @@ void TracyLlm::Draw()
         return;
     }
 
+    auto& style = ImGui::GetStyle();
     std::lock_guard lock( m_lock );
 
     if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
@@ -178,11 +183,11 @@ void TracyLlm::Draw()
     }
 
     ImGui::Spacing();
-    ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + ImGui::GetStyle().ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
+    ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + style.ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
     if( m_chat->empty() )
     {
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
-        ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled] );
+        ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
         ImGui::TextWrapped( "What I had not realized is that extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people." );
         ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
         const auto tw = ImGui::CalcTextSize( "-- Joseph Weizenbaum, 1976" ).x;
@@ -200,7 +205,8 @@ void TracyLlm::Draw()
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
             const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
             const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
-            const auto mw = std::max( { uw, rw, ew } );
+            const auto ww = ImGui::CalcTextSize( ICON_FA_WRENCH ).x;
+            const auto mw = std::max( { uw, rw, ew, ww } );
 
             const auto posStart = ImGui::GetCursorPos().x;
             const auto& role = line["role"].get_ref<const std::string&>();
@@ -210,6 +216,7 @@ void TracyLlm::Draw()
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
+            const auto isTools = isAssistant && line.contains( "tool_calls" );
 
             if( first )
             {
@@ -237,6 +244,14 @@ void TracyLlm::Draw()
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ICON_FA_CIRCLE_EXCLAMATION );
             }
+            else if( isTools )
+            {
+                diff = mw - ww;
+                offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_WRENCH );
+            }
             else if( isAssistant )
             {
                 diff = mw - rw;
@@ -255,7 +270,6 @@ void TracyLlm::Draw()
             ImGui::SameLine();
             ImGui::BeginGroup();
 
-            auto& style = ImGui::GetStyle();
             if( isUser )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.65f, 0.65f, 0.65f, 1.f ) );
@@ -263,6 +277,10 @@ void TracyLlm::Draw()
             else if( isError )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
+            }
+            else if( isTools )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
             }
             else if( isAssistant )
             {
@@ -273,7 +291,16 @@ void TracyLlm::Draw()
                 assert( false );
             }
 
-            if( isAssistant )
+            if( isTools )
+            {
+                ImGui::PushFont( m_font );
+                for( auto& tool : line["tool_calls"] )
+                {
+                    ImGui::TextWrapped( "%s", tool["function"]["name"].get_ref<const std::string&>().c_str() );
+                }
+                ImGui::PopFont();
+            }
+            else if( isAssistant )
             {
                 const auto& content = line["content"].get_ref<const std::string&>();
 
@@ -490,6 +517,7 @@ void TracyLlm::SendMessage( ollama::messages&& messages )
         req["stream"] = true;
         req["options"] = options["options"];
         req["keep_alive"] = "5m";
+        req["tools"] = m_tools;     // enabling tools prevents streaming in ollama 0.6.8
 
         res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });
     }
@@ -525,12 +553,15 @@ bool TracyLlm::OnResponse( const ollama::response& response )
         return false;
     }
 
-    auto& back = m_chat->back()["content"];
-    const auto& str = back.get_ref<const std::string&>();
-    back = str + response.as_simple_string();
+    auto& back = m_chat->back();
+    auto& content = back["content"];
+    const auto& str = content.get_ref<const std::string&>();
+    content = str + response.as_simple_string();
     m_wasUpdated = true;
 
     auto& json = response.as_json();
+    auto& message = json["message"];
+    if( message.contains( "tool_calls" ) ) back["tool_calls"] = message["tool_calls"];
     if( json["done"] )
     {
         m_responding = false;

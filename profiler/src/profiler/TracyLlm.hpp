@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <imgui.h>
+#include <json.hpp>
 
 #include "TracyEmbed.hpp"
 #include "tracy_robin_hood.h"
@@ -119,6 +120,7 @@ private:
     ImFont* m_bigFont;
 
     std::shared_ptr<EmbedData> m_systemPrompt;
+    nlohmann::json m_tools;
 };
 
 }

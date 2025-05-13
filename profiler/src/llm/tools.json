@@ -1,0 +1,9 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_time",
+            "description": "Get the current time formatted as a string."
+        }
+    }
+]

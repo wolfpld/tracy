@@ -92,6 +92,10 @@ private:
     void PrintLine( LineContext& ctx, const std::string& str, int num );
     void CleanContext( LineContext& ctx);
 
+    void HandleToolCalls( const nlohmann::json& calls );
+
+    std::string GetCurrentTime();
+
     std::unique_ptr<Ollama> m_ollama;
 
     mutable std::mutex m_modelsLock;

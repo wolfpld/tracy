@@ -1,5 +1,6 @@
-#include <ranges>
 #include <ollama.hpp>
+#include <ranges>
+#include <time.h>
 
 #include "TracyConfig.hpp"
 #include "TracyImGui.hpp"
@@ -213,7 +214,7 @@ void TracyLlm::Draw()
             const auto posStart = ImGui::GetCursorPos().x;
             const auto& role = line["role"].get_ref<const std::string&>();
 
-            if( role == "system" ) continue;
+            if( role == "system" || role == "tool" ) continue;
 
             const auto isUser = role == "user";
             const auto isError = role == "error";
@@ -566,8 +567,22 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     if( message.contains( "tool_calls" ) ) back["tool_calls"] = message["tool_calls"];
     if( json["done"] )
     {
-        m_responding = false;
-        m_focusInput = true;
+        if( back.contains( "tool_calls" ) )
+        {
+            HandleToolCalls( back["tool_calls"] );
+
+            m_jobs.emplace_back( WorkItem {
+                .task = Task::SendMessage,
+                .callback = nullptr,
+                .chat = std::make_unique<ollama::messages>( *m_chat )
+            } );
+            m_cv.notify_all();
+        }
+        else
+        {
+            m_responding = false;
+            m_focusInput = true;
+        }
         return false;
     }
 
@@ -671,6 +686,40 @@ void TracyLlm::CleanContext( LineContext& ctx)
         ImGui::PopFont();
         ImGui::EndChild();
     }
+}
+
+void TracyLlm::HandleToolCalls( const nlohmann::json& calls )
+{
+    std::string response;
+
+    for( auto& call : calls )
+    {
+        auto& func = call["function"];
+        auto& name = func["name"].get_ref<const std::string&>();
+        auto& args = func["arguments"];
+
+        std::string result = "### Result of calling function " + name + ":\n";
+
+        if( name == "get_current_time" ) result += GetCurrentTime();
+        else result = "### Unknown function: " + name + "\n";
+
+        result += "\n\n";
+
+        response += result;
+    }
+
+    m_chat->emplace_back( ollama::message( "tool", response ) );
+}
+
+std::string TracyLlm::GetCurrentTime()
+{
+    auto t = time( nullptr );
+    auto tm = localtime( &t );
+
+    char buffer[64];
+    std::strftime( buffer, sizeof( buffer ), "%Y-%m-%d %H:%M:%S", tm );
+
+    return buffer;
 }
 
 }

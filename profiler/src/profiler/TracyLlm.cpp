@@ -1,5 +1,4 @@
 #include <curl/curl.h>
-#include <html2md.h>
 #include <ollama.hpp>
 #include <stdint.h>
 #include <stdlib.h>
@@ -806,7 +805,7 @@ std::string TracyLlm::FetchWebPage( const std::string& url )
     }
     else
     {
-        response = html2md::Convert( buf );
+        response = std::move( buf );
     }
 
     curl_easy_cleanup( curl );

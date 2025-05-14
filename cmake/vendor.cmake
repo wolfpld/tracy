@@ -224,12 +224,3 @@ CPMAddPackage(
     VERSION 0.9.5 
     DOWNLOAD_ONLY TRUE
 )
-
-# html2md
-
-CPMAddPackage(
-    NAME html2md
-    GITHUB_REPOSITORY tim-gromeyer/html2md
-    VERSION 1.6.6
-    EXCLUDE_FROM_ALL TRUE
-)

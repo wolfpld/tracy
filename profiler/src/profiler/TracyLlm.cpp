@@ -1,4 +1,5 @@
 #include <curl/curl.h>
+#include <html2md.h>
 #include <ollama.hpp>
 #include <stdint.h>
 #include <stdlib.h>
@@ -782,7 +783,7 @@ std::string TracyLlm::FetchWebPage( const nlohmann::json& args )
     else
     {
         response = "## Web page '" + url + "' content:\n";
-        response += buf;
+        response += html2md::Convert( buf );
         response += "\n";
     }
 

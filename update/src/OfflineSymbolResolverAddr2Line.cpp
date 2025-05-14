@@ -10,26 +10,26 @@
 #include <memory>
 #include <stdio.h>
 
-std::string ExecShellCommand( const char* cmd )
+class Addr2LineSymbolResolver
 {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if( !pipe )
+    static std::string ExecShellCommand( const char* cmd )
     {
-        return "";
+        std::array<char, 128> buffer;
+        std::string result;
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+        if( !pipe )
+        {
+            return "";
+        }
+        while( fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr )
+        {
+            result += buffer.data();
+        }
+        return result;
     }
-    while( fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr )
-    {
-        result += buffer.data();
-    }
-    return result;
-}
 
-class SymbolResolver
-{
 public:
-    SymbolResolver()
+    Addr2LineSymbolResolver()
     {
         std::stringstream result( ExecShellCommand("which addr2line") );
         std::getline(result, m_addr2LinePath);
@@ -119,7 +119,8 @@ public:
                 std::string addr;
                 std::getline( result, addr );
                 std::getline( result, newEntry.name );
-                if( newEntry.name == "??" )
+                newEntry.resolved =( newEntry.name != "??" );
+                if (!newEntry.resolved)
                 {
                     newEntry.name = "[unknown] + " + std::to_string( inputEntry.symbolOffset );
                 }
@@ -149,10 +150,10 @@ private:
     std::string m_addr2LinePath;
 };
 
-bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
-                     SymbolEntryList& resolvedEntries )
+bool ResolveSymbolsWithAddr2Line( const std::string& imagePath, const FrameEntryList& inputEntryList,
+                                  SymbolEntryList& resolvedEntries )
 {
-    static SymbolResolver symbolResolver;
+    static Addr2LineSymbolResolver symbolResolver;
     return symbolResolver.ResolveSymbols( imagePath, inputEntryList, resolvedEntries );
 }
 

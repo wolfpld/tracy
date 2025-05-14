@@ -213,17 +213,19 @@ void TracyLlm::Draw()
             const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
             const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
             const auto ww = ImGui::CalcTextSize( ICON_FA_WRENCH ).x;
-            const auto mw = std::max( { uw, rw, ew, ww } );
+            const auto yw = ImGui::CalcTextSize( ICON_FA_REPLY ).x;
+            const auto mw = std::max( { uw, rw, ew, ww, yw } );
 
             const auto posStart = ImGui::GetCursorPos().x;
             const auto& role = line["role"].get_ref<const std::string&>();
 
-            if( role == "system" || role == "tool" ) continue;
+            if( role == "system" ) continue;
 
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
             const auto isTools = isAssistant && line.contains( "tool_calls" );
+            const auto isToolResponse = role == "tool";
 
             if( first )
             {
@@ -267,6 +269,14 @@ void TracyLlm::Draw()
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ICON_FA_ROBOT );
             }
+            else if( isToolResponse )
+            {
+                diff = mw - yw;
+                offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_REPLY );
+            }
             else
             {
                 assert( false );
@@ -285,7 +295,7 @@ void TracyLlm::Draw()
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
             }
-            else if( isTools )
+            else if( isTools || isToolResponse )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
             }
@@ -317,6 +327,18 @@ void TracyLlm::Draw()
                     }
                 }
                 ImGui::PopFont();
+            }
+            else if( isToolResponse )
+            {
+                ImGui::PushID( idx );
+                if( ImGui::TreeNode( "Tool response..." ) )
+                {
+                    ImGui::PushFont( m_font );
+                    ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() );
+                    ImGui::PopFont();
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
             }
             else if( isAssistant )
             {

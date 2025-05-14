@@ -11,7 +11,6 @@
 #include "TracyLlm.hpp"
 #include "TracyPrint.hpp"
 
-#include "data/ToolsJson.hpp"
 #include "data/SystemPrompt.hpp"
 
 extern tracy::Config s_config;
@@ -48,9 +47,6 @@ TracyLlm::TracyLlm()
     *m_input = 0;
 
     m_systemPrompt = Unembed( SystemPrompt );
-
-    auto tools = Unembed( ToolsJson );
-    m_tools = nlohmann::json::parse( tools->data(), tools->data() + tools->size() );
 
     ResetChat();
 
@@ -162,8 +158,6 @@ void TracyLlm::Draw()
             ImGui::EndCombo();
         }
 
-        ImGui::Checkbox( "Enable tools", &m_enableTools );
-
         ImGui::AlignTextToFramePadding();
         ImGui::TextUnformatted( "Context size:" );
         ImGui::SameLine();
@@ -207,14 +201,14 @@ void TracyLlm::Draw()
         int idx = 0;
         int num = 0;
         bool first = true;
+        bool wasToolResponse = false;
         for( auto& line : *m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
             const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
             const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
-            const auto ww = ImGui::CalcTextSize( ICON_FA_WRENCH ).x;
             const auto yw = ImGui::CalcTextSize( ICON_FA_REPLY ).x;
-            const auto mw = std::max( { uw, rw, ew, ww, yw } );
+            const auto mw = std::max( { uw, rw, ew, yw } );
 
             const auto posStart = ImGui::GetCursorPos().x;
             const auto& role = line["role"].get_ref<const std::string&>();
@@ -224,17 +218,18 @@ void TracyLlm::Draw()
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
-            const auto isTools = isAssistant && line.contains( "tool_calls" );
             const auto isToolResponse = role == "tool";
 
             if( first )
             {
                 first = false;
             }
-            else
+            else if( !isToolResponse && !wasToolResponse )
             {
                 ImGui::Spacing();
             }
+
+            wasToolResponse = isToolResponse;
 
             float diff, offset;
             if( isUser )
@@ -252,14 +247,6 @@ void TracyLlm::Draw()
                 ImGui::Dummy( ImVec2( offset, 0 ) );
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ICON_FA_CIRCLE_EXCLAMATION );
-            }
-            else if( isTools )
-            {
-                diff = mw - ww;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_WRENCH );
             }
             else if( isAssistant )
             {
@@ -295,7 +282,7 @@ void TracyLlm::Draw()
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
             }
-            else if( isTools || isToolResponse )
+            else if( isToolResponse )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
             }
@@ -308,27 +295,7 @@ void TracyLlm::Draw()
                 assert( false );
             }
 
-            if( isTools )
-            {
-                ImGui::PushFont( m_font );
-                for( auto& tool : line["tool_calls"] )
-                {
-                    auto& func = tool["function"];
-                    ImGui::TextWrapped( "%s", func["name"].get_ref<const std::string&>().c_str() );
-                    if( func.contains( "arguments" ) )
-                    {
-                        ImGui::PushFont( m_smallFont );
-                        auto& args = func["arguments"];
-                        for( auto& arg : args.items() )
-                        {
-                            ImGui::TextWrapped( "%s: %s", arg.key().c_str(), arg.value().dump( 2 ).c_str() );
-                        }
-                        ImGui::PopFont();
-                    }
-                }
-                ImGui::PopFont();
-            }
-            else if( isToolResponse )
+            if( isToolResponse )
             {
                 ImGui::PushID( idx );
                 if( ImGui::TreeNode( "Tool response..." ) )
@@ -383,6 +350,30 @@ void TracyLlm::Draw()
                             else
                             {
                                 while( it != cache.lines.end() && *it != "</think>" ) ++it;
+                                if( it != cache.lines.end() ) ++it;
+                            }
+                            ImGui::PopID();
+                            ImGui::PopStyleColor();
+                        }
+                        else if( line == "<tool>" )
+                        {
+                            ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
+                            ImGui::PushID( idx );
+                            if( ImGui::TreeNode( "Tool query..." ) )
+                            {
+                                ImGui::PushFont( m_font );
+                                while( it != cache.lines.end() && *it != "</tool>" )
+                                {
+                                    ImGui::TextWrapped( "%s", (*it).c_str() );
+                                    ++it;
+                                }
+                                if( it != cache.lines.end() ) ++it;
+                                ImGui::PopFont();
+                                ImGui::TreePop();
+                            }
+                            else
+                            {
+                                while( it != cache.lines.end() && *it != "</tool>" ) ++it;
                                 if( it != cache.lines.end() ) ++it;
                             }
                             ImGui::PopID();
@@ -557,7 +548,6 @@ void TracyLlm::SendMessage( const ollama::messages& messages )
         req["stream"] = true;
         req["options"] = options["options"];
         req["keep_alive"] = "5m";
-        if( m_enableTools ) req["tools"] = m_tools;         // enabling tools prevents streaming in ollama 0.6.8
 
         res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });
     }
@@ -581,6 +571,20 @@ void TracyLlm::SendMessage( const ollama::messages& messages )
     }
 }
 
+static std::vector<std::string> SplitLines( const std::string& str )
+{
+    std::vector<std::string> lines;
+    auto pos = 0;
+    while( pos < str.size() )
+    {
+        auto next = str.find( '\n', pos );
+        if( next == std::string::npos ) next = str.size();
+        if( pos != next ) lines.emplace_back( str.substr( pos, next - pos ) );
+        pos = next + 1;
+    }
+    return lines;
+}
+
 bool TracyLlm::OnResponse( const ollama::response& response )
 {
     std::lock_guard lock( m_lock );
@@ -601,21 +605,36 @@ bool TracyLlm::OnResponse( const ollama::response& response )
 
     auto& json = response.as_json();
     auto& message = json["message"];
-    if( message.contains( "tool_calls" ) ) back["tool_calls"] = message["tool_calls"];
     if( json["done"] )
     {
-        if( back.contains( "tool_calls" ) )
+        bool isTool = false;
+        auto& str = back["content"].get_ref<const std::string&>();
+        auto pos = str.find( "<tool>\n" );
+        if( pos != std::string::npos )
         {
-            HandleToolCalls( back["tool_calls"] );
+            auto end = str.find( "\n</tool>", pos );
+            if( end != std::string::npos )
+            {
+                auto data = str.substr( pos + 7, end - pos - 7 );
+                auto lines = SplitLines( data );
+                if( !lines.empty() )
+                {
+                    isTool = true;
+                    auto tool = lines[0];
+                    lines.erase( lines.begin() );
+                    const auto reply = HandleToolCalls( tool, lines );
+                    m_chat->emplace_back( ollama::message( "tool", reply ) );
 
-            m_jobs.emplace_back( WorkItem {
-                .task = Task::SendMessage,
-                .callback = nullptr,
-                .chat = std::make_unique<ollama::messages>( *m_chat )
-            } );
-            m_cv.notify_all();
+                    m_jobs.emplace_back( WorkItem {
+                        .task = Task::SendMessage,
+                        .callback = nullptr,
+                        .chat = std::make_unique<ollama::messages>( *m_chat )
+                    } );
+                    m_cv.notify_all();
+                }
+            }
         }
-        else
+        if( !isTool )
         {
             m_responding = false;
             m_focusInput = true;
@@ -725,29 +744,15 @@ void TracyLlm::CleanContext( LineContext& ctx)
     }
 }
 
-void TracyLlm::HandleToolCalls( const nlohmann::json& calls )
+std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vector<std::string>& args )
 {
-    std::string response;
-
-    for( auto& call : calls )
+    if( name == "get_current_time" ) return GetCurrentTime();
+    if( name == "fetch_web_page" )
     {
-        auto& func = call["function"];
-        auto& name = func["name"].get_ref<const std::string&>();
-        auto& args = func["arguments"];
-
-        std::string result = "### Result of calling function " + name + ":\n";
-
-        if( name == "get_current_time" ) result += GetCurrentTime();
-        else if( name == "fetch_web_page" ) result += FetchWebPage( args );
-
-        else result = "### Unknown function: " + name + "\n";
-
-        result += "\n\n";
-
-        response += result;
+        if( args.empty() ) return "Missing URL argument";
+        return FetchWebPage( args[0] );
     }
-
-    m_chat->emplace_back( ollama::message( "tool", response ) );
+    return "Unknown tool call: " + name;
 }
 
 std::string TracyLlm::GetCurrentTime()
@@ -770,11 +775,8 @@ static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
     return sz;
 }
 
-std::string TracyLlm::FetchWebPage( const nlohmann::json& args )
+std::string TracyLlm::FetchWebPage( const std::string& url )
 {
-    if( !args.contains( "url" ) ) return "## Error: Missing URL argument";
-    std::string url = args["url"].get_ref<const std::string&>();
-
     static bool initialized = false;
     if( !initialized )
     {
@@ -784,7 +786,7 @@ std::string TracyLlm::FetchWebPage( const nlohmann::json& args )
     }
 
     auto curl = curl_easy_init();
-    if( !curl ) return "## Error: Failed to initialize cURL";
+    if( !curl ) return "Error: Failed to initialize cURL";
 
     std::string buf;
 
@@ -800,13 +802,11 @@ std::string TracyLlm::FetchWebPage( const nlohmann::json& args )
     std::string response;
     if( res != CURLE_OK )
     {
-        response = "## Error: " + std::string( curl_easy_strerror( res ) );
+        response = "Error: " + std::string( curl_easy_strerror( res ) );
     }
     else
     {
-        response = "## Web page '" + url + "' content:\n";
-        response += html2md::Convert( buf );
-        response += "\n";
+        response = html2md::Convert( buf );
     }
 
     curl_easy_cleanup( curl );

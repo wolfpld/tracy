@@ -121,7 +121,6 @@ set(PROFILER_FILES
 )
 
 Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt)
-Embed(PROFILER_FILES ToolsJson src/llm/tools.json)
 
 set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")

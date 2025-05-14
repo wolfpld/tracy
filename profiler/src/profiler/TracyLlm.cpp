@@ -531,9 +531,6 @@ void TracyLlm::ResetChat()
 
 void TracyLlm::SendMessage( const ollama::messages& messages )
 {
-    ollama::options options;
-    options["num_ctx"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
-
     // The chat() call will fire a callback right away, so the assistant message needs to be there already
     m_chat->emplace_back( ollama::message( "assistant", "" ) );
 
@@ -545,7 +542,7 @@ void TracyLlm::SendMessage( const ollama::messages& messages )
         req["model"] = m_models[m_modelIdx].name;
         req["messages"] = messages.to_json();
         req["stream"] = true;
-        req["options"] = options["options"];
+        req["options"]["ctx_size"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
         req["keep_alive"] = "5m";
 
         res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });

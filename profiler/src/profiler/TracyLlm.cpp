@@ -766,6 +766,32 @@ void TracyLlm::CleanContext( LineContext& ctx)
     }
 }
 
+static std::string UrlEncode( const std::string& str )
+{
+    std::string out;
+    out.reserve( str.size() * 3 );
+
+    constexpr char hex[] = "0123456789ABCDEF";
+
+    for( char c : str )
+    {
+        if( ( c >= 'a' && c <= 'z' ) ||
+            ( c >= 'A' && c <= 'Z' ) ||
+            ( c >= '0' && c <= '9' ) ||
+              c == '-' || c == '.' || c == '_' || c == '~' )
+        {
+            out += c;
+        }
+        else
+        {
+            out += '%';
+            out += hex[(unsigned char)c >> 4];
+            out += hex[(unsigned char)c & 0x0F];
+        }
+    }
+    return out;
+}
+
 std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vector<std::string>& args )
 {
     if( name == "get_current_time" ) return GetCurrentTime();
@@ -778,9 +804,8 @@ std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vecto
     {
         if( args.empty() ) return "Missing search term argument";
         auto query = args[0];
-        std::erase( query, '"' );
         std::ranges::replace( query, ' ', '+' );
-        return FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + query + "&limit=1" );
+        return FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
     }
     if( name == "get_wikipedia" )
     {

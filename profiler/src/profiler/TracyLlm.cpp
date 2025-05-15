@@ -772,6 +772,18 @@ std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vecto
         if( args.empty() ) return "Missing URL argument";
         return FetchWebPage( args[0] );
     }
+    if( name == "search_wikipedia" )
+    {
+        if( args.empty() ) return "Missing search term argument";
+        return FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + args[0] + "&limit=1" );
+    }
+    if( name == "get_wikipedia" )
+    {
+        if( args.empty() ) return "Missing page name argument";
+        auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + args[0] );
+        if( res.size() > 10 * 1024 ) res = res.substr( 0, 10 * 1024 );
+        return res;
+    }
     return "Unknown tool call: " + name;
 }
 

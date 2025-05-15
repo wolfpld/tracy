@@ -114,6 +114,7 @@ private:
     bool m_stop = false;
     bool m_wasUpdated = false;
     bool m_focusInput = false;
+    int m_chatId = 0;
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;

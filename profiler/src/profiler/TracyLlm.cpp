@@ -197,6 +197,7 @@ void TracyLlm::Draw()
     }
     else
     {
+        ImGui::PushID( m_chatId );
         int idx = 0;
         int num = 0;
         bool first = true;
@@ -400,6 +401,7 @@ void TracyLlm::Draw()
             ImGui::SetScrollHereY( 1.f );
             m_wasUpdated = false;
         }
+        ImGui::PopID();
     }
     ImGui::EndChild();
     ImGui::Spacing();
@@ -527,6 +529,7 @@ void TracyLlm::ResetChat()
 {
     m_chat = std::make_unique<ollama::messages>();
     m_chat->emplace_back( ollama::message( "system", std::string( m_systemPrompt->data(), m_systemPrompt->size() ) ) );
+    m_chatId++;
 }
 
 void TracyLlm::SendMessage( const ollama::messages& messages )

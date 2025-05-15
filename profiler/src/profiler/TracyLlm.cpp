@@ -182,6 +182,23 @@ void TracyLlm::Draw()
         ImGui::TreePop();
     }
 
+    const auto ctxSize = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
+    ImGui::Spacing();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    ImGui::ProgressBar( m_usedCtx / (float)ctxSize, ImVec2( -1, 0 ), "" );
+    ImGui::PopStyleVar();
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        TextFocused( "Used context size:", RealToString( m_usedCtx ) );
+        ImGui::SameLine();
+        char buf[64];
+        PrintStringPercent( buf, m_usedCtx / (float)ctxSize * 100 );
+        tracy::TextDisabledUnformatted( buf );
+        TextFocused( "Available context size:", RealToString( ctxSize ) );
+        ImGui::EndTooltip();
+    }
+
     ImGui::Spacing();
     ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + style.ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
     if( m_chat->size() <= 1 )   // account for system prompt
@@ -530,6 +547,7 @@ void TracyLlm::ResetChat()
     m_chat = std::make_unique<ollama::messages>();
     m_chat->emplace_back( ollama::message( "system", std::string( m_systemPrompt->data(), m_systemPrompt->size() ) ) );
     m_chatId++;
+    m_usedCtx = 0;
 }
 
 void TracyLlm::SendMessage( const ollama::messages& messages )
@@ -601,6 +619,7 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     const auto& str = content.get_ref<const std::string&>();
     content = str + response.as_simple_string();
     m_wasUpdated = true;
+    m_usedCtx++;
 
     auto& json = response.as_json();
     auto& message = json["message"];
@@ -638,6 +657,8 @@ bool TracyLlm::OnResponse( const ollama::response& response )
             m_responding = false;
             m_focusInput = true;
         }
+
+        m_usedCtx = json["prompt_eval_count"].get<int>() + json["eval_count"].get<int>();
         return false;
     }
 

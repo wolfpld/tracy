@@ -617,7 +617,9 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     auto& back = m_chat->back();
     auto& content = back["content"];
     const auto& str = content.get_ref<const std::string&>();
-    content = str + response.as_simple_string();
+    auto responseStr = response.as_simple_string();
+    std::erase( responseStr, '\r' );
+    content = str + responseStr;
     m_wasUpdated = true;
     m_usedCtx++;
 

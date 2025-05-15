@@ -811,7 +811,13 @@ std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vecto
     {
         if( args.empty() ) return "Missing page name argument";
         auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + args[0] );
-        if( res.size() > 10 * 1024 ) res = res.substr( 0, 10 * 1024 );
+
+        // Limit the size of the response to avoid exceeding the context size
+        // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
+        const auto ctxSize = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
+        const auto maxSize = ( ctxSize * 4 ) / 3;
+
+        if( res.size() > maxSize ) res = res.substr( 0, maxSize );
         return res;
     }
     return "Unknown tool call: " + name;

@@ -563,7 +563,7 @@ void TracyLlm::SendMessage( const ollama::messages& messages )
         req["model"] = m_models[m_modelIdx].name;
         req["messages"] = messages.to_json();
         req["stream"] = true;
-        req["options"]["ctx_size"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
+        req["options"]["num_ctx"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
         req["keep_alive"] = "5m";
 
         res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });

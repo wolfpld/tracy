@@ -778,6 +778,7 @@ std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vecto
     {
         if( args.empty() ) return "Missing search term argument";
         auto query = args[0];
+        std::erase( query, '"' );
         std::ranges::replace( query, ' ', '+' );
         return FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + query + "&limit=1" );
     }

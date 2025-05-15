@@ -17,7 +17,7 @@ ImFont* s_fixedWidth;
 void LoadFonts( float scale )
 {
     static const ImWchar rangesBasic[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
+        0x0020, 0x024F, // Basic Latin + Latin Supplement + Latin Extended A + Latin Extended B
         0x03BC, 0x03BC, // micro
         0x03C3, 0x03C3, // small sigma
         0x2013, 0x2013, // en dash

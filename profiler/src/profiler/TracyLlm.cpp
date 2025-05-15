@@ -810,7 +810,9 @@ std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vecto
     if( name == "get_wikipedia" )
     {
         if( args.empty() ) return "Missing page name argument";
-        auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + args[0] );
+        auto page = args[0];
+        std::ranges::replace( page, ' ', '_' );
+        auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + page );
 
         // Limit the size of the response to avoid exceeding the context size
         // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.

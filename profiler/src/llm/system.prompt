@@ -30,7 +30,7 @@ These are the tools available to you:
 
 - Search the English Wikipedia with given query. Returns a json response with the 'key' field specifying the wikipedia page name describing the topic. This response does not contain information about the subject. To get the information, you must follow by retrieving the wikipedia article using the 'key' field.
   Function: search_wikipedia
-  Parameter: The search terms combined with a plus sign, as in URL encoding. For example: 'red+apple'.
+  Parameter: The search terms, in English language.
 
 - Retrieve the English Wikipedia article on given subject. Returns a json response with a markdown page content in the 'source' key. The response will be trimmed to 10 KB, so it may be incomplete. You are to assume that Wikipedia articles are always up-to-date and follow real-time events.
   Function: get_wikipedia

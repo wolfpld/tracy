@@ -53,6 +53,12 @@ class TracyLlm
         bool codeBlock;
     };
 
+    struct ToolReply
+    {
+        std::string reply;
+        std::string image;
+    };
+
 public:
     struct LlmModel
     {
@@ -91,10 +97,12 @@ private:
     void PrintLine( LineContext& ctx, const std::string& str, int num );
     void CleanContext( LineContext& ctx);
 
-    std::string HandleToolCalls( const std::string& name, const std::vector<std::string>& args );
+    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args );
 
     std::string GetCurrentTime();
     std::string FetchWebPage( const std::string& url );
+    ToolReply SearchWikipedia( std::string query );
+    std::string GetWikipedia( std::string page );
 
     std::unique_ptr<Ollama> m_ollama;
 

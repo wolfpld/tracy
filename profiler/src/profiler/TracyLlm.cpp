@@ -1,3 +1,4 @@
+#include <libbase64.h>
 #include <curl/curl.h>
 #include <ollama.hpp>
 #include <stdint.h>
@@ -643,7 +644,16 @@ bool TracyLlm::OnResponse( const ollama::response& response )
                     auto tool = lines[0];
                     lines.erase( lines.begin() );
                     const auto reply = HandleToolCalls( tool, lines );
-                    m_chat->emplace_back( ollama::message( "tool", reply ) );
+                    if( reply.image.empty() )
+                    {
+                        m_chat->emplace_back( ollama::message( "tool", reply.reply ) );
+                    }
+                    else
+                    {
+                        std::vector<ollama::image> images;
+                        images.emplace_back( ollama::image::from_base64_string( reply.image ) );
+                        m_chat->emplace_back( ollama::message( "tool", reply.reply, images ) );
+                    }
 
                     m_jobs.emplace_back( WorkItem {
                         .task = Task::SendMessage,
@@ -792,37 +802,25 @@ static std::string UrlEncode( const std::string& str )
     return out;
 }
 
-std::string TracyLlm::HandleToolCalls( const std::string& name, const std::vector<std::string>& args )
+TracyLlm::ToolReply TracyLlm::HandleToolCalls( const std::string& name, const std::vector<std::string>& args )
 {
-    if( name == "get_current_time" ) return GetCurrentTime();
+    if( name == "get_current_time" ) return { .reply = GetCurrentTime() };
     if( name == "fetch_web_page" )
     {
-        if( args.empty() ) return "Missing URL argument";
-        return FetchWebPage( args[0] );
+        if( args.empty() ) return { .reply = "Missing URL argument" };
+        return { .reply = FetchWebPage( args[0] ) };
     }
     if( name == "search_wikipedia" )
     {
-        if( args.empty() ) return "Missing search term argument";
-        auto query = args[0];
-        std::ranges::replace( query, ' ', '+' );
-        return FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
+        if( args.empty() ) return { .reply = "Missing search term argument" };
+        return SearchWikipedia( args[0] );
     }
     if( name == "get_wikipedia" )
     {
-        if( args.empty() ) return "Missing page name argument";
-        auto page = args[0];
-        std::ranges::replace( page, ' ', '_' );
-        auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + page );
-
-        // Limit the size of the response to avoid exceeding the context size
-        // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
-        const auto ctxSize = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
-        const auto maxSize = ( ctxSize * 4 ) / 3;
-
-        if( res.size() > maxSize ) res = res.substr( 0, maxSize );
-        return res;
+        if( args.empty() ) return { .reply = "Missing page name argument" };
+        return { .reply = GetWikipedia( args[0] ) };
     }
-    return "Unknown tool call: " + name;
+    return { .reply = "Unknown tool call: " + name };
 }
 
 std::string TracyLlm::GetCurrentTime()
@@ -881,6 +879,61 @@ std::string TracyLlm::FetchWebPage( const std::string& url )
 
     curl_easy_cleanup( curl );
     return response;
+}
+
+TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query )
+{
+    std::ranges::replace( query, ' ', '+' );
+    const auto response = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
+    auto json = nlohmann::json::parse( response );
+    std::string reply = "No results found";
+    std::string image;
+    if( json.contains( "pages" ) )
+    {
+        auto& page = json["pages"];
+        if( page.size() > 0 )
+        {
+            auto& page0 = page[0];
+            reply = page0.dump( 2 );
+            if( page0.contains( "thumbnail" ) )
+            {
+                auto& thumb = page0["thumbnail"];
+                if( thumb.contains( "url" ) )
+                {
+                    auto url = "https:" + thumb["url"].get_ref<const std::string&>();
+                    url = url.substr( 0, url.find_last_of( '/' ) );
+                    auto pos = url.find( "/thumb" );
+                    url.erase( pos, 6 );
+                    auto imgData = FetchWebPage( url );
+                    if( !imgData.empty() && imgData[0] != '<' && strncmp( imgData.c_str(), "Error:", 6 ) != 0 )
+                    {
+                        size_t b64sz = ( ( 4 * imgData.size() / 3 ) + 3 ) & ~3;
+                        char* b64 = new char[b64sz+1];
+                        b64[b64sz] = 0;
+                        size_t outSz;
+                        base64_encode( (const char*)imgData.data(), imgData.size(), b64, &outSz, 0 );
+                        image = std::string( b64, outSz );
+                        delete[] b64;
+                    }
+                }
+            }
+        }
+    }
+    return { .reply = reply, .image = image };
+}
+
+std::string TracyLlm::GetWikipedia( std::string page )
+{
+    std::ranges::replace( page, ' ', '_' );
+    auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + page );
+
+    // Limit the size of the response to avoid exceeding the context size
+    // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
+    const auto ctxSize = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
+    const auto maxSize = ( ctxSize * 4 ) / 3;
+
+    if( res.size() > maxSize ) res = res.substr( 0, maxSize );
+    return res;
 }
 
 }

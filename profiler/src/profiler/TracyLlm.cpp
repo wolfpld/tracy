@@ -236,7 +236,7 @@ void TracyLlm::Draw()
             const auto isUser = role == "user";
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
-            const auto isToolResponse = role == "tool";
+            const auto isToolResponse = isUser && line["content"].get_ref<const std::string&>().starts_with( "<tool_output>\n" );
 
             if( first )
             {
@@ -250,7 +250,15 @@ void TracyLlm::Draw()
             wasToolResponse = isToolResponse;
 
             float diff, offset;
-            if( isUser )
+            if( isToolResponse )
+            {
+                diff = mw - yw;
+                offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_REPLY );
+            }
+            else if( isUser )
             {
                 diff = mw - uw;
                 offset = diff / 2;
@@ -274,14 +282,6 @@ void TracyLlm::Draw()
                 ImGui::SameLine( 0, 0 );
                 ImGui::TextColored( ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ICON_FA_ROBOT );
             }
-            else if( isToolResponse )
-            {
-                diff = mw - yw;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_REPLY );
-            }
             else
             {
                 assert( false );
@@ -292,17 +292,17 @@ void TracyLlm::Draw()
             ImGui::SameLine();
             ImGui::BeginGroup();
 
-            if( isUser )
+            if( isToolResponse )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
+            }
+            else if( isUser )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.65f, 0.65f, 0.65f, 1.f ) );
             }
             else if( isError )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
-            }
-            else if( isToolResponse )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
             }
             else if( isAssistant )
             {
@@ -319,7 +319,7 @@ void TracyLlm::Draw()
                 if( ImGui::TreeNode( "Tool response..." ) )
                 {
                     ImGui::PushFont( m_font );
-                    ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() );
+                    ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() + sizeof( "<tool_output>" ) );
                     ImGui::PopFont();
                     ImGui::TreePop();
                 }
@@ -644,15 +644,16 @@ bool TracyLlm::OnResponse( const ollama::response& response )
                     auto tool = lines[0];
                     lines.erase( lines.begin() );
                     const auto reply = HandleToolCalls( tool, lines );
+                    const auto output = "<tool_output>\n" + reply.reply;
                     if( reply.image.empty() )
                     {
-                        m_chat->emplace_back( ollama::message( "tool", reply.reply ) );
+                        m_chat->emplace_back( ollama::message( "user", output ) );
                     }
                     else
                     {
                         std::vector<ollama::image> images;
                         images.emplace_back( ollama::image::from_base64_string( reply.image ) );
-                        m_chat->emplace_back( ollama::message( "tool", reply.reply, images ) );
+                        m_chat->emplace_back( ollama::message( "user", output, images ) );
                     }
 
                     m_jobs.emplace_back( WorkItem {

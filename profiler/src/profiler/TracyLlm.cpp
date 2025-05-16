@@ -316,7 +316,13 @@ void TracyLlm::Draw()
             if( isToolResponse )
             {
                 ImGui::PushID( idx );
-                if( ImGui::TreeNode( "Tool response..." ) )
+                auto expand = ImGui::TreeNode( "Tool response..." );
+                if( line.contains( "images" ) )
+                {
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted( ICON_FA_FILE_IMAGE );
+                }
+                if( expand )
                 {
                     ImGui::PushFont( m_font );
                     ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() + sizeof( "<tool_output>" ) );

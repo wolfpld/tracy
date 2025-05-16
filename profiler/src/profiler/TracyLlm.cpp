@@ -869,6 +869,7 @@ std::string TracyLlm::FetchWebPage( const std::string& url )
     curl_easy_setopt( curl, CURLOPT_TIMEOUT, 10 );
     curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
     curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
+    curl_easy_setopt( curl, CURLOPT_USERAGENT, "Tracy Profiler" );
 
     auto res = curl_easy_perform( curl );
 

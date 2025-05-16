@@ -605,7 +605,7 @@ static std::vector<std::string> SplitLines( const std::string& str )
 
 bool TracyLlm::OnResponse( const ollama::response& response )
 {
-    std::lock_guard lock( m_lock );
+    std::unique_lock lock( m_lock );
 
     if( m_stop )
     {
@@ -643,8 +643,10 @@ bool TracyLlm::OnResponse( const ollama::response& response )
                     isTool = true;
                     auto tool = lines[0];
                     lines.erase( lines.begin() );
+                    lock.unlock();
                     const auto reply = HandleToolCalls( tool, lines );
                     const auto output = "<tool_output>\n" + reply.reply;
+                    lock.lock();
                     if( reply.image.empty() )
                     {
                         m_chat->emplace_back( ollama::message( "user", output ) );

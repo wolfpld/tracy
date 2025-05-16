@@ -120,7 +120,6 @@ private:
     bool m_busy = false;
     bool m_responding = false;
     bool m_stop = false;
-    bool m_wasUpdated = false;
     bool m_focusInput = false;
     int m_chatId = 0;
     int m_usedCtx = 0;

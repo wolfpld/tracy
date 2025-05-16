@@ -414,10 +414,9 @@ void TracyLlm::Draw()
             idx++;
         }
 
-        if( m_wasUpdated )
+        if( ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
         {
             ImGui::SetScrollHereY( 1.f );
-            m_wasUpdated = false;
         }
         ImGui::PopID();
     }
@@ -460,7 +459,6 @@ void TracyLlm::Draw()
                 m_chat->emplace_back( ollama::message( "user", m_input ) );
                 *m_input = 0;
                 m_responding = true;
-                m_wasUpdated = true;
 
                 m_jobs.emplace_back( WorkItem {
                     .task = Task::SendMessage,
@@ -576,7 +574,6 @@ void TracyLlm::SendMessage( const ollama::messages& messages )
         m_chat->emplace_back( ollama::message( "error", e.what() ) );
         m_responding = false;
         m_stop = false;
-        m_wasUpdated = true;
         return;
     }
 
@@ -621,7 +618,6 @@ bool TracyLlm::OnResponse( const ollama::response& response )
     auto responseStr = response.as_simple_string();
     std::erase( responseStr, '\r' );
     content = str + responseStr;
-    m_wasUpdated = true;
     m_usedCtx++;
 
     auto& json = response.as_json();

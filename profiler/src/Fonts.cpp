@@ -30,7 +30,7 @@ void LoadFonts( float scale )
         0
     };
     static const ImWchar rangesFixed[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
+        0x0020, 0x024F, // Basic Latin + Latin Supplement + Latin Extended A + Latin Extended B
         0x2026, 0x2026, // ellipsis
         0
     };

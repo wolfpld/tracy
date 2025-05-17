@@ -226,7 +226,8 @@ void TracyLlm::Draw()
     else
     {
         ImGui::PushID( m_chatId );
-        int idx = 0;
+        int cacheIdx = 0;
+        int treeIdx = 0;
         int num = 0;
         bool first = true;
         bool wasToolResponse = false;
@@ -325,7 +326,7 @@ void TracyLlm::Draw()
 
             if( isToolResponse )
             {
-                ImGui::PushID( idx );
+                ImGui::PushID( treeIdx++ );
                 auto expand = ImGui::TreeNode( "Tool response..." );
                 if( line.contains( "images" ) )
                 {
@@ -345,8 +346,8 @@ void TracyLlm::Draw()
             {
                 const auto& content = line["content"].get_ref<const std::string&>();
 
-                auto cit = m_chatCache.find( idx );
-                if( cit == m_chatCache.end() ) cit = m_chatCache.emplace( idx, ChatCache {} ).first;
+                auto cit = m_chatCache.find( cacheIdx );
+                if( cit == m_chatCache.end() ) cit = m_chatCache.emplace( cacheIdx, ChatCache {} ).first;
                 auto& cache = cit->second;
 
                 if( cache.parsedLen != content.size() )
@@ -369,7 +370,7 @@ void TracyLlm::Draw()
                         if( line == "<think>" )
                         {
                             ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
-                            ImGui::PushID( idx );
+                            ImGui::PushID( treeIdx++ );
                             if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
                             {
                                 LineContext thinkCtx = {};
@@ -392,7 +393,7 @@ void TracyLlm::Draw()
                         else if( line == "<tool>" )
                         {
                             ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
-                            ImGui::PushID( idx );
+                            ImGui::PushID( treeIdx++ );
                             if( ImGui::TreeNode( "Tool query..." ) )
                             {
                                 ImGui::PushFont( m_font );
@@ -427,7 +428,7 @@ void TracyLlm::Draw()
             }
             ImGui::PopStyleColor();
             ImGui::EndGroup();
-            idx++;
+            cacheIdx++;
         }
 
         if( ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )

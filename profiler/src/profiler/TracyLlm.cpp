@@ -188,6 +188,8 @@ void TracyLlm::Draw()
         ImGui::SetNextItemWidth( 40 * scale );
         if( ImGui::InputFloat( "##temperature", &m_temperature, 0, 0, "%.2f" ) ) m_temperature = std::clamp( m_temperature, 0.f, 2.f );
 
+        ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_netAccess );
+
         ImGui::TreePop();
     }
 
@@ -917,6 +919,8 @@ std::string TracyLlm::FetchWebPage( const std::string& url )
 
 TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query, const std::string& lang )
 {
+    if( !m_netAccess ) return { .reply = "Internet access is disabled by the user." };
+
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
 
@@ -968,6 +972,8 @@ TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query, const std::str
 
 std::string TracyLlm::GetWikipedia( std::string page, const std::string& lang )
 {
+    if( !m_netAccess ) return "Internet access is disabled by the user.";
+
     std::ranges::replace( page, ' ', '_' );
     auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
 
@@ -989,6 +995,8 @@ static std::string RemoveNewline( std::string str )
 
 std::string TracyLlm::SearchWeb( std::string query )
 {
+    if( !m_netAccess ) return "Internet access is disabled by the user.";
+
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + UrlEncode( query ) );
 

@@ -126,6 +126,7 @@ private:
     int m_usedCtx = 0;
     float m_temperature = 1.0f;
     bool m_setTemperature = false;
+    bool m_netAccess = true;
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;

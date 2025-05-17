@@ -893,37 +893,50 @@ TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query, const std::str
 {
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
+
     auto json = nlohmann::json::parse( response );
-    std::string reply = "No results found";
+    if( !json.contains( "pages" ) ) return { .reply = "No results found" };
+
+    auto& page = json["pages"];
+    if( page.size() == 0 ) return { .reply = "No results found" };
+
+    auto& page0 = page[0];
+    if( !page0.contains( "key" ) ) return { .reply = "No results found" };
+
+    const auto key = page0["key"].get_ref<const std::string&>();
+
+    auto summary = FetchWebPage( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
+    auto summaryJson = nlohmann::json::parse( summary );
+
+    if( !summaryJson.contains( "title" ) ) return { .reply = "No results found" };
+
+    nlohmann::json output;
+    output["key"] = key;
+    output["title"] = summaryJson["title"];
+    if( summaryJson.contains( "description" ) ) output["description"] = summaryJson["description"];
+    output["extract"] = summaryJson["extract"];
+
     std::string image;
-    if( json.contains( "pages" ) )
+    if( summaryJson.contains( "thumbnail" ) )
     {
-        auto& page = json["pages"];
-        if( page.size() > 0 )
+        auto& thumb = summaryJson["thumbnail"];
+        if( thumb.contains( "source" ) )
         {
-            auto& page0 = page[0];
-            reply = page0.dump( 2 );
-            if( page0.contains( "thumbnail" ) )
+            auto imgData = FetchWebPage( thumb["source"].get_ref<const std::string&>() );
+            if( !imgData.empty() && imgData[0] != '<' && strncmp( imgData.c_str(), "Error:", 6 ) != 0 )
             {
-                auto& thumb = page0["thumbnail"];
-                if( thumb.contains( "url" ) )
-                {
-                    auto url = "https:" + thumb["url"].get_ref<const std::string&>();
-                    auto imgData = FetchWebPage( url );
-                    if( !imgData.empty() && imgData[0] != '<' && strncmp( imgData.c_str(), "Error:", 6 ) != 0 )
-                    {
-                        size_t b64sz = ( ( 4 * imgData.size() / 3 ) + 3 ) & ~3;
-                        char* b64 = new char[b64sz+1];
-                        b64[b64sz] = 0;
-                        size_t outSz;
-                        base64_encode( (const char*)imgData.data(), imgData.size(), b64, &outSz, 0 );
-                        image = std::string( b64, outSz );
-                        delete[] b64;
-                    }
-                }
+                size_t b64sz = ( ( 4 * imgData.size() / 3 ) + 3 ) & ~3;
+                char* b64 = new char[b64sz+1];
+                b64[b64sz] = 0;
+                size_t outSz;
+                base64_encode( (const char*)imgData.data(), imgData.size(), b64, &outSz, 0 );
+                image = std::string( b64, outSz );
+                delete[] b64;
             }
         }
     }
+
+    const auto reply = output.dump( 2 );
     return { .reply = reply, .image = image };
 }
 

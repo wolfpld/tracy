@@ -3,7 +3,11 @@
 
 #ifndef TRACY_ENABLE
 
-// TODO: Add necessary macros here
+#define TracyCUDAContext(device, queue) nullptr
+#define TracyCUDAContextDestroy(ctx)
+#define TracyCUDAContextName(ctx, name, size)
+
+#define TracyCUDACollect(ctx)
 
 #else
 #include <cupti.h>

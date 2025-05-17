@@ -558,7 +558,7 @@ void TracyLlm::ResetChat()
     m_chat = std::make_unique<ollama::messages>();
     m_chat->emplace_back( ollama::message( "system", std::string( m_systemPrompt->data(), m_systemPrompt->size() ) ) );
     m_chatId++;
-    m_usedCtx = 0;
+    m_usedCtx = m_systemPrompt->size() / 4;
 }
 
 void TracyLlm::SendMessage( const ollama::messages& messages )

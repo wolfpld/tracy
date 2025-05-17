@@ -2,6 +2,10 @@
 #define __TRACYCUDA_HPP__
 
 #ifndef TRACY_ENABLE
+
+// TODO: Add necessary macros here
+
+#else
 #include <cupti.h>
 
 #include <cassert>

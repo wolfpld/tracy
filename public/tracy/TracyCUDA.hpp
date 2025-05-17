@@ -3,7 +3,7 @@
 
 #ifndef TRACY_ENABLE
 
-#define TracyCUDAContext(device, queue) nullptr
+#define TracyCUDAContext() nullptr
 #define TracyCUDAContextDestroy(ctx)
 #define TracyCUDAContextName(ctx, name, size)
 
@@ -1307,6 +1307,15 @@ namespace tracy
     };
 
 }
+
+#define TracyCUDAContext() tracy::CUDACtx::Create()
+#define TracyCUDAContextDestroy(ctx) tracy::CUDACtx::Destroy(ctx)
+#define TracyCUDAContextName(ctx, name, size) ctx->Name(name, size)
+
+#define TracyCUDAStartProfiling(ctx) ctx->StartProfiling()
+#define TracyCUDAStopProfiling(ctx) ctx->StopProfiling()
+
+#define TracyCUDACollect(ctx) ctx->Collect()
 
 #endif
 

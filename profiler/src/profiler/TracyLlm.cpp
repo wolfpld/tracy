@@ -907,9 +907,6 @@ TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query )
                 if( thumb.contains( "url" ) )
                 {
                     auto url = "https:" + thumb["url"].get_ref<const std::string&>();
-                    url = url.substr( 0, url.find_last_of( '/' ) );
-                    auto pos = url.find( "/thumb" );
-                    url.erase( pos, 6 );
                     auto imgData = FetchWebPage( url );
                     if( !imgData.empty() && imgData[0] != '<' && strncmp( imgData.c_str(), "Error:", 6 ) != 0 )
                     {

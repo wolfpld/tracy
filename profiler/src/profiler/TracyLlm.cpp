@@ -298,7 +298,7 @@ void TracyLlm::Draw()
             }
             else if( isUser )
             {
-                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.65f, 0.65f, 0.65f, 1.f ) );
+                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.64f, 0.76f, 0.41f, 1.f ) );
             }
             else if( isError )
             {

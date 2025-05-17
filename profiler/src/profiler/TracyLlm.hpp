@@ -128,6 +128,8 @@ private:
     std::unique_ptr<ollama::messages> m_chat;
     unordered_flat_map<size_t, ChatCache> m_chatCache;
 
+    unordered_flat_map<std::string, std::string> m_webCache;
+
     ImFont* m_font;
     ImFont* m_smallFont;
     ImFont* m_bigFont;

@@ -852,6 +852,9 @@ static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
 
 std::string TracyLlm::FetchWebPage( const std::string& url )
 {
+    auto it = m_webCache.find( url );
+    if( it != m_webCache.end() ) return it->second;
+
     static bool initialized = false;
     if( !initialized )
     {
@@ -884,6 +887,7 @@ std::string TracyLlm::FetchWebPage( const std::string& url )
     {
         response = std::move( buf );
     }
+    m_webCache.emplace( url, response );
 
     curl_easy_cleanup( curl );
     return response;

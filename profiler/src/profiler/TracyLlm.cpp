@@ -568,10 +568,13 @@ void TracyLlm::UpdateModels()
 
 void TracyLlm::ResetChat()
 {
+    auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
+    systemPrompt += "The current time is: " + GetCurrentTime() + "\n";
+
     m_chat = std::make_unique<ollama::messages>();
-    m_chat->emplace_back( ollama::message( "system", std::string( m_systemPrompt->data(), m_systemPrompt->size() ) ) );
+    m_chat->emplace_back( ollama::message( "system", systemPrompt ) );
     m_chatId++;
-    m_usedCtx = m_systemPrompt->size() / 4;
+    m_usedCtx = systemPrompt.size() / 4;
 }
 
 void TracyLlm::SendMessage( const ollama::messages& messages )
@@ -828,7 +831,6 @@ static std::string UrlEncode( const std::string& str )
 
 TracyLlm::ToolReply TracyLlm::HandleToolCalls( const std::string& name, const std::vector<std::string>& args )
 {
-    if( name == "get_current_time" ) return { .reply = GetCurrentTime() };
     if( name == "fetch_web_page" )
     {
         if( args.empty() ) return { .reply = "Missing URL argument" };

@@ -1692,6 +1692,16 @@ OpenCL zones can be created with the \texttt{TracyCLZone(ctx, name)} where \text
 
 Similar to Vulkan and OpenGL, you also need to periodically collect the OpenCL events using the \texttt{TracyCLCollect(ctx)} macro. An excellent place to perform this operation is after a \texttt{clFinish} since this will ensure that any previously queued OpenCL commands will have finished by this point.
 
+\subsubsection{CUDA}
+
+CUDA support is enabled by including the \texttt{public/tracy/TracyCUDA.hpp} header file. Tracing CUDA requires the creation of a Tracy CUDA context using the macro \texttt{TracyCUDAContext()}, which returns an instance of a \texttt{TracyCUDACtx} object. This context must be used when profiling CUDA events. Cleanup is handled using the \texttt{TracyCUDAContextDestroy(ctx)} macro. To assign a custom name to the context, use the \texttt{TracyCUDAContextName(ctx, name, size)} macro.
+
+To begin profiling CUDA events, call the \texttt{TracyCUDAStartProfiling(ctx)} macro. This initiates the profiling of CUDA events, and GPU zones for key CUDA activities will be created automatically.
+
+The \texttt{TracyCUDACollect(ctx)} macro flushes CUDA activities and collects the associated events, resulting in the creation of GPU zones. This step is optional, as the collector thread is enabled by default.
+
+To stop profiling, call the \texttt{TracyCUDAStopProfiling(ctx)} macro. This terminates the profiling of CUDA events.
+
 \subsubsection{Multiple zones in one scope}
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).

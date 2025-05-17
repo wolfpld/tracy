@@ -6,6 +6,7 @@ option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
 option(NO_STATISTICS "Disable calculation of statistics" OFF)
 option(SELF_PROFILE "Enable self-profiling" OFF)
+option(SANITIZE "Sanitizer parameters" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
@@ -20,6 +21,11 @@ project(
 if(SELF_PROFILE)
     add_definitions(-DTRACY_ENABLE)
     add_compile_options(-g -O3 -fno-omit-frame-pointer)
+endif()
+
+if(SANITIZE)
+    add_compile_options(-fsanitize=${SANITIZE} -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=${SANITIZE} -fno-omit-frame-pointer)
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)

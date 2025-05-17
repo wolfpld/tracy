@@ -103,6 +103,7 @@ private:
     std::string FetchWebPage( const std::string& url );
     ToolReply SearchWikipedia( std::string query, const std::string& lang );
     std::string GetWikipedia( std::string page, const std::string& lang );
+    std::string SearchWeb( std::string query );
 
     std::unique_ptr<Ollama> m_ollama;
 

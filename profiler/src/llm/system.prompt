@@ -51,6 +51,15 @@ These are the tools available to you. There are no other tools, and you do not h
         "description": "The language code."
       }
     ]
+  },
+  {
+    "name": "search_web",
+    "description": "Search the web with given query.",
+    "parameters": [
+      {
+        "description": "Search query."
+      }
+    ]
   }
 ]
 

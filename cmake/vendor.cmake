@@ -12,6 +12,7 @@ option(DOWNLOAD_CAPSTONE "Force download capstone" ON)
 option(DOWNLOAD_GLFW "Force download glfw" OFF)
 option(DOWNLOAD_FREETYPE "Force download freetype" OFF)
 option(DOWNLOAD_LIBCURL "Force download libcURL" OFF)
+option(DOWNLOAD_PUGIXML "Force download pugixml" OFF)
 
 # capstone
 
@@ -137,6 +138,24 @@ else()
     target_link_libraries(TracyLibcurl INTERFACE curl)
 endif()
 
+# pugixml
+
+pkg_check_modules(PUGIXML pugixml)
+if (PUGIXML_FOUND AND NOT DOWNLOAD_PUGIXML)
+    add_library(TracyPugixml INTERFACE)
+    target_include_directories(TracyPugixml INTERFACE ${PUGIXML_INCLUDE_DIRS})
+    target_link_libraries(TracyPugixml INTERFACE ${PUGIXML_LINK_LIBRARIES})
+else()
+    CPMAddPackage(
+        NAME pugixml
+        GITHUB_REPOSITORY zeux/pugixml
+        GIT_TAG v1.15
+        EXCLUDE_FROM_ALL TRUE
+    )
+    add_library(TracyPugixml INTERFACE)
+    target_link_libraries(TracyPugixml INTERFACE pugixml)
+endif()
+
 # Diff Template Library
 
 set(DTL_DIR "${ROOT_DIR}/dtl")
@@ -239,3 +258,14 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
 )
 set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVE})
+
+# tidy
+
+CPMAddPackage(
+    NAME tidy
+    GITHUB_REPOSITORY htacg/tidy-html5
+    GIT_TAG 5.8.0
+    PATCHES
+        "${CMAKE_CURRENT_LIST_DIR}/tidy-cmake.patch"
+    EXCLUDE_FROM_ALL TRUE
+)

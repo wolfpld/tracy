@@ -3,7 +3,10 @@
 #include <ollama.hpp>
 #include <stdint.h>
 #include <stdlib.h>
+#include <pugixml.hpp>
 #include <ranges>
+#include <tidy.h>
+#include <tidybuffio.h>
 #include <time.h>
 
 #include "TracyConfig.hpp"
@@ -840,6 +843,11 @@ TracyLlm::ToolReply TracyLlm::HandleToolCalls( const std::string& name, const st
         if( args.size() < 2 ) return { .reply = "Missing language argument" };
         return { .reply = GetWikipedia( args[0], args[1] ) };
     }
+    if( name == "search_web" )
+    {
+        if( args.empty() ) return { .reply = "Missing search term argument" };
+        return { .reply = SearchWeb( args[0] ) };
+    }
     return { .reply = "Unknown tool call: " + name };
 }
 
@@ -969,6 +977,82 @@ std::string TracyLlm::GetWikipedia( std::string page, const std::string& lang )
 
     if( res.size() > maxSize ) res = res.substr( 0, maxSize );
     return res;
+}
+
+static std::string RemoveNewline( std::string str )
+{
+    std::erase( str, '\r' );
+    std::ranges::replace( str, '\n', ' ' );
+    return str;
+}
+
+std::string TracyLlm::SearchWeb( std::string query )
+{
+    std::ranges::replace( query, ' ', '+' );
+    const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + UrlEncode( query ) );
+
+    TidyBuffer err = {};
+    tidyBufInit( &err );
+
+    TidyDoc td = tidyCreate();
+    tidyOptSetBool( td, TidyXhtmlOut, yes );
+    tidyOptSetBool( td, TidyLowerLiterals, yes );
+    tidyOptSetBool( td, TidyMark, no );
+    tidyOptSetBool( td, TidyHideComments, yes );
+    tidySetErrorBuffer( td, &err );
+
+    if( tidyParseString( td, response.c_str() ) == 2 )
+    {
+        auto out = std::string( (const char*)err.bp );
+        tidyBufFree( &err );
+        tidyRelease( td );
+        return out;
+    }
+
+    TidyBuffer buf = {};
+    tidyBufInit( &buf );
+    tidyCleanAndRepair( td );
+    tidySaveBuffer( td, &buf );
+
+    auto tidy = std::string( (const char*)buf.bp );
+
+    tidyBufFree( &buf );
+    tidyBufFree( &err );
+    tidyRelease( td );
+
+    auto doc = std::make_unique<pugi::xml_document>();
+    if( !doc->load_string( tidy.c_str() ) )
+    {
+        return "Error: Failed to parse HTML";
+    }
+
+    const auto titles = doc->select_nodes( "//a[@class='result-link']" );
+    const auto snippets = doc->select_nodes( "//td[@class='result-snippet']" );
+    const auto urls = doc->select_nodes( "//span[@class='link-text']" );
+
+    const auto sz = titles.size();
+    if( sz != snippets.size() || sz != urls.size() )
+    {
+        return "Error: Failed to parse HTML";
+    }
+
+    nlohmann::json json;
+
+    for( size_t i = 0; i < sz; i++ )
+    {
+        auto title = titles[i].node();
+        auto snippet = snippets[i].node();
+        auto url = urls[i].node();
+
+        nlohmann::json result;
+        result["title"] = RemoveNewline( title.text().as_string() );
+        result["snippet"] = RemoveNewline( snippet.text().as_string() );
+        result["url"] = RemoveNewline( url.text().as_string() );
+
+        json[i] = result;
+    }
+
+    return json.dump( 2 );
 }
 
 }

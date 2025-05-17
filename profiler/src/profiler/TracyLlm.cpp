@@ -197,6 +197,8 @@ void TracyLlm::Draw()
         PrintStringPercent( buf, m_usedCtx / (float)ctxSize * 100 );
         tracy::TextDisabledUnformatted( buf );
         TextFocused( "Available context size:", RealToString( ctxSize ) );
+        ImGui::Separator();
+        tracy::TextDisabledUnformatted( ICON_FA_TRIANGLE_EXCLAMATION " Context use may be an estimate" );
         ImGui::EndTooltip();
     }
 

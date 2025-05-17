@@ -451,8 +451,14 @@ void TracyLlm::Draw()
             ImGui::SetKeyboardFocusHere( 0 );
             m_focusInput = false;
         }
-        ImGui::PushItemWidth( -1 );
-        if( ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue ) )
+        const char* buttonText = ICON_FA_PAPER_PLANE;
+        auto buttonSize = ImGui::CalcTextSize( buttonText );
+        buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
+        ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
+        bool send = ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        ImGui::SameLine();
+        send |= ImGui::Button( buttonText );
+        if( send )
         {
             auto ptr = m_input;
             while( *ptr )

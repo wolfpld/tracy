@@ -1247,7 +1247,7 @@ namespace tracy
             tracyMemWrite(item->gpuNewContext.gpuTime, (int64_t)tCUpti); // TODO: Be more careful about this cast
             tracyMemWrite(item->gpuNewContext.thread, (uint32_t)0);
             tracyMemWrite(item->gpuNewContext.period, 1.0f);
-            tracyMemWrite(item->gpuNewContext.type, GpuContextType::Direct3D12);    // TODO: add a CUDA type
+            tracyMemWrite(item->gpuNewContext.type, GpuContextType::CUDA);    // TODO: add a CUDA type
             tracyMemWrite(item->gpuNewContext.context, m_tracyGpuContext);
             #if TRACY_CUDA_CALIBRATED_CONTEXT
             tracyMemWrite(item->gpuNewContext.flags, GpuContextCalibration);

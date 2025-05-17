@@ -1,6 +1,7 @@
 #ifndef __TRACYCUDA_HPP__
 #define __TRACYCUDA_HPP__
 
+#ifndef TRACY_ENABLE
 #include <cupti.h>
 
 #include <cassert>
@@ -1298,5 +1299,7 @@ namespace tracy
     };
 
 }
+
+#endif
 
 #endif

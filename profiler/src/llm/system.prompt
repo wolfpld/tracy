@@ -26,13 +26,15 @@ These are the tools available to you. There are no other tools, and you do not h
 - Get the current time formatted as a string.
   Function: get_current_time
 
-- Search the English Wikipedia with given query. Returns a json response with the 'key' field specifying the wikipedia page name describing the topic. This response only contains a short excerpt about the subject. To get the complete information, you must follow by retrieving the wikipedia article matching the 'key' field.
+- Search the Wikipedia with given query. The 'key' field is the Wikipedia page name.
   Function: search_wikipedia
-  Parameter: The search terms, in English language.
+  Parameter 1: The search terms in the language matching the second parameter.
+  Parameter 2: The language code. For example, 'en' for English or 'pl' for Polish.
 
-- Retrieve the English Wikipedia article on given subject. Returns a json response with a markdown page content in the 'source' key. The response may be trimmed to fit in the context you can process, so it may be incomplete. You are to assume that Wikipedia articles are always up-to-date and follow real-time events.
+- Retrieve the Wikipedia article on given subject. The response may be trimmed.
   Function: get_wikipedia
-  Parameter: The 'key' field from the search response, specifying the topic you want to retrieve.
+  Parameter 1: The 'key' field from the search response, specifying the topic you want to retrieve.
+  Parameter 2: The language code.
 
 After you use the <tool> call, you will receive a response starting with the '<tool_output>' tag. This message is a direct reply to your earlier query. You MUST use this reply to continue your reasoning (possibly making other queries for additional information), so that you can provide the answer. The user does not know and should not know that you are doing tool calls, or what their replies are. You will therefore ONLY refer to the tool replies with a phrase such as "the information I obtained from [source]" or similar wording clearly stating where it is coming from. You will write it only if necessary.
 

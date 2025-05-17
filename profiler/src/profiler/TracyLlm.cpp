@@ -818,12 +818,14 @@ TracyLlm::ToolReply TracyLlm::HandleToolCalls( const std::string& name, const st
     if( name == "search_wikipedia" )
     {
         if( args.empty() ) return { .reply = "Missing search term argument" };
-        return SearchWikipedia( args[0] );
+        if( args.size() < 2 ) return { .reply = "Missing language argument" };
+        return SearchWikipedia( args[0], args[1] );
     }
     if( name == "get_wikipedia" )
     {
         if( args.empty() ) return { .reply = "Missing page name argument" };
-        return { .reply = GetWikipedia( args[0] ) };
+        if( args.size() < 2 ) return { .reply = "Missing language argument" };
+        return { .reply = GetWikipedia( args[0], args[1] ) };
     }
     return { .reply = "Unknown tool call: " + name };
 }
@@ -887,10 +889,10 @@ std::string TracyLlm::FetchWebPage( const std::string& url )
     return response;
 }
 
-TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query )
+TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query, const std::string& lang )
 {
     std::ranges::replace( query, ' ', '+' );
-    const auto response = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
+    const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
     auto json = nlohmann::json::parse( response );
     std::string reply = "No results found";
     std::string image;
@@ -925,10 +927,10 @@ TracyLlm::ToolReply TracyLlm::SearchWikipedia( std::string query )
     return { .reply = reply, .image = image };
 }
 
-std::string TracyLlm::GetWikipedia( std::string page )
+std::string TracyLlm::GetWikipedia( std::string page, const std::string& lang )
 {
     std::ranges::replace( page, ' ', '_' );
-    auto res = FetchWebPage( "https://en.wikipedia.org/w/rest.php/v1/page/" + page );
+    auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
 
     // Limit the size of the response to avoid exceeding the context size
     // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.

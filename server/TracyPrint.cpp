@@ -71,7 +71,7 @@ static inline void PrintSmallInt( char*& buf, uint64_t v )
 
 static inline void PrintSmallInt0( char*& buf, uint64_t v )
 {
-    assert( v < uint64_t(1000ll) );
+    assert( v < 1000 );
     if( v >= 100 )
     {
         memcpy( buf, IntTable100 + v/10*2, 2 );
@@ -157,13 +157,13 @@ static inline void PrintSecondsFrac( char*& buf, uint64_t v )
 
 uint64_t _int64_abs( int64_t x )
 {
-    if( x == std::numeric_limits<int64_t>::min() )
+    if( x < 0 )
     {
-        return -(x + 1) + 1;
-    }
-    else if( x < 0 )
-    {
-        return -x;
+        // `-x` does not work if `x` is `std::numeric_limits<int64_t>::min()`,
+        // see https://github.com/wolfpld/tracy/pull/1040
+        // This works though:
+        // https://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs
+        return -(uint64_t)x;
     }
     else
     {

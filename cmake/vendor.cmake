@@ -132,6 +132,7 @@ else()
             "BUILD_SHARED_LIBS OFF"
             "HTTP_ONLY ON"
             "CURL_ZSTD OFF"
+            "CURL_USE_LIBPSL OFF"
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyLibcurl INTERFACE)

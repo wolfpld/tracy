@@ -244,6 +244,8 @@ CPMAddPackage(
     GITHUB_REPOSITORY jmont-dev/ollama-hpp
     VERSION 0.9.5 
     DOWNLOAD_ONLY TRUE
+    PATCHES
+        "${CMAKE_CURRENT_LIST_DIR}/ollama-hpp-string.patch"
 )
 
 # base64

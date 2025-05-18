@@ -136,7 +136,7 @@ else()
         EXCLUDE_FROM_ALL TRUE
     )
     add_library(TracyLibcurl INTERFACE)
-    target_link_libraries(TracyLibcurl INTERFACE curl)
+    target_link_libraries(TracyLibcurl INTERFACE libcurl_static)
     target_include_directories(TracyLibcurl INTERFACE ${libcurl_SOURCE_DIR}/include)
 endif()
 

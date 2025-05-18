@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "TracyEmbed.hpp"
+#include "TracyLlmTools.hpp"
 #include "tracy_robin_hood.h"
 
 struct ImFont;
@@ -52,12 +53,6 @@ class TracyLlm
         bool codeBlock;
     };
 
-    struct ToolReply
-    {
-        std::string reply;
-        std::string image;
-    };
-
 public:
     struct LlmModel
     {
@@ -96,14 +91,6 @@ private:
     void PrintLine( LineContext& ctx, const std::string& str, int num );
     void CleanContext( LineContext& ctx);
 
-    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args );
-
-    std::string GetCurrentTime();
-    std::string FetchWebPage( const std::string& url );
-    ToolReply SearchWikipedia( std::string query, const std::string& lang );
-    std::string GetWikipedia( std::string page, const std::string& lang );
-    std::string SearchWeb( std::string query );
-
     std::unique_ptr<Ollama> m_ollama;
 
     mutable std::mutex m_modelsLock;
@@ -125,19 +112,18 @@ private:
     int m_usedCtx = 0;
     float m_temperature = 1.0f;
     bool m_setTemperature = false;
-    bool m_netAccess = true;
 
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;
     unordered_flat_map<size_t, ChatCache> m_chatCache;
-
-    unordered_flat_map<std::string, std::string> m_webCache;
 
     ImFont* m_font;
     ImFont* m_smallFont;
     ImFont* m_bigFont;
 
     std::shared_ptr<EmbedData> m_systemPrompt;
+
+    TracyLlmTools m_tools;
 };
 
 }

@@ -60,6 +60,7 @@ set(SERVER_FILES
     TracyFilesystem.cpp
     TracyImGui.cpp
     TracyLlm.cpp
+    TracyLlmTools.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
     TracyProtoHistory.cpp

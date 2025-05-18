@@ -119,14 +119,17 @@ void TracyLlm::Draw()
     auto& style = ImGui::GetStyle();
     std::lock_guard lock( m_lock );
 
-    if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
+    if( !m_models.empty() )
     {
-        if( m_responding ) m_stop = true;
-        ResetChat();
-        m_chatCache.clear();
-        *m_input = 0;
+        if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
+        {
+            if( m_responding ) m_stop = true;
+            ResetChat();
+            m_chatCache.clear();
+            *m_input = 0;
+        }
+        ImGui::SameLine();
     }
-    ImGui::SameLine();
     if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reload models" ) )
     {
         if( m_responding ) m_stop = true;
@@ -135,6 +138,22 @@ void TracyLlm::Draw()
             .callback = [this] { UpdateModels(); }
         } );
         m_cv.notify_all();
+    }
+
+    if( m_models.empty() )
+    {
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
+        TextCentered( ICON_FA_WORM );
+        ImGui::Spacing();
+        TextCentered( "No models available." );
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 1.5f ) );
+        ImGui::PopFont();
+        ImGui::TextWrapped( "You need to retrieve at least one model with the ollama tools before you can use this feature." );
+        ImGui::TextWrapped( "Models can be downloaded by running the 'ollama pull <model>' command." );
+        ImGui::TextWrapped( "The https://ollama.com/ website contains a list of available models. The 'gemma3' model works quite well." );
+        ImGui::End();
+        return;
     }
 
     ImGui::SameLine();

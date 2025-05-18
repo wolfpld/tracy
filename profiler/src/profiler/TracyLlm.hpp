@@ -10,11 +10,10 @@
 #include <thread>
 #include <vector>
 
-#include <imgui.h>
-
 #include "TracyEmbed.hpp"
 #include "tracy_robin_hood.h"
 
+struct ImFont;
 class Ollama;
 
 namespace ollama

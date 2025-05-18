@@ -137,6 +137,7 @@ else()
     )
     add_library(TracyLibcurl INTERFACE)
     target_link_libraries(TracyLibcurl INTERFACE curl)
+    target_include_directories(TracyLibcurl INTERFACE ${libcurl_SOURCE_DIR}/include)
 endif()
 
 # pugixml

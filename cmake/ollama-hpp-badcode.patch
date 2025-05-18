@@ -1,0 +1,13 @@
+diff --git i/include/ollama.hpp w/include/ollama.hpp
+index eaa7a51..9c8ca18 100644
+--- i/include/ollama.hpp
++++ w/include/ollama.hpp
+@@ -851,7 +848,7 @@ class Ollama
+         }
+         else
+         {
+-            throw ollama::exception("Error retrieving version: "+res->status);
++            throw ollama::exception("Error retrieving version: "+std::to_string(res->status));
+         }
+ 
+         return version;

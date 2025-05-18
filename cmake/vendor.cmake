@@ -246,6 +246,7 @@ CPMAddPackage(
     DOWNLOAD_ONLY TRUE
     PATCHES
         "${CMAKE_CURRENT_LIST_DIR}/ollama-hpp-string.patch"
+        "${CMAKE_CURRENT_LIST_DIR}/ollama-hpp-badcode.patch"
 )
 
 # base64

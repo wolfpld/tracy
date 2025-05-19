@@ -8,6 +8,9 @@ struct FontData
     ImFont* big;
     ImFont* small;
     ImFont* mono;
+    ImFont* bold;
+    ImFont* boldItalic;
+    ImFont* italic;
 };
 
 extern FontData g_fonts;

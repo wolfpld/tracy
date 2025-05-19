@@ -10,6 +10,9 @@
 #include "data/FontFixed.hpp"
 #include "data/FontIcons.hpp"
 #include "data/FontNormal.hpp"
+#include "data/FontBold.hpp"
+#include "data/FontBoldItalic.hpp"
+#include "data/FontItalic.hpp"
 
 FontData g_fonts;
 
@@ -51,6 +54,9 @@ void LoadFonts( float scale )
     auto fontFixed = Unembed( FontFixed );
     auto fontIcons = Unembed( FontIcons );
     auto fontNormal = Unembed( FontNormal );
+    auto fontBold = Unembed( FontBold );
+    auto fontBoldItalic = Unembed( FontBoldItalic );
+    auto fontItalic = Unembed( FontItalic );
 
     io.Fonts->Clear();
 
@@ -63,6 +69,14 @@ void LoadFonts( float scale )
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
 
     g_fonts.small = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 10.0f * scale ), &configBasic );
+
+    g_fonts.bold = io.Fonts->AddFontFromMemoryTTF( (void*)fontBold->data(), fontBold->size(), round( 15.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
+
+    g_fonts.boldItalic = io.Fonts->AddFontFromMemoryTTF( (void*)fontBoldItalic->data(), fontBoldItalic->size(), round( 15.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
+
+    g_fonts.italic = io.Fonts->AddFontFromMemoryTTF( (void*)fontItalic->data(), fontItalic->size(), round( 15.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
 
     ImGui_ImplOpenGL3_DestroyFontsTexture();

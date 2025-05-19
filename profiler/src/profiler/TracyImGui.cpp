@@ -127,4 +127,24 @@ void PrintSource( const std::vector<Tokenizer::Line>& lines )
     }
 }
 
+void PrintTextWrapped( const char* text, const char* end )
+{
+    if( !end ) end = text + strlen( text );
+
+    auto scale = ImGui::GetIO().FontGlobalScale;
+    auto left = ImGui::GetContentRegionAvail().x;
+    auto endLine = ImGui::GetFont()->CalcWordWrapPositionA( scale, text, end, left );
+    ImGui::TextUnformatted( text, endLine );
+
+    left = ImGui::GetContentRegionAvail().x;
+    while( endLine < end )
+    {
+        text = endLine;
+        if( *text == ' ' ) text++;
+        endLine = ImGui::GetFont()->CalcWordWrapPositionA( scale, text, end, left );
+        if( text == endLine ) endLine++;
+        ImGui::TextUnformatted( text, endLine );
+    }
+}
+
 }

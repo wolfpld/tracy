@@ -440,7 +440,7 @@ void TracyLlm::Draw()
             }
             else
             {
-                ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() );
+                PrintMarkdown( line["content"].get_ref<const std::string&>().c_str() );
             }
             ImGui::PopStyleColor();
             ImGui::EndGroup();
@@ -803,10 +803,60 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
                 ImGui::SameLine();
                 ptr++;
             }
-            ImGui::TextUnformatted( ptr );
+            PrintMarkdown( ptr );
         }
         ImGui::PopTextWrapPos();
     }
+}
+
+void TracyLlm::PrintMarkdown( const char* str )
+{
+    auto& style = ImGui::GetStyle();
+    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( style.ItemSpacing.x, 0.0f ) );
+
+    auto end = str + strlen( str );
+    bool first = true;
+    bool isCode = false;
+
+    while( str != end )
+    {
+        if( first )
+        {
+            first = false;
+        }
+        else
+        {
+            ImGui::SameLine( 0, 0 );
+        }
+
+        auto next = str;
+        while( next != end && *next != '`' ) next++;
+        if( *next == '`' )
+        {
+            PrintTextWrapped( str, next );
+            str = next + 1;
+
+            isCode = !isCode;
+            if( isCode )
+            {
+                ImGui::PushFont( m_font );
+            }
+            else
+            {
+                ImGui::PopFont();
+            }
+        }
+        else
+        {
+            PrintTextWrapped( str, next );
+            str = next;
+        }
+    }
+
+    if( isCode ) ImGui::PopFont();
+
+    ImGui::PopStyleVar();
+    ImGui::SetCursorPosY( ImGui::GetCursorPosY() + style.ItemSpacing.y );
 }
 
 void TracyLlm::CleanContext( LineContext& ctx)

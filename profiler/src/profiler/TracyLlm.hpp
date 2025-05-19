@@ -89,6 +89,7 @@ private:
     void UpdateCache( ChatCache& cache, const std::string& str );
 
     void PrintLine( LineContext& ctx, const std::string& str, int num );
+    void PrintMarkdown( const char* str );
     void CleanContext( LineContext& ctx);
 
     std::unique_ptr<Ollama> m_ollama;

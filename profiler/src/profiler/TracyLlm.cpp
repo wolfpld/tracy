@@ -755,6 +755,13 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
             char tmp[64];
             snprintf( tmp, sizeof( tmp ), "##ollama_code_%d", num );
             ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
+            if( ptr[3] )
+            {
+                ImGui::PushFont( g_fonts.small );
+                ImGui::SetCursorPosX( ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize( ptr + 3 ).x );
+                ImGui::TextUnformatted( ptr + 3 );
+                ImGui::PopFont();
+            }
             ImGui::PushFont( g_fonts.mono );
             ctx.codeBlock = true;
         }

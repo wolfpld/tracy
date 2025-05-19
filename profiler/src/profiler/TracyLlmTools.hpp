@@ -31,6 +31,7 @@ private:
     std::string FetchWebPage( const std::string& url );
     ToolReply SearchWikipedia( std::string query, const std::string& lang );
     std::string GetWikipedia( std::string page, const std::string& lang );
+    std::string GetDictionary( std::string word, const std::string& lang );
     std::string SearchWeb( std::string query );
 
     unordered_flat_map<std::string, std::string> m_webCache;

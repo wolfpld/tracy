@@ -59,7 +59,7 @@ These are the tools you can use. *You have no access to any other tools or means
         "description": "The search terms in the language matching the second parameter."
       },
       {
-        "description": "The language code matching the search query. For example, `en` for English or `pl` for Polish."
+        "description": "Language code matching the search query. For example, `en` for English or `pl` for Polish."
       }
     ]
   },
@@ -71,7 +71,19 @@ These are the tools you can use. *You have no access to any other tools or means
         "description": "The `key` field from the search response, specifying the topic you want to retrieve.",
       },
       {
-        "description": "The language code."
+        "description": "Language code."
+      }
+    ]
+  },
+  {
+    "name": "get_dictionary",
+    "description": "Retrieve description of a word from dictionary.",
+    "parameters": [
+      {
+        "description": "Word to describe."
+      },
+      {
+        "description": "Language code."
       }
     ]
   },

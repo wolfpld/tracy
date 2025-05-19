@@ -64,6 +64,12 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name
         if( args.size() < 2 ) return { .reply = "Missing language argument" };
         return { .reply = GetWikipedia( args[0], args[1] ) };
     }
+    if( name == "get_dictionary" )
+    {
+        if( args.empty() ) return { .reply = "Missing word argument" };
+        if( args.size() < 2 ) return { .reply = "Missing language argument" };
+        return { .reply = GetDictionary( args[0], args[1] ) };
+    }
     if( name == "search_web" )
     {
         if( args.empty() ) return { .reply = "Missing search term argument" };
@@ -210,6 +216,26 @@ std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& la
     return res;
 }
 
+std::string TracyLlmTools::GetDictionary( std::string word, const std::string& lang )
+{
+    if( !m_netAccess ) return "Internet access is disabled by the user.";
+
+    std::ranges::replace( word, ' ', '+' );
+    const auto response = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/search/page?q=" + UrlEncode( word ) + "&limit=1" );
+
+    auto json = nlohmann::json::parse( response );
+    if( !json.contains( "pages" ) ) return "No results found";
+
+    auto& page = json["pages"];
+    if( page.size() == 0 ) return "No results found";
+
+    auto& page0 = page[0];
+    if( !page0.contains( "key" ) ) return "No results found";
+
+    const auto key = page0["key"].get_ref<const std::string&>();
+    auto res = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/page/" + key );
+
+    const auto maxSize = CalcMaxSize();
     if( res.size() > maxSize ) res = res.substr( 0, maxSize );
     return res;
 }

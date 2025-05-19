@@ -783,7 +783,7 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
             const auto begin = str.c_str();
             ptr = begin;
             while( *ptr == ' ' || *ptr == '\t' ) ptr++;
-            if( ptr[0] == '*' && ptr[1] == ' ' )
+            if( ( ptr[0] == '*' || ptr[0] == '-' ) && ptr[1] == ' ' )
             {
                 ImGui::TextUnformatted( std::string( ptr - begin, ' ' ).c_str() );
                 ImGui::SameLine();

@@ -245,8 +245,6 @@ void TracyLlm::Draw()
         int cacheIdx = 0;
         int treeIdx = 0;
         int num = 0;
-        bool first = true;
-        bool wasToolResponse = false;
         for( auto& line : *m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
@@ -264,17 +262,6 @@ void TracyLlm::Draw()
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
             const auto isToolResponse = isUser && line["content"].get_ref<const std::string&>().starts_with( "<tool_output>\n" );
-
-            if( first )
-            {
-                first = false;
-            }
-            else if( !isToolResponse && !wasToolResponse )
-            {
-                ImGui::Spacing();
-            }
-
-            wasToolResponse = isToolResponse;
 
             float diff, offset;
             if( isToolResponse )

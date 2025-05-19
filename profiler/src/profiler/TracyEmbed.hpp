@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 

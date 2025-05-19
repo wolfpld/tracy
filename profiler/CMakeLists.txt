@@ -128,6 +128,9 @@ set(PROFILER_FILES
 )
 
 Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt)
+Embed(PROFILER_FILES FontFixed src/font/FiraCode-Retina.ttf)
+Embed(PROFILER_FILES FontIcons src/font/Font\ Awesome\ 6\ Free-Solid-900.otf)
+Embed(PROFILER_FILES FontNormal src/font/Roboto-Regular.ttf)
 
 set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")

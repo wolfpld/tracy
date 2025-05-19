@@ -9,6 +9,7 @@
 #include "TracyTimelineItemPlot.hpp"
 #include "TracyTimelineItemThread.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -403,7 +404,7 @@ void View::DrawTimeline()
     }
 
     const auto vcenter = verticallyCenterTimeline && drawMouseLine && m_viewMode == ViewMode::Paused;
-    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax, m_smallFont );
+    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax, g_fonts.small );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;

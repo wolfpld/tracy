@@ -3,6 +3,7 @@
 #include "TracyPrint.hpp"
 #include "TracyTexture.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -168,7 +169,7 @@ bool View::DrawConnection()
 
     if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );

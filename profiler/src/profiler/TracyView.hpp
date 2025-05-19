@@ -111,14 +111,12 @@ public:
     using SetScaleCallback = void(*)( float );
     using AttentionCallback = void(*)();
 
-    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr );
-    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr );
+    View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr );
     ~View();
 
     bool Draw();
     bool WasActive() const;
-
-    void UpdateFont( ImFont* fixed, ImFont* small, ImFont* big ) { m_fixedFont = fixed; m_smallFont = small; m_bigFont = big; }
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void ViewSource( const char* fileName, int line );
@@ -573,10 +571,6 @@ private:
     std::unique_ptr<SourceView> m_sourceView;
     const char* m_sourceViewFile;
     bool m_uarchSet = false;
-
-    ImFont* m_smallFont;
-    ImFont* m_bigFont;
-    ImFont* m_fixedFont;
 
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;

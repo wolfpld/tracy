@@ -22,6 +22,7 @@
 #include "TracyView.hpp"
 #include "../server/TracySysUtil.hpp"
 #include "../public/common/TracyStackFrames.hpp"
+#include "../Fonts.hpp"
 
 #include "imgui_internal.h"
 #include "IconsFontAwesome6.h"
@@ -35,7 +36,7 @@ namespace tracy
 
 double s_time = 0;
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
     : m_worker( addr, port, config.memoryLimit == 0 ? -1 : ( config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
@@ -47,9 +48,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_messagesScrollBottom( true )
     , m_reactToCrash( true )
     , m_reactToLostConnection( true )
-    , m_smallFont( smallFont )
-    , m_bigFont( bigFont )
-    , m_fixedFont( fixedWidth )
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
@@ -68,7 +66,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     SetupConfig( config );
 }
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
@@ -77,9 +75,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_tc( *this, m_worker, config.threadedRendering )
     , m_frames( m_worker.GetFramesBase() )
     , m_messagesScrollBottom( false )
-    , m_smallFont( smallFont )
-    , m_bigFont( bigFont )
-    , m_fixedFont( fixedWidth )
     , m_stcb( stcb )
     , m_sscb( sscb )
     , m_acb( acb )
@@ -321,7 +316,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
@@ -347,7 +342,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client not ready", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_LIGHTBULB );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
@@ -373,7 +368,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client disconnected", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_HANDSHAKE );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
@@ -400,7 +395,7 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         const auto& data = m_worker.GetFailureData();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_SKULL );
         ImGui::PopFont();
         ImGui::TextUnformatted( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
@@ -583,7 +578,7 @@ bool View::Draw()
     {
         assert( !m_filenameStaging.empty() );
         auto fn = m_filenameStaging.c_str();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextFocused( "Path:", fn );
         ImGui::PopFont();
         ImGui::Separator();
@@ -648,7 +643,7 @@ bool View::Draw()
     if( saveFailed ) ImGui::OpenPopup( "Save failed" );
     if( ImGui::BeginPopupModal( "Save failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "Could not save trace at the specified location. Try again somewhere else." );
@@ -687,7 +682,7 @@ bool View::DrawImpl()
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, &keepOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse );
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_WIFI );
         ImGui::PopFont();
         ImGui::TextUnformatted( "Waiting for connection..." );
@@ -1156,11 +1151,7 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
-    if( m_llm.m_show )
-    {
-        m_llm.UpdateFont( m_fixedFont, m_smallFont, m_bigFont );
-        m_llm.Draw();
-    }
+    if( m_llm.m_show ) m_llm.Draw();
 
     if( m_setRangePopup.active )
     {
@@ -1331,7 +1322,7 @@ bool View::DrawImpl()
     }
     if( ImGui::BeginPopupModal( "Connection lost!", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         TextCentered( ICON_FA_PLUG );
         ImGui::PopFont();
         ImGui::TextUnformatted(
@@ -1353,11 +1344,7 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 1800 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
-    if( !ImGui::GetCurrentWindowRead()->SkipItems )
-    {
-        m_sourceView->UpdateFont( m_fixedFont, m_smallFont, m_bigFont );
-        m_sourceView->Render( m_worker, *this );
-    }
+    if( !ImGui::GetCurrentWindowRead()->SkipItems ) m_sourceView->Render( m_worker, *this );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;
 }
@@ -1379,7 +1366,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     if( m_srcHintCache.empty() ) return;
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
     if( separateTooltip ) ImGui::BeginTooltip();
-    ImGui::PushFont( m_fixedFont );
+    ImGui::PushFont( g_fonts.mono );
     auto& lines = m_srcHintCache.get();
     const int start = std::max( 0, (int)srcline - ( before+1 ) );
     const int end = std::min<int>( m_srcHintCache.get().size(), srcline + after );

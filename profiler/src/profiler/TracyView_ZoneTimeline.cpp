@@ -7,6 +7,7 @@
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -569,7 +570,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                     }
                     if( normalized != origSymName && strcmp( normalized, origSymName ) != 0 )
                     {
-                        ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( g_fonts.small );
                         TextDisabledUnformatted( origSymName );
                         ImGui::PopFont();
                     }

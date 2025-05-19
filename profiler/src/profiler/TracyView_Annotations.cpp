@@ -2,6 +2,7 @@
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -83,7 +84,7 @@ void View::DrawAnnotationList()
     if( m_annotations.empty() )
     {
         ImGui::Separator();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_HORSE );
         TextCentered( "No annotations" );

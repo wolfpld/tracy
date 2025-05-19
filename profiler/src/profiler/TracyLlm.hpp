@@ -14,7 +14,6 @@
 #include "TracyLlmTools.hpp"
 #include "tracy_robin_hood.h"
 
-struct ImFont;
 class Ollama;
 
 namespace ollama
@@ -62,8 +61,6 @@ public:
 
     TracyLlm();
     ~TracyLlm();
-
-    void UpdateFont( ImFont* fixed, ImFont* small, ImFont* big ) { m_font = fixed; m_smallFont = small; m_bigFont = big; }
 
     [[nodiscard]] bool IsValid() const { return (bool)m_ollama; }
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock); return m_busy; }
@@ -117,10 +114,6 @@ private:
     char* m_input;
     std::unique_ptr<ollama::messages> m_chat;
     unordered_flat_map<size_t, ChatCache> m_chatCache;
-
-    ImFont* m_font;
-    ImFont* m_smallFont;
-    ImFont* m_bigFont;
 
     std::shared_ptr<EmbedData> m_systemPrompt;
 

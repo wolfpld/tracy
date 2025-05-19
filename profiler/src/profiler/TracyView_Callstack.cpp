@@ -6,6 +6,7 @@
 #include "TracyPrint.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -213,7 +214,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
-                        ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( g_fonts.small );
                         TextDisabledUnformatted( "external" );
                         ImGui::TableNextColumn();
                         if( external == 1 )
@@ -237,7 +238,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                     else
                     {
-                        ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( g_fonts.small );
                         TextDisabledUnformatted( "inline" );
                         ImGui::PopFont();
                     }
@@ -418,7 +419,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            ImGui::PushFont( m_smallFont );
+            ImGui::PushFont( g_fonts.small );
             TextDisabledUnformatted( "external" );
             ImGui::TableNextColumn();
             if( external == 1 )
@@ -565,7 +566,7 @@ void View::CallstackTooltipContents( uint32_t idx )
                 if( frameData->imageName.Active() )
                 {
                     ImGui::SameLine();
-                    ImGui::PushFont( m_smallFont );
+                    ImGui::PushFont( g_fonts.small );
                     ImGui::AlignTextToFramePadding();
                     TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
                     ImGui::PopFont();

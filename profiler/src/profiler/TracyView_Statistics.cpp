@@ -5,6 +5,7 @@
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -47,7 +48,7 @@ void View::DrawStatistics()
     if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_HIPPO );
         TextCentered( "Please wait, computing data..." );
@@ -596,7 +597,7 @@ void View::DrawStatistics()
     {
         if( srcloc.empty() )
         {
-            ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( g_fonts.big );
             ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
             TextCentered( ICON_FA_HIPPO );
             TextCentered( "No entries to be displayed" );

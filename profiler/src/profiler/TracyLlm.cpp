@@ -7,6 +7,7 @@
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
 #include "TracyPrint.hpp"
+#include "../Fonts.hpp"
 
 #include "data/SystemPrompt.hpp"
 
@@ -85,13 +86,13 @@ void TracyLlm::Draw()
     if( !m_ollama )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_PLUG_CIRCLE_XMARK );
         TextCentered( "Cannot connect to ollama server!" );
         ImGui::PopFont();
         ImGui::Dummy( ImVec2( 0, ty * 2 ) );
-        ImGui::PushFont( m_smallFont );
+        ImGui::PushFont( g_fonts.small );
         TextCentered( "Server address:" );
         TextCentered( s_config.llmAddress.c_str() );
         ImGui::PopFont();
@@ -100,7 +101,7 @@ void TracyLlm::Draw()
     }
     if( IsBusy() )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_HOURGLASS );
         TextCentered( "Please wait..." );
@@ -136,7 +137,7 @@ void TracyLlm::Draw()
 
     if( m_models.empty() )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
         TextCentered( ICON_FA_WORM );
         ImGui::Spacing();
@@ -338,7 +339,7 @@ void TracyLlm::Draw()
                 }
                 if( expand )
                 {
-                    ImGui::PushFont( m_font );
+                    ImGui::PushFont( g_fonts.mono );
                     ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() + sizeof( "<tool_output>" ) );
                     ImGui::PopFont();
                     ImGui::TreePop();
@@ -399,7 +400,7 @@ void TracyLlm::Draw()
                             ImGui::PushID( treeIdx++ );
                             if( ImGui::TreeNode( "Tool query..." ) )
                             {
-                                ImGui::PushFont( m_font );
+                                ImGui::PushFont( g_fonts.mono );
                                 while( it != cache.lines.end() && *it != "</tool>" )
                                 {
                                     ImGui::TextWrapped( "%s", (*it).c_str() );
@@ -754,7 +755,7 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
             char tmp[64];
             snprintf( tmp, sizeof( tmp ), "##ollama_code_%d", num );
             ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
-            ImGui::PushFont( m_font );
+            ImGui::PushFont( g_fonts.mono );
             ctx.codeBlock = true;
         }
     }
@@ -773,7 +774,7 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
         }
         else if( IsHeading( str.c_str() ) )
         {
-            ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( g_fonts.big );
             ImGui::TextUnformatted( str.c_str() );
             ImGui::PopFont();
         }
@@ -826,7 +827,7 @@ void TracyLlm::PrintMarkdown( const char* str )
             isCode = !isCode;
             if( isCode )
             {
-                ImGui::PushFont( m_font );
+                ImGui::PushFont( g_fonts.mono );
             }
             else
             {

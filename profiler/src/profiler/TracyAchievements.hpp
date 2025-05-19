@@ -16,18 +16,11 @@ namespace tracy
 namespace data
 {
 
-struct ctx
-{
-    ImFont* big;
-    ImFont* small;
-    ImFont* fixed;
-};
-
 struct AchievementItem
 {
     const char* id;
     const char* name;
-    void(*description)(const ctx&);
+    void(*description)();
     AchievementItem** items;
     AchievementItem** unlocks;
     bool keepOpen;

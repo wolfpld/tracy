@@ -3,6 +3,7 @@
 #include "TracyPrint.hpp"
 #include "TracyTimelineItem.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -254,7 +255,7 @@ void View::DrawNotificationArea()
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
 
-    ImGui::PushFont( m_smallFont );
+    ImGui::PushFont( g_fonts.small );
     const auto wpos = ImGui::GetWindowPos();
     const auto w = ImGui::GetContentRegionAvail().x;
     const auto fps = RealToString( int( io.Framerate + 0.5f ) );

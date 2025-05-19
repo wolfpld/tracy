@@ -11,9 +11,7 @@
 #include "data/FontIcons.hpp"
 #include "data/FontNormal.hpp"
 
-ImFont* s_bigFont;
-ImFont* s_smallFont;
-ImFont* s_fixedWidth;
+FontData g_fonts;
 
 void LoadFonts( float scale )
 {
@@ -55,12 +53,17 @@ void LoadFonts( float scale )
     auto fontNormal = Unembed( FontNormal );
 
     io.Fonts->Clear();
+
     io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 15.0f * scale ), &configBasic, rangesBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge, rangesIcons );
-    s_fixedWidth = io.Fonts->AddFontFromMemoryTTF( (void*)fontFixed->data(), fontFixed->size(), round( 15.0f * scale ), &configFixed, rangesFixed );
-    s_bigFont = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 21.0f * scale ), &configBasic );
+
+    g_fonts.mono = io.Fonts->AddFontFromMemoryTTF( (void*)fontFixed->data(), fontFixed->size(), round( 15.0f * scale ), &configFixed, rangesFixed );
+
+    g_fonts.big = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 21.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
-    s_smallFont = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 10.0f * scale ), &configBasic );
+
+    g_fonts.small = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 10.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
 
     ImGui_ImplOpenGL3_DestroyFontsTexture();
     ImGui_ImplOpenGL3_CreateFontsTexture();

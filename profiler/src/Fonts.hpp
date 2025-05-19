@@ -3,9 +3,14 @@
 
 struct ImFont;
 
-extern ImFont* s_bigFont;
-extern ImFont* s_smallFont;
-extern ImFont* s_fixedWidth;
+struct FontData
+{
+    ImFont* big;
+    ImFont* small;
+    ImFont* mono;
+};
+
+extern FontData g_fonts;
 
 void LoadFonts( float scale );
 

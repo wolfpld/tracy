@@ -18,6 +18,7 @@
 #include "TracyView.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 #include "IconsFontAwesome6.h"
 
@@ -242,9 +243,7 @@ float SourceView::CalcJumpSeparation( float scale )
 
 
 SourceView::SourceView()
-    : m_font( nullptr )
-    , m_smallFont( nullptr )
-    , m_symAddr( 0 )
+    : m_symAddr( 0 )
     , m_targetAddr( 0 )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
@@ -1059,7 +1058,7 @@ void SourceView::Render( Worker& worker, View& view )
 
     if( m_symAddr == 0 )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         if( ClipboardButton() )
         {
             std::ostringstream stream;
@@ -1072,7 +1071,7 @@ void SourceView::Render( Worker& worker, View& view )
         ImGui::SameLine();
         if( m_source.filename() )
         {
-            ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( g_fonts.big );
             TextFocused( ICON_FA_FILE " File:", m_source.filename() );
             ImGui::PopFont();
         }
@@ -1158,7 +1157,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
     assert( sym );
-    ImGui::PushFont( m_bigFont );
+    ImGui::PushFont( g_fonts.big );
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     if( ButtonDisablable( " " ICON_FA_CARET_LEFT " ", m_historyCursor <= 1 ) )
     {
@@ -1191,7 +1190,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", normalized );
                 ImGui::PopFont();
                 TooltipNormalizedName( symName, normalized );
-                ImGui::PushFont( m_bigFont );
+                ImGui::PushFont( g_fonts.big );
             }
         }
         else
@@ -1214,7 +1213,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", normalized );
             ImGui::PopFont();
             TooltipNormalizedName( symName, normalized );
-            ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( g_fonts.big );
         }
     }
     ImGui::SameLine();
@@ -2631,7 +2630,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                 if( symData )
                                 {
                                     ImGui::SameLine();
-                                    ImGui::PushFont( m_smallFont );
+                                    ImGui::PushFont( g_fonts.small );
                                     ImGui::AlignTextToFramePadding();
                                     const auto symName = worker.GetString( symData->name );
                                     const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
@@ -2668,7 +2667,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                                     if( symData )
                                     {
                                         ImGui::SameLine();
-                                        ImGui::PushFont( m_smallFont );
+                                        ImGui::PushFont( g_fonts.small );
                                         ImGui::AlignTextToFramePadding();
                                         const auto symName = worker.GetString( symData->name );
                                         const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
@@ -2876,7 +2875,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         }
         if( ImGui::BeginPopup( "localCallstackPopup" ) )
         {
-            ImGui::PushFont( m_smallFont );
+            ImGui::PushFont( g_fonts.small );
             TextDisabledUnformatted( "Local call stack:" );
             ImGui::PopFont();
             const auto lcs = m_localCallstackPopup;
@@ -2896,7 +2895,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         m_sourceTooltip.Parse( fn, worker, view );
                         if( !m_sourceTooltip.empty() )
                         {
-                            ImGui::PushFont( m_smallFont );
+                            ImGui::PushFont( g_fonts.small );
                             ImGui::TextDisabled( "%s:%i", fn, srcline );
                             ImGui::PopFont();
                             ImGui::Separator();
@@ -3916,7 +3915,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                             ImGui::TextDisabled( "(0x%" PRIx64 ")", symAddr );
                             if( normalized != symName && strcmp( normalized, symName ) != 0 )
                             {
-                                ImGui::PushFont( m_smallFont );
+                                ImGui::PushFont( g_fonts.small );
                                 TextDisabledUnformatted( symName );
                                 ImGui::PopFont();
                             }
@@ -3949,7 +3948,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
                         ImGui::Text( "%s", normalized );
                         ImGui::SameLine();
-                        ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( g_fonts.small );
                         ImGui::AlignTextToFramePadding();
                         ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), frame->data[i].line );
                         ImGui::PopFont();
@@ -4245,7 +4244,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                     if( normalized != jumpName )
                     {
-                        ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( g_fonts.small );
                         TextDisabledUnformatted( jumpName );
                         ImGui::PopFont();
                     }
@@ -4397,7 +4396,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             }
             if( normalized != jumpName && strcmp( normalized, jumpName ) != 0 )
             {
-                ImGui::PushFont( m_smallFont );
+                ImGui::PushFont( g_fonts.small );
                 TextDisabledUnformatted( jumpName );
                 ImGui::PopFont();
             }
@@ -5740,7 +5739,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
 
 void SourceView::SetFont()
 {
-    ImGui::PushFont( m_font );
+    ImGui::PushFont( g_fonts.mono );
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
 }
 

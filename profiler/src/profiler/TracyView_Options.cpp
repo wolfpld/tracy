@@ -9,6 +9,7 @@
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -37,7 +38,7 @@ void View::DrawOptions()
     ImGui::SameLine();
     TextDisabledUnformatted( TimeToString( 1000*1000*1000 / tmp ) );
     ImGui::PopStyleVar();
-    ImGui::PushFont( m_smallFont );
+    ImGui::PushFont( g_fonts.small );
     SmallColorBox( 0xFF2222DD );
     ImGui::SameLine( 0, 0 );
     ImGui::Text( "  <  %i  <  ", tmp / 2 );
@@ -120,7 +121,7 @@ void View::DrawOptions()
                     char buf[64];
                     auto& item = (TimelineItemGpu&)( m_tc.GetItem( gpuData[i] ) );
                     sprintf( buf, "%s context %i", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
-                    ImGui::PushFont( m_smallFont );
+                    ImGui::PushFont( g_fonts.small );
                     ImGui::TextUnformatted( buf );
                     ImGui::PopFont();
                 }

@@ -164,7 +164,6 @@ private:
 public:
     SourceView();
 
-    void UpdateFont( ImFont* fixed, ImFont* small, ImFont* big ) { m_font = fixed; m_smallFont = small; m_bigFont = big; }
     void SetCpuId( uint32_t cpuid );
 
     void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
@@ -222,9 +221,6 @@ private:
     tracy_force_inline void SetFont();
     tracy_force_inline void UnsetFont();
 
-    ImFont* m_font;
-    ImFont* m_smallFont;
-    ImFont* m_bigFont;
     uint64_t m_symAddr;
     uint64_t m_baseAddr;
     uint64_t m_targetAddr;

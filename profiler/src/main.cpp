@@ -170,7 +170,6 @@ static void SetupDPIScale()
     dpiChanged = 2;
 
     LoadFonts( scale );
-    if( view ) view->UpdateFont( s_fixedWidth, s_smallFont, s_bigFont );
 
 #ifdef __APPLE__
     // No need to upscale the style on macOS, but we need to downscale the fonts.
@@ -429,12 +428,12 @@ int main( int argc, char** argv )
 
     if( initFileOpen )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
         initFileOpen.reset();
     }
     else if( connectTo )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
     }
 
     tracy::Fileselector::Init();
@@ -607,7 +606,7 @@ static void UpdateBroadcastClients()
 static void TextComment( const char* str )
 {
     ImGui::SameLine();
-    ImGui::PushFont( s_smallFont );
+    ImGui::PushFont( g_fonts.small );
     ImGui::AlignTextToFramePadding();
     tracy::TextDisabledUnformatted( str );
     ImGui::PopFont();
@@ -721,7 +720,7 @@ static void DrawContents()
         ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings );
         char buf[128];
         sprintf( buf, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
-        ImGui::PushFont( s_bigFont );
+        ImGui::PushFont( g_fonts.big );
         tracy::TextCentered( buf );
         ImGui::PopFont();
         if( dpiChanged == 0 )
@@ -737,10 +736,10 @@ static void DrawContents()
         {
             tracy::ImageCentered( iconTex, ImVec2( iconTexSz, iconTexSz ) );
             ImGui::Spacing();
-            ImGui::PushFont( s_bigFont );
+            ImGui::PushFont( g_fonts.big );
             tracy::TextCentered( buf );
             ImGui::PopFont();
-            ImGui::PushFont( s_smallFont );
+            ImGui::PushFont( g_fonts.small );
             ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
             tracy::TextCentered( tracy::GitRef );
             ImGui::PopStyleColor();
@@ -756,7 +755,7 @@ static void DrawContents()
                 }
             }
 #ifndef NDEBUG
-            ImGui::PushFont( s_smallFont );
+            ImGui::PushFont( g_fonts.small );
             ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.5f, 0.5f, 1.f ) );
             tracy::TextCentered( "Debug build" );
             ImGui::PopStyleColor();
@@ -1039,7 +1038,7 @@ static void DrawContents()
                 ImGui::TreePop();
             }
             ImGui::Separator();
-            ImGui::PushFont( s_smallFont );
+            ImGui::PushFont( g_fonts.small );
             tracy::TextFocused( "Protocol version", tracy::RealToString( tracy::ProtocolVersion ) );
             ImGui::SameLine();
             ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
@@ -1146,7 +1145,7 @@ static void DrawContents()
             ImGui::Separator();
             ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
             tracy::TextCentered( ICON_FA_TRIANGLE_EXCLAMATION " Profiler has elevated privileges! " ICON_FA_TRIANGLE_EXCLAMATION );
-            ImGui::PushFont( s_smallFont );
+            ImGui::PushFont( g_fonts.small );
             tracy::TextCentered( "You are running the profiler interface with admin privileges. This is" );
             tracy::TextCentered( "most likely a mistake, as there is no reason to do so. Instead, you" );
             tracy::TextCentered( "probably wanted to run the client (the application you are profiling)" );
@@ -1211,11 +1210,11 @@ static void DrawContents()
                 {
                     std::string addrPart = std::string( adata, ptr );
                     uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
                 }
                 else
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, address.c_str(), port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
                 }
             }
         }
@@ -1239,7 +1238,7 @@ static void DrawContents()
                         loadThread = std::thread( [f] {
                             try
                             {
-                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -1274,7 +1273,7 @@ static void DrawContents()
         if( badVer.state != tracy::BadVersionState::Ok )
         {
             if( loadThread.joinable() ) { loadThread.join(); }
-            tracy::BadVersion( badVer, s_bigFont );
+            tracy::BadVersion( badVer, g_fonts.big );
         }
 
         if( !clients.empty() )
@@ -1372,7 +1371,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -1423,7 +1422,7 @@ static void DrawContents()
             }
             else
             {
-                ImGui::PushFont( s_fixedWidth );
+                ImGui::PushFont( g_fonts.mono );
                 ImGui::TextUnformatted( releaseNotes.c_str() );
                 ImGui::PopFont();
             }
@@ -1465,7 +1464,7 @@ static void DrawContents()
     }
     if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings) )
     {
-        ImGui::PushFont( s_bigFont );
+        ImGui::PushFont( g_fonts.big );
         tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
         ImGui::PopFont();
 
@@ -1542,7 +1541,7 @@ static void DrawContents()
         viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
         if( reconnect )
         {
-            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
         }
         break;
     default:
@@ -1551,7 +1550,7 @@ static void DrawContents()
     if( ImGui::BeginPopupModal( "Capture cleanup...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         if( viewShutdown.load( std::memory_order_relaxed ) != ViewShutdown::True ) ImGui::CloseCurrentPopup();
-        ImGui::PushFont( s_bigFont );
+        ImGui::PushFont( g_fonts.big );
         tracy::TextCentered( ICON_FA_BROOM );
         ImGui::PopFont();
         animTime += ImGui::GetIO().DeltaTime;
@@ -1587,7 +1586,7 @@ static void DrawContents()
         ImGui::TextUnformatted( "easy-to-handle manner." );
         ImGui::Separator();
         ImGui::TextUnformatted( "Would you like to enable achievements?" );
-        ImGui::PushFont( s_smallFont );
+        ImGui::PushFont( g_fonts.small );
         tracy::TextDisabledUnformatted( "You can change this setting later in the global settings." );
         ImGui::PopFont();
         ImGui::Separator();
@@ -1611,7 +1610,7 @@ static void DrawContents()
     {
         ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 16 * dpiScale );
 
-        ImGui::PushFont( s_bigFont );
+        ImGui::PushFont( g_fonts.big );
         const auto starSize = ImGui::CalcTextSize( ICON_FA_STAR );
         ImGui::PopFont();
 
@@ -1688,7 +1687,7 @@ static void DrawContents()
                 }
             }
         }
-        ImGui::PushFont( s_bigFont );
+        ImGui::PushFont( g_fonts.big );
         tracy::TextColoredUnformatted( color, ICON_FA_STAR );
         ImGui::PopFont();
 
@@ -1699,7 +1698,7 @@ static void DrawContents()
             const auto th = ImGui::GetTextLineHeight();
             ImGui::SetCursorPosY( cursor.y - th * 0.175f );
             ImGui::TextUnformatted( aItem->name );
-            ImGui::PushFont( s_smallFont );
+            ImGui::PushFont( g_fonts.small );
             ImGui::SetCursorPos( cursor + ImVec2( starSize.x + ImGui::GetStyle().ItemSpacing.x, th ) );
             tracy::TextDisabledUnformatted( "Click to open" );
             ImGui::PopFont();
@@ -1759,11 +1758,7 @@ static void DrawContents()
                         ImGui::SetColumnWidth( 0, 300 * dpiScale );
                         DrawAchievements( c->items );
                         ImGui::NextColumn();
-                        if( s_achievementItem )
-                        {
-                            const tracy::data::ctx ctx = { s_bigFont, s_smallFont, s_fixedWidth };
-                            s_achievementItem->description( ctx );
-                        }
+                        if( s_achievementItem ) s_achievementItem->description();
                         ImGui::EndColumns();
                         ImGui::EndTabItem();
                     }

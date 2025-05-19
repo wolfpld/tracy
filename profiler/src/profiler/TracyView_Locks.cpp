@@ -9,6 +9,7 @@
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -26,7 +27,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
     {
         sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
     }
-    ImGui::PushFont( m_smallFont );
+    ImGui::PushFont( g_fonts.small );
     DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
     ImGui::PopFont();
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty + 1 ) ) )
@@ -558,7 +559,7 @@ void View::DrawLockInfoWindow()
             }
         }
 
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.big );
         if( lock.customName.Active() )
         {
             ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );

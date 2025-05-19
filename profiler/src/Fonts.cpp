@@ -65,7 +65,7 @@ void LoadFonts( float scale )
 
     g_fonts.mono = io.Fonts->AddFontFromMemoryTTF( (void*)fontFixed->data(), fontFixed->size(), round( 15.0f * scale ), &configFixed, rangesFixed );
 
-    g_fonts.big = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 21.0f * scale ), &configBasic );
+    g_fonts.big = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 21.0f * scale ), &configBasic, rangesBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
 
     g_fonts.small = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 10.0f * scale ), &configBasic );

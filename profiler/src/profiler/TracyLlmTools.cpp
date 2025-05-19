@@ -83,6 +83,16 @@ std::string TracyLlmTools::GetCurrentTime()
     return buffer;
 }
 
+int TracyLlmTools::CalcMaxSize() const
+{
+    // Limit the size of the response to avoid exceeding the context size
+    // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
+    assert( m_modelMaxContext != 0 );
+    const auto ctxSize = std::min( m_modelMaxContext, s_config.llmContext );
+    const auto maxSize = ( ctxSize * 4 ) / 3;
+    return maxSize;
+}
+
 static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
 {
     const auto data = (unsigned char*)_data;
@@ -195,11 +205,10 @@ std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& la
     std::ranges::replace( page, ' ', '_' );
     auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
 
-    // Limit the size of the response to avoid exceeding the context size
-    // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
-    assert( m_modelMaxContext != 0 );
-    const auto ctxSize = std::min( m_modelMaxContext, s_config.llmContext );
-    const auto maxSize = ( ctxSize * 4 ) / 3;
+    const auto maxSize = CalcMaxSize();
+    if( res.size() > maxSize ) res = res.substr( 0, maxSize );
+    return res;
+}
 
     if( res.size() > maxSize ) res = res.substr( 0, maxSize );
     return res;

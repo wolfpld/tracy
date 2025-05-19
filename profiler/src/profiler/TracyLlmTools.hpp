@@ -26,6 +26,8 @@ public:
     bool m_netAccess = true;
 
 private:
+    [[nodiscard]] int CalcMaxSize() const;
+
     std::string FetchWebPage( const std::string& url );
     ToolReply SearchWikipedia( std::string query, const std::string& lang );
     std::string GetWikipedia( std::string page, const std::string& lang );

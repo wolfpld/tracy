@@ -274,3 +274,12 @@ CPMAddPackage(
         "${CMAKE_CURRENT_LIST_DIR}/tidy-cmake.patch"
     EXCLUDE_FROM_ALL TRUE
 )
+
+# json
+
+CPMAddPackage(
+    NAME json
+    GITHUB_REPOSITORY nlohmann/json
+    GIT_TAG v3.12.0
+    EXCLUDE_FROM_ALL TRUE
+)

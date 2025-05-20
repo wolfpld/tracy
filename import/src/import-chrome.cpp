@@ -3,6 +3,7 @@
 #endif
 
 #include <fstream>
+#include <nlohmann/json.hpp>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,8 +18,6 @@
 #if defined __APPLE__
 #  define stat64 stat
 #endif
-
-#include "json.hpp"
 
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMmap.hpp"

@@ -20,7 +20,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 add_executable(tracy-import-chrome
     src/import-chrome.cpp
 )
-target_link_libraries(tracy-import-chrome PRIVATE TracyServer)
+target_link_libraries(tracy-import-chrome PRIVATE TracyServer nlohmann_json::nlohmann_json)
 
 add_executable(tracy-import-fuchsia
     src/import-fuchsia.cpp

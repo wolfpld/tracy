@@ -35,7 +35,6 @@
 #include "profiler/TracyConfig.hpp"
 #include "profiler/TracyFileselector.hpp"
 #include "profiler/TracyImGui.hpp"
-#include "profiler/TracyLlm.hpp"
 #include "profiler/TracyMouse.hpp"
 #include "profiler/TracyProtoHistory.hpp"
 #include "profiler/TracyStorage.hpp"
@@ -125,7 +124,6 @@ tracy::Config s_config;
 tracy::AchievementsMgr* s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 static bool s_switchAchievementCategory = false;
-static std::unique_ptr<tracy::TracyLlm> llmProbe;
 
 static float smoothstep( float x )
 {
@@ -446,7 +444,6 @@ int main( int argc, char** argv )
     if( updateThread.joinable() ) updateThread.join();
     if( updateNotesThread.joinable() ) updateNotesThread.join();
     view.reset();
-    llmProbe.reset();
 
     tracy::FreeTexture( zigzagTex, RunOnMainThread );
     tracy::FreeTexture( iconTex, RunOnMainThread );
@@ -859,180 +856,10 @@ static void DrawContents()
 
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
+                ImGui::Spacing();
                 if( ImGui::Checkbox( "Save UI scale", &s_config.saveUserScale) ) SaveConfig();
-
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable LLM", &s_config.llm ) ) SaveConfig();
-                if( s_config.llm )
-                {
-                    static int llmstatus = 0;
-                    static std::string llmVersion;
-                    static std::vector<tracy::TracyLlm::LlmModel> llmModels;
-
-                    ImGui::Indent();
-                    ImGui::TextUnformatted( "Ollama URL" );
-                    ImGui::SameLine();
-                    if( ImGui::Button( ICON_FA_ARROWS_ROTATE ) )
-                    {
-                        llmstatus = 0;
-                        llmModels.clear();
-                        s_config.llmAddress = "http://localhost:11434";
-                        SaveConfig();
-                        llmProbe.reset();
-                    }
-                    ImGui::SameLine();
-                    char llmAddress[1024];
-                    snprintf( llmAddress, sizeof( llmAddress ), "%s", s_config.llmAddress.c_str() );
-                    ImGui::SetNextItemWidth( 225 * dpiScale );
-                    if( ImGui::InputText( "##ollamaurl", llmAddress, sizeof( llmAddress ) ) )
-                    {
-                        llmstatus = 0;
-                        llmModels.clear();
-                        s_config.llmAddress = llmAddress;
-                        SaveConfig();
-                        llmProbe.reset();
-                    }
-
-                    if( llmstatus == 1 ) ImGui::BeginDisabled();
-                    const bool doCheck = ImGui::Button( ICON_FA_PLUG " Check connection" );
-                    if( llmstatus == 1 ) ImGui::EndDisabled();
-                    if( doCheck )
-                    {
-                        llmstatus = 1;
-                        llmProbe = std::make_unique<tracy::TracyLlm>();
-                        activeFrames = 3;
-                    }
-                    else if( llmProbe )
-                    {
-                        activeFrames = 3;
-                        if( llmProbe->IsValid() )
-                        {
-                            if( !llmProbe->IsBusy() )
-                            {
-                                llmstatus = 2;
-                                llmVersion = llmProbe->GetVersion();
-                                llmModels = llmProbe->GetModels();
-                            }
-                        }
-                        else
-                        {
-                            llmstatus = 3;
-                            llmProbe.reset();
-                        }
-                    }
-
-                    ImGui::TextDisabled( "Connection status:" );
-                    ImGui::SameLine();
-                    switch( llmstatus )
-                    {
-                    case 0:
-                        ImGui::TextUnformatted( "Unknown" );
-                        break;
-                    case 1:
-                        ImGui::TextColored( ImVec4( 1, 1, 0.5f, 1 ), "Checking..." );
-                        break;
-                    case 2:
-                        ImGui::TextColored( ImVec4( 0.5f, 1, 0.5f, 1 ), "Valid" );
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s)", llmVersion.c_str() );
-                        break;
-                    case 3:
-                        ImGui::TextColored( ImVec4( 1, 0.5f, 0.5f, 1 ), "Failed" );
-                        break;
-                    default:
-                        assert( false );
-                        break;
-                    }
-
-                    if( llmstatus == 2 )
-                    {
-                        if( !llmModels.empty() )
-                        {
-                            ImGui::TextDisabled( "Selected model:" );
-                            int sel;
-                            for( sel=0; sel<llmModels.size(); sel++ )
-                            {
-                                if( llmModels[sel].name == s_config.llmModel ) break;
-                            }
-                            if( sel == llmModels.size() )
-                            {
-                                sel = 0;
-                                s_config.llmModel = llmModels[0].name;
-                                SaveConfig();
-                            }
-                            ImGui::SameLine();
-                            ImGui::SetNextItemWidth( 225 * dpiScale );
-                            if( ImGui::BeginCombo( "##llmmodel", llmModels[sel].name.c_str() ) )
-                            {
-                                for( int i=0; i<llmModels.size(); i++ )
-                                {
-                                    bool isSelected = ( i == sel );
-                                    if( ImGui::Selectable( llmModels[i].name.c_str(), isSelected ) )
-                                    {
-                                        s_config.llmModel = llmModels[i].name;
-                                        SaveConfig();
-                                    }
-                                    if( isSelected ) ImGui::SetItemDefaultFocus();
-                                    ImGui::SameLine();
-                                    ImGui::TextDisabled( "(max context: %s)", tracy::RealToString( llmModels[i].ctxSize ) );
-                                }
-                                ImGui::EndCombo();
-                            }
-                        }
-                        else
-                        {
-                            ImGui::TextColored( ImVec4( 1, 0.5f, 0.5f, 1 ), "No models available! Use ollama to get some." );
-                        }
-                    }
-
-                    ImGui::TextUnformatted( "Context size" );
-                    ImGui::SameLine();
-                    ImGui::SetNextItemWidth( 120 * dpiScale );
-                    if( ImGui::InputInt( "##contextsize", &s_config.llmContext, 1024, 8192 ) )
-                    {
-                        s_config.llmContext = std::clamp( s_config.llmContext, 2048, 10240 * 1024 );
-                        SaveConfig();
-                    }
-                    ImGui::Indent();
-                    if( ImGui::Button( "4K" ) )
-                    {
-                        s_config.llmContext = 4 * 1024;
-                        SaveConfig();
-                    }
-                    ImGui::SameLine();
-                    if( ImGui::Button( "8K" ) )
-                    {
-                        s_config.llmContext = 8 * 1024;
-                        SaveConfig();
-                    }
-                    ImGui::SameLine();
-                    if( ImGui::Button( "16K" ) )
-                    {
-                        s_config.llmContext = 16 * 1024;
-                        SaveConfig();
-                    }
-                    ImGui::SameLine();
-                    if( ImGui::Button( "32K" ) )
-                    {
-                        s_config.llmContext = 32 * 1024;
-                        SaveConfig();
-                    }
-                    ImGui::SameLine();
-                    if( ImGui::Button( "64K" ) )
-                    {
-                        s_config.llmContext = 64 * 1024;
-                        SaveConfig();
-                    }
-                    ImGui::SameLine();
-                    if( ImGui::Button( "128K" ) )
-                    {
-                        s_config.llmContext = 128 * 1024;
-                        SaveConfig();
-                    }
-                    ImGui::Unindent();
-
-                    ImGui::Unindent();
-                }
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();
@@ -1439,7 +1266,6 @@ static void DrawContents()
             clients.clear();
         }
         if( loadThread.joinable() ) loadThread.join();
-        llmProbe.reset();
         view->NotifyRootWindowSize( display_w, display_h );
         if( !view->Draw() )
         {

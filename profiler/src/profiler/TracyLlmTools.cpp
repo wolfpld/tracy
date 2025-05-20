@@ -113,14 +113,6 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url )
     auto it = m_webCache.find( url );
     if( it != m_webCache.end() ) return it->second;
 
-    static bool initialized = false;
-    if( !initialized )
-    {
-        initialized = true;
-        curl_global_init( CURL_GLOBAL_ALL );
-        atexit( curl_global_cleanup );
-    }
-
     auto curl = curl_easy_init();
     if( !curl ) return "Error: Failed to initialize cURL";
 

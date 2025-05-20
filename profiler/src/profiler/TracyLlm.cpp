@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include <ollama.hpp>
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,6 +26,14 @@ TracyLlm::TracyLlm()
     , m_input( nullptr )
 {
     if( !s_config.llm ) return;
+
+    static bool initialized = false;
+    if( !initialized )
+    {
+        initialized = true;
+        curl_global_init( CURL_GLOBAL_ALL );
+        atexit( curl_global_cleanup );
+    }
 
     try
     {

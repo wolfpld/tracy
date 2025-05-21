@@ -1,23 +1,16 @@
 #include <curl/curl.h>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include <libbase64.h>
 #include <pugixml.hpp>
 #include <tidy.h>
 #include <tidybuffio.h>
 #include <time.h>
 
-#include "TracyConfig.hpp"
+#include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
-
-extern tracy::Config s_config;
 
 namespace tracy
 {
-
-void TracyLlmTools::SetModelMaxContext( int modelMaxContext )
-{
-    m_modelMaxContext = modelMaxContext;
-}
 
 static std::string UrlEncode( const std::string& str )
 {
@@ -45,8 +38,10 @@ static std::string UrlEncode( const std::string& str )
     return out;
 }
 
-TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args )
+TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, const TracyLlmApi& api)
 {
+    m_ctxSize = api.GetContextSize();
+
     if( name == "fetch_web_page" )
     {
         if( args.empty() ) return { .reply = "Missing URL argument" };
@@ -91,11 +86,11 @@ std::string TracyLlmTools::GetCurrentTime()
 
 int TracyLlmTools::CalcMaxSize() const
 {
+    if( m_ctxSize <= 0 ) return 32*1024;
+
     // Limit the size of the response to avoid exceeding the context size
     // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
-    assert( m_modelMaxContext != 0 );
-    const auto ctxSize = std::min( m_modelMaxContext, s_config.llmContext );
-    const auto maxSize = ( ctxSize * 4 ) / 3;
+    const auto maxSize = ( m_ctxSize * 4 ) / 3;
     return maxSize;
 }
 

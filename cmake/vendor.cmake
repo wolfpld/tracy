@@ -237,18 +237,6 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
 )
 
-# ollama-hpp
-
-CPMAddPackage(
-    NAME ollama-hpp
-    GITHUB_REPOSITORY jmont-dev/ollama-hpp
-    VERSION 0.9.5 
-    DOWNLOAD_ONLY TRUE
-    PATCHES
-        "${CMAKE_CURRENT_LIST_DIR}/ollama-hpp-string.patch"
-        "${CMAKE_CURRENT_LIST_DIR}/ollama-hpp-badcode.patch"
-)
-
 # base64
 
 set(BUILD_SHARED_LIBS_SAVE ${BUILD_SHARED_LIBS})

@@ -13,6 +13,7 @@
 
 #include "imgui.h"
 
+#include "TracyConfig.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
@@ -30,6 +31,8 @@
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661923
 #endif
+
+extern tracy::Config s_config;
 
 namespace tracy
 {
@@ -952,7 +955,7 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
-    if( m_llm.IsValid() )
+    if( s_config.llm )
     {
         ImGui::SameLine();
         ToggleButton( ICON_FA_ROBOT, m_llm.m_show );

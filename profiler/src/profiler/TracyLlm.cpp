@@ -1,5 +1,4 @@
 #include <curl/curl.h>
-#include <ollama.hpp>
 #include <stdint.h>
 #include <stdlib.h>
 #include <ranges>
@@ -7,12 +6,14 @@
 #include "TracyConfig.hpp"
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
+#include "TracyLlmApi.hpp"
 #include "TracyPrint.hpp"
 #include "../Fonts.hpp"
 
 #include "data/SystemPrompt.hpp"
 
 extern tracy::Config s_config;
+extern bool SaveConfig();
 
 namespace tracy
 {
@@ -35,30 +36,16 @@ TracyLlm::TracyLlm()
         atexit( curl_global_cleanup );
     }
 
-    try
-    {
-        m_ollama = std::make_unique<Ollama>( s_config.llmAddress );
-        if( !m_ollama->is_running() )
-        {
-            m_ollama.reset();
-            return;
-        }
-    }
-    catch( const std::exception& e )
-    {
-        m_ollama.reset();
-        return;
-    }
-
-    m_input = new char[InputBufferSize];
-    *m_input = 0;
-
     m_systemPrompt = Unembed( SystemPrompt );
-
+    m_input = new char[InputBufferSize];
+    m_apiInput = new char[InputBufferSize];
     ResetChat();
 
+    m_api = std::make_unique<TracyLlmApi>();
+
+    m_busy = true;
     m_jobs.emplace_back( WorkItem {
-        .task = Task::LoadModels,
+        .task = Task::Connect,
         .callback = [this] { UpdateModels(); }
     } );
     m_thread = std::thread( [this] { Worker(); } );
@@ -67,6 +54,7 @@ TracyLlm::TracyLlm()
 TracyLlm::~TracyLlm()
 {
     delete[] m_input;
+    delete[] m_apiInput;
 
     if( m_thread.joinable() )
     {
@@ -80,11 +68,6 @@ TracyLlm::~TracyLlm()
     }
 }
 
-std::string TracyLlm::GetVersion() const
-{
-    return m_ollama->get_version();
-}
-
 void TracyLlm::Draw()
 {
     const auto scale = GetScale();
@@ -92,22 +75,6 @@ void TracyLlm::Draw()
     ImGui::Begin( "Tracy AI", &m_show, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
-    if( !m_ollama )
-    {
-        const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
-        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
-        TextCentered( ICON_FA_PLUG_CIRCLE_XMARK );
-        TextCentered( "Cannot connect to ollama server!" );
-        ImGui::PopFont();
-        ImGui::Dummy( ImVec2( 0, ty * 2 ) );
-        ImGui::PushFont( g_fonts.small );
-        TextCentered( "Server address:" );
-        TextCentered( s_config.llmAddress.c_str() );
-        ImGui::PopFont();
-        ImGui::End();
-        return;
-    }
     if( IsBusy() )
     {
         ImGui::PushFont( g_fonts.big );
@@ -123,41 +90,23 @@ void TracyLlm::Draw()
     auto& style = ImGui::GetStyle();
     std::lock_guard lock( m_lock );
 
-    if( !m_models.empty() )
+    const auto hasChat = m_chat.size() <= 1 && *m_input == 0;
+    if( hasChat ) ImGui::BeginDisabled();
+    if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
     {
-        if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
-        {
-            if( m_responding ) m_stop = true;
-            ResetChat();
-            m_chatCache.clear();
-            *m_input = 0;
-        }
-        ImGui::SameLine();
+        if( m_responding ) m_stop = true;
+        ResetChat();
     }
-    if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reload models" ) )
+    if( hasChat ) ImGui::EndDisabled();
+    ImGui::SameLine();
+    if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reconnect" ) )
     {
         if( m_responding ) m_stop = true;
         m_jobs.emplace_back( WorkItem {
-            .task = Task::LoadModels,
+            .task = Task::Connect,
             .callback = [this] { UpdateModels(); }
         } );
         m_cv.notify_all();
-    }
-
-    if( m_models.empty() )
-    {
-        ImGui::PushFont( g_fonts.big );
-        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
-        TextCentered( ICON_FA_WORM );
-        ImGui::Spacing();
-        TextCentered( "No models available." );
-        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 1.5f ) );
-        ImGui::PopFont();
-        ImGui::TextWrapped( "You need to retrieve at least one model with the ollama tools before you can use this feature." );
-        ImGui::TextWrapped( "Models can be downloaded by running the 'ollama pull <model>' command." );
-        ImGui::TextWrapped( "The https://ollama.com/ website contains a list of available models. The 'gemma3' model works quite well." );
-        ImGui::End();
-        return;
     }
 
     ImGui::SameLine();
@@ -165,47 +114,50 @@ void TracyLlm::Draw()
     {
         ImGui::Spacing();
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Model:" );
+        TextDisabledUnformatted( "API:" );
         ImGui::SameLine();
-        if( ImGui::BeginCombo( "##model", m_models[m_modelIdx].name.c_str() ) )
+        const auto sz = std::min( InputBufferSize-1, s_config.llmAddress.size() );
+        memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );
+        m_apiInput[sz] = 0;
+        if( ImGui::InputTextWithHint( "##api", "http://127.0.0.1:1234", m_apiInput, InputBufferSize ) )
         {
-            for( size_t i = 0; i < m_models.size(); ++i )
-            {
-                const auto& model = m_models[i];
-                if( ImGui::Selectable( model.name.c_str(), i == m_modelIdx ) )
-                {
-                    m_modelIdx = i;
-                    s_config.llmModel = model.name;
-                    m_tools.SetModelMaxContext( model.ctxSize );
-                }
-                if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(max context: %s)", tracy::RealToString( m_models[i].ctxSize ) );
-            }
-            ImGui::EndCombo();
+            s_config.llmAddress = m_apiInput;
+            SaveConfig();
+            m_jobs.emplace_back( WorkItem {
+                .task = Task::Connect,
+                .callback = [this] { UpdateModels(); }
+            } );
+            m_cv.notify_all();
         }
 
+        const auto& models = m_api->GetModels();
         ImGui::AlignTextToFramePadding();
-        ImGui::TextUnformatted( "Context size:" );
+        TextDisabledUnformatted( "Model:" );
         ImGui::SameLine();
-        ImGui::SetNextItemWidth( 120 * scale );
-        if( ImGui::InputInt( "##contextsize", &s_config.llmContext, 1024, 8192 ) )
+        if( models.empty() )
         {
-            s_config.llmContext = std::clamp( s_config.llmContext, 2048, 10240 * 1024 );
+            ImGui::TextUnformatted( "No models available" );
         }
-        ImGui::Indent();
-        if( ImGui::Button( "4K" ) ) s_config.llmContext = 4 * 1024;
-        ImGui::SameLine();
-        if( ImGui::Button( "8K" ) ) s_config.llmContext = 8 * 1024;
-        ImGui::SameLine();
-        if( ImGui::Button( "16K" ) ) s_config.llmContext = 16 * 1024;
-        ImGui::SameLine();
-        if( ImGui::Button( "32K" ) ) s_config.llmContext = 32 * 1024;
-        ImGui::SameLine();
-        if( ImGui::Button( "64K" ) ) s_config.llmContext = 64 * 1024;
-        ImGui::SameLine();
-        if( ImGui::Button( "128K" ) ) s_config.llmContext = 128 * 1024;
-        ImGui::Unindent();
+        else
+        {
+            if( ImGui::BeginCombo( "##model", models[m_modelIdx].name.c_str() ) )
+            {
+                for( size_t i = 0; i < models.size(); ++i )
+                {
+                    const auto& model = models[i];
+                    if( ImGui::Selectable( model.name.c_str(), i == m_modelIdx ) )
+                    {
+                        m_modelIdx = i;
+                        s_config.llmModel = model.name;
+                        SaveConfig();
+                    }
+                    if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                }
+                ImGui::EndCombo();
+            }
+        }
 
         ImGui::Checkbox( ICON_FA_TEMPERATURE_HALF " Temperature", &m_setTemperature );
         ImGui::SameLine();
@@ -217,28 +169,60 @@ void TracyLlm::Draw()
         ImGui::TreePop();
     }
 
-    const auto ctxSize = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
-    ImGui::Spacing();
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    ImGui::ProgressBar( m_usedCtx / (float)ctxSize, ImVec2( -1, 0 ), "" );
-    ImGui::PopStyleVar();
-    if( ImGui::IsItemHovered() )
+    if( !m_api->IsConnected() )
     {
-        ImGui::BeginTooltip();
-        TextFocused( "Used context size:", RealToString( m_usedCtx ) );
-        ImGui::SameLine();
-        char buf[64];
-        PrintStringPercent( buf, m_usedCtx / (float)ctxSize * 100 );
-        tracy::TextDisabledUnformatted( buf );
-        TextFocused( "Available context size:", RealToString( ctxSize ) );
-        ImGui::Separator();
-        tracy::TextDisabledUnformatted( ICON_FA_TRIANGLE_EXCLAMATION " Context use may be an estimate" );
-        ImGui::EndTooltip();
+        ImGui::PushFont( g_fonts.big );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_PLUG_CIRCLE_XMARK );
+        TextCentered( "No connection to LLM API" );
+        ImGui::PopFont();
+        ImGui::End();
+        return;
+    }
+
+    if( m_api->GetModels().empty() )
+    {
+        ImGui::PushFont( g_fonts.big );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_WORM );
+        ImGui::Spacing();
+        TextCentered( "No models available." );
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 1.5f ) );
+        ImGui::PopFont();
+        ImGui::TextWrapped( "Use the LLM backend tooling to download models." );
+        ImGui::End();
+        return;
+    }
+
+    const auto ctxSize = m_api->GetContextSize();
+    if( ctxSize > 0 )
+    {
+        ImGui::Spacing();
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        ImGui::ProgressBar( m_usedCtx / (float)ctxSize, ImVec2( -1, 0 ), "" );
+        ImGui::PopStyleVar();
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Used context size:", RealToString( m_usedCtx ) );
+            ImGui::SameLine();
+            char buf[64];
+            PrintStringPercent( buf, m_usedCtx / (float)ctxSize * 100 );
+            tracy::TextDisabledUnformatted( buf );
+            TextFocused( "Available context size:", RealToString( ctxSize ) );
+            ImGui::Separator();
+            tracy::TextDisabledUnformatted( ICON_FA_TRIANGLE_EXCLAMATION " Context use may be an estimate" );
+            ImGui::EndTooltip();
+        }
+    }
+    else
+    {
+        tracy::TextDisabledUnformatted( ICON_FA_TRIANGLE_EXCLAMATION " Context size is not available" );
     }
 
     ImGui::Spacing();
-    ImGui::BeginChild( "##ollama", ImVec2( 0, -( ImGui::GetFrameHeight() + style.ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
-    if( m_chat->size() <= 1 )   // account for system prompt
+    ImGui::BeginChild( "##chat", ImVec2( 0, -( ImGui::GetFrameHeight() + style.ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
+    if( m_chat.size() <= 1 )   // account for system prompt
     {
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
         ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
@@ -255,7 +239,7 @@ void TracyLlm::Draw()
         int cacheIdx = 0;
         int treeIdx = 0;
         int num = 0;
-        for( auto& line : *m_chat )
+        for( auto& line : m_chat )
         {
             const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
             const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
@@ -479,7 +463,7 @@ void TracyLlm::Draw()
         auto buttonSize = ImGui::CalcTextSize( buttonText );
         buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
-        bool send = ImGui::InputTextWithHint( "##ollama_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        bool send = ImGui::InputTextWithHint( "##chat_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
         send |= ImGui::Button( buttonText );
         if( send )
@@ -492,14 +476,17 @@ void TracyLlm::Draw()
             }
             if( *ptr )
             {
-                m_chat->emplace_back( ollama::message( "user", m_input ) );
+                nlohmann::json msg;
+                msg["role"] = "user";
+                msg["content"] = m_input;
+                m_chat.emplace_back( std::move( msg ) );
                 *m_input = 0;
                 m_responding = true;
 
                 m_jobs.emplace_back( WorkItem {
                     .task = Task::SendMessage,
                     .callback = nullptr,
-                    .chat = std::make_unique<ollama::messages>( *m_chat )
+                    .chat = m_chat
                 } );
                 m_cv.notify_all();
             }
@@ -527,16 +514,16 @@ void TracyLlm::Worker()
 
         switch( job.task )
         {
-        case Task::LoadModels:
+        case Task::Connect:
             m_busy = true;
             lock.unlock();
-            LoadModels();
+            m_api->Connect( s_config.llmAddress.c_str() );
             job.callback();
             lock.lock();
             m_busy = false;
             break;
         case Task::SendMessage:
-            SendMessage( *job.chat );
+            SendMessage( job.chat );
             break;
         default:
             assert( false );
@@ -545,37 +532,18 @@ void TracyLlm::Worker()
     }
 };
 
-void TracyLlm::LoadModels()
-{
-    std::vector<LlmModel> m;
-
-    const auto models = m_ollama->list_models();
-    for( const auto& model : models )
-    {
-        const auto info = m_ollama->show_model_info( model );
-        const auto& modelInfo = info["model_info"];
-        const auto& architecture = modelInfo["general.architecture"].get_ref<const std::string&>();
-        const auto& ctx = modelInfo[architecture + ".context_length"];
-        m.emplace_back( LlmModel { .name = model, .ctxSize = ctx.get<int>() } );
-    }
-
-    m_modelsLock.lock();
-    std::swap( m_models, m );
-    m_modelsLock.unlock();
-}
-
 void TracyLlm::UpdateModels()
 {
-    auto it = std::ranges::find_if( m_models, []( const auto& model ) { return model.name == s_config.llmModel; } );
-    if( it == m_models.end() )
+    auto& models = m_api->GetModels();
+    auto it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmModel; } );
+    if( it == models.end() )
     {
         m_modelIdx = 0;
     }
     else
     {
-        m_modelIdx = std::distance( m_models.begin(), it );
+        m_modelIdx = std::distance( models.begin(), it );
     }
-    if( !m_models.empty() ) m_tools.SetModelMaxContext( m_models[m_modelIdx].ctxSize );
 }
 
 void TracyLlm::ResetChat()
@@ -583,46 +551,47 @@ void TracyLlm::ResetChat()
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
     systemPrompt += "The current time is: " + m_tools.GetCurrentTime() + "\n";
 
-    m_chat = std::make_unique<ollama::messages>();
-    m_chat->emplace_back( ollama::message( "system", systemPrompt ) );
+    *m_input = 0;
+    m_chat.clear();
+    nlohmann::json msg;
+    msg["role"] = "system";
+    msg["content"] = systemPrompt;
+    m_chat.emplace_back( std::move( msg ) );
     m_chatId++;
     m_usedCtx = systemPrompt.size() / 4;
+    m_chatCache.clear();
 }
 
-void TracyLlm::SendMessage( const ollama::messages& messages )
+void TracyLlm::SendMessage( const std::vector<nlohmann::json>& messages )
 {
-    // The chat() call will fire a callback right away, so the assistant message needs to be there already
-    m_chat->emplace_back( ollama::message( "assistant", "" ) );
+    nlohmann::json msg;
+    msg["role"] = "assistant";
+    msg["content"] = "";
+    m_chat.emplace_back( std::move( msg ) );
 
     m_lock.unlock();
     bool res;
     try
     {
-        ollama::request req( ollama::message_type::chat );
-        req["model"] = m_models[m_modelIdx].name;
-        req["messages"] = messages.to_json();
+        nlohmann::json req;
+        req["model"] = m_api->GetModels()[m_modelIdx].name;
+        req["messages"] = messages;
         req["stream"] = true;
-        req["options"]["num_ctx"] = std::min( m_models[m_modelIdx].ctxSize, s_config.llmContext );
-        if( m_setTemperature ) req["options"]["temperature"] = m_temperature;
+        if( m_setTemperature ) req["temperature"] = m_temperature;
 
-        res = m_ollama->chat( req, [this]( const ollama::response& response ) -> bool { return OnResponse( response ); });
+        res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); } );
     }
     catch( std::exception& e )
     {
         m_lock.lock();
-        if( !m_chat->empty() && m_chat->back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat->pop_back();
-        m_chat->emplace_back( ollama::message( "error", e.what() ) );
+        if( !m_chat.empty() && m_chat.back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat.pop_back();
+        nlohmann::json err;
+        err["role"] = "error";
+        err["content"] = e.what();
+        m_chat.emplace_back( std::move( err ) );
         m_responding = false;
         m_stop = false;
         return;
-    }
-
-    m_lock.lock();
-    if( !res )
-    {
-        m_chat->pop_back();
-        m_responding = false;
-        m_stop = false;
     }
 }
 
@@ -640,7 +609,7 @@ static std::vector<std::string> SplitLines( const std::string& str )
     return lines;
 }
 
-bool TracyLlm::OnResponse( const ollama::response& response )
+bool TracyLlm::OnResponse( const nlohmann::json& json )
 {
     std::unique_lock lock( m_lock );
 
@@ -652,17 +621,37 @@ bool TracyLlm::OnResponse( const ollama::response& response )
         return false;
     }
 
-    auto& back = m_chat->back();
+    auto& back = m_chat.back();
     auto& content = back["content"];
     const auto& str = content.get_ref<const std::string&>();
-    auto responseStr = response.as_simple_string();
-    std::erase( responseStr, '\r' );
-    content = str + responseStr;
-    m_usedCtx++;
 
-    auto& json = response.as_json();
-    auto& message = json["message"];
-    if( json["done"] )
+    std::string responseStr;
+    bool done;
+    try
+    {
+        auto& node = json["choices"][0];
+        auto& delta = node["delta"];
+        if( delta.contains( "content" ) ) responseStr = delta["content"].get_ref<const std::string&>();
+        done = !node["finish_reason"].empty();
+    }
+    catch( const nlohmann::json::exception& e )
+    {
+        if( m_responding )
+        {
+            m_responding = false;
+            m_focusInput = true;
+        }
+        return false;
+    }
+
+    if( !responseStr.empty() )
+    {
+        std::erase( responseStr, '\r' );
+        content = str + responseStr;
+        m_usedCtx++;
+    }
+
+    if( done )
     {
         bool isTool = false;
         auto& str = back["content"].get_ref<const std::string&>();
@@ -680,24 +669,29 @@ bool TracyLlm::OnResponse( const ollama::response& response )
                     auto tool = lines[0];
                     lines.erase( lines.begin() );
                     lock.unlock();
-                    const auto reply = m_tools.HandleToolCalls( tool, lines );
+                    const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api );
                     const auto output = "<tool_output>\n" + reply.reply;
                     lock.lock();
-                    if( reply.image.empty() )
+                    //if( reply.image.empty() )
                     {
-                        m_chat->emplace_back( ollama::message( "user", output ) );
+                        nlohmann::json msg;
+                        msg["role"] = "user";
+                        msg["content"] = output;
+                        m_chat.emplace_back( std::move( msg ) );
                     }
+                    /*
                     else
                     {
                         std::vector<ollama::image> images;
                         images.emplace_back( ollama::image::from_base64_string( reply.image ) );
                         m_chat->emplace_back( ollama::message( "user", output, images ) );
                     }
+                    */
 
                     m_jobs.emplace_back( WorkItem {
                         .task = Task::SendMessage,
                         .callback = nullptr,
-                        .chat = std::make_unique<ollama::messages>( *m_chat )
+                        .chat = m_chat
                     } );
                     m_cv.notify_all();
                 }
@@ -709,7 +703,6 @@ bool TracyLlm::OnResponse( const ollama::response& response )
             m_focusInput = true;
         }
 
-        m_usedCtx = json["prompt_eval_count"].get<int>() + json["eval_count"].get<int>();
         return false;
     }
 
@@ -762,7 +755,7 @@ void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
         else
         {
             char tmp[64];
-            snprintf( tmp, sizeof( tmp ), "##ollama_code_%d", num );
+            snprintf( tmp, sizeof( tmp ), "##chat_code_%d", num );
             ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
             if( ptr[3] )
             {

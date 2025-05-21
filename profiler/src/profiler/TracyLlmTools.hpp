@@ -9,6 +9,8 @@
 namespace tracy
 {
 
+class TracyLlmApi;
+
 class TracyLlmTools
 {
 public:
@@ -18,9 +20,7 @@ public:
         std::string image;
     };
 
-    void SetModelMaxContext( int modelMaxContext );
-
-    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args );
+    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, const TracyLlmApi& api );
     std::string GetCurrentTime();
 
     bool m_netAccess = true;
@@ -36,7 +36,7 @@ private:
 
     unordered_flat_map<std::string, std::string> m_webCache;
 
-    int m_modelMaxContext = 0;
+    int m_ctxSize;
 };
 
 }

@@ -236,12 +236,11 @@ static void LoadConfig()
     if( ini_sget( ini, "llm", "enabled", "%d", &v ) ) s_config.llm = v;
     if( v2 = ini_get( ini, "llm", "address" ); v2 ) s_config.llmAddress = v2;
     if( v2 = ini_get( ini, "llm", "model" ); v2 ) s_config.llmModel = v2;
-    if( ini_sget( ini, "llm", "context", "%d", &v ) ) s_config.llmContext = v;
 
     ini_free( ini );
 }
 
-static bool SaveConfig()
+bool SaveConfig()
 {
     const auto fn = tracy::GetSavePath( "tracy.ini" );
     FILE* f = fopen( fn, "wb" );
@@ -275,7 +274,6 @@ static bool SaveConfig()
     fprintf( f, "enabled = %i\n", (int)s_config.llm );
     fprintf( f, "address = %s\n", s_config.llmAddress.c_str() );
     fprintf( f, "model = %s\n", s_config.llmModel.c_str() );
-    fprintf( f, "context = %i\n", s_config.llmContext );
 
     fclose( f );
     return true;

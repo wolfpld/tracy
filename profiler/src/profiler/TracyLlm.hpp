@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -14,23 +15,16 @@
 #include "TracyLlmTools.hpp"
 #include "tracy_robin_hood.h"
 
-class Ollama;
-
-namespace ollama
-{
-class message;
-class messages;
-class response;
-}
-
 namespace tracy
 {
+
+class TracyLlmApi;
 
 class TracyLlm
 {
     enum class Task
     {
-        LoadModels,
+        Connect,
         SendMessage,
     };
 
@@ -38,7 +32,7 @@ class TracyLlm
     {
         Task task;
         std::function<void()> callback;
-        std::unique_ptr<ollama::messages> chat;
+        std::vector<nlohmann::json> chat;
     };
 
     struct ChatCache
@@ -53,20 +47,10 @@ class TracyLlm
     };
 
 public:
-    struct LlmModel
-    {
-        std::string name;
-        int ctxSize;
-    };
-
     TracyLlm();
     ~TracyLlm();
 
-    [[nodiscard]] bool IsValid() const { return (bool)m_ollama; }
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock); return m_busy; }
-
-    [[nodiscard]] std::string GetVersion() const;
-    [[nodiscard]] std::vector<LlmModel> GetModels() const { std::lock_guard lock( m_modelsLock ); return m_models; }
 
     void Draw();
 
@@ -80,8 +64,8 @@ private:
 
     void ResetChat();
 
-    void SendMessage( const ollama::messages& messages );
-    bool OnResponse( const ollama::response& response );
+    void SendMessage( const std::vector<nlohmann::json>& messages );
+    bool OnResponse( const nlohmann::json& json );
 
     void UpdateCache( ChatCache& cache, const std::string& str );
 
@@ -89,10 +73,7 @@ private:
     void PrintMarkdown( const char* str );
     void CleanContext( LineContext& ctx);
 
-    std::unique_ptr<Ollama> m_ollama;
-
-    mutable std::mutex m_modelsLock;
-    std::vector<LlmModel> m_models;
+    std::unique_ptr<TracyLlmApi> m_api;
 
     size_t m_modelIdx;
 
@@ -112,7 +93,8 @@ private:
     bool m_setTemperature = false;
 
     char* m_input;
-    std::unique_ptr<ollama::messages> m_chat;
+    char* m_apiInput;
+    std::vector<nlohmann::json> m_chat;
     unordered_flat_map<size_t, ChatCache> m_chatCache;
 
     std::shared_ptr<EmbedData> m_systemPrompt;

@@ -9,7 +9,7 @@
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 
-constexpr const char* NoNetworkAccess = "Internet access is disabled by the user.";
+constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. You may inform the user that he can enable it in the settings, so that you can use the tools to gather information.";
 
 #define NetworkCheckString if( !m_netAccess ) return NoNetworkAccess
 #define NetworkCheckReply if( !m_netAccess ) return { .reply = NoNetworkAccess }

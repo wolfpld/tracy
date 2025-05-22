@@ -125,6 +125,18 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 
     auto manual = Unembed( Manual );
 
+    size_t length;
+    {
+        nlohmann::json req;
+        req["input"] = "embeddings length probe";
+        req["model"] = m_manualEmbeddingState.model;
+
+        nlohmann::json response;
+        api.Embeddings( req, response );
+
+        length = response["data"][0]["embedding"].size();
+    }
+
     const auto sz = (int)manual->size();
     const auto chunks = ( sz + Chunk - 1 ) / Chunk;
     for( int i=0; i<chunks; i++ )

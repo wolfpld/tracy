@@ -88,6 +88,30 @@ void TracyLlm::Draw()
     }
 
     auto& style = ImGui::GetStyle();
+
+    const auto manualEmbeddingsState = m_tools.GetManualEmbeddingsState();
+    if( manualEmbeddingsState.inProgress )
+    {
+        ImGui::PushFont( g_fonts.big );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 7 ) * 0.5f ) );
+        TextCentered( ICON_FA_BOOK_BOOKMARK );
+        ImGui::Spacing();
+        TextCentered( "Building manual embeddings..." );
+        ImGui::Spacing();
+        DrawWaitingDots( s_time );
+        ImGui::TextUnformatted( "" );
+        ImGui::PopFont();
+        char tmp[128];
+        snprintf( tmp, sizeof( tmp ), "Progress: %.1f%%", manualEmbeddingsState.progress * 100 );
+        TextCentered( tmp );
+        ImGui::Spacing();
+        const auto sz = ImGui::CalcTextSize( "Cancel" ).x + style.FramePadding.x * 2;
+        ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - sz ) * 0.5f );
+        if( ImGui::Button( "Cancel" ) ) m_tools.CancelManualEmbeddings();
+        ImGui::End();
+        return;
+    }
+
     std::lock_guard lock( m_lock );
 
     const auto hasChat = m_chat.size() <= 1 && *m_input == 0;
@@ -249,6 +273,29 @@ void TracyLlm::Draw()
         ImGui::PopFont();
         ImGui::End();
         return;
+    }
+
+    if( !manualEmbeddingsState.done || manualEmbeddingsState.model != models[m_embedIdx].name )
+    {
+        if( m_embedIdx < 0 ) ImGui::BeginDisabled();
+        if( ImGui::SmallButton( ICON_FA_BOOK_BOOKMARK " Learn manual" ) )
+        {
+            if( m_responding ) m_stop = true;
+            m_tools.BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
+        }
+        if( m_embedIdx < 0 ) ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::PushFont( g_fonts.small );
+        ImGui::AlignTextToFramePadding();
+        if( !manualEmbeddingsState.done )
+        {
+            tracy::TextDisabledUnformatted( "Embeddings not calculated" );
+        }
+        else
+        {
+            ImGui::TextDisabled( "Embeddings calculated for model %s", manualEmbeddingsState.model.c_str() );
+        }
+        ImGui::PopFont();
     }
 
     const auto ctxSize = models[m_modelIdx].contextSize;

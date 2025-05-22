@@ -159,7 +159,7 @@ void TracyLlm::Draw()
         ImGui::AlignTextToFramePadding();
         TextDisabledUnformatted( "Model:" );
         ImGui::SameLine();
-        if( models.empty() )
+        if( models.empty() || m_modelIdx < 0 )
         {
             ImGui::TextUnformatted( "No models available" );
         }
@@ -170,6 +170,7 @@ void TracyLlm::Draw()
                 for( size_t i = 0; i < models.size(); ++i )
                 {
                     const auto& model = models[i];
+                    if( model.embeddings ) continue;
                     if( ImGui::Selectable( model.name.c_str(), i == m_modelIdx ) )
                     {
                         m_modelIdx = i;
@@ -177,6 +178,35 @@ void TracyLlm::Draw()
                         SaveConfig();
                     }
                     if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( "Embeddings:" );
+        ImGui::SameLine();
+        if( models.empty() || m_embedIdx < 0 )
+        {
+            ImGui::TextUnformatted( "No models available" );
+        }
+        else
+        {
+            if( ImGui::BeginCombo( "##embedmodel", models[m_embedIdx].name.c_str() ) )
+            {
+                for( size_t i = 0; i < models.size(); ++i )
+                {
+                    const auto& model = models[i];
+                    if( !model.embeddings ) continue;
+                    if( ImGui::Selectable( model.name.c_str(), i == m_embedIdx ) )
+                    {
+                        m_embedIdx = i;
+                        s_config.llmEmbeddingsModel = model.name;
+                        SaveConfig();
+                    }
+                    if( m_embedIdx == i ) ImGui::SetItemDefaultFocus();
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", model.quant.c_str() );
                 }
@@ -192,6 +222,9 @@ void TracyLlm::Draw()
         ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_tools.m_netAccess );
 
         ImGui::TreePop();
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
     }
 
     if( !m_api->IsConnected() )
@@ -206,7 +239,7 @@ void TracyLlm::Draw()
     }
 
     const auto& models = m_api->GetModels();
-    if( models.empty() )
+    if( models.empty() || m_modelIdx < 0 )
     {
         ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
@@ -558,15 +591,42 @@ void TracyLlm::Worker()
 
 void TracyLlm::UpdateModels()
 {
+    m_modelIdx = -1;
+    m_embedIdx = -1;
+
     auto& models = m_api->GetModels();
     auto it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmModel; } );
     if( it == models.end() )
     {
-        m_modelIdx = 0;
+        for( int i=0; i<models.size(); i++ )
+        {
+            if( !models[i].embeddings )
+            {
+                m_modelIdx = i;
+                break;
+            }
+        }
     }
     else
     {
         m_modelIdx = std::distance( models.begin(), it );
+    }
+
+    it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmEmbeddingsModel; } );
+    if( it == models.end() )
+    {
+        for( int i=0; i<models.size(); i++ )
+        {
+            if( models[i].embeddings )
+            {
+                m_embedIdx = i;
+                break;
+            }
+        }
+    }
+    else
+    {
+        m_embedIdx = std::distance( models.begin(), it );
     }
 }
 

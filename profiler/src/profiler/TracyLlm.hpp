@@ -75,7 +75,8 @@ private:
 
     std::unique_ptr<TracyLlmApi> m_api;
 
-    size_t m_modelIdx;
+    int m_modelIdx;
+    int m_embedIdx;
 
     std::atomic<bool> m_exit;
     std::condition_variable m_cv;

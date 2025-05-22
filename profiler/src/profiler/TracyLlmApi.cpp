@@ -116,7 +116,7 @@ static size_t StreamFn( void* _data, size_t size, size_t num, void* ptr )
         if( end == std::string::npos ) break;
 
         nlohmann::json json = nlohmann::json::parse( v.str.c_str() + pos, v.str.c_str() + end );
-        if( !v.callback( json ) ) return 0;
+        if( !v.callback( json ) ) return CURL_WRITEFUNC_ERROR;
         v.str.erase( 0, end + 2 );
     }
     return sz;
@@ -143,7 +143,7 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
 
     auto res = curl_easy_perform( m_curl );
     curl_slist_free_all( hdr );
-    if( res != CURLE_OK ) return false;
+    if( res != CURLE_OK && res != CURLE_WRITE_ERROR ) return false;
 
     int64_t http_code = 0;
     curl_easy_getinfo( m_curl, CURLINFO_RESPONSE_CODE, &http_code );

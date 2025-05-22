@@ -25,6 +25,7 @@ public:
 
 private:
     [[nodiscard]] int CalcMaxSize() const;
+    [[nodiscard]] std::string TrimString( std::string&& str ) const;
 
     std::string FetchWebPage( const std::string& url );
     ToolReply SearchWikipedia( std::string query, const std::string& lang );

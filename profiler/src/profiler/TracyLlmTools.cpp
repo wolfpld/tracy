@@ -98,6 +98,23 @@ int TracyLlmTools::CalcMaxSize() const
     return maxSize;
 }
 
+std::string TracyLlmTools::TrimString( std::string&& str ) const
+{
+    auto maxSize = CalcMaxSize();
+    if( str.size() < maxSize ) return str;
+
+    // Check if UTF-8 continuation byte will be removed, meaning an UTF-8 character is split in the middle
+    if( ( str[maxSize] & 0xC0 ) == 0xC0 )
+    {
+        // Remove the current UTF-8 character
+        while( maxSize > 0 && ( str[maxSize-1] & 0xC0 ) == 0xC0 ) maxSize--;
+        // Finally, remove the first byte of a UTF-8 multi-byte sequence
+        //assert( ( str[maxSize-1] & 0xC0 ) == 0x80 );
+        if( maxSize > 0 ) maxSize--;
+    }
+    return str.substr( 0, maxSize );
+}
+
 static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
 {
     const auto data = (unsigned char*)_data;
@@ -203,9 +220,7 @@ std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& la
     std::ranges::replace( page, ' ', '_' );
     auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
 
-    const auto maxSize = CalcMaxSize();
-    if( res.size() > maxSize ) res = res.substr( 0, maxSize );
-    return res;
+    return TrimString( std::move( res ) );
 }
 
 std::string TracyLlmTools::GetDictionary( std::string word, const std::string& lang )
@@ -227,9 +242,7 @@ std::string TracyLlmTools::GetDictionary( std::string word, const std::string& l
     const auto key = page0["key"].get_ref<const std::string&>();
     auto res = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/page/" + key );
 
-    const auto maxSize = CalcMaxSize();
-    if( res.size() > maxSize ) res = res.substr( 0, maxSize );
-    return res;
+    return TrimString( std::move( res ) );
 }
 
 static std::string RemoveNewline( std::string str )

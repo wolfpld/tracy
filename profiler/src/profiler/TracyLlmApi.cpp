@@ -23,6 +23,15 @@ TracyLlmApi::~TracyLlmApi()
     if( m_curl ) curl_easy_cleanup( m_curl );
 }
 
+void TracyLlmApi::SetupCurl()
+{
+    curl_easy_setopt( m_curl, CURLOPT_NOSIGNAL, 1L );
+    curl_easy_setopt( m_curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
+    curl_easy_setopt( m_curl, CURLOPT_FOLLOWLOCATION, 1L );
+    curl_easy_setopt( m_curl, CURLOPT_TIMEOUT, 300 );
+    curl_easy_setopt( m_curl, CURLOPT_USERAGENT, "Tracy Profiler" );
+}
+
 bool TracyLlmApi::Connect( const char* url )
 {
     m_contextSize = -1;
@@ -33,11 +42,7 @@ bool TracyLlmApi::Connect( const char* url )
     m_curl = curl_easy_init();
     if( !m_curl ) return false;
 
-    curl_easy_setopt( m_curl, CURLOPT_NOSIGNAL, 1L );
-    curl_easy_setopt( m_curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
-    curl_easy_setopt( m_curl, CURLOPT_FOLLOWLOCATION, 1L );
-    curl_easy_setopt( m_curl, CURLOPT_TIMEOUT, 300 );
-    curl_easy_setopt( m_curl, CURLOPT_USERAGENT, "Tracy Profiler" );
+    SetupCurl();
 
     std::string buf;
     if( GetRequest( m_url + "/v1/models", buf ) != 200 )

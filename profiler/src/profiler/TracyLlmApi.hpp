@@ -36,6 +36,8 @@ public:
     [[nodiscard]] int GetContextSize() const { return m_contextSize; }
 
 private:
+    void SetupCurl();
+
     int64_t GetRequest( const std::string& url, std::string& response );
     int64_t PostRequest( const std::string& url, const std::string& data, std::string& response );
 

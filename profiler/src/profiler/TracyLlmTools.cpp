@@ -9,6 +9,11 @@
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 
+constexpr const char* NoNetworkAccess = "Internet access is disabled by the user.";
+
+#define NetworkCheckString if( !m_netAccess ) return NoNetworkAccess
+#define NetworkCheckReply if( !m_netAccess ) return { .reply = NoNetworkAccess }
+
 namespace tracy
 {
 
@@ -141,7 +146,7 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url )
 
 TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, const std::string& lang )
 {
-    if( !m_netAccess ) return { .reply = "Internet access is disabled by the user." };
+    NetworkCheckReply;
 
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
@@ -194,7 +199,7 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
 
 std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& lang )
 {
-    if( !m_netAccess ) return "Internet access is disabled by the user.";
+    NetworkCheckString;
 
     std::ranges::replace( page, ' ', '_' );
     auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
@@ -206,7 +211,7 @@ std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& la
 
 std::string TracyLlmTools::GetDictionary( std::string word, const std::string& lang )
 {
-    if( !m_netAccess ) return "Internet access is disabled by the user.";
+    NetworkCheckString;
 
     std::ranges::replace( word, ' ', '+' );
     const auto response = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/search/page?q=" + UrlEncode( word ) + "&limit=1" );
@@ -237,7 +242,7 @@ static std::string RemoveNewline( std::string str )
 
 std::string TracyLlmTools::SearchWeb( std::string query )
 {
-    if( !m_netAccess ) return "Internet access is disabled by the user.";
+    NetworkCheckString;
 
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + UrlEncode( query ) );

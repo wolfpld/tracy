@@ -696,6 +696,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                     lock.unlock();
                     const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api );
                     const auto output = "<tool_output>\n" + reply.reply;
+                    m_usedCtx += output.size() / 4;
                     lock.lock();
                     //if( reply.image.empty() )
                     {

@@ -168,6 +168,18 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
     return false;
 }
 
+bool TracyLlmApi::Embeddings( const nlohmann::json& req, nlohmann::json& response )
+{
+    assert( m_curl );
+
+    std::string buf;
+    auto res = PostRequest( m_url + "/v1/embeddings", req.dump(), buf );
+    if( res != 200 ) return false;
+
+    response = nlohmann::json::parse( buf );
+    return true;
+}
+
 int64_t TracyLlmApi::GetRequest( const std::string& url, std::string& response )
 {
     assert( m_curl );

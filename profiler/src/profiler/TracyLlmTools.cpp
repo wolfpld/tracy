@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 #include <libbase64.h>
@@ -6,7 +7,11 @@
 #include <tidybuffio.h>
 #include <time.h>
 
+#include "TracyEmbed.hpp"
+#include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
+
+#include "data/Manual.hpp"
 
 constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. You may inform the user that he can enable it in the settings, so that you can use the tools to gather information.";
 
@@ -40,6 +45,11 @@ static std::string UrlEncode( const std::string& str )
         }
     }
     return out;
+}
+
+TracyLlmTools::~TracyLlmTools()
+{
+    CancelManualEmbeddings();
 }
 
 TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, int contextSize )
@@ -86,6 +96,81 @@ std::string TracyLlmTools::GetCurrentTime()
     strftime( buffer, sizeof( buffer ), "%Y-%m-%d %H:%M:%S", tm );
 
     return buffer;
+}
+
+TracyLlmTools::EmbeddingState TracyLlmTools::GetManualEmbeddingsState() const
+{
+    std::lock_guard lock( m_lock );
+    return m_manualEmbeddingState;
+}
+
+void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi& api )
+{
+    std::unique_lock lock( m_lock );
+    assert( !m_manualEmbeddingState.inProgress );
+    if( m_manualEmbeddingState.done && m_manualEmbeddingState.model == model ) return;
+
+    lock.unlock();
+    if( m_thread.joinable() ) m_thread.join();
+
+    assert( !m_cancel );
+    m_manualEmbeddingState = { .model = model, .inProgress = true };
+    m_thread = std::thread( [this, &api] { ManualEmbeddingsWorker( api ); } );
+}
+
+void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
+{
+    constexpr auto Chunk = 1000;
+    constexpr auto Overlap = 200;
+
+    auto manual = Unembed( Manual );
+
+    const auto sz = (int)manual->size();
+    const auto chunks = ( sz + Chunk - 1 ) / Chunk;
+    for( int i=0; i<chunks; i++ )
+    {
+        std::unique_lock lock( m_lock );
+        if( m_cancel )
+        {
+            m_manualEmbeddingState.inProgress = false;
+            m_manualEmbeddingState.done = false;
+            return;
+        }
+        m_manualEmbeddingState.progress = (float)i / chunks;
+        lock.unlock();
+
+        const auto start = std::max( 0, Chunk * i - Overlap );
+        const auto end = std::min( sz, Chunk * ( i + 1 ) + Overlap );
+
+        nlohmann::json req;
+        req["input"] = std::string( manual->data() + start, end - start );
+        req["model"] = m_manualEmbeddingState.model;
+
+        nlohmann::json response;
+        api.Embeddings( req, response );
+
+        std::vector<float> embeddings;
+        for( auto& item : response["data"][0]["embedding"] )
+        {
+            embeddings.emplace_back( item.get<float>() );
+        }
+    }
+
+    std::lock_guard lock( m_lock );
+    m_manualEmbeddingState.inProgress = false;
+    m_manualEmbeddingState.done = true;
+}
+
+void TracyLlmTools::CancelManualEmbeddings()
+{
+    if( m_thread.joinable() )
+    {
+        m_lock.lock();
+        m_cancel = true;
+        m_lock.unlock();
+        m_thread.join();
+        m_cancel = false;
+    }
 }
 
 int TracyLlmTools::CalcMaxSize() const

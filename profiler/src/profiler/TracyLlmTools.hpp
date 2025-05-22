@@ -1,13 +1,17 @@
 #ifndef __TRACYLLMTOOLS_HPP__
 #define __TRACYLLMTOOLS_HPP__
 
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "tracy_robin_hood.h"
 
 namespace tracy
 {
+
+class TracyLlmApi;
 
 class TracyLlmTools
 {
@@ -18,8 +22,22 @@ public:
         std::string image;
     };
 
+    struct EmbeddingState
+    {
+        std::string model;
+        bool done = false;
+        bool inProgress = false;
+        float progress = 0;
+    };
+
+    ~TracyLlmTools();
+
     ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, int contextSize );
     std::string GetCurrentTime();
+
+    [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
+    void BuildManualEmbeddings( const std::string& model, TracyLlmApi& api );
+    void CancelManualEmbeddings();
 
     bool m_netAccess = true;
 
@@ -33,9 +51,16 @@ private:
     std::string GetDictionary( std::string word, const std::string& lang );
     std::string SearchWeb( std::string query );
 
+    void ManualEmbeddingsWorker( TracyLlmApi& api );
+
     unordered_flat_map<std::string, std::string> m_webCache;
 
     int m_ctxSize;
+
+    mutable std::mutex m_lock;
+    std::thread m_thread;
+    bool m_cancel = false;
+    EmbeddingState m_manualEmbeddingState;
 };
 
 }

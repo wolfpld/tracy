@@ -97,6 +97,8 @@ static size_t StreamFn( void* _data, size_t size, size_t num, void* ptr )
 
     for(;;)
     {
+        if( strncmp( v.str.c_str(), "data: [DONE]", 12 ) == 0 ) return sz;
+
         auto pos = v.str.find( "data: " );
         if( pos == std::string::npos ) break;
         pos += 6;

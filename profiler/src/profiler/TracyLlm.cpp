@@ -728,8 +728,6 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
             m_responding = false;
             m_focusInput = true;
         }
-
-        return false;
     }
 
     return true;

@@ -15,6 +15,7 @@ struct LlmModel
     std::string name;
     std::string quant;
     int contextSize = -1;
+    bool embeddings = false;
 };
 
 class TracyLlmApi

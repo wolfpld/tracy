@@ -186,13 +186,19 @@ int64_t TracyLlmApi::PostRequest( const std::string& url, const std::string& dat
     assert( m_curl );
     response.clear();
 
+    curl_slist *hdr = nullptr;
+    hdr = curl_slist_append( hdr, "Accept: application/json" );
+    hdr = curl_slist_append( hdr, "Content-Type: application/json" );
+
     curl_easy_setopt( m_curl, CURLOPT_URL, url.c_str() );
+    curl_easy_setopt( m_curl, CURLOPT_HTTPHEADER, hdr );
     curl_easy_setopt( m_curl, CURLOPT_POSTFIELDS, data.c_str() );
     curl_easy_setopt( m_curl, CURLOPT_POSTFIELDSIZE, data.size() );
     curl_easy_setopt( m_curl, CURLOPT_WRITEDATA, &response );
     curl_easy_setopt( m_curl, CURLOPT_WRITEFUNCTION, WriteFn );
 
     auto res = curl_easy_perform( m_curl );
+    curl_slist_free_all( hdr );
     if( res != CURLE_OK ) return -1;
 
     int64_t http_code = 0;

@@ -212,9 +212,7 @@ void TracyLlm::Draw()
         TextCentered( ICON_FA_WORM );
         ImGui::Spacing();
         TextCentered( "No models available." );
-        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 1.5f ) );
         ImGui::PopFont();
-        ImGui::TextWrapped( "Use the LLM backend tooling to download models." );
         ImGui::End();
         return;
     }

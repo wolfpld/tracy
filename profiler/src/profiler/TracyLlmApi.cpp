@@ -66,6 +66,11 @@ bool TracyLlmApi::Connect( const char* url )
             {
                 m_type = Type::LmStudio;
                 auto json2 = nlohmann::json::parse( buf2 );
+                if( json2["type"] == "embeddings" )
+                {
+                    m_models.pop_back();
+                    continue;
+                }
                 m_models.back().quant = json2["quantization"].get_ref<const std::string&>();
             }
             else if( PostRequest( m_url + "/api/show", "{\"name\":\"" + id + "\"}", buf2 ) == 200 )

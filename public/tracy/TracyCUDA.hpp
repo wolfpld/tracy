@@ -7,6 +7,9 @@
 #define TracyCUDAContextDestroy(ctx)
 #define TracyCUDAContextName(ctx, name, size)
 
+#define TracyCUDAStartProfiling(ctx)
+#define TracyCUDAStopProfiling(ctx)
+
 #define TracyCUDACollect(ctx)
 
 #else

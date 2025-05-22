@@ -72,6 +72,7 @@ bool TracyLlmApi::Connect( const char* url )
                     continue;
                 }
                 m_models.back().quant = json2["quantization"].get_ref<const std::string&>();
+                if( json2.contains( "loaded_context_length" ) ) m_models.back().contextSize = json2["loaded_context_length"].get<int>();
             }
             else if( PostRequest( m_url + "/api/show", "{\"name\":\"" + id + "\"}", buf2 ) == 200 )
             {
@@ -122,7 +123,7 @@ static size_t StreamFn( void* _data, size_t size, size_t num, void* ptr )
     return sz;
 }
 
-bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function<bool(const nlohmann::json&)>& callback )
+bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function<bool(const nlohmann::json&)>& callback, int modelIdx )
 {
     assert( m_curl );
     StreamData data = { .callback = callback };
@@ -147,7 +148,21 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
 
     int64_t http_code = 0;
     curl_easy_getinfo( m_curl, CURLINFO_RESPONSE_CODE, &http_code );
-    return http_code == 200;
+    if( http_code == 200 )
+    {
+        if( m_type == Type::LmStudio && m_models[modelIdx].contextSize <= 0 )
+        {
+            curl_easy_reset( m_curl );
+            SetupCurl();
+            std::string buf;
+            if( GetRequest( m_url + "/api/v0/models/" + m_models[modelIdx].name, buf ) == 200 )
+            {
+                m_models[modelIdx].contextSize = nlohmann::json::parse( buf )["loaded_context_length"].get<int>();
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 int64_t TracyLlmApi::GetRequest( const std::string& url, std::string& response )

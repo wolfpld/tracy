@@ -602,7 +602,7 @@ void TracyLlm::SendMessage( const std::vector<nlohmann::json>& messages )
         req["stream"] = true;
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
-        res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); } );
+        res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );
     }
     catch( std::exception& e )
     {

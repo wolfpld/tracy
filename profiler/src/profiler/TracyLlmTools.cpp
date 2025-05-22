@@ -6,7 +6,6 @@
 #include <tidybuffio.h>
 #include <time.h>
 
-#include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 
 constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. You may inform the user that he can enable it in the settings, so that you can use the tools to gather information.";
@@ -43,9 +42,9 @@ static std::string UrlEncode( const std::string& str )
     return out;
 }
 
-TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, const TracyLlmApi& api)
+TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, int contextSize )
 {
-    m_ctxSize = api.GetContextSize();
+    m_ctxSize = contextSize;
 
     if( name == "fetch_web_page" )
     {

@@ -205,7 +205,8 @@ void TracyLlm::Draw()
         return;
     }
 
-    if( m_api->GetModels().empty() )
+    const auto& models = m_api->GetModels();
+    if( models.empty() )
     {
         ImGui::PushFont( g_fonts.big );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
@@ -217,7 +218,7 @@ void TracyLlm::Draw()
         return;
     }
 
-    const auto ctxSize = m_api->GetContextSize();
+    const auto ctxSize = models[m_modelIdx].contextSize;
     if( ctxSize > 0 )
     {
         ImGui::Spacing();
@@ -692,7 +693,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                     auto tool = lines[0];
                     lines.erase( lines.begin() );
                     lock.unlock();
-                    const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api );
+                    const auto reply = m_tools.HandleToolCalls( tool, lines, m_api->GetModels()[m_modelIdx].contextSize );
                     const auto output = "<tool_output>\n" + reply.reply;
                     m_usedCtx += output.size() / 4;
                     lock.lock();

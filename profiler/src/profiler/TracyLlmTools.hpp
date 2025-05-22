@@ -9,8 +9,6 @@
 namespace tracy
 {
 
-class TracyLlmApi;
-
 class TracyLlmTools
 {
 public:
@@ -20,7 +18,7 @@ public:
         std::string image;
     };
 
-    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, const TracyLlmApi& api );
+    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, int contextSize );
     std::string GetCurrentTime();
 
     bool m_netAccess = true;

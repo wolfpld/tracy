@@ -34,7 +34,6 @@ void TracyLlmApi::SetupCurl()
 
 bool TracyLlmApi::Connect( const char* url )
 {
-    m_contextSize = -1;
     m_url = url;
     m_models.clear();
     if( m_curl ) curl_easy_cleanup( m_curl );

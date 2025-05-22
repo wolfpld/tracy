@@ -34,7 +34,6 @@ public:
 
     [[nodiscard]] bool IsConnected() const { return m_curl != nullptr; }
     [[nodiscard]] const std::vector<LlmModel>& GetModels() const { return m_models; }
-    [[nodiscard]] int GetContextSize() const { return m_contextSize; }
 
 private:
     void SetupCurl();
@@ -47,7 +46,6 @@ private:
     Type m_type;
 
     std::vector<LlmModel> m_models;
-    int m_contextSize;
 };
 
 }

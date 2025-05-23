@@ -32,7 +32,7 @@ public:
 
     bool Connect( const char* url );
     bool ChatCompletion( const nlohmann::json& req, const std::function<bool(const nlohmann::json&)>& callback, int modelIdx );
-    bool Embeddings( const nlohmann::json& req, nlohmann::json& response );
+    bool Embeddings( const nlohmann::json& req, nlohmann::json& response, bool separateConnection = false );
 
     [[nodiscard]] bool IsConnected() const { return m_curl != nullptr; }
     [[nodiscard]] const std::vector<LlmModel>& GetModels() const { return m_models; }
@@ -41,7 +41,7 @@ private:
     void SetupCurl( void* curl );
 
     int64_t GetRequest( const std::string& url, std::string& response );
-    int64_t PostRequest( const std::string& url, const std::string& data, std::string& response );
+    int64_t PostRequest( const std::string& url, const std::string& data, std::string& response, bool separateConnection = false );
 
     void* m_curl = nullptr;
     std::string m_url;

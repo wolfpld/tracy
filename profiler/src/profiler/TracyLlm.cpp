@@ -679,8 +679,10 @@ void TracyLlm::UpdateModels()
 
 void TracyLlm::ResetChat()
 {
-    auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
+    std::string systemPrompt = "<SYSTEM_PROMPT>\n";
+    systemPrompt += std::string( m_systemPrompt->data(), m_systemPrompt->size() );
     systemPrompt += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+    systemPrompt += "</SYSTEM_PROMPT>\n";
 
     *m_input = 0;
     m_chat.clear();

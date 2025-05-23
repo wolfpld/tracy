@@ -11,6 +11,7 @@
 #include "../Fonts.hpp"
 
 #include "data/SystemPrompt.hpp"
+#include "data/SystemReminder.hpp"
 
 extern tracy::Config s_config;
 extern bool SaveConfig();
@@ -37,6 +38,8 @@ TracyLlm::TracyLlm()
     }
 
     m_systemPrompt = Unembed( SystemPrompt );
+    m_systemReminder = Unembed( SystemReminder );
+
     m_input = new char[InputBufferSize];
     m_apiInput = new char[InputBufferSize];
     ResetChat();
@@ -525,7 +528,20 @@ void TracyLlm::Draw()
             }
             else
             {
-                PrintMarkdown( line["content"].get_ref<const std::string&>().c_str() );
+                auto& string = line["content"].get_ref<const std::string&>();
+                if( string.starts_with( "<SYSTEM_REMINDER>\n" ) )
+                {
+                    auto pos = string.find( "</SYSTEM_REMINDER>\n" );
+                    if( pos != std::string::npos )
+                    {
+                        pos += sizeof( "</SYSTEM_REMINDER>\n" ) - 1;
+                        PrintMarkdown( string.c_str() + pos );
+                    }
+                }
+                else
+                {
+                    PrintMarkdown( string.c_str() );
+                }
             }
             ImGui::PopStyleColor();
             ImGui::EndGroup();
@@ -580,9 +596,20 @@ void TracyLlm::Draw()
             }
             if( *ptr )
             {
+                std::string message;
+                if( m_chat.size() > 1 )
+                {
+                    message += "<SYSTEM_REMINDER>\n";
+                    message += std::string( m_systemReminder->data(), m_systemReminder->size() );
+                    message += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+                    message += "</SYSTEM_REMINDER>\n";
+                }
+                message += ptr;
+                m_usedCtx += message.size() / 4;
+
                 nlohmann::json msg;
                 msg["role"] = "user";
-                msg["content"] = m_input;
+                msg["content"] = message;
                 m_chat.emplace_back( std::move( msg ) );
                 *m_input = 0;
                 m_responding = true;

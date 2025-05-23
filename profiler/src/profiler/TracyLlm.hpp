@@ -99,6 +99,7 @@ private:
     unordered_flat_map<size_t, ChatCache> m_chatCache;
 
     std::shared_ptr<EmbedData> m_systemPrompt;
+    std::shared_ptr<EmbedData> m_systemReminder;
 
     TracyLlmTools m_tools;
 };

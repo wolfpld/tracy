@@ -104,6 +104,13 @@ void TracyLlm::Draw()
         DrawWaitingDots( s_time );
         ImGui::TextUnformatted( "" );
         ImGui::PopFont();
+        const float w = 100 * scale;
+        const float ww = ImGui::GetWindowWidth();
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        ImGui::SetCursorPosX( ( ww - w ) * 0.5f );
+        ImGui::ProgressBar( manualEmbeddingsState.progress, ImVec2( w, 0 ), "" );
+        ImGui::PopStyleVar();
+        ImGui::Spacing();
         char tmp[128];
         snprintf( tmp, sizeof( tmp ), "Progress: %.1f%%", manualEmbeddingsState.progress * 100 );
         TextCentered( tmp );

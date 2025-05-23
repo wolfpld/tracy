@@ -61,6 +61,7 @@ set(SERVER_FILES
     TracyImGui.cpp
     TracyLlm.cpp
     TracyLlmApi.cpp
+    TracyLlmEmbeddings.cpp
     TracyLlmTools.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
@@ -221,7 +222,7 @@ else()
 endif()
 
 find_package(Threads REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui Threads::Threads TracyLibcurl base64 tidy-static TracyPugixml nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui Threads::Threads TracyLibcurl base64 tidy-static TracyPugixml nlohmann_json::nlohmann_json usearch)
 target_include_directories(${PROJECT_NAME} PRIVATE ${tidy_SOURCE_DIR}/include)
 
 if(NOT DEFINED GIT_REV)

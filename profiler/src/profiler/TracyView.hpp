@@ -40,8 +40,8 @@ constexpr const char* GpuContextNames[] = {
     "Direct3D 12",
     "Direct3D 11",
     "Metal",
-    "CUDA",
-    "Custom"
+    "Custom",
+    "CUDA"
 };
 
 struct MemoryPage;

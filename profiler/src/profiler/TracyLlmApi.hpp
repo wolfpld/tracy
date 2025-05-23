@@ -38,7 +38,7 @@ public:
     [[nodiscard]] const std::vector<LlmModel>& GetModels() const { return m_models; }
 
 private:
-    void SetupCurl();
+    void SetupCurl( void* curl );
 
     int64_t GetRequest( const std::string& url, std::string& response );
     int64_t PostRequest( const std::string& url, const std::string& data, std::string& response );

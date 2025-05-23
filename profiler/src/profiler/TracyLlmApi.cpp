@@ -23,13 +23,13 @@ TracyLlmApi::~TracyLlmApi()
     if( m_curl ) curl_easy_cleanup( m_curl );
 }
 
-void TracyLlmApi::SetupCurl()
+void TracyLlmApi::SetupCurl( void* curl )
 {
-    curl_easy_setopt( m_curl, CURLOPT_NOSIGNAL, 1L );
-    curl_easy_setopt( m_curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
-    curl_easy_setopt( m_curl, CURLOPT_FOLLOWLOCATION, 1L );
-    curl_easy_setopt( m_curl, CURLOPT_TIMEOUT, 300 );
-    curl_easy_setopt( m_curl, CURLOPT_USERAGENT, "Tracy Profiler" );
+    curl_easy_setopt( curl, CURLOPT_NOSIGNAL, 1L );
+    curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
+    curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
+    curl_easy_setopt( curl, CURLOPT_TIMEOUT, 300 );
+    curl_easy_setopt( curl, CURLOPT_USERAGENT, "Tracy Profiler" );
 }
 
 bool TracyLlmApi::Connect( const char* url )
@@ -41,7 +41,7 @@ bool TracyLlmApi::Connect( const char* url )
     m_curl = curl_easy_init();
     if( !m_curl ) return false;
 
-    SetupCurl();
+    SetupCurl( m_curl );
 
     std::string buf;
     if( GetRequest( m_url + "/v1/models", buf ) != 200 )
@@ -156,7 +156,7 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
         if( m_type == Type::LmStudio && m_models[modelIdx].contextSize <= 0 )
         {
             curl_easy_reset( m_curl );
-            SetupCurl();
+            SetupCurl( m_curl );
             std::string buf;
             if( GetRequest( m_url + "/api/v0/models/" + m_models[modelIdx].name, buf ) == 200 )
             {

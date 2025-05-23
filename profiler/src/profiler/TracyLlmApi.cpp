@@ -160,7 +160,8 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
             std::string buf;
             if( GetRequest( m_url + "/api/v0/models/" + m_models[modelIdx].name, buf ) == 200 )
             {
-                m_models[modelIdx].contextSize = nlohmann::json::parse( buf )["loaded_context_length"].get<int>();
+                auto json = nlohmann::json::parse( buf );
+                if( json.contains( "loaded_context_length" ) ) m_models[modelIdx].contextSize = json["loaded_context_length"].get<int>();
             }
         }
         return true;

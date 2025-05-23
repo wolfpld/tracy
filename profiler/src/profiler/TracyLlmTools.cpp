@@ -47,6 +47,35 @@ static std::string UrlEncode( const std::string& str )
     return out;
 }
 
+static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
+{
+    TidyDoc td = tidyCreate();
+    tidyOptSetBool( td, TidyXhtmlOut, yes );
+    tidyOptSetBool( td, TidyLowerLiterals, yes );
+    tidyOptSetBool( td, TidyMark, no );
+    tidyOptSetBool( td, TidyHideComments, yes );
+
+    if( tidyParseString( td, html.c_str() ) == 2 )
+    {
+        tidyRelease( td );
+        return nullptr;
+    }
+
+    TidyBuffer buf = {};
+    tidyBufInit( &buf );
+    tidyCleanAndRepair( td );
+    tidySaveBuffer( td, &buf );
+
+    auto tidy = std::string( (const char*)buf.bp );
+
+    tidyBufFree( &buf );
+    tidyRelease( td );
+
+    auto doc = std::make_unique<pugi::xml_document>();
+    if( !doc->load_string( tidy.c_str() ) ) return nullptr;
+    return doc;
+}
+
 TracyLlmTools::~TracyLlmTools()
 {
     CancelManualEmbeddings();
@@ -368,40 +397,8 @@ std::string TracyLlmTools::SearchWeb( std::string query )
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + UrlEncode( query ) );
 
-    TidyBuffer err = {};
-    tidyBufInit( &err );
-
-    TidyDoc td = tidyCreate();
-    tidyOptSetBool( td, TidyXhtmlOut, yes );
-    tidyOptSetBool( td, TidyLowerLiterals, yes );
-    tidyOptSetBool( td, TidyMark, no );
-    tidyOptSetBool( td, TidyHideComments, yes );
-    tidySetErrorBuffer( td, &err );
-
-    if( tidyParseString( td, response.c_str() ) == 2 )
-    {
-        auto out = std::string( (const char*)err.bp );
-        tidyBufFree( &err );
-        tidyRelease( td );
-        return out;
-    }
-
-    TidyBuffer buf = {};
-    tidyBufInit( &buf );
-    tidyCleanAndRepair( td );
-    tidySaveBuffer( td, &buf );
-
-    auto tidy = std::string( (const char*)buf.bp );
-
-    tidyBufFree( &buf );
-    tidyBufFree( &err );
-    tidyRelease( td );
-
-    auto doc = std::make_unique<pugi::xml_document>();
-    if( !doc->load_string( tidy.c_str() ) )
-    {
-        return "Error: Failed to parse HTML";
-    }
+    auto doc = ParseHtml( response );
+    if( !doc ) return "Error: Failed to parse HTML";
 
     const auto titles = doc->select_nodes( "//a[@class='result-link']" );
     const auto snippets = doc->select_nodes( "//td[@class='result-snippet']" );

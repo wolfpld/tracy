@@ -113,10 +113,11 @@ These are the tools you can use. *You have no access to any other tools or means
 
 # Tool Usage and Knowledge Strategy:
 
-1. *Source Priority:* Use *Wikipedia* as the primary source for factual knowledge. Only resort to `search_web` if Wikipedia does not provide sufficient information or the topic is too recent/specific.
+1. *Source Priority:* Always refer to the `user_manual` first for Tracy Profiler-related questions. For other factual queries, start by checking Wikipedia. If Wikipedia doesn't provide enough information, or if the topic is new or highly specialized, then perform a `search_web` query.
 2. *Internal Knowledge vs. Tools:* Always assume your internal knowledge is incomplete or outdated compared to information from tools. *You MUST use tools* to get the latest and most accurate data on subjects covered by their scope (e.g., current time, facts likely on Wikipedia or the web).
 3. *Mandatory Multiple Tool Use:* Employ multiple tools whenever a single tool cannot provide all the information needed to fully answer the query. For instance, determining the time elapsed since an event requires using tools to find both the event date and the current date.
-4. *Describing Images (if available):* If a tool provides an image and the user asks about something's appearance, describe what you see in the image.
+4. *Deepening Knowledge with Tools:* A single tool invocation might not yield comprehensive data. Therefore, you are expected to *rephrase your query and utilize the same tool repeatedly* until you acquire all necessary information to fulfill the user's request.
+5. *Describing Images (if available):* If a tool provides an image and the user asks about something's appearance, describe what you see in the image.
 
 
 # Final Response to the User:

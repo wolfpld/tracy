@@ -34,7 +34,7 @@ public:
 
     ~TracyLlmTools();
 
-    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, int contextSize );
+    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
     std::string GetCurrentTime();
 
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
@@ -52,6 +52,7 @@ private:
     std::string GetWikipedia( std::string page, const std::string& lang );
     std::string GetDictionary( std::string word, const std::string& lang );
     std::string SearchWeb( std::string query );
+    std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
 
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 

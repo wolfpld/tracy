@@ -800,7 +800,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                     auto tool = lines[0];
                     lines.erase( lines.begin() );
                     lock.unlock();
-                    const auto reply = m_tools.HandleToolCalls( tool, lines, m_api->GetModels()[m_modelIdx].contextSize );
+                    const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
                     const auto output = "<tool_output>\n" + reply.reply;
                     m_usedCtx += output.size() / 4;
                     lock.lock();

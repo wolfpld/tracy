@@ -52,7 +52,7 @@ TracyLlmTools::~TracyLlmTools()
     CancelManualEmbeddings();
 }
 
-TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, int contextSize )
+TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {
     m_ctxSize = contextSize;
 
@@ -83,6 +83,11 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name
     {
         if( args.empty() ) return { .reply = "Missing search term argument" };
         return { .reply = SearchWeb( args[0] ) };
+    }
+    if( name == "user_manual" )
+    {
+        if( args.empty() ) return { .reply = "Missing search term argument" };
+        return { .reply = SearchManual( args[0], api, hasEmbeddingsModel ) };
     }
     return { .reply = "Unknown tool call: " + name };
 }
@@ -422,6 +427,37 @@ std::string TracyLlmTools::SearchWeb( std::string query )
         result["url"] = RemoveNewline( url.text().as_string() );
 
         json[i] = result;
+    }
+
+    return json.dump( 2 );
+}
+
+std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel )
+{
+    if( !hasEmbeddingsModel ) return "Searching the user manual requires vector embeddings model to be selected. You must inform the user that he should download such a model using their LLM provider software, so you can use this tool.";
+    if( !m_manualEmbeddingState.done ) return "User manual embedding vectors are not calculated. You must inform the user that he should click the \"Learn manual\" button, so you can use this tool.";
+
+    nlohmann::json req;
+    req["input"] = query;
+    req["model"] = m_manualEmbeddingState.model;
+
+    nlohmann::json response;
+    api.Embeddings( req, response, true );
+    auto& embedding = response["data"][0]["embedding"];
+    std::vector<float> vec;
+    vec.reserve( embedding.size() );
+    for( auto& item : embedding ) vec.emplace_back( item.get<float>() );
+
+    auto results = m_manualEmbeddings->Search( vec, 5 );
+    std::ranges::sort( results, []( const auto& a, const auto& b ) { return a.distance < b.distance; } );
+
+    nlohmann::json json;
+    for( auto& item : results )
+    {
+        nlohmann::json r;
+        r["distance"] = item.distance;
+        r["text"] = m_manualEmbeddings->Get( item.idx );
+        json.emplace_back( std::move( r ) );
     }
 
     return json.dump( 2 );

@@ -233,7 +233,7 @@ static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
     return sz;
 }
 
-std::string TracyLlmTools::FetchWebPage( const std::string& url )
+std::string TracyLlmTools::FetchWebPage( const std::string& url, bool cache )
 {
     auto it = m_webCache.find( url );
     if( it != m_webCache.end() ) return it->second;
@@ -263,7 +263,7 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url )
     {
         response = std::move( buf );
     }
-    m_webCache.emplace( url, response );
+    if( cache ) m_webCache.emplace( url, response );
 
     curl_easy_cleanup( curl );
     return response;

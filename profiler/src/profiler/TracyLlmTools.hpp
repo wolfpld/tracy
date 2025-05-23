@@ -47,7 +47,7 @@ private:
     [[nodiscard]] int CalcMaxSize() const;
     [[nodiscard]] std::string TrimString( std::string&& str ) const;
 
-    std::string FetchWebPage( const std::string& url );
+    std::string FetchWebPage( const std::string& url, bool cache = true );
     ToolReply SearchWikipedia( std::string query, const std::string& lang );
     std::string GetWikipedia( std::string page, const std::string& lang );
     std::string GetDictionary( std::string word, const std::string& lang );

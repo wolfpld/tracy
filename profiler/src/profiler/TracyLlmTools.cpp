@@ -166,6 +166,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         api.Embeddings( req, response );
 
         std::vector<float> embeddings;
+        embeddings.reserve( length );
         for( auto& item : response["data"][0]["embedding"] )
         {
             embeddings.emplace_back( item.get<float>() );

@@ -1,11 +1,13 @@
 #ifndef __TRACYLLMTOOLS_HPP__
 #define __TRACYLLMTOOLS_HPP__
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include "TracyLlmEmbeddings.hpp"
 #include "tracy_robin_hood.h"
 
 namespace tracy
@@ -61,6 +63,7 @@ private:
     std::thread m_thread;
     bool m_cancel = false;
     EmbeddingState m_manualEmbeddingState;
+    std::unique_ptr<TracyLlmEmbeddings> m_manualEmbeddings;
 };
 
 }

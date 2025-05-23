@@ -139,6 +139,9 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 
     const auto sz = (int)manual->size();
     const auto chunks = ( sz + Chunk - 1 ) / Chunk;
+
+    m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, chunks );
+
     for( int i=0; i<chunks; i++ )
     {
         std::unique_lock lock( m_lock );
@@ -153,9 +156,10 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 
         const auto start = std::max( 0, Chunk * i - Overlap );
         const auto end = std::min( sz, Chunk * ( i + 1 ) + Overlap );
+        std::string str( manual->data() + start, end - start );
 
         nlohmann::json req;
-        req["input"] = std::string( manual->data() + start, end - start );
+        req["input"] = str;
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;
@@ -166,6 +170,8 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         {
             embeddings.emplace_back( item.get<float>() );
         }
+
+        m_manualEmbeddings->Add( std::move( str ), embeddings );
     }
 
     std::lock_guard lock( m_lock );

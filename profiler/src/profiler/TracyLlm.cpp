@@ -327,15 +327,41 @@ void TracyLlm::Draw()
     }
 
     const auto ctxSize = models[m_modelIdx].contextSize;
-    if( ctxSize > 0 )
+    ImGui::Spacing();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    if( ctxSize <= 0 )
     {
-        ImGui::Spacing();
-        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        ImGui::ProgressBar( m_usedCtx / (float)ctxSize, ImVec2( -1, 0 ), "" );
-        ImGui::PopStyleVar();
-        if( ImGui::IsItemHovered() )
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.3f, 0.3f, 0.3f, 1.0f));
+        ImGui::ProgressBar( 1, ImVec2( -1, 0 ), "" );
+    }
+    else
+    {
+        const auto ratio = m_usedCtx / (float)ctxSize;
+        if( ratio < 0.5f )
         {
-            ImGui::BeginTooltip();
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.2f, 0.6f, 0.2f, 1.0f));
+        }
+        else if( ratio < 0.8f )
+        {
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.6f, 0.6f, 0.2f, 1.0f));
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+        }
+        ImGui::ProgressBar( ratio, ImVec2( -1, 0 ), "" );
+    }
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        if( ctxSize <= 0 )
+        {
+            ImGui::TextUnformatted( "Context size is not available" );
+        }
+        else
+        {
             TextFocused( "Used context size:", RealToString( m_usedCtx ) );
             ImGui::SameLine();
             char buf[64];
@@ -344,12 +370,8 @@ void TracyLlm::Draw()
             TextFocused( "Available context size:", RealToString( ctxSize ) );
             ImGui::Separator();
             tracy::TextDisabledUnformatted( ICON_FA_TRIANGLE_EXCLAMATION " Context use may be an estimate" );
-            ImGui::EndTooltip();
         }
-    }
-    else
-    {
-        tracy::TextDisabledUnformatted( ICON_FA_TRIANGLE_EXCLAMATION " Context size is not available" );
+        ImGui::EndTooltip();
     }
 
     ImGui::Spacing();

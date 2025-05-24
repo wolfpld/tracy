@@ -189,12 +189,25 @@ if(NOT DEFINED GIT_REV)
     set(GIT_REV "HEAD")
 endif()
 
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-add_custom_target(git-ref
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/../extra/git-ref.py ${GIT_REV}
-    BYPRODUCTS GitRef.hpp
-)
-add_dependencies(${PROJECT_NAME} git-ref)
+find_package(Git)
+if(Git_FOUND)
+    add_custom_target(git-ref
+        COMMAND ${GIT_EXECUTABLE} log -1 "--format=#pragma once %nnamespace tracy { static inline const char* GitRef = %x22%h%x22; }" ${GIT_REV} > GitRef.hpp.tmp
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different GitRef.hpp.tmp GitRef.hpp
+        BYPRODUCTS GitRef.hpp GitRef.hpp.tmp
+        VERBATIM
+    )
+    add_dependencies(${PROJECT_NAME} git-ref)
+else()
+    message(WARNING "git not found, using 'unknown' as git ref.")
+    add_custom_command(
+        OUTPUT GitRef.hpp
+        COMMAND ${CMAKE_COMMAND} -E echo "#pragma once" > GitRef.hpp
+        COMMAND ${CMAKE_COMMAND} -E echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp
+        VERBATIM
+    )
+    target_sources(${PROJECT_NAME} PUBLIC GitRef.hpp)
+endif()
 
 if(NOT EMSCRIPTEN)
     if(NOT NO_FILESELECTOR)

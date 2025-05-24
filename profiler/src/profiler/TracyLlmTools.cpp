@@ -474,6 +474,22 @@ static void RemoveAttributes( pugi::xml_node node, const char* tag, std::vector<
     }
 }
 
+static void RemoveEmptyTags( pugi::xml_node node )
+{
+    auto child = node.first_child();
+    while( child )
+    {
+        auto next = child.next_sibling();
+        auto type = child.type();
+        if( child.type() == pugi::xml_node_type::node_element )
+        {
+            RemoveEmptyTags( child );
+            if( !child.first_child() && child.text().empty() ) { node.remove_child( child ); }
+        }
+        child = next;
+    }
+}
+
 struct xml_writer : public pugi::xml_writer
 {
     explicit xml_writer( std::string& str ) : str( str ) {}
@@ -591,6 +607,7 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         RemoveAttributes( node, "//i" );
         RemoveAttributes( node, "//b" );
         RemoveAttributes( node, "//u" );
+        RemoveEmptyTags( node );
 
         xml_writer writer( response );
         body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );

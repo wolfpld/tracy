@@ -35,7 +35,7 @@ public:
     ~TracyLlmTools();
 
     ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
-    std::string GetCurrentTime();
+    std::string GetCurrentTime() const;
 
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
     void BuildManualEmbeddings( const std::string& model, TracyLlmApi& api );

@@ -128,7 +128,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name
     return { .reply = "Unknown tool call: " + name };
 }
 
-std::string TracyLlmTools::GetCurrentTime()
+std::string TracyLlmTools::GetCurrentTime() const
 {
     auto t = time( nullptr );
     auto tm = localtime( &t );

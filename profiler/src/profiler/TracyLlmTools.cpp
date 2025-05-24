@@ -54,6 +54,8 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     tidyOptSetBool( td, TidyLowerLiterals, yes );
     tidyOptSetBool( td, TidyMark, no );
     tidyOptSetBool( td, TidyHideComments, yes );
+    tidyOptSetBool( td, TidyShowWarnings, no );
+    tidyOptSetInt( td, TidyShowErrors, 0 );
 
     if( tidyParseString( td, html.c_str() ) == 2 )
     {

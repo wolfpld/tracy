@@ -446,6 +446,34 @@ static void RemoveTag( pugi::xml_node node, const char* tag )
     }
 }
 
+static void RemoveAttributes( pugi::xml_node node, const char* tag, std::vector<const char*> valid = {} )
+{
+    auto nodes = node.select_nodes( tag );
+    if( valid.empty() )
+    {
+        for( auto& n : nodes ) n.node().remove_attributes();
+    }
+    else
+    {
+        unordered_flat_set<std::string> toRemove;
+        for( auto& n : nodes )
+        {
+            toRemove.clear();
+            auto node = n.node();
+            for( auto& attr : node.attributes() ) toRemove.emplace( attr.name() );
+            for( auto& validAttr : valid )
+            {
+                auto it = toRemove.find( validAttr );
+                if( it != toRemove.end() ) toRemove.erase( it );
+            }
+            for( auto& attr : toRemove )
+            {
+                while( node.remove_attribute( attr.c_str() ) );
+            }
+        }
+    }
+}
+
 struct xml_writer : public pugi::xml_writer
 {
     explicit xml_writer( std::string& str ) : str( str ) {}
@@ -517,6 +545,39 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         RemoveTag( node, "//link" );
         RemoveTag( node, "//meta" );
         RemoveTag( node, "//svg" );
+        RemoveTag( node, "//template" );
+        RemoveAttributes( node, "//body" );
+        RemoveAttributes( node, "//div" );
+        RemoveAttributes( node, "//p" );
+        RemoveAttributes( node, "//a", { "href", "title" } );
+        RemoveAttributes( node, "//img", { "src", "alt" } );
+        RemoveAttributes( node, "//li" );
+        RemoveAttributes( node, "//ul", { "role" } );
+        RemoveAttributes( node, "//td", { "colspan" } );
+        RemoveAttributes( node, "//tr" );
+        RemoveAttributes( node, "//span" );
+        RemoveAttributes( node, "//pre" );
+        RemoveAttributes( node, "//button" );
+        RemoveAttributes( node, "//label", { "title" } );
+        RemoveAttributes( node, "//input", { "type", "placeholder" } );
+        RemoveAttributes( node, "//form", { "action", "method" } );
+        RemoveAttributes( node, "//textarea", { "placeholder" } );
+        RemoveAttributes( node, "//dialog" );
+        RemoveAttributes( node, "//header" );
+        RemoveAttributes( node, "//footer" );
+        RemoveAttributes( node, "//section" );
+        RemoveAttributes( node, "//article" );
+        RemoveAttributes( node, "//aside" );
+        RemoveAttributes( node, "//figure" );
+        RemoveAttributes( node, "//main" );
+        RemoveAttributes( node, "//nav" );
+        RemoveAttributes( node, "//time", { "datetime" } );
+        RemoveAttributes( node, "//h1" );
+        RemoveAttributes( node, "//h2" );
+        RemoveAttributes( node, "//h3" );
+        RemoveAttributes( node, "//h4" );
+        RemoveAttributes( node, "//h5" );
+        RemoveAttributes( node, "//h6" );
 
         xml_writer writer( response );
         body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );

@@ -546,6 +546,7 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         RemoveTag( node, "//meta" );
         RemoveTag( node, "//svg" );
         RemoveTag( node, "//template" );
+        RemoveTag( node, "//ins" );
         RemoveAttributes( node, "//body" );
         RemoveAttributes( node, "//div" );
         RemoveAttributes( node, "//p" );
@@ -555,6 +556,10 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         RemoveAttributes( node, "//ul", { "role" } );
         RemoveAttributes( node, "//td", { "colspan" } );
         RemoveAttributes( node, "//tr" );
+        RemoveAttributes( node, "//hr" );
+        RemoveAttributes( node, "//th", { "colspan", "rowspan" } );
+        RemoveAttributes( node, "//table", { "role" } );
+        RemoveAttributes( node, "//col" );
         RemoveAttributes( node, "//span" );
         RemoveAttributes( node, "//pre" );
         RemoveAttributes( node, "//button" );
@@ -570,7 +575,10 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         RemoveAttributes( node, "//aside" );
         RemoveAttributes( node, "//figure" );
         RemoveAttributes( node, "//main" );
+        RemoveAttributes( node, "//summary" );
+        RemoveAttributes( node, "//details" );
         RemoveAttributes( node, "//nav" );
+        RemoveAttributes( node, "//bdi" );
         RemoveAttributes( node, "//time", { "datetime" } );
         RemoveAttributes( node, "//h1" );
         RemoveAttributes( node, "//h2" );
@@ -578,6 +586,11 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         RemoveAttributes( node, "//h4" );
         RemoveAttributes( node, "//h5" );
         RemoveAttributes( node, "//h6" );
+        RemoveAttributes( node, "//strong" );
+        RemoveAttributes( node, "//em" );
+        RemoveAttributes( node, "//i" );
+        RemoveAttributes( node, "//b" );
+        RemoveAttributes( node, "//u" );
 
         xml_writer writer( response );
         body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );

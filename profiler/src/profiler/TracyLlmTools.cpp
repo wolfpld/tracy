@@ -7,6 +7,7 @@
 #include <tidybuffio.h>
 #include <time.h>
 
+#include "TracyConfig.hpp"
 #include "TracyEmbed.hpp"
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
@@ -17,6 +18,8 @@ constexpr const char* NoNetworkAccess = "Internet access is disabled by the user
 
 #define NetworkCheckString if( !m_netAccess ) return NoNetworkAccess
 #define NetworkCheckReply if( !m_netAccess ) return { .reply = NoNetworkAccess }
+
+extern tracy::Config s_config;
 
 namespace tracy
 {
@@ -457,46 +460,50 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
 {
     NetworkCheckString;
 
-    auto curl = curl_easy_init();
-    if( !curl ) return "Error: Failed to initialize cURL";
-
-    nlohmann::json post;
-    post["url"] = url;
-    auto postStr = post.dump();
-
-    std::string buf;
-
-    curl_slist *hdr = nullptr;
-    hdr = curl_slist_append( hdr, "Accept: application/json" );
-    hdr = curl_slist_append( hdr, "Content-Type: application/json" );
-
-    curl_easy_setopt( curl, CURLOPT_NOSIGNAL, 1L );
-    curl_easy_setopt( curl, CURLOPT_URL, "http://localhost:3000/" );
-    curl_easy_setopt( curl, CURLOPT_HTTPHEADER, hdr );
-    curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
-    curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
-    curl_easy_setopt( curl, CURLOPT_TIMEOUT, 120 );
-    curl_easy_setopt( curl, CURLOPT_POSTFIELDS, postStr.c_str() );
-    curl_easy_setopt( curl, CURLOPT_POSTFIELDSIZE, postStr.size() );
-    curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
-    curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
-    curl_easy_setopt( curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" );
-
-    auto res = curl_easy_perform( curl );
-    curl_slist_free_all( hdr );
-
     std::string response;
-    if( res == CURLE_OK )
+
+    if( !s_config.llmReadability.empty() )
     {
-        try
+        auto curl = curl_easy_init();
+        if( !curl ) return "Error: Failed to initialize cURL";
+
+        nlohmann::json post;
+        post["url"] = url;
+        auto postStr = post.dump();
+
+        std::string buf;
+
+        curl_slist *hdr = nullptr;
+        hdr = curl_slist_append( hdr, "Accept: application/json" );
+        hdr = curl_slist_append( hdr, "Content-Type: application/json" );
+
+        curl_easy_setopt( curl, CURLOPT_NOSIGNAL, 1L );
+        curl_easy_setopt( curl, CURLOPT_URL, "http://localhost:3000/" );
+        curl_easy_setopt( curl, CURLOPT_HTTPHEADER, hdr );
+        curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
+        curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
+        curl_easy_setopt( curl, CURLOPT_TIMEOUT, 120 );
+        curl_easy_setopt( curl, CURLOPT_POSTFIELDS, postStr.c_str() );
+        curl_easy_setopt( curl, CURLOPT_POSTFIELDSIZE, postStr.size() );
+        curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
+        curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
+        curl_easy_setopt( curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" );
+
+        auto res = curl_easy_perform( curl );
+        curl_slist_free_all( hdr );
+
+        if( res == CURLE_OK )
         {
-            auto json = nlohmann::json::parse( buf );
-            if( json.contains( "content" ) ) response = json["content"].get_ref<const std::string&>();
+            try
+            {
+                auto json = nlohmann::json::parse( buf );
+                if( json.contains( "content" ) ) response = json["content"].get_ref<const std::string&>();
+            }
+            catch( const nlohmann::json::exception& e ) {}
         }
-        catch( const nlohmann::json::exception& e ) {}
+        curl_easy_cleanup( curl );
     }
 
-    curl_easy_cleanup( curl );
     if( response.empty() )
     {
         auto data = FetchWebPage( url, false );

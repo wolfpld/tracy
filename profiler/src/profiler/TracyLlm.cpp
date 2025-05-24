@@ -8,6 +8,7 @@
 #include "TracyLlm.hpp"
 #include "TracyLlmApi.hpp"
 #include "TracyPrint.hpp"
+#include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
 #include "data/SystemPrompt.hpp"
@@ -254,6 +255,23 @@ void TracyLlm::Draw()
         if( ImGui::InputFloat( "##temperature", &m_temperature, 0, 0, "%.2f" ) ) m_temperature = std::clamp( m_temperature, 0.f, 2.f );
 
         ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_tools.m_netAccess );
+
+        if( ImGui::TreeNode( "External services" ) )
+        {
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted( "Readability.js:" );
+            ImGui::SameLine();
+            char buf[1024];
+            snprintf( buf, sizeof( buf ), "%s", s_config.llmReadability.c_str() );
+            if( ImGui::InputTextWithHint( "##readability", "http://127.0.0.1:3000", buf, sizeof( buf ) ) )
+            {
+                s_config.llmReadability = buf;
+                SaveConfig();
+            }
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_HOUSE ) ) OpenWebpage( "https://github.com/phpdocker-io/readability-js-server" );
+            ImGui::TreePop();
+        }
 
         ImGui::TreePop();
         ImGui::Spacing();

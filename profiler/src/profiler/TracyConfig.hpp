@@ -28,6 +28,7 @@ struct Config
     std::string llmAddress = "http://localhost:11434";
     std::string llmModel;
     std::string llmEmbeddingsModel;
+    std::string llmReadability;
 };
 
 }

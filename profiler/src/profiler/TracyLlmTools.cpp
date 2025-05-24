@@ -115,6 +115,11 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name
         if( args.empty() ) return { .reply = "Missing search term argument" };
         return { .reply = SearchWeb( args[0] ) };
     }
+    if( name == "get_webpage" )
+    {
+        if( args.empty() ) return { .reply = "Missing URL argument" };
+        return { .reply = GetWebpage( args[0] ) };
+    }
     if( name == "user_manual" )
     {
         if( args.empty() ) return { .reply = "Missing search term argument" };
@@ -429,6 +434,96 @@ std::string TracyLlmTools::SearchWeb( std::string query )
     }
 
     return json.dump( 2 );
+}
+
+static void RemoveTag( pugi::xml_node node, const char* tag )
+{
+    auto nodes = node.select_nodes( tag );
+    for( auto& n : nodes )
+    {
+        auto node = n.node();
+        if( node.parent() ) node.parent().remove_child( node );
+    }
+}
+
+struct xml_writer : public pugi::xml_writer
+{
+    explicit xml_writer( std::string& str ) : str( str ) {}
+    void write( const void* data, size_t size ) override { str.append( (const char*)data, size ); }
+    std::string& str;
+};
+
+std::string TracyLlmTools::GetWebpage( const std::string& url )
+{
+    NetworkCheckString;
+
+    auto curl = curl_easy_init();
+    if( !curl ) return "Error: Failed to initialize cURL";
+
+    nlohmann::json post;
+    post["url"] = url;
+    auto postStr = post.dump();
+
+    std::string buf;
+
+    curl_slist *hdr = nullptr;
+    hdr = curl_slist_append( hdr, "Accept: application/json" );
+    hdr = curl_slist_append( hdr, "Content-Type: application/json" );
+
+    curl_easy_setopt( curl, CURLOPT_NOSIGNAL, 1L );
+    curl_easy_setopt( curl, CURLOPT_URL, "http://localhost:3000/" );
+    curl_easy_setopt( curl, CURLOPT_HTTPHEADER, hdr );
+    curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
+    curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
+    curl_easy_setopt( curl, CURLOPT_TIMEOUT, 120 );
+    curl_easy_setopt( curl, CURLOPT_POSTFIELDS, postStr.c_str() );
+    curl_easy_setopt( curl, CURLOPT_POSTFIELDSIZE, postStr.size() );
+    curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
+    curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
+    curl_easy_setopt( curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" );
+
+    auto res = curl_easy_perform( curl );
+    curl_slist_free_all( hdr );
+
+    std::string response;
+    if( res == CURLE_OK )
+    {
+        try
+        {
+            auto json = nlohmann::json::parse( buf );
+            if( json.contains( "content" ) ) response = json["content"].get_ref<const std::string&>();
+        }
+        catch( const nlohmann::json::exception& e ) {}
+    }
+
+    curl_easy_cleanup( curl );
+    if( response.empty() )
+    {
+        auto data = FetchWebPage( url, false );
+
+        auto doc = ParseHtml( data );
+        if( !doc ) return "Error: Failed to parse HTML";
+
+        auto body = doc->select_node( "/html/body" );
+        if( !body ) return "Error: Failed to parse HTML";
+
+        auto node = body.node();
+        RemoveTag( node, "//script" );
+        RemoveTag( node, "//style" );
+        RemoveTag( node, "//link" );
+        RemoveTag( node, "//meta" );
+        RemoveTag( node, "//svg" );
+
+        xml_writer writer( response );
+        body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );
+
+        RemoveNewline( response );
+        auto it = std::ranges::unique( response, []( char a, char b ) { return ( a == ' ' || a == '\t' ) && ( b == ' ' || b == '\t' ); } );
+        response.erase( it.begin(), it.end() );
+    }
+    response = TrimString( std::move( response ) );
+    m_webCache.emplace( url, response );
+    return response;
 }
 
 std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel )

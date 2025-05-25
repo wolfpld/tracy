@@ -39,6 +39,7 @@ void LoadConfig()
     if( v2 = ini_get( ini, "llm", "model" ); v2 ) s_config.llmModel = v2;
     if( v2 = ini_get( ini, "llm", "embeddings" ); v2 ) s_config.llmEmbeddingsModel = v2;
     if( v2 = ini_get( ini, "llm", "readability" ); v2 ) s_config.llmReadability = v2;
+    if( v2 = ini_get( ini, "llm", "useragent" ); v2 ) s_config.llmUserAgent = v2;
 
     ini_free( ini );
 }
@@ -79,6 +80,7 @@ bool SaveConfig()
     fprintf( f, "model = %s\n", s_config.llmModel.c_str() );
     fprintf( f, "embeddings = %s\n", s_config.llmEmbeddingsModel.c_str() );
     fprintf( f, "readability = %s\n", s_config.llmReadability.c_str() );
+    fprintf( f, "useragent = %s\n", s_config.llmUserAgent.c_str() );
 
     fclose( f );
     return true;

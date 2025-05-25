@@ -256,10 +256,11 @@ void TracyLlm::Draw()
 
         if( ImGui::TreeNode( "External services" ) )
         {
+            char buf[1024];
+
             ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted( "Readability.js:" );
             ImGui::SameLine();
-            char buf[1024];
             snprintf( buf, sizeof( buf ), "%s", s_config.llmReadability.c_str() );
             if( ImGui::InputTextWithHint( "##readability", "http://127.0.0.1:3000", buf, sizeof( buf ) ) )
             {
@@ -268,6 +269,17 @@ void TracyLlm::Draw()
             }
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_HOUSE ) ) OpenWebpage( "https://github.com/phpdocker-io/readability-js-server" );
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted( "User agent:" );
+            ImGui::SameLine();
+            snprintf( buf, sizeof( buf ), "%s", s_config.llmUserAgent.c_str() );
+            if( ImGui::InputTextWithHint( "##useragent", "Spoof user agent", buf, sizeof( buf ) ) )
+            {
+                s_config.llmUserAgent = buf;
+                SaveConfig();
+            }
+
             ImGui::TreePop();
         }
 

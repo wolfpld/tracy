@@ -284,7 +284,7 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url, bool cache )
     curl_easy_setopt( curl, CURLOPT_TIMEOUT, 10 );
     curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
     curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
-    curl_easy_setopt( curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" );
+    curl_easy_setopt( curl, CURLOPT_USERAGENT, s_config.llmUserAgent.c_str() );
 
     auto res = curl_easy_perform( curl );
 
@@ -526,7 +526,7 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
         curl_easy_setopt( curl, CURLOPT_POSTFIELDSIZE, postStr.size() );
         curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
         curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
-        curl_easy_setopt( curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" );
+        curl_easy_setopt( curl, CURLOPT_USERAGENT, s_config.llmUserAgent.c_str() );
 
         auto res = curl_easy_perform( curl );
         curl_slist_free_all( hdr );

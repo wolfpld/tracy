@@ -421,7 +421,7 @@ void TracyLlm::Draw()
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
             const auto isToolResponse = isUser && line["content"].get_ref<const std::string&>().starts_with( "<tool_output>\n" );
-            const auto isForgotten = isToolResponse && line["content"].get_ref<const std::string&>() == ForgetMsg;
+            const auto isForgotten = isToolResponse && line["content"].is_string() && line["content"].get_ref<const std::string&>() == ForgetMsg;
 
             float diff, offset;
             if( isForgotten )

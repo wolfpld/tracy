@@ -19,8 +19,6 @@ constexpr const char* NoNetworkAccess = "Internet access is disabled by the user
 #define NetworkCheckString if( !m_netAccess ) return NoNetworkAccess
 #define NetworkCheckReply if( !m_netAccess ) return { .reply = NoNetworkAccess }
 
-extern tracy::Config s_config;
-
 namespace tracy
 {
 

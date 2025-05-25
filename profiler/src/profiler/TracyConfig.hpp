@@ -31,6 +31,11 @@ struct Config
     std::string llmReadability;
 };
 
+extern Config s_config;
+
+void LoadConfig();
+bool SaveConfig();
+
 }
 
 #endif

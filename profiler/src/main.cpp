@@ -26,8 +26,6 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
 
-#include "ini.h"
-
 #include "../../public/common/TracyProtocol.hpp"
 #include "../../public/common/TracyVersion.hpp"
 #include "profiler/TracyAchievements.hpp"
@@ -37,7 +35,6 @@
 #include "profiler/TracyImGui.hpp"
 #include "profiler/TracyMouse.hpp"
 #include "profiler/TracyProtoHistory.hpp"
-#include "profiler/TracyStorage.hpp"
 #include "profiler/TracyTexture.hpp"
 #include "profiler/TracyView.hpp"
 #include "profiler/TracyWeb.hpp"
@@ -120,7 +117,6 @@ static Backend* bptr;
 static bool s_customTitle = false;
 static bool s_isElevated = false;
 static size_t s_totalMem = tracy::GetPhysicalMemorySize();
-tracy::Config s_config;
 tracy::AchievementsMgr* s_achievements;
 static const tracy::data::AchievementItem* s_achievementItem = nullptr;
 static bool s_switchAchievementCategory = false;
@@ -161,7 +157,7 @@ static void ScaleWindow(ImGuiWindow* window, float scale)
 
 static void SetupDPIScale()
 {
-    auto scale = dpiScale * s_config.userScale;
+    auto scale = dpiScale * tracy::s_config.userScale;
 
     if( !dpiFirstSetup && prevScale == scale ) return;
     dpiFirstSetup = false;
@@ -209,84 +205,10 @@ static int IsBusy()
     return 0;
 }
 
-static void LoadConfig()
-{
-    const auto fn = tracy::GetSavePath( "tracy.ini" );
-    auto ini = ini_load( fn );
-    if( !ini ) return;
-
-    int v;
-    double v1;
-    const char* v2;
-
-    if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
-    if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
-    if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
-    if( ini_sget( ini, "timeline", "dynamicColors", "%d", &v ) ) s_config.dynamicColors = v;
-    if( ini_sget( ini, "timeline", "forceColors", "%d", &v ) ) s_config.forceColors = v;
-    if( ini_sget( ini, "timeline", "shortenName", "%d", &v ) ) s_config.shortenName = v;
-    if( ini_sget( ini, "timeline", "horizontalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.horizontalScrollMultiplier = v1;
-    if( ini_sget( ini, "timeline", "verticalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.verticalScrollMultiplier = v1;
-    if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
-    if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
-    if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
-    if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
-    if( ini_sget( ini, "ui", "saveUserScale", "%d", &v ) ) s_config.saveUserScale = v;
-    if( ini_sget( ini, "ui", "userScale", "%lf", &v1 ) && v1 > 0.0 && s_config.saveUserScale ) s_config.userScale = v1;
-    if( ini_sget( ini, "llm", "enabled", "%d", &v ) ) s_config.llm = v;
-    if( v2 = ini_get( ini, "llm", "address" ); v2 ) s_config.llmAddress = v2;
-    if( v2 = ini_get( ini, "llm", "model" ); v2 ) s_config.llmModel = v2;
-    if( v2 = ini_get( ini, "llm", "embeddings" ); v2 ) s_config.llmEmbeddingsModel = v2;
-    if( v2 = ini_get( ini, "llm", "readability" ); v2 ) s_config.llmReadability = v2;
-
-    ini_free( ini );
-}
-
-bool SaveConfig()
-{
-    const auto fn = tracy::GetSavePath( "tracy.ini" );
-    FILE* f = fopen( fn, "wb" );
-    if( !f ) return false;
-
-    fprintf( f, "[core]\n" );
-    fprintf( f, "threadedRendering = %i\n", (int)s_config.threadedRendering );
-    fprintf( f, "focusLostLimit = %i\n", (int)s_config.focusLostLimit );
-
-    fprintf( f, "\n[timeline]\n" );
-    fprintf( f, "targetFps = %i\n", s_config.targetFps );
-    fprintf( f, "dynamicColors = %i\n", s_config.dynamicColors );
-    fprintf( f, "forceColors = %i\n", (int)s_config.forceColors );
-    fprintf( f, "shortenName = %i\n", s_config.shortenName );
-    fprintf( f, "horizontalScrollMultiplier = %lf\n", s_config.horizontalScrollMultiplier );
-    fprintf( f, "verticalScrollMultiplier = %lf\n", s_config.verticalScrollMultiplier );
-
-    fprintf( f, "\n[memory]\n" );
-    fprintf( f, "limit = %i\n", (int)s_config.memoryLimit );
-    fprintf( f, "percent = %i\n", s_config.memoryLimitPercent );
-
-    fprintf( f, "\n[achievements]\n" );
-    fprintf( f, "enabled = %i\n", (int)s_config.achievements );
-    fprintf( f, "asked = %i\n", (int)s_config.achievementsAsked );
-
-    fprintf( f, "\n[ui]\n" );
-    fprintf( f, "saveUserScale = %i\n", (int)s_config.saveUserScale );
-    fprintf( f, "userScale = %lf\n", s_config.userScale );
-
-    fprintf( f, "\n[llm]\n" );
-    fprintf( f, "enabled = %i\n", (int)s_config.llm );
-    fprintf( f, "address = %s\n", s_config.llmAddress.c_str() );
-    fprintf( f, "model = %s\n", s_config.llmModel.c_str() );
-    fprintf( f, "embeddings = %s\n", s_config.llmEmbeddingsModel.c_str() );
-    fprintf( f, "readability = %s\n", s_config.llmReadability.c_str() );
-
-    fclose( f );
-    return true;
-}
-
 static void SetupScaleCallback( float scale )
 {
-    s_config.userScale = scale;
-    if ( s_config.saveUserScale ) SaveConfig();
+    tracy::s_config.userScale = scale;
+    if ( tracy::s_config.saveUserScale ) tracy::SaveConfig();
     RunOnMainThread( []{ SetupDPIScale(); }, true );
 }
 
@@ -398,7 +320,7 @@ int main( int argc, char** argv )
         zigzagPx[5] = stbi_load_from_memory( (const stbi_uc*)ZigZag01_data, ZigZag01_size, &zigzagX[5], &zigzagY[5], nullptr, 4 );
     } );
 
-    LoadConfig();
+    tracy::LoadConfig();
 
     ImGuiTracyContext imguiContext;
     Backend backend( title, DrawContents, ScaleChanged, IsBusy, &mainThreadTasks );
@@ -428,12 +350,12 @@ int main( int argc, char** argv )
 
     if( initFileOpen )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
         initFileOpen.reset();
     }
     else if( connectTo )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
     }
 
     tracy::Fileselector::Init();
@@ -664,7 +586,7 @@ static void DrawContents()
     int display_w, display_h;
     bptr->NewFrame( display_w, display_h );
 
-    const bool achievementsAttention = s_config.achievements ? s_achievements->NeedsAttention() : false;
+    const bool achievementsAttention = tracy::s_config.achievements ? s_achievements->NeedsAttention() : false;
 
     static int activeFrames = 3;
     if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) || achievementsAttention )
@@ -776,45 +698,45 @@ static void DrawContents()
 
                 ImGui::TextUnformatted( "Threaded rendering" );
                 ImGui::Indent();
-                if( ImGui::RadioButton( "Enabled", s_config.threadedRendering ) ) { s_config.threadedRendering = true; SaveConfig(); }
+                if( ImGui::RadioButton( "Enabled", tracy::s_config.threadedRendering ) ) { tracy::s_config.threadedRendering = true; tracy::SaveConfig(); }
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "Uses multiple CPU cores for rendering. May affect performance of the profiled application when running on the same machine." );
-                if( ImGui::RadioButton( "Disabled", !s_config.threadedRendering ) ) { s_config.threadedRendering = false; SaveConfig(); }
+                if( ImGui::RadioButton( "Disabled", !tracy::s_config.threadedRendering ) ) { tracy::s_config.threadedRendering = false; tracy::SaveConfig(); }
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "Restricts rendering to a single CPU core. Can reduce profiler frame rate." );
                 ImGui::Unindent();
 
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Reduce render rate when focus is lost", &s_config.focusLostLimit ) ) SaveConfig();
+                if( ImGui::Checkbox( "Reduce render rate when focus is lost", &tracy::s_config.focusLostLimit ) ) tracy::SaveConfig();
 
                 ImGui::Spacing();
                 ImGui::TextUnformatted( "Target FPS" );
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "The default target frame rate for your application. Frames displayed in the frame time graph will be colored accordingly if they are within the target frame rate. This can be adjusted later for each individual trace." );
                 ImGui::SameLine();
-                int tmp = s_config.targetFps;
+                int tmp = tracy::s_config.targetFps;
                 ImGui::SetNextItemWidth( 90 * dpiScale );
-                if( ImGui::InputInt( "##targetfps", &tmp ) ) { s_config.targetFps = std::clamp( tmp, 1, 9999 ); SaveConfig(); }
+                if( ImGui::InputInt( "##targetfps", &tmp ) ) { tracy::s_config.targetFps = std::clamp( tmp, 1, 9999 ); tracy::SaveConfig(); }
 
                 ImGui::Spacing();
                 ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );
                 ImGui::SameLine();
-                tracy::SmallCheckbox( "Ignore custom", &s_config.forceColors );
+                tracy::SmallCheckbox( "Ignore custom", &tracy::s_config.forceColors );
                 ImGui::Indent();
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-                ImGui::RadioButton( "Static", &s_config.dynamicColors, 0 );
-                ImGui::RadioButton( "Thread dynamic", &s_config.dynamicColors, 1 );
-                ImGui::RadioButton( "Source location dynamic", &s_config.dynamicColors, 2 );
+                ImGui::RadioButton( "Static", &tracy::s_config.dynamicColors, 0 );
+                ImGui::RadioButton( "Thread dynamic", &tracy::s_config.dynamicColors, 1 );
+                ImGui::RadioButton( "Source location dynamic", &tracy::s_config.dynamicColors, 2 );
                 ImGui::PopStyleVar();
                 ImGui::Unindent();
                 ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
                 ImGui::Indent();
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-                ImGui::RadioButton( "Disabled", &s_config.shortenName, (uint8_t)tracy::ShortenName::Never );
-                ImGui::RadioButton( "Minimal length", &s_config.shortenName, (uint8_t)tracy::ShortenName::Always );
-                ImGui::RadioButton( "Only normalize", &s_config.shortenName, (uint8_t)tracy::ShortenName::OnlyNormalize );
-                ImGui::RadioButton( "As needed", &s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpace );
-                ImGui::RadioButton( "As needed + normalize", &s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpaceAndNormalize );
+                ImGui::RadioButton( "Disabled", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::Never );
+                ImGui::RadioButton( "Minimal length", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::Always );
+                ImGui::RadioButton( "Only normalize", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::OnlyNormalize );
+                ImGui::RadioButton( "As needed", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpace );
+                ImGui::RadioButton( "As needed + normalize", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpaceAndNormalize );
                 ImGui::PopStyleVar();
                 ImGui::Unindent();
 
@@ -823,33 +745,33 @@ static void DrawContents()
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "The multipliers to the amount to scroll by horizontally and vertically. This is used in the timeline and setting this value can help compensate for scroll wheel sensitivity." );
                 ImGui::SameLine();
-                double tmpScroll = s_config.horizontalScrollMultiplier;
+                double tmpScroll = tracy::s_config.horizontalScrollMultiplier;
                 ImGui::SetNextItemWidth( 45 * dpiScale );
-                if( ImGui::InputDouble( "##horizontalscrollmultiplier", &tmpScroll ) ) { s_config.horizontalScrollMultiplier = std::max( tmpScroll, 0.01 ); SaveConfig(); }
-                tmpScroll = s_config.verticalScrollMultiplier;
+                if( ImGui::InputDouble( "##horizontalscrollmultiplier", &tmpScroll ) ) { tracy::s_config.horizontalScrollMultiplier = std::max( tmpScroll, 0.01 ); tracy::SaveConfig(); }
+                tmpScroll = tracy::s_config.verticalScrollMultiplier;
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth( 45 * dpiScale );
-                if( ImGui::InputDouble( "##verticalscrollmultiplier", &tmpScroll ) ) { s_config.verticalScrollMultiplier = std::max( tmpScroll, 0.01 ); SaveConfig(); }
+                if( ImGui::InputDouble( "##verticalscrollmultiplier", &tmpScroll ) ) { tracy::s_config.verticalScrollMultiplier = std::max( tmpScroll, 0.01 ); tracy::SaveConfig(); }
 
                 if( s_totalMem == 0 )
                 {
                     ImGui::BeginDisabled();
-                    s_config.memoryLimit = false;
+                    tracy::s_config.memoryLimit = false;
                 }
 
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Memory limit", &s_config.memoryLimit ) ) SaveConfig();
+                if( ImGui::Checkbox( "Memory limit", &tracy::s_config.memoryLimit ) ) tracy::SaveConfig();
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of available memory. Values greater than 100% will rely on swap. You need to make sure that memory is actually available." );
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth( 70 * dpiScale );
-                if( ImGui::InputInt( "##memorylimit", &s_config.memoryLimitPercent ) ) { s_config.memoryLimitPercent = std::clamp( s_config.memoryLimitPercent, 1, 999 ); SaveConfig(); }
+                if( ImGui::InputInt( "##memorylimit", &tracy::s_config.memoryLimitPercent ) ) { tracy::s_config.memoryLimitPercent = std::clamp( tracy::s_config.memoryLimitPercent, 1, 999 ); tracy::SaveConfig(); }
                 ImGui::SameLine();
                 ImGui::TextUnformatted( "%" );
                 if( s_totalMem != 0 )
                 {
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", tracy::MemSizeToString( s_totalMem * s_config.memoryLimitPercent / 100 ) );
+                    ImGui::TextDisabled( "(%s)", tracy::MemSizeToString( s_totalMem * tracy::s_config.memoryLimitPercent / 100 ) );
                 }
                 else
                 {
@@ -857,11 +779,11 @@ static void DrawContents()
                 }
 
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Enable achievements", &s_config.achievements ) ) SaveConfig();
+                if( ImGui::Checkbox( "Enable achievements", &tracy::s_config.achievements ) ) tracy::SaveConfig();
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Save UI scale", &s_config.saveUserScale) ) SaveConfig();
+                if( ImGui::Checkbox( "Save UI scale", &tracy::s_config.saveUserScale) ) tracy::SaveConfig();
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Enable LLM", &s_config.llm ) ) SaveConfig();
+                if( ImGui::Checkbox( "Enable LLM", &tracy::s_config.llm ) ) tracy::SaveConfig();
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();
@@ -1039,15 +961,15 @@ static void DrawContents()
                 {
                     std::string addrPart = std::string( adata, ptr );
                     uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
                 }
                 else
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
                 }
             }
         }
-        if( s_config.memoryLimit )
+        if( tracy::s_config.memoryLimit )
         {
             ImGui::SameLine();
             tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
@@ -1067,7 +989,7 @@ static void DrawContents()
                         loadThread = std::thread( [f] {
                             try
                             {
-                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -1200,7 +1122,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -1369,7 +1291,7 @@ static void DrawContents()
         viewShutdown.store( ViewShutdown::False, std::memory_order_relaxed );
         if( reconnect )
         {
-            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+            view = std::make_unique<tracy::View>( RunOnMainThread, reconnectAddr.c_str(), reconnectPort, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
         }
         break;
     default:
@@ -1398,9 +1320,9 @@ static void DrawContents()
     }
 
 #ifndef __EMSCRIPTEN__
-    if( !s_config.achievementsAsked )
+    if( !tracy::s_config.achievementsAsked )
     {
-        s_config.achievementsAsked = true;
+        tracy::s_config.achievementsAsked = true;
         ImGui::OpenPopup( ICON_FA_STAR " Achievements" );
     }
 #endif
@@ -1420,21 +1342,21 @@ static void DrawContents()
         ImGui::Separator();
         if( ImGui::Button( "Yes" ) )
         {
-            s_config.achievements = true;
-            SaveConfig();
+            tracy::s_config.achievements = true;
+            tracy::SaveConfig();
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
         if( ImGui::Button( "No" ) )
         {
-            s_config.achievements = false;
-            SaveConfig();
+            tracy::s_config.achievements = false;
+            tracy::SaveConfig();
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
 
-    if( s_config.achievements )
+    if( tracy::s_config.achievements )
     {
         ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 16 * dpiScale );
 

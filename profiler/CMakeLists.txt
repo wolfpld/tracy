@@ -54,6 +54,7 @@ set(SERVER_FILES
     TracyAchievements.cpp
     TracyBadVersion.cpp
     TracyColor.cpp
+    TracyConfig.cpp
     TracyEmbed.cpp
     TracyEventDebug.cpp
     TracyFileselector.cpp

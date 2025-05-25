@@ -23,8 +23,6 @@ static WindowPosition* s_winPos;
 static bool s_iconified;
 static float s_prevScale = -1;
 
-extern tracy::Config s_config;
-
 
 static void glfw_error_callback( int error, const char* description )
 {

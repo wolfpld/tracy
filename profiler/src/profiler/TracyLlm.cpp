@@ -14,9 +14,6 @@
 #include "data/SystemPrompt.hpp"
 #include "data/SystemReminder.hpp"
 
-extern tracy::Config s_config;
-extern bool SaveConfig();
-
 namespace tracy
 {
 

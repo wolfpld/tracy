@@ -32,21 +32,19 @@
 #define M_PI_2 1.57079632679489661923
 #endif
 
-extern tracy::Config s_config;
-
 namespace tracy
 {
 
 double s_time = 0;
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
-    : m_worker( addr, port, config.memoryLimit == 0 ? -1 : ( config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
+    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
     , m_viewModeHeuristicTry( true )
     , m_totalMemory( GetPhysicalMemorySize() )
     , m_forceConnectionPopup( true, true )
-    , m_tc( *this, m_worker, config.threadedRendering )
+    , m_tc( *this, m_worker, s_config.threadedRendering )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
     , m_reactToCrash( true )
@@ -56,9 +54,9 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_acb( acb )
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
-    , m_achievements( config.achievements )
-    , m_horizontalScrollMultiplier( config.horizontalScrollMultiplier )
-    , m_verticalScrollMultiplier( config.verticalScrollMultiplier )
+    , m_achievements( s_config.achievements )
+    , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
+    , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -66,16 +64,16 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
 #endif
 {
     InitTextEditor();
-    SetupConfig( config );
+    SetupConfig();
 }
 
-View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, const Config& config, AchievementsMgr* amgr )
+View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
     , m_viewMode( ViewMode::Paused )
     , m_totalMemory( GetPhysicalMemorySize() )
-    , m_tc( *this, m_worker, config.threadedRendering )
+    , m_tc( *this, m_worker, s_config.threadedRendering )
     , m_frames( m_worker.GetFramesBase() )
     , m_messagesScrollBottom( false )
     , m_stcb( stcb )
@@ -84,9 +82,9 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
     , m_cbMainThread( cbMainThread )
     , m_achievementsMgr( amgr )
-    , m_achievements( config.achievements )
-    , m_horizontalScrollMultiplier( config.horizontalScrollMultiplier )
-    , m_verticalScrollMultiplier( config.verticalScrollMultiplier )
+    , m_achievements( s_config.achievements )
+    , m_horizontalScrollMultiplier( s_config.horizontalScrollMultiplier )
+    , m_verticalScrollMultiplier( s_config.verticalScrollMultiplier )
 #ifdef __EMSCRIPTEN__
     , m_td( 2, "ViewMt" )
 #else
@@ -97,7 +95,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
     InitTextEditor();
-    SetupConfig( config );
+    SetupConfig();
 
     m_vd.zvStart = m_worker.GetFirstTime();
     m_vd.zvEnd = m_worker.GetLastTime();
@@ -133,12 +131,12 @@ void View::InitTextEditor()
     m_sourceViewFile = nullptr;
 }
 
-void View::SetupConfig( const Config& config )
+void View::SetupConfig()
 {
-    m_vd.frameTarget = config.targetFps;
-    m_vd.dynamicColors = config.dynamicColors;
-    m_vd.forceColors = config.forceColors;
-    m_vd.shortenName = (ShortenName)config.shortenName;
+    m_vd.frameTarget = s_config.targetFps;
+    m_vd.dynamicColors = s_config.dynamicColors;
+    m_vd.forceColors = s_config.forceColors;
+    m_vd.shortenName = (ShortenName)s_config.shortenName;
 }
 
 void View::Achieve( const char* id )

@@ -64,6 +64,7 @@ private:
 
     void ResetChat();
 
+    void AddMessage( std::string&& str, const char* role );
     void SendMessage( const std::vector<nlohmann::json>& messages );
     bool OnResponse( const nlohmann::json& json );
 

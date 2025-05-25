@@ -652,12 +652,9 @@ void TracyLlm::Draw()
                     message += "</SYSTEM_REMINDER>\n";
                 }
                 message += ptr;
-                m_usedCtx += message.size() / 4;
 
-                nlohmann::json msg;
-                msg["role"] = "user";
-                msg["content"] = message;
-                m_chat.emplace_back( std::move( msg ) );
+                AddMessage( std::move( message ), "user" );
+
                 *m_input = 0;
                 m_responding = true;
 
@@ -759,22 +756,28 @@ void TracyLlm::ResetChat()
     systemPrompt += "</SYSTEM_PROMPT>\n";
 
     *m_input = 0;
-    m_chat.clear();
-    nlohmann::json msg;
-    msg["role"] = "system";
-    msg["content"] = systemPrompt;
-    m_chat.emplace_back( std::move( msg ) );
+    m_usedCtx = 0;
     m_chatId++;
-    m_usedCtx = systemPrompt.size() / 4;
+    m_chat.clear();
     m_chatCache.clear();
+
+    AddMessage( std::move( systemPrompt ), "system" );
+}
+
+void TracyLlm::AddMessage( std::string&& str, const char* role )
+{
+    m_usedCtx += str.size() / 4;
+
+    nlohmann::json msg;
+    msg["role"] = role;
+    msg["content"] = std::move( str );
+
+    m_chat.emplace_back( std::move( msg ) );
 }
 
 void TracyLlm::SendMessage( const std::vector<nlohmann::json>& messages )
 {
-    nlohmann::json msg;
-    msg["role"] = "assistant";
-    msg["content"] = "";
-    m_chat.emplace_back( std::move( msg ) );
+    AddMessage( "", "assistant" );
 
     m_lock.unlock();
     bool res;
@@ -792,10 +795,7 @@ void TracyLlm::SendMessage( const std::vector<nlohmann::json>& messages )
     {
         m_lock.lock();
         if( !m_chat.empty() && m_chat.back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat.pop_back();
-        nlohmann::json err;
-        err["role"] = "error";
-        err["content"] = e.what();
-        m_chat.emplace_back( std::move( err ) );
+        AddMessage( e.what(), "error" );
         m_responding = false;
         m_stop = false;
         return;
@@ -877,15 +877,11 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                     lines.erase( lines.begin() );
                     lock.unlock();
                     const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
-                    const auto output = "<tool_output>\n" + reply.reply;
-                    m_usedCtx += output.size() / 4;
+                    auto output = "<tool_output>\n" + reply.reply;
                     lock.lock();
                     //if( reply.image.empty() )
                     {
-                        nlohmann::json msg;
-                        msg["role"] = "user";
-                        msg["content"] = output;
-                        m_chat.emplace_back( std::move( msg ) );
+                        AddMessage( std::move( output ), "user" );
                     }
                     /*
                     else

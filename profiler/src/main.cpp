@@ -732,7 +732,7 @@ static void DrawContents()
                 ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
                 ImGui::Indent();
                 ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-                ImGui::RadioButton( "Disabled", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::Never );
+                ImGui::RadioButton( "Disabled##zns", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::Never );
                 ImGui::RadioButton( "Minimal length", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::Always );
                 ImGui::RadioButton( "Only normalize", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::OnlyNormalize );
                 ImGui::RadioButton( "As needed", &tracy::s_config.shortenName, (uint8_t)tracy::ShortenName::NoSpace );

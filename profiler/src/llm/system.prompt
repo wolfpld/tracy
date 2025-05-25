@@ -119,7 +119,7 @@ These are the tools you can use. *You have no access to any other tools or means
     "parameters": [
       {
         "name": "query",
-        "description": "Search query *in English*."
+        "description": "Search query *in English*. Describe the query in detail."
       }
     ]
   }

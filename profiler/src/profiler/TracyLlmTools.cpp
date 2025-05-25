@@ -176,6 +176,13 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         length = response["data"][0]["embedding"].size();
     }
 
+    if( length == 0 )
+    {
+        std::lock_guard lock( m_lock );
+        m_manualEmbeddingState.inProgress = false;
+        return;
+    }
+
     const auto sz = (int)manual->size();
     const auto chunks = ( sz + Chunk - 1 ) / Chunk;
 

@@ -295,7 +295,16 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url, bool cache )
     }
     else
     {
-        response = std::move( buf );
+        int64_t http_code = 0;
+        curl_easy_getinfo( curl, CURLINFO_RESPONSE_CODE, &http_code );
+        if( http_code != 200 )
+        {
+            response = "Error: HTTP " + std::to_string( http_code );
+        }
+        else
+        {
+            response = std::move( buf );
+        }
     }
     if( cache ) m_webCache.emplace( url, response );
 

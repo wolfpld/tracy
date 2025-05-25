@@ -132,7 +132,7 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
     StreamData data = { .callback = callback };
 
     const auto url = m_url + "/v1/chat/completions";
-    const auto reqStr = req.dump();
+    const auto reqStr = req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 
     curl_slist *hdr = nullptr;
     hdr = curl_slist_append( hdr, "Accept: application/json" );
@@ -174,7 +174,7 @@ bool TracyLlmApi::Embeddings( const nlohmann::json& req, nlohmann::json& respons
     assert( m_curl );
 
     std::string buf;
-    auto res = PostRequest( m_url + "/v1/embeddings", req.dump(), buf, separateConnection );
+    auto res = PostRequest( m_url + "/v1/embeddings", req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf, separateConnection );
     if( res != 200 ) return false;
 
     response = nlohmann::json::parse( buf );

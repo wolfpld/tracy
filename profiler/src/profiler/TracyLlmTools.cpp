@@ -354,7 +354,7 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
         }
     }
 
-    const auto reply = output.dump( 2 );
+    const auto reply = output.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
     return { .reply = reply, .image = image };
 }
 
@@ -433,7 +433,7 @@ std::string TracyLlmTools::SearchWeb( std::string query )
         json[i] = result;
     }
 
-    return json.dump( 2 );
+    return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 static void RemoveTag( pugi::xml_node node, const char* tag )
@@ -510,7 +510,7 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
 
         nlohmann::json post;
         post["url"] = url;
-        auto postStr = post.dump();
+        auto postStr = post.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 
         std::string buf;
 
@@ -649,7 +649,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
         json.emplace_back( std::move( r ) );
     }
 
-    return json.dump( 2 );
+    return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 }

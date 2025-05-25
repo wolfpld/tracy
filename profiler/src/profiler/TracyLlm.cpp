@@ -598,7 +598,7 @@ void TracyLlm::Draw()
                     CleanContext( ctx );
                 }
             }
-            else
+            else if( line["content"].is_string() )
             {
                 auto& string = line["content"].get_ref<const std::string&>();
                 if( string.starts_with( "<SYSTEM_REMINDER>\n" ) )

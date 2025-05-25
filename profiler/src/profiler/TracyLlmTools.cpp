@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <libbase64.h>
 #include <pugixml.hpp>
+#include <string_view>
 #include <tidy.h>
 #include <tidybuffio.h>
 #include <time.h>
@@ -159,9 +160,6 @@ void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi
 
 void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 {
-    constexpr auto Chunk = 1000;
-    constexpr auto Overlap = 200;
-
     size_t length;
     {
         nlohmann::json req;
@@ -182,12 +180,91 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
     }
 
     if( !m_manual ) m_manual = Unembed( Manual );
+    std::string_view manual( m_manual->data(), m_manual->size() );
     const auto sz = (int)m_manual->size();
-    const auto chunks = ( sz + Chunk - 1 ) / Chunk;
+    m_manualChunks.clear();
 
-    m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, chunks );
+    std::vector<std::pair<std::string, int>> chunks;
+    std::vector<int> levels = { 0 };
+    std::vector<std::string> chapterNames = { "Title Page" };
 
-    for( int i=0; i<chunks; i++ )
+    int manualChunkPos = 0;
+    int pos = 0;
+    while( pos < sz )
+    {
+        auto next = manual.find( '\n', pos );
+        if( next == std::string_view::npos ) next = sz;
+        if( next != pos )
+        {
+            std::string_view line( manual.data() + pos, next - pos );
+            if( line[0] == '#' )
+            {
+                if( manualChunkPos != pos )
+                {
+                    std::string manualChunk;
+                    if( levels[0] != 0 )
+                    {
+                        manualChunk += "Section " + std::to_string( levels[0] );
+                        for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
+                        manualChunk += "\n";
+                    }
+                    manualChunk += "Navigation: " + chapterNames[0];
+                    for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
+                    manualChunk += "\n\n";
+                    manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
+                    m_manualChunks.emplace_back( std::move( manualChunk ) );
+                    manualChunkPos = pos;
+                }
+
+                int level = 1;
+                if( line.find( ".unnumbered}" ) == std::string_view::npos )
+                {
+                    while( level < line.size() && line[level] == '#' ) level++;
+                    if( level != levels.size() )
+                    {
+                        levels.resize( level, 0 );
+                        chapterNames.resize( level );
+                    }
+                    levels[level - 1]++;
+                    chapterNames[level - 1] = line.substr( level + 1 );
+                }
+            }
+            else
+            {
+                std::string chunk;
+                if( levels[0] != 0 )
+                {
+                    chunk += "Section " + std::to_string( levels[0] );
+                    for( size_t i=1; i<levels.size(); i++ ) chunk += "." + std::to_string( levels[i] );
+                    chunk += "\n";
+                }
+                chunk += chapterNames[levels.size()-1] + "\n\n";
+                chunk += std::string( line );
+                chunks.emplace_back( std::move( chunk ), m_manualChunks.size() );
+            }
+        }
+        pos = next + 1;
+    }
+    if( manualChunkPos != pos )
+    {
+        std::string manualChunk;
+        if( levels[0] != 0 )
+        {
+            manualChunk += "Section " + std::to_string( levels[0] );
+            for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
+            manualChunk += "\n";
+        }
+        manualChunk += "Navigation: " + chapterNames[0];
+        for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
+        manualChunk += "\n\n";
+        manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
+        m_manualChunks.emplace_back( std::move( manualChunk ) );
+    }
+
+    const auto csz = chunks.size();
+    m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, csz );
+
+    for( size_t i=0; i<csz; i++ )
     {
         std::unique_lock lock( m_lock );
         if( m_cancel )
@@ -196,14 +273,11 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
             m_manualEmbeddingState.done = false;
             return;
         }
-        m_manualEmbeddingState.progress = (float)i / chunks;
+        m_manualEmbeddingState.progress = (float)i / csz;
         lock.unlock();
 
-        const auto start = std::max( 0, Chunk * i - Overlap );
-        const auto end = std::min( sz, Chunk * ( i + 1 ) + Overlap );
-
         nlohmann::json req;
-        req["input"] = std::string( m_manual->data() + start, end - start );
+        req["input"] = std::move( chunks[i].first );
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;
@@ -211,12 +285,9 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 
         std::vector<float> embeddings;
         embeddings.reserve( length );
-        for( auto& item : response["data"][0]["embedding"] )
-        {
-            embeddings.emplace_back( item.get<float>() );
-        }
+        for( auto& item : response["data"][0]["embedding"] ) embeddings.emplace_back( item.get<float>() );
 
-        m_manualEmbeddings->Add( m_manual->data() + start, end - start, embeddings );
+        m_manualEmbeddings->Add( chunks[i].second, embeddings );
     }
 
     std::lock_guard lock( m_lock );
@@ -649,16 +720,24 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     vec.reserve( embedding.size() );
     for( auto& item : embedding ) vec.emplace_back( item.get<float>() );
 
-    auto results = m_manualEmbeddings->Search( vec, 5 );
+    auto results = m_manualEmbeddings->Search( vec, 10 );
     std::ranges::sort( results, []( const auto& a, const auto& b ) { return a.distance < b.distance; } );
 
-    nlohmann::json json;
+    std::vector<std::pair<int, float>> chunks;
+    chunks.reserve( results.size() );
     for( auto& item : results )
     {
-        const auto& chunk = m_manualEmbeddings->Get( item.idx );
+        const auto chunk = m_manualEmbeddings->Get( item.idx );
+        if( std::ranges::find_if( chunks, [chunk]( const auto& v ) { return v.first == chunk; } ) == chunks.end() ) chunks.emplace_back( chunk, item.distance );
+    }
+    if( chunks.size() > 5 ) chunks.resize( 5 );
+
+    nlohmann::json json;
+    for( auto& chunk : chunks )
+    {
         nlohmann::json r;
-        r["distance"] = item.distance;
-        r["text"] = std::string( chunk.str, chunk.length );
+        r["distance"] = chunk.second;
+        r["text"] = m_manualChunks[chunk.first];
         json.emplace_back( std::move( r ) );
     }
 

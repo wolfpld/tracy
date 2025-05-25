@@ -10,10 +10,10 @@ TracyLlmEmbeddings::TracyLlmEmbeddings( size_t length, size_t reserve )
     if( reserve > 0 ) m_index.reserve( reserve );
 }
 
-void TracyLlmEmbeddings::Add( const char* chunk, size_t chunkLen, const std::vector<float>& embedding )
+void TracyLlmEmbeddings::Add( int idx, const std::vector<float>& embedding )
 {
     m_index.add( m_data.size(), embedding.data() );
-    m_data.emplace_back( Chunk { .str = chunk, .length = chunkLen } );
+    m_data.emplace_back( idx );
 }
 
 std::vector<TracyLlmEmbeddings::Result> TracyLlmEmbeddings::Search( const std::vector<float>& embedding, size_t k ) const

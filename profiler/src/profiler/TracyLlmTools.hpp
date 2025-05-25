@@ -68,7 +68,9 @@ private:
     bool m_cancel = false;
     EmbeddingState m_manualEmbeddingState;
     std::unique_ptr<TracyLlmEmbeddings> m_manualEmbeddings;
+
     std::shared_ptr<EmbedData> m_manual;
+    std::vector<std::string> m_manualChunks;
 };
 
 }

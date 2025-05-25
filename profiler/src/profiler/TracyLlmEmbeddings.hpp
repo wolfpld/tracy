@@ -18,15 +18,21 @@ public:
         float distance;
     };
 
+    struct Chunk
+    {
+        const char* str;
+        size_t length;
+    };
+
     explicit TracyLlmEmbeddings( size_t length, size_t reserve = 0 );
 
-    void Add( std::string str, const std::vector<float>& embedding );
+    void Add( const char* chunk, size_t chunkLen, const std::vector<float>& embedding );
     [[nodiscard]] std::vector<Result> Search( const std::vector<float>& embedding, size_t k ) const;
-    [[nodiscard]] const std::string& Get( size_t idx ) const { return m_data[idx]; }
+    [[nodiscard]] const Chunk& Get( size_t idx ) const { return m_data[idx]; }
 
 private:
     unum::usearch::index_dense_t m_index;
-    std::vector<std::string> m_data;
+    std::vector<Chunk> m_data;
 };
 
 }

@@ -162,8 +162,6 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
     constexpr auto Chunk = 1000;
     constexpr auto Overlap = 200;
 
-    auto manual = Unembed( Manual );
-
     size_t length;
     {
         nlohmann::json req;
@@ -183,7 +181,8 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         return;
     }
 
-    const auto sz = (int)manual->size();
+    if( !m_manual ) m_manual = Unembed( Manual );
+    const auto sz = (int)m_manual->size();
     const auto chunks = ( sz + Chunk - 1 ) / Chunk;
 
     m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, chunks );
@@ -202,10 +201,9 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 
         const auto start = std::max( 0, Chunk * i - Overlap );
         const auto end = std::min( sz, Chunk * ( i + 1 ) + Overlap );
-        std::string str( manual->data() + start, end - start );
 
         nlohmann::json req;
-        req["input"] = str;
+        req["input"] = std::string( m_manual->data() + start, end - start );
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;
@@ -218,7 +216,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
             embeddings.emplace_back( item.get<float>() );
         }
 
-        m_manualEmbeddings->Add( std::move( str ), embeddings );
+        m_manualEmbeddings->Add( m_manual->data() + start, end - start, embeddings );
     }
 
     std::lock_guard lock( m_lock );
@@ -657,9 +655,10 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     nlohmann::json json;
     for( auto& item : results )
     {
+        const auto& chunk = m_manualEmbeddings->Get( item.idx );
         nlohmann::json r;
         r["distance"] = item.distance;
-        r["text"] = m_manualEmbeddings->Get( item.idx );
+        r["text"] = std::string( chunk.str, chunk.length );
         json.emplace_back( std::move( r ) );
     }
 

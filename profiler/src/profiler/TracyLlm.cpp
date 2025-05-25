@@ -400,7 +400,8 @@ void TracyLlm::Draw()
             const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
             const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
             const auto yw = ImGui::CalcTextSize( ICON_FA_REPLY ).x;
-            const auto mw = std::max( { uw, rw, ew, yw } );
+            const auto cw = ImGui::CalcTextSize( ICON_FA_RECYCLE ).x;
+            const auto mw = std::max( { uw, rw, ew, yw, cw } );
 
             const auto posStart = ImGui::GetCursorPos().x;
             const auto& role = line["role"].get_ref<const std::string&>();
@@ -411,9 +412,18 @@ void TracyLlm::Draw()
             const auto isError = role == "error";
             const auto isAssistant = role == "assistant";
             const auto isToolResponse = isUser && line["content"].get_ref<const std::string&>().starts_with( "<tool_output>\n" );
+            const auto isForgotten = isToolResponse && line["content"].get_ref<const std::string&>() == ForgetMsg;
 
             float diff, offset;
-            if( isToolResponse )
+            if( isForgotten )
+            {
+                diff = mw - cw;
+                offset = diff / 2;
+                ImGui::Dummy( ImVec2( offset, 0 ) );
+                ImGui::SameLine( 0, 0 );
+                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_RECYCLE );
+            }
+            else if( isToolResponse )
             {
                 diff = mw - yw;
                 offset = diff / 2;
@@ -476,7 +486,12 @@ void TracyLlm::Draw()
                 assert( false );
             }
 
-            if( isToolResponse )
+            if( isForgotten )
+            {
+                ImGui::TextUnformatted( "Tool response removed to save context space" );
+                treeIdx++;
+            }
+            else if( isToolResponse )
             {
                 ImGui::PushID( treeIdx++ );
                 auto expand = ImGui::TreeNode( "Tool response..." );

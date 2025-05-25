@@ -32,7 +32,6 @@ class TracyLlm
     {
         Task task;
         std::function<void()> callback;
-        std::vector<nlohmann::json> chat;
     };
 
     struct ChatCache
@@ -65,7 +64,7 @@ private:
     void ResetChat();
 
     void AddMessage( std::string&& str, const char* role );
-    void SendMessage( const std::vector<nlohmann::json>& messages );
+    void SendMessage();
     bool OnResponse( const nlohmann::json& json );
 
     void UpdateCache( ChatCache& cache, const std::string& str );

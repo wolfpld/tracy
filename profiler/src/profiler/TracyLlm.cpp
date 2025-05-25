@@ -660,8 +660,7 @@ void TracyLlm::Draw()
 
                 m_jobs.emplace_back( WorkItem {
                     .task = Task::SendMessage,
-                    .callback = nullptr,
-                    .chat = m_chat
+                    .callback = nullptr
                 } );
                 m_cv.notify_all();
             }
@@ -698,7 +697,7 @@ void TracyLlm::Worker()
             m_busy = false;
             break;
         case Task::SendMessage:
-            SendMessage( job.chat );
+            SendMessage();
             break;
         default:
             assert( false );
@@ -775,7 +774,7 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
     m_chat.emplace_back( std::move( msg ) );
 }
 
-void TracyLlm::SendMessage( const std::vector<nlohmann::json>& messages )
+void TracyLlm::SendMessage()
 {
     AddMessage( "", "assistant" );
 
@@ -785,7 +784,7 @@ void TracyLlm::SendMessage( const std::vector<nlohmann::json>& messages )
     {
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;
-        req["messages"] = messages;
+        req["messages"] = m_chat;
         req["stream"] = true;
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
@@ -894,8 +893,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
 
                     m_jobs.emplace_back( WorkItem {
                         .task = Task::SendMessage,
-                        .callback = nullptr,
-                        .chat = m_chat
+                        .callback = nullptr
                     } );
                     m_cv.notify_all();
                 }

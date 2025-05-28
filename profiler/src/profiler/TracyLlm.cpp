@@ -722,7 +722,7 @@ void TracyLlm::Worker()
             m_busy = false;
             break;
         case Task::SendMessage:
-            SendMessage();
+            SendMessage( lock );
             break;
         default:
             assert( false );
@@ -799,7 +799,7 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
     m_chat.emplace_back( std::move( msg ) );
 }
 
-void TracyLlm::SendMessage()
+void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
 {
     const auto& models = m_api->GetModels();
     const auto ctxSize = models[m_modelIdx].contextSize;
@@ -833,10 +833,11 @@ void TracyLlm::SendMessage()
 
     AddMessage( "", "assistant" );
 
-    m_lock.unlock();
     bool res;
     try
     {
+        lock.unlock();
+
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;
         req["messages"] = m_chat;
@@ -844,15 +845,16 @@ void TracyLlm::SendMessage()
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
         res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );
+
+        lock.lock();
     }
     catch( std::exception& e )
     {
-        m_lock.lock();
+        lock.lock();
         if( !m_chat.empty() && m_chat.back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat.pop_back();
         AddMessage( e.what(), "error" );
         m_responding = false;
         m_stop = false;
-        return;
     }
 }
 

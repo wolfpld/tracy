@@ -49,7 +49,7 @@ public:
     TracyLlm();
     ~TracyLlm();
 
-    [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock); return m_busy; }
+    [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock ); return m_busy; }
 
     void Draw();
 

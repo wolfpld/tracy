@@ -58,9 +58,7 @@ public:
 private:
     void Worker();
 
-    void LoadModels();
     void UpdateModels();
-
     void ResetChat();
 
     void AddMessage( std::string&& str, const char* role );

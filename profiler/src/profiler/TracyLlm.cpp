@@ -601,19 +601,7 @@ void TracyLlm::Draw()
             else if( line["content"].is_string() )
             {
                 auto& string = line["content"].get_ref<const std::string&>();
-                if( string.starts_with( "<SYSTEM_REMINDER>\n" ) )
-                {
-                    auto pos = string.find( "</SYSTEM_REMINDER>\n" );
-                    if( pos != std::string::npos )
-                    {
-                        pos += sizeof( "</SYSTEM_REMINDER>\n" ) - 1;
-                        PrintMarkdown( string.c_str() + pos );
-                    }
-                }
-                else
-                {
-                    PrintMarkdown( string.c_str() );
-                }
+                PrintMarkdown( string.c_str() );
             }
             ImGui::PopStyleColor();
             ImGui::EndGroup();
@@ -668,17 +656,7 @@ void TracyLlm::Draw()
             }
             if( *ptr )
             {
-                std::string message;
-                if( m_chat.size() > 1 )
-                {
-                    message += "<SYSTEM_REMINDER>\n";
-                    message += std::string( m_systemReminder->data(), m_systemReminder->size() );
-                    message += "The current time is: " + m_tools.GetCurrentTime() + "\n";
-                    message += "</SYSTEM_REMINDER>\n";
-                }
-                message += ptr;
-
-                AddMessage( std::move( message ), "user" );
+                AddMessage( ptr, "user" );
 
                 *m_input = 0;
                 m_responding = true;
@@ -831,16 +809,25 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         }
     }
 
-    AddMessage( "", "assistant" );
+    AddMessage( "<think>\n", "assistant" );
 
     bool res;
     try
     {
+        auto chat = m_chat;
         lock.unlock();
+
+        std::string inject;
+        inject += "<SYSTEM_REMINDER>\n";
+        inject += std::string( m_systemReminder->data(), m_systemReminder->size() );
+        inject += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+        inject += "</SYSTEM_REMINDER>\n";
+
+        chat.back()["content"].get_ref<std::string&>().insert( 0, inject );
 
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;
-        req["messages"] = m_chat;
+        req["messages"] = std::move( chat );
         req["stream"] = true;
         if( m_setTemperature ) req["temperature"] = m_temperature;
 

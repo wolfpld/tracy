@@ -58,6 +58,7 @@ private:
     std::string GetWebpage( const std::string& url );
     std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
 
+    bool TryLoadEmbeddingsCache( const char* file, uint64_t hash );
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 
     unordered_flat_map<std::string, std::string> m_webCache;

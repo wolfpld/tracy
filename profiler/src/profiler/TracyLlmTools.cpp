@@ -77,6 +77,89 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     return doc;
 }
 
+TracyLlmTools::TracyLlmTools()
+    : m_manual( Unembed( Manual ) )
+{
+    std::string_view manual( m_manual->data(), m_manual->size() );
+    const auto sz = (int)m_manual->size();
+
+    std::vector<int> levels = { 0 };
+    std::vector<std::string> chapterNames = { "Title Page" };
+
+    int manualChunkPos = 0;
+    int pos = 0;
+    while( pos < sz )
+    {
+        auto next = manual.find( '\n', pos );
+        if( next == std::string_view::npos ) next = sz;
+        if( next != pos )
+        {
+            std::string_view line( manual.data() + pos, next - pos );
+            if( line[0] == '#' )
+            {
+                if( manualChunkPos != pos )
+                {
+                    std::string manualChunk;
+                    if( levels[0] != 0 )
+                    {
+                        manualChunk += "Section " + std::to_string( levels[0] );
+                        for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
+                        manualChunk += "\n";
+                    }
+                    manualChunk += "Navigation: " + chapterNames[0];
+                    for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
+                    manualChunk += "\n\n";
+                    manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
+                    m_manualChunks.emplace_back( std::move( manualChunk ) );
+                    manualChunkPos = pos;
+                }
+
+                int level = 1;
+                if( line.find( ".unnumbered}" ) == std::string_view::npos )
+                {
+                    while( level < line.size() && line[level] == '#' ) level++;
+                    if( level != levels.size() )
+                    {
+                        levels.resize( level, 0 );
+                        chapterNames.resize( level );
+                    }
+                    levels[level - 1]++;
+                    chapterNames[level - 1] = line.substr( level + 1 );
+                }
+            }
+            else
+            {
+                std::string chunk;
+                if( levels[0] != 0 )
+                {
+                    chunk += "Section " + std::to_string( levels[0] );
+                    for( size_t i=1; i<levels.size(); i++ ) chunk += "." + std::to_string( levels[i] );
+                    chunk += "\n";
+                }
+                chunk += chapterNames[levels.size()-1] + "\n\n";
+                chunk += std::string( line );
+                m_chunkData.emplace_back( std::move( chunk ), m_manualChunks.size() );
+            }
+        }
+        pos = next + 1;
+    }
+    if( manualChunkPos != pos )
+    {
+        std::string manualChunk;
+        if( levels[0] != 0 )
+        {
+            manualChunk += "Section " + std::to_string( levels[0] );
+            for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
+            manualChunk += "\n";
+        }
+        manualChunk += "Navigation: " + chapterNames[0];
+        for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
+        manualChunk += "\n\n";
+        manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
+        m_manualChunks.emplace_back( std::move( manualChunk ) );
+    }
+}
+
 TracyLlmTools::~TracyLlmTools()
 {
     CancelManualEmbeddings();
@@ -179,89 +262,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         return;
     }
 
-    if( !m_manual ) m_manual = Unembed( Manual );
-    std::string_view manual( m_manual->data(), m_manual->size() );
-    const auto sz = (int)m_manual->size();
-    m_manualChunks.clear();
-
-    std::vector<std::pair<std::string, int>> chunks;
-    std::vector<int> levels = { 0 };
-    std::vector<std::string> chapterNames = { "Title Page" };
-
-    int manualChunkPos = 0;
-    int pos = 0;
-    while( pos < sz )
-    {
-        auto next = manual.find( '\n', pos );
-        if( next == std::string_view::npos ) next = sz;
-        if( next != pos )
-        {
-            std::string_view line( manual.data() + pos, next - pos );
-            if( line[0] == '#' )
-            {
-                if( manualChunkPos != pos )
-                {
-                    std::string manualChunk;
-                    if( levels[0] != 0 )
-                    {
-                        manualChunk += "Section " + std::to_string( levels[0] );
-                        for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
-                        manualChunk += "\n";
-                    }
-                    manualChunk += "Navigation: " + chapterNames[0];
-                    for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
-                    manualChunk += "\n\n";
-                    manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-                    m_manualChunks.emplace_back( std::move( manualChunk ) );
-                    manualChunkPos = pos;
-                }
-
-                int level = 1;
-                if( line.find( ".unnumbered}" ) == std::string_view::npos )
-                {
-                    while( level < line.size() && line[level] == '#' ) level++;
-                    if( level != levels.size() )
-                    {
-                        levels.resize( level, 0 );
-                        chapterNames.resize( level );
-                    }
-                    levels[level - 1]++;
-                    chapterNames[level - 1] = line.substr( level + 1 );
-                }
-            }
-            else
-            {
-                std::string chunk;
-                if( levels[0] != 0 )
-                {
-                    chunk += "Section " + std::to_string( levels[0] );
-                    for( size_t i=1; i<levels.size(); i++ ) chunk += "." + std::to_string( levels[i] );
-                    chunk += "\n";
-                }
-                chunk += chapterNames[levels.size()-1] + "\n\n";
-                chunk += std::string( line );
-                chunks.emplace_back( std::move( chunk ), m_manualChunks.size() );
-            }
-        }
-        pos = next + 1;
-    }
-    if( manualChunkPos != pos )
-    {
-        std::string manualChunk;
-        if( levels[0] != 0 )
-        {
-            manualChunk += "Section " + std::to_string( levels[0] );
-            for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
-            manualChunk += "\n";
-        }
-        manualChunk += "Navigation: " + chapterNames[0];
-        for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
-        manualChunk += "\n\n";
-        manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-        m_manualChunks.emplace_back( std::move( manualChunk ) );
-    }
-
-    const auto csz = chunks.size();
+    const auto csz = m_chunkData.size();
     m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, csz );
 
     for( size_t i=0; i<csz; i++ )
@@ -277,7 +278,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         lock.unlock();
 
         nlohmann::json req;
-        req["input"] = std::move( chunks[i].first );
+        req["input"] = m_chunkData[i].first;
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;
@@ -287,7 +288,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         embeddings.reserve( length );
         for( auto& item : response["data"][0]["embedding"] ) embeddings.emplace_back( item.get<float>() );
 
-        m_manualEmbeddings->Add( chunks[i].second, embeddings );
+        m_manualEmbeddings->Add( m_chunkData[i].second, embeddings );
     }
 
     std::lock_guard lock( m_lock );

@@ -34,6 +34,7 @@ public:
         float progress = 0;
     };
 
+    TracyLlmTools();
     ~TracyLlmTools();
 
     ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
@@ -71,6 +72,7 @@ private:
 
     std::shared_ptr<EmbedData> m_manual;
     std::vector<std::string> m_manualChunks;
+    std::vector<std::pair<std::string, int>> m_chunkData;
 };
 
 }

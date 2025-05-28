@@ -88,6 +88,40 @@ static void GetConfigDirectory( char* buf, size_t& sz )
 #endif
 }
 
+static void GetCacheDirectory( char* buf, size_t& sz )
+{
+#ifdef _WIN32
+    auto path = getenv( "LOCALAPPDATA" );
+    sz = strlen( path );
+    memcpy( buf, path, sz );
+
+    for( size_t i=0; i<sz; i++ )
+    {
+        if( buf[i] == '\\' )
+        {
+            buf[i] = '/';
+        }
+    }
+#else
+    auto path = getenv( "XDG_CACHE_HOME" );
+    if( path && *path )
+    {
+        sz = strlen( path );
+        memcpy( buf, path, sz );
+    }
+    else
+    {
+        path = getenv( "HOME" );
+        assert( path && *path );
+
+        sz = strlen( path );
+        memcpy( buf, path, sz );
+        memcpy( buf+sz, "/.cache", 7 );
+        sz += 7;
+    }
+#endif
+}
+
 const char* GetSavePath( const char* file )
 {
     assert( file && *file );
@@ -204,6 +238,33 @@ const char* GetSavePath( const char* program, uint64_t time, const char* file, b
     {
         buf[sz] = '\0';
     }
+
+    return buf;
+}
+
+const char* GetCachePath( const char* file )
+{
+    assert( file && *file );
+
+    enum { Pool = 8 };
+    enum { MaxPath = 512 };
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetCacheDirectory( buf, sz );
+
+    memcpy( buf+sz, "/tracy/", 8 );
+    sz += 7;
+
+    auto status = CreateDirStruct( buf );
+    assert( status );
+
+    const auto fsz = strlen( file );
+    assert( sz + fsz < MaxPath );
+    memcpy( buf+sz, file, fsz+1 );
 
     return buf;
 }

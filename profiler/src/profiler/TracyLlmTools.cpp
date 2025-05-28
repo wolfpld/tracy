@@ -732,6 +732,16 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     }
     if( chunks.size() > 5 ) chunks.resize( 5 );
 
+    const auto maxSize = CalcMaxSize();
+    int totalSize = 0;
+    int idx;
+    for( idx = 0; idx < chunks.size(); idx++ )
+    {
+        totalSize += m_manualChunks[chunks[idx].first].size();
+        if( totalSize >= maxSize ) break;
+    }
+    if( idx < chunks.size() ) chunks.resize( idx );
+
     nlohmann::json json;
     for( auto& chunk : chunks )
     {

@@ -74,7 +74,7 @@ void TracyLlm::Draw()
 {
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Tracy AI", &m_show, ImGuiWindowFlags_NoScrollbar );
+    ImGui::Begin( "Tracy Assist", &m_show, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
     if( IsBusy() )

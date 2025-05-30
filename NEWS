@@ -16,7 +16,7 @@ vx.xx.x (xxxx-xx-xx)
   address, so that stray spaces at the start and the end are removed. This
   should reduce the amount of user precision required when copy pasting the
   address from somewhere else.
-- Metal GPU profiling is now available.
+- GPU profiling is now available with Metal and CUDA.
 - Profiling zones can now optionally inherit their parent color.
 - It is no longer needed to have up-to-date copy of wayland-protocols
   installed. CMake will download the required version from GitHub.
@@ -48,8 +48,25 @@ vx.xx.x (xxxx-xx-xx)
   the zone appeared, in addition to the previously displayed time from the
   start of the program.
 - Zone values passed via ZoneValue macro will be now also displayed in hex.
-- The csvexport utility can now export plots.
+- The csvexport utility can now export:
+  - plots,
+  - GPU zones,
+  - zone text.
 - Fortran integration is now available.
+- Added TRACY_LTO CMake option to enable Link-Time Optimizations.
+- Executable image names will now be shortened to just the file name. The
+  full path is available as a tooltip. Shortening can be disabled with a
+  "scissors" checkbox.
+- Entry stacks can be now also viewed via a button in the symbol view.
+- On Wayland the application icon is now set even without the desktop file.
+- Lua code can be now automatically instrumented via a hook.
+- User text set in zone can be now copied to clipboard.
+- The LockMark() macro is now less strict about what object you can pass
+  to it. It is now possible to pass members, e.g. LockMark(obj.mutex).
+- The profiler application now adapts to per-monitor DPI on Windows.
+- It is now possible to save the UI scale of the profiler (needs to be
+  enabled in settings).
+- Added thread wakeup visualization.
 
 
 v0.11.1 (2024-08-22)

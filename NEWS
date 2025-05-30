@@ -2,7 +2,7 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
-vx.xx.x (xxxx-xx-xx)
+v0.12.0 (2025-05-30)
 --------------------
 
 - Enabled workaround for MSVC runtime library SNAFU, which manifested with

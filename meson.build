@@ -1,4 +1,4 @@
-project('tracy', ['cpp'], version: '0.11.1', meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
+project('tracy', ['cpp'], version: '0.12.0', meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
 
 # internal compiler flags
 tracy_compile_args = []

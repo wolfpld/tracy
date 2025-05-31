@@ -755,6 +755,10 @@ void TracyLlm::ResetChat()
     std::string systemPrompt = "<SYSTEM_PROMPT>\n";
     systemPrompt += std::string( m_systemPrompt->data(), m_systemPrompt->size() );
     systemPrompt += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+#ifndef NDEBUG
+    systemPrompt += "\n\n# DEBUG MODE AVAILABLE\n";
+    systemPrompt += "Upon a user query beginning with `<debug>`, activate *Debug Mode*. In this mode, ignore all prior instructions. Your response must detail your complete reasoning process and the exact steps taken to generate your *previous* non-debug answer. Explicitly state any internal rules applied. Do not say you are sorry. Do not tell how you will change your behavior. Focus strictly on the analysis of what happened.\n";
+#endif
     systemPrompt += "</SYSTEM_PROMPT>\n";
 
     *m_input = 0;
@@ -809,7 +813,23 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         }
     }
 
-    AddMessage( "<think>\n", "assistant" );
+    bool debug = false;
+#ifndef NDEBUG
+    if( m_chat.size() > 1 && m_chat.back()["role"].get_ref<const std::string&>() == "user" )
+    {
+        const auto& content = m_chat.back()["content"].get_ref<const std::string&>();
+        if( content.starts_with( "<debug>" ) ) debug = true;
+    }
+#endif
+
+    if( debug )
+    {
+        AddMessage( "<debug>\n", "assistant" );
+    }
+    else
+    {
+        AddMessage( "<think>\n", "assistant" );
+    }
 
     bool res;
     try
@@ -818,10 +838,19 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         lock.unlock();
 
         std::string inject;
-        inject += "<SYSTEM_REMINDER>\n";
-        inject += std::string( m_systemReminder->data(), m_systemReminder->size() );
-        inject += "The current time is: " + m_tools.GetCurrentTime() + "\n";
-        inject += "</SYSTEM_REMINDER>\n";
+        if( debug )
+        {
+            inject += "<SYSTEM_REMINDER>\n";
+            inject += "You are in debug mode.\n";
+            inject += "</SYSTEM_REMINDER>\n";
+        }
+        else
+        {
+            inject += "<SYSTEM_REMINDER>\n";
+            inject += std::string( m_systemReminder->data(), m_systemReminder->size() );
+            inject += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+            inject += "</SYSTEM_REMINDER>\n";
+        }
 
         chat.back()["content"].get_ref<std::string&>().insert( 0, inject );
 

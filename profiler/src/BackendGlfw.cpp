@@ -166,6 +166,10 @@ void Backend::NewFrame( int& w, int& h )
     }
 
     glfwGetFramebufferSize( s_window, &w, &h );
+#if defined( __APPLE__ )
+    w = static_cast<int>( w / scale );
+    h = static_cast<int>( h / scale );
+#endif
     m_w = w;
     m_h = h;
 

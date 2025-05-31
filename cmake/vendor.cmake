@@ -115,49 +115,6 @@ CPMAddPackage(
     SOURCE_SUBDIR build/cmake
 )
 
-# libcurl
-
-pkg_check_modules(LIBCURL libcurl)
-if (LIBCURL_FOUND AND NOT DOWNLOAD_LIBCURL)
-    add_library(TracyLibcurl INTERFACE)
-    target_include_directories(TracyLibcurl INTERFACE ${LIBCURL_INCLUDE_DIRS})
-    target_link_libraries(TracyLibcurl INTERFACE ${LIBCURL_LINK_LIBRARIES})
-else()
-    CPMAddPackage(
-        NAME libcurl
-        GITHUB_REPOSITORY curl/curl
-        GIT_TAG curl-8_13_0
-        OPTIONS
-            "BUILD_STATIC_LIBS ON"
-            "BUILD_SHARED_LIBS OFF"
-            "HTTP_ONLY ON"
-            "CURL_ZSTD OFF"
-            "CURL_USE_LIBPSL OFF"
-        EXCLUDE_FROM_ALL TRUE
-    )
-    add_library(TracyLibcurl INTERFACE)
-    target_link_libraries(TracyLibcurl INTERFACE libcurl_static)
-    target_include_directories(TracyLibcurl INTERFACE ${libcurl_SOURCE_DIR}/include)
-endif()
-
-# pugixml
-
-pkg_check_modules(PUGIXML pugixml)
-if (PUGIXML_FOUND AND NOT DOWNLOAD_PUGIXML)
-    add_library(TracyPugixml INTERFACE)
-    target_include_directories(TracyPugixml INTERFACE ${PUGIXML_INCLUDE_DIRS})
-    target_link_libraries(TracyPugixml INTERFACE ${PUGIXML_LINK_LIBRARIES})
-else()
-    CPMAddPackage(
-        NAME pugixml
-        GITHUB_REPOSITORY zeux/pugixml
-        GIT_TAG v1.15
-        EXCLUDE_FROM_ALL TRUE
-    )
-    add_library(TracyPugixml INTERFACE)
-    target_link_libraries(TracyPugixml INTERFACE pugixml)
-endif()
-
 # Diff Template Library
 
 set(DTL_DIR "${ROOT_DIR}/dtl")
@@ -237,46 +194,93 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
 )
 
-# base64
+if(NOT EMSCRIPTEN)
 
-set(BUILD_SHARED_LIBS_SAVE ${BUILD_SHARED_LIBS})
-set(BUILD_SHARED_LIBS OFF)
-CPMAddPackage(
-    NAME base64
-    GITHUB_REPOSITORY aklomp/base64
-    GIT_TAG v0.5.2
-    OPTIONS
-        "BASE64_BUILD_CLI OFF"
-        "BASE64_WITH_OpenMP OFF"
-    EXCLUDE_FROM_ALL TRUE
-)
-set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVE})
+    # base64
 
-# tidy
+    set(BUILD_SHARED_LIBS_SAVE ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+    CPMAddPackage(
+        NAME base64
+        GITHUB_REPOSITORY aklomp/base64
+        GIT_TAG v0.5.2
+        OPTIONS
+            "BASE64_BUILD_CLI OFF"
+            "BASE64_WITH_OpenMP OFF"
+        EXCLUDE_FROM_ALL TRUE
+    )
+    set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVE})
 
-CPMAddPackage(
-    NAME tidy
-    GITHUB_REPOSITORY htacg/tidy-html5
-    GIT_TAG 5.8.0
-    PATCHES
-        "${CMAKE_CURRENT_LIST_DIR}/tidy-cmake.patch"
-    EXCLUDE_FROM_ALL TRUE
-)
+    # tidy
 
-# json
+    CPMAddPackage(
+        NAME tidy
+        GITHUB_REPOSITORY htacg/tidy-html5
+        GIT_TAG 5.8.0
+        PATCHES
+            "${CMAKE_CURRENT_LIST_DIR}/tidy-cmake.patch"
+        EXCLUDE_FROM_ALL TRUE
+    )
 
-CPMAddPackage(
-    NAME json
-    GITHUB_REPOSITORY nlohmann/json
-    GIT_TAG v3.12.0
-    EXCLUDE_FROM_ALL TRUE
-)
+    # json
 
-# usearch
+    CPMAddPackage(
+        NAME json
+        GITHUB_REPOSITORY nlohmann/json
+        GIT_TAG v3.12.0
+        EXCLUDE_FROM_ALL TRUE
+    )
 
-CPMAddPackage(
-    NAME usearch
-    GITHUB_REPOSITORY unum-cloud/usearch
-    GIT_TAG v2.17.7
-    EXCLUDE_FROM_ALL TRUE
-)
+    # usearch
+
+    CPMAddPackage(
+        NAME usearch
+        GITHUB_REPOSITORY unum-cloud/usearch
+        GIT_TAG v2.17.7
+        EXCLUDE_FROM_ALL TRUE
+    )
+
+    # pugixml
+
+    pkg_check_modules(PUGIXML pugixml)
+    if (PUGIXML_FOUND AND NOT DOWNLOAD_PUGIXML)
+        add_library(TracyPugixml INTERFACE)
+        target_include_directories(TracyPugixml INTERFACE ${PUGIXML_INCLUDE_DIRS})
+        target_link_libraries(TracyPugixml INTERFACE ${PUGIXML_LINK_LIBRARIES})
+    else()
+        CPMAddPackage(
+            NAME pugixml
+            GITHUB_REPOSITORY zeux/pugixml
+            GIT_TAG v1.15
+            EXCLUDE_FROM_ALL TRUE
+        )
+        add_library(TracyPugixml INTERFACE)
+        target_link_libraries(TracyPugixml INTERFACE pugixml)
+    endif()
+
+    # libcurl
+
+    pkg_check_modules(LIBCURL libcurl)
+    if (LIBCURL_FOUND AND NOT DOWNLOAD_LIBCURL)
+        add_library(TracyLibcurl INTERFACE)
+        target_include_directories(TracyLibcurl INTERFACE ${LIBCURL_INCLUDE_DIRS})
+        target_link_libraries(TracyLibcurl INTERFACE ${LIBCURL_LINK_LIBRARIES})
+    else()
+        CPMAddPackage(
+            NAME libcurl
+            GITHUB_REPOSITORY curl/curl
+            GIT_TAG curl-8_13_0
+            OPTIONS
+                "BUILD_STATIC_LIBS ON"
+                "BUILD_SHARED_LIBS OFF"
+                "HTTP_ONLY ON"
+                "CURL_ZSTD OFF"
+                "CURL_USE_LIBPSL OFF"
+            EXCLUDE_FROM_ALL TRUE
+        )
+        add_library(TracyLibcurl INTERFACE)
+        target_link_libraries(TracyLibcurl INTERFACE libcurl_static)
+        target_include_directories(TracyLibcurl INTERFACE ${libcurl_SOURCE_DIR}/include)
+    endif()
+
+endif()

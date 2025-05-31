@@ -224,8 +224,24 @@ else()
 endif()
 
 find_package(Threads REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui Threads::Threads TracyLibcurl base64 tidy-static TracyPugixml nlohmann_json::nlohmann_json usearch)
-target_include_directories(${PROJECT_NAME} PRIVATE ${tidy_SOURCE_DIR}/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    TracyServer
+    TracyImGui
+    Threads::Threads
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${tidy_SOURCE_DIR}/include
+)
+if(NOT EMSCRIPTEN)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        TracyLibcurl
+        base64
+        tidy-static
+        TracyPugixml
+        nlohmann_json::nlohmann_json
+        usearch
+    )
+endif()
 
 if(NOT DEFINED GIT_REV)
     set(GIT_REV "HEAD")

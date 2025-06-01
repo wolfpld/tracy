@@ -934,41 +934,44 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     {
         bool isTool = false;
         auto& str = back["content"].get_ref<const std::string&>();
-        auto pos = str.find( "<tool>\n" );
-        if( pos != std::string::npos )
+        if( !str.starts_with( "<debug>" ) )
         {
-            auto end = str.find( "\n</tool>", pos );
-            if( end != std::string::npos )
+            auto pos = str.find( "<tool>\n" );
+            if( pos != std::string::npos )
             {
-                auto data = str.substr( pos + 7, end - pos - 7 );
-                auto lines = SplitLines( data );
-                if( !lines.empty() )
+                auto end = str.find( "\n</tool>", pos );
+                if( end != std::string::npos )
                 {
-                    isTool = true;
-                    auto tool = lines[0];
-                    lines.erase( lines.begin() );
-                    lock.unlock();
-                    const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
-                    auto output = "<tool_output>\n" + reply.reply;
-                    lock.lock();
-                    //if( reply.image.empty() )
+                    auto data = str.substr( pos + 7, end - pos - 7 );
+                    auto lines = SplitLines( data );
+                    if( !lines.empty() )
                     {
-                        AddMessage( std::move( output ), "user" );
-                    }
-                    /*
-                    else
-                    {
-                        std::vector<ollama::image> images;
-                        images.emplace_back( ollama::image::from_base64_string( reply.image ) );
-                        m_chat->emplace_back( ollama::message( "user", output, images ) );
-                    }
-                    */
+                        isTool = true;
+                        auto tool = lines[0];
+                        lines.erase( lines.begin() );
+                        lock.unlock();
+                        const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
+                        auto output = "<tool_output>\n" + reply.reply;
+                        lock.lock();
+                        //if( reply.image.empty() )
+                        {
+                            AddMessage( std::move( output ), "user" );
+                        }
+                        /*
+                        else
+                        {
+                            std::vector<ollama::image> images;
+                            images.emplace_back( ollama::image::from_base64_string( reply.image ) );
+                            m_chat->emplace_back( ollama::message( "user", output, images ) );
+                        }
+                        */
 
-                    m_jobs.emplace_back( WorkItem {
-                        .task = Task::SendMessage,
-                        .callback = nullptr
-                    } );
-                    m_cv.notify_all();
+                        m_jobs.emplace_back( WorkItem {
+                            .task = Task::SendMessage,
+                            .callback = nullptr
+                        } );
+                        m_cv.notify_all();
+                    }
                 }
             }
         }

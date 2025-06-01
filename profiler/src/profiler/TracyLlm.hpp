@@ -62,6 +62,7 @@ private:
     void ResetChat();
 
     void AddMessage( std::string&& str, const char* role );
+    void ManageContext();
     void SendMessage( std::unique_lock<std::mutex>& lock );
     bool OnResponse( const nlohmann::json& json );
 

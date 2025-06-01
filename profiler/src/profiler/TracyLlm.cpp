@@ -781,37 +781,47 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
     m_chat.emplace_back( std::move( msg ) );
 }
 
-void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
+void TracyLlm::ManageContext()
 {
     const auto& models = m_api->GetModels();
     const auto ctxSize = models[m_modelIdx].contextSize;
-    if( ctxSize > 0 && (float)m_usedCtx / ctxSize > 0.7f )
+    if( ctxSize <= 0 ) return;
+
+    const auto quota = int( ctxSize * 0.7f );
+    if( m_usedCtx < quota ) return;
+
+    size_t idx = 0;
+    std::vector<std::pair<size_t, size_t>> toolOutputs;
+    for( auto& msg : m_chat )
     {
-        size_t idx = 0;
-        std::vector<std::pair<size_t, size_t>> toolOutputs;
-        for( auto& msg : m_chat )
+        if( msg["role"].get_ref<const std::string&>() == "user" )
         {
-            if( msg["role"].get_ref<const std::string&>() == "user" )
+            auto& content = msg["content"];
+            const auto& str = content.get_ref<const std::string&>();
+            if( str.starts_with( "<tool_output>\n" ) )
             {
-                auto& content = msg["content"];
-                const auto& str = content.get_ref<const std::string&>();
-                if( str.starts_with( "<tool_output>\n" ) )
-                {
-                    toolOutputs.emplace_back( str.size(), idx );
-                }
+                toolOutputs.emplace_back( str.size(), idx );
             }
-            idx++;
         }
-        if( toolOutputs.size() > 1 )
+        idx++;
+    }
+    if( toolOutputs.size() > 1 )
+    {
+        toolOutputs.pop_back();     // keep the last tool output
+        std::ranges::stable_sort( toolOutputs, []( const auto& a, const auto& b ) { return a.first > b.first; } );
+        for( auto& v : toolOutputs )
         {
-            toolOutputs.pop_back();     // keep the last tool output
-            std::ranges::stable_sort( toolOutputs, []( const auto& a, const auto& b ) { return a.first > b.first; } );
-            auto& v = toolOutputs[0];
             m_usedCtx -= v.first / 4;
             m_chat[v.second]["content"] = ForgetMsg;
             m_usedCtx += strlen( ForgetMsg ) / 4;
+            if( m_usedCtx < quota ) break;
         }
     }
+}
+
+void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
+{
+    ManageContext();
 
     bool debug = false;
 #ifndef NDEBUG

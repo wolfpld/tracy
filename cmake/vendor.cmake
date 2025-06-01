@@ -283,4 +283,13 @@ if(NOT EMSCRIPTEN)
         target_include_directories(TracyLibcurl INTERFACE ${libcurl_SOURCE_DIR}/include)
     endif()
 
+    # md4c
+
+    CPMAddPackage(
+        NAME md4c
+        GITHUB_REPOSITORY mity/md4c
+        GIT_TAG release-0.5.2
+        EXCLUDE_FROM_ALL TRUE
+    )
+
 endif()

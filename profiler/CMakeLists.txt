@@ -251,6 +251,7 @@ if(NOT EMSCRIPTEN)
         TracyPugixml
         nlohmann_json::nlohmann_json
         usearch
+        md4c
     )
 endif()
 

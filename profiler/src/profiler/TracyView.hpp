@@ -17,7 +17,6 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
-#include "TracyLlm.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyUserData.hpp"
@@ -29,6 +28,10 @@
 #include "../server/TracyWorker.hpp"
 #include "../server/tracy_robin_hood.h"
 #include "../server/TracyVector.hpp"
+
+#ifndef __EMSCRIPTEN__
+#  include "TracyLlm.hpp"
+#endif
 
 namespace tracy
 {
@@ -932,7 +935,9 @@ private:
         }
     } m_flameGraphInvariant;
 
+#ifndef __EMSCRIPTEN__
     TracyLlm m_llm;
+#endif
 };
 
 }

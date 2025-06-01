@@ -66,10 +66,6 @@ set(SERVER_FILES
     TracyFileselector.cpp
     TracyFilesystem.cpp
     TracyImGui.cpp
-    TracyLlm.cpp
-    TracyLlmApi.cpp
-    TracyLlmEmbeddings.cpp
-    TracyLlmTools.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
     TracyProtoHistory.cpp
@@ -117,6 +113,15 @@ set(SERVER_FILES
     TracyView_ZoneTimeline.cpp
     TracyWeb.cpp
 )
+
+if(NOT EMSCRIPTEN)
+    list(APPEND SERVER_FILES
+        TracyLlm.cpp
+        TracyLlmApi.cpp
+        TracyLlmEmbeddings.cpp
+        TracyLlmTools.cpp
+    )
+endif()
 
 list(TRANSFORM SERVER_FILES PREPEND "src/profiler/")
 

@@ -782,8 +782,10 @@ static void DrawContents()
                 if( ImGui::Checkbox( "Enable achievements", &tracy::s_config.achievements ) ) tracy::SaveConfig();
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Save UI scale", &tracy::s_config.saveUserScale) ) tracy::SaveConfig();
+#ifndef __EMSCRIPTEN__
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable LLM", &tracy::s_config.llm ) ) tracy::SaveConfig();
+#endif
 
                 ImGui::PopStyleVar();
                 ImGui::TreePop();

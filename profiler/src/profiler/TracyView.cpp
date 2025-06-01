@@ -953,11 +953,13 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
+#ifndef __EMSCRIPTEN__
     if( s_config.llm )
     {
         ImGui::SameLine();
         ToggleButton( ICON_FA_ROBOT, m_llm.m_show );
     }
+#endif
     if( m_worker.AreFramesUsed() )
     {
         ImGui::SameLine();
@@ -1152,7 +1154,9 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
+#ifndef __EMSCRIPTEN__
     if( m_llm.m_show ) m_llm.Draw();
+#endif
 
     if( m_setRangePopup.active )
     {

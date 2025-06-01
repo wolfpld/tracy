@@ -1,0 +1,14 @@
+diff --git i/include/ppqsort/parameters.h w/include/ppqsort/parameters.h
+index 115c3a1..3f4b669 100644
+--- i/include/ppqsort/parameters.h
++++ w/include/ppqsort/parameters.h
+@@ -3,7 +3,8 @@
+ #include <bit>
+ #include <execution>
+ 
+-#ifndef NDEBUG
++//#ifndef NDEBUG
++#if 0
+     #include <bitset>
+     #include <iostream>
+     #include <syncstream>

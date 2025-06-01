@@ -187,5 +187,7 @@ CPMAddPackage(
     NAME PPQSort
     GITHUB_REPOSITORY GabTux/PPQSort
     VERSION 1.0.5
+    PATCHES
+        "${CMAKE_CURRENT_LIST_DIR}/ppqsort-nodebug.patch"
     EXCLUDE_FROM_ALL TRUE
 )

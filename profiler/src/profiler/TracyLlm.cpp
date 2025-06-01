@@ -152,7 +152,7 @@ void TracyLlm::Draw()
         const auto sz = std::min( InputBufferSize-1, s_config.llmAddress.size() );
         memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );
         m_apiInput[sz] = 0;
-        bool changed = ImGui::InputTextWithHint( "##api", "http://127.0.0.1:1234", m_apiInput, InputBufferSize );
+        bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:1234", m_apiInput, InputBufferSize );
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##presets", nullptr, ImGuiComboFlags_NoPreview ) )
         {

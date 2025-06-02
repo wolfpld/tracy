@@ -7,6 +7,7 @@
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
 #include "TracyLlmApi.hpp"
+#include "TracyLlmTools.hpp"
 #include "TracyPrint.hpp"
 #include "TracyWeb.hpp"
 #include "../Fonts.hpp"
@@ -44,6 +45,7 @@ TracyLlm::TracyLlm()
     ResetChat();
 
     m_api = std::make_unique<TracyLlmApi>();
+    m_tools = std::make_unique<TracyLlmTools>();
 
     m_busy = true;
     m_jobs.emplace_back( WorkItem {
@@ -91,7 +93,7 @@ void TracyLlm::Draw()
 
     auto& style = ImGui::GetStyle();
 
-    const auto manualEmbeddingsState = m_tools.GetManualEmbeddingsState();
+    const auto manualEmbeddingsState = m_tools->GetManualEmbeddingsState();
     if( manualEmbeddingsState.inProgress )
     {
         ImGui::PushFont( g_fonts.big );
@@ -116,7 +118,7 @@ void TracyLlm::Draw()
         ImGui::Spacing();
         const auto sz = ImGui::CalcTextSize( "Cancel" ).x + style.FramePadding.x * 2;
         ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - sz ) * 0.5f );
-        if( ImGui::Button( "Cancel" ) ) m_tools.CancelManualEmbeddings();
+        if( ImGui::Button( "Cancel" ) ) m_tools->CancelManualEmbeddings();
         ImGui::End();
         return;
     }
@@ -252,7 +254,7 @@ void TracyLlm::Draw()
         ImGui::SetNextItemWidth( 40 * scale );
         if( ImGui::InputFloat( "##temperature", &m_temperature, 0, 0, "%.2f" ) ) m_temperature = std::clamp( m_temperature, 0.f, 2.f );
 
-        ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_tools.m_netAccess );
+        ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_tools->m_netAccess );
 
         if( ImGui::TreeNode( "External services" ) )
         {
@@ -319,7 +321,7 @@ void TracyLlm::Draw()
         if( ImGui::SmallButton( ICON_FA_BOOK_BOOKMARK " Learn manual" ) )
         {
             if( m_responding ) m_stop = true;
-            m_tools.BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
+            m_tools->BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
         }
         if( m_embedIdx < 0 ) ImGui::EndDisabled();
         ImGui::SameLine();
@@ -755,7 +757,7 @@ void TracyLlm::ResetChat()
 {
     std::string systemPrompt = "<SYSTEM_PROMPT>\n";
     systemPrompt += std::string( m_systemPrompt->data(), m_systemPrompt->size() );
-    systemPrompt += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+    systemPrompt += "The current time is: " + m_tools->GetCurrentTime() + "\n";
 #ifndef NDEBUG
     systemPrompt += "\n\n# DEBUG MODE AVAILABLE\n";
     systemPrompt += "Upon a user query beginning with `<debug>`, activate *Debug Mode*. In this mode, ignore all prior instructions. Your response must detail your complete reasoning process and the exact steps taken to generate your *previous* non-debug answer. Explicitly state any internal rules applied. Do not say you are sorry. Do not tell how you will change your behavior. Focus strictly on the analysis of what happened.\n";
@@ -859,7 +861,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         {
             inject += "<SYSTEM_REMINDER>\n";
             inject += std::string( m_systemReminder->data(), m_systemReminder->size() );
-            inject += "The current time is: " + m_tools.GetCurrentTime() + "\n";
+            inject += "The current time is: " + m_tools->GetCurrentTime() + "\n";
             inject += "</SYSTEM_REMINDER>\n";
         }
 
@@ -961,7 +963,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                         auto tool = lines[0];
                         lines.erase( lines.begin() );
                         lock.unlock();
-                        const auto reply = m_tools.HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
+                        const auto reply = m_tools->HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
                         auto output = "<tool_output>\n" + reply.reply;
                         lock.lock();
                         //if( reply.image.empty() )

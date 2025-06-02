@@ -19,6 +19,7 @@ namespace tracy
 {
 
 class TracyLlmApi;
+class TracyLlmTools;
 
 class TracyLlm
 {
@@ -73,6 +74,7 @@ private:
     void CleanContext( LineContext& ctx);
 
     std::unique_ptr<TracyLlmApi> m_api;
+    std::unique_ptr<TracyLlmTools> m_tools;
 
     int m_modelIdx;
     int m_embedIdx;
@@ -99,8 +101,6 @@ private:
 
     std::shared_ptr<EmbedData> m_systemPrompt;
     std::shared_ptr<EmbedData> m_systemReminder;
-
-    TracyLlmTools m_tools;
 };
 
 }

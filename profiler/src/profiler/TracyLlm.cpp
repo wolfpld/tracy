@@ -757,7 +757,6 @@ void TracyLlm::ResetChat()
 {
     std::string systemPrompt = "<SYSTEM_PROMPT>\n";
     systemPrompt += std::string( m_systemPrompt->data(), m_systemPrompt->size() );
-    systemPrompt += "The current time is: " + m_tools->GetCurrentTime() + "\n";
 #ifndef NDEBUG
     systemPrompt += "\n\n# DEBUG MODE AVAILABLE\n";
     systemPrompt += "Upon a user query beginning with `<debug>`, activate *Debug Mode*. In this mode, ignore all prior instructions. Your response must detail your complete reasoning process and the exact steps taken to generate your *previous* non-debug answer. Explicitly state any internal rules applied. Do not say you are sorry. Do not tell how you will change your behavior. Focus strictly on the analysis of what happened.\n";

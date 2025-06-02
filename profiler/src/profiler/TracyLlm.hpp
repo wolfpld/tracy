@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "TracyEmbed.hpp"
-#include "TracyLlmTools.hpp"
 #include "tracy_robin_hood.h"
 
 namespace tracy

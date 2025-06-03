@@ -19,12 +19,7 @@ FontData g_fonts;
 void LoadFonts( float scale )
 {
     static const ImWchar rangesBasic[] = {
-        0x0020, 0x024F, // Basic Latin + Latin Supplement + Latin Extended A + Latin Extended B
-        0x03BC, 0x03BC, // micro
-        0x03C3, 0x03C3, // small sigma
-        0x2013, 0x2013, // en dash
-        0x2026, 0x2026, // ellipsis
-        0x2264, 0x2264, // less-than or equal to
+        0x0020, 0xFFFF,
         0,
     };
     static const ImWchar rangesIcons[] = {
@@ -32,8 +27,7 @@ void LoadFonts( float scale )
         0
     };
     static const ImWchar rangesFixed[] = {
-        0x0020, 0x024F, // Basic Latin + Latin Supplement + Latin Extended A + Latin Extended B
-        0x2026, 0x2026, // ellipsis
+        0x0020, 0xFFFF,
         0
     };
 

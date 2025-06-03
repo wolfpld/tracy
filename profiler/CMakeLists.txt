@@ -118,6 +118,7 @@ if(NOT EMSCRIPTEN)
     list(APPEND SERVER_FILES
         TracyLlm.cpp
         TracyLlmApi.cpp
+        TracyLlmChat.cpp
         TracyLlmEmbeddings.cpp
         TracyLlmTools.cpp
     )

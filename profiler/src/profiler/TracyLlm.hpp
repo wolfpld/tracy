@@ -12,12 +12,12 @@
 #include <vector>
 
 #include "TracyEmbed.hpp"
-#include "tracy_robin_hood.h"
 
 namespace tracy
 {
 
 class TracyLlmApi;
+class TracyLlmChat;
 class TracyLlmTools;
 
 class TracyLlm
@@ -32,17 +32,6 @@ class TracyLlm
     {
         Task task;
         std::function<void()> callback;
-    };
-
-    struct ChatCache
-    {
-        std::vector<std::string> lines;
-        size_t parsedLen;
-    };
-
-    struct LineContext
-    {
-        bool codeBlock;
     };
 
 public:
@@ -66,13 +55,8 @@ private:
     void SendMessage( std::unique_lock<std::mutex>& lock );
     bool OnResponse( const nlohmann::json& json );
 
-    void UpdateCache( ChatCache& cache, const std::string& str );
-
-    void PrintLine( LineContext& ctx, const std::string& str, int num );
-    void PrintMarkdown( const char* str );
-    void CleanContext( LineContext& ctx);
-
     std::unique_ptr<TracyLlmApi> m_api;
+    std::unique_ptr<TracyLlmChat> m_chatUi;
     std::unique_ptr<TracyLlmTools> m_tools;
 
     int m_modelIdx;
@@ -96,7 +80,6 @@ private:
     char* m_input;
     char* m_apiInput;
     std::vector<nlohmann::json> m_chat;
-    unordered_flat_map<size_t, ChatCache> m_chatCache;
 
     std::shared_ptr<EmbedData> m_systemPrompt;
     std::shared_ptr<EmbedData> m_systemReminder;

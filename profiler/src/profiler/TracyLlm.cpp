@@ -1,3 +1,4 @@
+#include <array>
 #include <curl/curl.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -7,6 +8,7 @@
 #include "TracyImGui.hpp"
 #include "TracyLlm.hpp"
 #include "TracyLlmApi.hpp"
+#include "TracyLlmChat.hpp"
 #include "TracyLlmTools.hpp"
 #include "TracyPrint.hpp"
 #include "TracyWeb.hpp"
@@ -20,7 +22,6 @@ namespace tracy
 
 extern double s_time;
 
-constexpr const char* ForgetMsg = "<tool_output>\n...";
 constexpr size_t InputBufferSize = 1024;
 
 TracyLlm::TracyLlm()
@@ -45,6 +46,7 @@ TracyLlm::TracyLlm()
     ResetChat();
 
     m_api = std::make_unique<TracyLlmApi>();
+    m_chatUi = std::make_unique<TracyLlmChat>();
     m_tools = std::make_unique<TracyLlmTools>();
 
     m_busy = true;
@@ -403,219 +405,42 @@ void TracyLlm::Draw()
     else
     {
         ImGui::PushID( m_chatId );
-        int cacheIdx = 0;
-        int treeIdx = 0;
-        int num = 0;
+        m_chatUi->Begin();
+
         for( auto& line : m_chat )
         {
-            const auto uw = ImGui::CalcTextSize( ICON_FA_USER ).x;
-            const auto rw = ImGui::CalcTextSize( ICON_FA_ROBOT ).x;
-            const auto ew = ImGui::CalcTextSize( ICON_FA_CIRCLE_EXCLAMATION ).x;
-            const auto yw = ImGui::CalcTextSize( ICON_FA_REPLY ).x;
-            const auto cw = ImGui::CalcTextSize( ICON_FA_RECYCLE ).x;
-            const auto mw = std::max( { uw, rw, ew, yw, cw } );
+            const auto& roleStr = line["role"].get_ref<const std::string&>();
+            if( roleStr == "system" ) continue;
+            const auto& contentNode = line["content"];
+            if( !contentNode.is_string() ) continue;
+            const auto& content = contentNode.get_ref<const std::string&>();
 
-            const auto posStart = ImGui::GetCursorPos().x;
-            const auto& role = line["role"].get_ref<const std::string&>();
+            TracyLlmChat::TurnRole role = TracyLlmChat::TurnRole::None;
+            if( roleStr == "user" ) role = TracyLlmChat::TurnRole::User;
+            else if( roleStr == "error" ) role = TracyLlmChat::TurnRole::Error;
+            else if( roleStr == "assistant" ) role = TracyLlmChat::TurnRole::Assistant;
+            else assert( false );
 
-            if( role == "system" ) continue;
-
-            const auto isUser = role == "user";
-            const auto isError = role == "error";
-            const auto isAssistant = role == "assistant";
-            const auto isToolResponse = isUser && line["content"].get_ref<const std::string&>().starts_with( "<tool_output>\n" );
-            const auto isForgotten = isToolResponse && line["content"].is_string() && line["content"].get_ref<const std::string&>() == ForgetMsg;
-
-            float diff, offset;
-            if( isForgotten )
+            if( role == TracyLlmChat::TurnRole::User )
             {
-                diff = mw - cw;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_RECYCLE );
+                if( content.starts_with( "<tool_output>\n" ) ) role = TracyLlmChat::TurnRole::Assistant;
+                else if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::UserDebug;
             }
-            else if( isToolResponse )
+            else if( role == TracyLlmChat::TurnRole::Assistant )
             {
-                diff = mw - yw;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( style.Colors[ImGuiCol_TextDisabled], ICON_FA_REPLY );
-            }
-            else if( isUser )
-            {
-                diff = mw - uw;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( ImVec4( 0.75f, 1.f, 0.25f, 1.f ), ICON_FA_USER );
-            }
-            else if( isError )
-            {
-                diff = mw - ew;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ICON_FA_CIRCLE_EXCLAMATION );
-            }
-            else if( isAssistant )
-            {
-                diff = mw - rw;
-                offset = diff / 2;
-                ImGui::Dummy( ImVec2( offset, 0 ) );
-                ImGui::SameLine( 0, 0 );
-                ImGui::TextColored( ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ICON_FA_ROBOT );
-            }
-            else
-            {
-                assert( false );
+                if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::AssistantDebug;
             }
 
-            ImGui::SameLine( 0, 0 );
-            ImGui::Dummy( ImVec2( diff - offset, 0 ) );
-            ImGui::SameLine();
-            ImGui::BeginGroup();
-
-            if( isToolResponse )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
-            }
-            else if( isUser )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.64f, 0.76f, 0.41f, 1.f ) );
-            }
-            else if( isError )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.25f, 0.25f, 1.f ) );
-            }
-            else if( isAssistant )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_Text] );
-            }
-            else
-            {
-                assert( false );
-            }
-
-            if( isForgotten )
-            {
-                ImGui::TextUnformatted( "Tool response removed to save context space" );
-                treeIdx++;
-            }
-            else if( isToolResponse )
-            {
-                ImGui::PushID( treeIdx++ );
-                auto expand = ImGui::TreeNode( "Tool response..." );
-                if( line.contains( "images" ) )
-                {
-                    ImGui::SameLine();
-                    ImGui::TextUnformatted( ICON_FA_FILE_IMAGE );
-                }
-                if( expand )
-                {
-                    ImGui::PushFont( g_fonts.mono );
-                    ImGui::TextWrapped( "%s", line["content"].get_ref<const std::string&>().c_str() + sizeof( "<tool_output>" ) );
-                    ImGui::PopFont();
-                    ImGui::TreePop();
-                }
-                ImGui::PopID();
-            }
-            else if( isAssistant )
-            {
-                const auto& content = line["content"].get_ref<const std::string&>();
-
-                auto cit = m_chatCache.find( cacheIdx );
-                if( cit == m_chatCache.end() ) cit = m_chatCache.emplace( cacheIdx, ChatCache {} ).first;
-                auto& cache = cit->second;
-
-                if( cache.parsedLen != content.size() )
-                {
-                    UpdateCache( cache, content );
-                    assert( cache.parsedLen == content.size() );
-                }
-
-                if( cache.lines.empty() && m_responding )
-                {
-                    tracy::TextDisabledUnformatted( "\xe2\x80\xa6" );
-                }
-                else
-                {
-                    LineContext ctx = {};
-                    auto it = cache.lines.begin();
-                    while( it != cache.lines.end() )
-                    {
-                        auto& line = *it++;
-                        if( line == "<think>" )
-                        {
-                            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.3f, 1.f ) );
-                            ImGui::PushID( treeIdx++ );
-                            if( ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." ) )
-                            {
-                                LineContext thinkCtx = {};
-                                while( it != cache.lines.end() && *it != "</think>" )
-                                {
-                                    PrintLine( thinkCtx, *it++, num++ );
-                                }
-                                CleanContext( thinkCtx );
-                                if( it != cache.lines.end() ) ++it;
-                                ImGui::TreePop();
-                            }
-                            else
-                            {
-                                while( it != cache.lines.end() && *it != "</think>" ) ++it;
-                                if( it != cache.lines.end() ) ++it;
-                            }
-                            ImGui::PopID();
-                            ImGui::PopStyleColor();
-                        }
-                        else if( line == "<tool>" )
-                        {
-                            ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
-                            ImGui::PushID( treeIdx++ );
-                            if( ImGui::TreeNode( "Tool query..." ) )
-                            {
-                                ImGui::PushFont( g_fonts.mono );
-                                while( it != cache.lines.end() && *it != "</tool>" )
-                                {
-                                    ImGui::TextWrapped( "%s", (*it).c_str() );
-                                    ++it;
-                                }
-                                if( it != cache.lines.end() ) ++it;
-                                ImGui::PopFont();
-                                ImGui::TreePop();
-                            }
-                            else
-                            {
-                                while( it != cache.lines.end() && *it != "</tool>" ) ++it;
-                                if( it != cache.lines.end() ) ++it;
-                            }
-                            ImGui::PopID();
-                            ImGui::PopStyleColor();
-                        }
-                        else
-                        {
-                            PrintLine( ctx, line, num++ );
-                        }
-                    }
-                    CleanContext( ctx );
-                }
-            }
-            else if( line["content"].is_string() )
-            {
-                auto& string = line["content"].get_ref<const std::string&>();
-                PrintMarkdown( string.c_str() );
-            }
-            ImGui::PopStyleColor();
-            ImGui::EndGroup();
-            cacheIdx++;
+            m_chatUi->Turn( role, content );
         }
+
+        m_chatUi->End();
+        ImGui::PopID();
 
         if( ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
         {
             ImGui::SetScrollHereY( 1.f );
         }
-        ImGui::PopID();
     }
     ImGui::EndChild();
     ImGui::Spacing();
@@ -767,7 +592,6 @@ void TracyLlm::ResetChat()
     m_usedCtx = 0;
     m_chatId++;
     m_chat.clear();
-    m_chatCache.clear();
 
     AddMessage( std::move( systemPrompt ), "system" );
 }
@@ -814,8 +638,8 @@ void TracyLlm::ManageContext()
         for( auto& v : toolOutputs )
         {
             m_usedCtx -= v.first / 4;
-            m_chat[v.second]["content"] = ForgetMsg;
-            m_usedCtx += strlen( ForgetMsg ) / 4;
+            m_chat[v.second]["content"] = TracyLlmChat::ForgetMsg;
+            m_usedCtx += strlen( TracyLlmChat::ForgetMsg ) / 4;
             if( m_usedCtx < quota ) break;
         }
     }
@@ -995,162 +819,6 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     }
 
     return true;
-}
-
-void TracyLlm::UpdateCache( ChatCache& cache, const std::string& str )
-{
-    const auto sz = str.size();
-    auto pos = cache.parsedLen;
-    while( pos < sz )
-    {
-        const auto isNewLine = pos == 0 || str[pos - 1] == '\n';
-        auto next = str.find( '\n', pos );
-        if( next == std::string::npos ) next = sz;
-        if( isNewLine )
-        {
-            cache.lines.emplace_back( str.substr( pos, next - pos ) );
-        }
-        else
-        {
-            auto& line = cache.lines.back().append( str, pos, next - pos );
-        }
-        pos = next + 1;
-    }
-    cache.parsedLen = sz;
-}
-
-static bool IsHeading( const char* str )
-{
-    if( *str != '#' ) return false;
-    while( *str == '#' ) str++;
-    return *str == ' ' || *str == '\t';
-}
-
-void TracyLlm::PrintLine( LineContext& ctx, const std::string& str, int num )
-{
-    if( str.empty() ) return;
-
-    auto ptr = str.c_str();
-    while( *ptr == ' ' || *ptr == '\t' ) ptr++;
-    if( strncmp( ptr, "```", 3 ) == 0 )
-    {
-        if( ctx.codeBlock )
-        {
-            ImGui::PopFont();
-            ImGui::EndChild();
-            ctx.codeBlock = false;
-        }
-        else
-        {
-            char tmp[64];
-            snprintf( tmp, sizeof( tmp ), "##chat_code_%d", num );
-            ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
-            if( ptr[3] )
-            {
-                ImGui::PushFont( g_fonts.small );
-                ImGui::SetCursorPosX( ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize( ptr + 3 ).x );
-                ImGui::TextUnformatted( ptr + 3 );
-                ImGui::PopFont();
-            }
-            ImGui::PushFont( g_fonts.mono );
-            ctx.codeBlock = true;
-        }
-    }
-    else
-    {
-        ImGui::PushTextWrapPos( 0 );
-        if( ctx.codeBlock )
-        {
-            ImGui::TextUnformatted( str.c_str() );
-        }
-        else if( str == "---" )
-        {
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-        }
-        else if( IsHeading( str.c_str() ) )
-        {
-            ImGui::PushFont( g_fonts.big );
-            ImGui::TextUnformatted( str.c_str() );
-            ImGui::PopFont();
-        }
-        else
-        {
-            const auto begin = str.c_str();
-            ptr = begin;
-            while( *ptr == ' ' || *ptr == '\t' ) ptr++;
-            if( ( ptr[0] == '*' || ptr[0] == '-' ) && ptr[1] == ' ' )
-            {
-                ImGui::TextUnformatted( std::string( ptr - begin, ' ' ).c_str() );
-                ImGui::SameLine();
-                ImGui::Bullet();
-                ImGui::SameLine();
-                ptr++;
-            }
-            PrintMarkdown( ptr );
-        }
-        ImGui::PopTextWrapPos();
-    }
-}
-
-void TracyLlm::PrintMarkdown( const char* str )
-{
-    auto& style = ImGui::GetStyle();
-    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( style.ItemSpacing.x, 0.0f ) );
-
-    auto end = str + strlen( str );
-    bool first = true;
-    bool isCode = false;
-
-    while( str != end )
-    {
-        if( first )
-        {
-            first = false;
-        }
-        else
-        {
-            ImGui::SameLine( 0, 0 );
-        }
-
-        auto next = str;
-        while( next != end && *next != '`' ) next++;
-        if( *next == '`' )
-        {
-            PrintTextWrapped( str, next );
-            str = next + 1;
-
-            isCode = !isCode;
-            if( isCode )
-            {
-                ImGui::PushFont( g_fonts.mono );
-            }
-            else
-            {
-                ImGui::PopFont();
-            }
-        }
-        else
-        {
-            PrintTextWrapped( str, next );
-            str = next;
-        }
-    }
-
-    if( isCode ) ImGui::PopFont();
-
-    ImGui::PopStyleVar();
-    ImGui::SetCursorPosY( ImGui::GetCursorPosY() + style.ItemSpacing.y );
-}
-
-void TracyLlm::CleanContext( LineContext& ctx)
-{
-    if( ctx.codeBlock )
-    {
-        ImGui::PopFont();
-        ImGui::EndChild();
-    }
 }
 
 }

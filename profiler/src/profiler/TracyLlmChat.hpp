@@ -33,9 +33,9 @@ private:
     void NormalScope();
     void ThinkScope();
 
-    void PrintMarkdown( const char* str );
-    void PrintThink( const char* str );
-    void PrintToolCall( const char* str );
+    void PrintMarkdown( const char* str, size_t size );
+    void PrintThink( const char* str, size_t size );
+    void PrintToolCall( const char* str, size_t size );
 
     float* m_width;
     float m_maxWidth;

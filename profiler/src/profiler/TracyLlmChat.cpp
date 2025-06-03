@@ -138,7 +138,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
             if( pos != minPos )
             {
                 NormalScope();
-                PrintMarkdown( content.substr( pos, minPos - pos ).c_str() );
+                PrintMarkdown( content.c_str() + pos, std::min( end, minPos ) - pos );
             }
 
             pos = minPos;
@@ -150,7 +150,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
                 while( content[pos] == '\n' ) pos++;
                 auto endThink = content.find( "</think>", pos );
                 ThinkScope();
-                if( m_thinkOpen ) PrintThink( content.substr( pos, endThink - pos ).c_str() );
+                if( m_thinkOpen ) PrintThink( content.c_str() + pos, std::min( end, endThink ) - pos );
                 if( endThink == std::string::npos ) break;
                 pos = endThink + sizeof( "</think>" ) - 1;
                 while( content[pos] == '\n' ) pos++;
@@ -162,7 +162,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
                 while( content[pos] == '\n' ) pos++;
                 auto endTool = content.find( "</tool>", pos );
                 ThinkScope();
-                if( m_thinkOpen ) PrintToolCall( content.substr( pos, endTool - pos ).c_str() );
+                if( m_thinkOpen ) PrintToolCall( content.c_str() + pos, std::min( end, endTool ) - pos );
                 if( endTool == std::string::npos ) break;
                 pos = endTool + sizeof( "</tool>" ) - 1;
                 while( content[pos] == '\n' ) pos++;
@@ -194,23 +194,23 @@ void TracyLlmChat::ThinkScope()
     m_thinkOpen = ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." );
 }
 
-void TracyLlmChat::PrintMarkdown( const char* str )
+void TracyLlmChat::PrintMarkdown( const char* str, size_t size )
 {
-    ImGui::TextWrapped( "%s", str );
+    ImGui::TextWrapped( "%.*s", (int)size, str );
 }
 
-void TracyLlmChat::PrintThink( const char* str )
+void TracyLlmChat::PrintThink( const char* str, size_t size )
 {
     ImGui::PushStyleColor( ImGuiCol_Text, ThinkColor );
-    PrintMarkdown( str );
+    PrintMarkdown( str, size );
     ImGui::PopStyleColor();
 }
 
-void TracyLlmChat::PrintToolCall( const char* str )
+void TracyLlmChat::PrintToolCall( const char* str, size_t size )
 {
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
     ImGui::PushFont( g_fonts.mono );
-    ImGui::TextWrapped( "%s", str );
+    ImGui::TextWrapped( "%.*s", (int)size, str );
     ImGui::PopFont();
     ImGui::PopStyleColor();
 }

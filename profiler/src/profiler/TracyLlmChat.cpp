@@ -81,6 +81,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
 
         const auto diff = m_maxWidth - m_width[(int)role];
         const auto offset = diff / 2;
+        ImGui::Spacing();
         ImGui::Dummy( ImVec2( offset, 0 ) );
         ImGui::SameLine( 0, 0 );
         ImGui::TextColored( roleData.iconColor, "%s", roleData.icon );

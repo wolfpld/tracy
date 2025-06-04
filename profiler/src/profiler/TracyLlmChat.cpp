@@ -179,6 +179,7 @@ void TracyLlmChat::NormalScope()
     if( m_thinkOpen )
     {
         ImGui::TreePop();
+        ImGui::Spacing();
         m_thinkOpen = false;
     }
     ImGui::PopStyleColor();

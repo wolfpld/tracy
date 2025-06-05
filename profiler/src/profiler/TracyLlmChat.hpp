@@ -3,6 +3,8 @@
 
 #include <string>
 
+struct MD_PARSER;
+
 namespace tracy
 {
 
@@ -45,6 +47,8 @@ private:
     bool m_thinkOpen;
     int m_thinkIdx;
     int m_subIdx;
+
+    MD_PARSER* m_parser;
 };
 
 }

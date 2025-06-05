@@ -1,8 +1,14 @@
 #include <array>
 #include <assert.h>
+#include <md4c.h>
+#include <string>
+#include <string.h>
+#include <vector>
 
 #include "TracyImGui.hpp"
 #include "TracyLlmChat.hpp"
+#include "TracyMouse.hpp"
+#include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
 namespace tracy
@@ -29,13 +35,270 @@ constexpr size_t NumRoles = roles.size();
 static_assert( NumRoles == (int)TracyLlmChat::TurnRole::None );
 
 
+class Markdown
+{
+    struct List
+    {
+        bool tight;
+        int num;
+    };
+
+public:
+    int EnterBlock( MD_BLOCKTYPE type, void* detail )
+    {
+        switch( type )
+        {
+        case MD_BLOCK_P:
+            Separate();
+            glue = false;
+            break;
+        case MD_BLOCK_QUOTE:
+            Separate();
+            ImGui::Indent();
+            break;
+        case MD_BLOCK_UL:
+            Separate();
+            lists.emplace_back( List {
+                .tight = ((MD_BLOCK_UL_DETAIL*)detail)->is_tight != 0,
+                .num = -1
+            } );
+            ImGui::Indent();
+            break;
+        case MD_BLOCK_OL:
+            Separate();
+            lists.emplace_back( List {
+                .tight = ((MD_BLOCK_OL_DETAIL*)detail)->is_tight != 0,
+                .num = (int)((MD_BLOCK_OL_DETAIL*)detail)->start
+            } );
+            ImGui::Indent();
+            break;
+        case MD_BLOCK_LI:
+        {
+            Separate();
+            auto& l = lists.back();
+            if( l.num < 0 )
+            {
+                ImGui::Bullet();
+            }
+            else
+            {
+                ImGui::Text( "%d.", l.num++ );
+            }
+            glue = false;
+            ImGui::SameLine();
+            break;
+        }
+        case MD_BLOCK_HR:
+            Separate();
+            ImGui::Separator();
+            break;
+        case MD_BLOCK_H:
+            Separate();
+            header = ((MD_BLOCK_H_DETAIL*)detail)->level;
+            break;
+        case MD_BLOCK_CODE:
+        {
+            char tmp[64];
+            sprintf( tmp, "##code%d", idx++ );
+            Separate();
+            ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
+        }
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    int LeaveBlock( MD_BLOCKTYPE type, void* detail )
+    {
+        switch( type )
+        {
+        case MD_BLOCK_P:
+            separate = true;
+            break;
+        case MD_BLOCK_QUOTE:
+            ImGui::Unindent();
+            separate = true;
+        case MD_BLOCK_UL:
+        case MD_BLOCK_OL:
+            ImGui::Unindent();
+            lists.pop_back();
+            separate = lists.empty() || !lists.back().tight;
+            break;
+        case MD_BLOCK_LI:
+        {
+            auto& l = lists.back();
+            if( !l.tight ) separate = true;
+            break;
+        }
+        case MD_BLOCK_HR:
+            separate = true;
+            break;
+        case MD_BLOCK_H:
+            header = 0;
+            separate = true;
+            break;
+        case MD_BLOCK_CODE:
+            ImGui::EndChild();
+            separate = true;
+            break;
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    int EnterSpan( MD_SPANTYPE type, void* detail )
+    {
+        switch( type )
+        {
+        case MD_SPAN_EM:
+            italic++;
+            break;
+        case MD_SPAN_STRONG:
+            bold++;
+            break;
+        case MD_SPAN_A:
+            link = std::string( ((MD_SPAN_A_DETAIL*)detail)->href.text, ((MD_SPAN_A_DETAIL*)detail)->href.size );
+            break;
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    int LeaveSpan( MD_SPANTYPE type, void* detail )
+    {
+        switch( type )
+        {
+        case MD_SPAN_EM:
+            italic--;
+            break;
+        case MD_SPAN_STRONG:
+            bold--;
+            break;
+        case MD_SPAN_A:
+            link.clear();
+            break;
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    int Text( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size )
+    {
+        switch( type )
+        {
+        case MD_TEXT_NORMAL:
+        case MD_TEXT_ENTITY:
+        case MD_TEXT_HTML:
+        {
+            if( header > 0 )
+            {
+                ImGui::PushFont( g_fonts.big );
+            }
+            else if( bold > 0 )
+            {
+                ImGui::PushFont( italic > 0 ? g_fonts.boldItalic : g_fonts.bold );
+            }
+            else if( italic > 0 )
+            {
+                ImGui::PushFont( g_fonts.italic );
+            }
+            if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
+            Glue();
+            const auto hovered = PrintTextWrapped( text, text + size );
+            if( !link.empty() )
+            {
+                ImGui::PopStyleColor();
+                if( hovered )
+                {
+                    ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
+                    ImGui::BeginTooltip();
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, 1.f ) );
+                    ImGui::TextUnformatted( link.c_str() );
+                    ImGui::PopStyleColor();
+                    ImGui::EndTooltip();
+                    if( IsMouseClicked( ImGuiMouseButton_Left ) ) OpenWebpage( link.c_str() );
+                }
+            }
+            if( header > 0 || bold > 0 || italic > 0 ) ImGui::PopFont();
+            break;
+        }
+        case MD_TEXT_NULLCHAR:
+            Glue();
+            PrintTextWrapped( "\xEF\xBF\xBD" );
+            break;
+        case MD_TEXT_BR:
+            glue = false;
+            break;
+        case MD_TEXT_SOFTBR:
+            Glue();
+            PrintTextWrapped( " " );
+            break;
+        case MD_TEXT_CODE:
+        case MD_TEXT_LATEXMATH:
+            if( size == 1 && *text == '\n' )
+            {
+                glue = false;
+            }
+            else
+            {
+                Glue();
+                ImGui::PushFont( g_fonts.mono );
+                PrintTextWrapped( text, text + size );
+                ImGui::PopFont();
+            }
+            break;
+        }
+        return 0;
+    }
+
+private:
+    void Glue()
+    {
+        if( glue ) ImGui::SameLine( 0, 0 );
+        else glue = true;
+    }
+
+    void Separate()
+    {
+        if( !separate ) return;
+        ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+        separate = false;
+    }
+
+    int bold = 0;
+    int italic = 0;
+    int header = 0;
+
+    bool glue = false;
+    bool separate = false;
+
+    int idx = 0;
+
+    std::vector<List> lists;
+    std::string link;
+};
+
+
 TracyLlmChat::TracyLlmChat()
     : m_width( new float[NumRoles] )
+    , m_parser( new MD_PARSER() )
 {
+    memset( m_parser, 0, sizeof( MD_PARSER ) );
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML;
+    m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->EnterBlock( type, detail ); };
+    m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->LeaveBlock( type, detail ); };
+    m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->EnterSpan( type, detail ); };
+    m_parser->leave_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->LeaveSpan( type, detail ); };
+    m_parser->text = []( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* ud ) -> int { return ((Markdown*)ud)->Text( type, text, size ); };
 }
 
 TracyLlmChat::~TracyLlmChat()
 {
+    delete m_parser;
     delete[] m_width;
 }
 
@@ -92,9 +355,15 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
     }
 
     ImGui::PushStyleColor( ImGuiCol_Text, roleData.textColor );
-    if( role != TurnRole::Assistant )
+    if( role == TurnRole::Error )
     {
+        ImGui::PushFont( g_fonts.mono );
         ImGui::TextWrapped( "%s", content.c_str() );
+        ImGui::PopFont();
+    }
+    else if( role != TurnRole::Assistant )
+    {
+        PrintMarkdown( content.c_str(), content.size() );
     }
     else if( content.starts_with( "<tool_output>\n" ) )
     {
@@ -198,7 +467,12 @@ void TracyLlmChat::ThinkScope()
 
 void TracyLlmChat::PrintMarkdown( const char* str, size_t size )
 {
-    ImGui::TextWrapped( "%.*s", (int)size, str );
+    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( ImGui::GetStyle().ItemSpacing.x, 0.0f ) );
+
+    Markdown md;
+    md_parse( str, size, m_parser, &md );
+
+    ImGui::PopStyleVar();
 }
 
 void TracyLlmChat::PrintThink( const char* str, size_t size )

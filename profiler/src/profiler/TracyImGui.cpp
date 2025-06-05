@@ -132,9 +132,18 @@ bool PrintTextWrapped( const char* text, const char* end )
     bool hovered = false;
 
     if( !end ) end = text + strlen( text );
+    auto firstWord = text;
+    while( firstWord < end && *firstWord != ' ' && *firstWord != '\n' ) firstWord++;
 
     auto scale = ImGui::GetIO().FontGlobalScale;
     auto left = ImGui::GetContentRegionAvail().x;
+    auto fwLen = ImGui::CalcTextSize( text, firstWord ).x * scale;
+    if( fwLen > left )
+    {
+        ImGui::NewLine();
+        left = ImGui::GetContentRegionAvail().x;
+    }
+
     auto endLine = ImGui::GetFont()->CalcWordWrapPositionA( scale, text, end, left );
     ImGui::TextUnformatted( text, endLine );
     if( !hovered ) hovered = ImGui::IsItemHovered();

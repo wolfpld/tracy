@@ -127,14 +127,17 @@ void PrintSource( const std::vector<Tokenizer::Line>& lines )
     }
 }
 
-void PrintTextWrapped( const char* text, const char* end )
+bool PrintTextWrapped( const char* text, const char* end )
 {
+    bool hovered = false;
+
     if( !end ) end = text + strlen( text );
 
     auto scale = ImGui::GetIO().FontGlobalScale;
     auto left = ImGui::GetContentRegionAvail().x;
     auto endLine = ImGui::GetFont()->CalcWordWrapPositionA( scale, text, end, left );
     ImGui::TextUnformatted( text, endLine );
+    if( !hovered ) hovered = ImGui::IsItemHovered();
 
     left = ImGui::GetContentRegionAvail().x;
     while( endLine < end )
@@ -144,7 +147,10 @@ void PrintTextWrapped( const char* text, const char* end )
         endLine = ImGui::GetFont()->CalcWordWrapPositionA( scale, text, end, left );
         if( text == endLine ) endLine++;
         ImGui::TextUnformatted( text, endLine );
+        if( !hovered ) hovered = ImGui::IsItemHovered();
     }
+
+    return hovered;
 }
 
 }

@@ -317,6 +317,7 @@ void TracyLlmChat::Begin()
     m_thinkOpen = false;
     m_thinkIdx = 0;
     m_subIdx = 0;
+    m_roleIdx = 0;
 }
 
 void TracyLlmChat::End()
@@ -325,6 +326,7 @@ void TracyLlmChat::End()
     {
         NormalScope();
         ImGui::EndGroup();
+        ImGui::PopID();
     }
 }
 
@@ -337,6 +339,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
         {
             NormalScope();
             ImGui::EndGroup();
+            ImGui::PopID();
         }
         m_role = role;
         m_thinkActive = false;
@@ -345,6 +348,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
         const auto diff = m_maxWidth - m_width[(int)role];
         const auto offset = diff / 2;
         ImGui::Spacing();
+        ImGui::PushID( m_roleIdx++ );
         ImGui::Dummy( ImVec2( offset, 0 ) );
         ImGui::SameLine( 0, 0 );
         ImGui::TextColored( roleData.iconColor, "%s", roleData.icon );

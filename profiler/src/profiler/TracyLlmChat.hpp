@@ -47,6 +47,7 @@ private:
     bool m_thinkOpen;
     int m_thinkIdx;
     int m_subIdx;
+    int m_roleIdx;
 
     MD_PARSER* m_parser;
 };

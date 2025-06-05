@@ -86,6 +86,7 @@ public:
             }
             glue = false;
             ImGui::SameLine();
+            ImGui::BeginGroup();
             break;
         }
         case MD_BLOCK_HR:
@@ -127,6 +128,7 @@ public:
             break;
         case MD_BLOCK_LI:
         {
+            ImGui::EndGroup();
             auto& l = lists.back();
             if( !l.tight ) separate = true;
             break;

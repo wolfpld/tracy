@@ -1264,6 +1264,9 @@ void Backend::NewFrame( int& w, int& h )
         case ImGuiMouseCursor_NotAllowed:
             shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NOT_ALLOWED;
             break;
+        case ImGuiMouseCursor_Hand:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER;
+            break;
         default:
             shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;
             break;

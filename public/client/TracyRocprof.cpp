@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <mutex>
 #include <shared_mutex>
 #include <sstream>
 #include <unordered_map>
@@ -205,6 +206,7 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
                 rocprofiler_user_data_t  /*user_data*/ ,
                 void* callback_data_args)
 {
+    if (!TracyIsStarted) return;
     for(size_t i = 0; i < record_count; ++i) {
         int64_t profilerTime = Profiler::GetTime();
         TracyLfqPrepare( QueueType::PlotDataDouble );
@@ -220,7 +222,6 @@ void delay_init(void *user_data) {
     if (data->init) return;
     data->init = true;
     data->context_id = gpu_context_allocate();
-    std::cerr << "ctx = " << (int)data->context_id << std::endl;
 
     TracyLfqPrepare( QueueType::PlotConfig );
     MemWrite( &item->plotConfig.name, (uint64_t)PLOT_NAME);
@@ -243,7 +244,9 @@ dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
                   rocprofiler_user_data_t* /*user_data*/,
                   void* callback_data_args)
 {
+    if (!TracyIsStarted) return;
     delay_init(callback_data_args);
+    
     /**
      * This simple example uses the same profile counter set for all agents.
      * We store this in a cache to prevent constructing many identical profile counter
@@ -331,8 +334,10 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
                                rocprofiler_user_data_t*              user_data,
                                void*                                 callback_data)
 {
+    if (!TracyIsStarted) return;
     assert(callback_data != nullptr);
     ToolData * data = static_cast<ToolData*>(callback_data);
+    delay_init(callback_data);
 
     if(record.kind == ROCPROFILER_CALLBACK_TRACING_CODE_OBJECT &&
             record.operation == ROCPROFILER_CODE_OBJECT_DEVICE_KERNEL_SYMBOL_REGISTER)
@@ -341,17 +346,11 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
 
         if(record.phase == ROCPROFILER_CALLBACK_PHASE_LOAD)
         {
-            std::cerr << "load " << sym_data->kernel_id << " = " << sym_data->kernel_name << std::endl;
             auto _lk = std::unique_lock{data->mut};
-            // uint32_t line = 0;
-            // const auto src_loc = tracy::Profiler::AllocSourceLocation(
-            //     line, NULL, 0, NULL, 0,
-            //     sym_data->kernel_name, strlen(sym_data->kernel_name));
             data->client_kernels.emplace(sym_data->kernel_id, *sym_data);
         }
         else if(record.phase == ROCPROFILER_CALLBACK_PHASE_UNLOAD)
         {
-            std::cerr << "unload " << sym_data->kernel_id << " = " << sym_data->kernel_name << std::endl;
             auto _lk = std::unique_lock{data->mut};
             data->client_kernels.erase(sym_data->kernel_id);
         }
@@ -389,16 +388,11 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
 
 int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
 {
-    delay_init(user_data);
     ROCPROFILER_CALL( rocprofiler_create_context( &get_client_ctx() ), "context creation failed" );
 
     // ROCPROFILER_CALL( rocprofiler_configure_callback_dispatch_counting_service( get_client_ctx(), dispatch_callback,
     //                                                                             user_data, record_callback, user_data ),
     //                   "Could not setup counting service" );
-
-
-    // enable the control
-    //tool_control_init(client_ctx);
 
     rocprofiler_tracing_operation_t ops[] = {ROCPROFILER_CODE_OBJECT_DEVICE_KERNEL_SYMBOL_REGISTER};
     ROCPROFILER_CALL(
@@ -431,7 +425,6 @@ int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
         
 
     ROCPROFILER_CALL( rocprofiler_start_context( get_client_ctx() ), "start context" );
-    std::cerr << "init" << std::endl;
     return 0;
 }
 

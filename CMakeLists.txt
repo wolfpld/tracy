@@ -167,6 +167,7 @@ set(tracy_includes
     ${TRACY_PUBLIC_DIR}/tracy/TracyD3D11.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyD3D12.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyLua.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyMetal.hmm
     ${TRACY_PUBLIC_DIR}/tracy/TracyOpenCL.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyOpenGL.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyVulkan.hpp)

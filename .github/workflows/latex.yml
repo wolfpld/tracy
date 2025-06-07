@@ -13,9 +13,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Fix stupidity
-      run: |
-        cp LICENSE LICENSE.
     - name: Compile LaTeX
       uses: xu-cheng/latex-action@v3
       with:

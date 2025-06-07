@@ -132,9 +132,11 @@ endif
 includes = [
     'public/tracy/TracyC.h',
     'public/tracy/Tracy.hpp',
+    'public/tracy/TracyCUDA.hpp',
     'public/tracy/TracyD3D11.hpp',
     'public/tracy/TracyD3D12.hpp',
     'public/tracy/TracyLua.hpp',
+    'public/tracy/TracyMetal.hmm',
     'public/tracy/TracyOpenCL.hpp',
     'public/tracy/TracyOpenGL.hpp',
     'public/tracy/TracyVulkan.hpp'

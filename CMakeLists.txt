@@ -164,6 +164,7 @@ endif()
 set(tracy_includes
     ${TRACY_PUBLIC_DIR}/tracy/TracyC.h
     ${TRACY_PUBLIC_DIR}/tracy/Tracy.hpp
+    ${TRACY_PUBLIC_DIR}/tracy/TracyCUDA.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyD3D11.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyD3D12.hpp
     ${TRACY_PUBLIC_DIR}/tracy/TracyLua.hpp

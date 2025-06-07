@@ -41,6 +41,7 @@ public:
     std::string GetCurrentTime() const;
 
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
+    void SelectManualEmbeddings( const std::string& model );
     void BuildManualEmbeddings( const std::string& model, TracyLlmApi& api );
     void CancelManualEmbeddings();
 

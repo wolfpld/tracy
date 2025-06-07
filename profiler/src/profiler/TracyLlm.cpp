@@ -242,6 +242,7 @@ void TracyLlm::Draw()
                         m_embedIdx = i;
                         s_config.llmEmbeddingsModel = model.name;
                         SaveConfig();
+                        m_tools->SelectManualEmbeddings( model.name );
                     }
                     if( m_embedIdx == i ) ImGui::SetItemDefaultFocus();
                     ImGui::SameLine();
@@ -326,18 +327,6 @@ void TracyLlm::Draw()
             m_tools->BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
         }
         if( m_embedIdx < 0 ) ImGui::EndDisabled();
-        ImGui::SameLine();
-        ImGui::PushFont( g_fonts.small );
-        ImGui::AlignTextToFramePadding();
-        if( !manualEmbeddingsState.done )
-        {
-            tracy::TextDisabledUnformatted( "Embeddings not calculated" );
-        }
-        else
-        {
-            ImGui::TextDisabled( "Embeddings calculated for model %s", manualEmbeddingsState.model.c_str() );
-        }
-        ImGui::PopFont();
     }
 
     const auto ctxSize = models[m_modelIdx].contextSize;
@@ -575,6 +564,11 @@ void TracyLlm::UpdateModels()
     else
     {
         m_embedIdx = std::distance( models.begin(), it );
+    }
+
+    if( m_embedIdx >= 0 )
+    {
+        m_tools->SelectManualEmbeddings( models[m_embedIdx].name );
     }
 }
 

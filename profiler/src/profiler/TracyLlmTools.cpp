@@ -229,6 +229,23 @@ TracyLlmTools::EmbeddingState TracyLlmTools::GetManualEmbeddingsState() const
     return m_manualEmbeddingState;
 }
 
+void TracyLlmTools::SelectManualEmbeddings( const std::string& model )
+{
+    std::lock_guard lock( m_lock );
+    assert( !m_manualEmbeddingState.inProgress );
+    if( m_manualEmbeddingState.done && m_manualEmbeddingState.model == model ) return;
+
+    const uint64_t hash = XXH3_64bits( m_manual->data(), m_manual->size() );
+    auto cache = GetCachePath( model.c_str() );
+
+    try
+    {
+        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, hash );
+        m_manualEmbeddingState = { .model = model, .done = true };
+    }
+    catch( std::exception& ) {}
+}
+
 void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi& api )
 {
     std::unique_lock lock( m_lock );
@@ -246,19 +263,7 @@ void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi
 void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 {
     const uint64_t hash = XXH3_64bits( m_manual->data(), m_manual->size() );
-
     auto cache = GetCachePath( m_manualEmbeddingState.model.c_str() );
-    try
-    {
-        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, hash );
-
-        std::lock_guard lock( m_lock );
-        m_manualEmbeddingState.inProgress = false;
-        m_manualEmbeddingState.done = true;
-
-        return;
-    }
-    catch( std::exception& ) {}
 
     std::unique_lock lock( m_lock );
     if( m_cancel )

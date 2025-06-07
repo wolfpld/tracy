@@ -2,6 +2,19 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.12.1 (2025-06-07)
+--------------------
+
+- Fixed window size calculation on macOS, most notably enabling the vertical
+  timeline scroll bar.
+- Made debug builds of the GUI profiler work with broken Apple compiler.
+- Fixed profiler compilation when build directory is outside the source
+  directory.
+- Set proper include path when using CMake integration.
+- Added the Tracy Metal and CUDA headers to CMake install configuration.
+- Documented flame graphs.
+
+
 v0.12.0 (2025-05-30)
 --------------------
 

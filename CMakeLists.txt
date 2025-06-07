@@ -49,7 +49,7 @@ target_compile_features(TracyClient PUBLIC cxx_std_11)
 set_target_properties(TracyClient PROPERTIES INTERPROCEDURAL_OPTIMIZATION ${LTO_SUPPORTED})
 target_include_directories(TracyClient SYSTEM PUBLIC
     $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:include/tracy>)
 target_link_libraries(
     TracyClient
     PUBLIC
@@ -61,7 +61,7 @@ if(TRACY_Fortran)
     add_library(TracyClientF90 ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.F90")
     target_include_directories(TracyClientF90 PUBLIC
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-        $<INSTALL_INTERFACE:include>)
+        $<INSTALL_INTERFACE:include/tracy>)
     target_link_libraries(
         TracyClientF90
         PUBLIC

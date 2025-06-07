@@ -16,6 +16,7 @@
 #define TracyVkZoneC(c,x,y,z)
 #define TracyVkZoneTransient(c,x,y,z,w)
 #define TracyVkCollect(c,x)
+#define TracyVkCollectHost(c)
 
 #define TracyVkNamedZoneS(c,x,y,z,w,a)
 #define TracyVkNamedZoneCS(c,x,y,z,w,v,a)
@@ -256,7 +257,9 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
-            VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount ) );
+            cmdbuf ?
+                VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount ) ) :
+                VK_FUNCTION_WRAPPER( vkResetQueryPool( m_device, m_query, 0, m_queryCount ) );
             m_tail = head;
             m_oldCnt = 0;
             int64_t tgpu;
@@ -325,7 +328,9 @@ public:
             }
         }
 
-        VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, wrappedTail, cnt ) );
+        cmdbuf ?
+            VK_FUNCTION_WRAPPER( vkCmdResetQueryPool( cmdbuf, m_query, wrappedTail, cnt ) ) :
+            VK_FUNCTION_WRAPPER( vkResetQueryPool( m_device, m_query, wrappedTail, cnt ) );
 
         m_tail += cnt;
     }
@@ -721,6 +726,7 @@ using TracyVkCtx = tracy::VkCtx*;
 #  define TracyVkZoneTransient( ctx, varname, cmdbuf, name, active ) tracy::VkCtxScope varname( ctx, TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), cmdbuf, active );
 #endif
 #define TracyVkCollect( ctx, cmdbuf ) ctx->Collect( cmdbuf );
+#define TracyVkCollectHost( ctx ) ctx->Collect( VK_NULL_HANDLE );
 
 #ifdef TRACY_HAS_CALLSTACK
 #  define TracyVkNamedZoneS( ctx, varname, cmdbuf, name, depth, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,TracyLine), cmdbuf, depth, active );

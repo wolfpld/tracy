@@ -3223,7 +3223,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 \item \emph{\faTags{} Messages} -- Toggles the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
 \item \emph{\faSearch{} Find} -- This buttons toggles the find zone window, which allows inspection of zone behavior statistics (section~\ref{findzone}).
 \item \emph{\faSortAmountUp{} Statistics} -- Toggles the statistics window, which displays zones sorted by their total time cost (section~\ref{statistics}).
-\item \emph{\faFire{} Flame} -- Enables the flame graph window.
+\item \emph{\faFire{} Flame} -- Enables the flame graph window (section~\ref{flamegraph}).
 \item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here (section~\ref{memorywindow}).
 \item \emph{\faBalanceScale{} Compare} -- Toggles the trace compare window, which allows you to see the performance difference between two profiling runs (section~\ref{compare}).
 \item \emph{\faFingerprint{} Info} -- Show general information about the trace (section~\ref{traceinfo}).
@@ -4049,6 +4049,65 @@ Set custom trace descriptions (see section~\ref{traceinfo}) to easily differenti
 To see what changes were made in the source code between the two compared traces, select the \emph{Source diff} compare mode. This will display a list of deleted, added, and changed files. By default, the difference is calculated from the older trace to the newer one. You can reverse this by clicking on the \emph{Switch} button.
 
 Please note that changes will be registered only if the file has the same name and location in both traces. Tracy does not resolve file renames or moves.
+
+\subsection{Flame graph}
+\label{flamegraph}
+
+The flame graph is a way of showing the general performance characteristics of a program on a single chart. While the timeline view displays each zone individually, the flame graph aggregates all zones into a tree structure that better conveys where the application spends its time in relation to the program flow.
+
+Figure~\ref{flamegraphfigure} shows an example flame graph. The graph shows that the program has been running for 11 seconds. Looking at the top row of the zones tree, we see that during this time one second was spent in the \emph{Init} zone and the remaining ten seconds in the \emph{Game loop} zone.
+
+The rows below show the zone times of the child functions. For example, the \emph{Game loop} zone goes into the \emph{Logic update} and \emph{Render} zones. Only one aggregated \emph{Logic update} and \emph{Render} zone is displayed, even though the \emph{Game loop} would enter these functions hundreds of times in a 10-second span.
+
+There are two different \emph{Raycast} zones on the graph. This is because there are two code paths that lead to this function, and the graph distinguishes between them.
+
+\begin{figure}[h]
+	\centering\begin{tikzpicture}
+		\foreach \x in {0,1,2,...,10} {
+			\draw (\x+0, 0) -- +(0, -0.4);
+			\draw (\x+0.1, 0) -- +(0, -0.2);
+			\draw (\x+0.2, 0) -- +(0, -0.2);
+			\draw (\x+0.3, 0) -- +(0, -0.2);
+			\draw (\x+0.4, 0) -- +(0, -0.2);
+			\draw (\x+0.5, 0) -- +(0, -0.3);
+			\draw (\x+0.6, 0) -- +(0, -0.2);
+			\draw (\x+0.7, 0) -- +(0, -0.2);
+			\draw (\x+0.8, 0) -- +(0, -0.2);
+			\draw (\x+0.9, 0) -- +(0, -0.2); }
+		\draw (11, 0) -- +(0, -0.4);
+
+		\draw (-0.2, -0.4) node[anchor=north west] {0};
+		\draw (1.85, -0.4) node[anchor=north west] {2 \si{\second}};
+		\draw (3.85, -0.4) node[anchor=north west] {4 \si{\second}};
+		\draw (5.85, -0.4) node[anchor=north west] {6 \si{\second}};
+		\draw (7.85, -0.4) node[anchor=north west] {8 \si{\second}};
+		\draw (9.85, -0.4) node[anchor=north west] {10 \si{\second}};
+
+		\draw(0, -1) rectangle+(1, -0.5) node[midway] {Init};
+		\draw(1, -1) rectangle+(10, -0.5) node[midway] {Game loop};
+		\draw(0, -1.5) rectangle+(0.1, -0.5);
+		\draw(0.1, -1.5) rectangle+(0.3, -0.5);
+		\draw(0.4, -1.5) rectangle+(0.2, -0.5);
+		\draw(1, -1.5) rectangle+(7, -0.5) node[midway] {Logic update};
+		\draw(8, -1.5) rectangle+(2, -0.5) node[midway] {Render};
+		\draw(1, -2) rectangle+(3, -0.5) node[midway] {AI};
+		\draw(4, -2) rectangle+(2, -0.5) node[midway] {Projectiles};
+		\draw(6, -2) rectangle+(1.5, -0.5) node[midway] {Particles};
+		\draw(1, -2.5) rectangle+(1, -0.5) node[midway] {A*};
+		\draw(2, -2.5) rectangle+(1.5, -0.5) node[midway] {Raycast};
+		\draw(4, -2.5) rectangle+(1.25, -0.5) node[midway] {Raycast};
+	\end{tikzpicture}
+	\caption{Flame graph.}
+	\label{flamegraphfigure}
+\end{figure}
+
+The default sorting order of the zones on a flame graph \emph{approximates} the real call ordering. The program will call \emph{Init} before entering \emph{Game loop}, and each frame update will call \emph{Logic update} before doing \emph{Render}. This order is preserved. However, the logic update function may need to interleave the processing of AI entities and projectile movement\footnote{Such design would be less than ideal, but sometimes that's how you have to go.}. This interleaving won't be represented on the graph. Each zone will be placed in the appropriate bin in a first-come, first-served manner.
+
+You can use an alternative sorting method by enabling the \emph{Sort by time} option. This will place the most time-consuming zones first (to the left) on the graph.
+
+Similar to the statistics window (section~\ref{statistics}), the flame graph can operate in two modes: \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling}. In the instrumentation mode, the graph represents the zones you put in your program. In the sampling mode, the graph is constructed from the automatically captured call stack data (section~\ref{sampling}).
+
+In the sampling mode you can exclude \emph{external frames} from the graph, which typically would be internal implementation details of starting threads, handling smart pointers, and other such things that are quick to execute and not really interesting. This leaves only the frames from your code. One exception is \emph{external tails}, or calls that your code makes that do not eventually land in your application down the call chain. Think of functions that write to a file or send data on the network. These can be time-consuming, and you may want to see them. There is a separate option to disable these.
 
 \subsection{Memory window}
 \label{memorywindow}

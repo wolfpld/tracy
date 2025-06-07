@@ -310,7 +310,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
     size_t length;
     {
         nlohmann::json req;
-        req["input"] = "embeddings length probe";
+        req["input"] = "";
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;

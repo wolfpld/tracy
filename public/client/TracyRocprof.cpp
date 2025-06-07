@@ -43,6 +43,8 @@ struct ToolData
     uint64_t src_loc;
     uint64_t query_id;
     std::unordered_map<rocprofiler_kernel_id_t, kernel_symbol_data_t> client_kernels;
+    std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_start_times;
+    std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_end_times;
     std::mutex    mut{};
 };
 
@@ -133,7 +135,7 @@ uint64_t kernel_src_loc(ToolData *data, uint64_t kernel_id) {
 
 void record_interval(ToolData *data, rocprofiler_timestamp_t start_timestamp,
     rocprofiler_timestamp_t end_timestamp,
-    uint64_t src_loc) {
+    uint64_t src_loc, rocprofiler_dispatch_id_t dispatch_id) {
         
     uint16_t query_id = 0;
     uint8_t context_id = data->context_id;
@@ -144,12 +146,24 @@ void record_interval(ToolData *data, rocprofiler_timestamp_t start_timestamp,
         data->query_id++;
     }
 
+    uint64_t cpu_start_time = 0, cpu_end_time = 0;
+    if (dispatch_id == UINT64_MAX) {
+        cpu_start_time = tracy::Profiler::GetTime();
+        cpu_end_time = tracy::Profiler::GetTime();
+    } else {
+        auto _lk = std::unique_lock{data->mut};
+        cpu_start_time = data->launch_start_times.at(dispatch_id);
+        cpu_end_time = data->launch_end_times.at(dispatch_id);
+        data->launch_start_times.erase(dispatch_id);
+        data->launch_end_times.erase(dispatch_id);
+    }
+
     if (src_loc != 0) {
         {
         auto* item = tracy::Profiler::QueueSerial();
         tracy::MemWrite(&item->hdr.type,
                         tracy::QueueType::GpuZoneBeginAllocSrcLocSerial);
-        tracy::MemWrite(&item->gpuZoneBegin.cpuTime, tracy::Profiler::GetTime());
+        tracy::MemWrite(&item->gpuZoneBegin.cpuTime, cpu_start_time);
         tracy::MemWrite(&item->gpuZoneBegin.srcloc, (uint64_t)src_loc);
         tracy::MemWrite(&item->gpuZoneBegin.thread, tracy::GetThreadHandle());
         tracy::MemWrite(&item->gpuZoneBegin.queryId, query_id);
@@ -161,7 +175,7 @@ void record_interval(ToolData *data, rocprofiler_timestamp_t start_timestamp,
         {
         auto* item = tracy::Profiler::QueueSerial();
         tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuZoneBeginSerial);
-        tracy::MemWrite(&item->gpuZoneBegin.cpuTime, tracy::Profiler::GetTime());
+        tracy::MemWrite(&item->gpuZoneBegin.cpuTime, cpu_start_time);
         tracy::MemWrite(&item->gpuZoneBegin.srcloc, (uint64_t)&src_loc);
         tracy::MemWrite(&item->gpuZoneBegin.thread, tracy::GetThreadHandle());
         tracy::MemWrite(&item->gpuZoneBegin.queryId, query_id);
@@ -182,7 +196,7 @@ void record_interval(ToolData *data, rocprofiler_timestamp_t start_timestamp,
     {
     auto* item = tracy::Profiler::QueueSerial();
     tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuZoneEndSerial);
-    tracy::MemWrite(&item->gpuZoneEnd.cpuTime, tracy::Profiler::GetTime());
+    tracy::MemWrite(&item->gpuZoneEnd.cpuTime, cpu_end_time);
     tracy::MemWrite(&item->gpuZoneEnd.thread, tracy::GetThreadHandle());
     tracy::MemWrite(&item->gpuZoneEnd.queryId, query_id);
     tracy::MemWrite(&item->gpuZoneEnd.context, context_id);
@@ -354,11 +368,20 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
             auto _lk = std::unique_lock{data->mut};
             data->client_kernels.erase(sym_data->kernel_id);
         }
-    } else if (record.kind == ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH &&
-        record.operation == ROCPROFILER_KERNEL_DISPATCH_COMPLETE) {
+    } else if (record.kind == ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH) {
         auto* rdata = static_cast<rocprofiler_callback_tracing_kernel_dispatch_data_t*>(record.payload);
-        uint64_t src_loc = kernel_src_loc(data, rdata->dispatch_info.kernel_id);
-        record_interval(data, rdata->start_timestamp, rdata->end_timestamp, src_loc);
+        if (record.operation == ROCPROFILER_KERNEL_DISPATCH_ENQUEUE) {
+            if (record.phase == ROCPROFILER_CALLBACK_PHASE_ENTER) {
+                auto _lk = std::unique_lock{data->mut};
+                data->launch_start_times.emplace(rdata->dispatch_info.dispatch_id, tracy::Profiler::GetTime());
+            } else if (record.phase == ROCPROFILER_CALLBACK_PHASE_EXIT) {
+                auto _lk = std::unique_lock{data->mut};
+                data->launch_end_times.emplace(rdata->dispatch_info.dispatch_id, tracy::Profiler::GetTime());
+            }
+        } else if (record.operation == ROCPROFILER_KERNEL_DISPATCH_COMPLETE) {
+            uint64_t src_loc = kernel_src_loc(data, rdata->dispatch_info.kernel_id);
+            record_interval(data, rdata->start_timestamp, rdata->end_timestamp, src_loc, rdata->dispatch_info.dispatch_id);
+        }
     } else if (record.kind == ROCPROFILER_CALLBACK_TRACING_MEMORY_COPY &&
         record.operation != ROCPROFILER_MEMORY_COPY_NONE &&
         record.phase == ROCPROFILER_CALLBACK_PHASE_EXIT) {
@@ -382,7 +405,7 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
         uint64_t src_loc = tracy::Profiler::AllocSourceLocation(
             0, NULL, 0, name, name_len,
             NULL, 0);
-        record_interval(data, rdata->start_timestamp, rdata->end_timestamp, src_loc);
+        record_interval(data, rdata->start_timestamp, rdata->end_timestamp, src_loc, UINT64_MAX);
     }
 }
 
@@ -404,12 +427,12 @@ int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
                                                        user_data),
         "callback tracing service failed to configure");
 
-    rocprofiler_tracing_operation_t ops2[] = {ROCPROFILER_KERNEL_DISPATCH_COMPLETE};
+    rocprofiler_tracing_operation_t ops2[] = {ROCPROFILER_KERNEL_DISPATCH_COMPLETE, ROCPROFILER_KERNEL_DISPATCH_ENQUEUE};
     ROCPROFILER_CALL(
         rocprofiler_configure_callback_tracing_service(get_client_ctx(),
                                                         ROCPROFILER_CALLBACK_TRACING_KERNEL_DISPATCH,
                                                         ops2,
-                                                        1,
+                                                        2,
                                                         tool_callback_tracing_callback,
                                                         user_data),
         "callback tracing service failed to configure");

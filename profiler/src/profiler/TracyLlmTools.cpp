@@ -243,62 +243,24 @@ void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi
     m_thread = std::thread( [this, &api] { ManualEmbeddingsWorker( api ); } );
 }
 
-bool TracyLlmTools::TryLoadEmbeddingsCache( const char* file, uint64_t hash )
-{
-    FILE* f = fopen( file, "rb" );
-    if( !f ) return false;
-
-    std::vector<float> embeddings;
-
-    uint64_t fileHash;
-    if( fread( &fileHash, sizeof( fileHash ), 1, f ) != 1 ) goto fail;
-    if( fileHash != hash ) goto fail;
-
-    uint64_t length;
-    uint64_t chunks;
-
-    if( fread( &length, sizeof( length ), 1, f ) != 1 ) goto fail;
-    if( fread( &chunks, sizeof( chunks ), 1, f ) != 1 ) goto fail;
-
-    m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, chunks );
-    embeddings.resize( length );
-
-    for( uint64_t i=0; i<chunks; i++ )
-    {
-        std::unique_lock lock( m_lock );
-        if( m_cancel )
-        {
-            fclose( f );
-            return false;
-        }
-        m_manualEmbeddingState.progress = (float)i / chunks;
-        lock.unlock();
-
-        if( fread( embeddings.data(), sizeof( float ), length, f ) != length ) goto fail;
-        m_manualEmbeddings->Add( m_chunkData[i].second, embeddings );
-    }
-
-    fclose( f );
-    return true;
-
-fail:
-    fclose( f );
-    return false;
-}
-
 void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 {
     const uint64_t hash = XXH3_64bits( m_manual->data(), m_manual->size() );
 
     auto cache = GetCachePath( m_manualEmbeddingState.model.c_str() );
-    auto loaded = TryLoadEmbeddingsCache( cache, hash );
-    std::unique_lock lock( m_lock );
-    if( loaded )
+    try
     {
+        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, hash );
+
+        std::lock_guard lock( m_lock );
         m_manualEmbeddingState.inProgress = false;
         m_manualEmbeddingState.done = true;
+
         return;
     }
+    catch( std::exception& ) {}
+
+    std::unique_lock lock( m_lock );
     if( m_cancel )
     {
         m_manualEmbeddingState.inProgress = false;
@@ -329,35 +291,17 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
     const auto csz = m_chunkData.size();
     m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, csz );
 
-    FILE* f = fopen( cache, "wb" );
-    if( f )
-    {
-        auto l64 = (uint64_t)length;
-        auto csz64 = (uint64_t)csz;
-
-        if( fwrite( &hash, sizeof( hash ), 1, f ) != 1 ||
-            fwrite( &l64, sizeof( l64 ), 1, f ) != 1 ||
-            fwrite( &csz64, sizeof( csz64 ), 1, f ) != 1 )
-        {
-            fclose( f );
-            unlink( cache );
-            f = nullptr;
-        }
-    }
+    constexpr size_t batchSize = 64;
 
     std::vector<float> embeddings;
     embeddings.reserve( length );
 
-    for( size_t i=0; i<csz; i++ )
+    size_t i = 0;
+    while( i < csz )
     {
         lock.lock();
         if( m_cancel )
         {
-            if( f )
-            {
-                fclose( f );
-                unlink( cache );
-            }
             m_manualEmbeddingState.inProgress = false;
             m_manualEmbeddingState.done = false;
             return;
@@ -365,26 +309,30 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         m_manualEmbeddingState.progress = (float)i / csz;
         lock.unlock();
 
+        const auto bsz = std::min( batchSize, csz - i );
+        std::vector<std::string> batch;
+        batch.reserve( bsz );
+        for( size_t j=0; j<bsz; j++ ) batch.emplace_back( m_chunkData[i+j].first );
+
         nlohmann::json req;
-        req["input"] = m_chunkData[i].first;
+        req["input"] = std::move( batch );
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;
         api.Embeddings( req, response );
 
-        embeddings.clear();
-        for( auto& item : response["data"][0]["embedding"] ) embeddings.emplace_back( item.get<float>() );
-
-        m_manualEmbeddings->Add( m_chunkData[i].second, embeddings );
-        if( f && fwrite( embeddings.data(), sizeof( float ), length, f ) != length )
+        auto& data = response["data"];
+        for( size_t j=0; j<bsz; j++ )
         {
-            fclose( f );
-            unlink( cache );
-            f = nullptr;
+            embeddings.clear();
+            for( auto& item : data[j]["embedding"] ) embeddings.emplace_back( item.get<float>() );
+            m_manualEmbeddings->Add( m_chunkData[i+j].second, embeddings );
         }
+
+        i += bsz;
     }
 
-    if( f ) fclose( f );
+    m_manualEmbeddings->Save( cache, hash );
 
     lock.lock();
     m_manualEmbeddingState.inProgress = false;

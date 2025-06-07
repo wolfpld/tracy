@@ -58,7 +58,6 @@ private:
     std::string GetWebpage( const std::string& url );
     std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
 
-    bool TryLoadEmbeddingsCache( const char* file, uint64_t hash );
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 
     unordered_flat_map<std::string, std::string> m_webCache;
@@ -73,7 +72,7 @@ private:
 
     std::shared_ptr<EmbedData> m_manual;
     std::vector<std::string> m_manualChunks;
-    std::vector<std::pair<std::string, int>> m_chunkData;
+    std::vector<std::pair<std::string, uint32_t>> m_chunkData;
 };
 
 }

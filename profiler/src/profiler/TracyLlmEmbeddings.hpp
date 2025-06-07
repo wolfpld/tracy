@@ -18,14 +18,17 @@ public:
     };
 
     explicit TracyLlmEmbeddings( size_t length, size_t reserve = 0 );
+    explicit TracyLlmEmbeddings( const char* file, uint64_t hash );
 
-    void Add( int idx, const std::vector<float>& embedding );
+    void Add( uint32_t idx, const std::vector<float>& embedding );
     [[nodiscard]] std::vector<Result> Search( const std::vector<float>& embedding, size_t k ) const;
-    [[nodiscard]] int Get( size_t idx ) const { return m_data[idx]; }
+    [[nodiscard]] uint32_t Get( size_t idx ) const { return m_data[idx]; }
+
+    bool Save( const char* file, uint64_t hash ) const;
 
 private:
     unum::usearch::index_dense_t m_index;
-    std::vector<int> m_data;
+    std::vector<uint32_t> m_data;
 };
 
 }

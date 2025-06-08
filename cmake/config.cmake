@@ -43,8 +43,6 @@ if(EMSCRIPTEN)
     add_compile_options(-pthread -DIMGUI_IMPL_OPENGL_ES2)
 endif()
 
-message("compiler = ${CMAKE_C_COMPILER_ID}")
-
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
 	# gcc on windows can't handle section count resulting during compilation of profiler/src/profiler/TracyMicroArchitecture.cpp
 	if(NOT WIN32 OR (WIN32 AND NOT ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")))

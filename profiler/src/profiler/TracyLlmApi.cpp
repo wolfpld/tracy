@@ -162,15 +162,33 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
     curl_easy_getinfo( m_curl, CURLINFO_RESPONSE_CODE, &http_code );
     if( http_code == 200 )
     {
-        if( m_type == Type::LmStudio && m_models[modelIdx].contextSize <= 0 )
+        if( m_models[modelIdx].contextSize <= 0 )
         {
-            curl_easy_reset( m_curl );
-            SetupCurl( m_curl );
-            std::string buf;
-            if( GetRequest( m_url + "/api/v0/models/" + m_models[modelIdx].name, buf ) == 200 )
+            if( m_type == Type::LlamaSwap )
             {
-                auto json = nlohmann::json::parse( buf );
-                if( json.contains( "loaded_context_length" ) ) m_models[modelIdx].contextSize = json["loaded_context_length"].get<int>();
+                curl_easy_reset( m_curl );
+                SetupCurl( m_curl );
+                std::string buf;
+                if( GetRequest( m_url + "/upstream/" + m_models[modelIdx].name + "/props", buf ) == 200 )
+                {
+                    auto json = nlohmann::json::parse( buf );
+                    if( json.contains( "default_generation_settings" ) )
+                    {
+                        auto& settings = json["default_generation_settings"];
+                        if( settings.contains( "n_ctx" ) ) m_models[modelIdx].contextSize = settings["n_ctx"].get<int>();
+                    }
+                }
+            }
+            else if( m_type == Type::LmStudio )
+            {
+                curl_easy_reset( m_curl );
+                SetupCurl( m_curl );
+                std::string buf;
+                if( GetRequest( m_url + "/api/v0/models/" + m_models[modelIdx].name, buf ) == 200 )
+                {
+                    auto json = nlohmann::json::parse( buf );
+                    if( json.contains( "loaded_context_length" ) ) m_models[modelIdx].contextSize = json["loaded_context_length"].get<int>();
+                }
             }
         }
         return true;

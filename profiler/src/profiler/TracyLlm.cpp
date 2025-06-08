@@ -278,7 +278,7 @@ void TracyLlm::Draw()
                 SaveConfig();
             }
             ImGui::SameLine();
-            if( ImGui::Button( ICON_FA_HOUSE ) ) OpenWebpage( "https://github.com/phpdocker-io/readability-js-server" );
+            if( ImGui::Button( ICON_FA_HOUSE "##readability" ) ) OpenWebpage( "https://github.com/phpdocker-io/readability-js-server" );
 
             ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted( "User agent:" );
@@ -289,6 +289,30 @@ void TracyLlm::Draw()
                 s_config.llmUserAgent = buf;
                 SaveConfig();
             }
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted( "Google Search Engine:" );
+            ImGui::SameLine();
+            snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchIdentifier.c_str() );
+            if( ImGui::InputTextWithHint( "##cse", "search identifier", buf, sizeof( buf ) ) )
+            {
+                s_config.llmSearchIdentifier = buf;
+                SaveConfig();
+            }
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_HOUSE "##cse" ) ) OpenWebpage( "https://cse.google.com/cse/create/new" );
+
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted( "Google Search API Key:" );
+            ImGui::SameLine();
+            snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchApiKey.c_str() );
+            if( ImGui::InputTextWithHint( "##csekey", "search API key", buf, sizeof( buf ) ) )
+            {
+                s_config.llmSearchApiKey = buf;
+                SaveConfig();
+            }
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_HOUSE "##csekey" ) ) OpenWebpage( "https://developers.google.com/custom-search/v1/overview" );
 
             ImGui::TreePop();
         }

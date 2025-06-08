@@ -534,7 +534,33 @@ std::string TracyLlmTools::SearchWeb( std::string query )
     NetworkCheckString;
 
     std::ranges::replace( query, ' ', '+' );
-    const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + UrlEncode( query ) );
+    query = UrlEncode( query );
+
+    if( !s_config.llmSearchApiKey.empty() && !s_config.llmSearchIdentifier.empty() )
+    {
+        const auto response = FetchWebPage( "https://customsearch.googleapis.com/customsearch/v1?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
+        try
+        {
+            auto json = nlohmann::json::parse( response );
+            if( json.contains( "items" ) && json["items"].size() != 0 )
+            {
+                nlohmann::json results;
+                for( size_t i = 0; i < json["items"].size(); i++ )
+                {
+                    auto& item = json["items"][i];
+                    nlohmann::json result;
+                    result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
+                    result["snippet"] = RemoveNewline( item["snippet"].get_ref<const std::string&>() );
+                    result["url"] = RemoveNewline( item["link"].get_ref<const std::string&>() );
+                    results[i] = result;
+                }
+                return results.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+            }
+        }
+        catch( const nlohmann::json::exception& e ) {}
+    }
+
+    const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + query );
 
     auto doc = ParseHtml( response );
     if( !doc ) return "Error: Failed to parse HTML";

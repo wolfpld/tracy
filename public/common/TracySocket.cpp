@@ -22,6 +22,7 @@
 #  endif
 #  define poll WSAPoll
 #  ifdef _MSC_VER
+	// for gcc and clang added with linker options
 #    pragma comment(lib, "ws2_32.lib")
 #  endif
 #else

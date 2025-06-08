@@ -621,7 +621,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 #ifndef STBI_NO_THREAD_LOCALS
    #if defined(__cplusplus) &&  __cplusplus >= 201103L
       #define STBI_THREAD_LOCAL       thread_local
-   #elif defined(__GNUC__) && __GNUC__ < 5
+   #elif defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 5
       #define STBI_THREAD_LOCAL       __thread
    #elif defined(_MSC_VER)
       #define STBI_THREAD_LOCAL       __declspec(thread)
@@ -630,7 +630,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
    #endif
 
    #ifndef STBI_THREAD_LOCAL
-      #if defined(__GNUC__)
+      #if defined(__GNUC__) && !defined(__clang__)
         #define STBI_THREAD_LOCAL       __thread
       #endif
    #endif
@@ -658,12 +658,15 @@ typedef unsigned char validate_uint32[sizeof(stbi__uint32)==4 ? 1 : -1];
 #define STBI_NOTUSED(v)  (void)sizeof(v)
 #endif
 
-#ifdef _MSC_VER
-#define STBI_HAS_LROTL
-#endif
 
-#ifdef STBI_HAS_LROTL
+#ifdef _MSC_VER
    #define stbi_lrot(x,y)  _lrotl(x,y)
+#elif defined __clang__
+	// 32bit version of function as stb image uses this function to rotate 32bit integers
+	#define stbi_lrot(x,y) __builtin_rotateleft32(x,y)
+#elif defined __GNUC__
+	// gcc built-in is type-generic with first argument being any unsigned integer and second any signed or unsigned integer or char
+	#define stbi_lrot(x,y) __builtin_stdc_rotate_left(x,y)
 #else
    #define stbi_lrot(x,y)  (((x) << (y)) | ((x) >> (-(y) & 31)))
 #endif
@@ -725,7 +728,7 @@ typedef unsigned char validate_uint32[sizeof(stbi__uint32)==4 ? 1 : -1];
 
 #ifdef _MSC_VER
 
-#if _MSC_VER >= 1400  // not VC6
+#if defined (_MSC_VER && _MSC_VER >= 1400) // not VC6
 #include <intrin.h> // __cpuid
 static int stbi__cpuid3(void)
 {

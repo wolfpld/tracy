@@ -818,6 +818,7 @@ struct hash<Enum, typename std::enable_if<std::is_enum<Enum>::value>::type> {
     }
 
 #if defined(__GNUC__) && !defined(__clang__)
+// clang does not recognize -Wuseless-cast option
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wuseless-cast"
 #endif

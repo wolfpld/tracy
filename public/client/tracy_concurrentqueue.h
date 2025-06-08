@@ -34,7 +34,7 @@
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracySystem.hpp"
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and
 // Traits::index_t are set to < 32 bits, causing integer promotion, causing warnings
 // upon assigning any computed values)
@@ -64,7 +64,7 @@ namespace tracy
 
 // Compiler-specific likely/unlikely hints
 namespace moodycamel { namespace details {
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 	inline bool cqLikely(bool x) { return __builtin_expect((x), true); }
 	inline bool cqUnlikely(bool x) { return __builtin_expect((x), false); }
 #else
@@ -1436,6 +1436,6 @@ inline void swap(ConsumerToken& a, ConsumerToken& b) noexcept
 
 } /* namespace tracy */
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif

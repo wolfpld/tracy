@@ -12,6 +12,7 @@
 #  include "../common/TracyUwp.hpp"
 #  ifndef _MSC_VER
 #    include <excpt.h>
+#    include <exception>
 #  endif
 #else
 #  include <sys/time.h>
@@ -102,7 +103,7 @@
 #    define TRACY_DELAYED_INIT
 #  endif
 #else
-#  ifdef __GNUC__
+#  if defined __GNUC__ || defined __clang__
 #    define init_order( val ) __attribute__ ((init_priority(val)))
 #  else
 #    define init_order(x)
@@ -115,6 +116,12 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PROCESSOR_RELATIONSHIP, PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, PDWORD );
 extern "C" typedef char* (WINAPI *t_WineGetVersion)();
 extern "C" typedef char* (WINAPI *t_WineGetBuildId)();
+
+#  if defined __clang__ || defined __GNUC__
+	  // _WIN32
+#     include <fcntl.h>
+#endif
+
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -293,6 +300,10 @@ static bool EnsureReadable( uintptr_t address )
 {
     return true;
 }
+#endif
+
+#if defined __linux__
+	bool 
 #endif
 
 #ifndef TRACY_DELAYED_INIT
@@ -1453,6 +1464,12 @@ Profiler::Profiler()
     s_token_detail = moodycamel::ProducerToken( s_queue );
     s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
     s_threadHandle = ThreadHandleWrapper { m_mainThread };
+#  else
+	//#error FilipNur check if works
+	// 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
+    s_token_detail = moodycamel::ProducerToken( s_queue );
+    s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
+    s_threadHandle = ThreadHandleWrapper { m_mainThread };
 #  endif
 #endif
 
@@ -1481,7 +1498,36 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#ifndef _WIN32
+#if defined _WIN32 && (defined __clang__ || defined __GNUC__)
+
+	m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
+
+	{ // scope for temporary variable originalHandlesCount
+		int originalHandlesCount = _getmaxstdio();
+		
+		while(_pipe(m_pipe, m_pipeBufSize, _O_BINARY) != 0)
+		{
+			if ((errno == EMFILE) || (errno == ENFILE))
+			{	
+				// safe upper bound for exceptional situations
+				if(_getmaxstdio() > (originalHandlesCount + 10))
+				{
+					throw std::runtime_error("Failed to create communication pipe!");
+				}
+
+				// as described by Raymond Chen (https://devblogs.microsoft.com/oldnewthing/20070718-00/?p=25963)
+				// max number of handles in windows is 10000,
+				// _getmaxstdio() at the start returns 512, so no fear of too much handles
+				_setmaxstdio(_getmaxstdio() + 1);
+			}
+			else
+			{
+				m_pipeBufSize /= 2;
+			}
+		}
+	}
+
+#elif !defined _WIN32
     pipe(m_pipe);
 #  if defined __APPLE__ || defined BSD
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
@@ -1646,6 +1692,10 @@ Profiler::~Profiler()
 #ifndef _WIN32
     close( m_pipe[0] );
     close( m_pipe[1] );
+#elif defined __clang__ || defined __GNUC__
+	// _WIN32
+	_close(m_pipe[0]);
+	_close(m_pipe[1]);
 #endif
     tracy_free( m_safeSendBuffer );
 
@@ -3142,8 +3192,35 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     {
         success = false;
     }
-#  else
-    memcpy( buf, data, size );
+#  elif defined __GNUC__
+    // Send through the pipe to ensure safe reads on compilers with no __try/__except
+	for( size_t offset = 0; offset != size; /*in loop*/ )
+	{
+		size_t sendsize = size - offset;
+		int result1, result2;
+
+		// ENOSPC indicates that there is no more space to execute write operation
+		// other possible values:
+		// EBADF - invalid file descriptor or not opened for writing
+		// EINVAL - null buffer or odd number of bytes in unicode mode
+		while( ( result1 = _write( m_pipe[1], data + offset, sendsize ) ) < 0 && errno != ENOSPC ) { /* retry */ }
+		if( result1 < 0 )
+		{
+			success = false;
+			break;
+		}
+
+		// EBADF - errno set to this value if pipe is not opened for reading or locked
+		// other possible values:
+		// EINVAL - result1 > INT_MAX
+		while( ( result2 = _read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno != EBADF ) { /* retry */ }
+		if( result2 != result1 )
+		{
+			success = false;
+			break;
+		}
+		offset += result1;
+	}
 #  endif
 
 #else
@@ -3483,32 +3560,32 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
     case SymbolQueueItemType::KernelCode:
     {
 #ifdef _WIN32
-        auto mod = GetKernelModulePath( si.ptr );
-        if( mod )
-        {
-            auto fn = DecodeCallstackPtrFast( si.ptr );
-            if( *fn )
-            {
-                auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
-                if( hnd )
-                {
-                    auto ptr = (const void*)GetProcAddress( hnd, fn );
-                    if( ptr )
-                    {
-                        auto buf = (char*)tracy_malloc( si.extra );
-                        memcpy( buf, ptr, si.extra );
-                        FreeLibrary( hnd );
-                        TracyLfqPrepare( QueueType::SymbolCodeMetadata );
-                        MemWrite( &item->symbolCodeMetadata.symbol, si.ptr );
-                        MemWrite( &item->symbolCodeMetadata.ptr, (uint64_t)buf );
-                        MemWrite( &item->symbolCodeMetadata.size, (uint32_t)si.extra );
-                        TracyLfqCommit;
-                        break;
-                    }
-                    FreeLibrary( hnd );
-                }
-            }
-        }
+	auto mod = GetKernelModulePath( si.ptr );
+	if( mod )
+	{
+		auto fn = DecodeCallstackPtrFast( si.ptr );
+		if( *fn )
+		{
+			auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
+			if( hnd )
+			{
+				auto ptr = (const void*)GetProcAddress( hnd, fn );
+				if( ptr )
+				{
+					auto buf = (char*)tracy_malloc( si.extra );
+					memcpy( buf, ptr, si.extra );
+					FreeLibrary( hnd );
+					TracyLfqPrepare( QueueType::SymbolCodeMetadata );
+					MemWrite( &item->symbolCodeMetadata.symbol, si.ptr );
+					MemWrite( &item->symbolCodeMetadata.ptr, (uint64_t)buf );
+					MemWrite( &item->symbolCodeMetadata.size, (uint32_t)si.extra );
+					TracyLfqCommit;
+					break;
+				}
+				FreeLibrary( hnd );
+			}
+		}
+	}
 #elif defined __linux__
         void* data = m_kcore->Retrieve( si.ptr, si.extra );
         if( data )

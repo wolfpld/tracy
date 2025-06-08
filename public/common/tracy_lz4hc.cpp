@@ -162,7 +162,10 @@ int LZ4HC_countBack(const BYTE* const ip, const BYTE* const match,
 
 #if defined(_MSC_VER)
 #  define LZ4HC_rotl32(x,r) _rotl(x,r)
+#elif defined(__clang__)
+#  define LZ4HC_rotl32(x,r) __builtin_rotateleft32(x,r)
 #else
+// gcc does not provide builtin rotate left funciton for C++ (__builtin_stdc_rotate_left is available only in C)
 #  define LZ4HC_rotl32(x,r) ((x << r) | (x >> (32 - r)))
 #endif
 

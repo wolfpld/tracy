@@ -25,6 +25,7 @@ class TracyLlmApi
         Unknown,
         Ollama,
         LmStudio,
+        LlamaSwap,
         Other
     };
 

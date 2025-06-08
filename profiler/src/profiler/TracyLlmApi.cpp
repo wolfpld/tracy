@@ -61,7 +61,12 @@ bool TracyLlmApi::Connect( const char* url )
             m_models.emplace_back( LlmModel { .name = id } );
 
             std::string buf2;
-            if( ( m_type == Type::Unknown || m_type == Type::LmStudio ) && GetRequest( m_url + "/api/v0/models/" + id, buf2 ) == 200 )
+            if( ( m_type == Type::Unknown || m_type == Type::LlamaSwap ) && GetRequest( m_url + "/running", buf2 ) == 200 && buf2.starts_with( "{\"running\":" ) )
+            {
+                m_type = Type::LlamaSwap;
+                if( id.find( "embed" ) != std::string::npos ) m_models.back().embeddings = true;
+            }
+            else if( ( m_type == Type::Unknown || m_type == Type::LmStudio ) && GetRequest( m_url + "/api/v0/models/" + id, buf2 ) == 200 )
             {
                 m_type = Type::LmStudio;
                 auto json2 = nlohmann::json::parse( buf2 );

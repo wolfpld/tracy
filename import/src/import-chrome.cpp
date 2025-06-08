@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <zstd.h>
 
-#if defined _MSC_VER || defined __clang__ || defined __GNUC__
+#if defined _MSC_VER || (defined _WIN32 && defined __GNUC__)
 // all checked compilers contain _stat64
 #  define stat64 _stat64
 #endif

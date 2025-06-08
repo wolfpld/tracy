@@ -10,14 +10,6 @@
 #include "TracyTimelineItemThread.hpp"
 #include "TracyView.hpp"
 
-#if defined _WIN32 && (defined __GNUC__ && !defined __clang__)
-//_WIN32 - only tested on windows
-
-// gcc throws error for not present std::pow function,
-// clang does not have that problem
-#include <cmath>
-#endif
-
 namespace tracy
 {
 

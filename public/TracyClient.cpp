@@ -51,7 +51,7 @@
 #endif
 
 #ifdef _MSC_VER
-// when gcc and clang linker options will be used
+// for gcc and clang added with linker options
 #  pragma comment(lib, "ws2_32.lib")
 #  pragma comment(lib, "dbghelp.lib")
 #  pragma comment(lib, "advapi32.lib")

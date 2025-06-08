@@ -123,7 +123,7 @@ public:
         case MD_BLOCK_UL:
         case MD_BLOCK_OL:
             ImGui::Unindent();
-            lists.pop_back();
+            if( !lists.empty() ) lists.pop_back();
             separate = lists.empty() || !lists.back().tight;
             break;
         case MD_BLOCK_LI:

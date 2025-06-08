@@ -210,6 +210,9 @@ else()
     target_sources(${PROJECT_NAME} PUBLIC GitRef.hpp)
 endif()
 
+find_package(ZLIB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer ZLIB::ZLIB)
+
 if(NOT EMSCRIPTEN)
     if(NOT NO_FILESELECTOR)
         target_link_libraries(${PROJECT_NAME} PRIVATE nfd::nfd)

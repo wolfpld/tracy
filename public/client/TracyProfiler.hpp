@@ -1067,7 +1067,7 @@ private:
 
 #if defined _WIN32
     void* m_prevHandler;
-	#if defined __clang__ || defined __GNUC__
+	#if defined __GNUC__
 		int m_pipe[2];
 		int m_pipeBufSize;
 	#endif

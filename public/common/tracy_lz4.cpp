@@ -74,11 +74,11 @@
  * Prefer these methods in priority order (0 > 1 > 2)
  */
 #ifndef LZ4_FORCE_MEMORY_ACCESS   /* can be defined externally */
-#  if (defined(__GNUC__) || defined(__clang__)) && \
+#  if defined(__GNUC__) && \
   ( defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) \
   || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__) || defined(__ARM_ARCH_6T2__) )
 #    define LZ4_FORCE_MEMORY_ACCESS 2
-#  elif (defined(__INTEL_COMPILER) && !defined(_WIN32)) || (defined(__GNUC__) || defined(__clang__))
+#  elif (defined(__INTEL_COMPILER) && !defined(_WIN32)) || defined(__GNUC__)
 #    define LZ4_FORCE_MEMORY_ACCESS 1
 #  endif
 #endif

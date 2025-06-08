@@ -16,7 +16,7 @@
 #  define NO_CHARCONV
 #endif
 
-#if defined __GNUC__ || defined __clang__ 
+#if defined __GNUC__ 
 #  define NO_CHARCONV
 #endif
 

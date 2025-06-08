@@ -10,7 +10,7 @@
 #  include <inttypes.h>
 #  include <intrin.h>
 #  include "../common/TracyUwp.hpp"
-#  if defined __clang__ || defined __GNUC__
+#  if defined __GNUC__
 #      include <exception>
 #  endif
 #else
@@ -102,7 +102,7 @@
 #    define TRACY_DELAYED_INIT
 #  endif
 #else
-#  if defined __GNUC__ || defined __clang__
+#  if defined __GNUC__
 #    define init_order( val ) __attribute__ ((init_priority(val)))
 #  else
 #    define init_order(x)
@@ -116,7 +116,7 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 extern "C" typedef char* (WINAPI *t_WineGetVersion)();
 extern "C" typedef char* (WINAPI *t_WineGetBuildId)();
 
-#  if defined __clang__ || defined __GNUC__
+#  if defined __GNUC__
 	  // _WIN32
 #     include <fcntl.h>
 #endif
@@ -1490,7 +1490,7 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#if defined _WIN32 && (defined __clang__ || defined __GNUC__)
+#if defined _WIN32 && defined __GNUC__
 
 	m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
 
@@ -1684,7 +1684,7 @@ Profiler::~Profiler()
 #ifndef _WIN32
     close( m_pipe[0] );
     close( m_pipe[1] );
-#elif defined __clang__ || defined __GNUC__
+#elif defined __GNUC__
 	// _WIN32
 	_close(m_pipe[0]);
 	_close(m_pipe[1]);
@@ -3183,7 +3183,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 		success = false;
 	}
 
-#elif defined _WIN32 && (defined __clang__ || defined __GNUC__)
+#elif defined _WIN32 && defined __GNUC__
 	// Send through the pipe to ensure safe reads on compilers with no __try/__except
 	for( size_t offset = 0; offset != size; /*in loop*/ )
 	{

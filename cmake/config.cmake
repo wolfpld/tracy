@@ -45,7 +45,7 @@ endif()
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
 	# Mingw gcc on windows can't handle section count resulting during compilation of profiler/src/profiler/TracyMicroArchitecture.cpp
-	if(NOT (MINGW OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND WIN32 AND NOT ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")))
+	if(NOT (MINGW OR "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") AND WIN32 AND NOT ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
     	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 	endif()
 endif()

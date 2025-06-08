@@ -17,6 +17,7 @@ set(TRACY_SERVER_SOURCES
     TracyMemory.cpp
     TracyMmap.cpp
     TracyPrint.cpp
+    TracyProtocolServer.cpp
     TracySysUtil.cpp
     TracyTaskDispatch.cpp
     TracyTextureCompression.cpp

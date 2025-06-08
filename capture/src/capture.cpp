@@ -113,7 +113,7 @@ int main( int argc, char** argv )
     const char* output = nullptr;
     int port = 8086;
     int seconds = -1;
-    int64_t memoryLimit = -1;
+    int64_t memoryLimit = tracy::NO_WORKER_MEMORY_LIMIT;
 
     int c;
     while( ( c = getopt( argc, argv, "a:o:p:fs:m:" ) ) != -1 )

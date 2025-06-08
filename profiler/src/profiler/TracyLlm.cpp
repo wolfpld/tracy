@@ -683,10 +683,10 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         {
             inject += "<SYSTEM_REMINDER>\n";
             inject += std::string( m_systemReminder->data(), m_systemReminder->size() );
-            inject += "The current time is: " + m_tools->GetCurrentTime() + "\n";
             inject += "</SYSTEM_REMINDER>\n";
         }
 
+        chat.front()["content"].get_ref<std::string&>().append( "\n\nThe current time is: " + m_tools->GetCurrentTime() + "\n" );
         chat.back()["content"].get_ref<std::string&>().insert( 0, inject );
 
         nlohmann::json req;

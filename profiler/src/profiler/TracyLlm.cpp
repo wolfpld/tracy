@@ -317,7 +317,7 @@ void TracyLlm::Draw()
         return;
     }
 
-    if( !manualEmbeddingsState.done || manualEmbeddingsState.model != models[m_embedIdx].name )
+    if( !manualEmbeddingsState.done || m_embedIdx < 0 || manualEmbeddingsState.model != models[m_embedIdx].name )
     {
         if( m_embedIdx < 0 ) ImGui::BeginDisabled();
         if( ImGui::SmallButton( ICON_FA_BOOK_BOOKMARK " Learn manual" ) )

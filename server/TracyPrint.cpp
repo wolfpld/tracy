@@ -1,7 +1,7 @@
 #ifdef _MSC_VER
 #  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data
 #endif
-#ifdef __MINGW32__
+#if defined __MINGW32__ || defined __GNUC__ || defined __clang__
 #  define __STDC_FORMAT_MACROS
 #endif
 

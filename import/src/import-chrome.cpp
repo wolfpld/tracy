@@ -11,9 +11,11 @@
 #include <unordered_map>
 #include <zstd.h>
 
-#ifdef _MSC_VER
+#if defined _MSC_VER || defined __clang__ || defined __GNUC__
+// all checked compilers contain _stat64
 #  define stat64 _stat64
 #endif
+
 #if defined __APPLE__
 #  define stat64 stat
 #endif

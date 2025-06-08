@@ -74,11 +74,11 @@
  * Prefer these methods in priority order (0 > 1 > 2)
  */
 #ifndef LZ4_FORCE_MEMORY_ACCESS   /* can be defined externally */
-#  if defined(__GNUC__) && \
+#  if (defined(__GNUC__) || defined(__clang__)) && \
   ( defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__) \
   || defined(__ARM_ARCH_6Z__) || defined(__ARM_ARCH_6ZK__) || defined(__ARM_ARCH_6T2__) )
 #    define LZ4_FORCE_MEMORY_ACCESS 2
-#  elif (defined(__INTEL_COMPILER) && !defined(_WIN32)) || defined(__GNUC__)
+#  elif (defined(__INTEL_COMPILER) && !defined(_WIN32)) || (defined(__GNUC__) || defined(__clang__))
 #    define LZ4_FORCE_MEMORY_ACCESS 1
 #  endif
 #endif
@@ -345,7 +345,9 @@ namespace tracy
  * environments. This is needed when decompressing the Linux Kernel, for example.
  */
 #if !defined(LZ4_memcpy)
-#  if defined(__GNUC__) && (__GNUC__ >= 4)
+#  if defined(__clang__)
+#    define LZ4_memcpy(dst, src, size) __builtin_memcpy(dst, src, size)
+#  elif defined(__GNUC__) && (__GNUC__ >= 4)
 #    define LZ4_memcpy(dst, src, size) __builtin_memcpy(dst, src, size)
 #  else
 #    define LZ4_memcpy(dst, src, size) memcpy(dst, src, size)
@@ -1283,7 +1285,7 @@ _last_literals:
         } else {
             *op++ = (BYTE)(lastRun<<ML_BITS);
         }
-        LZ4_memcpy(op, anchor, lastRun);
+        LZ4_memcpy(op, anchor, (size_t const)lastRun);
         ip = anchor + lastRun;
         op += lastRun;
     }

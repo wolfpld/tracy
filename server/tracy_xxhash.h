@@ -260,7 +260,7 @@ extern "C" {
 #  define XXH_STATIC_LINKING_ONLY
    /* make all functions private */
 #  undef XXH_PUBLIC_API
-#  if defined(__GNUC__)
+#  if defined(__GNUC__) || defined(__clang__)
 #    define XXH_PUBLIC_API static __inline __attribute__((unused))
 #  elif defined (__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
 #    define XXH_PUBLIC_API static inline
@@ -373,11 +373,19 @@ extern "C" {
 
 /*! @brief Marks a global symbol. */
 #if !defined(XXH_INLINE_ALL) && !defined(XXH_PRIVATE_API)
-#  if defined(WIN32) && defined(_MSC_VER) && (defined(XXH_IMPORT) || defined(XXH_EXPORT))
+#  if defined(WIN32) && (defined(_MSC_VER) || defined(__clang__) || defined(__GNUC__)) && (defined(XXH_IMPORT) || defined(XXH_EXPORT))
 #    ifdef XXH_EXPORT
-#      define XXH_PUBLIC_API __declspec(dllexport)
+#	   if defined(__GNUC__) || defined(__clang__)
+#        __attribute__((dllexport))
+#      elif
+#        define XXH_PUBLIC_API __declspec(dllexport)
+#      endif
 #    elif XXH_IMPORT
-#      define XXH_PUBLIC_API __declspec(dllimport)
+#	   if defined(__GNUC__) || defined(__clang__)
+#        __attribute__((dllimport))
+#      elif
+#        define XXH_PUBLIC_API __declspec(dllimport)
+#      endif
 #    endif
 #  else
 #    define XXH_PUBLIC_API   /* do nothing */
@@ -449,18 +457,26 @@ extern "C" {
 
 /* specific declaration modes for Windows */
 #if !defined(XXH_INLINE_ALL) && !defined(XXH_PRIVATE_API)
-#  if defined(WIN32) && defined(_MSC_VER) && (defined(XXH_IMPORT) || defined(XXH_EXPORT))
+#  if defined(WIN32) && (defined(_MSC_VER) || defined(__clang__) || defined(__GNUC__)) && (defined(XXH_IMPORT) || defined(XXH_EXPORT))
 #    ifdef XXH_EXPORT
-#      define XXH_PUBLIC_API __declspec(dllexport)
+#	   if defined(__GNUC__) || defined(__clang__)
+#        __attribute__((dllexport))
+#      elif
+#        define XXH_PUBLIC_API __declspec(dllexport)
+#      endif
 #    elif XXH_IMPORT
-#      define XXH_PUBLIC_API __declspec(dllimport)
+#	   if defined(__GNUC__) || defined(__clang__)
+#        __attribute__((dllimport))
+#      elif
+#        define XXH_PUBLIC_API __declspec(dllimport)
+#      endif
 #    endif
 #  else
 #    define XXH_PUBLIC_API   /* do nothing */
 #  endif
 #endif
 
-#if defined (__GNUC__)
+#if defined (__GNUC__) || defined (__clang__)
 # define XXH_CONSTF  __attribute__((const))
 # define XXH_PUREF   __attribute__((pure))
 # define XXH_MALLOCF __attribute__((malloc))
@@ -1478,7 +1494,7 @@ struct XXH64_state_s {
 #elif defined(__cplusplus) && (__cplusplus >= 201103L) /* >= C++11 */
 /* In C++ alignas() is a keyword */
 #  define XXH_ALIGN(n)      alignas(n)
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(__clang__)
 #  define XXH_ALIGN(n)      __attribute__ ((aligned(n)))
 #elif defined(_MSC_VER)
 #  define XXH_ALIGN(n)      __declspec(align(n))
@@ -1489,7 +1505,7 @@ struct XXH64_state_s {
 /* Old GCC versions only accept the attribute after the type in structures. */
 #if !(defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L))   /* C11+ */ \
     && ! (defined(__cplusplus) && (__cplusplus >= 201103L)) /* >= C++11 */ \
-    && defined(__GNUC__)
+    && (defined(__GNUC__) || defined(__clang__))
 #   define XXH_ALIGN_MEMBER(align, type) type XXH_ALIGN(align)
 #else
 #   define XXH_ALIGN_MEMBER(align, type) XXH_ALIGN(align) type
@@ -1983,7 +1999,7 @@ XXH3_128bits_reset_withSecretandSeed(XXH_NOESCAPE XXH3_state_t* statePtr,
    /* prefer __packed__ structures (method 1) for GCC
     * < ARMv7 with unaligned access (e.g. Raspbian armhf) still uses byte shifting, so we use memcpy
     * which for some reason does unaligned loads. */
-#  if defined(__GNUC__) && !(defined(__ARM_ARCH) && __ARM_ARCH < 7 && defined(__ARM_FEATURE_UNALIGNED))
+#  if (defined(__GNUC__) || defined(__clang__)) && !(defined(__ARM_ARCH) && __ARM_ARCH < 7 && defined(__ARM_FEATURE_UNALIGNED))
 #    define XXH_FORCE_MEMORY_ACCESS 1
 #  endif
 #endif
@@ -2413,6 +2429,7 @@ static int XXH_isLittleEndian(void)
  */
 
 #if XXH_HAS_BUILTIN(__builtin_unreachable)
+// gcc and clang should have this as builtin
 #  define XXH_UNREACHABLE() __builtin_unreachable()
 
 #elif defined(_MSC_VER)
@@ -2443,13 +2460,14 @@ static int XXH_isLittleEndian(void)
  */
 #if !defined(NO_CLANG_BUILTIN) && XXH_HAS_BUILTIN(__builtin_rotateleft32) \
                                && XXH_HAS_BUILTIN(__builtin_rotateleft64)
-#  define XXH_rotl32 __builtin_rotateleft32
-#  define XXH_rotl64 __builtin_rotateleft64
+#  define XXH_rotl32(x,r) __builtin_rotateleft32(x,r)
+#  define XXH_rotl64(x,r) __builtin_rotateleft64(x,r)
 /* Note: although _rotl exists for minGW (GCC under windows), performance seems poor */
 #elif defined(_MSC_VER)
 #  define XXH_rotl32(x,r) _rotl(x,r)
 #  define XXH_rotl64(x,r) _rotl64(x,r)
 #else
+// gcc does not provide builtin rotate left funciton for C++ (__builtin_stdc_rotate_left is available only in C)
 #  define XXH_rotl32(x,r) (((x) << (r)) | ((x) >> (32 - (r))))
 #  define XXH_rotl64(x,r) (((x) << (r)) | ((x) >> (64 - (r))))
 #endif
@@ -2464,7 +2482,8 @@ static int XXH_isLittleEndian(void)
  */
 #if defined(_MSC_VER)     /* Visual Studio */
 #  define XXH_swap32 _byteswap_ulong
-#elif XXH_GCC_VERSION >= 403
+#elif XXH_GCC_VERSION >= 403 || defined __clang__
+// XXH_GCC_VERSION >= 403 should be equivalent to if defined __GNUC__
 #  define XXH_swap32 __builtin_bswap32
 #else
 static xxh_u32 XXH_swap32 (xxh_u32 x)
@@ -3012,7 +3031,8 @@ static xxh_u64 XXH_read64(const void* memPtr)
 
 #if defined(_MSC_VER)     /* Visual Studio */
 #  define XXH_swap64 _byteswap_uint64
-#elif XXH_GCC_VERSION >= 403
+#elif XXH_GCC_VERSION >= 403 || defined __clang__
+// XXH_GCC_VERSION >= 403 should be equivalent to if defined __GNUC__
 #  define XXH_swap64 __builtin_bswap64
 #else
 static xxh_u64 XXH_swap64(xxh_u64 x)
@@ -3953,7 +3973,7 @@ do { \
 #  elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))  /* _mm_prefetch() not defined outside of x86/x64 */
 #    include <mmintrin.h>   /* https://msdn.microsoft.com/fr-fr/library/84szxsww(v=vs.90).aspx */
 #    define XXH_PREFETCH(ptr)  _mm_prefetch((const char*)(ptr), _MM_HINT_T0)
-#  elif defined(__GNUC__) && ( (__GNUC__ >= 4) || ( (__GNUC__ == 3) && (__GNUC_MINOR__ >= 1) ) )
+#  elif ( defined(__GNUC__) && ( (__GNUC__ >= 4) || ( (__GNUC__ == 3) && (__GNUC_MINOR__ >= 1) ) ) ) || defined (__clang__)
 #    define XXH_PREFETCH(ptr)  __builtin_prefetch((ptr), 0 /* rw==read */, 3 /* locality */)
 #  else
 #    define XXH_PREFETCH(ptr) (void)(ptr)  /* disabled */

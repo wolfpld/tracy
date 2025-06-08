@@ -20,8 +20,9 @@
 #include <variant>
 #include <zstd.h>
 
-#ifdef _MSC_VER
-#define stat64 _stat64
+#if defined _MSC_VER || defined __clang__ || defined __GNUC__
+// all checked compilers contain _stat64
+#	define stat64 _stat64
 #endif
 #if defined __APPLE__
 #define stat64 stat

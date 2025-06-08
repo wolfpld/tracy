@@ -214,8 +214,11 @@ void TracyLlm::Draw()
                         SaveConfig();
                     }
                     if( m_modelIdx == i ) ImGui::SetItemDefaultFocus();
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                    if( !model.quant.empty() )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                    }
                 }
                 ImGui::EndCombo();
             }
@@ -244,8 +247,11 @@ void TracyLlm::Draw()
                         m_tools->SelectManualEmbeddings( model.name );
                     }
                     if( m_embedIdx == i ) ImGui::SetItemDefaultFocus();
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                    if( !model.quant.empty() )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                    }
                 }
                 ImGui::EndCombo();
             }

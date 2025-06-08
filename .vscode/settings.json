@@ -5,6 +5,7 @@
         "${workspaceFolder}/capture",
         "${workspaceFolder}/csvexport",
         "${workspaceFolder}/import",
+        "${workspaceFolder}/multiprocess",
         "${workspaceFolder}/update",
         "${workspaceFolder}/test",
         "${workspaceFolder}",

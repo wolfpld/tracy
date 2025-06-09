@@ -815,19 +815,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                         const auto reply = m_tools->HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
                         auto output = "<tool_output>\n" + reply.reply;
                         lock.lock();
-                        //if( reply.image.empty() )
-                        {
-                            AddMessage( std::move( output ), "user" );
-                        }
-                        /*
-                        else
-                        {
-                            std::vector<ollama::image> images;
-                            images.emplace_back( ollama::image::from_base64_string( reply.image ) );
-                            m_chat->emplace_back( ollama::message( "user", output, images ) );
-                        }
-                        */
-
+                        AddMessage( std::move( output ), "user" );
                         m_jobs.emplace_back( WorkItem {
                             .task = Task::SendMessage,
                             .callback = nullptr

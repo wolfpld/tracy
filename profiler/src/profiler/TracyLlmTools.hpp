@@ -1,6 +1,7 @@
 #ifndef __TRACYLLMTOOLS_HPP__
 #define __TRACYLLMTOOLS_HPP__
 
+#include <nlohmann/json.hpp>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -37,7 +38,7 @@ public:
     TracyLlmTools();
     ~TracyLlmTools();
 
-    ToolReply HandleToolCalls( const std::string& name, const std::vector<std::string>& args, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
+    ToolReply HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
     std::string GetCurrentTime() const;
 
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;

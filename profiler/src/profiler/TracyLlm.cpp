@@ -733,20 +733,6 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     }
 }
 
-static std::vector<std::string> SplitLines( const std::string& str )
-{
-    std::vector<std::string> lines;
-    auto pos = 0;
-    while( pos < str.size() )
-    {
-        auto next = str.find( '\n', pos );
-        if( next == std::string::npos ) next = str.size();
-        if( pos != next ) lines.emplace_back( str.substr( pos, next - pos ) );
-        pos = next + 1;
-    }
-    return lines;
-}
-
 bool TracyLlm::OnResponse( const nlohmann::json& json )
 {
     std::unique_lock lock( m_lock );
@@ -804,24 +790,29 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 if( end != std::string::npos )
                 {
                     while( end > pos && str[end-1] == '\n' ) end--;
-                    auto data = str.substr( pos, end - pos );
-                    auto lines = SplitLines( data );
-                    if( !lines.empty() )
+                    const auto tool = str.substr( pos, end - pos );
+                    lock.unlock();
+
+                    TracyLlmTools::ToolReply reply;
+                    try
                     {
-                        isTool = true;
-                        auto tool = lines[0];
-                        lines.erase( lines.begin() );
-                        lock.unlock();
-                        const auto reply = m_tools->HandleToolCalls( tool, lines, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
-                        auto output = "<tool_output>\n" + reply.reply;
-                        lock.lock();
-                        AddMessage( std::move( output ), "user" );
-                        m_jobs.emplace_back( WorkItem {
-                            .task = Task::SendMessage,
-                            .callback = nullptr
-                        } );
-                        m_cv.notify_all();
+                        auto json = nlohmann::json::parse( tool );
+                        reply = m_tools->HandleToolCalls( json, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
                     }
+                    catch( const nlohmann::json::exception& e )
+                    {
+                        reply.reply = e.what();
+                    }
+
+                    isTool = true;
+                    auto output = "<tool_output>\n" + reply.reply;
+                    lock.lock();
+                    AddMessage( std::move( output ), "user" );
+                    m_jobs.emplace_back( WorkItem {
+                        .task = Task::SendMessage,
+                        .callback = nullptr
+                    } );
+                    m_cv.notify_all();
                 }
             }
         }

@@ -26,16 +26,13 @@ The user is asking about the weather in San Francisco. I need to use the weather
 2. *Tool Usage (`<tool>`):*
   - If, in the `<think>` block, you decide you need to use a tool, the next block generated *MUST* be a `<tool>` block.
   - The tag name MUST be exactly `tool`.
-  - The first line inside the `<tool>` block *MUST* contain the *exact function name* from the list of available tools.
-  - If the function requires parameters, provide them on subsequent lines, *one parameter per line*. Provide parameters in plain form, *without quotation marks*.
   - *After generating a `<tool>` block, you MUST END YOUR RESPONSE FOR THIS TURN.* Do not generate any other text or tags after the `<tool>` block. The system will process this tool call and provide you with the result in the next step.
-  - Example:
+  - The tool name and its parameters (if applicable) must be passed as a json data. For example:
 <think>
-The user is asking about the weather in San Francisco. I need to use the weather checking tool. The function name is 'check_weather', the parameter is the city name.
+The user is asking about the weather in San Francisco. I need to use the weather checking tool. The tool name is 'check_weather', the parameter is the city name.
 </think>
 <tool>
-check_weather
-San Francisco
+{"tool": "check_weather", "city": "San Francisco"}
 </tool>
 
 3. *Tool Output (`<tool_output>`):*

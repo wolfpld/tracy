@@ -181,50 +181,48 @@ TracyLlmTools::~TracyLlmTools()
     CancelManualEmbeddings();
 }
 
-TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& name, const std::vector<std::string>& args, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
+#define Param(name) json[name].get_ref<const std::string&>()
+
+TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {
     m_ctxSize = contextSize;
 
-    if( name == "fetch_web_page" )
+    try
     {
-        if( args.empty() ) return { .reply = "Missing URL argument" };
-        return { .reply = FetchWebPage( args[0] ) };
+        auto name = json["tool"].get_ref<const std::string&>();
+        if( name == "search_wikipedia" )
+        {
+            return SearchWikipedia( Param( "query" ), Param( "language" ) );
+        }
+        else if( name == "get_wikipedia" )
+        {
+            return { .reply = GetWikipedia( Param( "page" ), Param( "language" ) ) };
+        }
+        else if( name == "get_dictionary" )
+        {
+            return { .reply = GetDictionary( Param( "word" ), Param( "language" ) ) };
+        }
+        else if( name == "search_web" )
+        {
+            return { .reply = SearchWeb( Param( "query" ) ) };
+        }
+        else if( name == "get_webpage" )
+        {
+            return { .reply = GetWebpage( Param( "url" ) ) };
+        }
+        else if( name == "user_manual" )
+        {
+            return { .reply = SearchManual( Param( "query" ), api, hasEmbeddingsModel ) };
+        }
+        return { .reply = "Unknown tool call: " + name };
     }
-    if( name == "search_wikipedia" )
+    catch( const nlohmann::json::exception& e )
     {
-        if( args.empty() ) return { .reply = "Missing search term argument" };
-        if( args.size() < 2 ) return { .reply = "Missing language argument" };
-        return SearchWikipedia( args[0], args[1] );
+        return { .reply = e.what() };
     }
-    if( name == "get_wikipedia" )
-    {
-        if( args.empty() ) return { .reply = "Missing page name argument" };
-        if( args.size() < 2 ) return { .reply = "Missing language argument" };
-        return { .reply = GetWikipedia( args[0], args[1] ) };
-    }
-    if( name == "get_dictionary" )
-    {
-        if( args.empty() ) return { .reply = "Missing word argument" };
-        if( args.size() < 2 ) return { .reply = "Missing language argument" };
-        return { .reply = GetDictionary( args[0], args[1] ) };
-    }
-    if( name == "search_web" )
-    {
-        if( args.empty() ) return { .reply = "Missing search term argument" };
-        return { .reply = SearchWeb( args[0] ) };
-    }
-    if( name == "get_webpage" )
-    {
-        if( args.empty() ) return { .reply = "Missing URL argument" };
-        return { .reply = GetWebpage( args[0] ) };
-    }
-    if( name == "user_manual" )
-    {
-        if( args.empty() ) return { .reply = "Missing search term argument" };
-        return { .reply = SearchManual( args[0], api, hasEmbeddingsModel ) };
-    }
-    return { .reply = "Unknown tool call: " + name };
 }
+
+#undef Param
 
 std::string TracyLlmTools::GetCurrentTime() const
 {

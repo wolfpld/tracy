@@ -795,13 +795,16 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         auto& str = back["content"].get_ref<const std::string&>();
         if( !str.starts_with( "<debug>" ) )
         {
-            auto pos = str.find( "<tool>\n" );
+            auto pos = str.find( "<tool>" );
             if( pos != std::string::npos )
             {
-                auto end = str.find( "\n</tool>", pos );
+                pos += 6;
+                while( str[pos] == '\n' ) pos++;
+                auto end = str.find( "</tool>", pos );
                 if( end != std::string::npos )
                 {
-                    auto data = str.substr( pos + 7, end - pos - 7 );
+                    while( end > pos && str[end-1] == '\n' ) end--;
+                    auto data = str.substr( pos, end - pos );
                     auto lines = SplitLines( data );
                     if( !lines.empty() )
                     {

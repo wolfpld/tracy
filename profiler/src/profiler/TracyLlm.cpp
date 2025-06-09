@@ -687,7 +687,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     }
     else
     {
-        AddMessage( "<think>\n", "assistant" );
+        AddMessage( "<think>", "assistant" );
     }
 
     bool res;

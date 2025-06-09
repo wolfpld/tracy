@@ -97,50 +97,53 @@ TracyLlmTools::TracyLlmTools()
         if( next != pos )
         {
             std::string_view line( manual.data() + pos, next - pos );
-            if( line[0] == '#' )
+            if( line != "---" && line != ":::" && line != "::: bclogo" )
             {
-                if( manualChunkPos != pos )
+                if( line[0] == '#' )
                 {
-                    std::string manualChunk;
+                    if( manualChunkPos != pos )
+                    {
+                        std::string manualChunk;
+                        if( levels[0] != 0 )
+                        {
+                            manualChunk += "Section " + std::to_string( levels[0] );
+                            for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
+                            manualChunk += "\n";
+                        }
+                        manualChunk += "Navigation: " + chapterNames[0];
+                        for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
+                        manualChunk += "\n\n";
+                        manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
+                        m_manualChunks.emplace_back( std::move( manualChunk ) );
+                        manualChunkPos = pos;
+                    }
+
+                    int level = 1;
+                    if( line.find( ".unnumbered}" ) == std::string_view::npos )
+                    {
+                        while( level < line.size() && line[level] == '#' ) level++;
+                        if( level != levels.size() )
+                        {
+                            levels.resize( level, 0 );
+                            chapterNames.resize( level );
+                        }
+                        levels[level - 1]++;
+                        chapterNames[level - 1] = line.substr( level + 1 );
+                    }
+                }
+                else
+                {
+                    std::string chunk;
                     if( levels[0] != 0 )
                     {
-                        manualChunk += "Section " + std::to_string( levels[0] );
-                        for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
-                        manualChunk += "\n";
+                        chunk += "Section " + std::to_string( levels[0] );
+                        for( size_t i=1; i<levels.size(); i++ ) chunk += "." + std::to_string( levels[i] );
+                        chunk += "\n";
                     }
-                    manualChunk += "Navigation: " + chapterNames[0];
-                    for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
-                    manualChunk += "\n\n";
-                    manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-                    m_manualChunks.emplace_back( std::move( manualChunk ) );
-                    manualChunkPos = pos;
+                    chunk += chapterNames[levels.size()-1] + "\n\n";
+                    chunk += std::string( line );
+                    m_chunkData.emplace_back( std::move( chunk ), m_manualChunks.size() );
                 }
-
-                int level = 1;
-                if( line.find( ".unnumbered}" ) == std::string_view::npos )
-                {
-                    while( level < line.size() && line[level] == '#' ) level++;
-                    if( level != levels.size() )
-                    {
-                        levels.resize( level, 0 );
-                        chapterNames.resize( level );
-                    }
-                    levels[level - 1]++;
-                    chapterNames[level - 1] = line.substr( level + 1 );
-                }
-            }
-            else
-            {
-                std::string chunk;
-                if( levels[0] != 0 )
-                {
-                    chunk += "Section " + std::to_string( levels[0] );
-                    for( size_t i=1; i<levels.size(); i++ ) chunk += "." + std::to_string( levels[i] );
-                    chunk += "\n";
-                }
-                chunk += chapterNames[levels.size()-1] + "\n\n";
-                chunk += std::string( line );
-                m_chunkData.emplace_back( std::move( chunk ), m_manualChunks.size() );
             }
         }
         pos = next + 1;

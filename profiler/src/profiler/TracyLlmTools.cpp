@@ -791,6 +791,9 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     nlohmann::json response;
     api.Embeddings( req, response, true );
     auto& embedding = response["data"][0]["embedding"];
+
+    if( embedding.empty() ) return "Error: Failed to get embedding for the query";
+
     std::vector<float> vec;
     vec.reserve( embedding.size() );
     for( auto& item : embedding ) vec.emplace_back( item.get<float>() );

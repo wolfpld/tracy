@@ -92,8 +92,18 @@ TracyLlmTools::TracyLlmTools()
     int pos = 0;
     while( pos < sz )
     {
-        auto next = manual.find( '\n', pos );
-        if( next == std::string_view::npos ) next = sz;
+        std::string::size_type next = pos;
+        for(;;)
+        {
+            next = manual.find( '\n', next );
+            if( next == std::string_view::npos )
+            {
+                next = sz;
+                break;
+            }
+            if( next+1 >= sz || manual[next+1] == '\n' ) break;
+            next++;
+        }
         if( next != pos )
         {
             std::string_view line( manual.data() + pos, next - pos );
@@ -147,6 +157,7 @@ TracyLlmTools::TracyLlmTools()
             }
         }
         pos = next + 1;
+        while( pos < sz && manual[pos] == '\n' ) pos++;
     }
     if( manualChunkPos != pos )
     {

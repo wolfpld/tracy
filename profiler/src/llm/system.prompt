@@ -115,7 +115,7 @@ These are the tools you can use. *You have no access to any other tools or means
     "parameters": [
       {
         "name": "query",
-        "description": "Search query *in English*. Describe the query in detail."
+        "description": "Detailed search query. The query should be in English language."
       }
     ]
   }

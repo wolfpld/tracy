@@ -545,7 +545,6 @@ std::string TracyLlmTools::SearchWeb( std::string query )
 {
     NetworkCheckString;
 
-    std::ranges::replace( query, ' ', '+' );
     query = UrlEncode( query );
 
     if( !s_config.llmSearchApiKey.empty() && !s_config.llmSearchIdentifier.empty() )

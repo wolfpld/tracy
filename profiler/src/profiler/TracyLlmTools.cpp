@@ -308,7 +308,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
     const auto csz = m_chunkData.size();
     m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( length, csz );
 
-    constexpr size_t batchSize = 64;
+    constexpr size_t batchSize = 4;
 
     std::vector<float> embeddings;
     embeddings.reserve( length );

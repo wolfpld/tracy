@@ -336,7 +336,12 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         req["model"] = m_manualEmbeddingState.model;
 
         nlohmann::json response;
-        api.Embeddings( req, response );
+        if( !api.Embeddings( req, response ) )
+        {
+            m_manualEmbeddingState.inProgress = false;
+            m_manualEmbeddingState.done = false;
+            return;
+        }
 
         auto& data = response["data"];
         for( size_t j=0; j<bsz; j++ )
@@ -800,7 +805,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     req["model"] = m_manualEmbeddingState.model;
 
     nlohmann::json response;
-    api.Embeddings( req, response, true );
+    if( !api.Embeddings( req, response, true ) ) return "Error: Failed to get embedding for the query";
     auto& embedding = response["data"][0]["embedding"];
 
     if( embedding.empty() ) return "Error: Failed to get embedding for the query";

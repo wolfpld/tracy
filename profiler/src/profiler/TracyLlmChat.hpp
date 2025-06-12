@@ -20,7 +20,9 @@ public:
         Assistant,
         AssistantDebug,
         Error,
-        None
+        // virtual roles below
+        Trash,
+        None,
     };
 
     TracyLlmChat();
@@ -29,7 +31,7 @@ public:
     void Begin();
     void End();
 
-    void Turn( TurnRole role, const std::string& content );
+    bool Turn( TurnRole role, const std::string& content );
 
 private:
     void NormalScope();

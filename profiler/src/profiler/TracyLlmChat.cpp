@@ -28,7 +28,8 @@ constexpr std::array roles = {
     RoleData { ICON_FA_TERMINAL, ImVec4( 1.f, 0.5f, 0.5f, 1.f ), ImVec4( 1.f, 0.65f, 0.65f, 1.f ) },
     RoleData { ICON_FA_ROBOT, ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
     RoleData { ICON_FA_CODE, ImVec4( 1.0f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 0.65f, 1.f, 1.f ) },
-    RoleData { ICON_FA_CIRCLE_EXCLAMATION, ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 0.25f, 0.25f, 1.f ) }
+    RoleData { ICON_FA_CIRCLE_EXCLAMATION, ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 0.25f, 0.25f, 1.f ) },
+    RoleData { ICON_FA_TRASH, ImVec4( 1.0f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
 };
 constexpr size_t NumRoles = roles.size();
 
@@ -332,8 +333,9 @@ void TracyLlmChat::End()
     }
 }
 
-void TracyLlmChat::Turn( TurnRole role, const std::string& content )
+bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
 {
+    bool keep = true;
     const auto& roleData = roles[(int)role];
     if( role != m_role )
     {
@@ -347,13 +349,28 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
         m_thinkActive = false;
         m_thinkOpen = false;
 
-        const auto diff = m_maxWidth - m_width[(int)role];
-        const auto offset = diff / 2;
+        bool hover = false;
         ImGui::Spacing();
         ImGui::PushID( m_roleIdx++ );
+        auto diff = m_maxWidth - m_width[(int)role];
+        if( ImGui::IsMouseHoveringRect( ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2( m_maxWidth, ImGui::GetTextLineHeight() ) ) )
+        {
+            diff = m_maxWidth - m_width[(int)TurnRole::Trash];
+            hover = true;
+        }
+        const auto offset = diff / 2;
         ImGui::Dummy( ImVec2( offset, 0 ) );
         ImGui::SameLine( 0, 0 );
-        ImGui::TextColored( roleData.iconColor, "%s", roleData.icon );
+        if( hover )
+        {
+            const auto& trash = roles[(int)TurnRole::Trash];
+            ImGui::TextColored( trash.iconColor, "%s", trash.icon );
+            if( IsMouseClicked( ImGuiMouseButton_Left ) ) keep = false;
+        }
+        else
+        {
+            ImGui::TextColored( roleData.iconColor, "%s", roleData.icon );
+        }
         ImGui::SameLine( 0, 0 );
         ImGui::Dummy( ImVec2( diff - offset, 0 ) );
         ImGui::SameLine();
@@ -446,6 +463,7 @@ void TracyLlmChat::Turn( TurnRole role, const std::string& content )
         }
     }
     ImGui::PopStyleColor();
+    return keep;
 }
 
 void TracyLlmChat::NormalScope()

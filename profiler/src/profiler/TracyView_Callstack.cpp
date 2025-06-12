@@ -1,7 +1,9 @@
 #include <inttypes.h>
+#include <nlohmann/json.hpp>
 #include <sstream>
 
 #include "../public/common/TracyStackFrames.hpp"
+#include "TracyConfig.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracyUtility.hpp"
@@ -96,6 +98,79 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
             s << buf;
         }
         ImGui::SetClipboardText( s.str().c_str() );
+    }
+    if( s_config.llm )
+    {
+        ImGui::SameLine();
+        if( ImGui::SmallButton( ICON_FA_ROBOT ) )
+        {
+            nlohmann::json json = {
+                { "type", "callstack" },
+                { "frames", nlohmann::json::array() }
+            };
+            auto& frames = json["frames"];
+
+            int fidx = 0;
+            for( auto& entry : cs )
+            {
+                auto frameData = m_worker.GetCallstackFrame( entry );
+                if( !frameData )
+                {
+                    frames.push_back( { "pointer", m_worker.GetCanonicalPointer( entry ) } );
+                }
+                else
+                {
+                    const auto fsz = frameData->size;
+                    for( uint8_t f=0; f<fsz; f++ )
+                    {
+                        const auto& frame = frameData->data[f];
+                        auto txt = m_worker.GetString( frame.name );
+
+                        if( fidx == 0 && f != fsz-1 )
+                        {
+                            auto test = tracy::s_tracyStackFrames;
+                            bool match = false;
+                            do
+                            {
+                                if( strcmp( txt, *test ) == 0 )
+                                {
+                                    match = true;
+                                    break;
+                                }
+                            }
+                            while( *++test );
+                            if( match ) continue;
+                        }
+
+                        frames.push_back( {
+                            { "function", txt },
+                            { "source", m_worker.GetString( frame.file ) },
+                        } );
+                        auto& frameJson = frames.back();
+
+                        if( f == fsz-1 )
+                        {
+                            frameJson["frame"] = fidx++;
+                        }
+                        else
+                        {
+                            frameJson["inline"] = true;
+                        }
+                        if( frame.line != 0 )
+                        {
+                            frameJson["line"] = frame.line;
+                        }
+                        if( frameData->imageName.Active() )
+                        {
+                            frameJson["executable"] = m_worker.GetString( frameData->imageName );
+                        }
+                    }
+                }
+            }
+
+            m_llm.AddAttachment( json.dump( 2 ), "user" );
+            m_llm.m_show = true;
+        }
     }
     ImGui::SameLine();
     ImGui::Spacing();

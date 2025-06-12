@@ -13,6 +13,8 @@
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
 #include "TracyStorage.hpp"
+#include "TracyUtility.hpp"
+#include "TracyWorker.hpp"
 #include "tracy_xxhash.h"
 
 #include "data/Manual.hpp"
@@ -79,8 +81,9 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     return doc;
 }
 
-TracyLlmTools::TracyLlmTools()
+TracyLlmTools::TracyLlmTools( Worker& worker )
     : m_manual( Unembed( Manual ) )
+    , m_worker( worker )
 {
     std::string_view manual( m_manual->data(), m_manual->size() );
     const auto sz = (int)m_manual->size();
@@ -203,6 +206,7 @@ TracyLlmTools::~TracyLlmTools()
 }
 
 #define Param(name) json[name].get_ref<const std::string&>()
+#define ParamU32(name) json[name].get<uint32_t>()
 
 TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {
@@ -234,6 +238,10 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const nlohmann::json& j
         else if( name == "user_manual" )
         {
             return { .reply = SearchManual( Param( "query" ), api, hasEmbeddingsModel ) };
+        }
+        else if( name == "source_file" )
+        {
+            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ) ) };
         }
         return { .reply = "Unknown tool call: " + name };
     }
@@ -867,6 +875,56 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
         r["title"] = m_manualChunks[chunk.first].title;
         r["parents"] = m_manualChunks[chunk.first].parents;
         json.emplace_back( std::move( r ) );
+    }
+
+    return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+}
+
+std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line ) const
+{
+    if( line == 0 ) return "Error: Source file line number must be greater than 0.";
+
+    const auto data = m_worker.GetSourceFileFromCache( file.c_str() );
+    if( data.data == nullptr ) return "Error: Source file not available.";
+
+    auto lines = SplitLines( data.data, data.len );
+    if( line > lines.size() ) return "Error: Source file line " + std::to_string( line ) + " is out of range. The file has only " + std::to_string( lines.size() ) + " lines.";
+
+    line--;
+
+    const auto maxSize = CalcMaxSize();
+    int size = lines[line].size() + 1;
+    uint32_t minLine = line;
+    uint32_t maxLine = line+1;
+
+    while( minLine > 0 || maxLine < lines.size() )
+    {
+        if( minLine > 0 )
+        {
+            size += lines[minLine].size() + 1;
+            if( size >= maxSize ) break;
+            minLine--;
+        }
+        if( maxLine < lines.size() )
+        {
+            size += lines[maxLine].size() + 1;
+            if( size >= maxSize ) break;
+            maxLine++;
+        }
+    }
+
+    nlohmann::json json = {
+        { "file", file },
+        { "contents", nlohmann::json::array() }
+    };
+
+    for( uint32_t i = minLine; i < maxLine; i++ )
+    {
+        nlohmann::json lineJson = {
+            { "line", i + 1 },
+            { "text", lines[i] }
+        };
+        json["contents"].emplace_back( std::move( lineJson ) );
     }
 
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );

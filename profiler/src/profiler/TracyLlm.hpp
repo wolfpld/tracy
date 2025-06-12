@@ -19,6 +19,7 @@ namespace tracy
 class TracyLlmApi;
 class TracyLlmChat;
 class TracyLlmTools;
+class Worker;
 
 class TracyLlm
 {
@@ -35,7 +36,7 @@ class TracyLlm
     };
 
 public:
-    TracyLlm();
+    TracyLlm( Worker& worker );
     ~TracyLlm();
 
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock ); return m_busy; }

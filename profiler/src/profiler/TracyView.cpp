@@ -61,6 +61,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
     , m_td( 2, "ViewMt" )
 #else
     , m_td( std::thread::hardware_concurrency(), "ViewMt" )
+    , m_llm( m_worker )
 #endif
 {
     InitTextEditor();
@@ -89,6 +90,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     , m_td( 2, "ViewMt" )
 #else
     , m_td( std::thread::hardware_concurrency(), "ViewMt" )
+    , m_llm( m_worker )
 #endif
 {
     m_notificationTime = 4;

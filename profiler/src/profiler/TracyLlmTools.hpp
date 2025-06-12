@@ -17,6 +17,7 @@ namespace tracy
 {
 
 class TracyLlmApi;
+class Worker;
 
 class TracyLlmTools
 {
@@ -43,7 +44,7 @@ public:
         std::string parents;
     };
 
-    TracyLlmTools();
+    TracyLlmTools( Worker& worker );
     ~TracyLlmTools();
 
     ToolReply HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
@@ -67,6 +68,7 @@ private:
     std::string SearchWeb( std::string query );
     std::string GetWebpage( const std::string& url );
     std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
+    std::string SourceFile( const std::string& file, uint32_t line ) const;
 
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 
@@ -83,6 +85,8 @@ private:
     std::shared_ptr<EmbedData> m_manual;
     std::vector<ManualChunk> m_manualChunks;
     std::vector<std::pair<std::string, uint32_t>> m_chunkData;
+
+    Worker& m_worker;
 };
 
 }

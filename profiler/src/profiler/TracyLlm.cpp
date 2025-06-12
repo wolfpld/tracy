@@ -503,7 +503,9 @@ void TracyLlm::Draw()
         ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
         bool send = ImGui::InputTextWithHint( "##chat_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
+        if( *m_input == 0 ) ImGui::BeginDisabled();
         send |= ImGui::Button( buttonText );
+        if( *m_input == 0 ) ImGui::EndDisabled();
         if( send )
         {
             auto ptr = m_input;

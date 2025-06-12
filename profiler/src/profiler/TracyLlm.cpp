@@ -456,6 +456,7 @@ void TracyLlm::Draw()
             {
                 if( content.starts_with( "<tool_output>\n" ) ) role = TracyLlmChat::TurnRole::Assistant;
                 else if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::UserDebug;
+                else if( content.starts_with( "<attachment>\n" ) ) role = TracyLlmChat::TurnRole::Attachment;
             }
             else if( role == TracyLlmChat::TurnRole::Assistant )
             {
@@ -654,6 +655,11 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
     msg["content"] = std::move( str );
 
     m_chat.emplace_back( std::move( msg ) );
+}
+
+void TracyLlm::AddAttachment( std::string&& str, const char* role )
+{
+    AddMessage( "<attachment>\n" + std::move( str ), role );
 }
 
 void TracyLlm::ManageContext()

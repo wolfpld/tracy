@@ -26,6 +26,7 @@ struct RoleData
 constexpr std::array roles = {
     RoleData { ICON_FA_USER, ImVec4( 0.75f, 1.f, 0.25f, 1.f ), ImVec4( 0.64f, 0.76f, 0.41f, 1.f ) },
     RoleData { ICON_FA_TERMINAL, ImVec4( 1.f, 0.5f, 0.5f, 1.f ), ImVec4( 1.f, 0.65f, 0.65f, 1.f ) },
+    RoleData { ICON_FA_FILE, ImVec4( 0.5f, 0.75f, 1.f, 1.f ), ImVec4( 0.65f, 0.75f, 1.f, 1.f ) },
     RoleData { ICON_FA_ROBOT, ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
     RoleData { ICON_FA_CODE, ImVec4( 1.0f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 0.65f, 1.f, 1.f ) },
     RoleData { ICON_FA_CIRCLE_EXCLAMATION, ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 0.25f, 0.25f, 1.f ) },
@@ -383,6 +384,19 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
         ImGui::PushFont( g_fonts.mono );
         ImGui::TextWrapped( "%s", content.c_str() );
         ImGui::PopFont();
+    }
+    else if( role == TurnRole::Attachment )
+    {
+        NormalScope();
+        ImGui::PushID( m_thinkIdx++ );
+        if( ImGui::TreeNode( "Attachment" ) )
+        {
+            ImGui::PushFont( g_fonts.mono );
+            ImGui::TextWrapped( "%s", content.c_str() + sizeof( "<attachment>\n" ) - 1 );
+            ImGui::PopFont();
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
     }
     else if( role != TurnRole::Assistant )
     {

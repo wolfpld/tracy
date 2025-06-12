@@ -41,6 +41,7 @@ public:
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock ); return m_busy; }
 
     void Draw();
+    void AddAttachment( std::string&& str, const char* role );
 
     bool m_show = false;
 

@@ -17,6 +17,7 @@ public:
     {
         User,
         UserDebug,
+        Attachment,
         Assistant,
         AssistantDebug,
         Error,

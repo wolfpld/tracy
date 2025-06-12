@@ -437,8 +437,9 @@ void TracyLlm::Draw()
         ImGui::PushID( m_chatId );
         m_chatUi->Begin();
 
-        for( auto& line : m_chat )
+        for( auto it = m_chat.begin(); it != m_chat.end(); ++it )
         {
+            const auto& line = *it;
             const auto& roleStr = line["role"].get_ref<const std::string&>();
             if( roleStr == "system" ) continue;
             const auto& contentNode = line["content"];
@@ -461,7 +462,18 @@ void TracyLlm::Draw()
                 if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::AssistantDebug;
             }
 
-            m_chatUi->Turn( role, content );
+            if( !m_chatUi->Turn( role, content ) )
+            {
+                if( ( m_responding || *m_input == 0 ) && ( role == TracyLlmChat::TurnRole::User || role == TracyLlmChat::TurnRole::UserDebug ) )
+                {
+                    const auto sz = std::min( InputBufferSize - 1, content.size() );
+                    memcpy( m_input, content.data(), sz );
+                    m_input[sz] = 0;
+                }
+                m_chat.erase( it, m_chat.end() );
+                if( m_responding ) m_stop = true;
+                break;
+            }
         }
 
         m_chatUi->End();

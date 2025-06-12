@@ -125,6 +125,18 @@ void TracyLlm::Draw()
         return;
     }
 
+    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.f, 1.0f ) );
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextWrapped( ICON_FA_TRIANGLE_EXCLAMATION );
+    ImGui::PopStyleColor();
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted( "Always verify the chat responses, as they may contain incorrect or misleading informations." );
+        ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+
     std::lock_guard lock( m_lock );
 
     const auto hasChat = m_chat.size() <= 1 && *m_input == 0;

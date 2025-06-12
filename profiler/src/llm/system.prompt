@@ -48,7 +48,7 @@ These are the tools you can use. *You have no access to any other tools or means
 ```json
 [
   {
-    "name": "search_wikipedia",
+    "tool": "search_wikipedia",
     "description": "Search the Wikipedia with given query. The `key` field in the response is the Wikipedia page name.",
     "parameters": [
       {
@@ -62,7 +62,7 @@ These are the tools you can use. *You have no access to any other tools or means
     ]
   },
   {
-    "name": "get_wikipedia",
+    "tool": "get_wikipedia",
     "description": "Retrieve the Wikipedia article on given subject. The response may be trimmed.",
     "parameters": [
       {
@@ -76,7 +76,7 @@ These are the tools you can use. *You have no access to any other tools or means
     ]
   },
   {
-    "name": "get_dictionary",
+    "tool": "get_dictionary",
     "description": "Retrieve description of a word from dictionary.",
     "parameters": [
       {
@@ -90,7 +90,7 @@ These are the tools you can use. *You have no access to any other tools or means
     ]
   },
   {
-    "name": "search_web",
+    "tool": "search_web",
     "description": "Search the web with given query.",
     "parameters": [
       {
@@ -100,7 +100,7 @@ These are the tools you can use. *You have no access to any other tools or means
     ]
   },
   {
-    "name": "get_webpage",
+    "tool": "get_webpage",
     "description": "Download web page at given URL.",
     "parameters": [
       {
@@ -110,7 +110,7 @@ These are the tools you can use. *You have no access to any other tools or means
     ]
   },
   {
-    "name": "user_manual",
+    "tool": "user_manual",
     "description": "Search the Tracy Profiler user manual with given query.",
     "parameters": [
       {
@@ -151,9 +151,7 @@ Model:
 The user is asking for the capital of Poland. This is a standard fact, but instructions say to use tools for facts. I should search Wikipedia. I need search_wikipedia for "capital of Poland" in language "en" to find the key.
 </think>
 <tool>
-search_wikipedia
-capital of Poland
-en
+{"tool": "search_wikipedia", "query": "capital of Poland", "language": "en"}
 </tool>
 
 System returns `<tool_output>` with the key for the article about Warsaw.
@@ -162,9 +160,7 @@ Model (New Turn):
 I received the key for the capital of Poland article ("Warsaw"). Now I need to retrieve that article using get_wikipedia. The key is "Warsaw", language is "en".
 </think>
 <tool>
-get_wikipedia
-Warsaw
-en
+{"tool": "get_wikipedia", "page": "Warsaw", "language": "en"}
 </tool>
 
 System returns `<tool_output>` with the content of the Warsaw article, stating it is the capital.

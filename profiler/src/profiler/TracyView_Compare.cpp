@@ -144,7 +144,7 @@ static std::vector<std::string> SplitLines( const char* data, size_t sz )
     {
         auto end = txt;
         while( *end != '\n' && *end != '\r' && end - data < sz ) end++;
-        ret.emplace_back( std::string { txt, end } );
+        ret.emplace_back( txt, end );
         if( end - data == sz ) break;
         if( *end == '\n' )
         {

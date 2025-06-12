@@ -35,6 +35,14 @@ public:
         float progress = 0;
     };
 
+    struct ManualChunk
+    {
+        std::string text;
+        std::string section;
+        std::string title;
+        std::string parents;
+    };
+
     TracyLlmTools();
     ~TracyLlmTools();
 
@@ -73,7 +81,7 @@ private:
     std::unique_ptr<TracyLlmEmbeddings> m_manualEmbeddings;
 
     std::shared_ptr<EmbedData> m_manual;
-    std::vector<std::string> m_manualChunks;
+    std::vector<ManualChunk> m_manualChunks;
     std::vector<std::pair<std::string, uint32_t>> m_chunkData;
 };
 

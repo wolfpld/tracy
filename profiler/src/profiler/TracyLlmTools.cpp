@@ -113,18 +113,29 @@ TracyLlmTools::TracyLlmTools()
                 {
                     if( manualChunkPos != pos )
                     {
-                        std::string manualChunk;
+                        std::string text, section, title, parents;
+                        text = std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
                         if( levels[0] != 0 )
                         {
-                            manualChunk += "Section " + std::to_string( levels[0] );
-                            for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
-                            manualChunk += "\n";
+                            section = std::to_string( levels[0] );
+                            for( size_t i=1; i<levels.size(); i++ ) section += "." + std::to_string( levels[i] );
                         }
-                        manualChunk += "Navigation: " + chapterNames[0];
-                        for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
-                        manualChunk += "\n\n";
-                        manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-                        m_manualChunks.emplace_back( std::move( manualChunk ) );
+                        if( levels.size() == 1 )
+                        {
+                            title = chapterNames[0];
+                        }
+                        else
+                        {
+                            title = chapterNames[levels.size()-1];
+                            parents = chapterNames[0];
+                            for( size_t i=1; i<levels.size() - 1; i++ ) parents += " > " + chapterNames[i];
+                        }
+                        m_manualChunks.emplace_back( ManualChunk {
+                            .text = std::move( text ),
+                            .section = std::move( section ),
+                            .title = std::move( title ),
+                            .parents = std::move( parents )
+                        } );
                         manualChunkPos = pos;
                     }
 
@@ -831,7 +842,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     int idx;
     for( idx = 0; idx < chunks.size(); idx++ )
     {
-        totalSize += m_manualChunks[chunks[idx].first].size();
+        totalSize += m_manualChunks[chunks[idx].first].text.size();
         if( totalSize >= maxSize ) break;
     }
     if( idx < chunks.size() ) chunks.resize( idx );
@@ -841,7 +852,10 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     {
         nlohmann::json r;
         r["distance"] = chunk.second;
-        r["text"] = m_manualChunks[chunk.first];
+        r["content"] = m_manualChunks[chunk.first].text;
+        r["section"] = m_manualChunks[chunk.first].section;
+        r["title"] = m_manualChunks[chunk.first].title;
+        r["parents"] = m_manualChunks[chunk.first].parents;
         json.emplace_back( std::move( r ) );
     }
 

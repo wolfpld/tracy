@@ -113,30 +113,40 @@ TracyLlmTools::TracyLlmTools()
                 {
                     if( manualChunkPos != pos )
                     {
-                        std::string text, section, title, parents;
-                        text = std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-                        if( levels[0] != 0 )
-                        {
-                            section = std::to_string( levels[0] );
-                            for( size_t i=1; i<levels.size(); i++ ) section += "." + std::to_string( levels[i] );
-                        }
-                        if( levels.size() == 1 )
-                        {
-                            title = chapterNames[0];
-                        }
-                        else
-                        {
-                            title = chapterNames[levels.size()-1];
-                            parents = chapterNames[0];
-                            for( size_t i=1; i<levels.size() - 1; i++ ) parents += " > " + chapterNames[i];
-                        }
-                        m_manualChunks.emplace_back( ManualChunk {
-                            .text = std::move( text ),
-                            .section = std::move( section ),
-                            .title = std::move( title ),
-                            .parents = std::move( parents )
-                        } );
+                        auto start = manualChunkPos;
+                        auto end = pos;
                         manualChunkPos = pos;
+
+                        while( manual[start] != '\n' ) start++;
+                        while( manual[start] == '\n' ) start++;
+                        while( manual[end-1] == '\n' ) end--;
+
+                        if( end > start )
+                        {
+                            std::string text, section, title, parents;
+                            text = std::string( manual.data() + start, end - start );
+                            if( levels[0] != 0 )
+                            {
+                                section = std::to_string( levels[0] );
+                                for( size_t i=1; i<levels.size(); i++ ) section += "." + std::to_string( levels[i] );
+                            }
+                            if( levels.size() == 1 )
+                            {
+                                title = chapterNames[0];
+                            }
+                            else
+                            {
+                                title = chapterNames[levels.size()-1];
+                                parents = chapterNames[0];
+                                for( size_t i=1; i<levels.size() - 1; i++ ) parents += " > " + chapterNames[i];
+                            }
+                            m_manualChunks.emplace_back( ManualChunk {
+                                .text = std::move( text ),
+                                .section = std::move( section ),
+                                .title = std::move( title ),
+                                .parents = std::move( parents )
+                            } );
+                        }
                     }
 
                     int level = 1;

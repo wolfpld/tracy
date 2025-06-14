@@ -193,7 +193,7 @@ endif()
 find_package(Git)
 if(Git_FOUND)
     add_custom_target(git-ref
-        COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} log -1 "--format=#pragma once %nnamespace tracy { static inline const char* GitRef = %x22%h%x22; }" ${GIT_REV} > GitRef.hpp.tmp
+        COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} log -1 "--format=#pragma once %nnamespace tracy { static inline const char* GitRef = %x22%h%x22; }" ${GIT_REV} > GitRef.hpp.tmp || echo "#pragma once\nnamespace tracy { static inline const char* GitRef = \"unknown\"; }" > GitRef.hpp.tmp
         COMMAND ${CMAKE_COMMAND} -E copy_if_different GitRef.hpp.tmp GitRef.hpp
         BYPRODUCTS GitRef.hpp GitRef.hpp.tmp
         VERBATIM

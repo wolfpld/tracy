@@ -16,7 +16,7 @@
 #  define NO_CHARCONV
 #endif
 
-#ifdef __GNUC__
+#if defined __GNUC__ 
 #  define NO_CHARCONV
 #endif
 

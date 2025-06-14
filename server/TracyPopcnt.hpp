@@ -8,7 +8,7 @@
 #  include <intrin.h>
 #  define TracyCountBits __popcnt64
 #  define TracyLzcnt __lzcnt64
-#elif defined __GNUC__ || defined __clang__
+#elif defined __GNUC__
 static inline uint64_t TracyCountBits( uint64_t i )
 {
     return uint64_t( __builtin_popcountll( i ) );

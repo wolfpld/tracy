@@ -167,6 +167,7 @@ public:
 
     bool m_showRanges = false;
     Range m_statRange;
+    Range m_flameRange;
     Range m_waitStackRange;
 
 private:
@@ -377,6 +378,7 @@ private:
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
+    bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, const RangeSlim& range, int64_t& time, uint64_t& cnt );
     const char* GetThreadContextData( uint64_t thread, bool& local, bool& untracked, const char*& program );
 
     tracy_force_inline void CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
@@ -926,6 +928,7 @@ private:
     {
         uint64_t count = 0;
         uint64_t lastTime = 0;
+        RangeSlim range = {false, 0, 0};
 
         void Reset()
         {

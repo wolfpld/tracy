@@ -1173,6 +1173,12 @@ bool View::DrawImpl()
             m_statRange.min = s;
             m_statRange.max = e;
         }
+        if( ImGui::Selectable( ICON_FA_FIRE_FLAME_CURVED " Limit flame time range" ) )
+        {
+            m_flameRange.active = true;
+            m_flameRange.min = s;
+            m_flameRange.max = e;
+        }
         if( ImGui::Selectable( ICON_FA_HOURGLASS_HALF " Limit wait stacks range" ) )
         {
             m_waitStackRange.active = true;

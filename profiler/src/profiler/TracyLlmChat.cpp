@@ -87,7 +87,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
 {
     bool keep = true;
     const auto& roleData = roles[(int)role];
-    if( role != m_role )
+    if( role != m_role || role == TurnRole::Attachment || role == TurnRole::Error )
     {
         if( m_role != TurnRole::None )
         {
@@ -95,12 +95,15 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
             ImGui::EndGroup();
             ImGui::PopID();
         }
-        m_role = role;
         m_thinkActive = false;
         m_thinkOpen = false;
 
         bool hover = false;
-        ImGui::Spacing();
+        if( m_role != role )
+        {
+            m_role = role;
+            ImGui::Spacing();
+        }
         ImGui::PushID( m_roleIdx++ );
         auto diff = m_maxWidth - m_width[(int)role];
         if( ImGui::IsMouseHoveringRect( ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2( m_maxWidth, ImGui::GetTextLineHeight() ) ) )

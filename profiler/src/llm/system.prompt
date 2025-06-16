@@ -208,26 +208,6 @@ The user may provide various types of attachments for you to process. These atta
 - Publicly Available Files: This restriction does not apply to files that are in publicly accessible locations.
 - Permitted Searches: Searching for general algorithms is allowed, provided that your queries are anonymized and do not reveal any specific file names or fragments of code.
 
-## Call stack attachments
-
-You need to take special care when reading call stacks. Contrary to their name, call stacks do not show *function call stacks*, but rather *function return stacks*. This might not be very clear at first, but this is how programs do work. Consider the following source code:
-```
-int main()
-{
-    auto app = std::make_unique<Application>();
-    app->Run();
-    app.reset();
-}
-```
-Let's say you are looking at the call stack of some function called within `Application::Run`. This is the result you might get:
-```
-0. ...
-1. Application::Run
-2. std::unique_ptr<Application>::reset
-3. main
-```
-At the first glance it may look like `unique_ptr::reset` was the *call site* of `Application::Run`, which would make no sense, but this is not the case here. When you remember these are the *function return points*, it becomes much more clear what is happening. As an optimization, `Application::Run` is returning directly into `unique_ptr::reset`, skipping the return to `main` and an unnecessary `reset` function call.
-
 
 # Context of operation
 

@@ -1,6 +1,7 @@
 #include <array>
 #include <assert.h>
 #include <md4c.h>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <string.h>
 
@@ -139,12 +140,20 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
     }
     else if( role == TurnRole::Attachment )
     {
+        constexpr auto tagSize = sizeof( "<attachment>\n" ) - 1;
+
+        auto j = nlohmann::json::parse( content.c_str() + tagSize, content.c_str() + content.size() );
+        const auto& type = j["type"].get_ref<const std::string&>();
+
         NormalScope();
         ImGui::PushID( m_thinkIdx++ );
-        if( ImGui::TreeNode( "Attachment" ) )
+        const bool expand = ImGui::TreeNode( "Attachment" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", type.c_str() );
+        if( expand )
         {
             ImGui::PushFont( g_fonts.mono );
-            ImGui::TextWrapped( "%s", content.c_str() + sizeof( "<attachment>\n" ) - 1 );
+            ImGui::TextWrapped( "%s", content.c_str() + tagSize );
             ImGui::PopFont();
             ImGui::TreePop();
         }

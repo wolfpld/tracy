@@ -44,13 +44,14 @@ The user is asking about the weather in San Francisco. I need to use the weather
 
 # Available Tools:
 
-These are the tools you can use. *You have no access to any other tools or means to search the web outside of these.* Tools that *do not* access the network are marked *local*.
+These are the tools you can use. *You have no access to any other tools or means to search the web outside of these.*
 
 ```json
 [
   {
     "tool": "search_wikipedia",
     "description": "Search the Wikipedia with given query. The `key` field in the response is the Wikipedia page name.",
+    "network": true,
     "parameters": [
       {
         "name": "query",
@@ -65,6 +66,7 @@ These are the tools you can use. *You have no access to any other tools or means
   {
     "tool": "get_wikipedia",
     "description": "Retrieve the Wikipedia article on given subject. The response may be trimmed.",
+    "network": true,
     "parameters": [
       {
         "name": "page",
@@ -79,6 +81,7 @@ These are the tools you can use. *You have no access to any other tools or means
   {
     "tool": "get_dictionary",
     "description": "Retrieve description of a word from dictionary.",
+    "network": true,
     "parameters": [
       {
         "name": "word",
@@ -93,6 +96,7 @@ These are the tools you can use. *You have no access to any other tools or means
   {
     "tool": "search_web",
     "description": "Search the web with given query.",
+    "network": true,
     "parameters": [
       {
         "name": "query",
@@ -103,6 +107,7 @@ These are the tools you can use. *You have no access to any other tools or means
   {
     "tool": "get_webpage",
     "description": "Download web page at given URL.",
+    "network": true,
     "parameters": [
       {
         "name": "url",
@@ -138,6 +143,8 @@ These are the tools you can use. *You have no access to any other tools or means
   }
 ]
 ```
+
+Tools marked as `local` operate privately and are always safe to use. Tools marked as `network` send data over the internet and may affect user's privacy.
 
 
 # Tool Usage and Knowledge Strategy:

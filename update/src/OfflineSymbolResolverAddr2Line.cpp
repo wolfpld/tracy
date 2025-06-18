@@ -89,7 +89,7 @@ public:
             const size_t startIdx = entryIdx;
             const size_t batchEndIdx = std::min( inputEntryList.size(), startIdx + (size_t)1024 );
 
-            printf( "Resolving symbols [%zu-%zu[\n", startIdx, batchEndIdx );
+            printf( "Resolving symbols [%zu-%zu]\n", startIdx, batchEndIdx );
 
             // generate a single addr2line cmd line for all addresses in one invocation
             std::stringstream ss;

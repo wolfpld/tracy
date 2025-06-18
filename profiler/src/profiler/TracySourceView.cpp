@@ -2382,6 +2382,31 @@ static int PrintHexBytes( const uint8_t* bytes, size_t len, CpuArchitecture arch
     }
 }
 
+std::tuple<size_t, size_t> SourceView::GetJumpRange( const JumpData& jump )
+{
+    size_t minIdx = 0, maxIdx = 0;
+    size_t i;
+    for( i=0; i<m_asm.size(); i++ )
+    {
+        if( m_asm[i].addr == jump.min )
+        {
+            minIdx = i++;
+            break;
+        }
+    }
+    assert( i != m_asm.size() );
+    for( ; i<m_asm.size(); i++ )
+    {
+        if( m_asm[i].addr == jump.max )
+        {
+            maxIdx = i+1;
+            break;
+        }
+    }
+    assert( i != m_asm.size() );
+    return std::make_tuple( minIdx, maxIdx );
+}
+
 uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view )
 {
     const auto scale = GetScale();
@@ -2733,27 +2758,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
 #ifndef TRACY_NO_FILESELECTOR
             if( ImGui::MenuItem( ICON_FA_FILE_IMPORT " Save jump range" ) )
             {
-                size_t minIdx = 0, maxIdx = 0;
-                size_t i;
-                for( i=0; i<m_asm.size(); i++ )
-                {
-                    if( m_asm[i].addr == it->second.min )
-                    {
-                        minIdx = i++;
-                        break;
-                    }
-                }
-                assert( i != m_asm.size() );
-                for( ; i<m_asm.size(); i++ )
-                {
-                    if( m_asm[i].addr == it->second.max )
-                    {
-                        maxIdx = i+1;
-                        break;
-                    }
-                }
-                assert( i != m_asm.size() );
-
+                auto [minIdx, maxIdx] = GetJumpRange( it->second );
                 Save( worker, minIdx, maxIdx );
                 ImGui::CloseCurrentPopup();
             }

@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "tracy_robin_hood.h"
@@ -213,6 +214,7 @@ private:
     const std::vector<uint64_t>* GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line, const Worker& worker );
 
     tracy_force_inline float CalcJumpSeparation( float scale );
+    std::tuple<size_t, size_t> GetJumpRange( const JumpData& jump );
 
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );

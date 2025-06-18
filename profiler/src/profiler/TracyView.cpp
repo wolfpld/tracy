@@ -1466,4 +1466,10 @@ bool View::WasActive() const
         !m_worker.IsBackgroundDone();
 }
 
+void View::AddLlmAttachment( const nlohmann::json& json )
+{
+    m_llm.AddAttachment( json.dump( 2 ), "user" );
+    m_llm.m_show = true;
+}
+
 }

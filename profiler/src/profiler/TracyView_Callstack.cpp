@@ -168,8 +168,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 }
             }
 
-            m_llm.AddAttachment( json.dump( 2 ), "user" );
-            m_llm.m_show = true;
+            AddLlmAttachment( json );
         }
     }
     ImGui::SameLine();

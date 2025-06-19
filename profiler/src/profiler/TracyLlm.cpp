@@ -754,6 +754,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );
 
         lock.lock();
+        if( !res ) m_responding = false;
     }
     catch( std::exception& e )
     {

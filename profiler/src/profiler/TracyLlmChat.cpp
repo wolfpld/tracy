@@ -215,25 +215,25 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
             if( minPos == posThink )
             {
                 pos += sizeof( "<think>" ) - 1;
-                while( content[pos] == '\n' ) pos++;
+                while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
                 auto endThink = content.find( "</think>", pos );
                 ThinkScope();
                 if( m_thinkOpen ) PrintThink( content.c_str() + pos, std::min( end, endThink ) - pos );
                 if( endThink == std::string::npos ) break;
                 pos = endThink + sizeof( "</think>" ) - 1;
-                while( content[pos] == '\n' ) pos++;
+                while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
             }
             else
             {
                 assert( minPos == posTool );
                 pos += sizeof( "<tool>" ) - 1;
-                while( content[pos] == '\n' ) pos++;
+                while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
                 auto endTool = content.find( "</tool>", pos );
                 ThinkScope();
                 if( m_thinkOpen ) PrintToolCall( content.c_str() + pos, std::min( end, endTool ) - pos );
                 if( endTool == std::string::npos ) break;
                 pos = endTool + sizeof( "</tool>" ) - 1;
-                while( content[pos] == '\n' ) pos++;
+                while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
             }
         }
     }

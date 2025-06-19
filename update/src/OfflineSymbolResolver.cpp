@@ -15,7 +15,7 @@ bool ApplyPathSubstitutions( std::string& path, const PathSubstitutionList& path
 {
     for( const auto& substitution : pathSubstitutionlist )
     {
-        if( std::regex_match(path, substitution.first) )
+        if( std::regex_search(path, substitution.first) )
         {
             path = std::regex_replace( path, substitution.first, substitution.second );
             return true;

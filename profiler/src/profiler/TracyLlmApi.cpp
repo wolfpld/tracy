@@ -122,15 +122,26 @@ static size_t StreamFn( void* _data, size_t size, size_t num, void* ptr )
     {
         if( strncmp( v.str.c_str(), "data: [DONE]", 12 ) == 0 ) return sz;
 
-        auto pos = v.str.find( "data: " );
-        if( pos == std::string::npos ) break;
-        pos += 6;
-        auto end = v.str.find( "\n\n", pos );
-        if( end == std::string::npos ) break;
+        auto err = v.str.find( "error: " );
+        if( err != std::string::npos )
+        {
+            err += 7;
+            auto end = v.str.find( "\n\n", err );
+            if( end == std::string::npos ) break;
+            throw std::runtime_error( v.str.substr( err, end - err ) );
+        }
+        else
+        {
+            auto pos = v.str.find( "data: " );
+            if( pos == std::string::npos ) break;
+            pos += 6;
+            auto end = v.str.find( "\n\n", pos );
+            if( end == std::string::npos ) break;
 
-        nlohmann::json json = nlohmann::json::parse( v.str.c_str() + pos, v.str.c_str() + end );
-        if( !v.callback( json ) ) return CURL_WRITEFUNC_ERROR;
-        v.str.erase( 0, end + 2 );
+            nlohmann::json json = nlohmann::json::parse( v.str.c_str() + pos, v.str.c_str() + end );
+            if( !v.callback( json ) ) return CURL_WRITEFUNC_ERROR;
+            v.str.erase( 0, end + 2 );
+        }
     }
     return sz;
 }

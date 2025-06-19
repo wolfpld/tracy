@@ -10,6 +10,9 @@
 #  include <inttypes.h>
 #  include <intrin.h>
 #  include "../common/TracyUwp.hpp"
+#  ifndef _MSC_VER
+#    include <excpt.h>
+#  endif
 #else
 #  include <sys/time.h>
 #  include <sys/param.h>
@@ -909,6 +912,13 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 }
 #endif
 
+#if defined _WIN32 && !defined _MSC_VER
+LONG WINAPI CrashFilterExecute( PEXCEPTION_POINTERS pExp )
+{
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
 static Profiler* s_instance = nullptr;
 static Thread* s_thread;
 #ifndef TRACY_NO_FRAME_IMAGE
@@ -1511,7 +1521,7 @@ void Profiler::InstallCrashHandler()
 #if defined _WIN32 && !defined TRACY_UWP && !defined TRACY_NO_CRASH_HANDLER
     // We cannot use Vectored Exception handling because it catches application-wide frame-based SEH blocks. We only
     // want to catch unhandled exceptions.
-    m_prevHandler = SetUnhandledExceptionFilter( CrashFilter );
+    m_prevHandler = reinterpret_cast<void*>( SetUnhandledExceptionFilter( CrashFilter ) );
 #endif
 
 #ifndef TRACY_NO_CRASH_HANDLER
@@ -3122,6 +3132,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
 #ifdef _WIN32
+#  ifdef _MSC_VER
     __try
     {
         memcpy( buf, data, size );
@@ -3130,6 +3141,9 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     {
         success = false;
     }
+#  else
+    memcpy( buf, data, size );
+#  endif
 #else
     // Send through the pipe to ensure safe reads
     for( size_t offset = 0; offset != size; /*in loop*/ )

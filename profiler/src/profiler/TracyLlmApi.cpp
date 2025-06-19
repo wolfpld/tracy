@@ -165,7 +165,20 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
     curl_easy_setopt( m_curl, CURLOPT_WRITEDATA, &data.str );
     curl_easy_setopt( m_curl, CURLOPT_WRITEFUNCTION, StreamFn );
 
-    auto res = curl_easy_perform( m_curl );
+    CURLcode res;
+    try
+    {
+        res = curl_easy_perform( m_curl );
+    }
+    catch( const std::exception& e )
+    {
+        curl_easy_cleanup( m_curl );
+        curl_slist_free_all( hdr );
+        m_curl = curl_easy_init();
+        SetupCurl( m_curl );
+        throw;
+    }
+
     curl_slist_free_all( hdr );
     if( res != CURLE_OK && res != CURLE_WRITE_ERROR ) return false;
 

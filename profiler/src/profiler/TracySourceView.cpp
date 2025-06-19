@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <inttypes.h>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <stdio.h>
 
@@ -8,6 +9,7 @@
 #include "imgui.h"
 #include "TracyCharUtil.hpp"
 #include "TracyColor.hpp"
+#include "TracyConfig.hpp"
 #include "TracyFileselector.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
@@ -2755,6 +2757,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             auto it = m_jumpTable.find( m_jumpPopupAddr );
             assert( it != m_jumpTable.end() );
 
+            bool needSeparator = false;
 #ifndef TRACY_NO_FILESELECTOR
             if( ImGui::MenuItem( ICON_FA_FILE_IMPORT " Save jump range" ) )
             {
@@ -2762,8 +2765,90 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 Save( worker, minIdx, maxIdx );
                 ImGui::CloseCurrentPopup();
             }
-            ImGui::Separator();
+            needSeparator = true;
 #endif
+            if( s_config.llm )
+            {
+                needSeparator = true;
+                if( ImGui::MenuItem( ICON_FA_ROBOT " Attach jump range in chat" ) )
+                {
+                    auto sym = worker.GetSymbolData( m_symAddr );
+                    assert( sym );
+                    const char* symName;
+                    if( sym->isInline )
+                    {
+                        auto parent = worker.GetSymbolData( m_baseAddr );
+                        if( parent )
+                        {
+                            symName = worker.GetString( parent->name );
+                        }
+                        else
+                        {
+                            char tmp[32];
+                            sprintf( tmp, "0x%" PRIx64, m_baseAddr );
+                            symName = tmp;
+                        }
+                    }
+                    else
+                    {
+                        symName = worker.GetString( sym->name );
+                    }
+
+                    nlohmann::json json = {
+                        { "type", "assembly" },
+                        { "symbol", symName },
+                        { "code", nlohmann::json::array() }
+                    };
+                    auto& code = json["code"];
+
+                    auto [start, stop] = GetJumpRange( it->second );
+                    const auto end = m_asm.size() < stop ? m_asm.size() : stop;
+                    for( size_t i=start; i<end; i++ )
+                    {
+                        const auto& v = m_asm[i];
+                        nlohmann::json line;
+
+                        auto it = m_locMap.find( v.addr );
+                        if( it != m_locMap.end() ) line["label"] = ".L" + std::to_string( it->second );
+
+                        bool hasJump = false;
+                        if( v.jumpAddr != 0 )
+                        {
+                            auto lit = m_locMap.find( v.jumpAddr );
+                            if( lit != m_locMap.end() )
+                            {
+                                line["asm"] = v.mnemonic + " .L" + std::to_string( lit->second );
+                                hasJump = true;
+                            }
+                        }
+                        if( !hasJump )
+                        {
+                            if( v.operands.empty() )
+                            {
+                                line["asm"] = v.mnemonic;
+                            }
+                            else
+                            {
+                                line["asm"] = v.mnemonic + " " + v.operands;
+                            }
+                        }
+                        uint32_t srcline;
+                        const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
+                        if( srcline != 0 )
+                        {
+                            line["source"] = {
+                                { "file", worker.GetString( srcidx ) },
+                                { "line", srcline }
+                            };
+                        }
+
+                        code.emplace_back( std::move( line ) );
+                    }
+
+                    view.AddLlmAttachment( json );
+                }
+            }
+            if( needSeparator ) ImGui::Separator();
             if( ImGui::BeginMenu( "Sources" ) )
             {
                 for( auto& src : it->second.source )

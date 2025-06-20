@@ -31,6 +31,7 @@ constexpr std::array roles = {
     RoleData { ICON_FA_CODE, ImVec4( 1.0f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 0.65f, 1.f, 1.f ) },
     RoleData { ICON_FA_CIRCLE_EXCLAMATION, ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 0.25f, 0.25f, 1.f ) },
     RoleData { ICON_FA_TRASH, ImVec4( 1.0f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
+    RoleData { ICON_FA_ARROWS_ROTATE, ImVec4( 1.0f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
 };
 constexpr size_t NumRoles = roles.size();
 
@@ -105,11 +106,12 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
             m_role = role;
             ImGui::Spacing();
         }
+        int trashIdx = ( role == TurnRole::Assistant || role == TurnRole::AssistantDebug ) ? (int)TurnRole::Regenerate : (int)TurnRole::Trash;
         ImGui::PushID( m_roleIdx++ );
         auto diff = m_maxWidth - m_width[(int)role];
         if( ImGui::IsMouseHoveringRect( ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2( m_maxWidth, ImGui::GetTextLineHeight() ) ) )
         {
-            diff = m_maxWidth - m_width[(int)TurnRole::Trash];
+            diff = m_maxWidth - m_width[trashIdx];
             hover = true;
         }
         const auto offset = diff / 2;
@@ -117,7 +119,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
         ImGui::SameLine( 0, 0 );
         if( hover )
         {
-            const auto& trash = roles[(int)TurnRole::Trash];
+            const auto& trash = roles[trashIdx];
             ImGui::TextColored( trash.iconColor, "%s", trash.icon );
             if( IsMouseClicked( ImGuiMouseButton_Left ) ) keep = false;
         }

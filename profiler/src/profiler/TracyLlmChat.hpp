@@ -23,6 +23,7 @@ public:
         Error,
         // virtual roles below
         Trash,
+        Regenerate,
         None,
     };
 

@@ -465,12 +465,21 @@ void TracyLlm::Draw()
 
             if( !m_chatUi->Turn( role, content ) )
             {
-                if( ( m_responding || *m_input == 0 ) && ( role == TracyLlmChat::TurnRole::User || role == TracyLlmChat::TurnRole::UserDebug ) )
+                if( role == TracyLlmChat::TurnRole::Assistant || role == TracyLlmChat::TurnRole::AssistantDebug )
+                {
+                    m_jobs.emplace_back( WorkItem {
+                        .task = Task::SendMessage,
+                        .callback = nullptr
+                    } );
+                    m_cv.notify_all();
+                }
+                else if( role == TracyLlmChat::TurnRole::User || role == TracyLlmChat::TurnRole::UserDebug )
                 {
                     const auto sz = std::min( InputBufferSize - 1, content.size() );
                     memcpy( m_input, content.data(), sz );
                     m_input[sz] = 0;
                 }
+
                 m_chat.erase( it, m_chat.end() );
                 if( m_responding ) m_stop = true;
                 break;
@@ -735,6 +744,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     bool res;
     try
     {
+        m_responding = true;
         auto chat = m_chat;
         lock.unlock();
 

@@ -1,6 +1,7 @@
 #include <rocprofiler-sdk/registration.h>
 #include <rocprofiler-sdk/rocprofiler.h>
 #include "TracyProfiler.hpp"
+#include "TracyThread.hpp"
 #include "tracy/TracyC.h"
 
 #include <iostream>
@@ -42,9 +43,11 @@ struct ToolData
     bool init;
     uint64_t src_loc;
     uint64_t query_id;
+    int64_t previous_cpu_time;
     std::unordered_map<rocprofiler_kernel_id_t, kernel_symbol_data_t> client_kernels;
     std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_start_times;
     std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_end_times;
+    std::unique_ptr<tracy::Thread> cal_thread;
     std::mutex    mut{};
 };
 
@@ -60,14 +63,15 @@ get_client_ctx()
 
 const char * CTX_NAME = "rocprofv3";
 
-uint8_t gpu_context_allocate() {
+uint8_t gpu_context_allocate(ToolData * data) {
 
     timespec ts;
     clock_gettime(CLOCK_BOOTTIME, &ts);
     uint64_t cpu_timestamp = Profiler::GetTime();
     uint64_t gpu_timestamp = ((uint64_t)ts.tv_sec * 1000000000) + ts.tv_nsec;
-    bool is_calibrated = false;
+    bool is_calibrated = true;
     float timestamp_period = 1.0f;
+    data->previous_cpu_time = cpu_timestamp;
 
     // Allocate the process-unique GPU context ID. There's a max of 255 available;
     // if we are recreating devices a lot we may exceed that. Don't do that, or
@@ -218,9 +222,12 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
                 rocprofiler_record_counter_t*                record_data,
                 size_t                                       record_count,
                 rocprofiler_user_data_t  /*user_data*/ ,
-                void* callback_data_args)
+                void* callback_data)
 {
-    if (!TracyIsStarted) return;
+    assert(callback_data != nullptr);
+    ToolData * data = static_cast<ToolData*>(callback_data);
+    if (!data->init) return;
+
     for(size_t i = 0; i < record_count; ++i) {
         int64_t profilerTime = Profiler::GetTime();
         TracyLfqPrepare( QueueType::PlotDataDouble );
@@ -229,21 +236,6 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
         MemWrite( &item->plotDataDouble.val, record_data[i].counter_value );
         TracyLfqCommit;
     }
-}
-
-void delay_init(void *user_data) {
-    ToolData * data = static_cast<ToolData*>(user_data);
-    if (data->init) return;
-    data->init = true;
-    data->context_id = gpu_context_allocate();
-
-    TracyLfqPrepare( QueueType::PlotConfig );
-    MemWrite( &item->plotConfig.name, (uint64_t)PLOT_NAME);
-    MemWrite( &item->plotConfig.type, (uint8_t)PlotFormatType::Number );
-    MemWrite( &item->plotConfig.step, (uint8_t)false );
-    MemWrite( &item->plotConfig.fill, (uint8_t)true );
-    MemWrite( &item->plotConfig.color, 0 );
-    TracyLfqCommit;
 }
 
 /**
@@ -256,10 +248,11 @@ void
 dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
                   rocprofiler_profile_config_id_t*             config,
                   rocprofiler_user_data_t* /*user_data*/,
-                  void* callback_data_args)
+                  void* callback_data)
 {
-    if (!TracyIsStarted) return;
-    delay_init(callback_data_args);
+    assert(callback_data != nullptr);
+    ToolData * data = static_cast<ToolData*>(callback_data);
+    if (!data->init) return;
     
     /**
      * This simple example uses the same profile counter set for all agents.
@@ -348,10 +341,9 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
                                rocprofiler_user_data_t*              user_data,
                                void*                                 callback_data)
 {
-    if (!TracyIsStarted) return;
     assert(callback_data != nullptr);
     ToolData * data = static_cast<ToolData*>(callback_data);
-    delay_init(callback_data);
+    if (!data->init) return;
 
     if(record.kind == ROCPROFILER_CALLBACK_TRACING_CODE_OBJECT &&
             record.operation == ROCPROFILER_CODE_OBJECT_DEVICE_KERNEL_SYMBOL_REGISTER)
@@ -409,13 +401,53 @@ tool_callback_tracing_callback(rocprofiler_callback_tracing_record_t record,
     }
 }
 
+void calibration_thread(void * ptr) {
+    while (!TracyIsStarted);
+    ToolData * data = static_cast<ToolData*>(ptr);
+    data->context_id = gpu_context_allocate(data);
+
+    TracyLfqPrepare( QueueType::PlotConfig );
+    MemWrite( &item->plotConfig.name, (uint64_t)PLOT_NAME);
+    MemWrite( &item->plotConfig.type, (uint8_t)PlotFormatType::Number );
+    MemWrite( &item->plotConfig.step, (uint8_t)false );
+    MemWrite( &item->plotConfig.fill, (uint8_t)true );
+    MemWrite( &item->plotConfig.color, 0 );
+    TracyLfqCommit;
+
+    data->init = true;
+
+    while (data->init) {
+        timespec ts;
+        // HSA performs a linear interpolation of GPU time to CLOCK_BOOTTIME. However, this is subject to network time updates and can drift relative to tracy's clock.
+        clock_gettime(CLOCK_BOOTTIME, &ts);
+        int64_t cpu_timestamp = Profiler::GetTime();
+        int64_t gpu_timestamp = ts.tv_nsec + ts.tv_sec * 1e9L;
+        
+        if (cpu_timestamp > data->previous_cpu_time) {
+            auto* item = tracy::Profiler::QueueSerial();
+            tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuCalibration);
+            tracy::MemWrite(&item->gpuCalibration.gpuTime, gpu_timestamp);
+            tracy::MemWrite(&item->gpuCalibration.cpuTime, cpu_timestamp);
+            tracy::MemWrite(&item->gpuCalibration.cpuDelta, cpu_timestamp - data->previous_cpu_time);
+            tracy::MemWrite(&item->gpuCalibration.context, data->context_id);
+            tracy::Profiler::QueueSerialFinish();
+            data->previous_cpu_time = cpu_timestamp;
+        }
+
+        sleep(1);
+    }
+}
+
 int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
 {
+    ToolData * data = static_cast<ToolData*>(user_data);
+    data->cal_thread = std::make_unique<tracy::Thread>(calibration_thread, data);
+
     ROCPROFILER_CALL( rocprofiler_create_context( &get_client_ctx() ), "context creation failed" );
 
-    // ROCPROFILER_CALL( rocprofiler_configure_callback_dispatch_counting_service( get_client_ctx(), dispatch_callback,
-    //                                                                             user_data, record_callback, user_data ),
-    //                   "Could not setup counting service" );
+    ROCPROFILER_CALL( rocprofiler_configure_callback_dispatch_counting_service( get_client_ctx(), dispatch_callback,
+                                                                                user_data, record_callback, user_data ),
+                      "Could not setup counting service" );
 
     rocprofiler_tracing_operation_t ops[] = {ROCPROFILER_CODE_OBJECT_DEVICE_KERNEL_SYMBOL_REGISTER};
     ROCPROFILER_CALL(
@@ -453,6 +485,10 @@ int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
 
 void tool_fini( void* tool_data_v ) {
     rocprofiler_stop_context(get_client_ctx());
+    
+    ToolData * data = static_cast<ToolData*>(tool_data_v);
+    data->init = false;
+    data->cal_thread.reset();
 }
 }
 
@@ -468,7 +504,7 @@ extern "C"
         client_id->name = "Tracy";
 
         // (optional) create configure data
-        static auto data = ToolData{ version, runtime_version, priority, *client_id, 0, false, 0, 0 };
+        static ToolData data = ToolData{ version, runtime_version, priority, *client_id, 0, false, 0, 0 };
 
         //std::cerr << "profile hello" << std::endl;
 

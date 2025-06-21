@@ -741,7 +741,7 @@ static void DrawContents()
                 ImGui::Unindent();
 
                 ImGui::Spacing();
-                ImGui::TextUnformatted( "Scroll Multipliers" );
+                ImGui::TextUnformatted( "Scroll multipliers" );
                 ImGui::SameLine();
                 tracy::DrawHelpMarker( "The multipliers to the amount to scroll by horizontally and vertically. This is used in the timeline and setting this value can help compensate for scroll wheel sensitivity." );
                 ImGui::SameLine();
@@ -784,7 +784,7 @@ static void DrawContents()
                 if( ImGui::Checkbox( "Save UI scale", &tracy::s_config.saveUserScale) ) tracy::SaveConfig();
 #ifndef __EMSCRIPTEN__
                 ImGui::Spacing();
-                if( ImGui::Checkbox( "Enable LLM", &tracy::s_config.llm ) ) tracy::SaveConfig();
+                if( ImGui::Checkbox( "Enable Tracy Assist", &tracy::s_config.llm ) ) tracy::SaveConfig();
 #endif
 
                 ImGui::PopStyleVar();

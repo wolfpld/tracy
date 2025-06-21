@@ -418,6 +418,7 @@ void TracyLlm::Draw()
         ImGui::EndTooltip();
     }
 
+    bool inputChanged = false;
     ImGui::Spacing();
     ImGui::BeginChild( "##chat", ImVec2( 0, -( ImGui::GetFrameHeight() + style.ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
     if( m_chat.size() <= 1 )   // account for system prompt
@@ -478,6 +479,7 @@ void TracyLlm::Draw()
                     const auto sz = std::min( InputBufferSize - 1, content.size() );
                     memcpy( m_input, content.data(), sz );
                     m_input[sz] = 0;
+                    inputChanged = true;
                 }
 
                 m_chat.erase( it, m_chat.end() );
@@ -533,6 +535,7 @@ void TracyLlm::Draw()
         auto buttonSize = ImGui::CalcTextSize( buttonText );
         buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
+        if( inputChanged ) ImGui::GetInputTextState( ImGui::GetCurrentWindow()->GetID( "##chat_input" ) )->ReloadUserBufAndMoveToEnd();
         bool send = ImGui::InputTextWithHint( "##chat_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
         if( *m_input == 0 ) ImGui::BeginDisabled();

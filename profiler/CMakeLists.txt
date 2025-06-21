@@ -214,7 +214,7 @@ endif()
 
 if(NOT EMSCRIPTEN)
     if(NOT NO_FILESELECTOR)
-        target_link_libraries(${PROJECT_NAME} PRIVATE nfd::nfd)
+        target_link_libraries(${PROJECT_NAME} PRIVATE TracyNfd)
     endif()
     if(NOT USE_WAYLAND)
         target_link_libraries(${PROJECT_NAME} PRIVATE TracyGlfw3)

@@ -11,6 +11,10 @@ include(${CMAKE_CURRENT_LIST_DIR}/CPM.cmake)
 option(DOWNLOAD_CAPSTONE "Force download capstone" ON)
 option(DOWNLOAD_GLFW "Force download glfw" OFF)
 option(DOWNLOAD_FREETYPE "Force download freetype" OFF)
+option(DOWNLOAD_ZSTD "Force download zstd" ON)
+option(DOWNLOAD_IMGUI "Force download imgui" OFF)
+option(DOWNLOAD_NFD "Force download nfd" OFF)
+option(DOWNLOAD_PPQSORT "Force download ppqsort" OFF)
 
 # capstone
 
@@ -103,15 +107,24 @@ endif()
 
 # Zstd
 
-CPMAddPackage(
-    NAME zstd
-    GITHUB_REPOSITORY facebook/zstd
-    GIT_TAG v1.5.7
-    OPTIONS
-        "ZSTD_BUILD_SHARED OFF"
-    EXCLUDE_FROM_ALL TRUE
-    SOURCE_SUBDIR build/cmake
-)
+pkg_check_modules(ZSTD zstd)
+if (ZSTD_FOUND AND NOT DOWNLOAD_ZSTD)
+    add_library(TracyZstd INTERFACE)
+    target_include_directories(TracyZstd INTERFACE ${ZSTD_INCLUDE_DIRS})
+    target_link_libraries(TracyZstd INTERFACE ${ZSTD_LINK_LIBRARIES})
+else()
+    CPMAddPackage(
+        NAME zstd
+        GITHUB_REPOSITORY facebook/zstd
+        GIT_TAG v1.5.7
+        OPTIONS
+            "ZSTD_BUILD_SHARED OFF"
+        EXCLUDE_FROM_ALL TRUE
+        SOURCE_SUBDIR build/cmake
+    )
+    add_library(TracyZstd INTERFACE)
+    target_link_libraries(TracyZstd INTERFACE libzstd)
+endif()
 
 # Diff Template Library
 
@@ -131,15 +144,18 @@ target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
 
 # ImGui
 
-CPMAddPackage(
-    NAME ImGui
-    GITHUB_REPOSITORY ocornut/imgui
-    GIT_TAG v1.91.9b-docking
-    DOWNLOAD_ONLY TRUE
-    PATCHES
-        "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
-        "${CMAKE_CURRENT_LIST_DIR}/imgui-loader.patch"
-)
+pkg_check_modules(ImGui imgui)
+if (NOT ImGui_FOUND OR DOWNLOAD_IMGUI)
+    CPMAddPackage(
+        NAME ImGui
+        GITHUB_REPOSITORY ocornut/imgui
+        GIT_TAG v1.91.9b-docking
+        DOWNLOAD_ONLY TRUE
+        PATCHES
+            "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
+            "${CMAKE_CURRENT_LIST_DIR}/imgui-loader.patch"
+    )
+endif()
 
 set(IMGUI_SOURCES
     imgui_widgets.cpp
@@ -171,23 +187,41 @@ if(NOT NO_FILESELECTOR AND NOT EMSCRIPTEN)
         set(NFD_PORTAL ON)
     endif()
 
-    CPMAddPackage(
-        NAME nfd
-        GITHUB_REPOSITORY btzy/nativefiledialog-extended
-        GIT_TAG v1.2.1
-        EXCLUDE_FROM_ALL TRUE
-        OPTIONS
-            "NFD_PORTAL ${NFD_PORTAL}"
-    )
+    pkg_check_modules(NFD nativefiledialog-extended)
+    if (NFD_FOUND AND NOT DOWNLOAD_NFD)
+        add_library(TracyNfd INTERFACE)
+        target_include_directories(TracyNfd INTERFACE ${NFD_INCLUDE_DIRS})
+        target_link_libraries(TracyNfd INTERFACE ${NFD_LINK_LIBRARIES})
+    else()
+        CPMAddPackage(
+            NAME nfd
+            GITHUB_REPOSITORY btzy/nativefiledialog-extended
+            GIT_TAG v1.2.1
+            EXCLUDE_FROM_ALL TRUE
+            OPTIONS
+                "NFD_PORTAL ${NFD_PORTAL}"
+        )
+        add_library(TracyNfd INTERFACE)
+        target_link_libraries(TracyNfd INTERFACE nfd::nfd)
+    endif()
 endif()
 
 # PPQSort
 
-CPMAddPackage(
-    NAME PPQSort
-    GITHUB_REPOSITORY GabTux/PPQSort
-    VERSION 1.0.5
-    PATCHES
-        "${CMAKE_CURRENT_LIST_DIR}/ppqsort-nodebug.patch"
-    EXCLUDE_FROM_ALL TRUE
-)
+pkg_check_modules(PPQSORT ppqsort)
+if (PPQSORT_FOUND AND NOT DOWNLOAD_PPQSORT)
+    add_library(TracyPPQSort INTERFACE)
+    target_include_directories(TracyPPQSort INTERFACE ${PPQSORT_INCLUDE_DIRS})
+    target_link_libraries(TracyPPQSort INTERFACE ${PPQSORT_LINK_LIBRARIES})
+else()
+    CPMAddPackage(
+        NAME PPQSort
+        GITHUB_REPOSITORY GabTux/PPQSort
+        VERSION 1.0.5
+        PATCHES
+            "${CMAKE_CURRENT_LIST_DIR}/ppqsort-nodebug.patch"
+        EXCLUDE_FROM_ALL TRUE
+    )
+    add_library(TracyPPQSort INTERFACE)
+    target_link_libraries(TracyPPQSort INTERFACE PPQSort::PPQSort)
+endif()

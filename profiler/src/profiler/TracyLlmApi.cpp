@@ -219,7 +219,12 @@ bool TracyLlmApi::ChatCompletion( const nlohmann::json& req, const std::function
         }
         return true;
     }
-    return false;
+    else
+    {
+        auto str = std::move( data.str );
+        data.str.clear();
+        throw std::runtime_error( "HTTP error " + std::to_string( http_code ) + ": " + str );
+    }
 }
 
 bool TracyLlmApi::Embeddings( const nlohmann::json& req, nlohmann::json& response, bool separateConnection )

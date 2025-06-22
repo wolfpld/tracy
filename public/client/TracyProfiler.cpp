@@ -3181,7 +3181,6 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 
     if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
-<<<<<<< HEAD
 #ifdef _WIN32
 
 #  ifdef _MSC_VER
@@ -3222,11 +3221,8 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
 		}
 		offset += result1;
 	}
-<<<<<<< HEAD
 #  endif
 
-=======
->>>>>>> 87316f28 (Fixed line endings in TracyProfiler.cpp)
 #else
     // Send through the pipe to ensure safe reads
     for( size_t offset = 0; offset != size; /*in loop*/ )
@@ -5087,8 +5083,4 @@ TRACY_API int32_t ___tracy_profiler_started( void )
 }
 #endif
 
-<<<<<<< HEAD
 #endif
-=======
-#endif
->>>>>>> 87316f28 (Fixed line endings in TracyProfiler.cpp)

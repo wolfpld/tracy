@@ -102,6 +102,8 @@ bool TracyLlmApi::Connect( const char* url )
         return false;
     }
 
+    std::ranges::sort( m_models, []( const auto& a, const auto& b ) { return a.name < b.name; } );
+
     return true;
 }
 

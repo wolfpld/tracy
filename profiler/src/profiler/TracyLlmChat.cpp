@@ -133,6 +133,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
         ImGui::BeginGroup();
     }
 
+    const auto posStart = ImGui::GetCursorScreenPos();
     ImGui::PushStyleColor( ImGuiCol_Text, roleData.textColor );
     if( role == TurnRole::Error )
     {
@@ -240,6 +241,23 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
         }
     }
     ImGui::PopStyleColor();
+
+    if( ImGui::IsMouseClicked( ImGuiMouseButton_Right ) &&
+        ImGui::IsWindowHovered() &&
+        ImGui::IsMouseHoveringRect( posStart, ImGui::GetCursorScreenPos() + ImVec2( ImGui::GetContentRegionAvail().x, 0 ) ) )
+    {
+        ImGui::OpenPopup( "ContextMenu" );
+    }
+    if( ImGui::BeginPopup( "ContextMenu" ) )
+    {
+        if( ImGui::Selectable( ICON_FA_CLIPBOARD " Copy" ) )
+        {
+            ImGui::SetClipboardText( content.c_str() );
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
     return keep;
 }
 

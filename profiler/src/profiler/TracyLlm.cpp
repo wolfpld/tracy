@@ -438,6 +438,7 @@ void TracyLlm::Draw()
         ImGui::PushID( m_chatId );
         m_chatUi->Begin();
 
+        int turnIdx = 0;
         for( auto it = m_chat.begin(); it != m_chat.end(); ++it )
         {
             const auto& line = *it;
@@ -464,6 +465,7 @@ void TracyLlm::Draw()
                 if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::AssistantDebug;
             }
 
+            ImGui::PushID( turnIdx++ );
             if( !m_chatUi->Turn( role, content ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant || role == TracyLlmChat::TurnRole::AssistantDebug )
@@ -484,8 +486,10 @@ void TracyLlm::Draw()
 
                 m_chat.erase( it, m_chat.end() );
                 if( m_responding ) m_stop = true;
+                ImGui::PopID();
                 break;
             }
+            ImGui::PopID();
         }
 
         m_chatUi->End();

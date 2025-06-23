@@ -142,8 +142,8 @@ set(PROFILER_FILES
     src/winmainArchDiscovery.cpp
 )
 
-Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt)
-Embed(PROFILER_FILES SystemReminder src/llm/system.reminder)
+Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt.md)
+Embed(PROFILER_FILES SystemReminder src/llm/system.reminder.md)
 Embed(PROFILER_FILES FontFixed src/font/FiraCode-Retina.ttf)
 Embed(PROFILER_FILES FontIcons src/font/Font\ Awesome\ 6\ Free-Solid-900.otf)
 Embed(PROFILER_FILES FontNormal src/font/Roboto-Regular.ttf)

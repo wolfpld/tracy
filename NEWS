@@ -2,6 +2,18 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.12.2 (2025-06-25)
+--------------------
+
+- Fixed builds made out of git checkout directory.
+- Added range limits for flame graph.
+- Fixed wayland include paths for distros that use non-standard package
+  layouts.
+- Workarounded MinGW build problems. Safe symbol retrieval is not available
+  on this platform.
+- Fixed Lua bindings when TRACY_NO_CALLSTACK is defined.
+
+
 v0.12.1 (2025-06-07)
 --------------------
 

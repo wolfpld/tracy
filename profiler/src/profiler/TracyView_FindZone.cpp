@@ -307,6 +307,7 @@ void View::DrawFindZone()
 
     if( ImGui::Button( ICON_FA_BAN " Clear" ) )
     {
+        m_findZone.pattern[0] = '\0';
         m_findZone.Reset();
     }
     ImGui::SameLine();

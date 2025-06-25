@@ -660,15 +660,13 @@ typedef unsigned char validate_uint32[sizeof(stbi__uint32)==4 ? 1 : -1];
 #endif
 
 #ifdef _MSC_VER
-   #define stbi_lrot(x,y)  _lrotl(x,y)
+   	#define stbi_lrot(x,y)  _lrotl(x,y)
 #elif defined __clang__
 	// 32bit version of function as stb image uses this function to rotate 32bit integers
 	#define stbi_lrot(x,y) __builtin_rotateleft32(x,y)
-#elif defined __GNUC__
-	// gcc built-in is type-generic with first argument being any unsigned integer and second any signed or unsigned integer or char
-	#define stbi_lrot(x,y) __builtin_stdc_rotate_left(x,y)
 #else
-   #define stbi_lrot(x,y)  (((x) << (y)) | ((x) >> (-(y) & 31)))
+	// gcc does not provide builtin rotate left funciton for C++ (__builtin_stdc_rotate_left is available only in C)
+   	#define stbi_lrot(x,y)  (((x) << (y)) | ((x) >> (-(y) & 31)))
 #endif
 
 #if defined(STBI_MALLOC) && defined(STBI_FREE) && (defined(STBI_REALLOC) || defined(STBI_REALLOC_SIZED))

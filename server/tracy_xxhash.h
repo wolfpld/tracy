@@ -376,14 +376,14 @@ extern "C" {
 #  if defined(WIN32) && (defined(_MSC_VER) || defined(__GNUC__)) && (defined(XXH_IMPORT) || defined(XXH_EXPORT))
 #    ifdef XXH_EXPORT
 #	   if defined(__GNUC__)
-#        __attribute__((dllexport))
-#      elif
+#        define XXH_PUBLIC_API __attribute__((dllexport))
+#      else
 #        define XXH_PUBLIC_API __declspec(dllexport)
 #      endif
 #    elif XXH_IMPORT
 #	   if defined(__GNUC__)
-#        __attribute__((dllimport))
-#      elif
+#        define XXH_PUBLIC_API __attribute__((dllimport))
+#      else
 #        define XXH_PUBLIC_API __declspec(dllimport)
 #      endif
 #    endif
@@ -2429,7 +2429,7 @@ static int XXH_isLittleEndian(void)
  */
 
 #if XXH_HAS_BUILTIN(__builtin_unreachable)
-// gcc and clang should have this as builtin
+// gcc and clang support this builtin
 #  define XXH_UNREACHABLE() __builtin_unreachable()
 
 #elif defined(_MSC_VER)
@@ -2460,8 +2460,8 @@ static int XXH_isLittleEndian(void)
  */
 #if !defined(NO_CLANG_BUILTIN) && XXH_HAS_BUILTIN(__builtin_rotateleft32) \
                                && XXH_HAS_BUILTIN(__builtin_rotateleft64)
-#  define XXH_rotl32(x,r) __builtin_rotateleft32(x,r)
-#  define XXH_rotl64(x,r) __builtin_rotateleft64(x,r)
+#  define XXH_rotl32 __builtin_rotateleft32
+#  define XXH_rotl64 __builtin_rotateleft64
 /* Note: although _rotl exists for minGW (GCC under windows), performance seems poor */
 #elif defined(_MSC_VER)
 #  define XXH_rotl32(x,r) _rotl(x,r)

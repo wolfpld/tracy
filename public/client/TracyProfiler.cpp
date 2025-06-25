@@ -103,7 +103,7 @@
 #    define TRACY_DELAYED_INIT
 #  endif
 #else
-#  if defined __GNUC__
+#  ifdef __GNUC__
 #    define init_order( val ) __attribute__ ((init_priority(val)))
 #  else
 #    define init_order(x)
@@ -300,10 +300,6 @@ static bool EnsureReadable( uintptr_t address )
 {
     return true;
 }
-#endif
-
-#if defined __linux__
-	bool 
 #endif
 
 #ifndef TRACY_DELAYED_INIT
@@ -1464,12 +1460,6 @@ Profiler::Profiler()
     s_token_detail = moodycamel::ProducerToken( s_queue );
     s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
     s_threadHandle = ThreadHandleWrapper { m_mainThread };
-#  else
-	//#error FilipNur check if works
-	// 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
-    s_token_detail = moodycamel::ProducerToken( s_queue );
-    s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
-    s_threadHandle = ThreadHandleWrapper { m_mainThread };
 #  endif
 #endif
 
@@ -1504,11 +1494,11 @@ Profiler::Profiler()
 
 	{ // scope for temporary variable originalHandlesCount
 		int originalHandlesCount = _getmaxstdio();
-		
+
 		while(_pipe(m_pipe, m_pipeBufSize, _O_BINARY) != 0)
 		{
 			if ((errno == EMFILE) || (errno == ENFILE))
-			{	
+			{
 				// safe upper bound for exceptional situations
 				if(_getmaxstdio() > (originalHandlesCount + 10))
 				{
@@ -3560,32 +3550,32 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
     case SymbolQueueItemType::KernelCode:
     {
 #ifdef _WIN32
-	auto mod = GetKernelModulePath( si.ptr );
-	if( mod )
-	{
-		auto fn = DecodeCallstackPtrFast( si.ptr );
-		if( *fn )
-		{
-			auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
-			if( hnd )
-			{
-				auto ptr = (const void*)GetProcAddress( hnd, fn );
-				if( ptr )
-				{
-					auto buf = (char*)tracy_malloc( si.extra );
-					memcpy( buf, ptr, si.extra );
-					FreeLibrary( hnd );
-					TracyLfqPrepare( QueueType::SymbolCodeMetadata );
-					MemWrite( &item->symbolCodeMetadata.symbol, si.ptr );
-					MemWrite( &item->symbolCodeMetadata.ptr, (uint64_t)buf );
-					MemWrite( &item->symbolCodeMetadata.size, (uint32_t)si.extra );
-					TracyLfqCommit;
-					break;
-				}
-				FreeLibrary( hnd );
-			}
-		}
-	}
+        auto mod = GetKernelModulePath( si.ptr );
+        if( mod )
+        {
+            auto fn = DecodeCallstackPtrFast( si.ptr );
+            if( *fn )
+            {
+                auto hnd = LoadLibraryExA( mod, nullptr, DONT_RESOLVE_DLL_REFERENCES );
+                if( hnd )
+                {
+                    auto ptr = (const void*)GetProcAddress( hnd, fn );
+                    if( ptr )
+                    {
+                        auto buf = (char*)tracy_malloc( si.extra );
+                        memcpy( buf, ptr, si.extra );
+                        FreeLibrary( hnd );
+                        TracyLfqPrepare( QueueType::SymbolCodeMetadata );
+                        MemWrite( &item->symbolCodeMetadata.symbol, si.ptr );
+                        MemWrite( &item->symbolCodeMetadata.ptr, (uint64_t)buf );
+                        MemWrite( &item->symbolCodeMetadata.size, (uint32_t)si.extra );
+                        TracyLfqCommit;
+                        break;
+                    }
+                    FreeLibrary( hnd );
+                }
+            }
+        }
 #elif defined __linux__
         void* data = m_kcore->Retrieve( si.ptr, si.extra );
         if( data )

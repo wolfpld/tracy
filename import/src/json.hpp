@@ -16799,7 +16799,7 @@ class binary_writer
 
     void write_compact_float(const number_float_t n, detail::input_format_t format)
     {
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
@@ -16819,7 +16819,7 @@ class binary_writer
                                 : get_msgpack_float_prefix(n));
             write_number(n);
         }
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
     }
@@ -17981,7 +17981,7 @@ char* to_chars(char* first, const char* last, FloatType value)
         *first++ = '-';
     }
 
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
@@ -17993,7 +17993,7 @@ char* to_chars(char* first, const char* last, FloatType value)
         *first++ = '0';
         return first;
     }
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
@@ -21187,7 +21187,7 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
                                         detail::negation<std::is_same<ValueType, typename string_t::value_type>>,
                                         detail::negation<detail::is_basic_json<ValueType>>,
                                         detail::negation<std::is_same<ValueType, std::initializer_list<typename string_t::value_type>>>,
-#if defined(JSON_HAS_CPP_17) && (defined(__GNUC__) || || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER <= 1914))
+#if defined(JSON_HAS_CPP_17) && (defined(__GNUC__) || (defined(_MSC_VER) && _MSC_VER >= 1910 && _MSC_VER <= 1914))
                                                 detail::negation<std::is_same<ValueType, std::string_view>>,
 #endif
 #if defined(JSON_HAS_CPP_17) && JSON_HAS_STATIC_RTTI
@@ -22983,13 +22983,13 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     /// @sa https://json.nlohmann.me/api/basic_json/operator_eq/
     bool operator==(const_reference rhs) const noexcept
     {
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
         const_reference lhs = *this;
         JSON_IMPLEMENT_OPERATOR( ==, true, false, false)
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
     }
@@ -23087,12 +23087,12 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     /// @sa https://json.nlohmann.me/api/basic_json/operator_eq/
     friend bool operator==(const_reference lhs, const_reference rhs) noexcept
     {
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
         JSON_IMPLEMENT_OPERATOR( ==, true, false, false)
-#if defined __GNUC__
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
     }

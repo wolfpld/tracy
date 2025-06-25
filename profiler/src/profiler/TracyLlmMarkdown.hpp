@@ -176,6 +176,7 @@ public:
         {
             if( header > 0 )
             {
+                if( !first ) ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
                 ImGui::PushFont( g_fonts.big );
             }
             else if( bold > 0 )
@@ -232,6 +233,7 @@ public:
             }
             break;
         }
+        first = false;
         return 0;
     }
 
@@ -255,6 +257,7 @@ private:
 
     bool glue = false;
     bool separate = false;
+    bool first = true;
 
     int idx = 0;
 

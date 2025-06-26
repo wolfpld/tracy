@@ -1640,7 +1640,7 @@ To enable calibrated context, replace the macro \texttt{TracyVkContext} with \te
 
 \subparagraph{Using Vulkan 1.2 features}
 
-Vulkan 1.2 and \texttt{VK\_EXT\_host\_query\_reset} provide mechanics to reset the query pool without the need of a command buffer. By using \texttt{TracyVkContextHostCalibrated} you can make use of this feature. It only requires a function pointer to \texttt{vkResetQueryPool} in addition to the ones required for \texttt{TracyVkContextCalibrated} instead of the VkQueue and VkCommandBuffer handles.
+Vulkan 1.2 and \texttt{VK\_EXT\_host\_query\_reset} provide mechanics to reset the query pool without the need of a command buffer. By using \texttt{TracyVkContextHostCalibrated} and \texttt{TracyVkCollectHost}, you can make use of this feature. It only requires a function pointer to \texttt{vkResetQueryPool} in addition to the ones required for \texttt{TracyVkContextCalibrated} instead of the VkQueue and VkCommandBuffer handles.
 
 However, using this feature requires the physical device to have calibrated device and host time domains. In addition to \texttt{VK\_TIME\_DOMAIN\_DEVICE\_EXT}, \texttt{vkGetPhysicalDeviceCalibrateableTimeDomainsEXT} will have to additionally return either \texttt{VK\_TIME\_DOMAIN\_CLOCK\_MONOTONIC\_RAW\_EXT} or \texttt{VK\_TIME\_DOMAIN\_QUERY\_PERFORMANCE\_COUNTER\_EXT} for Unix and Windows, respectively. If this is not the case, you will need to use \texttt{TracyVkContextCalibrated} or \texttt{TracyVkContext} macro instead.
 

@@ -98,6 +98,7 @@ public:
         case MD_BLOCK_QUOTE:
             ImGui::Unindent();
             separate = true;
+            break;
         case MD_BLOCK_UL:
         case MD_BLOCK_OL:
             ImGui::Unindent();

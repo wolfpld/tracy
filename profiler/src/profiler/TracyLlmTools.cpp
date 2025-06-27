@@ -358,7 +358,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         const auto bsz = std::min( batchSize, csz - i );
         std::vector<std::string> batch;
         batch.reserve( bsz );
-        for( size_t j=0; j<bsz; j++ ) batch.emplace_back( m_chunkData[i+j].first );
+        for( size_t j=0; j<bsz; j++ ) batch.emplace_back( "search_document: " + m_chunkData[i+j].first );
 
         nlohmann::json req;
         req["input"] = std::move( batch );
@@ -830,7 +830,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     if( !m_manualEmbeddingState.done ) return "User manual embedding vectors are not calculated. You must inform the user that he should click the \"Learn manual\" button, so you can use this tool.";
 
     nlohmann::json req;
-    req["input"] = query;
+    req["input"] = "search_query: " + query;
     req["model"] = m_manualEmbeddingState.model;
 
     nlohmann::json response;

@@ -74,6 +74,7 @@ public:
         case MD_BLOCK_H:
             Separate();
             header = ((MD_BLOCK_H_DETAIL*)detail)->level;
+            glue = false;
             break;
         case MD_BLOCK_CODE:
         {
@@ -177,7 +178,7 @@ public:
         {
             if( header > 0 )
             {
-                if( !first ) ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
+                if( !first && !glue ) ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
                 ImGui::PushFont( g_fonts.big );
             }
             else if( bold > 0 )

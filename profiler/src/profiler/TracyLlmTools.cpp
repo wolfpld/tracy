@@ -704,123 +704,78 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
 {
     NetworkCheckString;
 
+    auto data = FetchWebPage( url, false );
+    auto doc = ParseHtml( data );
+    if( !doc ) return "Error: Failed to parse HTML";
+
+    auto body = doc->select_node( "/html/body" );
+    if( !body ) return "Error: Failed to parse HTML";
+
+    auto node = body.node();
+    RemoveTag( node, "//script" );
+    RemoveTag( node, "//style" );
+    RemoveTag( node, "//link" );
+    RemoveTag( node, "//meta" );
+    RemoveTag( node, "//svg" );
+    RemoveTag( node, "//template" );
+    RemoveTag( node, "//ins" );
+    RemoveAttributes( node, "//body" );
+    RemoveAttributes( node, "//div" );
+    RemoveAttributes( node, "//p" );
+    RemoveAttributes( node, "//a", { "href", "title" } );
+    RemoveAttributes( node, "//img", { "src", "alt" } );
+    RemoveAttributes( node, "//li" );
+    RemoveAttributes( node, "//ul", { "role" } );
+    RemoveAttributes( node, "//td", { "colspan" } );
+    RemoveAttributes( node, "//tr" );
+    RemoveAttributes( node, "//hr" );
+    RemoveAttributes( node, "//th", { "colspan", "rowspan" } );
+    RemoveAttributes( node, "//table", { "role" } );
+    RemoveAttributes( node, "//col" );
+    RemoveAttributes( node, "//span" );
+    RemoveAttributes( node, "//pre" );
+    RemoveAttributes( node, "//button" );
+    RemoveAttributes( node, "//label", { "title" } );
+    RemoveAttributes( node, "//input", { "type", "placeholder" } );
+    RemoveAttributes( node, "//form", { "action", "method" } );
+    RemoveAttributes( node, "//textarea", { "placeholder" } );
+    RemoveAttributes( node, "//dialog" );
+    RemoveAttributes( node, "//header" );
+    RemoveAttributes( node, "//footer" );
+    RemoveAttributes( node, "//section" );
+    RemoveAttributes( node, "//article" );
+    RemoveAttributes( node, "//aside" );
+    RemoveAttributes( node, "//figure" );
+    RemoveAttributes( node, "//main" );
+    RemoveAttributes( node, "//summary" );
+    RemoveAttributes( node, "//details" );
+    RemoveAttributes( node, "//nav" );
+    RemoveAttributes( node, "//bdi" );
+    RemoveAttributes( node, "//time", { "datetime" } );
+    RemoveAttributes( node, "//h1" );
+    RemoveAttributes( node, "//h2" );
+    RemoveAttributes( node, "//h3" );
+    RemoveAttributes( node, "//h4" );
+    RemoveAttributes( node, "//h5" );
+    RemoveAttributes( node, "//h6" );
+    RemoveAttributes( node, "//strong" );
+    RemoveAttributes( node, "//em" );
+    RemoveAttributes( node, "//i" );
+    RemoveAttributes( node, "//b" );
+    RemoveAttributes( node, "//u" );
+    RemoveEmptyTags( node );
+
     std::string response;
+    xml_writer writer( response );
+    body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );
 
-    if( !s_config.llmReadability.empty() )
-    {
-        auto curl = curl_easy_init();
-        if( !curl ) return "Error: Failed to initialize cURL";
+    RemoveNewline( response );
+    auto it = std::ranges::unique( response, []( char a, char b ) { return ( a == ' ' || a == '\t' ) && ( b == ' ' || b == '\t' ); } );
+    response.erase( it.begin(), it.end() );
 
-        nlohmann::json post;
-        post["url"] = url;
-        auto postStr = post.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
-
-        std::string buf;
-
-        curl_slist *hdr = nullptr;
-        hdr = curl_slist_append( hdr, "Accept: application/json" );
-        hdr = curl_slist_append( hdr, "Content-Type: application/json" );
-
-        curl_easy_setopt( curl, CURLOPT_NOSIGNAL, 1L );
-        curl_easy_setopt( curl, CURLOPT_URL, "http://localhost:3000/" );
-        curl_easy_setopt( curl, CURLOPT_HTTPHEADER, hdr );
-        curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
-        curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
-        curl_easy_setopt( curl, CURLOPT_TIMEOUT, 120 );
-        curl_easy_setopt( curl, CURLOPT_POSTFIELDS, postStr.c_str() );
-        curl_easy_setopt( curl, CURLOPT_POSTFIELDSIZE, postStr.size() );
-        curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, WriteFn );
-        curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
-        curl_easy_setopt( curl, CURLOPT_USERAGENT, s_config.llmUserAgent.c_str() );
-
-        auto res = curl_easy_perform( curl );
-        curl_slist_free_all( hdr );
-
-        if( res == CURLE_OK )
-        {
-            try
-            {
-                auto json = nlohmann::json::parse( buf );
-                if( json.contains( "content" ) ) response = json["content"].get_ref<const std::string&>();
-            }
-            catch( const nlohmann::json::exception& e ) {}
-        }
-        curl_easy_cleanup( curl );
-    }
-
-    if( response.empty() )
-    {
-        auto data = FetchWebPage( url, false );
-
-        auto doc = ParseHtml( data );
-        if( !doc ) return "Error: Failed to parse HTML";
-
-        auto body = doc->select_node( "/html/body" );
-        if( !body ) return "Error: Failed to parse HTML";
-
-        auto node = body.node();
-        RemoveTag( node, "//script" );
-        RemoveTag( node, "//style" );
-        RemoveTag( node, "//link" );
-        RemoveTag( node, "//meta" );
-        RemoveTag( node, "//svg" );
-        RemoveTag( node, "//template" );
-        RemoveTag( node, "//ins" );
-        RemoveAttributes( node, "//body" );
-        RemoveAttributes( node, "//div" );
-        RemoveAttributes( node, "//p" );
-        RemoveAttributes( node, "//a", { "href", "title" } );
-        RemoveAttributes( node, "//img", { "src", "alt" } );
-        RemoveAttributes( node, "//li" );
-        RemoveAttributes( node, "//ul", { "role" } );
-        RemoveAttributes( node, "//td", { "colspan" } );
-        RemoveAttributes( node, "//tr" );
-        RemoveAttributes( node, "//hr" );
-        RemoveAttributes( node, "//th", { "colspan", "rowspan" } );
-        RemoveAttributes( node, "//table", { "role" } );
-        RemoveAttributes( node, "//col" );
-        RemoveAttributes( node, "//span" );
-        RemoveAttributes( node, "//pre" );
-        RemoveAttributes( node, "//button" );
-        RemoveAttributes( node, "//label", { "title" } );
-        RemoveAttributes( node, "//input", { "type", "placeholder" } );
-        RemoveAttributes( node, "//form", { "action", "method" } );
-        RemoveAttributes( node, "//textarea", { "placeholder" } );
-        RemoveAttributes( node, "//dialog" );
-        RemoveAttributes( node, "//header" );
-        RemoveAttributes( node, "//footer" );
-        RemoveAttributes( node, "//section" );
-        RemoveAttributes( node, "//article" );
-        RemoveAttributes( node, "//aside" );
-        RemoveAttributes( node, "//figure" );
-        RemoveAttributes( node, "//main" );
-        RemoveAttributes( node, "//summary" );
-        RemoveAttributes( node, "//details" );
-        RemoveAttributes( node, "//nav" );
-        RemoveAttributes( node, "//bdi" );
-        RemoveAttributes( node, "//time", { "datetime" } );
-        RemoveAttributes( node, "//h1" );
-        RemoveAttributes( node, "//h2" );
-        RemoveAttributes( node, "//h3" );
-        RemoveAttributes( node, "//h4" );
-        RemoveAttributes( node, "//h5" );
-        RemoveAttributes( node, "//h6" );
-        RemoveAttributes( node, "//strong" );
-        RemoveAttributes( node, "//em" );
-        RemoveAttributes( node, "//i" );
-        RemoveAttributes( node, "//b" );
-        RemoveAttributes( node, "//u" );
-        RemoveEmptyTags( node );
-
-        xml_writer writer( response );
-        body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );
-
-        RemoveNewline( response );
-        auto it = std::ranges::unique( response, []( char a, char b ) { return ( a == ' ' || a == '\t' ) && ( b == ' ' || b == '\t' ); } );
-        response.erase( it.begin(), it.end() );
-    }
     response = TrimString( std::move( response ) );
     m_webCache.emplace( url, response );
+
     return response;
 }
 

@@ -281,18 +281,6 @@ void TracyLlm::Draw()
             char buf[1024];
 
             ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted( "Readability.js:" );
-            ImGui::SameLine();
-            snprintf( buf, sizeof( buf ), "%s", s_config.llmReadability.c_str() );
-            if( ImGui::InputTextWithHint( "##readability", "http://127.0.0.1:3000", buf, sizeof( buf ) ) )
-            {
-                s_config.llmReadability = buf;
-                SaveConfig();
-            }
-            ImGui::SameLine();
-            if( ImGui::Button( ICON_FA_HOUSE "##readability" ) ) OpenWebpage( "https://github.com/phpdocker-io/readability-js-server" );
-
-            ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted( "User agent:" );
             ImGui::SameLine();
             snprintf( buf, sizeof( buf ), "%s", s_config.llmUserAgent.c_str() );

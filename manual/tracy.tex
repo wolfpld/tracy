@@ -4567,6 +4567,8 @@ Note that ranges displayed in the window have color hints that match the color o
 
 With Tracy Profiler, you can use GenAI features to get help using the profiler or analyzing the code you're profiling.
 
+The automated assistant can search the user manual to answer your questions about the profiler. It can also read the source code when you ask about program performance or algorithms. It has the capacity for access to Wikipedia, the ability to search the web, and the capability to access web pages in response to general questions.
+
 This feature can be completely disabled in the \emph{Global settings}, as described in section~\ref{aboutwindow}.
 
 \begin{bclogo}[
@@ -4574,7 +4576,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcattention
 ]{Caution}
-Remember that the responses you receive from the automated assistant are the result of complex yet limited algorithms. While the answers may be convincing and, in most cases, reliable, you should always verify their accuracy.
+Remember that the responses you receive from the automated assistant are the result of complex yet limited algorithms. While the answers may be convincing and in most cases reliable, you should always verify their accuracy.
 \end{bclogo}
 
 \begin{bclogo}[
@@ -4599,12 +4601,14 @@ There are no ideal LLM providers, but here are some options:
 \item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag behind. Manual configuration of each model is required.
 \item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
 \item \emph{llama-swap} (\url{https://github.com/mostlygeek/llama-swap}) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
-\item \emph{Ollama} (\url{https://ollama.com/}) -- It lacks some features required by Tracy. Very limited configuration is only available via the system service's environment variables. Some practices are questionable. It will not use full capabilities of the available hardware.
+\item \emph{Ollama} (\url{https://ollama.com/}) -- It lacks some features required by Tracy. Very limited configuration is only available via the system service's environment variables. Some practices are questionable. It will not use full capabilities of the available hardware. Not recommended.
 \end{itemize}
 
 \subsubsection{Model selection}
 
-Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser.
+Once you have installed the service provider, you will need to download the model files for the chat functionality. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser.
+
+Tracy will not issue commands to download any model on its own.
 
 \paragraph{Model family}
 
@@ -4612,11 +4616,11 @@ There are many factors to take into consideration when choosing a model to use. 
 
 \begin{itemize}
 \item \emph{Gemma 3} (\url{https://blog.google/technology/developers/gemma-3/}) is a well rounded model that can converse in multiple languages. 
-\item \emph{Qwen3} (\url{https://qwenlm.github.io/blog/qwen3/}) has a more technical feeling to it.
+\item \emph{Qwen3} (\url{https://qwenlm.github.io/blog/qwen3/}) has a more technical feeling to it, it likes to write bullet point lists.
 \item \emph{Mistral Small} (\url{https://mistral.ai/news/mistral-small-3-1}) may also be considered. Despite the name, it is not small.
 \end{itemize}
 
-This list is not exhaustive; it's only a starting point.
+This list is not exhaustive; it's only a starting point. These base models are often briefly fine-tuned to perform better at a specific task while retaining the model's general characteristics, hence the term \emph{model family}. It is recommended that you start with a base model and only explore the fine-tuned models later, if at all.
 
 When looking for a model you may encounter models that are "reasoning". These are generally not worth the additional time and resources they need.
 
@@ -4626,13 +4630,13 @@ The next thing to consider when selecting a model is its size, which is typicall
 
 Models with 4B parameters are too "dumb" to operate in Tracy and will produce nonsense results. The 8B models are barely capable, so their use is not recommended. Models such as Gemma 3 12B and Qwen3 14B should work reasonably well. However, if your hardware can handle it, you should look for even larger models.
 
-Then there are models that are "Mixture of Experts". For instance, a model may have 30B total parameters, but only 3B are active when generating a response. While these models can generate responses faster, they still require the full set of parameters to be loaded into memory. Their results are also worse than those of "dense" models that use all their parameters.
+Then there are models that are "Mixture of Experts". For instance, a model may have 30B total parameters, but only 3B are active when generating a response. While these models can generate responses faster, they still require the full set of parameters to be loaded into memory. Their results are also inferior to those of "dense" models of a similar size that use all their parameters.
 
 \paragraph{Model quantization}
 
 Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more "dumbed down" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
 
-There are different ways to quantize that give the same bit size. It's best to follow the recommendations provided by LM Studio, for example.
+There are different ways of doing quantization that give the same bit size. It's best to follow the recommendations provided by LM Studio, for example.
 
 Some models consider quantization during training, resulting in a more effective model. Gemma 3 refers to this as QAT (Quantization-Aware Training).
 
@@ -4667,6 +4671,22 @@ So, which model should you run and what hardware you need to be able to do so? L
 \item If you have a 4090 class GPU with 24 GB of VRAM, llama.cpp can run Gemma 3 27B with a 64K context.
 \end{itemize}
 
+\subsubsection{Embeddings model}
+
+To access the full functionality of the automated assistant, you will also need a second language model. While the previous section focused on the model used for conversation, we also need a model that enables searching the user manual.
+
+This kind of model performs \emph{vector embeddings}, which transform text content or a search query into a set of concepts that match the text's meaning. These semantic vectors can then be compared to each other without needing to precisely match keywords. For instance, if a user searches for efficient text search methods, the results will include text about vector embedding models.
+
+Embedding models can be downloaded just like conversation models. The text-nomic-embed v1.5 model is recommended, as it is known to work well. Using other models may result in catastrophic degradation of search results.\footnote{There are many reasons why:
+\begin{enumerate}
+\item Some models just won't work as advertised. For example, the BGE-M3 model doesn't work at all with the Tracy user manual.
+\item Embedding models usually require a prefix that describes the task at hand.
+\item It is better to support one model that is known to work as intended than to support many models that work poorly.
+\end{enumerate}
+}
+
+LM Studio and Ollama properly label the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
+
 \subsubsection{Usage}
 
 The automated assistant can be accessed via the various \emph{\faRobot{}~Tracy Assist} buttons in the UI. The button in the control menu (section~\ref{controlmenu}) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
@@ -4682,8 +4702,9 @@ The chat window is divided into three sections:
 The control section allows you to clear the chat contents, reconnect to the LLM provider and open the settings panel consisting of:
 
 \begin{itemize}
-\item \emph{API} -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL.
-\item \emph{Model} -- Here you can select one of the models you have configured in the LLM provider.
+\item \emph{API} -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
+\item \emph{Model} -- Here you can select one of the models you have configured in the LLM provider for chat.
+\item \emph{Embeddings} -- Select the vector embeddings model.
 \item \emph{Temperature} -- Allows changing default model temperature setting.
 \item \emph{Internet access} -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
 \item \emph{External services} -- Allows optional configuration of network access.
@@ -4692,6 +4713,8 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 \item \emph{Google Search Engine} and \emph{API Key} -- Enables use of Google search. If this is not set, searches will fall back to DuckDuckGo, which is very rate limited.
 \end{itemize}
 \end{itemize}
+
+The \emph{\faBook{}~Learn manual} button is used to build the search index for the user manual. This process only takes a short amount of time, and the results are cached until either the embeddings model changes or the manual is updated.
 
 The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
 
@@ -4804,6 +4827,12 @@ Trace files saved on disk are immutable and can't be changed. Still, it may be d
 This external data is stored in the \texttt{user/[letter]/[program]/[week]/[epoch]} directory, relative to the configuration's root directory. The \texttt{program} part is the name of the profiled application (for example \texttt{program.exe}). The \texttt{letter} part is the first letter of the profiled application's name. The \texttt{week} part is a count of weeks since the Unix epoch, and the \texttt{epoch} part is a count of seconds since the Unix epoch. This rather unusual convention prevents the creation of directories with hundreds of entries.
 
 The profiler never prunes user settings.
+
+\subsection{Cache files}
+
+Some of the profiler's features may want to store cache files on your disk. You can always get rid of these data files because they're only used to speed up some long operations that may precalculate data once and then reuse it.
+
+On Windows cache is stored in the \texttt{\%LOCALAPPDATA\%/tracy} directory. All other platforms use the \texttt{\$XDG\_CACHE\_HOME/tracy} directory, or \texttt{\$HOME/.cache/tracy} if the \texttt{XDG\_CACHE\_HOME} environment variable is not set.
 
 \newpage
 \appendix

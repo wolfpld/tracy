@@ -825,6 +825,12 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
 
     if( done )
     {
+        if( json.contains( "usage" ) )
+        {
+            auto& usage = json["usage"];
+            if( usage.contains( "total_tokens" ) ) m_usedCtx = usage["total_tokens"].get<int>();
+        }
+
         bool isTool = false;
         auto& str = back["content"].get_ref<const std::string&>();
         if( !str.starts_with( "<debug>" ) )

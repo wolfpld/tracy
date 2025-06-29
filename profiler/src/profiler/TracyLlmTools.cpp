@@ -856,13 +856,13 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line ) 
     {
         if( minLine > 0 )
         {
-            size += lines[minLine].size() + 1;
+            size += lines[minLine].size() * 3 + 30;
             if( size >= maxSize ) break;
             minLine--;
         }
         if( maxLine < lines.size() )
         {
-            size += lines[maxLine].size() + 1;
+            size += lines[maxLine].size() * 3 + 30;
             if( size >= maxSize ) break;
             maxLine++;
         }

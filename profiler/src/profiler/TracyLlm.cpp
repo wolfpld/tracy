@@ -662,7 +662,8 @@ void TracyLlm::ResetChat()
 
 void TracyLlm::AddMessage( std::string&& str, const char* role )
 {
-    m_usedCtx += str.size() / 4;
+    const auto tokens = m_api ? m_api->Tokenize( str, m_modelIdx ) : -1;
+    m_usedCtx += tokens >= 0 ? tokens : str.size() / 4;
 
     nlohmann::json msg;
     msg["role"] = role;
@@ -706,9 +707,13 @@ void TracyLlm::ManageContext()
         std::ranges::stable_sort( toolOutputs, []( const auto& a, const auto& b ) { return a.first > b.first; } );
         for( auto& v : toolOutputs )
         {
-            m_usedCtx -= v.first / 4;
+            auto tokens = m_api->Tokenize( m_chat[v.second]["content"].get_ref<const std::string&>(), m_modelIdx );
+            m_usedCtx -= tokens >= 0 ? tokens : v.first / 4;
+
             m_chat[v.second]["content"] = TracyLlmChat::ForgetMsg;
-            m_usedCtx += strlen( TracyLlmChat::ForgetMsg ) / 4;
+            tokens = m_api->Tokenize( TracyLlmChat::ForgetMsg, m_modelIdx );
+            m_usedCtx += tokens >= 0 ? tokens : strlen( TracyLlmChat::ForgetMsg ) / 4;
+
             if( m_usedCtx < quota ) break;
         }
     }

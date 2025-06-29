@@ -472,6 +472,15 @@ void TracyLlm::Draw()
                     inputChanged = true;
                 }
 
+                auto cit = it;
+                while( cit != m_chat.end() )
+                {
+                    const auto& content = (*cit)["content"].get_ref<const std::string&>();
+                    const auto tokens = m_api->Tokenize( content, m_modelIdx );
+                    m_usedCtx -= tokens >= 0 ? tokens : content.size() / 4;
+                    ++cit;
+                }
+
                 m_chat.erase( it, m_chat.end() );
                 if( m_responding ) m_stop = true;
                 ImGui::PopID();

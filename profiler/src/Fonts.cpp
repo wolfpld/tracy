@@ -30,14 +30,14 @@ void LoadFonts( float scale )
     ImGuiIO& io = ImGui::GetIO();
 
     ImFontConfig configBasic;
-    configBasic.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configBasic.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
     configBasic.FontDataOwnedByAtlas = false;
     ImFontConfig configMerge;
     configMerge.MergeMode = true;
-    configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configMerge.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
     configMerge.FontDataOwnedByAtlas = false;
     ImFontConfig configFixed;
-    configFixed.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configFixed.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
     configFixed.GlyphExtraAdvanceX = -1;
     configFixed.FontDataOwnedByAtlas = false;
 
@@ -68,7 +68,4 @@ void LoadFonts( float scale )
 
     g_fonts.italic = io.Fonts->AddFontFromMemoryTTF( (void*)fontItalic->data(), fontItalic->size(), round( 15.0f * scale ), &configBasic, rangesText );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge, rangesIcons );
-
-    ImGui_ImplOpenGL3_DestroyFontsTexture();
-    ImGui_ImplOpenGL3_CreateFontsTexture();
 }

@@ -167,8 +167,7 @@ static void SetupDPIScale()
 
 #ifdef __APPLE__
     // No need to upscale the style on macOS, but we need to downscale the fonts.
-    ImGuiIO& io = ImGui::GetIO();
-    io.FontGlobalScale = 1.0f / dpiScale;
+    ImFontCfg::RasterizerDensity = dpiScale;
     scale = 1.0f;
 #endif
 

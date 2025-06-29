@@ -239,6 +239,29 @@ bool TracyLlmApi::Embeddings( const nlohmann::json& req, nlohmann::json& respons
     return true;
 }
 
+int TracyLlmApi::Tokenize( const std::string& text, int modelIdx )
+{
+    if( m_type == Type::LlamaSwap )
+    {
+        std::string buf;
+        nlohmann::json req = { { "content", text } };
+        auto res = PostRequest( m_url + "/upstream/" + m_models[modelIdx].name + "/tokenize", req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ), buf, true );
+        if( res != 200 ) return -1;
+
+        try
+        {
+            auto json = nlohmann::json::parse( buf );
+            return json["tokens"].size();
+        }
+        catch( const std::exception& )
+        {
+            return -1;
+        }
+    }
+
+    return -1;
+}
+
 int64_t TracyLlmApi::GetRequest( const std::string& url, std::string& response )
 {
     assert( m_curl );

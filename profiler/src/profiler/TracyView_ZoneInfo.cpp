@@ -1985,6 +1985,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
         ImGui::NewLine();
         TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
     }
+    ImGui::TextDisabled( ICON_FA_COMPUTER_MOUSE "  Middle click: Zoom to zone" );
     ImGui::EndTooltip();
 }
 

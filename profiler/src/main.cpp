@@ -644,6 +644,8 @@ static void DrawContents()
     static std::string reconnectAddr;
     static uint16_t reconnectPort;
     static bool showFilter = false;
+    static int maxDuration = 0;
+    static int maxMemory = 0;
 
 #ifndef __EMSCRIPTEN__
     UpdateBroadcastClients();
@@ -1083,6 +1085,20 @@ static void DrawContents()
             } );
         }
 #endif
+        ImGui::Separator( );
+        auto InputIntRightAligned = [&]( const char* label, int* value, const char* tooltip, float inputWidth = 150.0f )
+            {
+                float windowWidth = ImGui::GetContentRegionAvail( ).x;
+                float posX = ImGui::GetCursorPosX( ) + windowWidth - inputWidth;
+                ImGui::TextUnformatted( label );
+                ImGui::SameLine( posX );
+                ImGui::SetNextItemWidth( inputWidth );
+                ImGui::InputInt( ( std::string( "##" ) + label ).c_str( ), value );
+                tracy::TooltipIfHovered( tooltip );
+            };
+
+        InputIntRightAligned( "Connection duration (s)", &maxDuration, "Optional. Leave 0 for unlimited connection duration." );
+        InputIntRightAligned( "Max memory (MB)", &maxMemory, "Optional. Leave at 0 for unlimited connection memory usage." );
 
         if( badVer.state != tracy::BadVersionState::Ok )
         {
@@ -1186,6 +1202,9 @@ static void DrawContents()
                 if( selected && !loadThread.joinable() )
                 {
                     view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, s_fixedWidth, s_smallFont, s_bigFont, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_config, s_achievements );
+                    view->SetStartTime( std::chrono::steady_clock::now( ) );
+                    view->SetMaxDuration( maxDuration * 1000 );
+                    view->SetMaxMemory( static_cast<uint64_t>(maxMemory) * 1024 * 1024 );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;

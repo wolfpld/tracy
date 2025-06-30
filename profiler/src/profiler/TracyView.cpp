@@ -681,6 +681,25 @@ enum { MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindo
 
 bool View::DrawImpl()
 {
+    if( m_maxDuration > 0 && !m_disconnectIssued && m_worker.IsConnected( ) )
+    {
+        if( std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::steady_clock::now( ) - m_startTime ).count( ) >= m_maxDuration )
+        {
+            m_worker.Disconnect( );
+            m_disconnectIssued = true;
+        }
+    }
+    if( m_maxMemory > 0 )
+    {
+        if( !m_disconnectIssued && m_worker.IsConnected( ) )
+        {
+            if( memUsage.load( std::memory_order_relaxed ) >= m_maxMemory )
+            {
+                m_worker.Disconnect( );
+                m_disconnectIssued = true;
+            }
+        }
+    }
     if( !m_worker.HasData() )
     {
         bool keepOpen = true;

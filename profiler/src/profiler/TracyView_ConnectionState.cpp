@@ -96,6 +96,22 @@ bool View::DrawConnection()
         }
     }
 
+    if( !m_disconnectIssued && m_worker.IsConnected( ) )
+    {
+        if( m_maxDuration > 0 )
+        {
+            TextDisabledUnformatted( "Remaining time:" );
+            ImGui::SameLine( );
+            ImGui::Text( "%.2fs", ( m_maxDuration - std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::steady_clock::now( ) - m_startTime ).count( ) ) / 1000.0 );
+        }
+        if( m_maxMemory > 0 )
+        {
+            TextDisabledUnformatted( "Remaining memory:" );
+            ImGui::SameLine( );
+            ImGui::Text( "%s", MemSizeToString( m_maxMemory - memUsage.load( std::memory_order_relaxed ) ) );
+        }
+    }
+
     const auto& fis = m_worker.GetFrameImages();
     if( !fis.empty() )
     {

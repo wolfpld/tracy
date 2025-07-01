@@ -111,6 +111,7 @@ enum class QueueType : uint8_t
     SecondStringData,
     MemNamePayload,
     ThreadGroupHint,
+    GpuZoneAnnotation,
     StringData,
     ThreadName,
     PlotName,
@@ -331,7 +332,7 @@ struct QueuePlotDataInt : public QueuePlotDataBase
     int64_t val;
 };
 
-struct QueuePlotDataFloat : public QueuePlotDataBase 
+struct QueuePlotDataFloat : public QueuePlotDataBase
 {
     float val;
 };
@@ -446,6 +447,14 @@ struct QueueGpuZoneEnd
     uint8_t context;
 };
 
+struct QueueGpuZoneAnnotation
+{
+  int64_t noteId;
+  double value;
+  uint16_t queryId;
+  uint8_t context;
+};
+
 struct QueueGpuTime
 {
     int64_t gpuTime;
@@ -467,7 +476,7 @@ struct QueueGpuTimeSync
     int64_t cpuTime;
     uint8_t context;
 };
-    
+
 struct QueueGpuContextName
 {
     uint8_t context;
@@ -789,6 +798,7 @@ struct QueueItem
         QueueSourceCodeNotAvailable sourceCodeNotAvailable;
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
+        QueueGpuZoneAnnotation zoneAnnotation;
     };
 };
 #pragma pack( pop )
@@ -900,6 +910,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // second string data
     sizeof( QueueHeader ) + sizeof( QueueMemNamePayload ),
     sizeof( QueueHeader ) + sizeof( QueueThreadGroupHint ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneAnnotation ), // GPU zone annotation
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

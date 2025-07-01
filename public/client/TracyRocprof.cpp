@@ -28,9 +28,11 @@
         }                                                                                                              \
     }
 
+#define USE_CALIBRATION 0
+
 namespace
 {
-    
+
 using kernel_symbol_data_t = rocprofiler_callback_tracing_code_object_kernel_symbol_register_data_t;
 
 struct ToolData
@@ -47,6 +49,7 @@ struct ToolData
     std::unordered_map<rocprofiler_kernel_id_t, kernel_symbol_data_t> client_kernels;
     std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_start_times;
     std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_end_times;
+    std::unordered_map<rocprofiler_dispatch_id_t, uint16_t> dispatch_query_id;
     std::unique_ptr<tracy::Thread> cal_thread;
     std::mutex    mut{};
 };
@@ -69,7 +72,7 @@ uint8_t gpu_context_allocate(ToolData * data) {
     clock_gettime(CLOCK_BOOTTIME, &ts);
     uint64_t cpu_timestamp = Profiler::GetTime();
     uint64_t gpu_timestamp = ((uint64_t)ts.tv_sec * 1000000000) + ts.tv_nsec;
-    bool is_calibrated = true;
+    bool is_calibrated = USE_CALIBRATION;
     float timestamp_period = 1.0f;
     data->previous_cpu_time = cpu_timestamp;
 
@@ -140,14 +143,16 @@ uint64_t kernel_src_loc(ToolData *data, uint64_t kernel_id) {
 void record_interval(ToolData *data, rocprofiler_timestamp_t start_timestamp,
     rocprofiler_timestamp_t end_timestamp,
     uint64_t src_loc, rocprofiler_dispatch_id_t dispatch_id) {
-        
+
     uint16_t query_id = 0;
     uint8_t context_id = data->context_id;
- 
+
     {
         auto _lk = std::unique_lock{data->mut};
         query_id = data->query_id;
         data->query_id++;
+        if (dispatch_id != UINT64_MAX)
+          data->dispatch_query_id[dispatch_id] = query_id;
     }
 
     uint64_t cpu_start_time = 0, cpu_end_time = 0;
@@ -228,6 +233,7 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
     ToolData * data = static_cast<ToolData*>(callback_data);
     if (!data->init) return;
 
+    double sum;
     for(size_t i = 0; i < record_count; ++i) {
         int64_t profilerTime = Profiler::GetTime();
         TracyLfqPrepare( QueueType::PlotDataDouble );
@@ -235,6 +241,33 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
         MemWrite( &item->plotDataDouble.time, profilerTime );
         MemWrite( &item->plotDataDouble.val, record_data[i].counter_value );
         TracyLfqCommit;
+
+        sum += record_data[i].counter_value;
+    }
+
+    uint16_t query_id = 0;
+    {
+      auto _lk = std::unique_lock{data->mut};
+      if (data->dispatch_query_id.count(dispatch_data.dispatch_info.dispatch_id)) {
+        query_id = data->dispatch_query_id[dispatch_data.dispatch_info.dispatch_id];
+      } else {
+        fprintf(stderr, "oops\n");
+      }
+    }
+
+    if (record_count > 0) {
+      //fprintf(stderr, "a %lu\n", dispatch_data.dispatch_info.dispatch_id);
+      auto* item = tracy::Profiler::QueueSerial();
+      tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuZoneAnnotation);
+      auto _counter_id = rocprofiler_counter_id_t{};
+      ROCPROFILER_CALL(rocprofiler_query_record_counter_id(record_data[0].id, &_counter_id),
+                       "query record counter id");
+      tracy::MemWrite(&item->zoneAnnotation.noteId, _counter_id.handle);
+      fprintf(stderr, "note %lu\n", _counter_id.handle);
+      tracy::MemWrite(&item->zoneAnnotation.queryId, query_id);
+      tracy::MemWrite(&item->zoneAnnotation.value, sum);
+      tracy::MemWrite(&item->zoneAnnotation.context, data->context_id);
+      tracy::Profiler::QueueSerialFinish();
     }
 }
 
@@ -253,7 +286,7 @@ dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
     assert(callback_data != nullptr);
     ToolData * data = static_cast<ToolData*>(callback_data);
     if (!data->init) return;
-    
+
     /**
      * This simple example uses the same profile counter set for all agents.
      * We store this in a cache to prevent constructing many identical profile counter
@@ -416,13 +449,15 @@ void calibration_thread(void * ptr) {
 
     data->init = true;
 
+#if USE_CALIBRATION
     while (data->init) {
         timespec ts;
-        // HSA performs a linear interpolation of GPU time to CLOCK_BOOTTIME. However, this is subject to network time updates and can drift relative to tracy's clock.
+        // HSA performs a linear interpolation of GPU time to CLOCK_BOOTTIME. However, this is
+        // subject to network time updates and can drift relative to tracy's clock.
         clock_gettime(CLOCK_BOOTTIME, &ts);
         int64_t cpu_timestamp = Profiler::GetTime();
         int64_t gpu_timestamp = ts.tv_nsec + ts.tv_sec * 1e9L;
-        
+
         if (cpu_timestamp > data->previous_cpu_time) {
             auto* item = tracy::Profiler::QueueSerial();
             tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuCalibration);
@@ -436,6 +471,7 @@ void calibration_thread(void * ptr) {
 
         sleep(1);
     }
+#endif
 }
 
 int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
@@ -468,7 +504,7 @@ int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
                                                         tool_callback_tracing_callback,
                                                         user_data),
         "callback tracing service failed to configure");
-    
+
     ROCPROFILER_CALL(
         rocprofiler_configure_callback_tracing_service(get_client_ctx(),
                                                         ROCPROFILER_CALLBACK_TRACING_MEMORY_COPY,
@@ -477,7 +513,7 @@ int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
                                                         tool_callback_tracing_callback,
                                                         user_data),
         "callback tracing service failed to configure");
-        
+
 
     ROCPROFILER_CALL( rocprofiler_start_context( get_client_ctx() ), "start context" );
     return 0;
@@ -485,7 +521,7 @@ int tool_init( rocprofiler_client_finalize_t fini_func, void* user_data )
 
 void tool_fini( void* tool_data_v ) {
     rocprofiler_stop_context(get_client_ctx());
-    
+
     ToolData * data = static_cast<ToolData*>(tool_data_v);
     data->init = false;
     data->cal_thread.reset();

@@ -412,6 +412,10 @@ struct GpuEvent
     uint64_t _gpuStart_child1;
     uint64_t _gpuEnd_child2;
     Int24 callstack;
+    uint16_t query_id;
+    int64_t note_ids[10];
+    double note_vals[10];
+    uint8_t note_count;
 };
 
 enum { GpuEventSize = sizeof( GpuEvent ) };

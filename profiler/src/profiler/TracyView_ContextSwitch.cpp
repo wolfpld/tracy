@@ -460,6 +460,12 @@ void View::DrawWaitStacks()
             m_waitStackRange.max = m_vd.zvEnd;
         }
     }
+    if( ImGui::IsItemHovered( ) )
+    {
+        ImGui::BeginTooltip( );
+        ImGui::TextDisabled( ICON_FA_COMPUTER_MOUSE " Ctrl + drag on timeline to set the range" );
+        ImGui::EndTooltip( );
+    }
     if( m_waitStackRange.active )
     {
         ImGui::SameLine();

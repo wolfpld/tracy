@@ -7075,7 +7075,7 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
     }
     auto& data = cit->second->v;
     auto& item = data.push_next();
-    item.SetCpu( t );
+    item.SetStart( t );
     item.SetCpu( 0 );
     item.SetWakeup( t );
     item.SetWakeupCpu( 0 );

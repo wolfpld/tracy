@@ -6051,9 +6051,6 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
     zone->note_ids[zone->note_count] = ev.noteId;
     zone->note_vals[zone->note_count] = ev.value;
     zone->note_count++;
-
-    if (ctx->notes.contains(ev.noteId))
-      fprintf(stderr, "%s: %f\n", GetString(ctx->notes[ev.noteId]), ev.value);
 }
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )

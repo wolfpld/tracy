@@ -50,6 +50,7 @@ struct ToolData
     std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_start_times;
     std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_end_times;
     std::unordered_map<rocprofiler_dispatch_id_t, uint16_t> dispatch_query_id;
+    std::set<std::string> counter_names = {"SQ_WAVES", "GL2C_MISS", "GL2C_HIT"};
     std::unique_ptr<tracy::Thread> cal_thread;
     std::mutex    mut{};
 };
@@ -305,8 +306,6 @@ dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
     auto wlock = std::unique_lock{m_mutex};
     if(search_cache()) return;
 
-    // Counters we want to collect (here its SQ_WAVES)
-    std::set<std::string> counters_to_collect = {"SQ_WAVES", "GL2C_MISS"};
     // GPU Counter IDs
     std::vector<rocprofiler_counter_id_t> gpu_counters;
 
@@ -337,7 +336,7 @@ dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
             rocprofiler_query_counter_info(
                 counter, ROCPROFILER_COUNTER_INFO_VERSION_0, static_cast<void*>(&info)),
             "Could not query info");
-        if(counters_to_collect.count(std::string(info.name)) > 0)
+        if(data->counter_names.count(std::string(info.name)) > 0)
         {
             std::clog << "Counter: " << counter.handle << " " << info.name << "\n";
             collect_counters.push_back(counter);
@@ -441,6 +440,14 @@ void calibration_thread(void * ptr) {
     while (!TracyIsStarted);
     ToolData * data = static_cast<ToolData*>(ptr);
     data->context_id = gpu_context_allocate(data);
+    const char* user_counters = GetEnvVar("TRACY_ROCPROF_COUNTERS");
+    if (user_counters) {
+      data->counter_names.clear();
+      std::stringstream ss(user_counters);
+      std::string counter;
+      while (std::getline(ss, counter, ','))
+        data->counter_names.insert(counter);
+    }
     data->init = true;
 
 #if USE_CALIBRATION
@@ -535,8 +542,6 @@ extern "C"
 
         // (optional) create configure data
         static ToolData data = ToolData{ version, runtime_version, priority, *client_id, 0, false, 0, 0 };
-
-        //std::cerr << "profile hello" << std::endl;
 
         // construct configure result
         static auto cfg = rocprofiler_tool_configure_result_t{ sizeof( rocprofiler_tool_configure_result_t ),

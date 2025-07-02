@@ -1105,6 +1105,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         auto ctx = m_slab.AllocInit<GpuCtxData>();
         uint8_t calibration;
         f.Read7( ctx->thread, calibration, ctx->count, ctx->period, ctx->type, ctx->name, ctx->overflow );
+        uint64_t notesz;
+        f.Read( notesz );
+        for ( uint64_t i=0; i<notesz; i++ )
+        {
+          decltype(ctx->notes)::key_type key;
+          decltype(ctx->notes)::mapped_type value;
+          f.Read2( key, value );
+          ctx->notes[key] = value;
+        }
         ctx->hasCalibration = calibration;
         ctx->hasPeriod = ctx->period != 1.f;
         m_data.gpuCnt += ctx->count;
@@ -4622,6 +4631,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::GpuContextName:
         ProcessGpuContextName( ev.gpuContextName );
         break;
+    case QueueType::GpuAnnotationName:
+        ProcessGpuAnnotationName( ev.gpuAnnotationName );
+        break;
     case QueueType::GpuZoneAnnotation:
         ProcessGpuZoneAnnotation( ev.zoneAnnotation );
         break;
@@ -6017,6 +6029,14 @@ void Worker::ProcessGpuContextName( const QueueGpuContextName& ev )
     ctx->name = StringIdx( idx );
 }
 
+void Worker::ProcessGpuAnnotationName( const QueueGpuAnnotationName& ev )
+{
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
+    const auto idx = GetSingleStringIdx();
+    ctx->notes[ev.noteId] = StringIdx( idx );
+}
+
 void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
 {
     auto ctx = m_gpuCtxMap[ev.context];
@@ -6031,6 +6051,9 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
     zone->note_ids[zone->note_count] = ev.noteId;
     zone->note_vals[zone->note_count] = ev.value;
     zone->note_count++;
+
+    if (ctx->notes.contains(ev.noteId))
+      fprintf(stderr, "%s: %f\n", GetString(ctx->notes[ev.noteId]), ev.value);
 }
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
@@ -8149,6 +8172,13 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &ctx->type, sizeof( ctx->type ) );
         f.Write( &ctx->name, sizeof( ctx->name ) );
         f.Write( &ctx->overflow, sizeof( ctx->overflow ) );
+        sz = ctx->notes.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& p : ctx->notes )
+        {
+          f.Write( &p.first, sizeof( p.first ) );
+          f.Write( &p.second, sizeof( p.second ) );
+        }
         sz = ctx->threadData.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& td : ctx->threadData )

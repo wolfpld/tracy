@@ -61,6 +61,7 @@ enum class QueueType : uint8_t
     ThreadWakeup,
     GpuTime,
     GpuContextName,
+    GpuAnnotationName,
     CallstackFrameSize,
     SymbolInformation,
     ExternalNameMetadata,
@@ -488,6 +489,18 @@ struct QueueGpuContextNameFat : public QueueGpuContextName
     uint16_t size;
 };
 
+struct QueueGpuAnnotationName
+{
+  int64_t noteId;
+  uint8_t context;
+};
+
+struct QueueGpuAnnotationNameFat : public QueueGpuAnnotationName
+{
+  uint64_t ptr;
+  uint16_t size;
+};
+
 struct QueueMemNamePayload
 {
     uint64_t name;
@@ -765,6 +778,8 @@ struct QueueItem
         QueueGpuTimeSync gpuTimeSync;
         QueueGpuContextName gpuContextName;
         QueueGpuContextNameFat gpuContextNameFat;
+        QueueGpuAnnotationName gpuAnnotationName;
+        QueueGpuAnnotationNameFat gpuAnnotationNameFat;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
         QueueMemDiscard memDiscard;
@@ -859,6 +874,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     sizeof( QueueHeader ) + sizeof( QueueGpuContextName ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuAnnotationName ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
     sizeof( QueueHeader ),                                  // ExternalNameMetadata - not for wire transfer

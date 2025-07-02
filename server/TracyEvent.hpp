@@ -778,6 +778,7 @@ struct GpuCtxData
     uint32_t overflowMul;
     StringIdx name;
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
+    unordered_flat_map<int64_t, StringIdx> notes;
     short_ptr<GpuEvent> query[64*1024];
 };
 

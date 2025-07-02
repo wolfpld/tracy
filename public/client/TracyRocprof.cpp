@@ -263,7 +263,6 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
       ROCPROFILER_CALL(rocprofiler_query_record_counter_id(record_data[0].id, &_counter_id),
                        "query record counter id");
       tracy::MemWrite(&item->zoneAnnotation.noteId, _counter_id.handle);
-      fprintf(stderr, "note %lu\n", _counter_id.handle);
       tracy::MemWrite(&item->zoneAnnotation.queryId, query_id);
       tracy::MemWrite(&item->zoneAnnotation.value, sum);
       tracy::MemWrite(&item->zoneAnnotation.context, data->context_id);
@@ -351,6 +350,19 @@ dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
         {
             std::clog << "Counter: " << counter.handle << " " << info.name << "\n";
             collect_counters.push_back(counter);
+
+            size_t name_length = strlen(info.name);
+            char* cloned_name = (char*)tracy::tracy_malloc(name_length);
+            memcpy(cloned_name, info.name, name_length);
+            {
+              auto* item = tracy::Profiler::QueueSerial();
+              tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuAnnotationName);
+              tracy::MemWrite(&item->gpuAnnotationNameFat.context, data->context_id);
+              tracy::MemWrite(&item->gpuAnnotationNameFat.noteId, counter.handle);
+              tracy::MemWrite(&item->gpuAnnotationNameFat.ptr, (uint64_t)cloned_name);
+              tracy::MemWrite(&item->gpuAnnotationNameFat.size, name_length);
+              tracy::Profiler::QueueSerialFinish();
+            }
         }
     }
 

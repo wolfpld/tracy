@@ -55,7 +55,6 @@ struct ToolData
 };
 
 using namespace tracy;
-const char * PLOT_NAME = "SQ_WAVES";
 
 rocprofiler_context_id_t&
 get_client_ctx()
@@ -233,16 +232,12 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
     ToolData * data = static_cast<ToolData*>(callback_data);
     if (!data->init) return;
 
-    double sum;
+    std::unordered_map<rocprofiler_counter_instance_id_t, double> sums;
     for(size_t i = 0; i < record_count; ++i) {
-        int64_t profilerTime = Profiler::GetTime();
-        TracyLfqPrepare( QueueType::PlotDataDouble );
-        MemWrite( &item->plotDataDouble.name, (uint64_t)PLOT_NAME );
-        MemWrite( &item->plotDataDouble.time, profilerTime );
-        MemWrite( &item->plotDataDouble.val, record_data[i].counter_value );
-        TracyLfqCommit;
-
-        sum += record_data[i].counter_value;
+        auto _counter_id = rocprofiler_counter_id_t{};
+        ROCPROFILER_CALL(rocprofiler_query_record_counter_id(record_data[i].id, &_counter_id),
+                         "query record counter id");
+        sums[_counter_id.handle] += record_data[i].counter_value;
     }
 
     uint16_t query_id = 0;
@@ -255,16 +250,12 @@ record_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
       }
     }
 
-    if (record_count > 0) {
-      //fprintf(stderr, "a %lu\n", dispatch_data.dispatch_info.dispatch_id);
+    for( auto& p: sums ) {
       auto* item = tracy::Profiler::QueueSerial();
       tracy::MemWrite(&item->hdr.type, tracy::QueueType::GpuZoneAnnotation);
-      auto _counter_id = rocprofiler_counter_id_t{};
-      ROCPROFILER_CALL(rocprofiler_query_record_counter_id(record_data[0].id, &_counter_id),
-                       "query record counter id");
-      tracy::MemWrite(&item->zoneAnnotation.noteId, _counter_id.handle);
+      tracy::MemWrite(&item->zoneAnnotation.noteId, p.first);
       tracy::MemWrite(&item->zoneAnnotation.queryId, query_id);
-      tracy::MemWrite(&item->zoneAnnotation.value, sum);
+      tracy::MemWrite(&item->zoneAnnotation.value, p.second);
       tracy::MemWrite(&item->zoneAnnotation.context, data->context_id);
       tracy::Profiler::QueueSerialFinish();
     }
@@ -315,7 +306,7 @@ dispatch_callback(rocprofiler_dispatch_counting_service_data_t dispatch_data,
     if(search_cache()) return;
 
     // Counters we want to collect (here its SQ_WAVES)
-    std::set<std::string> counters_to_collect = {"SQ_WAVES"};
+    std::set<std::string> counters_to_collect = {"SQ_WAVES", "GL2C_MISS"};
     // GPU Counter IDs
     std::vector<rocprofiler_counter_id_t> gpu_counters;
 
@@ -450,15 +441,6 @@ void calibration_thread(void * ptr) {
     while (!TracyIsStarted);
     ToolData * data = static_cast<ToolData*>(ptr);
     data->context_id = gpu_context_allocate(data);
-
-    TracyLfqPrepare( QueueType::PlotConfig );
-    MemWrite( &item->plotConfig.name, (uint64_t)PLOT_NAME);
-    MemWrite( &item->plotConfig.type, (uint8_t)PlotFormatType::Number );
-    MemWrite( &item->plotConfig.step, (uint8_t)false );
-    MemWrite( &item->plotConfig.fill, (uint8_t)true );
-    MemWrite( &item->plotConfig.color, 0 );
-    TracyLfqCommit;
-
     data->init = true;
 
 #if USE_CALIBRATION

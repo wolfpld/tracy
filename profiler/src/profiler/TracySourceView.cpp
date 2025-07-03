@@ -1616,12 +1616,8 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                     view.m_statRange.max = vd.zvEnd;
                 }
             }
-            if( ImGui::IsItemHovered( ) )
-            {
-                ImGui::BeginTooltip( );
-                ImGui::TextDisabled( ICON_FA_COMPUTER_MOUSE " Ctrl + drag on timeline to set the range" );
-                ImGui::EndTooltip( );
-            }
+            TooltipIfHovered( ICON_FA_COMPUTER_MOUSE " Ctrl + drag on timeline to set the range" );
+
             if( view.m_statRange.active )
             {
                 ImGui::SameLine();

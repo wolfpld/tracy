@@ -246,12 +246,8 @@ void View::DrawMemory()
             m_memInfo.range.max = m_vd.zvEnd;
         }
     }
-    if( ImGui::IsItemHovered( ) )
-    {
-        ImGui::BeginTooltip( );
-        ImGui::TextDisabled( ICON_FA_COMPUTER_MOUSE " Ctrl + drag on timeline to set the range" );
-        ImGui::EndTooltip( );
-    }
+    TooltipIfHovered( ICON_FA_COMPUTER_MOUSE " Ctrl + drag on timeline to set the range" );
+
     if( m_memInfo.range.active )
     {
         ImGui::SameLine();

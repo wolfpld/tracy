@@ -681,23 +681,15 @@ enum { MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindo
 
 bool View::DrawImpl()
 {
-    if( m_maxDuration > 0 && !m_disconnectIssued && m_worker.IsConnected( ) )
+    if( m_worker.IsConnected() && !m_worker.WasDisconnectIssued() )
     {
-        if( std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::steady_clock::now( ) - m_startTime ).count( ) >= m_maxDuration )
+        if( m_maxDuration.count() > 0 && ( std::chrono::steady_clock::now() - m_startTime ) >= m_maxDuration )
         {
-            m_worker.Disconnect( );
-            m_disconnectIssued = true;
+            m_worker.Disconnect();
         }
-    }
-    if( m_maxMemory > 0 )
-    {
-        if( !m_disconnectIssued && m_worker.IsConnected( ) )
+        if( m_maxMemory > 0 && memUsage.load( std::memory_order_relaxed ) >= m_maxMemory )
         {
-            if( memUsage.load( std::memory_order_relaxed ) >= m_maxMemory )
-            {
-                m_worker.Disconnect( );
-                m_disconnectIssued = true;
-            }
+            m_worker.Disconnect();
         }
     }
     if( !m_worker.HasData() )
@@ -844,9 +836,9 @@ bool View::DrawImpl()
         ImGui::SameLine();
         if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
         {
-            const bool wasDisconnectIssued = m_disconnectIssued;
+            const bool wasDisconnectIssued = m_worker.WasDisconnectIssued();
             const bool discardData = !DrawConnection();
-            const bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
+            const bool disconnectIssuedJustNow = m_worker.WasDisconnectIssued() != wasDisconnectIssued;
             if( discardData ) keepOpen = false;
             if( disconnectIssuedJustNow || discardData ) ImGui::CloseCurrentPopup();
             ImGui::EndPopup();

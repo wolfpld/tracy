@@ -166,7 +166,7 @@ public:
     bool IsBackgroundDone() const { return m_worker.IsBackgroundDone(); }
     void SetMaxMemory( uint64_t memory ) { m_maxMemory = memory; }
     void SetStartTime( std::chrono::steady_clock::time_point time ) { m_startTime = time; }
-    void SetMaxDuration( int time ) { m_maxDuration = time; }
+    void SetMaxDuration( std::chrono::milliseconds time ) { m_maxDuration = time; }
 
     bool m_showRanges = false;
     Range m_statRange;
@@ -454,7 +454,7 @@ private:
     Worker m_worker;
     uint64_t m_maxMemory;
     std::chrono::steady_clock::time_point m_startTime;
-    int m_maxDuration;
+    std::chrono::milliseconds m_maxDuration;
     std::string m_filename, m_filenameStaging;
     bool m_staticView;
     ViewMode m_viewMode;
@@ -495,7 +495,6 @@ private:
     size_t m_prevMessages = 0;
     bool m_messagesShowCallstack = false;
     Vector<uint32_t> m_msgList;
-    bool m_disconnectIssued = false;
     uint64_t m_selectedThread = 0;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;

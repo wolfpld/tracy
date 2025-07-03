@@ -220,11 +220,19 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
                 pos += sizeof( "<think>" ) - 1;
                 while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
                 auto endThink = content.find( "</think>", pos );
-                ThinkScope();
-                if( m_thinkOpen ) PrintThink( content.c_str() + pos, std::min( end, endThink ) - pos );
+                if( endThink != pos )
+                {
+                    ThinkScope();
+                    if( m_thinkOpen ) PrintThink( content.c_str() + pos, std::min( end, endThink ) - pos );
+                }
                 if( endThink == std::string::npos ) break;
-                pos = endThink + sizeof( "</think>" ) - 1;
-                while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
+                pos = endThink;
+                do
+                {
+                    pos += sizeof( "</think>" ) - 1;
+                    while( content[pos] == '\n' || content[pos] == ' ' ) pos++;
+                }
+                while( strncmp( content.c_str() + pos, "</think>", sizeof( "</think>" ) - 1 ) == 0 );
             }
             else
             {

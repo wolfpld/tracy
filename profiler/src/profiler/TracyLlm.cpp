@@ -860,25 +860,33 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 auto end = str.find( "</tool>", pos );
                 if( end != std::string::npos )
                 {
-                    while( end > pos && str[end-1] == '\n' ) end--;
-                    const auto tool = str.substr( pos, end - pos );
-                    lock.unlock();
-
-                    TracyLlmTools::ToolReply reply;
-                    try
+                    auto repeat = str.find( "<tool>", end );
+                    if( repeat != std::string::npos )
                     {
-                        auto json = nlohmann::json::parse( tool );
-                        reply = m_tools->HandleToolCalls( json, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
+                        AddMessage( "<tool_output>\nError: Only one tool call is allowed per turn.", "user" );
                     }
-                    catch( const nlohmann::json::exception& e )
+                    else
                     {
-                        reply.reply = e.what();
-                    }
+                        while( end > pos && str[end-1] == '\n' ) end--;
+                        const auto tool = str.substr( pos, end - pos );
+                        lock.unlock();
 
-                    isTool = true;
-                    auto output = "<tool_output>\n" + reply.reply;
-                    lock.lock();
-                    AddMessage( std::move( output ), "user" );
+                        TracyLlmTools::ToolReply reply;
+                        try
+                        {
+                            auto json = nlohmann::json::parse( tool );
+                            reply = m_tools->HandleToolCalls( json, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
+                        }
+                        catch( const nlohmann::json::exception& e )
+                        {
+                            reply.reply = e.what();
+                        }
+
+                        isTool = true;
+                        auto output = "<tool_output>\n" + reply.reply;
+                        lock.lock();
+                        AddMessage( std::move( output ), "user" );
+                    }
                     m_jobs.emplace_back( WorkItem {
                         .task = Task::SendMessage,
                         .callback = nullptr

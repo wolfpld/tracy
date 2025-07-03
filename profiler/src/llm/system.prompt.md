@@ -25,7 +25,7 @@ Your operation process will be strictly structured using `<think>` and `<tool>` 
   - If, in the `<think>` block, you decide you need to use a tool, the next block generated *MUST* be a `<tool>` block.
   - The tag name MUST be exactly `tool`.
   - There can be ONLY ONE tool call in the `<tool>` block.
-  - There can be ONLY ONE `<tool>` block.
+  - Only ONE tool call is permitted PER TURN.
   - *After generating a `<tool>` block, you MUST END YOUR RESPONSE FOR THIS TURN.* Do not generate any other text or tags after the `<tool>` block. The system will process this tool call and provide you with the result in the next step.
   - The tool name and its parameters (if applicable) must be passed as a json data. For example:
 <think>

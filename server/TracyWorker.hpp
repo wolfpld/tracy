@@ -52,6 +52,8 @@ namespace EventType
     };
 }
 
+constexpr int64_t NO_WORKER_MEMORY_LIMIT = -1; // anything <0 would do
+
 struct UnsupportedVersion : public std::exception
 {
     UnsupportedVersion( int version ) : version( version ) {}

@@ -339,10 +339,7 @@ void ArenaAllocatorTest()
 
 int main()
 {
-#ifdef _WIN32
-    signal( SIGUSR1, SignalHandler_TriggerCrash );
-    signal( SIGUSR2, SignalHandler_TriggerInstrumentationFailure );
-#else
+#ifndef _WIN32
     struct sigaction sigusr1, oldsigusr1,sigusr2, oldsigusr2 ;
     memset( &sigusr1, 0, sizeof( sigusr1 ) );
     sigusr1.sa_handler = SignalHandler_TriggerCrash;

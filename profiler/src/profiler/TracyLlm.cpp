@@ -63,7 +63,7 @@ TracyLlm::~TracyLlm()
     {
         {
             std::lock_guard lock( m_lock );
-            m_stop = true;
+            if( m_currentJob ) m_currentJob->stop = true;
             m_exit.store( true, std::memory_order_release );
             m_cv.notify_all();
         }
@@ -140,21 +140,21 @@ void TracyLlm::Draw()
     if( hasChat ) ImGui::BeginDisabled();
     if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
     {
-        if( m_responding ) m_stop = true;
+        if( m_currentJob ) m_currentJob->stop = true;
         ResetChat();
     }
     if( hasChat ) ImGui::EndDisabled();
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reconnect" ) )
     {
-        if( m_responding ) m_stop = true;
+        if( m_currentJob ) m_currentJob->stop = true;
         QueueConnect();
     }
 
     ImGui::SameLine();
     if( ImGui::TreeNode( "Settings" ) )
     {
-        const auto responding = m_responding;
+        const auto responding = m_currentJob != nullptr;
         if( responding ) ImGui::BeginDisabled();
         ImGui::Spacing();
         ImGui::AlignTextToFramePadding();
@@ -344,7 +344,7 @@ void TracyLlm::Draw()
         if( m_embedIdx < 0 ) ImGui::BeginDisabled();
         if( ImGui::SmallButton( ICON_FA_BOOK_BOOKMARK " Learn manual" ) )
         {
-            if( m_responding ) m_stop = true;
+            if( m_currentJob ) m_currentJob->stop = true;
             m_tools->BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
         }
         if( m_embedIdx < 0 ) ImGui::EndDisabled();
@@ -470,7 +470,7 @@ void TracyLlm::Draw()
                 }
 
                 m_chat.erase( it, m_chat.end() );
-                if( m_responding ) m_stop = true;
+                if( m_currentJob ) m_currentJob->stop = true;
                 ImGui::PopID();
                 break;
             }
@@ -488,11 +488,11 @@ void TracyLlm::Draw()
     ImGui::EndChild();
     ImGui::Spacing();
 
-    if( m_responding )
+    if( m_currentJob )
     {
-        const bool disabled = m_stop;
+        const bool disabled = m_currentJob->stop;
         if( disabled ) ImGui::BeginDisabled();
-        if( ImGui::Button( ICON_FA_STOP " Stop" ) ) m_stop = true;
+        if( ImGui::Button( ICON_FA_STOP " Stop" ) ) m_currentJob->stop = true;
         if( disabled ) ImGui::EndDisabled();
         ImGui::SameLine();
         const auto pos = ImGui::GetWindowPos() + ImGui::GetCursorPos();
@@ -503,7 +503,7 @@ void TracyLlm::Draw()
         draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 2 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
         ImGui::Dummy( ImVec2( ty * 3, ty ) );
         ImGui::SameLine();
-        if( m_stop )
+        if( disabled )
         {
             ImGui::TextUnformatted( "Stopping..." );
         }
@@ -541,10 +541,7 @@ void TracyLlm::Draw()
             if( *ptr )
             {
                 AddMessage( ptr, "user" );
-
                 *m_input = 0;
-                m_responding = true;
-
                 QueueSendMessage();
             }
             else
@@ -757,7 +754,6 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     bool res;
     try
     {
-        m_responding = true;
         auto chat = m_chat;
         lock.unlock();
 
@@ -787,15 +783,12 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );
 
         lock.lock();
-        if( !res ) m_responding = false;
     }
     catch( std::exception& e )
     {
         lock.lock();
         if( !m_chat.empty() && m_chat.back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat.pop_back();
         AddMessage( e.what(), "error" );
-        m_responding = false;
-        m_stop = false;
     }
 }
 
@@ -803,10 +796,8 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
 {
     std::unique_lock lock( m_lock );
 
-    if( m_stop )
+    if( m_currentJob->stop )
     {
-        m_stop = false;
-        m_responding = false;
         m_focusInput = true;
         return false;
     }
@@ -826,11 +817,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     }
     catch( const nlohmann::json::exception& e )
     {
-        if( m_responding )
-        {
-            m_responding = false;
-            m_focusInput = true;
-        }
+        m_focusInput = true;
         return false;
     }
 
@@ -894,7 +881,6 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         }
         if( !isTool )
         {
-            m_responding = false;
             m_focusInput = true;
         }
     }

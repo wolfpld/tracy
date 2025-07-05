@@ -60,7 +60,9 @@ private:
     void QueueSendMessage();
 
     void AddMessage( std::string&& str, const char* role );
-    void ManageContext();
+    void AddMessageBlocking( std::string&& str, const char* role, std::unique_lock<std::mutex>& lock );
+
+    void ManageContext( std::unique_lock<std::mutex>& lock );
     void SendMessage( std::unique_lock<std::mutex>& lock );
     bool OnResponse( const nlohmann::json& json );
 

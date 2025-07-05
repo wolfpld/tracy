@@ -677,6 +677,30 @@ void TracyLlm::QueueSendMessage()
 
 void TracyLlm::AddMessage( std::string&& str, const char* role )
 {
+    if( !m_api )
+    {
+        std::unique_lock<std::mutex> null;
+        AddMessageBlocking( std::move( str ), role, null );
+        return;
+    }
+
+    m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
+        .task = Task::Tokenize,
+        .callback2 = [this, str, role]( nlohmann::json json ) {
+            m_usedCtx += json["tokens"].get<int>();
+            nlohmann::json msg = {
+                { "role", role },
+                { "content", str }
+            };
+            m_chat.emplace_back( std::move( msg ) );
+        },
+        .param = std::move( str ),
+    } ) );
+    m_cv.notify_all();
+}
+
+void TracyLlm::AddMessageBlocking( std::string&& str, const char* role, std::unique_lock<std::mutex>& lock )
+{
     const auto tokens = m_api ? m_api->Tokenize( str, m_modelIdx ) : -1;
     m_usedCtx += tokens >= 0 ? tokens : str.size() / 4;
 
@@ -684,7 +708,9 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
     msg["role"] = role;
     msg["content"] = std::move( str );
 
+    if( lock ) lock.lock();
     m_chat.emplace_back( std::move( msg ) );
+    if( lock ) lock.unlock();
 }
 
 void TracyLlm::AddAttachment( std::string&& str, const char* role )
@@ -692,7 +718,7 @@ void TracyLlm::AddAttachment( std::string&& str, const char* role )
     AddMessage( "<attachment>\n" + std::move( str ), role );
 }
 
-void TracyLlm::ManageContext()
+void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
 {
     const auto& models = m_api->GetModels();
     const auto ctxSize = models[m_modelIdx].contextSize;
@@ -725,7 +751,9 @@ void TracyLlm::ManageContext()
             auto tokens = m_api->Tokenize( m_chat[v.second]["content"].get_ref<const std::string&>(), m_modelIdx );
             m_usedCtx -= tokens >= 0 ? tokens : v.first / 4;
 
+            lock.lock();
             m_chat[v.second]["content"] = TracyLlmChat::ForgetMsg;
+            lock.unlock();
             tokens = m_api->Tokenize( TracyLlmChat::ForgetMsg, m_modelIdx );
             m_usedCtx += tokens >= 0 ? tokens : strlen( TracyLlmChat::ForgetMsg ) / 4;
 
@@ -736,7 +764,8 @@ void TracyLlm::ManageContext()
 
 void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
 {
-    ManageContext();
+    lock.unlock();
+    ManageContext( lock );
 
     bool debug = false;
 #ifndef NDEBUG
@@ -749,18 +778,17 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
 
     if( debug )
     {
-        AddMessage( "<debug>\n", "assistant" );
+        AddMessageBlocking( "<debug>\n", "assistant", lock );
     }
     else
     {
-        AddMessage( "<think>", "assistant" );
+        AddMessageBlocking( "<think>", "assistant", lock );
     }
 
     bool res;
     try
     {
         auto chat = m_chat;
-        lock.unlock();
 
         std::string inject;
         if( debug )
@@ -793,7 +821,9 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     {
         lock.lock();
         if( !m_chat.empty() && m_chat.back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat.pop_back();
-        AddMessage( e.what(), "error" );
+        lock.unlock();
+        AddMessageBlocking( e.what(), "error", lock );
+        lock.lock();
     }
 }
 
@@ -856,7 +886,9 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                     auto repeat = str.find( "<tool>", end );
                     if( repeat != std::string::npos )
                     {
-                        AddMessage( "<tool_output>\nError: Only one tool call is allowed per turn.", "user" );
+                        lock.unlock();
+                        AddMessageBlocking( "<tool_output>\nError: Only one tool call is allowed per turn.", "user", lock );
+                        lock.lock();
                     }
                     else
                     {
@@ -877,8 +909,8 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
 
                         isTool = true;
                         auto output = "<tool_output>\n" + reply.reply;
+                        AddMessageBlocking( std::move( output ), "user", lock );
                         lock.lock();
-                        AddMessage( std::move( output ), "user" );
                     }
                     QueueSendMessage();
                 }

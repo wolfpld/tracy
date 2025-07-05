@@ -27,12 +27,15 @@ class TracyLlm
     {
         Connect,
         SendMessage,
+        Tokenize
     };
 
     struct WorkItem
     {
         Task task;
         std::function<void()> callback;
+        std::function<void(nlohmann::json)> callback2;
+        std::string param;
         bool stop;
     };
 

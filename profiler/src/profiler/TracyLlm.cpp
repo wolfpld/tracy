@@ -579,9 +579,15 @@ void TracyLlm::Worker()
         case Task::SendMessage:
             SendMessage( lock );
             break;
-        default:
-            assert( false );
+        case Task::Tokenize:
+        {
+            lock.unlock();
+            auto tokens = m_api->Tokenize( m_currentJob->param, m_modelIdx );
+            if( tokens < 0 ) tokens = m_currentJob->param.size() / 4;
+            m_currentJob->callback2( { { "tokens", tokens } } );
+            lock.lock();
             break;
+        }
         }
 
         m_currentJob.reset();
@@ -664,8 +670,7 @@ void TracyLlm::QueueConnect()
 void TracyLlm::QueueSendMessage()
 {
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
-        .task = Task::SendMessage,
-        .callback = nullptr
+        .task = Task::SendMessage
     } ) );
     m_cv.notify_all();
 }

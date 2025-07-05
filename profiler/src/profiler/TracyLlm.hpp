@@ -52,6 +52,9 @@ private:
     void UpdateModels();
     void ResetChat();
 
+    void QueueConnect();
+    void QueueSendMessage();
+
     void AddMessage( std::string&& str, const char* role );
     void ManageContext();
     void SendMessage( std::unique_lock<std::mutex>& lock );

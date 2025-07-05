@@ -50,10 +50,7 @@ TracyLlm::TracyLlm( class Worker& worker )
     m_tools = std::make_unique<TracyLlmTools>( worker );
 
     m_busy = true;
-    m_jobs.emplace_back( WorkItem {
-        .task = Task::Connect,
-        .callback = [this] { UpdateModels(); }
-    } );
+    QueueConnect();
     m_thread = std::thread( [this] { Worker(); } );
 }
 
@@ -151,11 +148,7 @@ void TracyLlm::Draw()
     if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reconnect" ) )
     {
         if( m_responding ) m_stop = true;
-        m_jobs.emplace_back( WorkItem {
-            .task = Task::Connect,
-            .callback = [this] { UpdateModels(); }
-        } );
-        m_cv.notify_all();
+        QueueConnect();
     }
 
     ImGui::SameLine();
@@ -198,11 +191,7 @@ void TracyLlm::Draw()
         {
             s_config.llmAddress = m_apiInput;
             SaveConfig();
-            m_jobs.emplace_back( WorkItem {
-                .task = Task::Connect,
-                .callback = [this] { UpdateModels(); }
-            } );
-            m_cv.notify_all();
+            QueueConnect();
         }
 
         const auto& models = m_api->GetModels();
@@ -461,11 +450,7 @@ void TracyLlm::Draw()
             {
                 if( role == TracyLlmChat::TurnRole::Assistant || role == TracyLlmChat::TurnRole::AssistantDebug )
                 {
-                    m_jobs.emplace_back( WorkItem {
-                        .task = Task::SendMessage,
-                        .callback = nullptr
-                    } );
-                    m_cv.notify_all();
+                    QueueSendMessage();
                 }
                 else if( role == TracyLlmChat::TurnRole::User || role == TracyLlmChat::TurnRole::UserDebug )
                 {
@@ -560,11 +545,7 @@ void TracyLlm::Draw()
                 *m_input = 0;
                 m_responding = true;
 
-                m_jobs.emplace_back( WorkItem {
-                    .task = Task::SendMessage,
-                    .callback = nullptr
-                } );
-                m_cv.notify_all();
+                QueueSendMessage();
             }
             else
             {
@@ -670,6 +651,24 @@ void TracyLlm::ResetChat()
     m_chat.clear();
 
     AddMessage( std::move( systemPrompt ), "system" );
+}
+
+void TracyLlm::QueueConnect()
+{
+    m_jobs.emplace_back( WorkItem {
+        .task = Task::Connect,
+        .callback = [this] { UpdateModels(); }
+    } );
+    m_cv.notify_all();
+}
+
+void TracyLlm::QueueSendMessage()
+{
+    m_jobs.emplace_back( WorkItem {
+        .task = Task::SendMessage,
+        .callback = nullptr
+    } );
+    m_cv.notify_all();
 }
 
 void TracyLlm::AddMessage( std::string&& str, const char* role )
@@ -887,11 +886,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                         lock.lock();
                         AddMessage( std::move( output ), "user" );
                     }
-                    m_jobs.emplace_back( WorkItem {
-                        .task = Task::SendMessage,
-                        .callback = nullptr
-                    } );
-                    m_cv.notify_all();
+                    QueueSendMessage();
                 }
             }
         }

@@ -566,8 +566,8 @@ void TracyLlm::Worker()
         m_cv.wait( lock, [this] { return !m_jobs.empty() || m_exit.load( std::memory_order_acquire ); } );
         if( m_exit.load( std::memory_order_acquire ) ) break;
 
-        auto job = std::move( m_jobs.back() );
-        m_jobs.pop_back();
+        auto job = std::move( m_jobs.front() );
+        m_jobs.erase( m_jobs.begin() );
 
         switch( job.task )
         {

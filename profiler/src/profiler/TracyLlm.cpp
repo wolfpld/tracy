@@ -566,16 +566,16 @@ void TracyLlm::Worker()
         m_cv.wait( lock, [this] { return !m_jobs.empty() || m_exit.load( std::memory_order_acquire ); } );
         if( m_exit.load( std::memory_order_acquire ) ) break;
 
-        auto job = std::move( m_jobs.front() );
+        m_currentJob = std::move( m_jobs.front() );
         m_jobs.erase( m_jobs.begin() );
 
-        switch( job.task )
+        switch( m_currentJob->task )
         {
         case Task::Connect:
             m_busy = true;
             lock.unlock();
             m_api->Connect( s_config.llmAddress.c_str() );
-            job.callback();
+            m_currentJob->callback();
             lock.lock();
             m_busy = false;
             break;
@@ -586,6 +586,8 @@ void TracyLlm::Worker()
             assert( false );
             break;
         }
+
+        m_currentJob.reset();
     }
 };
 
@@ -655,19 +657,19 @@ void TracyLlm::ResetChat()
 
 void TracyLlm::QueueConnect()
 {
-    m_jobs.emplace_back( WorkItem {
+    m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::Connect,
         .callback = [this] { UpdateModels(); }
-    } );
+    } ) );
     m_cv.notify_all();
 }
 
 void TracyLlm::QueueSendMessage()
 {
-    m_jobs.emplace_back( WorkItem {
+    m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::SendMessage,
         .callback = nullptr
-    } );
+    } ) );
     m_cv.notify_all();
 }
 

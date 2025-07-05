@@ -72,7 +72,9 @@ private:
     std::thread m_thread;
 
     mutable std::mutex m_lock;
-    std::vector<WorkItem> m_jobs;
+    std::vector<std::shared_ptr<WorkItem>> m_jobs;
+    std::shared_ptr<WorkItem> m_currentJob;
+
     bool m_busy = false;
     bool m_responding = false;
     bool m_stop = false;

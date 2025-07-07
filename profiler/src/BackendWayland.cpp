@@ -741,8 +741,10 @@ static void SurfacePreferredBufferTransform( void*, struct wl_surface* surface, 
 constexpr struct wl_surface_listener surfaceListener = {
     .enter = SurfaceEnter,
     .leave = SurfaceLeave,
+#ifdef WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION
     .preferred_buffer_scale = SurfacePreferredBufferScale,
     .preferred_buffer_transform = SurfacePreferredBufferTransform
+#endif
 };
 
 static void FractionalPreferredScale( void*, struct wp_fractional_scale_v1* frac, uint32_t scale )

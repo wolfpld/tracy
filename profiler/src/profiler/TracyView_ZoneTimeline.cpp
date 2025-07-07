@@ -13,8 +13,6 @@ namespace tracy
 
 extern double s_time;
 
-constexpr float MinVisSize = 3;
-
 static tracy_force_inline uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
 {
     return 0xFF000000 |
@@ -56,9 +54,19 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
 
     const auto yPos = wpos.y + offset;
+    const float marginLeft = 5.5f;
+    const float radius = 4.5f *  GetScale();
+    const float margin = 2 * radius + marginLeft + 3.0f * GetScale();
+    
+    if( depth > 0 )
+    {
+        depth = DrawThreadCropper( depth, thread.id, yPos, ostep, radius, marginLeft, hasCtxSwitch );
+    }
+    const auto* drawList = ImGui::GetWindowDrawList();
+    ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( margin, 0 ), drawList->GetClipRectMax(), true );
     if( !draw.empty() && yPos <= yMax && yPos + ostep * depth >= yMin )
     {
-        DrawZoneList( ctx, draw, offset, thread.id );
+        DrawZoneList( ctx, draw, offset, thread.id, depth, margin );
     }
     offset += ostep * depth;
 
@@ -78,6 +86,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
         const auto lockDepth = DrawLocks( ctx, lockDraw, thread.id, offset, m_nextLockHighlight );
         offset += sstep * lockDepth;
     }
+    ImGui::PopClipRect();
 }
 
 void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid )
@@ -203,7 +212,7 @@ void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const
     }
 }
 
-void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid )
+void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, const int maxDepth, const double margin )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ctx.w;
@@ -219,6 +228,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
     for( auto& v : drawList )
     {
+        if( v.depth >= maxDepth ) continue;
         const auto offset = _offset + ostep * v.depth;
         const auto yPos = wpos.y + offset;
         if( yPos > yMax || yPos + ostep < yMin ) continue;
@@ -230,11 +240,12 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             auto& ev = *(const ZoneEvent*)v.ev.get();
             const auto color = v.inheritedColor ? v.inheritedColor : ( m_vd.dynamicColors == 2 ? 0xFF666666 : GetThreadColor( tid, v.depth ) );
             const auto rend = v.rend.Val();
-            const auto px0 = ( ev.Start() - vStart ) * pxns;
-            const auto px1 = ( rend - vStart ) * pxns;
-            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
-            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )
+            const auto px0 = std::max( ( ev.Start() - vStart ) * pxns, margin);
+            const auto px1 = std::max( ( rend - vStart ) * pxns, margin );
+            if( px1 == px0 ) break;
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), color );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), px0, std::min( px1, double( w + 10 ) ), ty/4, DarkenColor( color ) );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty + 1 ) ) )
             {
                 if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), rend, true };
                 if( v.num > 1 )
@@ -300,8 +311,9 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
             const auto pr0 = ( ev.Start() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( end - m_vd.zvStart ) * pxns;
-            const auto px0 = std::max( pr0, -10.0 );
-            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            const auto px0 = std::max( pr0, margin );
+            const auto px1 = std::clamp( pr1, margin, double( w + 10 ) );
+            if( px1 == px0 ) break;
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
             if( zoneColor.highlight )
             {
@@ -322,7 +334,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             }
             if( tsz.x < zsz )
             {
-                const auto x = ( ev.Start() - m_vd.zvStart ) * pxns + ( ( end - ev.Start() ) * pxns - tsz.x ) / 2;
+                const auto x = pr0 + ( ( end - ev.Start() ) * pxns - tsz.x ) / 2;
                 if( x < 0 || x > w - tsz.x )
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
@@ -335,13 +347,13 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 }
                 else
                 {
-                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( std::max( x, margin ), offset ), 0xFFFFFFFF, zoneName );
                 }
             }
             else
             {
                 ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                DrawTextContrast( draw, wpos + ImVec2( std::max( int64_t( 0 ), ev.Start() - m_vd.zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                DrawTextContrast( draw, wpos + ImVec2( px0, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
@@ -378,11 +390,12 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             auto& ev = *(const GhostZone*)v.ev.get();
             const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : MixGhostColor( GetThreadColor( tid, v.depth ), 0x665555 );
             const auto rend = v.rend.Val();
-            const auto px0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
-            const auto px1 = ( rend - m_vd.zvStart ) * pxns;
-            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
-            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty + 1 ) ) )
+            const auto px0 = std::max( ( ev.start.Val() - m_vd.zvStart ) * pxns, margin );
+            const auto px1 = std::max( ( rend - m_vd.zvStart ) * pxns, margin );
+            if( px0 == px1 ) break;
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::min( px0, double( w + 10 ) ), offset + ty ), color );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), px0, std::min( px0, double( w + 10 ) ), ty/4, DarkenColor( color ) );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::min( px0, double( w + 10 ) ), offset + ty + 1 ) ) )
             {
                 if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { ev.start.Val(), rend , true };
                 ImGui::BeginTooltip();
@@ -427,8 +440,9 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
             const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
-            const auto px0 = std::max( pr0, -10.0 );
-            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            const auto px0 = std::max( pr0, margin );
+            const auto px1 = std::clamp( pr1, margin, double( w + 10 ) );
+            if( px0 == px1 ) break;
             if( !frame )
             {
                 char symName[64];
@@ -444,7 +458,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
                 if( tsz.x < zsz )
                 {
-                    const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
+                    const auto x = pr0 + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
                     if( x < 0 || x > w - tsz.x )
                     {
                         ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
@@ -457,13 +471,13 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                     }
                     else
                     {
-                        DrawTextContrast( draw, wpos + ImVec2( x, offset ), txtColor, symName );
+                        DrawTextContrast( draw, wpos + ImVec2( std::max( x, margin ), offset ), txtColor, symName );
                     }
                 }
                 else
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    DrawTextContrast( draw, wpos + ImVec2( ( ev.start.Val() - m_vd.zvStart ) * pxns, offset ), txtColor, symName );
+                    DrawTextContrast( draw, wpos + ImVec2( px0, offset ), txtColor, symName );
                     ImGui::PopClipRect();
                 }
 
@@ -526,7 +540,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
                 if( tsz.x < zsz )
                 {
-                    const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
+                    const auto x = pr0 + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
                     if( x < 0 || x > w - tsz.x )
                     {
                         ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
@@ -539,13 +553,13 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                     }
                     else
                     {
-                        DrawTextContrast( draw, wpos + ImVec2( x, offset ), txtColor, symName );
+                        DrawTextContrast( draw, wpos + ImVec2( std::max( x, margin ), offset ), txtColor, symName );
                     }
                 }
                 else
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    DrawTextContrast( draw, wpos + ImVec2( std::max( int64_t( 0 ), ev.start.Val() - m_vd.zvStart ) * pxns, offset ), txtColor, symName );
+                    DrawTextContrast( draw, wpos + ImVec2( px0, offset ), txtColor, symName );
                     ImGui::PopClipRect();
                 }
 
@@ -612,6 +626,66 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             break;
         }
     }
+}
+
+int View::DrawThreadCropper( const int depth, const uint64_t tid, const float yPos, const float ostep, const float radius, const float margin, const bool hasCtxSwitches )
+{
+    ImVec2 mouse = ImGui::GetMousePos();
+    const bool clicked = ImGui::IsMouseClicked( 0 );
+    auto draw = ImGui::GetWindowDrawList();
+    auto foreground = ImGui::GetForegroundDrawList();
+    auto window = ImGui::GetWindowSize();
+    bool isCropped = ( m_threadMaxDisplayDepth.find( tid ) != m_threadMaxDisplayDepth.end() );
+    const float hoverCircle = 2.0f * GetScale();
+    int lineId = hasCtxSwitches? -1 : 0;
+
+    for( lineId; lineId < ( isCropped ? m_threadMaxDisplayDepth[tid] : depth ); lineId++ )
+    {
+        ImVec2 center = ImVec2( margin + radius, yPos + ostep * (lineId + 0.5) );
+        const float hradius = radius + hoverCircle;
+        const float dx = mouse.x - center.x;
+        const float dy = mouse.y - center.y;
+
+        if( dx * dx + dy * dy <= hradius * hradius )
+        {
+            foreground->AddCircle( center, hradius, 0xFFFFFFFF, 0, GetScale() );
+            foreground->AddLine( ImVec2( 0, yPos + ( lineId + 1 ) * ostep ), ImVec2( window.x, yPos + ( lineId + 1 ) * ostep ), 0x880000FF, 2.0f * GetScale() );
+            if( clicked )
+            {
+                if( isCropped )
+                {
+                    if( m_threadMaxDisplayDepth[tid] >= 0 )
+                    {
+                        if( m_threadMaxDisplayDepth[tid] == lineId + 1 )
+                        {
+                            isCropped = false;
+                            m_threadMaxDisplayDepth.erase( tid );
+                        }
+                        else
+                        {
+                            m_threadMaxDisplayDepth[tid] = lineId + 1;
+                        }
+                    }
+                }
+                else
+                {
+                    isCropped = true;
+                    m_threadMaxDisplayDepth[tid] = lineId + 1;
+                }
+            }
+        }
+        ImU32 color = 0xFF666666;
+        if( isCropped && lineId + 1 == m_threadMaxDisplayDepth[tid] )
+        {
+            color = 0xFFFFFFFF;
+        }
+        if( !isCropped || lineId < m_threadMaxDisplayDepth[tid] )
+        {
+            draw->AddCircleFilled( center, radius, color );
+        }
+    }
+    draw->AddLine( ImVec2( margin + radius, yPos + ostep * ( hasCtxSwitches ? -0.5 : 0.5 ) - radius ), ImVec2( margin + radius, yPos + ostep * ( ( lineId - 1 ) + 0.5 ) - radius ), 0xFF666666, 2.0f * GetScale() );
+    return isCropped ? m_threadMaxDisplayDepth[tid] : depth;
 }
 
 }

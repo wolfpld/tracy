@@ -205,8 +205,20 @@ TracyLlmTools::~TracyLlmTools()
     CancelManualEmbeddings();
 }
 
-#define Param(name) json[name].get_ref<const std::string&>()
-#define ParamU32(name) json[name].get<uint32_t>()
+static const std::string& GetParam( const nlohmann::json& json, const char* name )
+{
+    if( !json.contains( name ) ) throw std::runtime_error( "Error: missing parameter: " + std::string( name ) );
+    return json[name].get_ref<const std::string&>();
+}
+
+static uint32_t GetParamU32( const nlohmann::json& json, const char* name )
+{
+    if( !json.contains( name ) ) throw std::runtime_error( "Error: missing parameter: " + std::string( name ) );
+    return json[name].get<uint32_t>();
+}
+
+#define Param(name) GetParam( json, name )
+#define ParamU32(name) GetParamU32( json, name )
 
 TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {
@@ -245,7 +257,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const nlohmann::json& j
         }
         return { .reply = "Unknown tool call: " + name };
     }
-    catch( const nlohmann::json::exception& e )
+    catch( const std::exception& e )
     {
         return { .reply = e.what() };
     }

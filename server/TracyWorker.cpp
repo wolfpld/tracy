@@ -6044,9 +6044,15 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
     // TODO: Get thread ID properly
     // TODO: Search for the query from the back
     assert( ctx->threadData.size() );
-    assert( ctx->threadData.begin()->second.timeline.size() );
-    auto & zone = ctx->threadData.begin()->second.timeline.back();
-    assert( zone->query_id == ev.queryId );
+    auto & timeline = ctx->threadData.begin()->second.timeline;
+    assert( timeline.size() );
+    ssize_t i = timeline.size() - 1;
+    for ( ; i >= 0 ; i--) {
+      if( timeline[i]->query_id == ev.queryId ) {
+        break;
+      }
+    }
+    auto& zone = timeline[i];
     assert( zone->note_count < 10 );
     zone->note_ids[zone->note_count] = ev.noteId;
     zone->note_vals[zone->note_count] = ev.value;

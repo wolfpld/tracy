@@ -247,14 +247,10 @@ void record_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data
     uint16_t query_id = 0;
     {
         auto _lk = std::unique_lock{ data->mut };
-        if( data->dispatch_query_id.count( dispatch_data.dispatch_info.dispatch_id ) )
-        {
-            query_id = data->dispatch_query_id[dispatch_data.dispatch_info.dispatch_id];
-        }
-        else
-        {
-            fprintf( stderr, "oops\n" );
-        }
+        // An assumption is made here that the counter values are supplied after the dispatch
+        // complete callback.
+        assert( data->dispatch_query_id.count( dispatch_data.dispatch_info.dispatch_id ) );
+        query_id = data->dispatch_query_id[dispatch_data.dispatch_info.dispatch_id];
     }
 
     for( auto& p : sums )

@@ -1579,14 +1579,18 @@ void View::DrawGpuInfoWindow()
             TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
         }
 
-        TextFocused( "Query ID:", RealToString(ev.query_id) );
-        for (int i = 0; i < ev.note_count; i++ ) {
-          auto id = ev.note_ids[i];
-          if (ctx->notes.count(id)) {
-            TextFocused( m_worker.GetString( ctx->notes.at(id) ), RealToString(ev.note_vals[i]) );
-          } else {
-            TextFocused( RealToString(ev.note_ids[i]), RealToString(ev.note_vals[i]) );
-          }
+        TextFocused( "Query ID:", RealToString( ev.query_id ) );
+        for( int i = 0; i < ev.note_count; i++ )
+        {
+            auto id = ev.note_ids[i];
+            if( ctx->notes.count( id ) )
+            {
+                TextFocused( m_worker.GetString( ctx->notes.at( id ) ), RealToString( ev.note_vals[i] ) );
+            }
+            else
+            {
+                TextFocused( RealToString( ev.note_ids[i] ), RealToString( ev.note_vals[i] ) );
+            }
         }
 
         ImGui::Separator();
@@ -2056,14 +2060,18 @@ void View::ZoneTooltip( const GpuEvent& ev )
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
     }
 
-    TextFocused( "Query ID:", RealToString(ev.query_id) );
-    for (int i = 0; i < ev.note_count; i++ ) {
-      auto id = ev.note_ids[i];
-      if (ctx->notes.count(id)) {
-        TextFocused( m_worker.GetString( ctx->notes.at(id) ), RealToString(ev.note_vals[i]) );
-      } else {
-        TextFocused( RealToString(ev.note_ids[i]), RealToString(ev.note_vals[i]) );
-      }
+    TextFocused( "Query ID:", RealToString( ev.query_id ) );
+    for( int i = 0; i < ev.note_count; i++ )
+    {
+        auto id = ev.note_ids[i];
+        if( ctx->notes.count( id ) )
+        {
+            TextFocused( m_worker.GetString( ctx->notes.at( id ) ), RealToString( ev.note_vals[i] ) );
+        }
+        else
+        {
+            TextFocused( RealToString( ev.note_ids[i] ), RealToString( ev.note_vals[i] ) );
+        }
     }
 
     ImGui::EndTooltip();

@@ -450,10 +450,10 @@ struct QueueGpuZoneEnd
 
 struct QueueGpuZoneAnnotation
 {
-  int64_t noteId;
-  double value;
-  uint16_t queryId;
-  uint8_t context;
+    int64_t noteId;
+    double value;
+    uint16_t queryId;
+    uint8_t context;
 };
 
 struct QueueGpuTime
@@ -491,14 +491,14 @@ struct QueueGpuContextNameFat : public QueueGpuContextName
 
 struct QueueGpuAnnotationName
 {
-  int64_t noteId;
-  uint8_t context;
+    int64_t noteId;
+    uint8_t context;
 };
 
 struct QueueGpuAnnotationNameFat : public QueueGpuAnnotationName
 {
-  uint64_t ptr;
-  uint16_t size;
+    uint64_t ptr;
+    uint16_t size;
 };
 
 struct QueueMemNamePayload

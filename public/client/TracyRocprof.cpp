@@ -366,8 +366,6 @@ void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_da
     *config = profile;
 }
 
-using kernel_symbol_data_t = rocprofiler_callback_tracing_code_object_kernel_symbol_register_data_t;
-
 void tool_callback_tracing_callback( rocprofiler_callback_tracing_record_t record, rocprofiler_user_data_t* user_data,
                                      void* callback_data )
 {

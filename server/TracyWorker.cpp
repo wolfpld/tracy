@@ -5774,6 +5774,10 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     zone->callstack.SetVal( 0 );
     zone->SetChild( -1 );
     zone->query_id = ev.queryId;
+    // tracy allocates slab memory without invoking the constructor
+    new( &zone->notes ) unordered_flat_map<int64_t, double>();
+    // reserve space for all the counters we've been given a name for
+    zone->notes.reserve( ctx->notes.size() );
 
     uint64_t ztid;
     if( ctx->thread == 0 )
@@ -6054,10 +6058,7 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
         }
     }
     auto& zone = timeline[i];
-    assert( zone->note_count < 10 );
-    zone->note_ids[zone->note_count] = ev.noteId;
-    zone->note_vals[zone->note_count] = ev.value;
-    zone->note_count++;
+    zone->notes.insert_or_assign( ev.noteId, ev.value );
 }
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
@@ -7836,9 +7837,17 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         zone->SetCpuEnd( refTime );
         zone->SetGpuEnd( refGpuTime );
         f.Read( zone->query_id );
-        f.Read( zone->note_count );
-        f.Read( zone->note_ids );
-        f.Read( zone->note_vals );
+        uint64_t note_count;
+        f.Read( note_count );
+        new( &zone->notes ) unordered_flat_map<int64_t, double>();
+        zone->notes.reserve( note_count );
+        for( uint64_t i = 0; i < note_count; i++ )
+        {
+            int64_t id;
+            double value;
+            f.Read2( id, value );
+            zone->notes[id] = value;
+        }
     }
     while( ++zone != end );
 }
@@ -8570,9 +8579,12 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
         WriteTimeOffset( f, refTime, v.CpuEnd() );
         WriteTimeOffset( f, refGpuTime, v.GpuEnd() );
         f.Write( &v.query_id, sizeof( v.query_id ) );
-        f.Write( &v.note_count, sizeof( v.note_count ) );
-        f.Write( &v.note_ids, sizeof( v.note_ids ) );
-        f.Write( &v.note_vals, sizeof( v.note_vals ) );
+        uint64_t note_count = v.notes.size();
+        f.Write( &note_count, sizeof( note_count ) );
+        for ( auto& p : v.notes ) {
+          f.Write( &p.first, sizeof( p.first ) );
+          f.Write( &p.second, sizeof( p.second ) );
+        }
     }
 }
 

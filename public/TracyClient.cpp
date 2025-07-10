@@ -31,7 +31,10 @@
 #include "client/TracyAlloc.cpp"
 #include "client/TracyOverride.cpp"
 #include "client/TracyKCore.cpp"
+
+#ifdef TRACY_ROCPROF
 #include "client/TracyRocprof.cpp"
+#endif
 
 #if defined(TRACY_HAS_CALLSTACK)
 #  if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6

@@ -41,7 +41,8 @@ constexpr const char* GpuContextNames[] = {
     "Direct3D 11",
     "Metal",
     "Custom",
-    "CUDA"
+    "CUDA",
+    "Rocprof"
 };
 
 struct MemoryPage;

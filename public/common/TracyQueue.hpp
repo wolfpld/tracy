@@ -408,7 +408,8 @@ enum class GpuContextType : uint8_t
     Direct3D11,
     Metal,
     Custom,
-    CUDA
+    CUDA,
+    Rocprof
 };
 
 enum GpuContextFlags : uint8_t

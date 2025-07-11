@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-06-12 <https://github.com/wolfpld/tracy>
+2025-07-11 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -1430,7 +1430,7 @@ To enable calibrated context, replace the macro `TracyVkContext` with `TracyVkCo
 
 ##### Using Vulkan 1.2 features
 
-Vulkan 1.2 and `VK_EXT_host_query_reset` provide mechanics to reset the query pool without the need of a command buffer. By using `TracyVkContextHostCalibrated` you can make use of this feature. It only requires a function pointer to `vkResetQueryPool` in addition to the ones required for `TracyVkContextCalibrated` instead of the VkQueue and VkCommandBuffer handles.
+Vulkan 1.2 and `VK_EXT_host_query_reset` provide mechanics to reset the query pool without the need of a command buffer. By using `TracyVkContextHostCalibrated` and `TracyVkCollectHost`, you can make use of this feature. It only requires a function pointer to `vkResetQueryPool` in addition to the ones required for `TracyVkContextCalibrated` instead of the VkQueue and VkCommandBuffer handles.
 
 However, using this feature requires the physical device to have calibrated device and host time domains. In addition to `VK_TIME_DOMAIN_DEVICE_EXT`, `vkGetPhysicalDeviceCalibrateableTimeDomainsEXT` will have to additionally return either `VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT` or `VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT` for Unix and Windows, respectively. If this is not the case, you will need to use `TracyVkContextCalibrated` or `TracyVkContext` macro instead.
 
@@ -2499,11 +2499,10 @@ If no client is running at the given address, the server will wait until it can 
 
     % ./capture -a 127.0.0.1 -o trace
     Connecting to 127.0.0.1:8086...
-    Queue delay: 5 ns
     Timer resolution: 3 ns
        1.33 Mbps / 40.4% = 3.29 Mbps | Net: 64.42 MB | Mem: 283.03 MB | Time: 10.6 s
 
-The *queue delay* and *timer resolution* parameters are calibration results of timers used by the client. The following line is a status bar, which displays: network connection speed, connection compression ratio, and the resulting uncompressed data rate; the total amount of data transferred over the network; memory usage of the capture utility; time extent of the captured data.
+The *timer resolution* parameter shows the calibration results of timers used by the client. The following line is a status bar, which displays: network connection speed, connection compression ratio, and the resulting uncompressed data rate; the total amount of data transferred over the network; memory usage of the capture utility; time extent of the captured data.
 
 You can disconnect from the client and save the captured trace by pressing . If you prefer to disconnect after a fixed time, use the `-s seconds` parameter.
 
@@ -2511,7 +2510,7 @@ You can disconnect from the client and save the captured trace by pressing . If 
 
 If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog){reference-type="ref" reference="welcomedialog"}), presenting a bunch of useful links ( *User manual*,  *Web*,  *Join chat* and  *Sponsor*). The  *Web* button opens a drop-down list with links to the profiler's * Home page* and a bunch of * Feature videos*.
 
-The * Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak.
+The * Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow){reference-type="ref" reference="aboutwindow"}).
 
 The client *address entry* field and the  *Connect* button are used to connect to a running client[^64]. You can use the connection history button  to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the  mouse cursor over an entry and pressing the button on the keyboard.
 
@@ -2533,6 +2532,32 @@ The *discovered clients* list is only displayed if clients are broadcasting thei
 Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data (see section [5](#analyzingdata){reference-type="ref" reference="analyzingdata"}).
 
 Once connected to a client can be used to quickly discard any captured data and reconnect to a client at the same address.
+
+### About window {#aboutwindow}
+
+The About window displays the profiler version and the Git SHA identifier of the build, as well as some additional information.
+
+You can also adjust some settings that affect global profiler behavior in this window. These settings are accessible by expanding the * Global settings* node. The following options are available:
+
+-   *Threaded rendering* -- This controls whether the profiler UI uses multithreaded rendering. Since the profiler needs to quickly navigate large amounts of data, it spends a lot of time waiting for memory accesses to be resolved. Multithreading enables multiple simultaneous memory reads, which significantly reduces the impact of memory access latency. However, this may result in higher CPU usage, which could interfere with the application you are profiling.
+
+-   *Reduce render rate when focus is lost* -- This throttles the profiler window refresh rate to 20 FPS when the window does not have focus.
+
+-   *Target FPS* -- Sets the default *target FPS* value for the *Frame time graph*. See sections [5.2.2](#frametimegraph){reference-type="ref" reference="frametimegraph"} and [5.4](#options){reference-type="ref" reference="options"} for more information. Not related to the profiler window refresh rate.
+
+-   *Zone colors* -- Sets the default zone coloring preset used in new traces. See section [5.4](#options){reference-type="ref" reference="options"} for more information.
+
+-   *Zone name shortening* -- Sets the default zone name shortening behavior used in new traces. See section [5.4](#options){reference-type="ref" reference="options"} for more information.
+
+-   *Scroll multipliers* -- Allows you to fine-tune the sensitivity of the horizontal and vertical scroll in the timeline. The default values ($1.0$) are an attempt at the best possible settings, but differences in hardware manufacturers, platform implementations, and user expectations may require adjustments.
+
+-   *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.4](#memoryusage){reference-type="ref" reference="memoryusage"} for more information.
+
+-   *Enable achievements* -- Enables achievements system, accessed through the  icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler.
+
+-   *Save UI scale* -- Determines whether the UI scale set by the user should be saved between sessions. This setting is not related to DPI scaling.
+
+-   *Enable Tracy Assist* -- Controls whether the automated assistant features (based on large language models) are available through the Profiler UI. See section [5.25](#tracyassist){reference-type="ref" reference="tracyassist"} for more details.
 
 ### Connection information pop-up {#connectionpopup}
 
@@ -2563,7 +2588,7 @@ Tracy network bandwidth requirements depend on the amount of data collection the
 
 The maximum attainable connection speed is determined by the ability of the client to provide data and the ability of the server to process the received data. In an extreme conditions test performed on an i7 8700K, the maximum transfer rate peaked at 950 Mbps. In each second, the profiler could process 27 million zones and consume 1 GB of RAM.
 
-## Memory usage
+## Memory usage {#memoryusage}
 
 The captured data is stored in RAM and only written to the disk when the capture finishes. This can result in memory exhaustion when you capture massive amounts of profile data or even in typical usage situations when the capture is performed over a long time. Therefore, the recommended usage pattern is to perform moderate instrumentation of the client code and limit capture time to the strict necessity.
 
@@ -2757,7 +2782,7 @@ The main profiler window is split into three sections, as seen in figure [14](#
 
 The control menu (top row of buttons) provides access to various profiler features. The buttons perform the following actions:
 
--   * Connection* -- Opens the connection information popup (see section [4.2.1](#connectionpopup){reference-type="ref" reference="connectionpopup"}). Only available when live capture is in progress.
+-   * Connection* -- Opens the connection information popup (see section [4.2.2](#connectionpopup){reference-type="ref" reference="connectionpopup"}). Only available when live capture is in progress.
 
 -   *Close* -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by * Pause*, * Resume* and * Stopped* buttons.
 
@@ -2797,6 +2822,8 @@ The control menu (top row of buttons) provides access to various profiler featur
 
 -   * Display scale* -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the *Save UI scale* option is selected in global settings.
 
+-   * Tracy Assist* -- Shows the automated assistant chat window (section [5.25](#tracyassist){reference-type="ref" reference="tracyassist"}). Only available if enabled in global settings (section [4.2.1](#aboutwindow){reference-type="ref" reference="aboutwindow"}).
+
 [^70]: Or perform any action on the timeline view, apart from changing the zoom level.
 
 The frame information block[^71] consists of four elements: the current frame set name along with the number of captured frames (click on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button to go to a specified frame), the two navigational buttons and , which allow you to focus the timeline view on the previous or next frame, and the frame set selection button , which is used to switch to another frame set[^72]. For more information about marking frames, see section [3.3](#markingframes){reference-type="ref" reference="markingframes"}.
@@ -2809,7 +2836,7 @@ The following three items show the * view time range*, the * time span* of the
 
 #### Notification area
 
-The notification area displays informational notices, for example, how long it took to load a trace from the disk. A pulsating dot next to the  icon indicates that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling){reference-type="ref" reference="crashhandling"}), a * crash* icon will be displayed. The red  icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.2.1](#connectionpopup){reference-type="ref" reference="connectionpopup"} for more information).
+The notification area displays informational notices, for example, how long it took to load a trace from the disk. A pulsating dot next to the  icon indicates that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling){reference-type="ref" reference="crashhandling"}), a * crash* icon will be displayed. The red  icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.2.2](#connectionpopup){reference-type="ref" reference="connectionpopup"} for more information).
 
 If the drawing of timeline elements was disabled in the options menu (section [5.4](#options){reference-type="ref" reference="options"}), the profiler will use the following orange icons to remind you about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section [5.2.3.3](#zoneslocksplots){reference-type="ref" reference="zoneslocksplots"}) are not taken into account here.
 
@@ -3056,6 +3083,8 @@ To define a time range, drag the ![image](icons/lmb.pdf){height=".8\\baselineski
 -   * Limit find zone time range* -- this will limit find zone results. See chapter [5.7](#findzone){reference-type="ref" reference="findzone"} for more details.
 
 -   * Limit statistics time range* -- selecting this option will limit statistics results. See chapter [5.6](#statistics){reference-type="ref" reference="statistics"} for more details.
+
+-   * Limit flame graph time range* -- limits flame graph results. Refer to chapter [5.9](#flamegraph){reference-type="ref" reference="flamegraph"}.
 
 -   * Limit wait stacks time range* -- limits wait stacks results. Refer to chapter [5.18](#waitstackswindow){reference-type="ref" reference="waitstackswindow"}.
 
@@ -3387,6 +3416,8 @@ You can use an alternative sorting method by enabling the *Sort by time* option.
 Similar to the statistics window (section [5.6](#statistics){reference-type="ref" reference="statistics"}), the flame graph can operate in two modes: * Instrumentation* and * Sampling*. In the instrumentation mode, the graph represents the zones you put in your program. In the sampling mode, the graph is constructed from the automatically captured call stack data (section [3.16.5](#sampling){reference-type="ref" reference="sampling"}).
 
 In the sampling mode you can exclude *external frames* from the graph, which typically would be internal implementation details of starting threads, handling smart pointers, and other such things that are quick to execute and not really interesting. This leaves only the frames from your code. One exception is *external tails*, or calls that your code makes that do not eventually land in your application down the call chain. Think of functions that write to a file or send data on the network. These can be time-consuming, and you may want to see them. There is a separate option to disable these.
+
+The flame graph can be restricted to a specific time extent using the *Limit range* option (chapter [5.3](#timeranges){reference-type="ref" reference="timeranges"}). You can access more options through the * Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits){reference-type="ref" reference="timerangelimits"}.
 
 ## Memory window {#memorywindow}
 
@@ -3798,7 +3829,7 @@ A new view-sized annotation can be added in this window by pressing the * Add a
 
 ## Time range limits {#timerangelimits}
 
-This window displays information about time range limits (section [5.3](#timeranges){reference-type="ref" reference="timeranges"}) for find zone (section [5.7](#findzone){reference-type="ref" reference="findzone"}), statistics (section [5.6](#statistics){reference-type="ref" reference="statistics"}), memory (section [5.10](#memorywindow){reference-type="ref" reference="memorywindow"}) and wait stacks (section [5.18](#waitstackswindow){reference-type="ref" reference="waitstackswindow"}) results. Each limit can be enabled or disabled and adjusted through the following options:
+This window displays information about time range limits (section [5.3](#timeranges){reference-type="ref" reference="timeranges"}) for find zone (section [5.7](#findzone){reference-type="ref" reference="findzone"}), statistics (section [5.6](#statistics){reference-type="ref" reference="statistics"}), flame graph (section [5.9](#flamegraph){reference-type="ref" reference="flamegraph"}), memory (section [5.10](#memorywindow){reference-type="ref" reference="memorywindow"}) and wait stacks (section [5.18](#waitstackswindow){reference-type="ref" reference="waitstackswindow"}) results. Each limit can be enabled or disabled and adjusted through the following options:
 
 -   *Limit to view* -- Set the time range limit to current view.
 
@@ -3815,6 +3846,166 @@ This window displays information about time range limits (section [5.3](#timera
 -   * Copy from memory* -- Copies the memory time range limit.
 
 Note that ranges displayed in the window have color hints that match the color of the striped regions on the timeline.
+
+## Tracy Assist {#tracyassist}
+
+With Tracy Profiler, you can use GenAI features to get help using the profiler or analyzing the code you're profiling.
+
+The automated assistant can search the user manual to answer your questions about the profiler. It can also read the source code when you ask about program performance or algorithms. It has the capacity for access to Wikipedia, the ability to search the web, and the capability to access web pages in response to general questions.
+
+This feature can be completely disabled in the *Global settings*, as described in section [4.2.1](#aboutwindow){reference-type="ref" reference="aboutwindow"}.
+
+::: bclogo
+Caution Remember that the responses you receive from the automated assistant are the result of complex yet limited algorithms. While the answers may be convincing and in most cases reliable, you should always verify their accuracy.
+:::
+
+::: bclogo
+How do I enter my OpenAI API key? You do not. Tracy is not a money funnel for Silicon Valley tech bros to get rich.
+
+The only way to access the assistant is to run everything locally on your system. This ensures that everything you do stays private and that you won't be subject to forced changes in features or terms and conditions. You should own the tools you work with instead of renting them from someone else.
+:::
+
+### Service provider
+
+To get started, you will need to install an LLM[^101] provider on your system. Any service that's compatible with the standard API should work, but some may work better than others. The LLM field is advancing quickly, with new models frequently being released that often require specific support from provider services to deliver the best experience.
+
+[^101]: Large Language Model.
+
+The ideal LLM provider should be a system service that loads and unloads models on demand and swaps between them as needed. It should provide a service to a variety of user-facing applications running on the system. The ideal provider should also implement a time-to-live mechanism that unloads models after a period of inactivity to make resources available to other programs. The user should be able to use the ideal provider to find and download models that they can run on their hardware.
+
+There are no ideal LLM providers, but here are some options:
+
+-   *LM Studio* (<https://lmstudio.ai/>) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag behind. Manual configuration of each model is required.
+
+-   *llama.cpp* (<https://github.com/ggml-org/llama.cpp>) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
+
+-   *llama-swap* (<https://github.com/mostlygeek/llama-swap>) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
+
+-   *Ollama* (<https://ollama.com/>) -- It lacks some features required by Tracy. Very limited configuration is only available via the system service's environment variables. Some practices are questionable. It will not use full capabilities of the available hardware. Not recommended.
+
+### Model selection
+
+Once you have installed the service provider, you will need to download the model files for the chat functionality. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser.
+
+Tracy will not issue commands to download any model on its own.
+
+#### Model family
+
+There are many factors to take into consideration when choosing a model to use. First, you should determine which model family you want to use:
+
+-   *Gemma 3* (<https://blog.google/technology/developers/gemma-3/>) is a well rounded model that can converse in multiple languages.
+
+-   *Qwen3* (<https://qwenlm.github.io/blog/qwen3/>) has a more technical feeling to it, it likes to write bullet point lists.
+
+-   *Mistral Small* (<https://mistral.ai/news/mistral-small-3-1>) may also be considered. Despite the name, it is not small.
+
+This list is not exhaustive; it's only a starting point. These base models are often briefly fine-tuned to perform better at a specific task while retaining the model's general characteristics, hence the term *model family*. It is recommended that you start with a base model and only explore the fine-tuned models later, if at all.
+
+When looking for a model you may encounter models that are \"reasoning\". These are generally not worth the additional time and resources they need.
+
+#### Model size
+
+The next thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. A model's size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the \"smarter\" its responses will be.
+
+Models with 4B parameters are too \"dumb\" to operate in Tracy and will produce nonsense results. The 8B models are barely capable, so their use is not recommended. Models such as Gemma 3 12B and Qwen3 14B should work reasonably well. However, if your hardware can handle it, you should look for even larger models.
+
+Then there are models that are \"Mixture of Experts\". For instance, a model may have 30B total parameters, but only 3B are active when generating a response. While these models can generate responses faster, they still require the full set of parameters to be loaded into memory. Their results are also inferior to those of \"dense\" models of a similar size that use all their parameters.
+
+#### Model quantization
+
+Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more \"dumbed down\" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
+
+There are different ways of doing quantization that give the same bit size. It's best to follow the recommendations provided by LM Studio, for example.
+
+Some models consider quantization during training, resulting in a more effective model. Gemma 3 refers to this as QAT (Quantization-Aware Training).
+
+#### Multimodality
+
+Some models can recognize vision or audio. This is achieved by loading an additional model alongside the language model, which increases memory requirements. Since Tracy does not require these capabilities, it's best to either avoid multimodal models or configure the LLM provider appropriately.
+
+#### Context size
+
+The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can \"remember\". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
+
+Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. The KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
+
+The minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. If you have the resources, it's recommended to use 32K or even 64K.
+
+#### Hardware resources
+
+Ideally, you want to keep both the model and the context cache in your GPU's VRAM. This will provide the fastest possible speed. However, this won't be possible in many configurations.
+
+LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more that can be run on the GPU, the faster it goes.
+
+Determining how much of the model can be run on the GPU usually requires some experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
+
+#### In practice
+
+So, which model should you run and what hardware you need to be able to do so? Let's take look at some example systems.
+
+-   On a Dell XPS 13\" laptop with an i7-1185G7 CPU and integrated GPU, you will struggle to run even the most basic 4B model. Forget about it.
+
+-   With 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run Gemma 3 12B (8K context, 8/48 layers offloaded) or Qwen3 14B (16K context, 11/40 layers offloaded) on a Ryzen laptop. A moderate amount of patience will be necessary.
+
+-   An 8 GB Nvidia GPU can reach usable speeds when running Gemma 3 12B (16K context, 28/48 layers offloaded) or Qwen3 14B (16K context, 30/40 layers offloaded).
+
+-   If you have a 4090 class GPU with 24 GB of VRAM, llama.cpp can run Gemma 3 27B with a 64K context.
+
+### Embeddings model
+
+To access the full functionality of the automated assistant, you will also need a second language model. While the previous section focused on the model used for conversation, we also need a model that enables searching the user manual.
+
+This kind of model performs *vector embeddings*, which transform text content or a search query into a set of concepts that match the text's meaning. These semantic vectors can then be compared to each other without needing to precisely match keywords. For instance, if a user searches for efficient text search methods, the results will include text about vector embedding models.
+
+Embedding models can be downloaded just like conversation models. The text-nomic-embed v1.5 model is recommended, as it is known to work well. Using other models may result in catastrophic degradation of search results.[^102]
+
+[^102]: There are many reasons why:
+
+    1.  Some models just won't work as advertised. For example, the BGE-M3 model doesn't work at all with the Tracy user manual.
+
+    2.  Embedding models usually require a prefix that describes the task at hand.
+
+    3.  It is better to support one model that is known to work as intended than to support many models that work poorly.
+
+LM Studio and Ollama properly label the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word `embed`.
+
+### Usage
+
+The automated assistant can be accessed via the various * Tracy Assist* buttons in the UI. The button in the control menu (section [5.2.1](#controlmenu){reference-type="ref" reference="controlmenu"}) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
+
+The chat window is divided into three sections:
+
+1.  The control section at the top.
+
+2.  The chat contents take up most of the window.
+
+3.  The entry box is at the bottom.
+
+The control section allows you to clear the chat contents, reconnect to the LLM provider and open the settings panel consisting of:
+
+-   *API* -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
+
+-   *Model* -- Here you can select one of the models you have configured in the LLM provider for chat.
+
+-   *Embeddings* -- Select the vector embeddings model.
+
+-   *Temperature* -- Allows changing default model temperature setting.
+
+-   *Internet access* -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
+
+-   *External services* -- Allows optional configuration of network access.
+
+    -   *User agent* -- Allows changing the user agent parameter in web queries.
+
+    -   *Google Search Engine* and *API Key* -- Enables use of Google search. If this is not set, searches will fall back to DuckDuckGo, which is very rate limited.
+
+The * Learn manual* button is used to build the search index for the user manual. This process only takes a short amount of time, and the results are cached until either the embeddings model changes or the manual is updated.
+
+The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
+
+The chat section contains the conversation with the automated assistant. Each assistant reply includes a hidden \"thinking\" section in which various tool calls are made and the response is prepared.
+
+Clicking on the * User* role icon removes the chat content up to the selected question. Similarly, clicking on the * Assistant* role icon removes the conversation content up to this point and generates another response from the assistant.
 
 # Exporting zone statistics to CSV {#csvexport}
 
@@ -3865,7 +4056,7 @@ Tracy can import data generated by other profilers. This external data cannot be
         $ tracy mytracefile.tracy
     ```
 
--   Fuchsia's tracing format[^101] data through the `import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
+-   Fuchsia's tracing format[^103] data through the `import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
 
     To this this tool, assuming it's compiled, run:
 
@@ -3874,7 +4065,7 @@ Tracy can import data generated by other profilers. This external data cannot be
         $ tracy mytracefile.tracy
     ```
 
-[^101]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
+[^103]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
 
 ::: bclogo
 Compressed traces Tracy can import traces compressed with the Zstandard algorithm (for example, using the `zstd` command-line utility). Traces ending with `.zst` extension are assumed to be compressed. This applies for both chrome and fuchsia traces.
@@ -3909,6 +4100,12 @@ Trace files saved on disk are immutable and can't be changed. Still, it may be d
 This external data is stored in the `user/[letter]/[program]/[week]/[epoch]` directory, relative to the configuration's root directory. The `program` part is the name of the profiled application (for example `program.exe`). The `letter` part is the first letter of the profiled application's name. The `week` part is a count of weeks since the Unix epoch, and the `epoch` part is a count of seconds since the Unix epoch. This rather unusual convention prevents the creation of directories with hundreds of entries.
 
 The profiler never prunes user settings.
+
+## Cache files
+
+Some of the profiler's features may want to store cache files on your disk. You can always get rid of these data files because they're only used to speed up some long operations that may precalculate data once and then reuse it.
+
+On Windows cache is stored in the `%LOCALAPPDATA%/tracy` directory. All other platforms use the `$XDG_CACHE_HOME/tracy` directory, or `$HOME/.cache/tracy` if the `XDG_CACHE_HOME` environment variable is not set.
 
 # License
 

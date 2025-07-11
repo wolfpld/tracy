@@ -96,6 +96,22 @@ bool View::DrawConnection()
         }
     }
 
+    if( m_worker.IsConnected() && !m_worker.WasDisconnectIssued() )
+    {
+        if( m_maxDuration.count() > 0 )
+        {
+            TextDisabledUnformatted( "Remaining time:" );
+            ImGui::SameLine();
+            ImGui::Text( "%.2fs", ( m_maxDuration.count() - std::chrono::duration_cast< std::chrono::milliseconds >( std::chrono::steady_clock::now() - m_startTime ).count() ) / 1000.0 );
+        }
+        if( m_maxMemory > 0 )
+        {
+            TextDisabledUnformatted( "Remaining memory:" );
+            ImGui::SameLine();
+            ImGui::Text( "%s", MemSizeToString( m_maxMemory - memUsage.load( std::memory_order_relaxed ) ) );
+        }
+    }
+
     const auto& fis = m_worker.GetFrameImages();
     if( !fis.empty() )
     {
@@ -145,12 +161,11 @@ bool View::DrawConnection()
     ImGui::SameLine( 0, 2 * ty );
     const char* stopStr = ICON_FA_PLUG " Stop";
     std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
-    if( !m_disconnectIssued && m_worker.IsConnected() )
+    if( !m_worker.WasDisconnectIssued() && m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )
         {
             m_worker.Disconnect();
-            m_disconnectIssued = true;
         }
     }
     else

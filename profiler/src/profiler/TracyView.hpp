@@ -164,6 +164,9 @@ public:
     void DrawThreadMigrations( const TimelineContext& ctx, const int origOffset, uint64_t thread );
 
     bool IsBackgroundDone() const { return m_worker.IsBackgroundDone(); }
+    void SetMaxMemory( uint64_t memory ) { m_maxMemory = memory; }
+    void SetStartTime( std::chrono::steady_clock::time_point time ) { m_startTime = time; }
+    void SetMaxDuration( std::chrono::milliseconds time ) { m_maxDuration = time; }
 
     bool m_showRanges = false;
     Range m_statRange;
@@ -451,6 +454,9 @@ private:
     static const char* DecodeContextSwitchReasonCode( uint8_t reason );
 
     Worker m_worker;
+    uint64_t m_maxMemory;
+    std::chrono::steady_clock::time_point m_startTime;
+    std::chrono::milliseconds m_maxDuration;
     std::string m_filename, m_filenameStaging;
     bool m_staticView;
     ViewMode m_viewMode;
@@ -491,7 +497,6 @@ private:
     size_t m_prevMessages = 0;
     bool m_messagesShowCallstack = false;
     Vector<uint32_t> m_msgList;
-    bool m_disconnectIssued = false;
     uint64_t m_selectedThread = 0;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;

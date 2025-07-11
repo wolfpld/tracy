@@ -35,6 +35,14 @@ namespace
 
 using kernel_symbol_data_t = rocprofiler_callback_tracing_code_object_kernel_symbol_register_data_t;
 
+struct DispatchData
+{
+    int64_t launch_start;
+    int64_t launch_end;
+    uint32_t thread_id;
+    uint16_t query_id;
+};
+
 struct ToolData
 {
     uint32_t version;
@@ -47,9 +55,7 @@ struct ToolData
     uint64_t query_id;
     int64_t previous_cpu_time;
     std::unordered_map<rocprofiler_kernel_id_t, kernel_symbol_data_t> client_kernels;
-    std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_start_times;
-    std::unordered_map<rocprofiler_dispatch_id_t, int64_t> launch_end_times;
-    std::unordered_map<rocprofiler_dispatch_id_t, uint16_t> dispatch_query_id;
+    std::unordered_map<rocprofiler_dispatch_id_t, DispatchData> dispatch_data;
     std::set<std::string> counter_names = { "SQ_WAVES", "GL2C_MISS", "GL2C_HIT" };
     std::unique_ptr<tracy::Thread> cal_thread;
     std::mutex mut{};
@@ -152,7 +158,12 @@ void record_interval( ToolData* data, rocprofiler_timestamp_t start_timestamp, r
         auto _lk = std::unique_lock{ data->mut };
         query_id = data->query_id;
         data->query_id++;
-        if( dispatch_id != UINT64_MAX ) data->dispatch_query_id[dispatch_id] = query_id;
+        if( dispatch_id != UINT64_MAX )
+        {
+            DispatchData& dispatch_data = data->dispatch_data[dispatch_id];
+            dispatch_data.query_id = query_id;
+            dispatch_data.thread_id = tracy::GetThreadHandle();
+        }
     }
 
     uint64_t cpu_start_time = 0, cpu_end_time = 0;
@@ -164,10 +175,9 @@ void record_interval( ToolData* data, rocprofiler_timestamp_t start_timestamp, r
     else
     {
         auto _lk = std::unique_lock{ data->mut };
-        cpu_start_time = data->launch_start_times.at( dispatch_id );
-        cpu_end_time = data->launch_end_times.at( dispatch_id );
-        data->launch_start_times.erase( dispatch_id );
-        data->launch_end_times.erase( dispatch_id );
+        DispatchData& dispatch_data = data->dispatch_data[dispatch_id];
+        cpu_start_time = dispatch_data.launch_start;
+        cpu_end_time = dispatch_data.launch_end;
     }
 
     if( src_loc != 0 )
@@ -245,12 +255,15 @@ void record_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data
     }
 
     uint16_t query_id = 0;
+    uint32_t thread_id = 0;
     {
         auto _lk = std::unique_lock{ data->mut };
         // An assumption is made here that the counter values are supplied after the dispatch
         // complete callback.
-        assert( data->dispatch_query_id.count( dispatch_data.dispatch_info.dispatch_id ) );
-        query_id = data->dispatch_query_id[dispatch_data.dispatch_info.dispatch_id];
+        assert( data->dispatch_data.count( dispatch_data.dispatch_info.dispatch_id ) );
+        DispatchData& ddata = data->dispatch_data[dispatch_data.dispatch_info.dispatch_id];
+        query_id = ddata.query_id;
+        thread_id = ddata.thread_id;
     }
 
     for( auto& p : sums )
@@ -259,6 +272,7 @@ void record_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::GpuZoneAnnotation );
         tracy::MemWrite( &item->zoneAnnotation.noteId, p.first );
         tracy::MemWrite( &item->zoneAnnotation.queryId, query_id );
+        tracy::MemWrite( &item->zoneAnnotation.thread, thread_id );
         tracy::MemWrite( &item->zoneAnnotation.value, p.second );
         tracy::MemWrite( &item->zoneAnnotation.context, data->context_id );
         tracy::Profiler::QueueSerialFinish();
@@ -397,12 +411,12 @@ void tool_callback_tracing_callback( rocprofiler_callback_tracing_record_t recor
             if( record.phase == ROCPROFILER_CALLBACK_PHASE_ENTER )
             {
                 auto _lk = std::unique_lock{ data->mut };
-                data->launch_start_times.emplace( rdata->dispatch_info.dispatch_id, tracy::Profiler::GetTime() );
+                data->dispatch_data[rdata->dispatch_info.dispatch_id].launch_start = tracy::Profiler::GetTime();
             }
             else if( record.phase == ROCPROFILER_CALLBACK_PHASE_EXIT )
             {
                 auto _lk = std::unique_lock{ data->mut };
-                data->launch_end_times.emplace( rdata->dispatch_info.dispatch_id, tracy::Profiler::GetTime() );
+                data->dispatch_data[rdata->dispatch_info.dispatch_id].launch_end = tracy::Profiler::GetTime();
             }
         }
         else if( record.operation == ROCPROFILER_KERNEL_DISPATCH_COMPLETE )

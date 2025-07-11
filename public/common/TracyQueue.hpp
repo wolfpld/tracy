@@ -453,6 +453,7 @@ struct QueueGpuZoneAnnotation
 {
     int64_t noteId;
     double value;
+    uint32_t thread;
     uint16_t queryId;
     uint8_t context;
 };

@@ -796,8 +796,8 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     if( !hasEmbeddingsModel ) return "Searching the user manual requires vector embeddings model to be selected. You must inform the user that he should download such a model using their LLM provider software, so you can use this tool.";
     if( !m_manualEmbeddingState.done ) return "User manual embedding vectors are not calculated. You must inform the user that he should click the \"Learn manual\" button, so you can use this tool.";
 
-    constexpr size_t MaxSearchResults = 10;
-    constexpr size_t MaxOutputChunks = 5;
+    constexpr size_t MaxSearchResults = 20;
+    constexpr size_t MaxOutputChunks = 10;
 
     nlohmann::json req;
     req["input"] = "search_query: " + query;

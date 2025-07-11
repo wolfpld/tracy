@@ -796,6 +796,9 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     if( !hasEmbeddingsModel ) return "Searching the user manual requires vector embeddings model to be selected. You must inform the user that he should download such a model using their LLM provider software, so you can use this tool.";
     if( !m_manualEmbeddingState.done ) return "User manual embedding vectors are not calculated. You must inform the user that he should click the \"Learn manual\" button, so you can use this tool.";
 
+    constexpr size_t MaxSearchResults = 10;
+    constexpr size_t MaxOutputChunks = 5;
+
     nlohmann::json req;
     req["input"] = "search_query: " + query;
     req["model"] = m_manualEmbeddingState.model;
@@ -810,7 +813,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     vec.reserve( embedding.size() );
     for( auto& item : embedding ) vec.emplace_back( item.get<float>() );
 
-    auto results = m_manualEmbeddings->Search( vec, 10 );
+    auto results = m_manualEmbeddings->Search( vec, MaxSearchResults );
     std::ranges::sort( results, []( const auto& a, const auto& b ) { return a.distance < b.distance; } );
 
     std::vector<std::pair<int, float>> chunks;
@@ -820,7 +823,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
         const auto chunk = m_manualEmbeddings->Get( item.idx );
         if( std::ranges::find_if( chunks, [chunk]( const auto& v ) { return v.first == chunk; } ) == chunks.end() ) chunks.emplace_back( chunk, item.distance );
     }
-    if( chunks.size() > 5 ) chunks.resize( 5 );
+    if( chunks.size() > MaxOutputChunks ) chunks.resize( MaxOutputChunks );
 
     const auto maxSize = CalcMaxSize();
     int totalSize = 0;

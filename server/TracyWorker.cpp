@@ -2832,15 +2832,20 @@ void Worker::Exec()
         const char* end = ptr + netbuf.size;
 
         {
-            std::lock_guard<std::mutex> lock( m_data.lock );
-            while( ptr < end )
+            std::unique_lock<std::mutex> lk(m_data.lock);
+            if(m_data.mainThreadWantsLock) m_data.lockCv.wait_for(lk, std::chrono::milliseconds(1));
+
             {
-                auto ev = (const QueueItem*)ptr;
-                if( !DispatchProcess( *ev, ptr ) )
+                while (ptr < end)
                 {
-                    if( m_failure != Failure::None ) HandleFailure( ptr, end );
-                    QueryTerminate();
-                    goto close;
+                    auto ev = (const QueueItem*)ptr;
+                    if (!DispatchProcess(*ev, ptr))
+                    {
+        
+                        if (m_failure != Failure::None) HandleFailure(ptr, end);
+                        QueryTerminate();
+                        goto close;
+                    }
                 }
             }
 

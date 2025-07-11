@@ -76,7 +76,6 @@ void View::DrawInfo()
         ImGui::SameLine();
         const auto version = m_worker.GetTraceVersion();
         ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
-        TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
         TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
         TextFocused( "CPU zones:", RealToString( m_worker.GetZoneCount() ) );
         ImGui::SameLine();

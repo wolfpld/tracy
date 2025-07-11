@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-07-11 <https://github.com/wolfpld/tracy>
+2025-07-12 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -571,7 +571,7 @@ To get the most accurate profiling results, you should minimize interference cau
 Interference caused by other programs can be seen in the profiler if context switch capture (section [3.16.3](#contextswitches){reference-type="ref" reference="contextswitches"}) is enabled.
 
 ::: bclogo
-Debugger in Visual Studio In MSVC, you would typically run your program using the *Start Debugging* menu option, which is conveniently available as a shortcut. You should instead use the *Start Without Debugging* option, available as shortcut.
+Debugger in Visual Studio In MSVC, you would typically run your program using the *Start Debugging* menu option, which is conveniently available as a F5 shortcut. You should instead use the *Start Without Debugging* option, available as Ctrl + F5 shortcut.
 :::
 
 ### CPU design {#checkenvironmentcpu}
@@ -746,7 +746,7 @@ After the build configuration phase is over, you may want to make some further a
 
 -   The *Build variant* setting is used to toggle between the debug and release build configurations.
 
-With all this taken care of, you can now start the program with the key, set breakpoints, get code completion and navigation[^24], and so on.
+With all this taken care of, you can now start the program with the F5 key, set breakpoints, get code completion and navigation[^24], and so on.
 
 [^24]: To get the Intellisense experience if you are using the MSVC compiler, you need to do some additional setup. First, you need to install Ninja (<https://ninja-build.org/>). The Meson installer (<https://github.com/mesonbuild/meson/releases>) is probably the most convenient way to do this. Then you need to set the `cmake.generator` option in the VS Code settings to `Ninja`. Once this is done, all you have to do is wipe the existing build directories and run the CMake configuration again.
 
@@ -2504,7 +2504,7 @@ If no client is running at the given address, the server will wait until it can 
 
 The *timer resolution* parameter shows the calibration results of timers used by the client. The following line is a status bar, which displays: network connection speed, connection compression ratio, and the resulting uncompressed data rate; the total amount of data transferred over the network; memory usage of the capture utility; time extent of the captured data.
 
-You can disconnect from the client and save the captured trace by pressing . If you prefer to disconnect after a fixed time, use the `-s seconds` parameter.
+You can disconnect from the client and save the captured trace by pressing Ctrl + C. If you prefer to disconnect after a fixed time, use the `-s seconds` parameter.
 
 ## Interactive profiling {#interactiveprofiling}
 
@@ -2512,7 +2512,7 @@ If you want to look at the profile data in real-time (or load a saved trace file
 
 The * Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow){reference-type="ref" reference="aboutwindow"}).
 
-The client *address entry* field and the  *Connect* button are used to connect to a running client[^64]. You can use the connection history button  to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the  mouse cursor over an entry and pressing the button on the keyboard.
+The client *address entry* field and the  *Connect* button are used to connect to a running client[^64]. You can use the connection history button  to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the  mouse cursor over an entry and pressing the Delete button on the keyboard.
 
 [^64]: Note that a custom port may be provided here, for example by entering '127.0.0.1:1234'.
 
@@ -2531,7 +2531,7 @@ The *discovered clients* list is only displayed if clients are broadcasting thei
 
 Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data (see section [5](#analyzingdata){reference-type="ref" reference="analyzingdata"}).
 
-Once connected to a client can be used to quickly discard any captured data and reconnect to a client at the same address.
+Once connected to a client Ctrl + Shift + Alt + R can be used to quickly discard any captured data and reconnect to a client at the same address.
 
 ### About window {#aboutwindow}
 
@@ -2887,7 +2887,7 @@ Moving the mouse cursor over the frames displayed on the graph will display a to
 
 You may focus the timeline view on the frames by clicking or dragging the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the graph. The graph may be scrolled left and right by dragging the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button over the graph. Finally, you may zoom the view in and out by using the ![image](icons/scroll.pdf){height=".8\\baselineskip"} mouse wheel. If the view is zoomed out, so that multiple frames are merged into one column, the profiler will use the highest frame time to represent the given column.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the graph while the  key is pressed will open the frame image playback window (section [5.20](#playback){reference-type="ref" reference="playback"}) and set the playback to the selected frame. See section [3.3.3](#frameimages){reference-type="ref" reference="frameimages"} for more information about frame images.
+Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the graph while the Ctrl key is pressed will open the frame image playback window (section [5.20](#playback){reference-type="ref" reference="playback"}) and set the playback to the selected frame. See section [3.3.3](#frameimages){reference-type="ref" reference="frameimages"} for more information about frame images.
 
 ### Timeline view
 
@@ -2927,7 +2927,7 @@ You can also see frame separators are projected down to the rest of the timeline
 
 Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a frame will zoom the view to the extent of the frame.
 
-If a frame has an associated frame image (see chapter [3.3.3](#frameimages){reference-type="ref" reference="frameimages"}), you can hold the key and click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the frame to open the frame image playback window (see chapter [5.20](#playback){reference-type="ref" reference="playback"}) and set the playback to the selected frame.
+If a frame has an associated frame image (see chapter [3.3.3](#frameimages){reference-type="ref" reference="frameimages"}), you can hold the Ctrl key and click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the frame to open the frame image playback window (see chapter [5.20](#playback){reference-type="ref" reference="playback"}) and set the playback to the selected frame.
 
 If the * Draw frame targets* option is enabled (see section [5.4](#options){reference-type="ref" reference="options"}), time regions in frames exceeding the set target value will be marked with a red background.
 
@@ -2968,7 +2968,7 @@ Meanwhile, the *Streaming thread* is performing some *Streaming jobs*. The first
 
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL context in place of a thread name.
 
-Hovering the mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo){reference-type="ref" reference="zoneinfo"}). Holding the key and clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone statistics window (section [5.7](#findzone){reference-type="ref" reference="findzone"}). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the view to the extent of the zone.
+Hovering the mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo){reference-type="ref" reference="zoneinfo"}). Holding the Ctrl key and clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone statistics window (section [5.7](#findzone){reference-type="ref" reference="findzone"}). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the view to the extent of the zone.
 
 ##### Ghost zones
 
@@ -3070,15 +3070,15 @@ Hovering the mouse pointer over the timeline view will display a vertical line t
 
 The timeline view may be scrolled both vertically and horizontally by dragging the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button. Note that only the zones, locks, and plots scroll vertically, while the time scale and frame sets always stay on the top.
 
-You can zoom in and out the timeline view by using the ![image](icons/scroll.pdf){height=".8\\baselineskip"} mouse wheel. Pressing the key will make zooming more precise while pressing the key will make it faster. You can select a range to which you want to zoom in by dragging the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button. Dragging the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button while the key is pressed will zoom out.
+You can zoom in and out the timeline view by using the ![image](icons/scroll.pdf){height=".8\\baselineskip"} mouse wheel. Pressing the Ctrl key will make zooming more precise while pressing the Shift key will make it faster. You can select a range to which you want to zoom in by dragging the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button. Dragging the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button while the Ctrl key is pressed will zoom out.
 
-It is also possible to navigate the timeline using the keyboard. The and keys scroll the view to the left and right, respectively. The and keys change the zoom level.
+It is also possible to navigate the timeline using the keyboard. The A and D keys scroll the view to the left and right, respectively. The W and S keys change the zoom level.
 
 ## Time ranges {#timeranges}
 
 Sometimes, you may want to specify a time range, such as limiting some statistics to a specific part of your program execution or marking interesting places.
 
-To define a time range, drag the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button over the timeline view while holding the key. When the mouse key is released, the profiler will mark the selected time extent with a blue striped pattern, and it will display a context menu with the following options:
+To define a time range, drag the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button over the timeline view while holding the Ctrl key. When the mouse key is released, the profiler will mark the selected time extent with a blue striped pattern, and it will display a context menu with the following options:
 
 -   * Limit find zone time range* -- this will limit find zone results. See chapter [5.7](#findzone){reference-type="ref" reference="findzone"} for more details.
 
@@ -3267,7 +3267,7 @@ Tracy gives you the ability to display an execution time histogram of all occurr
 
 You start by entering a search query, which will be matched against known zone names (see section [3.4](#markingzones){reference-type="ref" reference="markingzones"} for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the *matched source locations* drop-down. The selected zone's graph is displayed on the *histogram* drop-down, and also the matching zones are highlighted on the timeline view.
 
-Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview){reference-type="ref" reference="sourceview"}). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the key while clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button.
+Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview){reference-type="ref" reference="sourceview"}). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the Ctrl key while clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button.
 
 An example histogram is presented in figure [22](#findzonehistogram){reference-type="ref" reference="findzonehistogram"}. Here you can see that the majority of zone calls (by count) are clustered in the 300 ns group, closely followed by the 10 μs cluster. There are some outliers at the 1 and 10 ms marks, which can be ignored on most occasions, as these are single occurrences.
 
@@ -3326,7 +3326,7 @@ Tracy displays a variety of statistical values regarding the selected function: 
 Hovering the  mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a pulsing vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned. In addition, it will also highlight zone entry on the zone list.
 
 ::: bclogo
-Keyboard shortcut You may press to open or focus the find zone window and set the keyboard input on the search box.
+Keyboard shortcut You may press Ctrl + F to open or focus the find zone window and set the keyboard input on the search box.
 :::
 
 ::: bclogo
@@ -3654,7 +3654,7 @@ Some modes may be unavailable in some circumstances (missing or outdated source 
 
 This is pretty much the source file view window, but with the ability to select one of the source files that the compiler used to build the symbol. Additionally, each source file line that produced machine code in the symbol will show a count of associated assembly instructions, displayed with an '`@`' prefix, and will be marked with grey color on the scroll bar. Due to how optimizing compilers work, some lines may seemingly not produce any machine code, for example, because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have a disproportionate amount of associated instructions, e.g., when the compiler applied a loop unrolling optimization. This varies from case to case and from compiler to compiler.
 
-The *Propagate inlines* option, available when sample data is present, will enable propagation of the instruction costs down the local call stack. For example, suppose a base function in the symbol issues a call to an inlined function (which may not be readily visible due to being contained in another source file). In that case, any cost attributed to the inlined function will be visible in the base function. Because the cost information is added to all the entries in the local call stacks, it is possible to see seemingly nonsense total cost values when this feature is enabled. To quickly toggle this on or off, you may also press the key.
+The *Propagate inlines* option, available when sample data is present, will enable propagation of the instruction costs down the local call stack. For example, suppose a base function in the symbol issues a call to an inlined function (which may not be readily visible due to being contained in another source file). In that case, any cost attributed to the inlined function will be visible in the base function. Because the cost information is added to all the entries in the local call stacks, it is possible to see seemingly nonsense total cost values when this feature is enabled. To quickly toggle this on or off, you may also press the X key.
 
 #### Assembly mode
 
@@ -3730,11 +3730,11 @@ In this mode, the source and assembly panes will be displayed together, providin
 
 If automated call stack sampling (see chapter [3.16.5](#sampling){reference-type="ref" reference="sampling"}) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. You can use this information to determine which function line takes the most time. The displayed percentage values are heat map color-coded, with the lowest values mapped to dark red and the highest to bright yellow. The color code will appear next to the percentage value and on the scroll bar so that you can identify 'hot' places in the code at a glance.
 
-By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the key. You can also click the  drop down control to display a child call distribution list, which shows each known function[^100] that the symbol called. Make sure to familiarize yourself with section [5.15.1](#readingcallstacks){reference-type="ref" reference="readingcallstacks"} to be able to read the results correctly.
+By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the  drop down control to display a child call distribution list, which shows each known function[^100] that the symbol called. Make sure to familiarize yourself with section [5.15.1](#readingcallstacks){reference-type="ref" reference="readingcallstacks"} to be able to read the results correctly.
 
 [^100]: You should remember that these are results of random sampling. Some function calls may be missing here.
 
-Instruction timings can be viewed as a group. To begin constructing such a group, click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the percentage value. Additional instructions can be added using the  key while holding the  key will allow selection of a range. To cancel the selection, click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
+Instruction timings can be viewed as a group. To begin constructing such a group, click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the percentage value. Additional instructions can be added using the Ctrl key while holding the Shift key will allow selection of a range. To cancel the selection, click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
 
 Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter [5.16](#sampleparents){reference-type="ref" reference="sampleparents"}). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
 
@@ -3814,7 +3814,7 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 
 -   *Zoom* -- Zooms timeline to the annotation extent.
 
--   *Remove* -- Removes the annotation. You must press the key to enable this button.
+-   *Remove* -- Removes the annotation. You must press the Ctrl key to enable this button.
 
 -   Colored box -- Color of the annotation.
 

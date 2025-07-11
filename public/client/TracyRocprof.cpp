@@ -1,3 +1,4 @@
+#include "../server/tracy_robin_hood.h"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
 #include "tracy/TracyC.h"
@@ -51,12 +52,11 @@ struct ToolData
     rocprofiler_client_id_t client_id;
     uint8_t context_id;
     bool init;
-    uint64_t src_loc;
     uint64_t query_id;
     int64_t previous_cpu_time;
-    std::unordered_map<rocprofiler_kernel_id_t, kernel_symbol_data_t> client_kernels;
-    std::unordered_map<rocprofiler_dispatch_id_t, DispatchData> dispatch_data;
-    std::set<std::string> counter_names = { "SQ_WAVES", "GL2C_MISS", "GL2C_HIT" };
+    tracy::unordered_map<rocprofiler_kernel_id_t, kernel_symbol_data_t> client_kernels;
+    tracy::unordered_map<rocprofiler_dispatch_id_t, DispatchData> dispatch_data;
+    tracy::unordered_set<std::string> counter_names = { "SQ_WAVES", "GL2C_MISS", "GL2C_HIT" };
     std::unique_ptr<tracy::Thread> cal_thread;
     std::mutex mut{};
 };
@@ -282,8 +282,7 @@ void record_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data
 /**
  * Callback from rocprofiler when an kernel dispatch is enqueued into the HSA queue.
  * rocprofiler_counter_config_id_t* is a return to specify what counters to collect
- * for this dispatch (dispatch_packet). This example function creates a profile
- * to collect the counter SQ_WAVES for all kernel dispatch packets.
+ * for this dispatch (dispatch_packet).
  */
 void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_data,
                         rocprofiler_profile_config_id_t* config, rocprofiler_user_data_t* /*user_data*/,
@@ -342,6 +341,7 @@ void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_da
         "Could not fetch supported counters" );
 
     std::vector<rocprofiler_counter_id_t> collect_counters;
+    collect_counters.reserve( data->counter_names.size() );
     // Look for the counters contained in counters_to_collect in gpu_counters
     for( auto& counter : gpu_counters )
     {
@@ -351,7 +351,6 @@ void dispatch_callback( rocprofiler_dispatch_counting_service_data_t dispatch_da
             "Could not query info" );
         if( data->counter_names.count( std::string( info.name ) ) > 0 )
         {
-            std::clog << "Counter: " << counter.handle << " " << info.name << "\n";
             collect_counters.push_back( counter );
 
             size_t name_length = strlen( info.name );

@@ -33,6 +33,7 @@
 #include "profiler/TracyConfig.hpp"
 #include "profiler/TracyFileselector.hpp"
 #include "profiler/TracyImGui.hpp"
+#include "profiler/TracyMarkdown.hpp"
 #include "profiler/TracyMouse.hpp"
 #include "profiler/TracyProtoHistory.hpp"
 #include "profiler/TracyTexture.hpp"
@@ -1333,15 +1334,22 @@ static void DrawContents()
     }
 #endif
 
+    ImGui::SetNextWindowSize( ImVec2( 325 * dpiScale, 0 ) );
     if( ImGui::BeginPopupModal( ICON_FA_STAR " Achievements", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::TextUnformatted( "Tracy Profiler is a complex tool with many features. It" );
-        ImGui::TextUnformatted( "can be difficult to discover all of them on your own." );
-        ImGui::TextUnformatted( "The Achievements system will guide you through the" );
-        ImGui::TextUnformatted( "main features and teach you how to use them in an" );
-        ImGui::TextUnformatted( "easy-to-handle manner." );
-        ImGui::Separator();
-        ImGui::TextUnformatted( "Would you like to enable achievements?" );
+        constexpr const char* text = R"(
+**Tracy Profiler** is a complex tool with many features. It can be difficult to discover all of them on your own.
+
+The *Achievements* system will guide you through the main features and teach you how to use them in an easy-to-handle manner. You can use this system as a **tutorial** to learn how to use Tracy Profiler.
+
+---
+
+Would you like to enable achievements?
+)";
+
+        tracy::Markdown md;
+        md.Print( text, strlen( text ) );
+        ImGui::Spacing();
         ImGui::PushFont( g_fonts.normal, FontSmall );
         tracy::TextDisabledUnformatted( "You can change this setting later in the global settings." );
         ImGui::PopFont();

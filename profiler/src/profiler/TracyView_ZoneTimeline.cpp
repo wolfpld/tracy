@@ -570,7 +570,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                     }
                     if( normalized != origSymName && strcmp( normalized, origSymName ) != 0 )
                     {
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         TextDisabledUnformatted( origSymName );
                         ImGui::PopFont();
                     }

@@ -255,7 +255,7 @@ void View::DrawNotificationArea()
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
 
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     const auto wpos = ImGui::GetWindowPos();
     const auto w = ImGui::GetContentRegionAvail().x;
     const auto fps = RealToString( int( io.Framerate + 0.5f ) );

@@ -179,15 +179,15 @@ public:
             if( header > 0 )
             {
                 if( !first && !glue ) ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
-                ImGui::PushFont( g_fonts.big );
+                ImGui::PushFont( g_fonts.normal, FontBig );
             }
             else if( bold > 0 )
             {
-                ImGui::PushFont( italic > 0 ? g_fonts.boldItalic : g_fonts.bold );
+                ImGui::PushFont( italic > 0 ? g_fonts.boldItalic : g_fonts.bold, FontNormal );
             }
             else if( italic > 0 )
             {
-                ImGui::PushFont( g_fonts.italic );
+                ImGui::PushFont( g_fonts.italic, FontNormal );
             }
             if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
             Glue();
@@ -229,7 +229,7 @@ public:
             else
             {
                 Glue();
-                ImGui::PushFont( g_fonts.mono );
+                ImGui::PushFont( g_fonts.mono, FontNormal );
                 PrintTextWrapped( text, text + size );
                 ImGui::PopFont();
             }

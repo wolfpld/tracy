@@ -12,7 +12,7 @@ AchievementItem ai_samplingIntro = { "samplingIntro", "Sampling program executio
     ImGui::TextWrapped( "Sampling program execution is a great way to find out where the hot spots are in your program. It can be used to find out which functions take the most time, or which lines of code are executed the most often." );
     ImGui::TextWrapped( "While instrumentation requires changes to your code, sampling does not. However, because of the way it works, the results are coarser and it's not possible to know when functions are called or when they return." );
     ImGui::TextWrapped( "Sampling is automatic on Linux. On Windows, you must run the profiled application as an administrator for it to work." );
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
     ImGui::TextWrapped( "Depending on your system configuration, some additional steps may be required. Please refer to the user manual for more information." );
     ImGui::PopStyleColor();
@@ -27,7 +27,7 @@ AchievementItem ai_100million = { "100million", "It's over 100 million!", [](){
     ImGui::TextWrapped( "Tracy can handle a lot of data. How about 100 million zones in a single trace? Add a lot of zones to your program and see how it handles it!" );
     ImGui::TextWrapped( "Capturing a long-running profile trace is easy. Need to profile an hour of your program execution? You can do it." );
     ImGui::TextWrapped( "Note that it doesn't make much sense to instrument every little function you might have. The cost of the instrumentation itself will be higher than the cost of the function in such a case." );
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
     ImGui::TextWrapped( "Keep in mind that the more zones you have, the more memory and CPU time the profiler will use. Be careful not to run out of memory." );
     ImGui::TextWrapped( "To capture 100 million zones, you will need approximately 4 GB of RAM." );
@@ -70,11 +70,11 @@ void SomeFunction()
 
     ImGui::TextWrapped( "Instrumentation is a powerful feature that allows you to see the exact runtime of each call to the selected set of functions. The downside is that it takes a bit of manual work to get it set up." );
     ImGui::TextWrapped( "To get started, open a source file and include the Tracy.hpp header. This will give you access to a variety of macros provided by Tracy. Next, add the ZoneScoped macro to the beginning of one of your functions, like this:" );
-    ImGui::PushFont( g_fonts.mono );
+    ImGui::PushFont( g_fonts.mono, FontNormal );
     PrintSource( sc.get() );
     ImGui::PopFont();
     ImGui::TextWrapped( "Now, when you profile your application, you will see a new zone appear on the timeline for each call to the function. This allows you to see how much time is spent in each call and how many times the function is called." );
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
     ImGui::TextWrapped( "Note: The ZoneScoped macro is just one of the many macros provided by Tracy. See the documentation for more information." );
     ImGui::TextWrapped( "The above description applies to C++ code, but things are done similarly in other programming languages. Refer to the documentation for your language for more information." );
@@ -111,7 +111,7 @@ void Render()
 
     ImGui::TextWrapped( "In addition to instrumenting functions, you can also instrument frames. This allows you to see how much time is spent in each frame of your application." );
     ImGui::TextWrapped( "To instrument frames, you need to add the FrameMark macro at the beginning of each frame. This can be done in the main loop of your application, or in a separate function that is called at the beginning of each frame." );
-    ImGui::PushFont( g_fonts.mono );
+    ImGui::PushFont( g_fonts.mono, FontNormal );
     PrintSource( sc.get() );
     ImGui::PopFont();
     ImGui::TextWrapped( "When you profile your application, you will see a new frame appear on the timeline each time the FrameMark macro is called. This allows you to see how much time is spent in each frame and how many frames are rendered per second." );

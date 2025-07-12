@@ -26,7 +26,7 @@ bool View::DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offs
 
     auto draw = ImGui::GetWindowDrawList();
 
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     const auto sty = ImGui::GetTextLineHeight();
     const auto sstep = sty + 1;
     ImGui::PopFont();
@@ -51,7 +51,7 @@ bool View::DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offs
                 {
                     if( !singleThread )
                     {
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         DrawTextContrast( draw, wpos + ImVec2( ty, offset-1-sstep ), 0xFFFFAAAA, m_worker.GetThreadName( td.first ) );
                         DrawLine( draw, dpos + ImVec2( 0, offset+sty-sstep ), dpos + ImVec2( w, offset+sty-sstep ), 0x22FFAAAA );
                         ImGui::PopFont();
@@ -78,7 +78,7 @@ bool View::DrawGpu( const TimelineContext& ctx, const GpuCtxData& gpu, int& offs
                 {
                     if( !singleThread )
                     {
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         DrawTextContrast( draw, wpos + ImVec2( ty, offset-1-sstep ), 0xFFFFAAAA, m_worker.GetThreadName( td.first ) );
                         DrawLine( draw, dpos + ImVec2( 0, offset+sty-sstep ), dpos + ImVec2( w, offset+sty-sstep ), 0x22FFAAAA );
                         ImGui::PopFont();

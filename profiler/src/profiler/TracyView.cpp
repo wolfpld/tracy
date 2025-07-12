@@ -319,7 +319,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
@@ -345,7 +345,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client not ready", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_LIGHTBULB );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
@@ -371,7 +371,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client disconnected", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_HANDSHAKE );
         ImGui::PopFont();
         ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
@@ -398,7 +398,7 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         const auto& data = m_worker.GetFailureData();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_SKULL );
         ImGui::PopFont();
         ImGui::TextUnformatted( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
@@ -581,7 +581,7 @@ bool View::Draw()
     {
         assert( !m_filenameStaging.empty() );
         auto fn = m_filenameStaging.c_str();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextFocused( "Path:", fn );
         ImGui::PopFont();
         ImGui::Separator();
@@ -646,7 +646,7 @@ bool View::Draw()
     if( saveFailed ) ImGui::OpenPopup( "Save failed" );
     if( ImGui::BeginPopupModal( "Save failed", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "Could not save trace at the specified location. Try again somewhere else." );
@@ -685,8 +685,10 @@ bool View::DrawImpl()
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, &keepOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse );
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontNormal * 2.f );
+        ImGui::Spacing();
         TextCentered( ICON_FA_WIFI );
+        ImGui::Spacing();
         ImGui::PopFont();
         ImGui::TextUnformatted( "Waiting for connection..." );
         DrawWaitingDots( s_time );
@@ -1329,7 +1331,7 @@ bool View::DrawImpl()
     }
     if( ImGui::BeginPopupModal( "Connection lost!", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_PLUG );
         ImGui::PopFont();
         ImGui::TextUnformatted(
@@ -1373,7 +1375,7 @@ void View::DrawSourceTooltip( const char* filename, uint32_t srcline, int before
     if( m_srcHintCache.empty() ) return;
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
     if( separateTooltip ) ImGui::BeginTooltip();
-    ImGui::PushFont( g_fonts.mono );
+    ImGui::PushFont( g_fonts.mono, FontNormal );
     auto& lines = m_srcHintCache.get();
     const int start = std::max( 0, (int)srcline - ( before+1 ) );
     const int end = std::min<int>( m_srcHintCache.get().size(), srcline + after );

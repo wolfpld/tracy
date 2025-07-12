@@ -237,14 +237,14 @@ void View::DrawContextSwitchList( const TimelineContext& ctx, const std::vector<
                         {
                             TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
                             ImGui::SameLine();
-                            ImGui::PushFont( g_fonts.small );
+                            ImGui::PushFont( g_fonts.normal, FontSmall );
                             ImGui::AlignTextToFramePadding();
                             TextDisabledUnformatted( DecodeContextSwitchReason( prev.Reason() ) );
                             ImGui::PopFont();
                         }
                         TextFocused( "Wait state:", DecodeContextSwitchStateCode( prev.State() ) );
                         ImGui::SameLine();
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         ImGui::AlignTextToFramePadding();
                         TextDisabledUnformatted( DecodeContextSwitchState( prev.State() ) );
                         ImGui::PopFont();
@@ -540,7 +540,7 @@ void View::DrawWaitStacks()
     ImGui::BeginChild( "##waitstacks" );
     if( stacks.empty() )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_KIWI_BIRD );
         TextCentered( "No wait stacks to display" );

@@ -16,7 +16,6 @@ bool View::DrawConnection()
 {
     const auto scale = GetScale();
     const auto ty = ImGui::GetTextLineHeight();
-    const auto cs = ty * 0.9f;
     const auto isConnected = m_worker.IsConnected();
     size_t sendQueue;
 
@@ -34,7 +33,8 @@ bool View::DrawConnection()
         {
             sprintf( buf, "%6.2f Mbps", mbps );
         }
-        ImGui::Dummy( ImVec2( cs, 0 ) );
+        ImGui::AlignTextToFramePadding();
+        TextColoredUnformatted( isConnected ? 0xFF2222CC : 0xFF444444, ICON_FA_CIRCLE );
         ImGui::SameLine();
         ImGui::PlotLines( buf, mbpsVector.data(), mbpsVector.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150 * scale, 0 ) );
         TextDisabledUnformatted( "Ratio" );
@@ -76,9 +76,6 @@ bool View::DrawConnection()
             }
         }
     }
-
-    const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
-    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 1.75 ), cs * 0.5, isConnected ? 0xFF2222CC : 0xFF444444, 10 );
 
     {
         std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
@@ -169,7 +166,7 @@ bool View::DrawConnection()
 
     if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextCentered( ICON_FA_TRIANGLE_EXCLAMATION );
         ImGui::PopFont();
         ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );

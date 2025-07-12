@@ -381,7 +381,7 @@ void View::DrawZoneInfoWindow()
         const auto tid = threadData->id;
         if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).name.Active() )
         {
-            ImGui::PushFont( g_fonts.big );
+            ImGui::PushFont( g_fonts.normal, FontBig );
             TextFocused( "Zone name:", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
             ImGui::PopFont();
             if( srcloc.name.active )
@@ -409,7 +409,7 @@ void View::DrawZoneInfoWindow()
         }
         else if( srcloc.name.active )
         {
-            ImGui::PushFont( g_fonts.big );
+            ImGui::PushFont( g_fonts.normal, FontBig );
             TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
             ImGui::PopFont();
             ImGui::SameLine();
@@ -420,7 +420,7 @@ void View::DrawZoneInfoWindow()
         }
         else
         {
-            ImGui::PushFont( g_fonts.big );
+            ImGui::PushFont( g_fonts.normal, FontBig );
             TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
             ImGui::PopFont();
             ImGui::SameLine();
@@ -1513,7 +1513,7 @@ void View::DrawGpuInfoWindow()
         ImGui::Separator();
 
         const auto tid = GetZoneThread( ev );
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
         ImGui::PopFont();
         ImGui::SameLine();

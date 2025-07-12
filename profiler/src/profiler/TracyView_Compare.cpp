@@ -213,7 +213,7 @@ void View::DrawCompare()
     if( !m_compare.second )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 5 ) * 0.5f ) );
         TextCentered( ICON_FA_SCALE_BALANCED );
         TextCentered( "Please load a second trace to compare results" );
@@ -252,7 +252,7 @@ void View::DrawCompare()
                 }
             } );
         }
-        tracy::BadVersion( m_compare.badVer, g_fonts.big );
+        tracy::BadVersion( m_compare.badVer );
         ImGui::End();
         return;
     }
@@ -262,7 +262,7 @@ void View::DrawCompare()
     if( !m_worker.AreSourceLocationZonesReady() || !m_compare.second->AreSourceLocationZonesReady() )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_FROG );
         TextCentered( "Please wait, computing data..." );
@@ -412,7 +412,7 @@ void View::DrawCompare()
                         {
                             auto it = tfc.find( v );
                             assert( it != tfc.end() );
-                            ImGui::PushFont( g_fonts.mono );
+                            ImGui::PushFont( g_fonts.mono, FontNormal );
                             ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintFile( it->second.data, it->second.len, 0xFF6666FF );
                             ImGui::PopStyleVar();
@@ -436,7 +436,7 @@ void View::DrawCompare()
                         {
                             auto it = ofc.find( v );
                             assert( it != ofc.end() );
-                            ImGui::PushFont( g_fonts.mono );
+                            ImGui::PushFont( g_fonts.mono, FontNormal );
                             ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintFile( it->second.data, it->second.len, 0xFF66DD66 );
                             ImGui::PopStyleVar();
@@ -458,7 +458,7 @@ void View::DrawCompare()
                     {
                         if( ImGui::TreeNode( v.first ) )
                         {
-                            ImGui::PushFont( g_fonts.mono );
+                            ImGui::PushFont( g_fonts.mono, FontNormal );
                             ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintDiff( v.second );
                             ImGui::PopStyleVar();

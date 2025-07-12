@@ -404,7 +404,7 @@ void View::DrawTimeline()
     }
 
     const auto vcenter = verticallyCenterTimeline && drawMouseLine && m_viewMode == ViewMode::Paused;
-    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax, g_fonts.small );
+    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;

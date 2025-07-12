@@ -559,13 +559,13 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                     TextDisabledUnformatted( ICON_FA_HAT_WIZARD " kernel" );
                 }
                 ImGui::SameLine();
-                ImGui::PushFont( g_fonts.small );
+                ImGui::PushFont( g_fonts.normal, FontSmall );
                 ImGui::AlignTextToFramePadding();
                 ImGui::TextDisabled( "0x%" PRIx64, symAddr );
                 ImGui::PopFont();
                 if( normalized != name && strcmp( normalized, name ) != 0 )
                 {
-                    ImGui::PushFont( g_fonts.small );
+                    ImGui::PushFont( g_fonts.normal, FontSmall );
                     TextDisabledUnformatted( name );
                     ImGui::PopFont();
                 }
@@ -939,7 +939,7 @@ void View::DrawFlameGraph()
 
     if( m_flameGraphData.empty() )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( region.y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_CAT );
         TextCentered( "No data available to display" );

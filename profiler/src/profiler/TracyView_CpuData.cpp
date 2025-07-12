@@ -150,7 +150,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
         offset += cpuUsageHeight + 3;
     }
 
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     const auto sstep = sty + 1;
 
     const auto origOffset = offset;
@@ -195,7 +195,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
                         TextFocused( "End time:", TimeToString( t1 ) );
                         TextFocused( "Activity time:", TimeToString( t1 - t0 ) );
                         ImGui::EndTooltip();
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
 
                         if( IsMouseClicked( 2 ) )
                         {
@@ -342,7 +342,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
                                 TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( prev.Reason() ) );
                                 ImGui::SameLine();
-                                ImGui::PushFont( g_fonts.small );
+                                ImGui::PushFont( g_fonts.normal, FontSmall );
                                 ImGui::AlignTextToFramePadding();
                                 TextDisabledUnformatted( DecodeContextSwitchReason( prev.Reason() ) );
                                 ImGui::PopFont();
@@ -385,7 +385,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
 
                         ImGui::EndTooltip();
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
 
                         if( local && IsMouseClicked( 0 ) )
                         {
@@ -439,7 +439,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
             }
             TextFocused( "Context switch regions:", RealToString( cpuData[i].cs.size() ) );
             ImGui::EndTooltip();
-            ImGui::PushFont( g_fonts.small );
+            ImGui::PushFont( g_fonts.normal, FontSmall );
         }
 
         offset += sstep;

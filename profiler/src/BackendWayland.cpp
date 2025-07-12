@@ -928,7 +928,7 @@ static void SetupCursor()
     s_cursorY = cursor->images[0]->hotspot_y * 120 / s_maxScale;
 }
 
-static void SetClipboard( void*, const char* text )
+static void SetClipboard( ImGuiContext*, const char* text )
 {
     s_clipboard = text;
 
@@ -939,7 +939,7 @@ static void SetClipboard( void*, const char* text )
     wl_data_device_set_selection( s_dataDev, s_dataSource, s_dataSerial );
 }
 
-static const char* GetClipboard( void* )
+static const char* GetClipboard( ImGuiContext* )
 {
     if( !s_dataOffer ) return nullptr;
     int fd[2];
@@ -1069,8 +1069,9 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         s_dataDev = wl_data_device_manager_get_data_device( s_dataDevMgr, s_seat );
         wl_data_device_add_listener( s_dataDev, &dataDeviceListener, nullptr );
 
-        io.SetClipboardTextFn = SetClipboard;
-        io.GetClipboardTextFn = GetClipboard;
+        auto& platform = ImGui::GetPlatformIO();
+        platform.Platform_SetClipboardTextFn = SetClipboard;
+        platform.Platform_GetClipboardTextFn = GetClipboard;
     }
 
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();

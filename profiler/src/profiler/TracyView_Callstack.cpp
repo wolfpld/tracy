@@ -288,7 +288,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         TextDisabledUnformatted( "external" );
                         ImGui::TableNextColumn();
                         if( external == 1 )
@@ -312,7 +312,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                     else
                     {
-                        ImGui::PushFont( g_fonts.small );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         TextDisabledUnformatted( "inline" );
                         ImGui::PopFont();
                     }
@@ -493,7 +493,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            ImGui::PushFont( g_fonts.small );
+            ImGui::PushFont( g_fonts.normal, FontSmall );
             TextDisabledUnformatted( "external" );
             ImGui::TableNextColumn();
             if( external == 1 )
@@ -640,7 +640,7 @@ void View::CallstackTooltipContents( uint32_t idx )
                 if( frameData->imageName.Active() )
                 {
                     ImGui::SameLine();
-                    ImGui::PushFont( g_fonts.small );
+                    ImGui::PushFont( g_fonts.normal, FontSmall );
                     ImGui::AlignTextToFramePadding();
                     TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
                     ImGui::PopFont();

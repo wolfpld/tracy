@@ -268,7 +268,7 @@ void View::DrawFindZone()
     if( !m_worker.AreSourceLocationZonesReady() )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_CROW );
         TextCentered( "Please wait, computing data..." );
@@ -279,7 +279,7 @@ void View::DrawFindZone()
     }
     if( m_worker.GetZoneCount() == 0 )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_CROW );
         TextCentered( "No zones were collected" );
@@ -349,7 +349,7 @@ void View::DrawFindZone()
 
     if( m_findZone.match.empty() )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_CROW );
         if( m_findZone.hasResults )

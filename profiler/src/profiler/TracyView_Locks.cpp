@@ -27,7 +27,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
     {
         sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
     }
-    ImGui::PushFont( g_fonts.small );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
     ImGui::PopFont();
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty + 1 ) ) )
@@ -559,7 +559,7 @@ void View::DrawLockInfoWindow()
             }
         }
 
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         if( lock.customName.Active() )
         {
             ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );

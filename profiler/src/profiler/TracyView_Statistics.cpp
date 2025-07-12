@@ -48,7 +48,7 @@ void View::DrawStatistics()
     if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_HIPPO );
         TextCentered( "Please wait, computing data..." );
@@ -597,7 +597,7 @@ void View::DrawStatistics()
     {
         if( srcloc.empty() )
         {
-            ImGui::PushFont( g_fonts.big );
+            ImGui::PushFont( g_fonts.normal, FontBig );
             ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
             TextCentered( ICON_FA_HIPPO );
             TextCentered( "No entries to be displayed" );

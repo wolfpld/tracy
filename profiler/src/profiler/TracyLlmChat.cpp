@@ -137,7 +137,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
     ImGui::PushStyleColor( ImGuiCol_Text, roleData.textColor );
     if( role == TurnRole::Error )
     {
-        ImGui::PushFont( g_fonts.mono );
+        ImGui::PushFont( g_fonts.mono, FontNormal );
         ImGui::TextWrapped( "%s", content.c_str() );
         ImGui::PopFont();
     }
@@ -155,7 +155,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
         ImGui::TextDisabled( "(%s)", type.c_str() );
         if( expand )
         {
-            ImGui::PushFont( g_fonts.mono );
+            ImGui::PushFont( g_fonts.mono, FontNormal );
             ImGui::TextWrapped( "%s", content.c_str() + tagSize );
             ImGui::PopFont();
             ImGui::TreePop();
@@ -182,7 +182,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
                 ImGui::PushID( m_subIdx++ );
                 if( ImGui::TreeNode( ICON_FA_REPLY " Tool response..." ) )
                 {
-                    ImGui::PushFont( g_fonts.mono );
+                    ImGui::PushFont( g_fonts.mono, FontNormal );
                     ImGui::TextWrapped( "%s", content.c_str() + sizeof( "<tool_output>\n" ) - 1 );
                     ImGui::PopFont();
                     ImGui::TreePop();
@@ -312,7 +312,7 @@ void TracyLlmChat::PrintThink( const char* str, size_t size )
 void TracyLlmChat::PrintToolCall( const char* str, size_t size )
 {
     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
-    ImGui::PushFont( g_fonts.mono );
+    ImGui::PushFont( g_fonts.mono, FontNormal );
     ImGui::TextWrapped( "%.*s", (int)size, str );
     ImGui::PopFont();
     ImGui::PopStyleColor();

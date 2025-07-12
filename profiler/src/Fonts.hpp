@@ -5,8 +5,7 @@ struct ImFont;
 
 struct FontData
 {
-    ImFont* big;
-    ImFont* small;
+    ImFont* normal;
     ImFont* mono;
     ImFont* bold;
     ImFont* boldItalic;
@@ -14,6 +13,7 @@ struct FontData
 };
 
 extern FontData g_fonts;
+extern float FontNormal, FontSmall, FontBig;
 
 void LoadFonts( float scale );
 

@@ -19,7 +19,7 @@ void View::DrawMessages()
     if( msgs.empty() )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_FISH_FINS );
         TextCentered( "No messages were collected" );

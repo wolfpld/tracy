@@ -80,7 +80,7 @@ void TracyLlm::Draw()
 
     if( IsBusy() )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_HOURGLASS );
         TextCentered( "Please wait..." );
@@ -95,7 +95,7 @@ void TracyLlm::Draw()
     const auto manualEmbeddingsState = m_tools->GetManualEmbeddingsState();
     if( manualEmbeddingsState.inProgress )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 7 ) * 0.5f ) );
         TextCentered( ICON_FA_BOOK_BOOKMARK );
         ImGui::Spacing();
@@ -317,7 +317,7 @@ void TracyLlm::Draw()
 
     if( !m_api->IsConnected() )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_PLUG_CIRCLE_XMARK );
         TextCentered( "No connection to LLM API" );
@@ -329,7 +329,7 @@ void TracyLlm::Draw()
     const auto& models = m_api->GetModels();
     if( models.empty() || m_modelIdx < 0 )
     {
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_WORM );
         ImGui::Spacing();

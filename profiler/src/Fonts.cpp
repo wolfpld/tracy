@@ -16,19 +16,21 @@
 
 FontData g_fonts;
 
+float FontNormal, FontSmall, FontBig;
+
 void LoadFonts( float scale )
 {
     ImGuiIO& io = ImGui::GetIO();
 
     ImFontConfig configBasic;
-    configBasic.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configBasic.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LightHinting;
     configBasic.FontDataOwnedByAtlas = false;
     ImFontConfig configMerge;
     configMerge.MergeMode = true;
-    configMerge.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configMerge.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LightHinting;
     configMerge.FontDataOwnedByAtlas = false;
     ImFontConfig configFixed;
-    configFixed.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configFixed.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LightHinting;
     configFixed.GlyphExtraAdvanceX = -1;
     configFixed.FontDataOwnedByAtlas = false;
 
@@ -41,22 +43,22 @@ void LoadFonts( float scale )
 
     io.Fonts->Clear();
 
-    io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 15.0f * scale ), &configBasic );
+    g_fonts.normal = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 15.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.mono = io.Fonts->AddFontFromMemoryTTF( (void*)fontFixed->data(), fontFixed->size(), round( 15.0f * scale ), &configFixed );
-
-    g_fonts.big = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 21.0f * scale ), &configBasic );
-    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge );
-
-    g_fonts.small = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 10.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.bold = io.Fonts->AddFontFromMemoryTTF( (void*)fontBold->data(), fontBold->size(), round( 15.0f * scale ), &configBasic );
-    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.boldItalic = io.Fonts->AddFontFromMemoryTTF( (void*)fontBoldItalic->data(), fontBoldItalic->size(), round( 15.0f * scale ), &configBasic );
-    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.italic = io.Fonts->AddFontFromMemoryTTF( (void*)fontItalic->data(), fontItalic->size(), round( 15.0f * scale ), &configBasic );
-    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 20.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+
+    FontNormal = round( scale * 15.f );
+    FontSmall = round( scale * 15 * 2.f / 3.f );
+    FontBig = round( scale * 15 * 1.4f );
 }

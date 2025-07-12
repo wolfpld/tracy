@@ -201,7 +201,7 @@ void View::DrawMemory()
     if( mem.data.empty() )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( g_fonts.big );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_DOG );
         TextCentered( "No memory data collected" );
@@ -731,7 +731,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                 auto v = vec[i];
                 const auto arrIdx = std::distance( mem.data.begin(), v );
 
-                ImGui::PushFont( g_fonts.mono );
+                ImGui::PushFont( g_fonts.mono, FontNormal );
                 if( m_memoryAllocInfoPool == pool && m_memoryAllocInfoWindow == arrIdx )
                 {
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );

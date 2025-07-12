@@ -3265,7 +3265,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 
 The frame information block\footnote{Visible only if frame instrumentation was included in the capture.} consists of four elements: the current frame set name along with the number of captured frames (click on it with the \LMB{}~left mouse button to go to a specified frame), the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. For more information about marking frames, see section~\ref{markingframes}.
 
-The following three items show the \emph{\faEye{}~view time range}, the \emph{\faDatabase{}~time span} of the whole capture (clicking on it with the \MMB{} middle mouse button will set the view range to the entire capture), and the \emph{\faMemory{}~memory usage} of the profiler.
+The following three items show the \emph{\faEye{}~view time range}, the \emph{\faDatabase{}~time span} of the whole capture (clicking on it with the \MMB{}~middle mouse button will set the view range to the entire capture), and the \emph{\faMemory{}~memory usage} of the profiler.
 
 \paragraph{Notification area}
 
@@ -3437,7 +3437,7 @@ In figure~\ref{framesetsfig} we can see the fully described frames~312 and 347. 
 
 You can also see frame separators are projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. You can make a frame set active by clicking the \LMB{}~left mouse button on a frame set row you want to select (also see section~\ref{controlmenu}).
 
-Clicking the \MMB{} middle mouse button on a frame will zoom the view to the extent of the frame.
+Clicking the \MMB{}~middle mouse button on a frame will zoom the view to the extent of the frame.
 
 If a frame has an associated frame image (see chapter~\ref{frameimages}), you can hold the \keys{\ctrl} key and click the \LMB{}~left mouse button on the frame to open the frame image playback window (see chapter~\ref{playback}) and set the playback to the selected frame.
 
@@ -3659,17 +3659,17 @@ The numerical data values (figure~\ref{plot}) are plotted right below the zones 
 \label{plot}
 \end{figure}
 
-When memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{}~Memory usage} plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the \LMB{} left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
+When memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{}~Memory usage} plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the \LMB{}~left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
 
 Another plot that Tracy automatically provides is the \emph{\faTachometer*{}~CPU usage} plot, which represents the total system CPU usage percentage (it is not limited to the profiled application).
 
 \subsubsection{Navigating the view}
 
-Hovering the \faMousePointer{} mouse pointer over the timeline view will display a vertical line that you can use to line up events in multiple threads visually. Dragging the \LMB{} left mouse button will display the time measurement of the selected region.
+Hovering the \faMousePointer{} mouse pointer over the timeline view will display a vertical line that you can use to line up events in multiple threads visually. Dragging the \LMB{}~left mouse button will display the time measurement of the selected region.
 
-The timeline view may be scrolled both vertically and horizontally by dragging the \RMB{} right mouse button. Note that only the zones, locks, and plots scroll vertically, while the time scale and frame sets always stay on the top.
+The timeline view may be scrolled both vertically and horizontally by dragging the \RMB{}~right mouse button. Note that only the zones, locks, and plots scroll vertically, while the time scale and frame sets always stay on the top.
 
-You can zoom in and out the timeline view by using the \Scroll{}~mouse wheel. Pressing the \keys{\ctrl} key will make zooming more precise while pressing the \keys{\shift} key will make it faster. You can select a range to which you want to zoom in by dragging the \MMB{} middle mouse button. Dragging the \MMB{} middle mouse button while the \keys{\ctrl} key is pressed will zoom out.
+You can zoom in and out the timeline view by using the \Scroll{}~mouse wheel. Pressing the \keys{\ctrl} key will make zooming more precise while pressing the \keys{\shift} key will make it faster. You can select a range to which you want to zoom in by dragging the \MMB{}~middle mouse button. Dragging the \MMB{}~middle mouse button while the \keys{\ctrl} key is pressed will zoom out.
 
 It is also possible to navigate the timeline using the keyboard. The \keys{A} and \keys{D} keys scroll the view to the left and right, respectively. The \keys{W} and \keys{S} keys change the zoom level.
 
@@ -3770,7 +3770,7 @@ Disabling the display of some events is especially recommended when the profiler
 \subsection{Messages window}
 \label{messages}
 
-In this window, you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into four columns: \emph{time}, \emph{thread}, \emph{message} and \emph{call stack}. Hovering the \faMousePointer{}~mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{} left mouse button on a message will center the timeline view on the selected message.
+In this window, you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into four columns: \emph{time}, \emph{thread}, \emph{message} and \emph{call stack}. Hovering the \faMousePointer{}~mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{}~left mouse button on a message will center the timeline view on the selected message.
 
 The \emph{call stack} column is filled only if a call stack capture was requested, as described in section~\ref{collectingcallstacks}. A single entry consists of the \emph{\faAlignJustify{}~Show} button, which opens the call stack information window (chapter~\ref{callstackwindow}) and of abbreviated information about the call path.
 
@@ -3800,7 +3800,7 @@ Here you will find a multi-column display of captured zones, which contains: the
 
 In the \emph{~Timing} menu, the \emph{~With children} selection displays inclusive measurements, that is, containing execution time of zone's children. The \emph{~Self only} selection switches the measurement to exclusive, displaying just the time spent in the zone, subtracting the child calls. Finally, the \emph{~Non-reentrant} selection shows inclusive time but counts only the first appearance of a given zone on a thread's stack.
 
-Clicking the \LMB{} left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
+Clicking the \LMB{}~left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
 
 You can filter the displayed list of zones by matching the zone name to the expression in the \emph{\faFilter{}~Filter zones} entry field. Refer to section~\ref{messages} for a more detailed description of the expression syntax.
 
@@ -3858,7 +3858,7 @@ Tracy gives you the ability to display an execution time histogram of all occurr
 
 You start by entering a search query, which will be matched against known zone names (see section~\ref{markingzones} for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the \emph{matched source locations} drop-down. The selected zone's graph is displayed on the \emph{histogram} drop-down, and also the matching zones are highlighted on the timeline view.
 
-Clicking the \RMB{} right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the \keys{\ctrl} key while clicking the \RMB{} right mouse button.
+Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the \keys{\ctrl} key while clicking the \RMB{}~right mouse button.
 
 An example histogram is presented in figure~\ref{findzonehistogram}. Here you can see that the majority of zone calls (by count) are clustered in the 300~\si{\nano\second} group, closely followed by the 10~\si{\micro\second} cluster. There are some outliers at the 1~and~10~\si{\milli\second} marks, which can be ignored on most occasions, as these are single occurrences.
 
@@ -3914,7 +3914,7 @@ Various data statistics about displayed data accompany the histogram, for exampl
 \item \emph{Minimum values in bin} -- Excludes display of bins that do not hold enough values at both ends of the time range. Increasing this parameter will eliminate outliers, allowing us to concentrate on the interesting part of the graph.
 \end{itemize}
 
-You can drag the \LMB{} left mouse button over the histogram to select a time range that you want to look at closely. This will display the data in the histogram info section, and it will also filter zones shown in the \emph{found zones} section. This is quite useful if you actually want to look at the outliers, i.e.,\ where did they originate from, what the program was doing at the moment, etc\footnote{More often than not you will find out, that the application was just starting, or access to a cold file was required and there's not much you can do to optimize that particular case.}. You can reset the selection range by pressing the \RMB{} right mouse button on the histogram.
+You can drag the \LMB{}~left mouse button over the histogram to select a time range that you want to look at closely. This will display the data in the histogram info section, and it will also filter zones shown in the \emph{found zones} section. This is quite useful if you actually want to look at the outliers, i.e.,\ where did they originate from, what the program was doing at the moment, etc\footnote{More often than not you will find out, that the application was just starting, or access to a cold file was required and there's not much you can do to optimize that particular case.}. You can reset the selection range by pressing the \RMB{}~right mouse button on the histogram.
 
 The \emph{found zones} section displays the individual zones grouped according to the following criteria:
 
@@ -3927,9 +3927,9 @@ The \emph{found zones} section displays the individual zones grouped according t
 \item \emph{No grouping} -- Disables zone grouping. It may be useful when you want to see zones in order as they appear.
 \end{itemize}
 
-You may sort each group according to the \emph{order} in which it appeared, the call \emph{count}, the total \emph{time} spent in the group, or the \emph{mean time per call}. Expanding the group view will display individual occurrences of the zone, which can be sorted by application's time, execution time, or zone's name. Clicking the \LMB{} left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Clicking the \MMB{} middle mouse button on a zone will zoom the timeline view to the zone's extent.
+You may sort each group according to the \emph{order} in which it appeared, the call \emph{count}, the total \emph{time} spent in the group, or the \emph{mean time per call}. Expanding the group view will display individual occurrences of the zone, which can be sorted by application's time, execution time, or zone's name. Clicking the \LMB{}~left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Clicking the \MMB{}~middle mouse button on a zone will zoom the timeline view to the zone's extent.
 
-Clicking the \LMB{} left mouse button on the group name will highlight the group time data on the histogram (figure~\ref{findzonehistogramgroup}). This function provides a quick insight into the impact of the originating thread or input data on the zone performance. Clicking on the \emph{\faBackspace~Clear} button will reset the group selection. If the grouping mode is set to \emph{Parent} option, clicking the \MMB{}~middle mouse button on the parent zone group will switch the find zone view to display the selected zone.
+Clicking the \LMB{}~left mouse button on the group name will highlight the group time data on the histogram (figure~\ref{findzonehistogramgroup}). This function provides a quick insight into the impact of the originating thread or input data on the zone performance. Clicking on the \emph{\faBackspace~Clear} button will reset the group selection. If the grouping mode is set to \emph{Parent} option, clicking the \MMB{}~middle mouse button on the parent zone group will switch the find zone view to display the selected zone.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -4144,7 +4144,7 @@ You can view the data gathered by profiling memory usage (section~\ref{memorypro
 
 The top row contains statistics, such as \emph{total allocations} count, number of \emph{active allocations}, current \emph{memory usage} and process \emph{memory span}\footnote{Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.}.
 
-The lists of captured memory allocations are displayed in a common multi-column format through the profiler. The first column specifies the memory address of an allocation or an address and an offset if the address is not at the start of the allocation. Clicking the \LMB{} left mouse button on an address will open the memory allocation information window\footnote{While the allocation information window is opened, the address will be highlighted on the list.} (see section~\ref{memallocinfo}). Clicking the \MMB{}~middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
+The lists of captured memory allocations are displayed in a common multi-column format through the profiler. The first column specifies the memory address of an allocation or an address and an offset if the address is not at the start of the allocation. Clicking the \LMB{}~left mouse button on an address will open the memory allocation information window\footnote{While the allocation information window is opened, the address will be highlighted on the list.} (see section~\ref{memallocinfo}). Clicking the \MMB{}~middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
 
 The allocation's timing data is contained in two columns: \emph{appeared at} and \emph{duration}. Clicking the \LMB{}~left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
 

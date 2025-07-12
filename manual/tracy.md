@@ -2826,13 +2826,13 @@ The control menu (top row of buttons) provides access to various profiler featur
 
 [^70]: Or perform any action on the timeline view, apart from changing the zoom level.
 
-The frame information block[^71] consists of four elements: the current frame set name along with the number of captured frames (click on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button to go to a specified frame), the two navigational buttons \"CaretLeft icon\" and \"CaretRight icon\", which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \"CaretDown icon\", which is used to switch to another frame set[^72]. For more information about marking frames, see section [3.3](#markingframes).
+The frame information block[^71] consists of four elements: the current frame set name along with the number of captured frames (click on it with the left mouse button to go to a specified frame), the two navigational buttons \"CaretLeft icon\" and \"CaretRight icon\", which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \"CaretDown icon\", which is used to switch to another frame set[^72]. For more information about marking frames, see section [3.3](#markingframes).
 
 [^71]: Visible only if frame instrumentation was included in the capture.
 
 [^72]: See section [5.2.3.2](#framesets) for another way to change the active frame set.
 
-The following three items show the *\"Eye icon\" view time range*, the *\"Database icon\" time span* of the whole capture (clicking on it with the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button will set the view range to the entire capture), and the *\"Memory icon\" memory usage* of the profiler.
+The following three items show the *\"Eye icon\" view time range*, the *\"Database icon\" time span* of the whole capture (clicking on it with the middle mouse button will set the view range to the entire capture), and the *\"Memory icon\" memory usage* of the profiler.
 
 #### Notification area
 
@@ -2885,9 +2885,9 @@ When a zone is displayed in the find zone window (section [5.7](#findzone)), th
 
 Moving the \"MousePointer icon\" mouse cursor over the frames displayed on the graph will display a tooltip with information about frame number, frame time, frame image (if available, see chapter [3.3.3](#frameimages)), etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
 
-You may focus the timeline view on the frames by clicking or dragging the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the graph. The graph may be scrolled left and right by dragging the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button over the graph. Finally, you may zoom the view in and out by using the ![image](icons/scroll.pdf){height=".8\\baselineskip"} mouse wheel. If the view is zoomed out, so that multiple frames are merged into one column, the profiler will use the highest frame time to represent the given column.
+You may focus the timeline view on the frames by clicking or dragging the left mouse button on the graph. The graph may be scrolled left and right by dragging the right mouse button over the graph. Finally, you may zoom the view in and out by using the mouse wheel. If the view is zoomed out, so that multiple frames are merged into one column, the profiler will use the highest frame time to represent the given column.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the graph while the Ctrl key is pressed will open the frame image playback window (section [5.20](#playback)) and set the playback to the selected frame. See section [3.3.3](#frameimages) for more information about frame images.
+Clicking the left mouse button on the graph while the Ctrl key is pressed will open the frame image playback window (section [5.20](#playback)) and set the playback to the selected frame. See section [3.3.3](#frameimages) for more information about frame images.
 
 ### Timeline view
 
@@ -2923,11 +2923,11 @@ Frames from each frame set are displayed directly underneath the time scale. Eac
 
 In figure [17](#framesetsfig) we can see the fully described frames 312 and 347. The description consists of the frame name, which is *Frame* for the default frame set (section [3.3](#markingframes)) or the name you used for the secondary name set (section [3.3.1](#secondaryframeset)), the frame number, and the frame time. Since frame 348 is too small to be fully labeled, only the frame time is shown. On the other hand, frame 349 is even smaller, with no space for any text. Moreover, frames 313 to 346 are too small to be displayed individually, so they are replaced with a zig-zag pattern, as described in section [5.2.3.0.1](#collapseditems).
 
-You can also see frame separators are projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. You can make a frame set active by clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a frame set row you want to select (also see section [5.2.1](#controlmenu)).
+You can also see frame separators are projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. You can make a frame set active by clicking the left mouse button on a frame set row you want to select (also see section [5.2.1](#controlmenu)).
 
-Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a frame will zoom the view to the extent of the frame.
+Clicking the middle mouse button on a frame will zoom the view to the extent of the frame.
 
-If a frame has an associated frame image (see chapter [3.3.3](#frameimages)), you can hold the Ctrl key and click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the frame to open the frame image playback window (see chapter [5.20](#playback)) and set the playback to the selected frame.
+If a frame has an associated frame image (see chapter [3.3.3](#frameimages)), you can hold the Ctrl key and click the left mouse button on the frame to open the frame image playback window (see chapter [5.20](#playback)) and set the playback to the selected frame.
 
 If the *\"FlagCheckered icon\" Draw frame targets* option is enabled (see section [5.4](#options)), time regions in frames exceeding the set target value will be marked with a red background.
 
@@ -2946,7 +2946,7 @@ The left-hand side *index area* of the timeline view displays various labels (th
 
 -   *Pink label* -- CPU data graph.
 
--   *White label* -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section [2.5](#crashhandling)). If automated sampling was performed, clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the *\"Ghost icon\" ghost zones* button will switch zone display mode between 'instrumented' and 'ghost.'
+-   *White label* -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section [2.5](#crashhandling)). If automated sampling was performed, clicking the left mouse button on the *\"Ghost icon\" ghost zones* button will switch zone display mode between 'instrumented' and 'ghost.'
 
 -   *Green label* -- Fiber, coroutine, or any other sort of cooperative multitasking 'green thread.'
 
@@ -2954,7 +2954,7 @@ The left-hand side *index area* of the timeline view displays various labels (th
 
 -   *Yellow label* -- Plot.
 
-Labels accompanied by the \"CaretDown icon\" symbol can be collapsed out of the view to reduce visual clutter. Hover the \"MousePointer icon\" mouse pointer over the label to display additional information. Click the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a title to zoom the view to the extent of the label contents. Finally, click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a label to display the context menu with available actions:
+Labels accompanied by the \"CaretDown icon\" symbol can be collapsed out of the view to reduce visual clutter. Hover the \"MousePointer icon\" mouse pointer over the label to display additional information. Click the middle mouse button on a title to zoom the view to the extent of the label contents. Finally, click the right mouse button on a label to display the context menu with available actions:
 
 -   *\"EyeSlash icon\" Hide* -- Hides the label along with the content associated to it. To make the label visible again, you must find it in the options menu (section [5.4](#options)).
 
@@ -2968,7 +2968,7 @@ Meanwhile, the *Streaming thread* is performing some *Streaming jobs*. The first
 
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL context in place of a thread name.
 
-Hovering the \"MousePointer icon\" mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Holding the Ctrl key and clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone statistics window (section [5.7](#findzone)). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the view to the extent of the zone.
+Hovering the \"MousePointer icon\" mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Holding the Ctrl key and clicking the left mouse button on a zone will open the zone statistics window (section [5.7](#findzone)). Clicking the middle mouse button on a zone will zoom the view to the extent of the zone.
 
 ##### Ghost zones
 
@@ -2980,7 +2980,7 @@ Another common pitfall to watch for is the order of presented functions. *It is 
 
 The available information about ghost zones is quite limited, but it's enough to give you a rough outlook on the execution of your application. The timeline view alone is more than any other statistical profiler can present. In addition, Tracy correctly handles inlined function calls, which are indicated by a darker background of ghost zones. Lastly, zones representing kernel-mode functions are displayed with red function names.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a ghost zone will open the corresponding source file location, if able (see chapter [5.17](#sourceview) for conditions). There are three ways in which source locations can be assigned to a ghost zone:
+Clicking the left mouse button on a ghost zone will open the corresponding source file location, if able (see chapter [5.17](#sourceview) for conditions). There are three ways in which source locations can be assigned to a ghost zone:
 
 1.  If the selected ghost zone is *not* an inline frame and its symbol data has been retrieved, the source location points to the function entry location (first line of the function).
 
@@ -2990,7 +2990,7 @@ Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse butt
 
 ##### Call stack samples
 
-The row of dots right below the *Main thread* label shows call stack sample points, which may have been automatically captured (see chapter [3.16.5](#sampling) for more detail). Hovering the \"MousePointer icon\" mouse pointer over each dot will display a short call stack summary while clicking on the dot with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will open a more detailed call stack information window (see section [5.15](#callstackwindow)).
+The row of dots right below the *Main thread* label shows call stack sample points, which may have been automatically captured (see chapter [3.16.5](#sampling) for more detail). Hovering the \"MousePointer icon\" mouse pointer over each dot will display a short call stack summary while clicking on the dot with the left mouse button will open a more detailed call stack information window (see section [5.15](#callstackwindow)).
 
 ##### Context switches {#context-switches}
 
@@ -3033,7 +3033,7 @@ It will also add lines starting with a filed circle to denote wake up events. Th
 
 In the above picture, *Thread B* migrates from *Core 3* to *Core 4* due to a wake up from *Thread A*. Then it migrates from *Core 4* to *Core 1*.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before. It will also lock the selected thread so that you may pan and explore data while retaining the visualization of thread migrations and wake up events. Clicking again somewhere empty on the timeline with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will unlock the selection.
+Clicking the left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before. It will also lock the selected thread so that you may pan and explore data while retaining the visualization of thread migrations and wake up events. Clicking again somewhere empty on the timeline with the left mouse button will unlock the selection.
 
 Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section [2.2.1](#checkenvironmentos)) or give you a hint to add more instrumentation macros.
 
@@ -3049,7 +3049,7 @@ Mutual exclusion zones are displayed in each thread that tries to acquire them. 
 
 [^75]: This region type is disabled by default and needs to be enabled in options (section [5.4](#options)).
 
-Hovering the \"MousePointer icon\" mouse pointer over a lock timeline will highlight the lock in all threads to help read the lock behavior. Hovering the \"MousePointer icon\" mouse pointer over a lock event will display important information, for example, a list of threads that are currently blocking or which are blocked by the lock. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a lock event or a lock label will open the lock information window, as described in section [5.19](#lockwindow). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a lock event will zoom the view to the extent of the event.
+Hovering the \"MousePointer icon\" mouse pointer over a lock timeline will highlight the lock in all threads to help read the lock behavior. Hovering the \"MousePointer icon\" mouse pointer over a lock event will display important information, for example, a list of threads that are currently blocking or which are blocked by the lock. Clicking the left mouse button on a lock event or a lock label will open the lock information window, as described in section [5.19](#lockwindow). Clicking the middle mouse button on a lock event will zoom the view to the extent of the event.
 
 ##### Plots
 
@@ -3060,17 +3060,17 @@ The numerical data values (figure [20](#plot)) are plotted right below the zone
 <figcaption>Plot display.</figcaption>
 </figure>
 
-When memory profiling (section [3.8](#memoryprofiling)) is enabled, Tracy will automatically generate a *\"Memory icon\" Memory usage* plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
+When memory profiling (section [3.8](#memoryprofiling)) is enabled, Tracy will automatically generate a *\"Memory icon\" Memory usage* plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
 
 Another plot that Tracy automatically provides is the *\"Tachometer icon\"\* CPU usage* plot, which represents the total system CPU usage percentage (it is not limited to the profiled application).
 
 ### Navigating the view
 
-Hovering the \"MousePointer icon\" mouse pointer over the timeline view will display a vertical line that you can use to line up events in multiple threads visually. Dragging the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will display the time measurement of the selected region.
+Hovering the \"MousePointer icon\" mouse pointer over the timeline view will display a vertical line that you can use to line up events in multiple threads visually. Dragging the left mouse button will display the time measurement of the selected region.
 
-The timeline view may be scrolled both vertically and horizontally by dragging the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button. Note that only the zones, locks, and plots scroll vertically, while the time scale and frame sets always stay on the top.
+The timeline view may be scrolled both vertically and horizontally by dragging the right mouse button. Note that only the zones, locks, and plots scroll vertically, while the time scale and frame sets always stay on the top.
 
-You can zoom in and out the timeline view by using the ![image](icons/scroll.pdf){height=".8\\baselineskip"} mouse wheel. Pressing the Ctrl key will make zooming more precise while pressing the Shift key will make it faster. You can select a range to which you want to zoom in by dragging the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button. Dragging the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button while the Ctrl key is pressed will zoom out.
+You can zoom in and out the timeline view by using the mouse wheel. Pressing the Ctrl key will make zooming more precise while pressing the Shift key will make it faster. You can select a range to which you want to zoom in by dragging the middle mouse button. Dragging the middle mouse button while the Ctrl key is pressed will zoom out.
 
 It is also possible to navigate the timeline using the keyboard. The A and D keys scroll the view to the left and right, respectively. The W and S keys change the zoom level.
 
@@ -3078,7 +3078,7 @@ It is also possible to navigate the timeline using the keyboard. The A and D key
 
 Sometimes, you may want to specify a time range, such as limiting some statistics to a specific part of your program execution or marking interesting places.
 
-To define a time range, drag the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button over the timeline view while holding the Ctrl key. When the mouse key is released, the profiler will mark the selected time extent with a blue striped pattern, and it will display a context menu with the following options:
+To define a time range, drag the left mouse button over the timeline view while holding the Ctrl key. When the mouse key is released, the profiler will mark the selected time extent with a blue striped pattern, and it will display a context menu with the following options:
 
 -   *\"Search icon\" Limit find zone time range* -- this will limit find zone results. See chapter [5.7](#findzone) for more details.
 
@@ -3092,11 +3092,11 @@ To define a time range, drag the ![image](icons/lmb.pdf){height=".8\\baselineski
 
 -   *\"StickyNote icon\" Add annotation* -- use to annotate regions of interest, as described in chapter [5.3.1](#annotatingtrace).
 
-Alternatively, you may specify the time range by clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a zone or a frame. The resulting time extent will match the selected item.
+Alternatively, you may specify the time range by clicking the right mouse button on a zone or a frame. The resulting time extent will match the selected item.
 
 To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section [5.24](#timerangelimits)). You can access the time range limits window through the *\"Tools icon\" Tools* button on the control menu.
 
-You can freely adjust each time range on the timeline by clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the range's edge and dragging the mouse.
+You can freely adjust each time range on the timeline by clicking the left mouse button on the range's edge and dragging the mouse.
 
 ### Annotating the trace {#annotatingtrace}
 
@@ -3161,7 +3161,7 @@ In this window, you can set various trace-related options. For example, the time
 
         Function names in the remaining places across the UI will be normalized unless this option is set to *Disabled*.
 
--   *\"Lock icon\" Draw locks* -- Controls the display of locks. If the *Only contended* option is selected, the profiler won't display the non-blocking regions of locks (see section [5.2.3.3](#zoneslocksplots)). The *Locks* drop-down allows disabling the display of locks on a per-lock basis. As a convenience, the list of locks is split into the single-threaded and multi-threaded (contended and uncontended) categories. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a lock label opens the lock information window (section [5.19](#lockwindow)).
+-   *\"Lock icon\" Draw locks* -- Controls the display of locks. If the *Only contended* option is selected, the profiler won't display the non-blocking regions of locks (see section [5.2.3.3](#zoneslocksplots)). The *Locks* drop-down allows disabling the display of locks on a per-lock basis. As a convenience, the list of locks is split into the single-threaded and multi-threaded (contended and uncontended) categories. Clicking the right mouse button on a lock label opens the lock information window (section [5.19](#lockwindow)).
 
 -   *\"Signature icon\" Draw plots* -- Allows disabling display of plots. Individual plots can be disabled in the *Plots* drop-down. The vertical size of the plots can be adjusted using the *Plot heights* slider.
 
@@ -3177,7 +3177,7 @@ Disabling the display of some events is especially recommended when the profiler
 
 ## Messages window {#messages}
 
-In this window, you can see all the messages that were sent by the client application, as described in section [3.7](#messagelog). The window is split into four columns: *time*, *thread*, *message* and *call stack*. Hovering the \"MousePointer icon\" mouse cursor over a message will highlight it on the timeline view. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a message will center the timeline view on the selected message.
+In this window, you can see all the messages that were sent by the client application, as described in section [3.7](#messagelog). The window is split into four columns: *time*, *thread*, *message* and *call stack*. Hovering the \"MousePointer icon\" mouse cursor over a message will highlight it on the timeline view. Clicking the left mouse button on a message will center the timeline view on the selected message.
 
 The *call stack* column is filled only if a call stack capture was requested, as described in section [3.11](#collectingcallstacks). A single entry consists of the *\"AlignJustify icon\" Show* button, which opens the call stack information window (chapter [5.15](#callstackwindow)) and of abbreviated information about the call path.
 
@@ -3205,7 +3205,7 @@ Here you will find a multi-column display of captured zones, which contains: the
 
 In the * Timing* menu, the * With children* selection displays inclusive measurements, that is, containing execution time of zone's children. The * Self only* selection switches the measurement to exclusive, displaying just the time spent in the zone, subtracting the child calls. Finally, the * Non-reentrant* selection shows inclusive time but counts only the first appearance of a given zone on a thread's stack.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the individual zone statistics view in the find zone window (section [5.7](#findzone)).
+Clicking the left mouse button on a zone will open the individual zone statistics view in the find zone window (section [5.7](#findzone)).
 
 You can filter the displayed list of zones by matching the zone name to the expression in the *\"Filter icon\" Filter zones* entry field. Refer to section [5.5](#messages) for a more detailed description of the expression syntax.
 
@@ -3219,7 +3219,7 @@ First and foremost, the presented information is constructed from many call stac
 
 The sample statistics list symbols, not functions. These terms are similar, but not exactly the same. A symbol always has a base function that gives it its name. In most cases, a symbol will also contain a number of inlined functions. In some cases, the same function may be inlined more than once within the same symbol.
 
-The *Name* column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the *\"PuzzlePiece icon\" Show all* option is disabled due to lack of sampling data). Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section [5.17.2](#symbolview)), or the sample entry stacks window (see chapter [5.16](#sampleparents))[^78].
+The *Name* column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the *\"PuzzlePiece icon\" Show all* option is disabled due to lack of sampling data). Clicking the left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section [5.17.2](#symbolview)), or the sample entry stacks window (see chapter [5.16](#sampleparents))[^78].
 
 [^78]: Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, preventing, or limiting the capability to display the data.
 
@@ -3237,7 +3237,7 @@ The profiler may not find some function locations due to insufficient debugging 
 
 The *Time* or *Count* column (depending on the *\"Stopwatch icon\" Show time* option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the total number of collected samples. You can also make the percentages of inline functions relative to the base symbol measurements by enabling the *\"Link icon\" Base relative* option.
 
-The last column, *Code size*, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved[^79] symbol size will be prepended with the `"Database icon"` icon, and clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the location column entry will open symbol view window (section [5.17.2](#symbolview)).
+The last column, *Code size*, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved[^79] symbol size will be prepended with the `"Database icon"` icon, and clicking the right mouse button on the location column entry will open symbol view window (section [5.17.2](#symbolview)).
 
 [^79]: Symbols larger than 128 KB are not captured.
 
@@ -3267,7 +3267,7 @@ Tracy gives you the ability to display an execution time histogram of all occurr
 
 You start by entering a search query, which will be matched against known zone names (see section [3.4](#markingzones) for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the *matched source locations* drop-down. The selected zone's graph is displayed on the *histogram* drop-down, and also the matching zones are highlighted on the timeline view.
 
-Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the Ctrl key while clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button.
+Clicking the right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)). If symbol data is available Tracy will try to match the instrumented zone name to a captured symbol. If this succeeds and there are no duplicate matches, the source file view will be accompanied by the disassembly of the code. Since this matching is not exact, in rare cases you may get the wrong data here. To just display the source code, press and hold the Ctrl key while clicking the right mouse button.
 
 An example histogram is presented in figure [22](#findzonehistogram). Here you can see that the majority of zone calls (by count) are clustered in the 300 ns group, closely followed by the 10 μs cluster. There are some outliers at the 1 and 10 ms marks, which can be ignored on most occasions, as these are single occurrences.
 
@@ -3292,7 +3292,7 @@ Various data statistics about displayed data accompany the histogram, for exampl
 
 [^80]: Or time, if the *cumulate time* option is enabled.
 
-You can drag the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button over the histogram to select a time range that you want to look at closely. This will display the data in the histogram info section, and it will also filter zones shown in the *found zones* section. This is quite useful if you actually want to look at the outliers, i.e., where did they originate from, what the program was doing at the moment, etc[^81]. You can reset the selection range by pressing the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the histogram.
+You can drag the left mouse button over the histogram to select a time range that you want to look at closely. This will display the data in the histogram info section, and it will also filter zones shown in the *found zones* section. This is quite useful if you actually want to look at the outliers, i.e., where did they originate from, what the program was doing at the moment, etc[^81]. You can reset the selection range by pressing the right mouse button on the histogram.
 
 [^81]: More often than not you will find out, that the application was just starting, or access to a cold file was required and there's not much you can do to optimize that particular case.
 
@@ -3310,9 +3310,9 @@ The *found zones* section displays the individual zones grouped according to the
 
 -   *No grouping* -- Disables zone grouping. It may be useful when you want to see zones in order as they appear.
 
-You may sort each group according to the *order* in which it appeared, the call *count*, the total *time* spent in the group, or the *mean time per call*. Expanding the group view will display individual occurrences of the zone, which can be sorted by application's time, execution time, or zone's name. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the timeline view to the zone's extent.
+You may sort each group according to the *order* in which it appeared, the call *count*, the total *time* spent in the group, or the *mean time per call*. Expanding the group view will display individual occurrences of the zone, which can be sorted by application's time, execution time, or zone's name. Clicking the left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Clicking the middle mouse button on a zone will zoom the timeline view to the zone's extent.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the group name will highlight the group time data on the histogram (figure [23](#findzonehistogramgroup)). This function provides a quick insight into the impact of the originating thread or input data on the zone performance. Clicking on the *\"Backspace icon\" Clear* button will reset the group selection. If the grouping mode is set to *Parent* option, clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on the parent zone group will switch the find zone view to display the selected zone.
+Clicking the left mouse button on the group name will highlight the group time data on the histogram (figure [23](#findzonehistogramgroup)). This function provides a quick insight into the impact of the originating thread or input data on the zone performance. Clicking on the *\"Backspace icon\" Clear* button will reset the group selection. If the grouping mode is set to *Parent* option, clicking the middle mouse button on the parent zone group will switch the find zone view to display the selected zone.
 
 <figure id="findzonehistogramgroup">
 
@@ -3427,13 +3427,13 @@ The top row contains statistics, such as *total allocations* count, number of *a
 
 [^84]: Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.
 
-The lists of captured memory allocations are displayed in a common multi-column format through the profiler. The first column specifies the memory address of an allocation or an address and an offset if the address is not at the start of the allocation. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on an address will open the memory allocation information window[^85] (see section [5.12](#memallocinfo)). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
+The lists of captured memory allocations are displayed in a common multi-column format through the profiler. The first column specifies the memory address of an allocation or an address and an offset if the address is not at the start of the allocation. Clicking the left mouse button on an address will open the memory allocation information window[^85] (see section [5.12](#memallocinfo)). Clicking the middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
 
 [^85]: While the allocation information window is opened, the address will be highlighted on the list.
 
-The allocation's timing data is contained in two columns: *appeared at* and *duration*. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
+The allocation's timing data is contained in two columns: *appeared at* and *duration*. Clicking the left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
 
-The memory event location in the code is displayed in the last four columns. The *thread* column contains the thread where the allocation was made and freed (if applicable), or an *alloc / free* pair of the threads if it was allocated in one thread and freed in another. The *zone alloc* contains the zone in which the allocation was performed[^86], or `-` if there was no active zone in the given thread at the time of allocation. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the zone name will open the zone information window (section [5.14](#zoneinfo)). Similarly, the *zone free* column displays the zone which freed the allocation, which may be colored yellow, if it is the same zone that did the allocation. Alternatively, if the zone has not yet been freed, a green *active* text is displayed. The last column contains the *alloc* and *free* call stack buttons, or their placeholders, if no call stack is available (see section [3.11](#collectingcallstacks) for more information). Clicking on either of the buttons will open the call stack window (section [5.15](#callstackwindow)). Note that the call stack buttons that match the information window will be highlighted.
+The memory event location in the code is displayed in the last four columns. The *thread* column contains the thread where the allocation was made and freed (if applicable), or an *alloc / free* pair of the threads if it was allocated in one thread and freed in another. The *zone alloc* contains the zone in which the allocation was performed[^86], or `-` if there was no active zone in the given thread at the time of allocation. Clicking the left mouse button on the zone name will open the zone information window (section [5.14](#zoneinfo)). Similarly, the *zone free* column displays the zone which freed the allocation, which may be colored yellow, if it is the same zone that did the allocation. Alternatively, if the zone has not yet been freed, a green *active* text is displayed. The last column contains the *alloc* and *free* call stack buttons, or their placeholders, if no call stack is available (see section [3.11](#collectingcallstacks) for more information). Clicking on either of the buttons will open the call stack window (section [5.15](#callstackwindow)). Note that the call stack buttons that match the information window will be highlighted.
 
 [^86]: The actual allocation is typically a couple functions deeper in the call stack.
 
@@ -3465,7 +3465,7 @@ The *\"LayerGroup icon\" Group by function name* option controls how tree node
 
 Enabling the *Only active allocations* option will limit the call stack tree only to display active allocations. Enabling *Only inactive allocations* option will have similar effect for inactive allocations. Both are mutually exclusive, enabling one disables the other. Displaing inactive allocations, when combined with *Limit range*, will show short lived allocatios highlighting potentially unwanted behavior in the code.
 
-Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the function name will open the allocations list window (see section [5.11](#alloclist)), which lists all the allocations included at the current call stack tree level. Likewise, clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
+Clicking the right mouse button on the function name will open the allocations list window (see section [5.11](#alloclist)), which lists all the allocations included at the current call stack tree level. Likewise, clicking the right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
 
 Some function names may be too long to correctly display, with the events count data at the end. In such cases, you may press the *control* button, which will display the events count tooltip.
 
@@ -3529,7 +3529,7 @@ The zone information window displays detailed information about a single zone. T
 
 -   List of messages that the profiler logged in the zone's scope. If the *exclude children* option is disabled, messages emitted in child zones will also be included.
 
--   Zone trace, taking into account the zone tree and call stack information (section [3.11](#collectingcallstacks)), trying to reconstruct a combined zone + call stack trace[^91]. Captured zones are displayed as standard text, while not instrumented functions are dimmed. Hovering the \"MousePointer icon\" mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will switch the zone info window to that zone. Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
+-   Zone trace, taking into account the zone tree and call stack information (section [3.11](#collectingcallstacks)), trying to reconstruct a combined zone + call stack trace[^91]. Captured zones are displayed as standard text, while not instrumented functions are dimmed. Hovering the \"MousePointer icon\" mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the left mouse button on a zone will switch the zone info window to that zone. Clicking the middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the right mouse button on a source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
 
 -   Child zones list, showing how the current zone's execution time was used. Zones on this list can be grouped according to their source location. Each group can be expanded to show individual entries. All the controls from the zone trace are also available here.
 
@@ -3557,7 +3557,7 @@ Clicking on the *\"Clipboard icon\" Copy to clipboard* buttons will copy the a
 
 ## Call stack window {#callstackwindow}
 
-This window shows the frames contained in the selected call stack. Each frame is described by a function name, source file location, and originating image[^92] name. Function frames originating from the kernel are marked with a red color. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
+This window shows the frames contained in the selected call stack. Each frame is described by a function name, source file location, and originating image[^92] name. Function frames originating from the kernel are marked with a red color. Clicking the left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the right mouse button on the source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
 
 [^92]: Executable images are called *modules* by Microsoft.
 
@@ -3658,21 +3658,21 @@ The *Propagate inlines* option, available when sample data is present, will enab
 
 #### Assembly mode
 
-This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the *\"Sitemap icon\" Function* selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the *\"SearchLocation icon\" Relative address* option is selected, the profiler will print an offset from the symbol beginning instead. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the address/offset will switch to counting line numbers, using the selected one as the origin (i.e., zero value). Line numbers are displayed inside `[]` brackets. This display mode can be useful to correlate lines with the output of external tools, such as `llvm-mca`. To disable line numbering click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a line number.
+This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the *\"Sitemap icon\" Function* selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the *\"SearchLocation icon\" Relative address* option is selected, the profiler will print an offset from the symbol beginning instead. Clicking the left mouse button on the address/offset will switch to counting line numbers, using the selected one as the origin (i.e., zero value). Line numbers are displayed inside `[]` brackets. This display mode can be useful to correlate lines with the output of external tools, such as `llvm-mca`. To disable line numbering click the right mouse button on a line number.
 
-If the *\"FileImport icon\" Source locations* option is selected, each line of the assembly code will also contain information about the originating source file name and line number. Each file is assigned its own color for easier differentiation between different source files. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on the selected line. Additionally, hovering the \"MousePointer icon\" mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment and the local call stack if it exists.
+If the *\"FileImport icon\" Source locations* option is selected, each line of the assembly code will also contain information about the originating source file name and line number. Each file is assigned its own color for easier differentiation between different source files. Clicking the left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on the selected line. Additionally, hovering the \"MousePointer icon\" mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment and the local call stack if it exists.
 
 ::: bclogo
 Local call stack In some cases, it may be challenging to understand what is being displayed in the disassembly. For example, calling the `std::lower_bound` function may generate multiple levels of inlined functions: first, we enter the search algorithm, then the comparison functions, which in turn may be lambdas that call even more external code, and so on. In such an event, you will most likely see that some external code is taking a long time to execute, and you will be none the wiser on improving things.
 
-The local call stack for an assembly instruction represents all the inline function calls *within the symbol* (hence the 'local' part), which were made to reach the instruction. Deeper inspection of the local call stack, including navigation to the source call site of each participating inline function, can be performed through the context menu accessible by pressing the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source location.
+The local call stack for an assembly instruction represents all the inline function calls *within the symbol* (hence the 'local' part), which were made to reach the instruction. Deeper inspection of the local call stack, including navigation to the source call site of each participating inline function, can be performed through the context menu accessible by pressing the right mouse button on the source location.
 :::
 
 Selecting the *\"Cogs icon\" Raw code* option will enable the display of raw machine code bytes for each line. Individual bytes are displayed with interwoven colors to make reading easier.
 
-If any instruction would jump to a predefined address, the symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol, an `->` arrow will be prepended to the name. Hovering the \"MousePointer icon\" mouse pointer over such symbol name will highlight the target location. Clicking on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will focus the view on the destination instruction or switch view to the destination symbol.
+If any instruction would jump to a predefined address, the symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol, an `->` arrow will be prepended to the name. Hovering the \"MousePointer icon\" mouse pointer over such symbol name will highlight the target location. Clicking on it with the left mouse button will focus the view on the destination instruction or switch view to the destination symbol.
 
-Enabling the *\"Share icon\" Jumps* option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the \"MousePointer icon\" mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will focus the view on the target location. The ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol[^95] will be indicated by a smaller arrow pointing away from the code.
+Enabling the *\"Share icon\" Jumps* option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the \"MousePointer icon\" mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the left mouse button will focus the view on the target location. The right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol[^95] will be indicated by a smaller arrow pointing away from the code.
 
 [^95]: This includes jumps, procedure calls, and returns. For example, in x86 assembly the respective operand names can be: `jmp`, `call`, `ret`.
 
@@ -3696,7 +3696,7 @@ Selection of the CPU microarchitecture can be performed using the *\"Microchip 
 
 [^97]: You can use this to gain insight into how the code *may* behave on other processors.
 
-Clicking on the *\"FileImport icon\" Save* button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as *LLVM Machine Code Analyzer* (`llvm-mca`)[^98], to see how the code is executed and if there are any pipeline bubbles. Consult the `llvm-mca` documentation for more details. Alternatively, you might click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a jump arrow and save only the instructions within the jump range, using the *\"FileImport icon\" Save jump range* button.
+Clicking on the *\"FileImport icon\" Save* button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as *LLVM Machine Code Analyzer* (`llvm-mca`)[^98], to see how the code is executed and if there are any pipeline bubbles. Consult the `llvm-mca` documentation for more details. Alternatively, you might click the right mouse button on a jump arrow and save only the instructions within the jump range, using the *\"FileImport icon\" Save jump range* button.
 
 [^98]: <https://llvm.org/docs/CommandGuide/llvm-mca.html>
 
@@ -3704,7 +3704,7 @@ Clicking on the *\"FileImport icon\" Save* button lets you write the disassemb
 
 Assembly instructions may read values stored in registers and may also write values to registers. As a result, a dependency between two instructions is created when one produces some result, which the other then consumes. Combining this dependency graph with information about instruction latencies may give a deep understanding of the bottlenecks in code performance.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on any assembly instruction will mark it as a target for resolving register dependencies between instructions. To cancel this selection, click on any assembly instruction with ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button.
+Clicking the left mouse button on any assembly instruction will mark it as a target for resolving register dependencies between instructions. To cancel this selection, click on any assembly instruction with right mouse button.
 
 The selected instruction will be highlighted in white, while its dependencies will be highlighted in red. Additionally, a list of dependent registers will be listed next to each instruction which reads or writes to them, with the following color code:
 
@@ -3724,7 +3724,7 @@ For more straightforward navigation, dependencies are also marked on the left si
 
 #### Combined mode
 
-In this mode, the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the \"MousePointer icon\" mouse pointer over the source file line or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a line will select it and focus on it in both panes. Note that while an assembly line always has only one corresponding source line, a single source line may have many associated assembly lines, not necessarily next to each other. Clicking on the same *source* line more than once will focus the *assembly* view on the next associated instructions block.
+In this mode, the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the \"MousePointer icon\" mouse pointer over the source file line or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the left mouse button on a line will select it and focus on it in both panes. Note that while an assembly line always has only one corresponding source line, a single source line may have many associated assembly lines, not necessarily next to each other. Clicking on the same *source* line more than once will focus the *assembly* view on the next associated instructions block.
 
 #### Instruction pointer cost statistics
 
@@ -3734,9 +3734,9 @@ By default, samples are displayed only within the selected symbol, in isolation.
 
 [^100]: You should remember that these are results of random sampling. Some function calls may be missing here.
 
-Instruction timings can be viewed as a group. To begin constructing such a group, click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the percentage value. Additional instructions can be added using the Ctrl key while holding the Shift key will allow selection of a range. To cancel the selection, click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
+Instruction timings can be viewed as a group. To begin constructing such a group, click the left mouse button on the percentage value. Additional instructions can be added using the Ctrl key while holding the Shift key will allow selection of a range. To cancel the selection, click the right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
 
-Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter [5.16](#sampleparents)). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
+Clicking the middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter [5.16](#sampleparents)). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
 
 The sample data source is controlled by the *\"Sitemap icon\" Function* control in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. You can change the currently selected function by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to the total number of samples collected within the symbol.
 

@@ -21,6 +21,7 @@ public:
 
     void Parse( const char* fileName, const Worker& worker, const View& view );
     void Parse( const char* source );
+    void Parse( const char* source, size_t len );
 
     const std::vector<Tokenizer::Line>& get() const { return m_lines; }
     bool empty() const { return m_lines.empty(); }

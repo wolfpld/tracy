@@ -69,9 +69,11 @@ void SourceContents::Parse( const char* fileName, const Worker& worker, const Vi
 void SourceContents::Parse( const char* source )
 {
     if( source == m_data ) return;
+    Parse( m_data, strlen( source ) );
+}
 
-    const size_t len = strlen( source );
-
+void SourceContents::Parse( const char* source, size_t len )
+{
     m_file = nullptr;
     m_fileStringIdx = 0;
     m_data = source;

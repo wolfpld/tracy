@@ -240,6 +240,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     TracyServer
     TracyImGui
     Threads::Threads
+    nlohmann_json::nlohmann_json
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${tidy_SOURCE_DIR}/include
@@ -250,7 +251,6 @@ if(NOT EMSCRIPTEN)
         base64
         tidy-static
         TracyPugixml
-        nlohmann_json::nlohmann_json
         usearch
         md4c
     )

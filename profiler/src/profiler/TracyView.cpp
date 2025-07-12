@@ -1468,8 +1468,10 @@ bool View::WasActive() const
 
 void View::AddLlmAttachment( const nlohmann::json& json )
 {
+#ifndef __EMSCRIPTEN__
     m_llm.AddAttachment( json.dump( 2 ), "user" );
     m_llm.m_show = true;
+#endif
 }
 
 }

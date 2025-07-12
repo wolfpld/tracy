@@ -194,6 +194,15 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
 )
 
+# json
+
+CPMAddPackage(
+    NAME json
+    GITHUB_REPOSITORY nlohmann/json
+    GIT_TAG v3.12.0
+    EXCLUDE_FROM_ALL TRUE
+)
+
 if(NOT EMSCRIPTEN)
 
     # base64
@@ -219,15 +228,6 @@ if(NOT EMSCRIPTEN)
         GIT_TAG 5.8.0
         PATCHES
             "${CMAKE_CURRENT_LIST_DIR}/tidy-cmake.patch"
-        EXCLUDE_FROM_ALL TRUE
-    )
-
-    # json
-
-    CPMAddPackage(
-        NAME json
-        GITHUB_REPOSITORY nlohmann/json
-        GIT_TAG v3.12.0
         EXCLUDE_FROM_ALL TRUE
     )
 

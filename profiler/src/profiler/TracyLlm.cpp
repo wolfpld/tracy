@@ -403,8 +403,13 @@ void TracyLlm::Draw()
     ImGui::BeginChild( "##chat", ImVec2( 0, -( ImGui::GetFrameHeight() + style.ItemSpacing.y * 2 ) ), ImGuiChildFlags_Borders, ImGuiWindowFlags_AlwaysVerticalScrollbar );
     if( m_chat.size() <= 1 )   // account for system prompt
     {
-        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 10 ) * 0.5f ) );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 15 ) * 0.5f ) );
         ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled] );
+        ImGui::PushFont( g_fonts.normal, FontNormal * 3.f );
+        TextCentered( ICON_FA_ROBOT );
+        ImGui::Spacing();
+        ImGui::Spacing();
+        ImGui::PopFont();
         ImGui::TextWrapped( "What I had not realized is that extremely short exposures to a relatively simple computer program could induce powerful delusional thinking in quite normal people." );
         ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
         constexpr auto signature = "-- Joseph Weizenbaum, 1976";

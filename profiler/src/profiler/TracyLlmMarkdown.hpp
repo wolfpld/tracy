@@ -82,6 +82,7 @@ public:
             char tmp[64];
             sprintf( tmp, "##code%d", idx++ );
             Separate();
+            ImGui::PushStyleColor( ImGuiCol_FrameBg, ImVec4( 0, 0, 0, 0.2f ) );
             ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
             codeBlock = true;
         }
@@ -124,6 +125,7 @@ public:
             break;
         case MD_BLOCK_CODE:
             ImGui::EndChild();
+            ImGui::PopStyleColor();
             separate = true;
             codeBlock = false;
             break;

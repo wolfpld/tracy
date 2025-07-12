@@ -1,3 +1,4 @@
+#include <array>
 #include <md4c.h>
 #include <string>
 #include <string.h>
@@ -174,28 +175,38 @@ public:
 
     int Text( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size )
     {
+        constexpr std::array FontSizes = {
+            1.f,
+            2.05f,
+            1.9f,
+            1.75f,
+            1.6f,
+            1.45f,
+            1.3f,
+            1.15f
+        };
+
         switch( type )
         {
         case MD_TEXT_NORMAL:
         case MD_TEXT_ENTITY:
         case MD_TEXT_HTML:
         {
-            if( header > 0 )
+            auto font = g_fonts.normal;
+            if( bold > 0 )
             {
-                if( !first && !glue ) ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
-                ImGui::PushFont( g_fonts.normal, FontBig );
-            }
-            else if( bold > 0 )
-            {
-                ImGui::PushFont( italic > 0 ? g_fonts.boldItalic : g_fonts.bold, FontNormal );
+                font = italic > 0 ? g_fonts.boldItalic : g_fonts.bold;
             }
             else if( italic > 0 )
             {
-                ImGui::PushFont( g_fonts.italic, FontNormal );
+                font = g_fonts.italic;
             }
+            ImGui::PushFont( font, FontNormal * FontSizes[header] );
+
             if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
             Glue();
             const auto hovered = PrintTextWrapped( text, text + size );
+            ImGui::PopFont();
             if( !link.empty() )
             {
                 ImGui::PopStyleColor();
@@ -210,7 +221,6 @@ public:
                     if( IsMouseClicked( ImGuiMouseButton_Left ) ) OpenWebpage( link.c_str() );
                 }
             }
-            if( header > 0 || bold > 0 || italic > 0 ) ImGui::PopFont();
             break;
         }
         case MD_TEXT_NULLCHAR:
@@ -233,7 +243,7 @@ public:
             else
             {
                 Glue();
-                ImGui::PushFont( g_fonts.mono, FontNormal );
+                ImGui::PushFont( g_fonts.mono, FontNormal * FontSizes[header] );
                 if( codeBlock )
                 {
                     SourceContents sc;

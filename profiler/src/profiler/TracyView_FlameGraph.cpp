@@ -776,6 +776,10 @@ void View::DrawFlameGraph()
         if( m_flameExternal ) ImGui::EndDisabled();
     }
 
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+
     if( ImGui::Checkbox( "Limit range", &m_flameRange.active ) )
     {
         if( m_flameRange.active && m_flameRange.min == 0 && m_flameRange.max == 0 )

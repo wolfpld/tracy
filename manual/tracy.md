@@ -117,7 +117,7 @@ You also need to understand how timer precision is reflected in measurement erro
 
 <figure id="timer">
 
-<figcaption>Low precision (300 ns) timer. Discrete timer ticks are indicated by the icon.</figcaption>
+<figcaption>Low precision (300 ns) timer. Discrete timer ticks are indicated by the "Clock icon" icon.</figcaption>
 </figure>
 
 Now let's take a look at the timer readings.
@@ -825,32 +825,32 @@ Caveats
 Some features of the profiler are only available on selected platforms. Please refer to table [2](#featuretable) for details.
 
 ::: {#featuretable}
-         **Feature**          **Windows**   **Linux**   **Android**   **OSX**   **iOS**   **BSD**   **QNX**
-  -------------------------- ------------- ----------- ------------- --------- --------- --------- ---------
-    Profiling program init         ✓            ✓            ✓                               ✓         ✓
-          CPU zones                ✓            ✓            ✓           ✓         ✓         ✓         ✓
-            Locks                  ✓            ✓            ✓           ✓         ✓         ✓         ✓
-            Plots                  ✓            ✓            ✓           ✓         ✓         ✓         ✓
-           Messages                ✓            ✓            ✓           ✓         ✓         ✓         ✓
-            Memory                 ✓            ✓            ✓           ✓         ✓         ✓     
-      GPU zones (OpenGL)           ✓            ✓            ✓                                     
-      GPU zones (Vulkan)           ✓            ✓            ✓           ✓         ✓               
-      GPU zones (Metal)                                               ✓^*b*^    ✓^*b*^             
-         Call stacks               ✓            ✓            ✓           ✓         ✓         ✓     
-      Symbol resolution            ✓            ✓            ✓           ✓         ✓         ✓         ✓
-        Crash handling             ✓            ✓            ✓                                     
-      CPU usage probing            ✓            ✓            ✓           ✓         ✓         ✓     
-       Context switches            ✓            ✓            ✓                                     
-         Wait stacks               ✓            ✓            ✓                                     
-   CPU topology information        ✓            ✓            ✓                                     
-     Call stack sampling           ✓            ✓            ✓                                     
-      Hardware sampling         ✓^*a*^          ✓            ✓                                     
-        VSync capture              ✓            ✓                                                  
+         **Feature**              **Windows**         **Linux**       **Android**           **OSX**               **iOS**            **BSD**          **QNX**
+  -------------------------- --------------------- ---------------- ---------------- --------------------- --------------------- ---------------- ----------------
+    Profiling program init      \"Check icon\"      \"Check icon\"   \"Check icon\"      \"Poo icon\"          \"Poo icon\"       \"Check icon\"   \"Check icon\"
+          CPU zones             \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Check icon\"
+            Locks               \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Check icon\"
+            Plots               \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Check icon\"
+           Messages             \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Check icon\"
+            Memory              \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Times icon\"
+      GPU zones (OpenGL)        \"Check icon\"      \"Check icon\"   \"Check icon\"      \"Poo icon\"          \"Poo icon\"                        \"Times icon\"
+      GPU zones (Vulkan)        \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"                       \"Times icon\"
+      GPU zones (Metal)         \"Times icon\"      \"Times icon\"   \"Times icon\"   \"Check icon\"^*b*^   \"Check icon\"^*b*^   \"Times icon\"   \"Times icon\"
+         Call stacks            \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Times icon\"
+      Symbol resolution         \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Check icon\"
+        Crash handling          \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Times icon\"        \"Times icon\"      \"Times icon\"   \"Times icon\"
+      CPU usage probing         \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Check icon\"        \"Check icon\"      \"Check icon\"   \"Times icon\"
+       Context switches         \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Times icon\"         \"Poo icon\"       \"Times icon\"   \"Times icon\"
+         Wait stacks            \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Times icon\"         \"Poo icon\"       \"Times icon\"   \"Times icon\"
+   CPU topology information     \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Times icon\"        \"Times icon\"      \"Times icon\"   \"Times icon\"
+     Call stack sampling        \"Check icon\"      \"Check icon\"   \"Check icon\"     \"Times icon\"         \"Poo icon\"       \"Times icon\"   \"Times icon\"
+      Hardware sampling       \"Check icon\"^*a*^   \"Check icon\"   \"Check icon\"     \"Times icon\"         \"Poo icon\"       \"Times icon\"   \"Times icon\"
+        VSync capture           \"Check icon\"      \"Check icon\"   \"Times icon\"     \"Times icon\"        \"Times icon\"      \"Times icon\"   \"Times icon\"
 
   : Feature support matrix
 :::
 
--- Not possible to support due to platform limitations.\
+\"Poo icon\" -- Not possible to support due to platform limitations.\
 ^*a*^Possible through WSL2. ^*b*^Only tested on Apple Silicon M1 series
 
 # Client markup {#client}
@@ -2508,17 +2508,17 @@ You can disconnect from the client and save the captured trace by pressing Ctrl 
 
 ## Interactive profiling {#interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ( *User manual*,  *Web*,  *Join chat* and  *Sponsor*). The  *Web* button opens a drop-down list with links to the profiler's * Home page* and a bunch of * Feature videos*.
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links (\"Book icon\" *User manual*, \"GlobeAmericas icon\" *Web*, \"Comment icon\" *Join chat* and \"Heart icon\" *Sponsor*). The \"GlobeAmericas icon\" *Web* button opens a drop-down list with links to the profiler's *\"Home icon\" Home page* and a bunch of *\"Video icon\" Feature videos*.
 
-The * Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow)).
+The *\"Wrench icon\" Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow)).
 
-The client *address entry* field and the  *Connect* button are used to connect to a running client[^64]. You can use the connection history button  to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the  mouse cursor over an entry and pressing the Delete button on the keyboard.
+The client *address entry* field and the \"Wifi icon\" *Connect* button are used to connect to a running client[^64]. You can use the connection history button \"CaretDown icon\" to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the \"MousePointer icon\" mouse cursor over an entry and pressing the Delete button on the keyboard.
 
 [^64]: Note that a custom port may be provided here, for example by entering '127.0.0.1:1234'.
 
-If you want to open a trace that you have stored on the disk, you can do so by pressing the  *Open saved trace* button.
+If you want to open a trace that you have stored on the disk, you can do so by pressing the \"FolderOpen icon\" *Open saved trace* button.
 
-The *discovered clients* list is only displayed if clients are broadcasting their presence on the local network[^65]. Each entry shows the client's address[^66] (and port, if different from the default one), how long the client has been running, and the name of the profiled application. Clicking on an entry will connect to the client. Incompatible clients are grayed out and can't be connected to, but Tracy will suggest a compatible version, if able. Clicking on the * Filter* toggle button will display client filtering input fields, allowing removal of the displayed entries according to their address, port number, or program name. If filters are active, a yellow  warning icon will be displayed.
+The *discovered clients* list is only displayed if clients are broadcasting their presence on the local network[^65]. Each entry shows the client's address[^66] (and port, if different from the default one), how long the client has been running, and the name of the profiled application. Clicking on an entry will connect to the client. Incompatible clients are grayed out and can't be connected to, but Tracy will suggest a compatible version, if able. Clicking on the *\"Filter icon\" Filter* toggle button will display client filtering input fields, allowing removal of the displayed entries according to their address, port number, or program name. If filters are active, a yellow \"ExclamationTriangle icon\" warning icon will be displayed.
 
 [^65]: Only on IPv4 network and only within the broadcast domain.
 
@@ -2537,7 +2537,7 @@ Once connected to a client Ctrl + Shift + Alt + R can be used to quickly discard
 
 The About window displays the profiler version and the Git SHA identifier of the build, as well as some additional information.
 
-You can also adjust some settings that affect global profiler behavior in this window. These settings are accessible by expanding the * Global settings* node. The following options are available:
+You can also adjust some settings that affect global profiler behavior in this window. These settings are accessible by expanding the *\"Toolbox icon\" Global settings* node. The following options are available:
 
 -   *Threaded rendering* -- This controls whether the profiler UI uses multithreaded rendering. Since the profiler needs to quickly navigate large amounts of data, it spends a lot of time waiting for memory accesses to be resolved. Multithreading enables multiple simultaneous memory reads, which significantly reduces the impact of memory access latency. However, this may result in higher CPU usage, which could interfere with the application you are profiling.
 
@@ -2553,7 +2553,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 -   *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.4](#memoryusage) for more information.
 
--   *Enable achievements* -- Enables achievements system, accessed through the  icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler.
+-   *Enable achievements* -- Enables achievements system, accessed through the \"Star icon\" icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler.
 
 -   *Save UI scale* -- Determines whether the UI scale set by the user should be saved between sessions. This setting is not related to DPI scaling.
 
@@ -2561,9 +2561,9 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 ### Connection information pop-up {#connectionpopup}
 
-If this is a real-time capture, you will also have access to the connection information pop-up (figure [9](#connectioninfo)) through the * Connection* button, with the capture status similar to the one displayed by the command-line utility. This dialog also shows the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The *Query backlog* consists of two numbers. The first represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests sent to the client but not yet answered. While these numbers drain down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
+If this is a real-time capture, you will also have access to the connection information pop-up (figure [9](#connectioninfo)) through the *\"Wifi icon\" Connection* button, with the capture status similar to the one displayed by the command-line utility. This dialog also shows the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The *Query backlog* consists of two numbers. The first represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests sent to the client but not yet answered. While these numbers drain down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the  *Save trace* button to save the current profile data to a file[^67]. The available compression modes are discussed in sections [4.5.1](#archival) and [4.5.3](#fidict). Use the  *Stop* button to disconnect from the client[^68]. The  *Discard* button is used to discard current trace.
+You can use the \"Save icon\" *Save trace* button to save the current profile data to a file[^67]. The available compression modes are discussed in sections [4.5.1](#archival) and [4.5.3](#fidict). Use the \"Plug icon\" *Stop* button to disconnect from the client[^68]. The \"ExclamationTriangle icon\" *Discard* button is used to discard current trace.
 
 [^67]: You should take this literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.
 
@@ -2782,81 +2782,81 @@ The main profiler window is split into three sections, as seen in figure [14](#
 
 The control menu (top row of buttons) provides access to various profiler features. The buttons perform the following actions:
 
--   * Connection* -- Opens the connection information popup (see section [4.2.2](#connectionpopup)). Only available when live capture is in progress.
+-   *\"Wifi icon\" Connection* -- Opens the connection information popup (see section [4.2.2](#connectionpopup)). Only available when live capture is in progress.
 
--   *Close* -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by * Pause*, * Resume* and * Stopped* buttons.
+-   *\"PowerOff icon\" Close* -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by *\"Pause icon\" Pause*, *\"Play icon\" Resume* and *\"Square icon\" Stopped* buttons.
 
--   *Pause* -- While a live capture is in progress, the profiler will display recent events, as either the last three fully captured frames, or a certain time range. You can use this to see the current behavior of the program. The pause button[^70] will stop the automatic updates of the timeline view (the capture will still be progressing).
+-   *\"Pause icon\" Pause* -- While a live capture is in progress, the profiler will display recent events, as either the last three fully captured frames, or a certain time range. You can use this to see the current behavior of the program. The pause button[^70] will stop the automatic updates of the timeline view (the capture will still be progressing).
 
--   *Resume* -- This button allows to resume following the most recent events in a live capture. You will have selection of one of the following options: * Newest three frames*, or * Use current zoom level*.
+-   *\"Play icon\" Resume* -- This button allows to resume following the most recent events in a live capture. You will have selection of one of the following options: *\"SearchPlus icon\" Newest three frames*, or *\"RulerHorizontal icon\" Use current zoom level*.
 
--   *Stopped* -- Inactive button used to indicate that the client application was terminated.
+-   *\"Square icon\" Stopped* -- Inactive button used to indicate that the client application was terminated.
 
--   *Options* -- Toggles the settings menu (section [5.4](#options)).
+-   *\"Cog icon\" Options* -- Toggles the settings menu (section [5.4](#options)).
 
--   *Messages* -- Toggles the message log window (section [5.5](#messages)), which displays custom messages sent by the client, as described in section [3.7](#messagelog).
+-   *\"Tags icon\" Messages* -- Toggles the message log window (section [5.5](#messages)), which displays custom messages sent by the client, as described in section [3.7](#messagelog).
 
--   *Find* -- This buttons toggles the find zone window, which allows inspection of zone behavior statistics (section [5.7](#findzone)).
+-   *\"Search icon\" Find* -- This buttons toggles the find zone window, which allows inspection of zone behavior statistics (section [5.7](#findzone)).
 
--   *Statistics* -- Toggles the statistics window, which displays zones sorted by their total time cost (section [5.6](#statistics)).
+-   *\"SortAmountUp icon\" Statistics* -- Toggles the statistics window, which displays zones sorted by their total time cost (section [5.6](#statistics)).
 
--   *Flame* -- Enables the flame graph window (section [5.9](#flamegraph)).
+-   *\"Fire icon\" Flame* -- Enables the flame graph window (section [5.9](#flamegraph)).
 
--   *Memory* -- Various memory profiling options may be accessed here (section [5.10](#memorywindow)).
+-   *\"Memory icon\" Memory* -- Various memory profiling options may be accessed here (section [5.10](#memorywindow)).
 
--   *Compare* -- Toggles the trace compare window, which allows you to see the performance difference between two profiling runs (section [5.8](#compare)).
+-   *\"BalanceScale icon\" Compare* -- Toggles the trace compare window, which allows you to see the performance difference between two profiling runs (section [5.8](#compare)).
 
--   *Info* -- Show general information about the trace (section [5.13](#traceinfo)).
+-   *\"Fingerprint icon\" Info* -- Show general information about the trace (section [5.13](#traceinfo)).
 
--   *Tools* -- Allows access to optional data collected during capture. Some choices might be unavailable.
+-   *\"Tools icon\" Tools* -- Allows access to optional data collected during capture. Some choices might be unavailable.
 
-    -   * Playback* -- If frame images were captured (section [3.3.3](#frameimages)), you will have option to open frame image playback window, described in chapter [5.20](#playback).
+    -   *\"Play icon\" Playback* -- If frame images were captured (section [3.3.3](#frameimages)), you will have option to open frame image playback window, described in chapter [5.20](#playback).
 
-    -   * CPU data* -- If context switch data was captured (section [3.16.3](#contextswitches)), this button will allow inspecting what was the processor load during the capture, as described in section [5.21](#cpudata).
+    -   *\"SlidersH icon\" CPU data* -- If context switch data was captured (section [3.16.3](#contextswitches)), this button will allow inspecting what was the processor load during the capture, as described in section [5.21](#cpudata).
 
-    -   * Annotations* -- If annotations have been made (section [5.3.1](#annotatingtrace)), you can open a list of all annotations, described in chapter [5.23](#annotationlist).
+    -   *\"StickyNote icon\" Annotations* -- If annotations have been made (section [5.3.1](#annotatingtrace)), you can open a list of all annotations, described in chapter [5.23](#annotationlist).
 
-    -   * Limits* -- Displays time range limits window (section [5.3](#timeranges)).
+    -   *\"Ruler icon\" Limits* -- Displays time range limits window (section [5.3](#timeranges)).
 
-    -   * Wait stacks* -- If sampling was performed, an option to display wait stacks may be available. See chapter [3.16.5.1](#waitstacks) for more details.
+    -   *\"HourglassHalf icon\" Wait stacks* -- If sampling was performed, an option to display wait stacks may be available. See chapter [3.16.5.1](#waitstacks) for more details.
 
--   * Display scale* -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the *Save UI scale* option is selected in global settings.
+-   *\"SearchPlus icon\" Display scale* -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the *Save UI scale* option is selected in global settings.
 
--   * Tracy Assist* -- Shows the automated assistant chat window (section [5.25](#tracyassist)). Only available if enabled in global settings (section [4.2.1](#aboutwindow)).
+-   *\"Robot icon\" Tracy Assist* -- Shows the automated assistant chat window (section [5.25](#tracyassist)). Only available if enabled in global settings (section [4.2.1](#aboutwindow)).
 
 [^70]: Or perform any action on the timeline view, apart from changing the zoom level.
 
-The frame information block[^71] consists of four elements: the current frame set name along with the number of captured frames (click on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button to go to a specified frame), the two navigational buttons and , which allow you to focus the timeline view on the previous or next frame, and the frame set selection button , which is used to switch to another frame set[^72]. For more information about marking frames, see section [3.3](#markingframes).
+The frame information block[^71] consists of four elements: the current frame set name along with the number of captured frames (click on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button to go to a specified frame), the two navigational buttons \"CaretLeft icon\" and \"CaretRight icon\", which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \"CaretDown icon\", which is used to switch to another frame set[^72]. For more information about marking frames, see section [3.3](#markingframes).
 
 [^71]: Visible only if frame instrumentation was included in the capture.
 
 [^72]: See section [5.2.3.2](#framesets) for another way to change the active frame set.
 
-The following three items show the * view time range*, the * time span* of the whole capture (clicking on it with the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button will set the view range to the entire capture), and the * memory usage* of the profiler.
+The following three items show the *\"Eye icon\" view time range*, the *\"Database icon\" time span* of the whole capture (clicking on it with the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button will set the view range to the entire capture), and the *\"Memory icon\" memory usage* of the profiler.
 
 #### Notification area
 
-The notification area displays informational notices, for example, how long it took to load a trace from the disk. A pulsating dot next to the  icon indicates that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling)), a * crash* icon will be displayed. The red  icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.2.2](#connectionpopup) for more information).
+The notification area displays informational notices, for example, how long it took to load a trace from the disk. A pulsating dot next to the \"Tasks icon\" icon indicates that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling)), a *\"Skull icon\" crash* icon will be displayed. The red \"SatelliteDish icon\" icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.2.2](#connectionpopup) for more information).
 
 If the drawing of timeline elements was disabled in the options menu (section [5.4](#options)), the profiler will use the following orange icons to remind you about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section [5.2.3.3](#zoneslocksplots)) are not taken into account here.
 
--   -- Display of empty labels is enabled.
+-   \"Expand icon\" -- Display of empty labels is enabled.
 
--   -- Context switches are hidden.
+-   \"Hiking icon\" -- Context switches are hidden.
 
--   -- CPU data is hidden.
+-   \"SlidersH icon\" -- CPU data is hidden.
 
--   -- GPU zones are hidden.
+-   \"Eye icon\" -- GPU zones are hidden.
 
--   -- CPU zones are hidden.
+-   \"Microchip icon\" -- CPU zones are hidden.
 
--   -- Locks are hidden.
+-   \"Lock icon\" -- Locks are hidden.
 
--   -- Plots are hidden.
+-   \"Signature icon\" -- Plots are hidden.
 
--   -- Ghost zones are not displayed.
+-   \"Ghost icon\" -- Ghost zones are not displayed.
 
--   -- At least one timeline item (e.g. a single thread, a single plot, a single lock, etc.) is hidden.
+-   \"LowVision icon\" -- At least one timeline item (e.g. a single thread, a single plot, a single lock, etc.) is hidden.
 
 ### Frame time graph {#frametimegraph}
 
@@ -2883,7 +2883,7 @@ The frames visible on the timeline are marked with a violet box drawn over them.
 
 When a zone is displayed in the find zone window (section [5.7](#findzone)), the coloring of frames may be changed, as described in section [5.7.2](#frametimefindzone).
 
-Moving the mouse cursor over the frames displayed on the graph will display a tooltip with information about frame number, frame time, frame image (if available, see chapter [3.3.3](#frameimages)), etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
+Moving the \"MousePointer icon\" mouse cursor over the frames displayed on the graph will display a tooltip with information about frame number, frame time, frame image (if available, see chapter [3.3.3](#frameimages)), etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
 
 You may focus the timeline view on the frames by clicking or dragging the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the graph. The graph may be scrolled left and right by dragging the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button over the graph. Finally, you may zoom the view in and out by using the ![image](icons/scroll.pdf){height=".8\\baselineskip"} mouse wheel. If the view is zoomed out, so that multiple frames are merged into one column, the profiler will use the highest frame time to represent the given column.
 
@@ -2910,7 +2910,7 @@ The time scale is a quick aid in determining the relation between screen space a
 
 The leftmost value on the scale represents when the timeline starts. The rest of the numbers label the notches on the scale, with some numbers omitted if there's no space to display them.
 
-Hovering the  mouse pointer over the time scale will display a tooltip with the exact timestamp at the position of the mouse cursor.
+Hovering the \"MousePointer icon\" mouse pointer over the time scale will display a tooltip with the exact timestamp at the position of the mouse cursor.
 
 #### Frame sets {#framesets}
 
@@ -2929,7 +2929,7 @@ Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse but
 
 If a frame has an associated frame image (see chapter [3.3.3](#frameimages)), you can hold the Ctrl key and click the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the frame to open the frame image playback window (see chapter [5.20](#playback)) and set the playback to the selected frame.
 
-If the * Draw frame targets* option is enabled (see section [5.4](#options)), time regions in frames exceeding the set target value will be marked with a red background.
+If the *\"FlagCheckered icon\" Draw frame targets* option is enabled (see section [5.4](#options)), time regions in frames exceeding the set target value will be marked with a red background.
 
 #### Zones, locks and plots display {#zoneslocksplots}
 
@@ -2946,7 +2946,7 @@ The left-hand side *index area* of the timeline view displays various labels (th
 
 -   *Pink label* -- CPU data graph.
 
--   *White label* -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section [2.5](#crashhandling)). If automated sampling was performed, clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the * ghost zones* button will switch zone display mode between 'instrumented' and 'ghost.'
+-   *White label* -- A CPU thread. It will be replaced by a bright red label in a thread that has crashed (section [2.5](#crashhandling)). If automated sampling was performed, clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the *\"Ghost icon\" ghost zones* button will switch zone display mode between 'instrumented' and 'ghost.'
 
 -   *Green label* -- Fiber, coroutine, or any other sort of cooperative multitasking 'green thread.'
 
@@ -2954,9 +2954,9 @@ The left-hand side *index area* of the timeline view displays various labels (th
 
 -   *Yellow label* -- Plot.
 
-Labels accompanied by the  symbol can be collapsed out of the view to reduce visual clutter. Hover the  mouse pointer over the label to display additional information. Click the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a title to zoom the view to the extent of the label contents. Finally, click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a label to display the context menu with available actions:
+Labels accompanied by the \"CaretDown icon\" symbol can be collapsed out of the view to reduce visual clutter. Hover the \"MousePointer icon\" mouse pointer over the label to display additional information. Click the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a title to zoom the view to the extent of the label contents. Finally, click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a label to display the context menu with available actions:
 
--   * Hide* -- Hides the label along with the content associated to it. To make the label visible again, you must find it in the options menu (section [5.4](#options)).
+-   *\"EyeSlash icon\" Hide* -- Hides the label along with the content associated to it. To make the label visible again, you must find it in the options menu (section [5.4](#options)).
 
 ##### Zones
 
@@ -2968,11 +2968,11 @@ Meanwhile, the *Streaming thread* is performing some *Streaming jobs*. The first
 
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan/Direct3D/Metal/OpenCL context in place of a thread name.
 
-Hovering the mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Holding the Ctrl key and clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone statistics window (section [5.7](#findzone)). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the view to the extent of the zone.
+Hovering the \"MousePointer icon\" mouse pointer over a zone will highlight all other zones that have the exact source location with a white outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Holding the Ctrl key and clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone statistics window (section [5.7](#findzone)). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the view to the extent of the zone.
 
 ##### Ghost zones
 
-You can enable the view of ghost zones (not pictured on figure [18](#zoneslocks), but similar to standard zones view) by clicking on the * ghost zones* icon next to the thread label, available if automated sampling (see chapter [3.16.5](#sampling)) was performed. Ghost zones will also be displayed by default if no instrumented zones are available for a given thread to help with pinpointing functions that should be instrumented.
+You can enable the view of ghost zones (not pictured on figure [18](#zoneslocks), but similar to standard zones view) by clicking on the *\"Ghost icon\" ghost zones* icon next to the thread label, available if automated sampling (see chapter [3.16.5](#sampling)) was performed. Ghost zones will also be displayed by default if no instrumented zones are available for a given thread to help with pinpointing functions that should be instrumented.
 
 Ghost zones represent true function calls in the program, periodically reported by the operating system. Due to the limited sampling resolution, you need to take great care when looking at reported timing data. While it may be apparent that some small function requires a relatively long time to execute, for example, 125 μs (8 kHz sampling rate), in reality, this time represents a period between taking two distinct samples, not the actual function run time. Similarly, two (or more) separate function calls may be represented as a single ghost zone because the profiler doesn't have the information needed to know about the actual lifetime of a sampled function.
 
@@ -2990,7 +2990,7 @@ Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse butt
 
 ##### Call stack samples
 
-The row of dots right below the *Main thread* label shows call stack sample points, which may have been automatically captured (see chapter [3.16.5](#sampling) for more detail). Hovering the  mouse pointer over each dot will display a short call stack summary while clicking on the dot with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will open a more detailed call stack information window (see section [5.15](#callstackwindow)).
+The row of dots right below the *Main thread* label shows call stack sample points, which may have been automatically captured (see chapter [3.16.5](#sampling) for more detail). Hovering the \"MousePointer icon\" mouse pointer over each dot will display a short call stack summary while clicking on the dot with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will open a more detailed call stack information window (see section [5.15](#callstackwindow)).
 
 ##### Context switches {#context-switches}
 
@@ -3000,7 +3000,7 @@ Context switch regions are using the following color key:
 
 -   *Green* -- Thread is running.
 
--   *Red* -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the  mouse pointer over the region will display more information. If sampling was performed, the profiler might display a wait stack. See section [3.16.5.1](#waitstacks) for additional details.
+-   *Red* -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \"MousePointer icon\" mouse pointer over the region will display more information. If sampling was performed, the profiler might display a wait stack. See section [3.16.5.1](#waitstacks) for additional details.
 
 -   *Blue* -- Thread is waiting to be resumed and is migrating to another CPU core. This might have visible performance effects because low-level CPU caches are not shared between cores, which may result in additional cache misses. To avoid this problem, you may pin a thread to a specific core by setting its affinity.
 
@@ -3012,7 +3012,7 @@ Fiber work and yield states are presented in the same way as context switch regi
 
 This label is only available if the profiler collected context switch data. It is split into two parts: a graph of CPU load by various threads running in the system and a per-core thread execution display.
 
-The CPU load graph shows how much CPU resources were used at any given time during program execution. The green part of the graph represents threads belonging to the profiled application, and the gray part of the graph shows all other programs running in the system. Hovering the  mouse pointer over the graph will display a list of threads running on the CPU at the given time.
+The CPU load graph shows how much CPU resources were used at any given time during program execution. The green part of the graph represents threads belonging to the profiled application, and the gray part of the graph shows all other programs running in the system. Hovering the \"MousePointer icon\" mouse pointer over the graph will display a list of threads running on the CPU at the given time.
 
 Each line in the thread execution display represents a separate logical CPU thread. If CPU topology data is available (see section [3.16.4](#cputopology)), package and core assignment will be displayed in brackets, in addition to numerical processor identifier (i.e. `[`*`package`*`:`*`core`*`] CPU `*`thread`*). When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
 
@@ -3022,7 +3022,7 @@ Each line in the thread execution display represents a separate logical CPU thre
 
 -   *Gray* -- Threads assigned to other programs running in the system.
 
-When the  mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores.
+When the \"MousePointer icon\" mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores.
 
 It will also add lines starting with a filed circle to denote wake up events. Those are useful to pinpoint the origin of a thread waking up, especially when holding locks. It may also start from an empty region, denoting the time at which the kernel chose to schedule or boost the priority of your thread. Wake ups will have a different color based on the reason for which the thread was waiting to be scheduled.
 
@@ -3049,7 +3049,7 @@ Mutual exclusion zones are displayed in each thread that tries to acquire them. 
 
 [^75]: This region type is disabled by default and needs to be enabled in options (section [5.4](#options)).
 
-Hovering the  mouse pointer over a lock timeline will highlight the lock in all threads to help read the lock behavior. Hovering the  mouse pointer over a lock event will display important information, for example, a list of threads that are currently blocking or which are blocked by the lock. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a lock event or a lock label will open the lock information window, as described in section [5.19](#lockwindow). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a lock event will zoom the view to the extent of the event.
+Hovering the \"MousePointer icon\" mouse pointer over a lock timeline will highlight the lock in all threads to help read the lock behavior. Hovering the \"MousePointer icon\" mouse pointer over a lock event will display important information, for example, a list of threads that are currently blocking or which are blocked by the lock. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a lock event or a lock label will open the lock information window, as described in section [5.19](#lockwindow). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a lock event will zoom the view to the extent of the event.
 
 ##### Plots
 
@@ -3060,13 +3060,13 @@ The numerical data values (figure [20](#plot)) are plotted right below the zone
 <figcaption>Plot display.</figcaption>
 </figure>
 
-When memory profiling (section [3.8](#memoryprofiling)) is enabled, Tracy will automatically generate a * Memory usage* plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
+When memory profiling (section [3.8](#memoryprofiling)) is enabled, Tracy will automatically generate a *\"Memory icon\" Memory usage* plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
 
-Another plot that Tracy automatically provides is the * CPU usage* plot, which represents the total system CPU usage percentage (it is not limited to the profiled application).
+Another plot that Tracy automatically provides is the *\"Tachometer icon\"\* CPU usage* plot, which represents the total system CPU usage percentage (it is not limited to the profiled application).
 
 ### Navigating the view
 
-Hovering the mouse pointer over the timeline view will display a vertical line that you can use to line up events in multiple threads visually. Dragging the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will display the time measurement of the selected region.
+Hovering the \"MousePointer icon\" mouse pointer over the timeline view will display a vertical line that you can use to line up events in multiple threads visually. Dragging the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will display the time measurement of the selected region.
 
 The timeline view may be scrolled both vertically and horizontally by dragging the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button. Note that only the zones, locks, and plots scroll vertically, while the time scale and frame sets always stay on the top.
 
@@ -3080,21 +3080,21 @@ Sometimes, you may want to specify a time range, such as limiting some statistic
 
 To define a time range, drag the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button over the timeline view while holding the Ctrl key. When the mouse key is released, the profiler will mark the selected time extent with a blue striped pattern, and it will display a context menu with the following options:
 
--   * Limit find zone time range* -- this will limit find zone results. See chapter [5.7](#findzone) for more details.
+-   *\"Search icon\" Limit find zone time range* -- this will limit find zone results. See chapter [5.7](#findzone) for more details.
 
--   * Limit statistics time range* -- selecting this option will limit statistics results. See chapter [5.6](#statistics) for more details.
+-   *\"SortAmountUp icon\" Limit statistics time range* -- selecting this option will limit statistics results. See chapter [5.6](#statistics) for more details.
 
--   * Limit flame graph time range* -- limits flame graph results. Refer to chapter [5.9](#flamegraph).
+-   *\"Fire icon\" Limit flame graph time range* -- limits flame graph results. Refer to chapter [5.9](#flamegraph).
 
--   * Limit wait stacks time range* -- limits wait stacks results. Refer to chapter [5.18](#waitstackswindow).
+-   *\"HourglassHalf icon\" Limit wait stacks time range* -- limits wait stacks results. Refer to chapter [5.18](#waitstackswindow).
 
--   * Limit memory time range* -- limits memory results. Read more about this in chapter [5.10](#memorywindow).
+-   *\"Memory icon\" Limit memory time range* -- limits memory results. Read more about this in chapter [5.10](#memorywindow).
 
--   * Add annotation* -- use to annotate regions of interest, as described in chapter [5.3.1](#annotatingtrace).
+-   *\"StickyNote icon\" Add annotation* -- use to annotate regions of interest, as described in chapter [5.3.1](#annotatingtrace).
 
 Alternatively, you may specify the time range by clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a zone or a frame. The resulting time extent will match the selected item.
 
-To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section [5.24](#timerangelimits)). You can access the time range limits window through the *Tools* button on the control menu.
+To reduce clutter, time range regions are only displayed if the windows they affect are open or if the time range limits control window is open (section [5.24](#timerangelimits)). You can access the time range limits window through the *\"Tools icon\" Tools* button on the control menu.
 
 You can freely adjust each time range on the timeline by clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the range's edge and dragging the mouse.
 
@@ -3104,7 +3104,7 @@ Tracy allows adding custom notes to the trace. For example, you may want to mark
 
 Methods of specifying the annotation region are described in section [5.3](#timeranges). When a new annotation is added, a settings window is displayed (section [5.22](#annotationsettings)), allowing you to enter a description.
 
-Annotations are displayed on the timeline, as presented in figure [21](#annotation). Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section [5.23](#annotationlist), which is accessible through the *Tools* button on the control menu.
+Annotations are displayed on the timeline, as presented in figure [21](#annotation). Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section [5.23](#annotationlist), which is accessible through the *\"Tools icon\" Tools* button on the control menu.
 
 <figure id="annotation">
 
@@ -3117,27 +3117,27 @@ Please note that while the annotations persist between profiling sessions, they 
 
 In this window, you can set various trace-related options. For example, the timeline view might sometimes become overcrowded, in which case disabling the display of some profiling events can increase readability.
 
--   *Draw empty labels* -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
+-   *\"Expand icon\" Draw empty labels* -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
 
--   *Draw frame targets* -- If enabled, time regions in any frame from the currently selected frame set, which exceed the specified *Target FPS* value will be marked with a red background on timeline view.
+-   *\"FlagCheckered icon\" Draw frame targets* -- If enabled, time regions in any frame from the currently selected frame set, which exceed the specified *Target FPS* value will be marked with a red background on timeline view.
 
     -   *Target FPS* -- Controls the option above, but also the frame bar colors in the frame time graph (section [5.2.2](#frametimegraph)). The color range thresholds are presented in a line directly below.
 
--   *Draw context switches* -- Allows disabling context switch display in threads.
+-   *\"Hiking icon\" Draw context switches* -- Allows disabling context switch display in threads.
 
-    -   *Darken inactive thread* -- If enabled, inactive regions in threads will be dimmed out.
+    -   *\"Moon icon\" Darken inactive thread* -- If enabled, inactive regions in threads will be dimmed out.
 
--   *Draw CPU data* -- Per-CPU behavior graph can be disabled here.
+-   *\"SlidersH icon\" Draw CPU data* -- Per-CPU behavior graph can be disabled here.
 
-    -   *Draw CPU usage graph* -- You can disable drawing of the CPU usage graph here.
+    -   *\"Signature icon\" Draw CPU usage graph* -- You can disable drawing of the CPU usage graph here.
 
--   *Draw GPU zones* -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL zones. The *GPU zones* drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section [3.9](#gpuprofiling) for more information). The * Auto* button automatically measures the GPU drift value[^76].
+-   *\"Eye icon\" Draw GPU zones* -- Allows disabling display of OpenGL/Vulkan/Metal/Direct3D/OpenCL zones. The *GPU zones* drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section [3.9](#gpuprofiling) for more information). The *\"Robot icon\" Auto* button automatically measures the GPU drift value[^76].
 
--   *Draw CPU zones* -- Determines whether CPU zones are displayed.
+-   *\"Microchip icon\" Draw CPU zones* -- Determines whether CPU zones are displayed.
 
-    -   *Draw ghost zones* -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.
+    -   *\"Ghost icon\" Draw ghost zones* -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.
 
-    -   *Zone colors* -- Zones with no user-set color may be colored according to the following schemes:
+    -   *\"Palette icon\" Zone colors* -- Zones with no user-set color may be colored according to the following schemes:
 
         -   *Disabled* -- A constant color (blue) will be used.
 
@@ -3147,7 +3147,7 @@ In this window, you can set various trace-related options. For example, the time
 
         Enabling the *Ignore custom* option will force usage of the selected zone coloring scheme, disregarding any colors set by the user in profiled code. Enabling the *Inherit parent colors* option will cause zones that have a color set by the user in the profiled code to be propagated down to the child zones, although slightly darker.
 
-    -   *Zone name shortening* -- controls display behavior of long zone names, which don't fit inside a zone box:
+    -   *\"RulerHorizontal icon\" Zone name shortening* -- controls display behavior of long zone names, which don't fit inside a zone box:
 
         -   *Disabled* -- Shortening of zone names is not performed and names are always displayed in full (e.g. `bool ns::container<float>::add(const float&)`).
 
@@ -3161,13 +3161,13 @@ In this window, you can set various trace-related options. For example, the time
 
         Function names in the remaining places across the UI will be normalized unless this option is set to *Disabled*.
 
--   *Draw locks* -- Controls the display of locks. If the *Only contended* option is selected, the profiler won't display the non-blocking regions of locks (see section [5.2.3.3](#zoneslocksplots)). The *Locks* drop-down allows disabling the display of locks on a per-lock basis. As a convenience, the list of locks is split into the single-threaded and multi-threaded (contended and uncontended) categories. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a lock label opens the lock information window (section [5.19](#lockwindow)).
+-   *\"Lock icon\" Draw locks* -- Controls the display of locks. If the *Only contended* option is selected, the profiler won't display the non-blocking regions of locks (see section [5.2.3.3](#zoneslocksplots)). The *Locks* drop-down allows disabling the display of locks on a per-lock basis. As a convenience, the list of locks is split into the single-threaded and multi-threaded (contended and uncontended) categories. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a lock label opens the lock information window (section [5.19](#lockwindow)).
 
--   *Draw plots* -- Allows disabling display of plots. Individual plots can be disabled in the *Plots* drop-down. The vertical size of the plots can be adjusted using the *Plot heights* slider.
+-   *\"Signature icon\" Draw plots* -- Allows disabling display of plots. Individual plots can be disabled in the *Plots* drop-down. The vertical size of the plots can be adjusted using the *Plot heights* slider.
 
--   *Visible threads* -- Here you can select which threads are visible on the timeline. You can change the display order of threads by dragging thread labels. Threads can be sorted alphabetically with the *Sort* button.
+-   *\"Random icon\" Visible threads* -- Here you can select which threads are visible on the timeline. You can change the display order of threads by dragging thread labels. Threads can be sorted alphabetically with the *Sort* button.
 
--   *Visible frame sets* -- Frame set display can be enabled or disabled here. Note that disabled frame sets are still available for selection in the frame set selection drop-down (section [5.2.1](#controlmenu)) but are marked with a dimmed font.
+-   *\"Images icon\" Visible frame sets* -- Frame set display can be enabled or disabled here. Note that disabled frame sets are still available for selection in the frame set selection drop-down (section [5.2.1](#controlmenu)) but are marked with a dimmed font.
 
 [^76]: There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.
 
@@ -3177,39 +3177,39 @@ Disabling the display of some events is especially recommended when the profiler
 
 ## Messages window {#messages}
 
-In this window, you can see all the messages that were sent by the client application, as described in section [3.7](#messagelog). The window is split into four columns: *time*, *thread*, *message* and *call stack*. Hovering the  mouse cursor over a message will highlight it on the timeline view. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a message will center the timeline view on the selected message.
+In this window, you can see all the messages that were sent by the client application, as described in section [3.7](#messagelog). The window is split into four columns: *time*, *thread*, *message* and *call stack*. Hovering the \"MousePointer icon\" mouse cursor over a message will highlight it on the timeline view. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a message will center the timeline view on the selected message.
 
-The *call stack* column is filled only if a call stack capture was requested, as described in section [3.11](#collectingcallstacks). A single entry consists of the * Show* button, which opens the call stack information window (chapter [5.15](#callstackwindow)) and of abbreviated information about the call path.
+The *call stack* column is filled only if a call stack capture was requested, as described in section [3.11](#collectingcallstacks). A single entry consists of the *\"AlignJustify icon\" Show* button, which opens the call stack information window (chapter [5.15](#callstackwindow)) and of abbreviated information about the call path.
 
-If the * Show frame images* option is selected, hovering the  mouse cursor over a message will show a tooltip containing frame image (see section [3.3.3](#frameimages)) associated with a frame in which the message was issued, if available.
+If the *\"Image icon\" Show frame images* option is selected, hovering the \"MousePointer icon\" mouse cursor over a message will show a tooltip containing frame image (see section [3.3.3](#frameimages)) associated with a frame in which the message was issued, if available.
 
 The message list will automatically scroll down to display the most recent message during live capture. You can disable this behavior by manually scrolling the message list up. The auto-scrolling feature will be enabled again when the view is scrolled down to display the last message.
 
 You can filter the message list in the following ways:
 
--   By the originating thread in the *Visible threads* drop-down.
+-   By the originating thread in the *\"Random icon\" Visible threads* drop-down.
 
--   By matching the message text to the expression in the * Filter messages* entry field. Multiple filter expressions can be comma-separated (e.g. 'warn, info' will match messages containing strings 'warn' *or* 'info'). You can exclude matches by preceding the term with a minus character (e.g., '-debug' will hide all messages containing the string 'debug').
+-   By matching the message text to the expression in the *\"Filter icon\" Filter messages* entry field. Multiple filter expressions can be comma-separated (e.g. 'warn, info' will match messages containing strings 'warn' *or* 'info'). You can exclude matches by preceding the term with a minus character (e.g., '-debug' will hide all messages containing the string 'debug').
 
 ## Statistics window {#statistics}
 
 Looking at the timeline view gives you a very localized outlook on things. However, sometimes you want to look at the general overview of the program's behavior. For example, you want to know which function takes the most of the application's execution time. The statistics window provides you with exactly that information.
 
-If the trace capture was performed with call stack sampling enabled (as described in chapter [3.16.5](#sampling)), you will be presented with an option to switch between * Instrumentation* and * Sampling* modes. If the profiler collected no sampling data, but it retrieved symbols, the second mode will be displayed as * Symbols*, enabling you to list available symbols.
+If the trace capture was performed with call stack sampling enabled (as described in chapter [3.16.5](#sampling)), you will be presented with an option to switch between *\"Syringe icon\" Instrumentation* and *\"EyeDropper icon\" Sampling* modes. If the profiler collected no sampling data, but it retrieved symbols, the second mode will be displayed as *\"PuzzlePiece icon\" Symbols*, enabling you to list available symbols.
 
-If GPU zones were captured, you would also have the * GPU* option to view the GPU zones statistics.
+If GPU zones were captured, you would also have the *\"Eye icon\" GPU* option to view the GPU zones statistics.
 
 ### Instrumentation mode
 
-Here you will find a multi-column display of captured zones, which contains: the zone *name* and *location*, *total time* spent in the zone, the *count* of zone executions, the *mean time spent in the zone per call* and the number of threads the zone has appeared in, labeled with a * thread icon*. You may sort the view according to the four displayed values or by the name.
+Here you will find a multi-column display of captured zones, which contains: the zone *name* and *location*, *total time* spent in the zone, the *count* of zone executions, the *mean time spent in the zone per call* and the number of threads the zone has appeared in, labeled with a *\"Random icon\" thread icon*. You may sort the view according to the four displayed values or by the name.
 
 In the * Timing* menu, the * With children* selection displays inclusive measurements, that is, containing execution time of zone's children. The * Self only* selection switches the measurement to exclusive, displaying just the time spent in the zone, subtracting the child calls. Finally, the * Non-reentrant* selection shows inclusive time but counts only the first appearance of a given zone on a thread's stack.
 
 Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the individual zone statistics view in the find zone window (section [5.7](#findzone)).
 
-You can filter the displayed list of zones by matching the zone name to the expression in the * Filter zones* entry field. Refer to section [5.5](#messages) for a more detailed description of the expression syntax.
+You can filter the displayed list of zones by matching the zone name to the expression in the *\"Filter icon\" Filter zones* entry field. Refer to section [5.5](#messages) for a more detailed description of the expression syntax.
 
-To limit the statistics to a specific time extent, you may enable the *Limit range* option (chapter [5.3](#timeranges)). The inclusion region will be marked with a red striped pattern. Note that a zone must be entirely inside the region to be counted. You can access more options through the * Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
+To limit the statistics to a specific time extent, you may enable the *Limit range* option (chapter [5.3](#timeranges)). The inclusion region will be marked with a red striped pattern. Note that a zone must be entirely inside the region to be counted. You can access more options through the *\"Ruler icon\" Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
 
 ### Sampling mode {#statisticssampling}
 
@@ -3219,29 +3219,29 @@ First and foremost, the presented information is constructed from many call stac
 
 The sample statistics list symbols, not functions. These terms are similar, but not exactly the same. A symbol always has a base function that gives it its name. In most cases, a symbol will also contain a number of inlined functions. In some cases, the same function may be inlined more than once within the same symbol.
 
-The *Name* column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the * Show all* option is disabled due to lack of sampling data). Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section [5.17.2](#symbolview)), or the sample entry stacks window (see chapter [5.16](#sampleparents))[^78].
+The *Name* column contains name of the symbol in which the sampling was done. Kernel-mode symbol samples are distinguished with the red color. Symbols containing inlined functions are listed with the number of inlined functions in parentheses and can be expanded to show all inlined functions (some functions may be hidden if the *\"PuzzlePiece icon\" Show all* option is disabled due to lack of sampling data). Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a function name will open a popup with options to select: you can either open the symbol view window (section [5.17.2](#symbolview)), or the sample entry stacks window (see chapter [5.16](#sampleparents))[^78].
 
 [^78]: Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, preventing, or limiting the capability to display the data.
 
-By default, each inlining of a function is listed separately. If you prefer to combine the measurements for functions that are inlined multiple times within a function, you can do so by enabling the * Aggregate* option. You cannot view sample entry stacks of inlined functions when this grouping method is enabled.
+By default, each inlining of a function is listed separately. If you prefer to combine the measurements for functions that are inlined multiple times within a function, you can do so by enabling the *\"LayerGroup icon\" Aggregate* option. You cannot view sample entry stacks of inlined functions when this grouping method is enabled.
 
-In some cases it may be more interesting to see the most time consuming inline within the symbol rather than the symbol name. If you enable the * Top inline* option, the name of the busiest inline function will be displayed in the *Name* column.
+In some cases it may be more interesting to see the most time consuming inline within the symbol rather than the symbol name. If you enable the *\"Fire icon\"\* Top inline* option, the name of the busiest inline function will be displayed in the *Name* column.
 
-If the * Inlines* option is enabled, the list will show all functions without grouping them by symbol. In this mode, inline functions are preceded by a symbol and their parent function name is displayed in parentheses.
+If the *\"Sitemap icon\" Inlines* option is enabled, the list will show all functions without grouping them by symbol. In this mode, inline functions are preceded by a \"CaretRight icon\" symbol and their parent function name is displayed in parentheses.
 
-The *Location* column displays the corresponding source file name and line number. Depending on the *Location* option selection, it can either show the function entry address or the instruction at which the sampling was performed. The *Entry* mode points at the beginning of a non-inlined function or at the place where the compiler inserted an inlined function in its parent function. The *Sample* mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in the case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem lets you look at both the inlined function code and the place where it was inserted. If the *Smart* location is selected, the profiler will display the entry point position for non-inlined functions and sample location for inlined functions. Selecting the * Address* option will instead print the symbol address.
+The *Location* column displays the corresponding source file name and line number. Depending on the *Location* option selection, it can either show the function entry address or the instruction at which the sampling was performed. The *Entry* mode points at the beginning of a non-inlined function or at the place where the compiler inserted an inlined function in its parent function. The *Sample* mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in the case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem lets you look at both the inlined function code and the place where it was inserted. If the *Smart* location is selected, the profiler will display the entry point position for non-inlined functions and sample location for inlined functions. Selecting the *\"At icon\" Address* option will instead print the symbol address.
 
 The location data is complemented by the originating executable image name, contained in the *Image* column. If the *Short image* (scissors icon) option is selected, the image path will be shortened to just the image file name, with the full path available in the tooltip.
 
-The profiler may not find some function locations due to insufficient debugging data available on the client-side. To filter out such entries, use the * Hide unknown* option.
+The profiler may not find some function locations due to insufficient debugging data available on the client-side. To filter out such entries, use the *\"EyeSlash icon\" Hide unknown* option.
 
-The *Time* or *Count* column (depending on the * Show time* option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the total number of collected samples. You can also make the percentages of inline functions relative to the base symbol measurements by enabling the * Base relative* option.
+The *Time* or *Count* column (depending on the *\"Stopwatch icon\" Show time* option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time. The percentage value of sample counts is relative to the total number of collected samples. You can also make the percentages of inline functions relative to the base symbol measurements by enabling the *\"Link icon\" Base relative* option.
 
-The last column, *Code size*, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved[^79] symbol size will be prepended with the  icon, and clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the location column entry will open symbol view window (section [5.17.2](#symbolview)).
+The last column, *Code size*, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved[^79] symbol size will be prepended with the `"Database icon"` icon, and clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the location column entry will open symbol view window (section [5.17.2](#symbolview)).
 
 [^79]: Symbols larger than 128 KB are not captured.
 
-Finally, the list can be filtered using the * Filter symbols* entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the * Include kernel* switch. The exclusive/inclusive time counting mode can be switched using the * Timing* menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the * Show all* option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
+Finally, the list can be filtered using the *\"Filter icon\" Filter symbols* entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the *\"HatWizard icon\" Include kernel* switch. The exclusive/inclusive time counting mode can be switched using the * Timing* menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the *\"PuzzlePiece icon\" Show all* option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
 
 A simple CSV document containing the visible zones after filtering and limiting can be copied to the clipboard with the button adjacent to the visible zones count. The document contains the following columns:
 
@@ -3312,18 +3312,18 @@ The *found zones* section displays the individual zones grouped according to the
 
 You may sort each group according to the *order* in which it appeared, the call *count*, the total *time* spent in the group, or the *mean time per call*. Expanding the group view will display individual occurrences of the zone, which can be sorted by application's time, execution time, or zone's name. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will open the zone information window (section [5.14](#zoneinfo)). Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the timeline view to the zone's extent.
 
-Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the group name will highlight the group time data on the histogram (figure [23](#findzonehistogramgroup)). This function provides a quick insight into the impact of the originating thread or input data on the zone performance. Clicking on the * Clear* button will reset the group selection. If the grouping mode is set to *Parent* option, clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on the parent zone group will switch the find zone view to display the selected zone.
+Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the group name will highlight the group time data on the histogram (figure [23](#findzonehistogramgroup)). This function provides a quick insight into the impact of the originating thread or input data on the zone performance. Clicking on the *\"Backspace icon\" Clear* button will reset the group selection. If the grouping mode is set to *Parent* option, clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on the parent zone group will switch the find zone view to display the selected zone.
 
 <figure id="findzonehistogramgroup">
 
 <figcaption>Zone execution time histogram with a group highlighted.</figcaption>
 </figure>
 
-The call stack grouping mode has a different way of listing groups. Here only one group is displayed at any time due to the need to display the call stack frames. You can switch between call stack groups by using the  and  buttons. You can select the group by clicking on the *✓ Select* button. You can open the call stack window (section [5.15](#callstackwindow)) by pressing the * Call stack* button.
+The call stack grouping mode has a different way of listing groups. Here only one group is displayed at any time due to the need to display the call stack frames. You can switch between call stack groups by using the \"CaretLeft icon\" and \"CaretRight icon\" buttons. You can select the group by clicking on the *\"Check icon\" Select* button. You can open the call stack window (section [5.15](#callstackwindow)) by pressing the *\"AlignJustify icon\" Call stack* button.
 
 Tracy displays a variety of statistical values regarding the selected function: mean (average value), median (middle value), mode (most common value, quantized using histogram bins), and (standard deviation). The mean and median zone times are also displayed on the histogram as red (mean) and blue (median) vertical bars. Additional bars will indicate the mean group time (orange) and median group time (green). You can disable the drawing of either set of markers by clicking on the check-box next to the color legend.
 
-Hovering the  mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a pulsing vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned. In addition, it will also highlight zone entry on the zone list.
+Hovering the \"MousePointer icon\" mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a pulsing vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned. In addition, it will also highlight zone entry on the zone list.
 
 ::: bclogo
 Keyboard shortcut You may press Ctrl + F to open or focus the find zone window and set the keyboard input on the search box.
@@ -3351,11 +3351,11 @@ Caveats The profiler might not calculate the displayed data correctly, and it ma
 
 ### Limiting zone time range
 
-If the *Limit range* option is selected, the profiler will include only the zones within the specified time range (chapter [5.3](#timeranges)) in the data. The inclusion region will be marked with a green striped pattern. Note that a zone must be entirely inside the region to be counted. You can access more options through the * Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
+If the *Limit range* option is selected, the profiler will include only the zones within the specified time range (chapter [5.3](#timeranges)) in the data. The inclusion region will be marked with a green striped pattern. Note that a zone must be entirely inside the region to be counted. You can access more options through the *\"Ruler icon\" Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
 
 ### Zone samples
 
-If sampling data has been captured (see section [3.16.5](#sampling)), an additional expandable * Samples* section will be displayed. This section contains only the sample data attributed to the displayed zone. Looking at this list may give you additional insight into what is happening within the zone. Refer to section [5.6.2](#statisticssampling) for more information about this view.
+If sampling data has been captured (see section [3.16.5](#sampling)), an additional expandable *\"EyeDropper icon\" Samples* section will be displayed. This section contains only the sample data attributed to the displayed zone. Looking at this list may give you additional insight into what is happening within the zone. Refer to section [5.6.2](#statisticssampling) for more information about this view.
 
 You can further narrow down the list of samples by selecting a time range on the histogram or by choosing a group in the *Found zones* section. However, do note that the random nature of sampling makes it highly unlikely that short-lived zones (i.e., left part of the histogram) will have any sample data collected.
 
@@ -3365,7 +3365,7 @@ Comparing the performance impact of the optimization work is not an easy thing t
 
 Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section [5.7](#findzone). You can compare traces either by zone or frame timing data.
 
-You would begin your work by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Finally, having the optimized trace open, you select the * Open second trace* option in the compare traces window and load the reference trace.
+You would begin your work by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Finally, having the optimized trace open, you select the *\"FolderOpen icon\" Open second trace* option in the compare traces window and load the reference trace.
 
 Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the *matched source locations* drop-down, and then you look at the histogram[^82]. This time there are two overlaid graphs, one representing the current trace and the second one representing the external (reference) trace (figure [24](#comparehistogram)). You can easily see how the performance characteristics of the zone were affected by your modifications.
 
@@ -3376,7 +3376,7 @@ Now things start to get familiar. You search for a zone, similarly like in the f
 <figcaption>Compare traces histogram.</figcaption>
 </figure>
 
-Note that the traces are color and symbol-coded. The current trace is marked by a yellow symbol, and the external one is marked by a red symbol.
+Note that the traces are color and symbol-coded. The current trace is marked by a yellow \"Lemon icon\" symbol, and the external one is marked by a red \"Gem icon\" symbol.
 
 When searching for source locations it's not uncommon to match more than one zone (for example a search for `Draw` may result in `DrawCircle` and `DrawRectangle` matches). Typically you wouldn't want to compare execution profiles of two unrelated functions, which is prevented by the *link selection* option, which ensures that when you choose a source location in one trace, the corresponding one is also selected in the second trace. Be aware that this may still result in a mismatch, for example, if you have overloaded functions. In such a case, you will need to select the appropriate function in the other trace manually.
 
@@ -3413,15 +3413,15 @@ The default sorting order of the zones on a flame graph *approximates* the real 
 
 You can use an alternative sorting method by enabling the *Sort by time* option. This will place the most time-consuming zones first (to the left) on the graph.
 
-Similar to the statistics window (section [5.6](#statistics)), the flame graph can operate in two modes: * Instrumentation* and * Sampling*. In the instrumentation mode, the graph represents the zones you put in your program. In the sampling mode, the graph is constructed from the automatically captured call stack data (section [3.16.5](#sampling)).
+Similar to the statistics window (section [5.6](#statistics)), the flame graph can operate in two modes: *\"Syringe icon\" Instrumentation* and *\"EyeDropper icon\" Sampling*. In the instrumentation mode, the graph represents the zones you put in your program. In the sampling mode, the graph is constructed from the automatically captured call stack data (section [3.16.5](#sampling)).
 
 In the sampling mode you can exclude *external frames* from the graph, which typically would be internal implementation details of starting threads, handling smart pointers, and other such things that are quick to execute and not really interesting. This leaves only the frames from your code. One exception is *external tails*, or calls that your code makes that do not eventually land in your application down the call chain. Think of functions that write to a file or send data on the network. These can be time-consuming, and you may want to see them. There is a separate option to disable these.
 
-The flame graph can be restricted to a specific time extent using the *Limit range* option (chapter [5.3](#timeranges)). You can access more options through the * Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
+The flame graph can be restricted to a specific time extent using the *Limit range* option (chapter [5.3](#timeranges)). You can access more options through the *\"Ruler icon\" Limits* button, which will open the time range limits window, described in section [5.24](#timerangelimits).
 
 ## Memory window {#memorywindow}
 
-You can view the data gathered by profiling memory usage (section [3.8](#memoryprofiling)) in the memory window. If the profiler tracked more than one memory pool during the capture, you would be able to select which collection you want to look at, using the * Memory pool* selection box.
+You can view the data gathered by profiling memory usage (section [3.8](#memoryprofiling)) in the memory window. If the profiler tracked more than one memory pool during the capture, you would be able to select which collection you want to look at, using the *\"Archive icon\" Memory pool* selection box.
 
 The top row contains statistics, such as *total allocations* count, number of *active allocations*, current *memory usage* and process *memory span*[^84].
 
@@ -3441,27 +3441,27 @@ The memory window is split into the following sections:
 
 ### Allocations
 
-The *Allocations* pane allows you to search for the specified address usage during the whole lifetime of the program. All recorded memory allocations that match the query will be displayed on a list.
+The *\"At icon\" Allocations* pane allows you to search for the specified address usage during the whole lifetime of the program. All recorded memory allocations that match the query will be displayed on a list.
 
 ### Active allocations
 
-The *Active allocations* pane displays a list of currently active memory allocations and their total memory usage. Here, you can see where your program allocated memory it is now using. If the application has already exited, this becomes a list of leaked memory.
+The *\"Heartbeat icon\" Active allocations* pane displays a list of currently active memory allocations and their total memory usage. Here, you can see where your program allocated memory it is now using. If the application has already exited, this becomes a list of leaked memory.
 
 ### Memory map
 
-On the *Memory map* pane, you can see the graphical representation of your program's address space. Active allocations are displayed as green lines, while the freed memory is red. The brightness of the color indicates how much time has passed since the last memory event at the given location -- the most recent events are the most vibrant.
+On the *\"Map icon\" Memory map* pane, you can see the graphical representation of your program's address space. Active allocations are displayed as green lines, while the freed memory is red. The brightness of the color indicates how much time has passed since the last memory event at the given location -- the most recent events are the most vibrant.
 
 This view may help assess the general memory behavior of the application or in debugging the problems resulting from address space fragmentation.
 
 ### Bottom-up call stack tree {#callstacktree}
 
-The * Bottom-up call stack tree* pane is only available, if the memory events were collecting the call stack data (section [3.11](#collectingcallstacks)). In this view, you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each tree level is sorted according to the number of bytes allocated in the given branch.
+The *\"Tree icon\" Bottom-up call stack tree* pane is only available, if the memory events were collecting the call stack data (section [3.11](#collectingcallstacks)). In this view, you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each tree level is sorted according to the number of bytes allocated in the given branch.
 
 Each tree node consists of the function name, the source file location, and the memory allocation data. The memory allocation data is either yellow *inclusive* events count (allocations performed by children) or the cyan *exclusive* events count (allocations that took place in the node)[^87]. Two values are counted: total memory size and number of allocations.
 
 [^87]: Due to the way call stacks work, there is no possibility for an entry to have both inclusive and exclusive counts, in an adequately instrumented program.
 
-The * Group by function name* option controls how tree nodes are grouped. If it is disabled, the grouping is performed at a machine instruction-level granularity. This may result in a very verbose output, but the displayed source locations are precise. To make the tree more readable, you may opt to perform grouping at the function name level, which will result in less valid source file locations, as multiple entries are collapsed into one.
+The *\"LayerGroup icon\" Group by function name* option controls how tree nodes are grouped. If it is disabled, the grouping is performed at a machine instruction-level granularity. This may result in a very verbose output, but the displayed source locations are precise. To make the tree more readable, you may opt to perform grouping at the function name level, which will result in less valid source file locations, as multiple entries are collapsed into one.
 
 Enabling the *Only active allocations* option will limit the call stack tree only to display active allocations. Enabling *Only inactive allocations* option will have similar effect for inactive allocations. Both are mutually exclusive, enabling one disables the other. Displaing inactive allocations, when combined with *Limit range*, will show short lived allocatios highlighting potentially unwanted behavior in the code.
 
@@ -3475,7 +3475,7 @@ This pane is identical in functionality to the *Bottom-up call stack tree*, but 
 
 ### Looking back at the memory history
 
-By default, the memory window displays the memory data at the current point of program execution. It is, however, possible to view the historical data by enabling the * Limits* option. The profiler will consider only the memory events within the time range in the displayed results. See section [5.24](#timerangelimits) for more information.
+By default, the memory window displays the memory data at the current point of program execution. It is, however, possible to view the historical data by enabling the *\"Ruler icon\" Limits* option. The profiler will consider only the memory events within the time range in the displayed results. See section [5.24](#timerangelimits) for more information.
 
 ## Allocations list window {#alloclist}
 
@@ -3483,7 +3483,7 @@ This window displays the list of allocations included at the selected call stack
 
 ## Memory allocation information window {#memallocinfo}
 
-The information about the selected memory allocation is displayed in this window. It lists the allocation's address and size, along with the time, thread, and zone data of the allocation and free events. Clicking the * Zoom to allocation* button will zoom the timeline view to the allocation's extent.
+The information about the selected memory allocation is displayed in this window. It lists the allocation's address and size, along with the time, thread, and zone data of the allocation and free events. Clicking the *\"Microscope icon\" Zoom to allocation* button will zoom the timeline view to the allocation's extent.
 
 ## Trace information window {#traceinfo}
 
@@ -3529,7 +3529,7 @@ The zone information window displays detailed information about a single zone. T
 
 -   List of messages that the profiler logged in the zone's scope. If the *exclude children* option is disabled, messages emitted in child zones will also be included.
 
--   Zone trace, taking into account the zone tree and call stack information (section [3.11](#collectingcallstacks)), trying to reconstruct a combined zone + call stack trace[^91]. Captured zones are displayed as standard text, while not instrumented functions are dimmed. Hovering the  mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will switch the zone info window to that zone. Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
+-   Zone trace, taking into account the zone tree and call stack information (section [3.11](#collectingcallstacks)), trying to reconstruct a combined zone + call stack trace[^91]. Captured zones are displayed as standard text, while not instrumented functions are dimmed. Hovering the \"MousePointer icon\" mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a zone will switch the zone info window to that zone. Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a source file location will open the source file view window (if applicable, see section [5.17](#sourceview)).
 
 -   Child zones list, showing how the current zone's execution time was used. Zones on this list can be grouped according to their source location. Each group can be expanded to show individual entries. All the controls from the zone trace are also available here.
 
@@ -3541,19 +3541,19 @@ The zone information window displays detailed information about a single zone. T
 
 The zone information window has the following controls available:
 
--   *Zoom to zone* -- Zooms the timeline view to the zone's extent.
+-   *\"Microscope icon\" Zoom to zone* -- Zooms the timeline view to the zone's extent.
 
--   *Go to parent* -- Switches the zone information window to display current zone's parent zone (if available).
+-   *\"ArrowUp icon\" Go to parent* -- Switches the zone information window to display current zone's parent zone (if available).
 
--   *Statistics* -- Displays the zone general performance characteristics in the find zone window (section [5.7](#findzone)).
+-   *\"ChartBar icon\" Statistics* -- Displays the zone general performance characteristics in the find zone window (section [5.7](#findzone)).
 
--   *Call stack* -- Views the current zone's call stack in the call stack window (section [5.15](#callstackwindow)). The button will be highlighted if the call stack window shows the zone's call stack. Only available if zone had captured call stack data (section [3.11](#collectingcallstacks)).
+-   *\"AlignJustify icon\" Call stack* -- Views the current zone's call stack in the call stack window (section [5.15](#callstackwindow)). The button will be highlighted if the call stack window shows the zone's call stack. Only available if zone had captured call stack data (section [3.11](#collectingcallstacks)).
 
--   *Source* -- Display source file view window with the zone source code (only available if applicable, see section [5.17](#sourceview)). The button will be highlighted if the source file is displayed (but the focused source line might be different).
+-   *\"File icon\"\* Source* -- Display source file view window with the zone source code (only available if applicable, see section [5.17](#sourceview)). The button will be highlighted if the source file is displayed (but the focused source line might be different).
 
--   *Go back* -- Returns to the previously viewed zone. The viewing history is lost when the zone information window is closed or when the type of displayed zone changes (from CPU to GPU or vice versa).
+-   *\"ArrowLeft icon\" Go back* -- Returns to the previously viewed zone. The viewing history is lost when the zone information window is closed or when the type of displayed zone changes (from CPU to GPU or vice versa).
 
-Clicking on the * Copy to clipboard* buttons will copy the appropriate data to the clipboard.
+Clicking on the *\"Clipboard icon\" Copy to clipboard* buttons will copy the appropriate data to the clipboard.
 
 ## Call stack window {#callstackwindow}
 
@@ -3563,9 +3563,9 @@ This window shows the frames contained in the selected call stack. Each frame is
 
 A single stack frame may have multiple function call places associated with it. This happens in the case of inlined function calls. Such entries will be displayed in the call stack window, with *inline* in place of frame number[^93].
 
-[^93]: Or '' icon in case of call stack tooltips.
+[^93]: Or '\"CaretRight icon\"' icon in case of call stack tooltips.
 
-Stack frame location may be displayed in the following number of ways, depending on the * Frame location* option selection:
+Stack frame location may be displayed in the following number of ways, depending on the *\"At icon\" Frame location* option selection:
 
 -   *Source code* -- displays source file and line number associated with the frame.
 
@@ -3577,9 +3577,9 @@ Stack frame location may be displayed in the following number of ways, depending
 
 In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed '`[ntdll.dll]`' name of the image containing the frame address, or simply '`[unknown]`' if the profiler cannot retrieve even this information. Additionally, '`[kernel]`' is used to indicate unknown stack frames within the operating system's internal routines.
 
-If the displayed call stack is a sampled call stack (chapter [3.16.5](#sampling)), an additional button will be available, * Global entry statistics*. Clicking it will open the sample entry stacks window (chapter [5.16](#sampleparents)) for the current call stack.
+If the displayed call stack is a sampled call stack (chapter [3.16.5](#sampling)), an additional button will be available, *\"DoorOpen icon\" Global entry statistics*. Clicking it will open the sample entry stacks window (chapter [5.16](#sampleparents)) for the current call stack.
 
-Clicking on the * Copy to clipboard* button will copy call stack to the clipboard.
+Clicking on the *\"Clipboard icon\" Copy to clipboard* button will copy call stack to the clipboard.
 
 ### Reading call stacks {#readingcallstacks}
 
@@ -3608,9 +3608,9 @@ Moreover, the linker may determine in some rare cases that any two functions in 
 
 ## Sample entry stacks window {#sampleparents}
 
-This window displays statistical information about the selected symbol. All sampled call stacks (chapter [3.16.5](#sampling)) leading to the symbol are counted and displayed in descending order. You can choose the displayed call stack using the *entry call stack* controls, which also display time spent in the selected call stack. Alternatively, sample counts may be shown by disabling the * Show time* option, which is described in more detail in chapter [5.6.2](#statisticssampling).
+This window displays statistical information about the selected symbol. All sampled call stacks (chapter [3.16.5](#sampling)) leading to the symbol are counted and displayed in descending order. You can choose the displayed call stack using the *entry call stack* controls, which also display time spent in the selected call stack. Alternatively, sample counts may be shown by disabling the *\"Stopwatch icon\" Show time* option, which is described in more detail in chapter [5.6.2](#statisticssampling).
 
-The layout of frame list and the * Frame location* option selection is similar to the call stack window, described in chapter [5.15](#callstackwindow).
+The layout of frame list and the *\"At icon\" Frame location* option selection is similar to the call stack window, described in chapter [5.15](#callstackwindow).
 
 ## Source view window {#sourceview}
 
@@ -3638,7 +3638,7 @@ Nevertheless, **the displayed source files might still not reflect the code that
 
 A much more capable symbol view mode is available if the inspected source location has an associated symbol context (i.e., if it comes from a call stack capture, from call stack sampling, etc.). A symbol is a unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of numerous inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter [5.6.2](#statisticssampling).
 
-The header of symbol view window contains a name of the selected * symbol*, a list of * functions* that contribute to the symbol, and information such as count of probed * Samples*. The entry stacks (section [5.16](#sampleparents)) of the symbol can be viewed by clicking on the *Entry stacks* button.
+The header of symbol view window contains a name of the selected *\"PuzzlePiece icon\" symbol*, a list of *\"Sitemap icon\" functions* that contribute to the symbol, and information such as count of probed *\"EyeDropper icon\" Samples*. The entry stacks (section [5.16](#sampleparents)) of the symbol can be viewed by clicking on the *Entry stacks* button.
 
 Additionally, you may use the *Mode* selector to decide what content should be displayed in the panels below:
 
@@ -3658,9 +3658,9 @@ The *Propagate inlines* option, available when sample data is present, will enab
 
 #### Assembly mode
 
-This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the * Function* selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the * Relative address* option is selected, the profiler will print an offset from the symbol beginning instead. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the address/offset will switch to counting line numbers, using the selected one as the origin (i.e., zero value). Line numbers are displayed inside `[]` brackets. This display mode can be useful to correlate lines with the output of external tools, such as `llvm-mca`. To disable line numbering click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a line number.
+This mode shows the disassembly of the symbol machine code. If only one inline function is selected through the *\"Sitemap icon\" Function* selector, assembly instructions outside of this function will be dimmed out. Each assembly instruction is displayed listed with its location in the program memory during execution. If the *\"SearchLocation icon\" Relative address* option is selected, the profiler will print an offset from the symbol beginning instead. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on the address/offset will switch to counting line numbers, using the selected one as the origin (i.e., zero value). Line numbers are displayed inside `[]` brackets. This display mode can be useful to correlate lines with the output of external tools, such as `llvm-mca`. To disable line numbering click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a line number.
 
-If the * Source locations* option is selected, each line of the assembly code will also contain information about the originating source file name and line number. Each file is assigned its own color for easier differentiation between different source files. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on the selected line. Additionally, hovering the  mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment and the local call stack if it exists.
+If the *\"FileImport icon\" Source locations* option is selected, each line of the assembly code will also contain information about the originating source file name and line number. Each file is assigned its own color for easier differentiation between different source files. Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on the selected line. Additionally, hovering the \"MousePointer icon\" mouse cursor over the presented location will show a tooltip containing the name of a function the instruction originates from, along with an appropriate source code fragment and the local call stack if it exists.
 
 ::: bclogo
 Local call stack In some cases, it may be challenging to understand what is being displayed in the disassembly. For example, calling the `std::lower_bound` function may generate multiple levels of inlined functions: first, we enter the search algorithm, then the comparison functions, which in turn may be lambdas that call even more external code, and so on. In such an event, you will most likely see that some external code is taking a long time to execute, and you will be none the wiser on improving things.
@@ -3668,11 +3668,11 @@ Local call stack In some cases, it may be challenging to understand what is bein
 The local call stack for an assembly instruction represents all the inline function calls *within the symbol* (hence the 'local' part), which were made to reach the instruction. Deeper inspection of the local call stack, including navigation to the source call site of each participating inline function, can be performed through the context menu accessible by pressing the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on the source location.
 :::
 
-Selecting the * Raw code* option will enable the display of raw machine code bytes for each line. Individual bytes are displayed with interwoven colors to make reading easier.
+Selecting the *\"Cogs icon\" Raw code* option will enable the display of raw machine code bytes for each line. Individual bytes are displayed with interwoven colors to make reading easier.
 
-If any instruction would jump to a predefined address, the symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol, an `->` arrow will be prepended to the name. Hovering the  mouse pointer over such symbol name will highlight the target location. Clicking on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will focus the view on the destination instruction or switch view to the destination symbol.
+If any instruction would jump to a predefined address, the symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol, an `->` arrow will be prepended to the name. Hovering the \"MousePointer icon\" mouse pointer over such symbol name will highlight the target location. Clicking on it with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will focus the view on the destination instruction or switch view to the destination symbol.
 
-Enabling the * Jumps* option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the  mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will focus the view on the target location. The ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol[^95] will be indicated by a smaller arrow pointing away from the code.
+Enabling the *\"Share icon\" Jumps* option will show jumps within the symbol code as a series of arrows from the jump source to the jump target, and hovering the \"MousePointer icon\" mouse pointer over a jump arrow will display a jump information tooltip. It will also draw the jump range on the scroll bar as a green line. A horizontal green line will mark the jump target location. Clicking on a jump arrow with the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button will focus the view on the target location. The ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button opens a jump context menu, which allows inspection and navigation to the target location or any of the source locations. Jumps going out of the symbol[^95] will be indicated by a smaller arrow pointing away from the code.
 
 [^95]: This includes jumps, procedure calls, and returns. For example, in x86 assembly the respective operand names can be: `jmp`, `call`, `ret`.
 
@@ -3680,7 +3680,7 @@ Portions of the executable used to show the symbol view are stored within the ca
 
 ##### Exploring microarchitecture
 
-If the listed assembly code targets x86 or x64 instruction set architectures, hovering  mouse pointer over an instruction will display a tooltip with microarchitectural data, based on measurements made in [@Abel19a]. *This information is retrieved from instruction cycle tables and does not represent the true behavior of the profiled code.* Reading the cited article will give you a detailed definition of the presented data, but here's a quick (and inaccurate) explanation:
+If the listed assembly code targets x86 or x64 instruction set architectures, hovering \"MousePointer icon\" mouse pointer over an instruction will display a tooltip with microarchitectural data, based on measurements made in [@Abel19a]. *This information is retrieved from instruction cycle tables and does not represent the true behavior of the profiled code.* Reading the cited article will give you a detailed definition of the presented data, but here's a quick (and inaccurate) explanation:
 
 -   *Throughput* -- How many cycles are required to execute an instruction in a stream of the same independent instructions. For example, if the CPU may execute two independent `add` instructions simultaneously on different execution units, then the throughput (cycle cost per instruction) is 0.5.
 
@@ -3690,13 +3690,13 @@ If the listed assembly code targets x86 or x64 instruction set architectures, ho
 
 -   *Ports* -- Which ports (execution units) are required for dispatch of microinstructions. For example, `2*p0+1*p015` would mean that out of the three microinstructions implementing the assembly instruction, two can only be executed on port 0, and one microinstruction can be executed on ports 0, 1, or 5. The number of available ports and their capabilities varies between different processors architectures. Refer to <https://wikichip.org/> for more information.
 
-Selection of the CPU microarchitecture can be performed using the * arch* drop-down. Each architecture is accompanied by the name of an example CPU implementing it. If the current selection matches the microarchitecture on which the profiled application was running, the  icon will be green[^96]. Otherwise, it will be red[^97]. Clicking on the  icon when it is red will reset the selected microarchitecture to the one the profiled application was running on.
+Selection of the CPU microarchitecture can be performed using the *\"Microchip icon\" arch* drop-down. Each architecture is accompanied by the name of an example CPU implementing it. If the current selection matches the microarchitecture on which the profiled application was running, the \"Microchip icon\" icon will be green[^96]. Otherwise, it will be red[^97]. Clicking on the \"Microchip icon\" icon when it is red will reset the selected microarchitecture to the one the profiled application was running on.
 
 [^96]: Comparing sampled instruction counts with microarchitectural details only makes sense when this selection is properly matched.
 
 [^97]: You can use this to gain insight into how the code *may* behave on other processors.
 
-Clicking on the * Save* button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as *LLVM Machine Code Analyzer* (`llvm-mca`)[^98], to see how the code is executed and if there are any pipeline bubbles. Consult the `llvm-mca` documentation for more details. Alternatively, you might click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a jump arrow and save only the instructions within the jump range, using the * Save jump range* button.
+Clicking on the *\"FileImport icon\" Save* button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as *LLVM Machine Code Analyzer* (`llvm-mca`)[^98], to see how the code is executed and if there are any pipeline bubbles. Consult the `llvm-mca` documentation for more details. Alternatively, you might click the ![image](icons/rmb.pdf){height=".8\\baselineskip"} right mouse button on a jump arrow and save only the instructions within the jump range, using the *\"FileImport icon\" Save jump range* button.
 
 [^98]: <https://llvm.org/docs/CommandGuide/llvm-mca.html>
 
@@ -3724,13 +3724,13 @@ For more straightforward navigation, dependencies are also marked on the left si
 
 #### Combined mode
 
-In this mode, the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the  mouse pointer over the source file line or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a line will select it and focus on it in both panes. Note that while an assembly line always has only one corresponding source line, a single source line may have many associated assembly lines, not necessarily next to each other. Clicking on the same *source* line more than once will focus the *assembly* view on the next associated instructions block.
+In this mode, the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the \"MousePointer icon\" mouse pointer over the source file line or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the ![image](icons/lmb.pdf){height=".8\\baselineskip"} left mouse button on a line will select it and focus on it in both panes. Note that while an assembly line always has only one corresponding source line, a single source line may have many associated assembly lines, not necessarily next to each other. Clicking on the same *source* line more than once will focus the *assembly* view on the next associated instructions block.
 
 #### Instruction pointer cost statistics
 
 If automated call stack sampling (see chapter [3.16.5](#sampling)) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. You can use this information to determine which function line takes the most time. The displayed percentage values are heat map color-coded, with the lowest values mapped to dark red and the highest to bright yellow. The color code will appear next to the percentage value and on the scroll bar so that you can identify 'hot' places in the code at a glance.
 
-By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the * Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the  drop down control to display a child call distribution list, which shows each known function[^100] that the symbol called. Make sure to familiarize yourself with section [5.15.1](#readingcallstacks) to be able to read the results correctly.
+By default, samples are displayed only within the selected symbol, in isolation. In some cases, you may, however, want to include samples from functions that the selected symbol called. To do so, enable the *\"SignOut icon\"\* Child calls* option, which you may also temporarily toggle by holding the Z key. You can also click the \"CaretDown icon\" drop down control to display a child call distribution list, which shows each known function[^100] that the symbol called. Make sure to familiarize yourself with section [5.15.1](#readingcallstacks) to be able to read the results correctly.
 
 [^100]: You should remember that these are results of random sampling. Some function calls may be missing here.
 
@@ -3738,7 +3738,7 @@ Instruction timings can be viewed as a group. To begin constructing such a group
 
 Clicking the ![image](icons/mmb.pdf){height=".8\\baselineskip"} middle mouse button on the percentage value of an assembly instruction will display entry call stacks of the selected sample (see chapter [5.16](#sampleparents)). This functionality is only available for instructions that have collected sampling data and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data. Note that number of entry call stacks is displayed in a tooltip for a quick reference.
 
-The sample data source is controlled by the * Function* control in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. You can change the currently selected function by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to the total number of samples collected within the symbol.
+The sample data source is controlled by the *\"Sitemap icon\" Function* control in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. You can change the currently selected function by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to the total number of samples collected within the symbol.
 
 Selecting the *Limit range* option will restrict counted samples to the time extent shared with the statistics view (displayed as a red-striped region on the timeline). See section [5.3](#timeranges) for more detail.
 
@@ -3748,7 +3748,7 @@ Important Be aware that the data is not entirely accurate, as it results from a 
 
 #### Inspecting hardware samples
 
-As described in chapter [3.16.6](#hardwaresampling), on some platforms, Tracy can capture the internal statistics counted by the CPU hardware. If this data has been collected, the * Cost* selection list will be available. It allows changing what is taken into consideration for display by the cost statistics. You can select the following options:
+As described in chapter [3.16.6](#hardwaresampling), on some platforms, Tracy can capture the internal statistics counted by the CPU hardware. If this data has been collected, the *\"Highlighter icon\" Cost* selection list will be available. It allows changing what is taken into consideration for display by the cost statistics. You can select the following options:
 
 -   *Sample count* -- this selects the instruction pointer statistics, collected by call stack sampling performed by the operating system. This is the default data shown when hardware samples have not been captured.
 
@@ -3760,23 +3760,23 @@ As described in chapter [3.16.6](#hardwaresampling), on some platforms, Tracy c
 
 -   The rest of the available selections just show raw values gathered from the hardware counters. These are: *Retirements*, *Branches taken*, *Branch miss*, *Cache access* and *Cache miss*.
 
-If the * HW* (hardware samples) switch is enabled, the profiler will supplement the cost percentages column with three additional columns. The first added column displays the instructions per cycle (IPC) value. The two remaining columns show branch and cache data, as described below. The displayed values are color-coded, with green indicating good execution performance and red indicating that the code stalled the CPU pipeline for one reason or another.
+If the *\"Hammer icon\" HW* (hardware samples) switch is enabled, the profiler will supplement the cost percentages column with three additional columns. The first added column displays the instructions per cycle (IPC) value. The two remaining columns show branch and cache data, as described below. The displayed values are color-coded, with green indicating good execution performance and red indicating that the code stalled the CPU pipeline for one reason or another.
 
-If the * Impact* switch is enabled, the branch and cache columns will show how much impact the branch mispredictions and cache misses have. The way these statistics are calculated is described in the list above. In the other case, the columns will show the raw branch and cache miss rate ratios, isolated to their respective source and assembly lines and not relative to the whole symbol.
+If the *\"CarCrash icon\" Impact* switch is enabled, the branch and cache columns will show how much impact the branch mispredictions and cache misses have. The way these statistics are calculated is described in the list above. In the other case, the columns will show the raw branch and cache miss rate ratios, isolated to their respective source and assembly lines and not relative to the whole symbol.
 
 ::: bclogo
-Isolated values The percentage values when * Impact* option is not selected will not take into account the relative count of events. For example, you may see a 100% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as important as a seemingly better 50% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. Therefore, you should always cross-check the presented information with the respective event counts. To help with this, Tracy will dim statistically unimportant values.
+Isolated values The percentage values when *\"CarCrash icon\" Impact* option is not selected will not take into account the relative count of events. For example, you may see a 100% cache miss rate when some instruction missed 10 out of 10 cache accesses. While not ideal, this is not as important as a seemingly better 50% cache miss rate instruction, which actually has missed 1000 out of 2000 accesses. Therefore, you should always cross-check the presented information with the respective event counts. To help with this, Tracy will dim statistically unimportant values.
 :::
 
 ## Wait stacks window {#waitstackswindow}
 
 If wait stack information has been captured (chapter [3.16.5.1](#waitstacks)), here you will be able to inspect the collected data. There are three different views available:
 
--   * List* -- shows all unique wait stacks, sorted by the number of times they were observed.
+-   *\"Table icon\" List* -- shows all unique wait stacks, sorted by the number of times they were observed.
 
--   * Bottom-up tree* -- displays wait stacks in the form of a collapsible tree, which starts at the bottom of the call stack.
+-   *\"Tree icon\" Bottom-up tree* -- displays wait stacks in the form of a collapsible tree, which starts at the bottom of the call stack.
 
--   * Top-down tree* -- displays wait stacks in the form of a collapsible tree, which starts at the top of the call stack.
+-   *\"Tree icon\" Top-down tree* -- displays wait stacks in the form of a collapsible tree, which starts at the top of the call stack.
 
 Displayed data may be narrowed down to a specific time range or to include only selected threads.
 
@@ -3786,7 +3786,7 @@ This window presents information and statistics about a lock. The lock events co
 
 ## Frame image playback window {#playback}
 
-You may view a live replay of the profiled application screen captures (see section [3.3.3](#frameimages)) using this window. Playback is controlled by the * Play* and * Pause* buttons and the *Frame image* slider can be used to scrub to the desired timestamp. Alternatively you may use the and buttons to change single frame back or forward.
+You may view a live replay of the profiled application screen captures (see section [3.3.3](#frameimages)) using this window. Playback is controlled by the *\"Play icon\" Play* and *\"Pause icon\" Pause* buttons and the *Frame image* slider can be used to scrub to the desired timestamp. Alternatively you may use the *\"CaretLeft icon\"* and *\"CaretRight icon\"* buttons to change single frame back or forward.
 
 If the *Sync timeline* option is selected, the profiler will focus the timeline view on the frame corresponding to the currently displayed screenshot. The *Zoom 2$\times$* option enlarges the image for easier viewing.
 
@@ -3810,11 +3810,11 @@ In this window, you may modify how a timeline annotation (section [5.3.1](#anno
 
 This window lists all annotations marked on the timeline. Each annotation is presented, as shown on figure [26](#figannlist). From left to right the elements are:
 
--   *Edit* -- Opens the annotation settings window (section [5.22](#annotationsettings)).
+-   *\"Edit icon\" Edit* -- Opens the annotation settings window (section [5.22](#annotationsettings)).
 
--   *Zoom* -- Zooms timeline to the annotation extent.
+-   *\"Microscope icon\" Zoom* -- Zooms timeline to the annotation extent.
 
--   *Remove* -- Removes the annotation. You must press the Ctrl key to enable this button.
+-   *\"Trash icon\"\* Remove* -- Removes the annotation. You must press the Ctrl key to enable this button.
 
 -   Colored box -- Color of the annotation.
 
@@ -3825,7 +3825,7 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 <figcaption>Annotation list entry</figcaption>
 </figure>
 
-A new view-sized annotation can be added in this window by pressing the * Add annotation* button. This effectively saves your current viewport for further reference.
+A new view-sized annotation can be added in this window by pressing the *\"Plus icon\" Add annotation* button. This effectively saves your current viewport for further reference.
 
 ## Time range limits {#timerangelimits}
 
@@ -3833,17 +3833,17 @@ This window displays information about time range limits (section [5.3](#timera
 
 -   *Limit to view* -- Set the time range limit to current view.
 
--   * Focus* -- Set the timeline view to the time range extent.
+-   *\"Microscope icon\" Focus* -- Set the timeline view to the time range extent.
 
--   * Set from annotation* -- Allows using the annotation region for limiting purposes.
+-   *\"StickyNote icon\" Set from annotation* -- Allows using the annotation region for limiting purposes.
 
--   * Copy from statistics* -- Copies the statistics time range limit.
+-   *\"SortAmountUp icon\" Copy from statistics* -- Copies the statistics time range limit.
 
--   * Copy from find zone* -- Copies the find zone time range limit.
+-   *\"Search icon\" Copy from find zone* -- Copies the find zone time range limit.
 
--   * Copy from wait stacks* -- Copies the wait stacks time range limit.
+-   *\"HourglassHalf icon\" Copy from wait stacks* -- Copies the wait stacks time range limit.
 
--   * Copy from memory* -- Copies the memory time range limit.
+-   *\"Memory icon\" Copy from memory* -- Copies the memory time range limit.
 
 Note that ranges displayed in the window have color hints that match the color of the striped regions on the timeline.
 
@@ -3971,7 +3971,7 @@ LM Studio and Ollama properly label the model's capabilities. This is not the ca
 
 ### Usage
 
-The automated assistant can be accessed via the various * Tracy Assist* buttons in the UI. The button in the control menu (section [5.2.1](#controlmenu)) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
+The automated assistant can be accessed via the various *\"Robot icon\" Tracy Assist* buttons in the UI. The button in the control menu (section [5.2.1](#controlmenu)) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
 
 The chat window is divided into three sections:
 
@@ -3999,13 +3999,13 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 
     -   *Google Search Engine* and *API Key* -- Enables use of Google search. If this is not set, searches will fall back to DuckDuckGo, which is very rate limited.
 
-The * Learn manual* button is used to build the search index for the user manual. This process only takes a short amount of time, and the results are cached until either the embeddings model changes or the manual is updated.
+The *\"Book icon\" Learn manual* button is used to build the search index for the user manual. This process only takes a short amount of time, and the results are cached until either the embeddings model changes or the manual is updated.
 
 The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
 
 The chat section contains the conversation with the automated assistant. Each assistant reply includes a hidden \"thinking\" section in which various tool calls are made and the response is prepared.
 
-Clicking on the * User* role icon removes the chat content up to the selected question. Similarly, clicking on the * Assistant* role icon removes the conversation content up to this point and generates another response from the assistant.
+Clicking on the *\"User icon\" User* role icon removes the chat content up to the selected question. Similarly, clicking on the *\"Robot icon\" Assistant* role icon removes the conversation content up to this point and generates another response from the assistant.
 
 # Exporting zone statistics to CSV {#csvexport}
 
@@ -4111,13 +4111,13 @@ On Windows cache is stored in the `%LOCALAPPDATA%/tracy` directory. All other pl
 
 # Inventory of external libraries
 
-The following libraries are included with and used by the Tracy Profiler. Entries marked with a  icon are used in the client code.
+The following libraries are included with and used by the Tracy Profiler. Entries marked with a \"Star icon\" icon are used in the client code.
 
 -   3-clause BSD license
 
     -   getopt_port -- <https://github.com/kimgr/getopt_port>
 
-    -   libbacktrace -- <https://github.com/ianlancetaylor/libbacktrace>
+    -   libbacktrace \"Star icon\" -- <https://github.com/ianlancetaylor/libbacktrace>
 
     -   Zstandard -- <https://github.com/facebook/zstd>
 
@@ -4127,15 +4127,15 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
 
 -   2-clause BSD license
 
-    -   concurrentqueue -- <https://github.com/cameron314/concurrentqueue>
+    -   concurrentqueue \"Star icon\" -- <https://github.com/cameron314/concurrentqueue>
 
-    -   LZ4 -- <https://github.com/lz4/lz4>
+    -   LZ4 \"Star icon\" -- <https://github.com/lz4/lz4>
 
     -   xxHash -- <https://github.com/Cyan4973/xxHash>
 
 -   Public domain
 
-    -   rpmalloc -- <https://github.com/rampantpixels/rpmalloc>
+    -   rpmalloc \"Star icon\" -- <https://github.com/rampantpixels/rpmalloc>
 
     -   gl3w -- <https://github.com/skaslev/gl3w>
 
@@ -4161,7 +4161,7 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
 
     -   robin-hood-hashing -- <https://github.com/martinus/robin-hood-hashing>
 
-    -   SPSCQueue -- <https://github.com/rigtorp/SPSCQueue>
+    -   SPSCQueue \"Star icon\" -- <https://github.com/rigtorp/SPSCQueue>
 
     -   ini -- <https://github.com/rxi/ini>
 

@@ -136,7 +136,7 @@ target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
 CPMAddPackage(
     NAME ImGui
     GITHUB_REPOSITORY ocornut/imgui
-    GIT_TAG v1.92.0-docking
+    GIT_TAG v1.92.1-docking
     DOWNLOAD_ONLY TRUE
     PATCHES
         "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"

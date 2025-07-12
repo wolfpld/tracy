@@ -4509,7 +4509,7 @@ Statistical data about all processes running on the system during the capture is
 
 Each running program has an assigned process identifier (PID), which is displayed in the first column. The profiler will also display a list of thread identifiers (TIDs) if a program entry is expanded.
 
-The \emph{running time} column shows how much processor time was used by a process or thread. The percentage may be over 100\%, as it is scaled to trace length, and multiple threads belonging to a single program may be executing simultaneously. The \emph{running regions} column displays how many times a given entry was in the \emph{running} state, and the \emph{CPU migrations} shows how many times an entry was moved from one CPU core to another when the system scheduler suspended an entry.
+The \emph{running time} column shows how much processor time was used by a process or thread. The percentage may be over 100\%, as it is scaled to trace length, and multiple threads belonging to a single program may be executing simultaneously. The \emph{slices} column displays how many times a given entry was in the \emph{running} state, and the \emph{core jumps} shows how many times an entry was moved from one CPU core to another when the system scheduler suspended an entry.
 
 The profiled program is highlighted using green color. Furthermore, the yellow highlight indicates threads known to the profiler (that is, which sent events due to instrumentation).
 

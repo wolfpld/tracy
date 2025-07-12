@@ -254,6 +254,10 @@ if(NOT EMSCRIPTEN)
         usearch
         md4c
     )
+
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${md4c_SOURCE_DIR}/src
+    )
 endif()
 
 if(NOT DEFINED GIT_REV)

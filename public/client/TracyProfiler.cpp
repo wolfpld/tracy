@@ -1165,6 +1165,38 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 }
 #endif
 
+#ifdef TRACY_HAS_SYSTEM_TRACING
+static void StartSystemTracing( int64_t& samplingPeriod )
+{
+    assert( s_sysTraceThread == nullptr );
+
+    // use TRACY_NO_SYS_TRACE=1 to force disabling sys tracing (even if available in the underlying system)
+    // as it can have significant impact on the size of the traces
+    const char* noSysTrace = GetEnvVar( "TRACY_NO_SYS_TRACE" );
+    const bool disableSystrace = (noSysTrace && noSysTrace[0] == '1');
+    if( disableSystrace )
+    {
+        TracyDebug("TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n");
+    }
+    else if( SysTraceStart( samplingPeriod ) )
+    {
+        s_sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+        new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
+static void StopSystemTracing()
+{
+    if( s_sysTraceThread )
+    {
+        SysTraceStop();
+        s_sysTraceThread->~Thread();
+        tracy_free( s_sysTraceThread );
+        s_sysTraceThread = nullptr;
+    }
+}
+#endif
 
 enum { QueuePrealloc = 256 * 1024 };
 
@@ -1563,20 +1595,7 @@ void Profiler::RemoveCrashHandler()
 void Profiler::SpawnWorkerThreads()
 {
 #ifdef TRACY_HAS_SYSTEM_TRACING
-    // use TRACY_NO_SYS_TRACE=1 to force disabling sys tracing (even if available in the underlying system)
-    // as it can have significant impact on the size of the traces
-    const char* noSysTrace = GetEnvVar( "TRACY_NO_SYS_TRACE" );
-    const bool disableSystrace = (noSysTrace && noSysTrace[0] == '1');
-    if( disableSystrace )
-    {
-        TracyDebug("TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n");
-    }
-    else if( SysTraceStart( m_samplingPeriod ) )
-    {
-        s_sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
-        new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-    }
+    StartSystemTracing( m_samplingPeriod );
 #endif
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
@@ -1613,12 +1632,7 @@ Profiler::~Profiler()
     RemoveCrashHandler();
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
-    if( s_sysTraceThread )
-    {
-        SysTraceStop();
-        s_sysTraceThread->~Thread();
-        tracy_free( s_sysTraceThread );
-    }
+    StopSystemTracing();
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
@@ -2010,7 +2024,6 @@ void Profiler::Worker()
             }
             else if( status == DequeueStatus::QueueEmpty && serialStatus == DequeueStatus::QueueEmpty )
             {
-                if( ShouldExit() ) break;
                 if( m_bufferOffset != m_bufferStart )
                 {
                     if( !CommitData() ) break;
@@ -2041,7 +2054,7 @@ void Profiler::Worker()
                 connActive = HandleServerQuery();
                 if( !connActive ) break;
             }
-            if( !connActive ) break;
+            if( !connActive || ShouldExit() ) break;
         }
         if( ShouldExit() ) break;
 
@@ -2107,7 +2120,13 @@ void Profiler::Worker()
     while( s_symbolThreadGone.load() == false ) { YieldThread(); }
 #endif
 
-    // Client is exiting. Send items remaining in queues.
+    // Client is exiting.
+#ifdef TRACY_HAS_SYSTEM_TRACING
+    // Stop filling queues with new data.
+    StopSystemTracing();
+#endif
+
+    // Send items remaining in queues.
     for(;;)
     {
         const auto status = Dequeue( token );

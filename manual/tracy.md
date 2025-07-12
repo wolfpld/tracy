@@ -19,21 +19,21 @@ The user manual
 
 Hello and welcome to the Tracy Profiler user manual! Here you will find all the information you need to start using the profiler. This manual has the following layout:
 
--   Chapter [1](#quicklook), , gives a short description of what Tracy is and how it works.
+-   Chapter [1](#quicklook), *A quick look at Tracy Profiler*, gives a short description of what Tracy is and how it works.
 
--   Chapter [2](#firststeps), , shows how you can integrate the profiler into your application and how to build the graphical user interface (section [2.3](#buildingserver)). At this point, you will be able to establish a connection from the profiler to your application.
+-   Chapter [2](#firststeps), *First steps*, shows how you can integrate the profiler into your application and how to build the graphical user interface (section [2.3](#buildingserver)). At this point, you will be able to establish a connection from the profiler to your application.
 
--   Chapter [3](#client), , provides information on how to instrument your application, in order to retrieve useful profiling data. This includes a description of the C API (section [3.13](#capi)), which enables usage of Tracy in any programming language.
+-   Chapter [3](#client), *Client markup*, provides information on how to instrument your application, in order to retrieve useful profiling data. This includes a description of the C API (section [3.13](#capi)), which enables usage of Tracy in any programming language.
 
--   Chapter [4](#capturing), , goes into more detail on how the profiling information can be captured and stored on disk.
+-   Chapter [4](#capturing), *Capturing the data*, goes into more detail on how the profiling information can be captured and stored on disk.
 
--   Chapter [5](#analyzingdata), , guides you through the graphical user interface of the profiler.
+-   Chapter [5](#analyzingdata), *Analyzing captured data*, guides you through the graphical user interface of the profiler.
 
--   Chapter [6](#csvexport), , explains how to export some zone timing statistics into a CSV format.
+-   Chapter [6](#csvexport), *Exporting zone statistics to CSV*, explains how to export some zone timing statistics into a CSV format.
 
--   Chapter [7](#importingdata), , documents how to import data from other profilers.
+-   Chapter [7](#importingdata), *Importing external profiling data*, documents how to import data from other profilers.
 
--   Chapter [8](#configurationfiles), , gives information on the profiler settings.
+-   Chapter [8](#configurationfiles), *Configuration files*, gives information on the profiler settings.
 
 # Quick-start guide {#quick-start-guide .unnumbered}
 

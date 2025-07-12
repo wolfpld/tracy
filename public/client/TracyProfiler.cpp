@@ -2377,6 +2377,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
 #endif
+    case QueueType::GpuAnnotationName:
+        ptr = MemRead<uint64_t>( &item.gpuAnnotationNameFat.ptr );
+        tracy_free( (void*)ptr );
+        break;
 #ifdef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
     case QueueType::GpuContextName:
@@ -2591,6 +2595,12 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 #ifndef TRACY_ON_DEMAND
                         tracy_free_fast( (void*)ptr );
 #endif
+                        break;
+                    case QueueType::GpuAnnotationName:
+                        ptr = MemRead<uint64_t>( &item->gpuAnnotationNameFat.ptr );
+                        size = MemRead<uint16_t>( &item->gpuAnnotationNameFat.size );
+                        SendSingleString( (const char*)ptr, size );
+                        tracy_free_fast( (void*)ptr );
                         break;
                     case QueueType::PlotDataInt:
                     case QueueType::PlotDataFloat:
@@ -2948,6 +2958,14 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
 #ifndef TRACY_ON_DEMAND
                     tracy_free_fast( (void*)ptr );
 #endif
+                    break;
+                }
+                case QueueType::GpuAnnotationName:
+                {
+                    ptr = MemRead<uint64_t>( &item->gpuAnnotationNameFat.ptr );
+                    uint16_t size = MemRead<uint16_t>( &item->gpuAnnotationNameFat.size );
+                    SendSingleString( (const char*)ptr, size );
+                    tracy_free_fast( (void*)ptr );
                     break;
                 }
 #ifdef TRACY_FIBERS

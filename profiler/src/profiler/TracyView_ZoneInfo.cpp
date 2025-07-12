@@ -1579,6 +1579,19 @@ void View::DrawGpuInfoWindow()
             TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
         }
 
+        TextFocused( "Query ID:", RealToString( ev.query_id ) );
+        for( auto& p : ev.notes )
+        {
+            if( ctx->notes.count( p.first ) )
+            {
+                TextFocused( m_worker.GetString( ctx->notes.at( p.first ) ), RealToString( p.second ) );
+            }
+            else
+            {
+                TextFocused( RealToString( p.first ), RealToString( p.second ) );
+            }
+        }
+
         ImGui::Separator();
 
         std::vector<const GpuEvent*> zoneTrace;
@@ -2044,6 +2057,19 @@ void View::ZoneTooltip( const GpuEvent& ev )
         }
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
+    }
+
+    TextFocused( "Query ID:", RealToString( ev.query_id ) );
+    for( auto& p : ev.notes )
+    {
+        if( ctx->notes.count( p.first ) )
+        {
+            TextFocused( m_worker.GetString( ctx->notes.at( p.first ) ), RealToString( p.second ) );
+        }
+        else
+        {
+            TextFocused( RealToString( p.first ), RealToString( p.second ) );
+        }
     }
 
     ImGui::EndTooltip();

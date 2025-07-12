@@ -7,6 +7,7 @@
 
 #include "TracyMouse.hpp"
 #include "TracyImGui.hpp"
+#include "TracySourceContents.hpp"
 #include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
@@ -82,6 +83,7 @@ public:
             sprintf( tmp, "##code%d", idx++ );
             Separate();
             ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
+            codeBlock = true;
         }
         default:
             break;
@@ -123,6 +125,7 @@ public:
         case MD_BLOCK_CODE:
             ImGui::EndChild();
             separate = true;
+            codeBlock = false;
             break;
         default:
             break;
@@ -230,7 +233,16 @@ public:
             {
                 Glue();
                 ImGui::PushFont( g_fonts.mono, FontNormal );
-                PrintTextWrapped( text, text + size );
+                if( codeBlock )
+                {
+                    SourceContents sc;
+                    sc.Parse( text, size );
+                    PrintSource( sc.get() );
+                }
+                else
+                {
+                    PrintTextWrapped( text, text + size );
+                }
                 ImGui::PopFont();
             }
             break;
@@ -260,6 +272,7 @@ private:
     bool glue = false;
     bool separate = false;
     bool first = true;
+    bool codeBlock = false;
 
     int idx = 0;
 

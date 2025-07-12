@@ -3,7 +3,7 @@
 
 #include <string>
 
-struct MD_PARSER;
+#include "TracyMarkdown.hpp"
 
 namespace tracy
 {
@@ -39,7 +39,6 @@ private:
     void NormalScope();
     void ThinkScope();
 
-    void PrintMarkdown( const char* str, size_t size );
     void PrintThink( const char* str, size_t size );
     void PrintToolCall( const char* str, size_t size );
 
@@ -53,7 +52,7 @@ private:
     int m_subIdx;
     int m_roleIdx;
 
-    MD_PARSER* m_parser;
+    Markdown m_markdown;
 };
 
 }

@@ -3,11 +3,9 @@
 #include <md4c.h>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <string.h>
 
 #include "TracyImGui.hpp"
 #include "TracyLlmChat.hpp"
-#include "TracyMarkdown.hpp"
 #include "TracyMouse.hpp"
 #include "../Fonts.hpp"
 
@@ -40,20 +38,11 @@ static_assert( NumRoles == (int)TracyLlmChat::TurnRole::None );
 
 TracyLlmChat::TracyLlmChat()
     : m_width( new float[NumRoles] )
-    , m_parser( new MD_PARSER() )
 {
-    memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML;
-    m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->EnterBlock( type, detail ); };
-    m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->LeaveBlock( type, detail ); };
-    m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->EnterSpan( type, detail ); };
-    m_parser->leave_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((Markdown*)ud)->LeaveSpan( type, detail ); };
-    m_parser->text = []( MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* ud ) -> int { return ((Markdown*)ud)->Text( type, text, size ); };
 }
 
 TracyLlmChat::~TracyLlmChat()
 {
-    delete m_parser;
     delete[] m_width;
 }
 
@@ -164,7 +153,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
     }
     else if( role != TurnRole::Assistant )
     {
-        PrintMarkdown( content.c_str(), content.size() );
+        m_markdown.Print( content.c_str(), content.size() );
     }
     else if( content.starts_with( "<tool_output>\n" ) )
     {
@@ -209,7 +198,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
             if( pos != minPos )
             {
                 NormalScope();
-                PrintMarkdown( content.c_str() + pos, std::min( end, minPos ) - pos );
+                m_markdown.Print( content.c_str() + pos, std::min( end, minPos ) - pos );
             }
 
             pos = minPos;
@@ -292,20 +281,10 @@ void TracyLlmChat::ThinkScope()
     m_thinkOpen = ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." );
 }
 
-void TracyLlmChat::PrintMarkdown( const char* str, size_t size )
-{
-    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( ImGui::GetStyle().ItemSpacing.x, 0.0f ) );
-
-    Markdown md;
-    md_parse( str, size, m_parser, &md );
-
-    ImGui::PopStyleVar();
-}
-
 void TracyLlmChat::PrintThink( const char* str, size_t size )
 {
     ImGui::PushStyleColor( ImGuiCol_Text, ThinkColor );
-    PrintMarkdown( str, size );
+    m_markdown.Print( str, size );
     ImGui::PopStyleColor();
 }
 

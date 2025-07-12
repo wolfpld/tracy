@@ -24,7 +24,11 @@ struct Config
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
     bool saveUserScale = false;
     float userScale = 1.0f;
+#ifdef __EMSCRIPTEN__
+    bool llm = false;
+#else
     bool llm = true;
+#endif
     std::string llmAddress = "http://localhost:11434";
     std::string llmModel;
     std::string llmEmbeddingsModel;

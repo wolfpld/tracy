@@ -445,7 +445,7 @@ In the case of some programming environments, you may need to take extra steps t
 
 #### Microsoft Visual Studio
 
-If you are using MSVC, you will need to disable the *Edit And Continue* feature, as it makes the compiler non-conformant to some aspects of the C++ standard. In order to do so, open the project properties and go to and make sure *Program Database for Edit And Continue (/ZI)* is *not* selected.
+If you are using MSVC, you will need to disable the *Edit And Continue* feature, as it makes the compiler non-conformant to some aspects of the C++ standard. In order to do so, open the project properties and go to C/C++,General,Debug Information Format and make sure *Program Database for Edit And Continue (/ZI)* is *not* selected.
 
 For context, if you experience errors like \"error C2131: expression did not evaluate to a constant\", \"failure was caused by non-constant arguments or reference to a non-constant symbol\", and \"see usage of '`__LINE__Var`'\", chances are that your project has the *Edit And Continue* feature enabled.
 
@@ -889,7 +889,7 @@ In some cases marked in the manual, Tracy expects you to provide a unique pointe
     ...
     FrameMarkEnd("Audio processing");
 
-Here, we pass two string literals with identical contents to two different macros. It is entirely up to the compiler to decide if it will pool these two strings into one pointer or if there will be two instances present in the executable image[^32]. For example, on MSVC, this is controlled by option in the project properties (optimized builds enable it automatically). Note that even if string pooling is used on the compilation unit level, it is still up to the linker to implement pooling across object files.
+Here, we pass two string literals with identical contents to two different macros. It is entirely up to the compiler to decide if it will pool these two strings into one pointer or if there will be two instances present in the executable image[^32]. For example, on MSVC, this is controlled by Configuration Properties,C/C++,Code Generation,Enable String Pooling option in the project properties (optimized builds enable it automatically). Note that even if string pooling is used on the compilation unit level, it is still up to the linker to implement pooling across object files.
 
 [^32]: [@ISO:2012:III] §2.14.5.12: \"Whether all string literals are distinct (that is, are stored in nonoverlapping objects) is implementation-defined.\"
 
@@ -1607,7 +1607,7 @@ libunwind On some platforms you can define `TRACY_LIBUNWIND_BACKTRACE` to use li
 
 You must compile the profiled application with debugging symbols enabled to have correct call stack information. You can achieve that in the following way:
 
--   On MSVC, open the project properties and go to , where you should select the *Generate Debug Information* option.
+-   On MSVC, open the project properties and go to Linker,Debugging,Generate Debug Info, where you should select the *Generate Debug Information* option.
 
 -   On gcc or clang remember to specify the debugging information `-g` parameter during compilation and *do not* add the strip symbols `-s` parameter. Additionally, omitting frame pointers will severely reduce the quality of stack traces, which can be fixed by adding the `-fno-omit-frame-pointer` parameter. Link the executable with an additional option `-rdynamic` (or `--export-dynamic`, if you are passing parameters directly to the linker).
 
@@ -1629,7 +1629,7 @@ You may also be interested in symbols from external libraries, especially if you
 
 ##### Windows
 
-In MSVC you can retrieve such symbols by going to and selecting appropriate *Symbol file (.pdb) location* servers. Note that additional symbols may significantly increase application startup times.
+In MSVC you can retrieve such symbols by going to Tools,Options,Debugging,Symbols and selecting appropriate *Symbol file (.pdb) location* servers. Note that additional symbols may significantly increase application startup times.
 
 Libraries built with vcpkg typically provide PDB symbol files, even for release builds. Using vcpkg to obtain libraries has the extra benefit that everything is built using local source files, which allows Tracy to provide a source view not only of your application but also the libraries you use.
 

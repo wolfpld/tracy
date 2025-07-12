@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cp -f tracy.tex _tmp.tex
-sed -i -e 's@\\menu[,]@@g' _tmp.tex
+sed -i -e 's@\\menu\[,\]@@g' _tmp.tex
 sed -i -e 's@\\keys@@g' _tmp.tex
 sed -i -e 's@\\ctrl@Ctrl@g' _tmp.tex
 sed -i -e 's@\\shift@Shift@g' _tmp.tex

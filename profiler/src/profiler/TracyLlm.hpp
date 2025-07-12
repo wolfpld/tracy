@@ -51,7 +51,7 @@ public:
     bool m_show = false;
 
 private:
-    void Worker();
+    void WorkerThread();
 
     void UpdateModels();
     void ResetChat();

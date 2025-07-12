@@ -24,7 +24,7 @@ extern double s_time;
 
 constexpr size_t InputBufferSize = 1024;
 
-TracyLlm::TracyLlm( class Worker& worker )
+TracyLlm::TracyLlm( Worker& worker )
     : m_exit( false )
     , m_input( nullptr )
 {
@@ -51,7 +51,7 @@ TracyLlm::TracyLlm( class Worker& worker )
 
     m_busy = true;
     QueueConnect();
-    m_thread = std::thread( [this] { Worker(); } );
+    m_thread = std::thread( [this] { WorkerThread(); } );
 }
 
 TracyLlm::~TracyLlm()
@@ -560,7 +560,7 @@ void TracyLlm::Draw()
     ImGui::End();
 }
 
-void TracyLlm::Worker()
+void TracyLlm::WorkerThread()
 {
     std::unique_lock lock( m_lock );
     while( !m_exit.load( std::memory_order_acquire ) )

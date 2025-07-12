@@ -204,6 +204,15 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
 )
 
+# md4c
+
+CPMAddPackage(
+    NAME md4c
+    GITHUB_REPOSITORY mity/md4c
+    GIT_TAG release-0.5.2
+    EXCLUDE_FROM_ALL TRUE
+)
+
 if(NOT EMSCRIPTEN)
 
     # base64
@@ -283,14 +292,5 @@ if(NOT EMSCRIPTEN)
         target_link_libraries(TracyLibcurl INTERFACE libcurl_static)
         target_include_directories(TracyLibcurl INTERFACE ${libcurl_SOURCE_DIR}/include)
     endif()
-
-    # md4c
-
-    CPMAddPackage(
-        NAME md4c
-        GITHUB_REPOSITORY mity/md4c
-        GIT_TAG release-0.5.2
-        EXCLUDE_FROM_ALL TRUE
-    )
 
 endif()

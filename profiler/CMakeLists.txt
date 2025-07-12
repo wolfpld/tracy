@@ -241,10 +241,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     TracyImGui
     Threads::Threads
     nlohmann_json::nlohmann_json
+    md4c
 )
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${tidy_SOURCE_DIR}/include
 )
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${md4c_SOURCE_DIR}/src
+)
+
 if(NOT EMSCRIPTEN)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         TracyLibcurl
@@ -252,11 +257,6 @@ if(NOT EMSCRIPTEN)
         tidy-static
         TracyPugixml
         usearch
-        md4c
-    )
-
-    target_include_directories(${PROJECT_NAME} PRIVATE
-        ${md4c_SOURCE_DIR}/src
     )
 endif()
 

@@ -1,5 +1,5 @@
-#ifndef __TRACYLLMMARKDOWN_HPP__
-#define __TRACYLLMMARKDOWN_HPP__
+#ifndef __TRACYMARKDOWN_HPP__
+#define __TRACYMARKDOWN_HPP__
 
 #include <md4c.h>
 #include <string>

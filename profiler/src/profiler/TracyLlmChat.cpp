@@ -7,7 +7,7 @@
 
 #include "TracyImGui.hpp"
 #include "TracyLlmChat.hpp"
-#include "TracyLlmMarkdown.hpp"
+#include "TracyMarkdown.hpp"
 #include "TracyMouse.hpp"
 #include "../Fonts.hpp"
 

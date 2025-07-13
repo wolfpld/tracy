@@ -672,12 +672,14 @@ void TracyLlm::QueueConnect()
     m_cv.notify_all();
 }
 
-void TracyLlm::QueueSendMessage()
+bool TracyLlm::QueueSendMessage()
 {
+    if( !m_api->IsConnected() || m_modelIdx < 0 ) return false;
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::SendMessage
     } ) );
     m_cv.notify_all();
+    return true;
 }
 
 void TracyLlm::AddMessage( std::string&& str, const char* role )

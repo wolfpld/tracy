@@ -47,6 +47,8 @@ public:
 
     void Draw();
     void AddAttachment( std::string&& str, const char* role );
+    void AddMessage( std::string&& str, const char* role );
+    bool QueueSendMessage();
 
     bool m_show = false;
 
@@ -57,9 +59,7 @@ private:
     void ResetChat();
 
     void QueueConnect();
-    void QueueSendMessage();
 
-    void AddMessage( std::string&& str, const char* role );
     void AddMessageBlocking( std::string&& str, const char* role, std::unique_lock<std::mutex>& lock );
 
     void ManageContext( std::unique_lock<std::mutex>& lock );

@@ -27,6 +27,74 @@ void View::DrawCallstackWindow()
     if( !show ) m_callstackInfoWindow = 0;
 }
 
+static nlohmann::json GetCallstackJson( Worker& worker, const VarArray<CallstackFrameId>& cs )
+{
+    nlohmann::json json = {
+        { "type", "callstack" },
+        { "frames", nlohmann::json::array() }
+    };
+    auto& frames = json["frames"];
+
+    int fidx = 0;
+    for( auto& entry : cs )
+    {
+        auto frameData = worker.GetCallstackFrame( entry );
+        if( !frameData )
+        {
+            frames.push_back( { "pointer", worker.GetCanonicalPointer( entry ) } );
+        }
+        else
+        {
+            const auto fsz = frameData->size;
+            for( uint8_t f=0; f<fsz; f++ )
+            {
+                const auto& frame = frameData->data[f];
+                auto txt = worker.GetString( frame.name );
+
+                if( fidx == 0 && f != fsz-1 )
+                {
+                    auto test = tracy::s_tracyStackFrames;
+                    bool match = false;
+                    do
+                    {
+                        if( strcmp( txt, *test ) == 0 )
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+                    while( *++test );
+                    if( match ) continue;
+                }
+
+                frames.push_back( {
+                    { "function", txt },
+                    { "source", worker.GetString( frame.file ) },
+                } );
+                auto& frameJson = frames.back();
+
+                if( f == fsz-1 )
+                {
+                    frameJson["frame"] = fidx++;
+                }
+                else
+                {
+                    frameJson["inline"] = true;
+                }
+                if( frame.line != 0 )
+                {
+                    frameJson["line"] = frame.line;
+                }
+                if( frameData->imageName.Active() )
+                {
+                    frameJson["executable"] = worker.GetString( frameData->imageName );
+                }
+            }
+        }
+    }
+    return json;
+}
+
 void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
 {
     auto& cs = m_worker.GetCallstack( callstack );
@@ -104,71 +172,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_ROBOT ) )
         {
-            nlohmann::json json = {
-                { "type", "callstack" },
-                { "frames", nlohmann::json::array() }
-            };
-            auto& frames = json["frames"];
-
-            int fidx = 0;
-            for( auto& entry : cs )
-            {
-                auto frameData = m_worker.GetCallstackFrame( entry );
-                if( !frameData )
-                {
-                    frames.push_back( { "pointer", m_worker.GetCanonicalPointer( entry ) } );
-                }
-                else
-                {
-                    const auto fsz = frameData->size;
-                    for( uint8_t f=0; f<fsz; f++ )
-                    {
-                        const auto& frame = frameData->data[f];
-                        auto txt = m_worker.GetString( frame.name );
-
-                        if( fidx == 0 && f != fsz-1 )
-                        {
-                            auto test = tracy::s_tracyStackFrames;
-                            bool match = false;
-                            do
-                            {
-                                if( strcmp( txt, *test ) == 0 )
-                                {
-                                    match = true;
-                                    break;
-                                }
-                            }
-                            while( *++test );
-                            if( match ) continue;
-                        }
-
-                        frames.push_back( {
-                            { "function", txt },
-                            { "source", m_worker.GetString( frame.file ) },
-                        } );
-                        auto& frameJson = frames.back();
-
-                        if( f == fsz-1 )
-                        {
-                            frameJson["frame"] = fidx++;
-                        }
-                        else
-                        {
-                            frameJson["inline"] = true;
-                        }
-                        if( frame.line != 0 )
-                        {
-                            frameJson["line"] = frame.line;
-                        }
-                        if( frameData->imageName.Active() )
-                        {
-                            frameJson["executable"] = m_worker.GetString( frameData->imageName );
-                        }
-                    }
-                }
-            }
-
-            AddLlmAttachment( json );
+            AddLlmAttachment( GetCallstackJson( m_worker, cs ) );
         }
     }
     ImGui::SameLine();

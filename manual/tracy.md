@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-07-12 <https://github.com/wolfpld/tracy>
+2025-07-13 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -3581,6 +3581,8 @@ If the displayed call stack is a sampled call stack (chapter [3.16.5](#sampling
 
 Clicking on the *(Clipboard icon) Copy to clipboard* button will copy call stack to the clipboard.
 
+Clicking on the *(Robot icon) Tracy Assist* button will attach the call stack to the automated assistant chat window (see section [5.25](#tracyassist)). The assistant will then be able to reference the call stack to answer your questions. Alternatively, you can click on the button with the right mouse button to display a list of predefined questions about the call stack for you to choose from.
+
 ### Reading call stacks {#readingcallstacks}
 
 You need to take special care when reading call stacks. Contrary to their name, call stacks do not show *function call stacks*, but rather *function return stacks*. This might not be very clear at first, but this is how programs do work. Consider the following source code:
@@ -3798,7 +3800,7 @@ Statistical data about all processes running on the system during the capture is
 
 Each running program has an assigned process identifier (PID), which is displayed in the first column. The profiler will also display a list of thread identifiers (TIDs) if a program entry is expanded.
 
-The *running time* column shows how much processor time was used by a process or thread. The percentage may be over 100%, as it is scaled to trace length, and multiple threads belonging to a single program may be executing simultaneously. The *running regions* column displays how many times a given entry was in the *running* state, and the *CPU migrations* shows how many times an entry was moved from one CPU core to another when the system scheduler suspended an entry.
+The *running time* column shows how much processor time was used by a process or thread. The percentage may be over 100%, as it is scaled to trace length, and multiple threads belonging to a single program may be executing simultaneously. The *slices* column displays how many times a given entry was in the *running* state, and the *core jumps* shows how many times an entry was moved from one CPU core to another when the system scheduler suspended an entry.
 
 The profiled program is highlighted using green color. Furthermore, the yellow highlight indicates threads known to the profiler (that is, which sent events due to instrumentation).
 

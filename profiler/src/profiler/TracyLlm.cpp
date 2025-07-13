@@ -427,6 +427,7 @@ void TracyLlm::Draw()
         for( auto it = m_chat.begin(); it != m_chat.end(); ++it )
         {
             const auto& line = *it;
+            if( !line.contains( "role" ) ) break;
             const auto& roleStr = line["role"].get_ref<const std::string&>();
             if( roleStr == "system" ) continue;
             const auto& contentNode = line["content"];

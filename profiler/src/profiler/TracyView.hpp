@@ -169,6 +169,7 @@ public:
     bool IsBackgroundDone() const { return m_worker.IsBackgroundDone(); }
 
     void AddLlmAttachment( const nlohmann::json& json );
+    void AddLlmQuery( const char* query );
 
     bool m_showRanges = false;
     Range m_statRange;

@@ -1476,4 +1476,14 @@ void View::AddLlmAttachment( const nlohmann::json& json )
 #endif
 }
 
+void View::AddLlmQuery( const char* query )
+{
+#ifndef __EMSCRIPTEN__
+    std::string str( query );
+    m_llm.AddMessage( std::move( str ), "user" );
+    m_llm.m_show = true;
+    m_llm.QueueSendMessage();
+#endif
+}
+
 }

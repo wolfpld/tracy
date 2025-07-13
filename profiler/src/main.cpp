@@ -167,8 +167,6 @@ static void SetupDPIScale()
     LoadFonts( scale );
 
 #ifdef __APPLE__
-    // No need to upscale the style on macOS, but we need to downscale the fonts.
-    ImFontCfg::RasterizerDensity = dpiScale;
     scale = 1.0f;
 #endif
 

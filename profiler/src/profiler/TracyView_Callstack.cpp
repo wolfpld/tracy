@@ -5,6 +5,7 @@
 #include "../public/common/TracyStackFrames.hpp"
 #include "TracyConfig.hpp"
 #include "TracyImGui.hpp"
+#include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
@@ -173,6 +174,26 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         if( ImGui::SmallButton( ICON_FA_ROBOT ) )
         {
             AddLlmAttachment( GetCallstackJson( m_worker, cs ) );
+        }
+        if( ImGui::IsItemHovered() && IsMouseClicked( ImGuiMouseButton_Right ) )
+        {
+            ImGui::OpenPopup( "##callstackllm" );
+        }
+        if( ImGui::BeginPopup( "##callstackllm" ) )
+        {
+            if( ImGui::Selectable( "What is program doing at this moment?" ) )
+            {
+                AddLlmAttachment( GetCallstackJson( m_worker, cs ) );
+                AddLlmQuery( "What is program doing at this moment?" );
+                ImGui::CloseCurrentPopup();
+            }
+            if( ImGui::Selectable( "Walk me through the details of this callstack, step by step, explaining the code." ) )
+            {
+                AddLlmAttachment( GetCallstackJson( m_worker, cs ) );
+                AddLlmQuery( "Walk me through the details of this callstack, step by step, explaining the code." );
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
     }
     ImGui::SameLine();

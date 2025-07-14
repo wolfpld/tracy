@@ -6048,7 +6048,7 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
     assert( ctx->threadData.contains( ev.thread ) );
     auto& timeline = ctx->threadData.at( ev.thread ).timeline;
     assert( timeline.size() );
-    ssize_t i = timeline.size() - 1;
+    uint64_t i = timeline.size() - 1;
     for( ; i >= 0; i-- )
     {
         if( timeline[i]->query_id == ev.queryId )

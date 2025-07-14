@@ -1445,6 +1445,7 @@ Profiler::Profiler()
     , m_shutdown( false )
     , m_shutdownManual( false )
     , m_shutdownFinished( false )
+    , m_isActive( true )
     , m_sock( nullptr )
     , m_broadcast( nullptr )
     , m_noExit( false )
@@ -2205,6 +2206,11 @@ void Profiler::Worker()
                 return;
             }
         }
+        else
+        {
+            m_shutdownFinished.store( true, std::memory_order_relaxed );
+            return;
+        }
     }
 }
 
@@ -2227,7 +2233,7 @@ void Profiler::CompressWorker()
             bool lockHeld = true;
             while( !m_fiLock.try_lock() )
             {
-                if( m_shutdownManual.load( std::memory_order_relaxed ) )
+                if( m_shutdownManual.load( std::memory_order_relaxed ) || m_shutdown.load( std::memory_order_relaxed ) )
                 {
                     lockHeld = false;
                     break;
@@ -4980,6 +4986,16 @@ TRACY_API int32_t ___tracy_profiler_started( void )
     return static_cast<int32_t>( tracy::s_isProfilerStarted.load( std::memory_order_seq_cst ) );
 }
 #  endif
+
+TRACY_API void ___tracy_suspend( void ) {
+    tracy::GetProfiler().Suspend();
+}
+TRACY_API void ___tracy_resume( void ) {
+    tracy::GetProfiler().Resume();
+}
+TRACY_API int32_t ___tracy_is_active( void ) {
+    return static_cast<int32_t>( tracy::GetProfiler().IsActive() );
+}
 
 #ifdef __cplusplus
 }

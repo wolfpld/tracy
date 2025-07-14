@@ -126,6 +126,10 @@
 #define TracyFiberEnterHint(x,y)
 #define TracyFiberLeave
 
+#define TracySuspend
+#define TracyResume
+#define TracyIsActive
+
 #else
 
 #include <string.h>
@@ -248,6 +252,10 @@
 #  define TracyFiberEnterHint( fiber, groupHint ) tracy::Profiler::EnterFiber( fiber, groupHint )
 #  define TracyFiberLeave tracy::Profiler::LeaveFiber()
 #endif
+
+#define TracySuspend tracy::GetProfiler().Suspend()
+#define TracyResume tracy::GetProfiler().Resume()
+#define TracyIsActive tracy::GetProfiler().IsActive()
 
 #endif
 

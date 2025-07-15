@@ -12,7 +12,7 @@ build_all:
     just build import
 
 [unix]
-find_artifacts:
+copy_artifacts:
     mkdir -p bin
     cp profiler/build/tracy-profiler bin
     cp update/build/tracy-update bin
@@ -22,7 +22,7 @@ find_artifacts:
     cp import/build/tracy-import-fuchsia bin
 
 [windows]
-find_artifacts:
+copy_artifacts:
     mkdir -p bin
     copy profiler\build\Release\tracy-profiler.exe bin
     copy update\build\Release\tracy-update.exe bin

@@ -1158,10 +1158,9 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
     const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
 
-    if( sym == nullptr )
     {
         ImGui::PushFont( m_bigFont );
-        TextCenteredWindow( ICON_FA_PERSON_DIGGING "Waiting for symbol resolution" );
+        TextCenteredWindow( ICON_FA_PERSON_DIGGING "Waiting for symbols resolution" );
         ImGui::PopFont();
         return;
     }

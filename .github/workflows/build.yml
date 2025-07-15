@@ -29,6 +29,15 @@ jobs:
       - uses: extractions/setup-just@v2
       - if: startsWith(matrix.os, 'windows')
         run: pip install meson ninja
+      - name: Cache CMake builds
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cmake
+            build
+          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
       - if: startsWith(matrix.os, 'macos')
         name: Install macos dependencies
         run: brew install pkg-config glfw meson
@@ -37,6 +46,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev
       - name: Trust git repo
         run: git config --global --add safe.directory '*'
+      - if: ${{ !startsWith(matrix.os, 'windows') }}
+        name: Library
+        run: just library
       - name: Profiler GUI
         run: just build profiler
       - name: Update utility
@@ -47,9 +59,9 @@ jobs:
         run: just build csvexport
       - name: Import utilities
         run: just build import
-      - if: ${{ !startsWith(matrix.os, 'windows') }}
-        name: Library
-        run: just library
+      - if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        name: Test compilation with different flags
+        run: just compile_test
       - name: Find Artifacts
         id: find_artifacts
         run: just copy_artifacts

@@ -35,3 +35,22 @@ library:
     meson setup -Dprefix={{justfile_directory()}}/bin/lib build
     meson compile -C build
     meson install -C build
+
+compile_test:
+    # test compilation with different flags
+    # we clean the build folder to reset cached variables between runs
+    cmake -B test/build -S test -DCMAKE_BUILD_TYPE=Release
+    cmake --build test/build --parallel
+    rm -rf test/build
+    # same with TRACY_ON_DEMAND
+    cmake -B test/build -S test -DCMAKE_BUILD_TYPE=Release -DTRACY_ON_DEMAND=ON .
+    cmake --build test/build --parallel
+    rm -rf test/build
+    # same with TRACY_DELAYED_INIT TRACY_MANUAL_LIFETIME
+    cmake -B test/build -S test -DCMAKE_BUILD_TYPE=Release -DTRACY_DELAYED_INIT=ON -DTRACY_MANUAL_LIFETIME=ON .
+    cmake --build test/build --parallel
+    rm -rf test/build
+    # same with TRACY_DEMANGLE
+    cmake -B test/build -S test -DCMAKE_BUILD_TYPE=Release -DTRACY_DEMANGLE=ON .
+    cmake --build test/build --parallel
+    rm -rf test/build

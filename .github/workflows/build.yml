@@ -2,9 +2,9 @@ name: build
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
@@ -13,71 +13,47 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ windows-latest, macos-15 ]
+        os: [windows-latest, macos-15, ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     steps:
-    - uses: actions/checkout@v4
-    - if: startsWith(matrix.os, 'windows')
-      uses: microsoft/setup-msbuild@v2
-    - if: startsWith(matrix.os, 'windows')
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - if: startsWith(matrix.os, 'windows')
-      run: pip install meson ninja
-    - if: startsWith(matrix.os, 'macos')
-      name: Install macos dependencies
-      run: brew install pkg-config glfw meson
-    - name: Trust git repo
-      run: git config --global --add safe.directory '*'
-    - name: Profiler GUI
-      run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build profiler/build --parallel --config Release
-    - name: Update utility
-      run: |
-        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release
-        cmake --build update/build --parallel --config Release
-    - name: Capture utility
-      run: |
-        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release
-        cmake --build capture/build --parallel --config Release
-    - name: Csvexport utility
-      run: |
-        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
-        cmake --build csvexport/build --parallel --config Release
-    - name: Import utilities
-      run: |
-        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release
-        cmake --build import/build --parallel --config Release
-    - if: ${{ !startsWith(matrix.os, 'windows') }}
-      name: Library
-      run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
-    - if: ${{ !startsWith(matrix.os, 'windows') }}
-      name: Find Artifacts
-      id: find_artifacts
-      run: |
-        mkdir -p bin
-        cp profiler/build/tracy-profiler bin
-        cp update/build/tracy-update bin
-        cp capture/build/tracy-capture bin
-        cp csvexport/build/tracy-csvexport bin
-        cp import/build/tracy-import-chrome bin
-        cp import/build/tracy-import-fuchsia bin
-    - if: startsWith(matrix.os, 'windows')
-      name: Find Artifacts
-      id: find_artifacts_windows
-      run: |
-        mkdir bin
-        copy profiler\build\Release\tracy-profiler.exe bin
-        copy update\build\Release\tracy-update.exe bin
-        copy capture\build\Release\tracy-capture.exe bin
-        copy csvexport\build\Release\tracy-csvexport.exe bin
-        copy import\build\Release\tracy-import-chrome.exe bin
-        copy import\build\Release\tracy-import-fuchsia.exe bin
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.os }}
-        path: bin
+      - uses: actions/checkout@v4
+      - if: startsWith(matrix.os, 'windows')
+        uses: microsoft/setup-msbuild@v2
+      - if: startsWith(matrix.os, 'windows')
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - uses: extractions/setup-just@v2
+      - if: startsWith(matrix.os, 'windows')
+        run: pip install meson ninja
+      - if: startsWith(matrix.os, 'macos')
+        name: Install macos dependencies
+        run: brew install pkg-config glfw meson
+      - if: startsWith(matrix.os, 'ubuntu')
+        name: Install linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build
+      - name: Trust git repo
+        run: git config --global --add safe.directory '*'
+      - name: Profiler GUI
+        run: just build profiler
+      - name: Update utility
+        run: just build update
+      - name: Capture utility
+        run: just build capture
+      - name: Csvexport utility
+        run: just build csvexport
+      - name: Import utilities
+        run: just build import
+      - if: ${{ !startsWith(matrix.os, 'windows') }}
+        name: Library
+        run: just library
+      - name: Find Artifacts
+        id: find_artifacts
+        run: |
+          just artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}
+          path: bin

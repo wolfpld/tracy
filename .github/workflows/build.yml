@@ -34,7 +34,7 @@ jobs:
         run: brew install pkg-config glfw meson
       - if: startsWith(matrix.os, 'ubuntu')
         name: Install linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype6-dev libdebuginfod-dev libwayland-dev libdbus-1-dev libxkbcommon-dev libglvnd-dev meson cmake git wayland-protocols nodejs
       - name: Trust git repo
         run: git config --global --add safe.directory '*'
       - name: Profiler GUI

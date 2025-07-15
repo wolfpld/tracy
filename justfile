@@ -24,7 +24,7 @@ copy_artifacts:
 [windows]
 copy_artifacts:
     mkdir -p bin
-    copy profiler\build\Release\tracy-profiler.exe bin
+    cp profiler\build\Release\tracy-profiler.exe bin
     cp update\build\Release\tracy-update.exe bin
     cp capture\build\Release\tracy-capture.exe bin
     cp csvexport\build\Release\tracy-csvexport.exe bin

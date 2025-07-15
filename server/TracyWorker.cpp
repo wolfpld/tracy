@@ -27,7 +27,6 @@
 #include <zdict.h>
 
 
-#include "../public/common/TracyCallstack.hpp"
 #include "../public/common/TracyFastVector.hpp"
 #include "../public/common/TracyProtocol.hpp"
 #include "../public/common/TracyStackFrames.hpp"
@@ -287,10 +286,13 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
+    , m_symbolAddressWorkerQueue( 8 * 1024)
+    , m_symAddrCallstackEntryDataQueu(8 * 1024)
+
 {
-#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
-    InitCallstack();
-#endif
+
+    m_symbolWorker = std::thread([this] { SetThreadName( "Tracy Server Symbol Worker"); RunSymbolWorker();});
+
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -312,6 +314,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const Symb
 
     m_thread = std::thread( [this] { SetThreadName( "Tracy Worker" ); Exec(); } );
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
+
 }
 
 Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig )
@@ -331,10 +334,10 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_symbolConfig( symbolResConfig )
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
+    , m_symbolAddressWorkerQueue( 8 * 1024)
+    , m_symAddrCallstackEntryDataQueu(8 * 1024)
 {
-#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
-    InitCallstack();
-#endif
+
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -578,10 +581,10 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
     , m_memoryLimit( -1 )
     , m_allowStringModification( allowStringModification )
     , m_symbolConfig( symbolResConfig )
+    , m_symbolAddressWorkerQueue( 8 * 1024)
+    , m_symAddrCallstackEntryDataQueu(8 * 1024)
 {
-#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
-    InitCallstack();
-#endif
+
     auto loadStart = std::chrono::high_resolution_clock::now();
 
     int fileVer = 0;
@@ -1981,6 +1984,7 @@ Worker::~Worker()
 #endif
     Shutdown();
 
+    if( m_symbolWorker.joinable() ) m_symbolWorker.join(); 
     if( m_threadNet.joinable() ) m_threadNet.join();
     if( m_thread.joinable() ) m_thread.join();
     if( m_threadBackground.joinable() ) m_threadBackground.join();
@@ -2929,6 +2933,8 @@ void Worker::Exec()
                 m_netWriteCnt++;
                 m_netWriteCv.notify_one();
             }
+
+            HandleSymbolWorkerJob();
 
             if( m_serverQuerySpaceLeft > 0 && !m_serverQueryQueuePrio.empty() )
             {
@@ -4074,42 +4080,12 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySy
     if( m_symbolConfig.m_attemptResolutionByWorker )
     {
         // TODO: offload to a worker thread
-        CallstackEntryData outCallStack = DecodeCallstackPtr( symbolAddress, &status );
-        if( ( status & DecodeCallStackPtrStatusFlags::ErrorMask ) == DecodeCallStackPtrStatusFlags::Success )
-        {
-            const uint32_t imageNameIdx = StoreString( outCallStack.imageName , strlen( outCallStack.imageName ) ).idx;
-            assert(outCallStack.size <= 255);
-            const QueueCallstackFrameSize queueCallstackFrameSize =
-            {
-                .ptr = symbolAddress,
-                .size = outCallStack.size,
-            };
-
-            m_pendingCallstackFrames++;
-            ProcessCallstackFrameSize( queueCallstackFrameSize, imageNameIdx );
-
-            for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
-            {
-                const auto& frame = outCallStack.data[i];
-                ProcessCallstackFrame( frame.line, frame.symAddr, frame.symLen,
-                    StoreString( frame.name, strlen( frame.name ) ).idx, StoreString( frame.file, strlen( frame.file ) ).idx, querySymbols );
-
-                // We copied it, now free the content
-                tracy_free_fast( (void*)frame.name );
-                tracy_free_fast( (void*)frame.file );
-            }
-
-            assert( m_pendingCallstackSubframes == 0 );
-        }
-      
-         if( status & DecodeCallStackPtrStatusFlags::SymbolMissing )
-         {
-            tracy_free_fast( (void*)outCallStack.data[0].file );
-            tracy_free_fast( (void*)outCallStack.data[0].name );
-         }
-
+        m_symbolAddressWorkerQueue.emplace(symbolAddress);
+        //auto entry = DecodeCallstackPtr( symbolAddress );
+        //HandleCallStackEntryData(symbolAddress, entry);
     }
 #endif
+#if 0
     if( querySymbols )
     {
 
@@ -4127,6 +4103,43 @@ void Worker::TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySy
             Query( ServerQueryCallstackFrame, symbolAddress );
         }
     }
+#endif
+}
+
+void Worker::HandleCallStackEntryData( uint64_t symaddr, const CallstackEntryData& entry, DecodeCallStackPtrStatus decodeCallStackPtrStatus ,bool querySymbols )
+{
+      if( ( decodeCallStackPtrStatus & DecodeCallStackPtrStatusFlags::ErrorMask ) == DecodeCallStackPtrStatusFlags::Success )
+        {
+            const uint32_t imageNameIdx = StoreString( entry.imageName , strlen( entry.imageName ) ).idx;
+            assert(entry.size <= 255);
+            const QueueCallstackFrameSize queueCallstackFrameSize =
+            {
+                .ptr = symaddr,
+                .size = entry.size,
+            };
+
+            m_pendingCallstackFrames++;
+            ProcessCallstackFrameSize( queueCallstackFrameSize, imageNameIdx );
+
+            for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
+            {
+                const auto& frame = entry.data[i];
+                ProcessCallstackFrame( frame.line, frame.symAddr, frame.symLen,
+                    StoreString( frame.name, strlen( frame.name ) ).idx, StoreString( frame.file, strlen( frame.file ) ).idx, querySymbols );
+
+                // We copied it, now free the content
+                tracy_free_fast( (void*)frame.name );
+                tracy_free_fast( (void*)frame.file );
+            }
+
+            assert( m_pendingCallstackSubframes == 0 );
+        }
+      
+         if( decodeCallStackPtrStatus & DecodeCallStackPtrStatusFlags::SymbolMissing )
+         {
+            tracy_free_fast( (void*)entry.data[0].file );
+            tracy_free_fast( (void*)entry.data[0].name );
+         }
 }
 
 void Worker::AddCallstackPayload( const char* _data, size_t _sz )
@@ -5247,7 +5260,7 @@ void Worker::ResolveSymbolLocally()
         CallstackFrameData& toResolveData = *it.second;
         if(toResolveData.data[0].name.Idx() == unresolvedStrIdx.Idx())
         {            
-            uint64_t symbolAddress = GetCanonicalPointer( it.first );
+            const uint64_t symbolAddress = GetCanonicalPointer( it.first );
             DecodeCallStackPtrStatus status;
             CallstackEntryData outCallStack = DecodeCallstackPtr( symbolAddress, &status );
             if ( ( status & DecodeCallStackPtrStatusFlags::ErrorMask ) == DecodeCallStackPtrStatusFlags::Success )
@@ -8995,4 +9008,74 @@ void Worker::DispatchImageEntry( const QueueImageEntry& ev )
 	FreePendingData();
 }
 
+void Worker::RunSymbolWorker()
+{
+#if defined( TRACY_HAS_CALLSTACK ) && !defined( TRACY_SELF_PROFILE ) // Self profiling will use the old path and query symbols
+	InitCallstack();
+#endif
+
+	while ( !m_shutdown )
+	{
+		auto si = m_symbolAddressWorkerQueue.front();
+
+		if ( si )
+		{
+			DecodeCallStackPtrStatus status;
+			CallstackEntryData callstackEntryData = DecodeCallstackPtr( *si, &status );
+			m_symAddrCallstackEntryDataQueu.emplace( *si, callstackEntryData, status );
+			m_symbolAddressWorkerQueue.pop();
+		}
+		else
+		{
+			std::this_thread::sleep_for( std::chrono::milliseconds(20) );
+		}
+
+	}
+}
+
+ void Worker::HandleSymbolWorkerJob()
+  {
+    // we are the worker thread in Exec so we have acquire the mutex before 
+
+      if (m_symAddrCallstackEntryDataQueu.empty())
+          return;
+      
+      //constexpr size_t MaxSymbolPerTick = 10;
+      //size_t count = 0;
+
+      // or proceed less than max number of symbol per tick
+      while ( !m_symAddrCallstackEntryDataQueu.empty() )
+      {
+          auto entData = m_symAddrCallstackEntryDataQueu.front();
+            
+          if (entData)
+          {
+			  HandleCallStackEntryData( entData->symadd, entData->callstackEntryData, entData->decodeCallStackPtrStatus, true );
+			  if ( entData->decodeCallStackPtrStatus & DecodeCallStackPtrStatusFlags::ModuleMissing )
+			  {
+				  // TODO: actually only query module info, and then try to resolve again locally.
+			      // Or we could just rely on the user triggering a new symbol resolution manually.
+				  m_pendingCallstackFrames++;
+				  Query(ServerQueryCallstackFrame, entData->symadd);
+			  }
+			  else if ( entData->decodeCallStackPtrStatus & DecodeCallStackPtrStatusFlags::SymbolMissing )
+			  {
+				  // Fallback to asking the client for the symbol since we couldn't find it.
+				  m_pendingCallstackFrames++;
+				  Query(ServerQueryCallstackFrame,entData->symadd );
+			  }
+              m_symAddrCallstackEntryDataQueu.pop();
+             // count++;
+          }
+          else
+          {
+              // m_symAddrCallstackEntryDataQueu.front() return nullptr but not empty ??
+              break;
+          }
+      
+
+      }    
+
+  }
+  
 }

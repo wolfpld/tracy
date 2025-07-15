@@ -4610,6 +4610,54 @@ There are no ideal LLM providers, but here are some options:
 \item \emph{Ollama} (\url{https://ollama.com/}) -- It lacks some features required by Tracy. Very limited configuration is only available via the system service's environment variables. Some practices are questionable. It will not use full capabilities of the available hardware. Not recommended.
 \end{itemize}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Example llama-swap configuration file}
+Here's an example configuration for llama-swap that will provide two swappable chat models, and an vector embeddings model that will not be unloaded:
+
+\begin{lstlisting}
+macros:
+  "llama": >
+    /usr/bin/llama-server
+    --port ${PORT}
+    --flash-attn
+    -ngl 999
+models:
+  "gemma3:12b":
+    cmd: |
+      ${llama}
+      --model /home/user/models/gemma-3-12B-it-QAT-Q4_0.gguf
+      --ctx-size 65536
+    ttl: 300
+  "qwen3:14b":
+    cmd: |
+      ${llama}
+      --model /home/user/models/Qwen3-14B-Q4_K_M.gguf
+      --ctx-size 32768
+      --cache-type-k q8_0
+      --cache-type-v q8_0
+    ttl: 300
+  "embed-nomic-text-v1.5":
+    cmd: |
+      ${llama}
+      --model /home/user/models/nomic-embed-text-v1.5.Q8_0.gguf
+      -c 8192
+      -b 8192
+      -ub 4096
+      -np 2
+      --embeddings
+    ttl: 300
+groups:
+  embeddings:
+    swap: false
+    exclusive: false
+    members:
+      - embed-nomic-text-v1.5
+\end{lstlisting}
+\end{bclogo}
+
 \subsubsection{Model selection}
 
 Once you have installed the service provider, you will need to download the model files for the chat functionality. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser.

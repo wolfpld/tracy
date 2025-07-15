@@ -25,11 +25,11 @@ copy_artifacts:
 copy_artifacts:
     mkdir -p bin
     copy profiler\build\Release\tracy-profiler.exe bin
-    copy update\build\Release\tracy-update.exe bin
-    copy capture\build\Release\tracy-capture.exe bin
-    copy csvexport\build\Release\tracy-csvexport.exe bin
-    copy import\build\Release\tracy-import-chrome.exe bin
-    copy import\build\Release\tracy-import-fuchsia.exe bin
+    cp update\build\Release\tracy-update.exe bin
+    cp capture\build\Release\tracy-capture.exe bin
+    cp csvexport\build\Release\tracy-csvexport.exe bin
+    cp import\build\Release\tracy-import-chrome.exe bin
+    cp import\build\Release\tracy-import-fuchsia.exe bin
 
 library:
     meson setup -Dprefix={{justfile_directory()}}/bin/lib build

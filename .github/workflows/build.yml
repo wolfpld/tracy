@@ -14,81 +14,27 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-15, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - if: startsWith(matrix.os, 'windows')
-        uses: microsoft/setup-msbuild@v2
-      - if: startsWith(matrix.os, 'windows')
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-      - uses: extractions/setup-just@v2
-      - if: startsWith(matrix.os, 'windows')
-        run: pip install meson ninja
-      - name: Cache CPM packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ github.workspace }}/cpm-cache
-            ~/.cache/CPM
-          key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cpm-
-      - name: Set CPM cache
-        run: echo "CPM_SOURCE_CACHE=${{ github.workspace }}/cpm-cache" >> $GITHUB_ENV
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-ccache-
-      - name: Cache CMake builds
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cmake
-            build
-          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
-      - if: startsWith(matrix.os, 'macos')
-        name: Install macos dependencies
-        run: brew install pkg-config glfw meson
-      - if: startsWith(matrix.os, 'ubuntu')
-        name: Install linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
-      - name: Trust git repo
-        run: git config --global --add safe.directory '*'
-      - if: ${{ !startsWith(matrix.os, 'windows') }}
-        name: Library
-        run: just library
-      - name: Profiler GUI
-        run: just build profiler
-      - name: Update utility
-        run: just build update
-      - name: Capture utility
-        run: just build capture
-      - name: Csvexport utility
-        run: just build csvexport
-      - name: Import utilities
-        run: just build import
-      - if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        name: Test compilation with different flags
-        run: just compile_tests
-      - name: Find Artifacts
-        id: find_artifacts
-        run: just copy_artifacts
-      - if: ${{ !startsWith(matrix.os, 'windows') }}
-        name: Symlink
-        run: just symlink
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}
-          path: bin
+        include:
+          - runningSystem: windows-latest
+            testCompilation: false
+            webBuild: false
+          - runningSystem: ubuntu-latest
+            testCompilation: true
+            webBuild: false
+          - runningSystem: ubuntu-latest
+            testCompilation: false
+            webBuild: true
+          - runningSystem: macos-15
+            testCompilation: false
+            webBuild: false
+    uses: ./.github/workflows/build_base.yml
+    with:
+      runningSystem: ${{ matrix.runningSystem }}
+      testCompilation: ${{ matrix.testCompilation }}
+      webBuild: false
   build_web:
     uses: ./.github/workflows/emscripten.yml
     with:
       deploy: false
+  build_linux_arch:
+    uses: ./.github/workflows/linux.yml

@@ -44,6 +44,12 @@ copy_artifacts:
     cp import/build/Release/tracy-import-chrome.exe bin
     cp import/build/Release/tracy-import-fuchsia.exe bin
 
+# Strip binaries artifacts
+[group('general')]
+[linux]
+strip_binary:
+    strip bin/tracy-*
+
 # Build Tracy as library with meson
 [group('general')]
 library:

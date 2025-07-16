@@ -24,29 +24,11 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
-      - name: Setup emscripten
-        uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: 4.0.10
-      - uses: extractions/setup-just@v2
-      - name: Trust git repo
-        run: git config --global --add safe.directory '*'
-      - uses: actions/checkout@v4
-      - name: Profiler GUI
-        run: just web_build ${{ github.sha }}
-      - name: Compress artifacts
-        run: just web_compress_artifacts
-      - name: Find Artifacts
-        id: find_artifacts
-        run: just web_copy_artifacts
-      - uses: actions/upload-artifact@v4
-        with:
-          name: emscripten
-          path: bin
+    uses: ./.github/workflows/build_base.yml
+    with:
+      runningSystem: ubuntu-latest
+      testCompilation: false
+      webBuild: true
   deploy:
     runs-on: ubuntu-latest
     needs: build

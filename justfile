@@ -1,4 +1,4 @@
-cmake_build_args := if os() == "macos" { "-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON" } else { "-DCMAKE_BUILD_TYPE=Release"}
+cmake_build_args := "-DCMAKE_BUILD_TYPE=Release"
 
 build project:
     cmake -B {{project}}/build -S {{project}} {{cmake_build_args}}

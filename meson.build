@@ -177,7 +177,7 @@ common_includes = [
     'public/common/TracySocket.hpp',
     'public/common/TracyStackFrames.hpp',
     'public/common/TracySystem.hpp',
-    'public/common/TracyUwp.hpp',
+    'public/common/TracyWinFamily.hpp',
     'public/common/TracyYield.hpp'
 ]
 

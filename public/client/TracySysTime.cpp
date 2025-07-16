@@ -27,13 +27,24 @@ static inline uint64_t ConvertTime( const FILETIME& t )
 
 void SysTime::ReadTimes()
 {
-    FILETIME idleTime;
     FILETIME kernelTime;
     FILETIME userTime;
+
+#    if defined TRACY_GDK
+    FILETIME creationTime;
+    FILETIME exitTime;
+
+    GetProcessTimes( GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime );
+
+    idle = 0;
+#    else
+    FILETIME idleTime;
 
     GetSystemTimes( &idleTime, &kernelTime, &userTime );
 
     idle = ConvertTime( idleTime );
+#    endif
+
     const auto kernel = ConvertTime( kernelTime );
     const auto user = ConvertTime( userTime );
     used = kernel + user;

@@ -1,5 +1,5 @@
-#ifndef __TRACYUWP_HPP__
-#define __TRACYUWP_HPP__
+#ifndef __TRACYWINFAMILY_HPP__
+#define __TRACYWINFAMILY_HPP__
 
 #ifdef _WIN32
 #  include <winapifamily.h>

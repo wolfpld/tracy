@@ -75,7 +75,7 @@ jobs:
         name: Test compilation with different flags
         run: just compile_tests
       - name: Find Artifacts
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         id: find_artifacts
         run: just copy_artifacts
       - if: ${{ startsWith(inputs.runningSystem, 'ubuntu') }} && inputs.webBuild == false

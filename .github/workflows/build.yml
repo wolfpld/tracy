@@ -27,6 +27,24 @@ jobs:
       - uses: extractions/setup-just@v2
       - if: startsWith(matrix.os, 'windows')
         run: pip install meson ninja
+      - name: Cache CPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/cpm-cache
+            ~/.cache/CPM
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+      - name: Set CPM cache
+        run: echo "CPM_SOURCE_CACHE=${{ github.workspace }}/cpm-cache" >> $GITHUB_ENV
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
       - name: Cache CMake builds
         uses: actions/cache@v4
         with:
@@ -70,3 +88,7 @@ jobs:
         with:
           name: ${{ matrix.os }}
           path: bin
+  build_web:
+    uses: ./.github/workflows/emscripten.yml
+    with:
+      deploy: false

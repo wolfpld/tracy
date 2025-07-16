@@ -10,11 +10,11 @@ _prepare project build_args:
 
 
 # Build project
-_build project: (_prepare project cmake_prepare_args)
+build project: (_prepare project cmake_prepare_args)
     cmake --build {{project}}/build --parallel --config Release
 
 # Build all projects
-_build_all: (_build 'profiler') (_build 'update') (_build 'capture') (_build 'csvexport') (_build 'import')
+build_all: (build 'profiler') (build 'update') (build 'capture') (build 'csvexport') (build 'import')
 
 # Copy artifacts to bin directory
 [unix]

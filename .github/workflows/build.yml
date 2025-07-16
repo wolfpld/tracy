@@ -59,7 +59,7 @@ jobs:
         run: just build import
       - if: ${{ startsWith(matrix.os, 'ubuntu') }}
         name: Test compilation with different flags
-        run: just compile_test
+        run: just compile_tests
       - name: Find Artifacts
         id: find_artifacts
         run: just copy_artifacts

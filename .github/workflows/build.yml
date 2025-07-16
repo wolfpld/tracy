@@ -31,10 +31,6 @@ jobs:
     with:
       runningSystem: ${{ matrix.runningSystem }}
       testCompilation: ${{ matrix.testCompilation }}
-      webBuild: false
-  build_web:
-    uses: ./.github/workflows/emscripten.yml
-    with:
-      deploy: false
+      webBuild: ${{ matrix.webBuild }}
   build_linux_arch:
     uses: ./.github/workflows/linux.yml

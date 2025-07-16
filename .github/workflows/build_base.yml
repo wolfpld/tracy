@@ -53,52 +53,52 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Trust git repo
         run: git config --global --add safe.directory '*'
-      - if: ${{ !startsWith(inputs.runningSystem, 'windows') }} && inputs.webBuild == 'false'
+      - if: ${{ !startsWith(inputs.runningSystem, 'windows') }} && inputs.webBuild == false
         name: Library
         run: just library
       - name: Profiler GUI
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         run: just build profiler
       - name: Update utility
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         run: just build update
       - name: Capture utility
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         run: just build capture
       - name: Csvexport utility
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         run: just build csvexport
       - name: Import utilities
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         run: just build import
-      - if: inputs.testCompilation == true && inputs.webBuild == 'false'
+      - if: inputs.testCompilation == true && inputs.webBuild == false
         name: Test compilation with different flags
         run: just compile_tests
       - name: Find Artifacts
         if: inputs.webBuild == 'false'
         id: find_artifacts
         run: just copy_artifacts
-      - if: ${{ startsWith(inputs.runningSystem, 'ubuntu') }} && inputs.webBuild == 'false'
+      - if: ${{ startsWith(inputs.runningSystem, 'ubuntu') }} && inputs.webBuild == false
         name: Strip binaries
         run: just strip_binary
-      - if: ${{ startsWith(inputs.runningSystem, 'macos') }} && inputs.webBuild == 'false'
+      - if: ${{ startsWith(inputs.runningSystem, 'macos') }} && inputs.webBuild == false
         name: Symlink
         run: just symlink
-      - if: inputs.webBuild == 'true'
+      - if: inputs.webBuild == true
         name: Web Build
         run: just web_build ${{ github.sha }}
-      - if: inputs.webBuild == 'true'
+      - if: inputs.webBuild == true
         name: Web Copy and Compress artifacts
         run: |
           just web_compress_artifacts
           just web_copy_artifacts
       - uses: actions/upload-artifact@v4
-        if: inputs.webBuild == 'true'
+        if: inputs.webBuild == true
         with:
           name: emscripten
           path: bin
       - uses: actions/upload-artifact@v4
-        if: inputs.webBuild == 'false'
+        if: inputs.webBuild == false
         with:
           name: ${{ inputs.runningSystem }}
           path: bin

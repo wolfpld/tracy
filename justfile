@@ -24,25 +24,14 @@ build_all: (build 'profiler') (build 'update') (build 'capture') (build 'csvexpo
 [unix]
 copy_artifacts:
     mkdir -p bin
-    cp profiler/build/tracy-profiler bin
-    cp update/build/tracy-update bin
-    cp capture/build/tracy-capture bin
-    cp csvexport/build/tracy-csvexport bin
-    cp import/build/tracy-import-chrome bin
-    cp import/build/tracy-import-fuchsia bin
-    cp import/build/tracy-import-fuchsia bin
+    cp */build/tracy-* bin
 
 # Copy artifacts to bin directory
 [group('general')]
 [windows]
 copy_artifacts:
     mkdir -p bin
-    cp profiler/build/Release/tracy-profiler.exe bin
-    cp update/build/Release/tracy-update.exe bin
-    cp capture/build/Release/tracy-capture.exe bin
-    cp csvexport/build/Release/tracy-csvexport.exe bin
-    cp import/build/Release/tracy-import-chrome.exe bin
-    cp import/build/Release/tracy-import-fuchsia.exe bin
+    cp */build/Release/tracy-*.exe bin
 
 # Strip binaries artifacts
 [group('general')]

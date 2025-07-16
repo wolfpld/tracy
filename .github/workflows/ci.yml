@@ -15,20 +15,21 @@ jobs:
           - runningSystem: windows-latest
             testCompilation: false
             webBuild: false
+            regularBuilds: true
           - runningSystem: ubuntu-latest
             testCompilation: true
-            webBuild: false
-          - runningSystem: ubuntu-latest
-            testCompilation: false
             webBuild: true
+            regularBuilds: true
           - runningSystem: macos-15
             testCompilation: false
             webBuild: false
+            regularBuilds: true
     uses: ./.github/workflows/build.yml
     with:
       runningSystem: ${{ matrix.runningSystem }}
       testCompilation: ${{ matrix.testCompilation }}
       webBuild: ${{ matrix.webBuild }}
+      regularBuilds: ${{ matrix.regularBuilds }}
   manual:
     needs:
       - build

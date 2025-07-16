@@ -26,6 +26,7 @@ jobs:
       runningSystem: ubuntu-latest
       testCompilation: false
       webBuild: true
+      regularBuilds: false
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -38,6 +39,6 @@ jobs:
           server: ${{ secrets.SERVER }}
           port: ${{ secrets.PORT }}
           ssh_private_key: ${{ secrets.PRIVATE_KEY }}
-          local_path: "./emscripten/*"
+          local_path: "./ubuntu-latest-web/*"
           remote_path: ${{ secrets.REMOTE_PATH }}
           sftp_only: true

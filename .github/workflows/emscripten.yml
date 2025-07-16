@@ -11,36 +11,24 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: archlinux:base-devel
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed cmake git unzip python ninja zstd
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Setup emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
           version: 4.0.10
+      - uses: extractions/setup-just@v2
       - name: Trust git repo
         run: git config --global --add safe.directory '*'
       - uses: actions/checkout@v4
       - name: Profiler GUI
-        run: |
-          cmake -G Ninja -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=MinSizeRel -DGIT_REV=${{ github.sha }} -DCMAKE_TOOLCHAIN_FILE=${{env.EMSDK}}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
-          cmake --build profiler/build --parallel
+        run: just web_build ${{ github.sha }}
       - name: Compress artifacts
-        run: |
-          zstd -18 profiler/build/tracy-profiler.js profiler/build/tracy-profiler.wasm
-          gzip -9 profiler/build/tracy-profiler.js profiler/build/tracy-profiler.wasm
+        run: just web_compress_artifacts
       - name: Find Artifacts
         id: find_artifacts
-        run: |
-          mkdir -p bin
-          cp profiler/build/index.html bin
-          cp profiler/build/favicon.svg bin
-          cp profiler/build/tracy-profiler.data bin
-          cp profiler/build/tracy-profiler.js.gz bin
-          cp profiler/build/tracy-profiler.js.zst bin
-          cp profiler/build/tracy-profiler.wasm.gz bin
-          cp profiler/build/tracy-profiler.wasm.zst bin
+        run: just web_copy_artifacts
       - uses: actions/upload-artifact@v4
         with:
           name: emscripten

@@ -23,8 +23,6 @@ static WindowPosition* s_winPos;
 static bool s_iconified;
 static float s_prevScale = -1;
 
-extern tracy::Config s_config;
-
 
 static void glfw_error_callback( int error, const char* description )
 {
@@ -79,6 +77,9 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 #ifdef WIN32
 #  if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4 )
     glfwWindowHint( GLFW_WIN32_KEYBOARD_MENU, 1 );
+#  endif
+#  if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
+    glfwWindowHint( GLFW_SCALE_TO_MONITOR, 1 );
 #  endif
 #endif
     s_window = glfwCreateWindow( m_winPos.w, m_winPos.h, title, NULL, NULL );
@@ -137,7 +138,7 @@ void Backend::Run()
         {
             glfwPollEvents();
             s_redraw();
-            if( s_config.focusLostLimit && !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            if( tracy::s_config.focusLostLimit && !glfwGetWindowAttrib( s_window, GLFW_FOCUSED ) ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
             s_mainThreadTasks->Run();
         }
     }
@@ -163,6 +164,10 @@ void Backend::NewFrame( int& w, int& h )
     }
 
     glfwGetFramebufferSize( s_window, &w, &h );
+#if defined( __APPLE__ )
+    w = static_cast<int>( w / scale );
+    h = static_cast<int>( h / scale );
+#endif
     m_w = w;
     m_h = h;
 
@@ -200,14 +205,10 @@ void Backend::SetTitle( const char* title )
 float Backend::GetDpiScale()
 {
 #if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 3 )
-    auto monitor = glfwGetWindowMonitor( s_window );
-    if( !monitor ) monitor = glfwGetPrimaryMonitor();
-    if( monitor )
-    {
-        float x, y;
-        glfwGetMonitorContentScale( monitor, &x, &y );
-        return x;
-    }
-#endif
+    float x, y;
+    glfwGetWindowContentScale( s_window, &x, &y );
+    return x;
+#else
     return 1;
+#endif
 }

@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
-option(NO_STATISTICS "Disable calculation of statistics" ON)
+
+set(NO_STATISTICS ON)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

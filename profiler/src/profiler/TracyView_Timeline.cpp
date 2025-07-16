@@ -9,6 +9,7 @@
 #include "TracyTimelineItemPlot.hpp"
 #include "TracyTimelineItemThread.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -31,7 +32,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
     {
         m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( m_highlight.active )
+    else if( m_highlight.active && !IsMouseDown( 0 ) )
     {
         if( ImGui::GetIO().KeyCtrl && m_highlight.start != m_highlight.end )
         {
@@ -49,7 +50,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
     {
         m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( m_highlightZoom.active )
+    else if( m_highlightZoom.active && !IsMouseDown( 2 )  )
     {
         if( m_highlightZoom.start != m_highlightZoom.end )
         {
@@ -242,6 +243,11 @@ void View::DrawTimeline()
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
+
+    if( !m_vd.drawCpuData )
+    {
+        m_selectedThread = 0;
+    }
     m_drawThreadMigrations.Decay( 0 );
     m_drawThreadHighlight.Decay( 0 );
     m_cpuDataThread.Decay( 0 );
@@ -249,6 +255,7 @@ void View::DrawTimeline()
     m_zoneHover2.Decay( nullptr );
     m_findZone.range.StartFrame();
     m_statRange.StartFrame();
+    m_flameRange.StartFrame();
     m_waitStackRange.StartFrame();
     m_memInfo.range.StartFrame();
     m_yDelta = 0;
@@ -278,6 +285,7 @@ void View::DrawTimeline()
     {
         HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_statRange, timespan, ImGui::GetCursorScreenPos(), w );
+        HandleRange( m_flameRange, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_waitStackRange, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_memInfo.range, timespan, ImGui::GetCursorScreenPos(), w );
         for( auto& v : m_annotations )
@@ -396,7 +404,7 @@ void View::DrawTimeline()
     }
 
     const auto vcenter = verticallyCenterTimeline && drawMouseLine && m_viewMode == ViewMode::Paused;
-    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax, m_smallFont );
+    m_tc.End( pxns, wpos, hover, vcenter, yMin, yMax );
     ImGui::EndChild();
 
     m_lockHighlight = m_nextLockHighlight;
@@ -488,6 +496,15 @@ void View::DrawTimeline()
         DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x228888EE, true, false );
         DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_statRange.hiMin ? 0x998888EE : 0x338888EE, m_statRange.hiMin ? 2 : 1 );
         DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_statRange.hiMax ? 0x998888EE : 0x338888EE, m_statRange.hiMax ? 2 : 1 );
+    }
+
+    if( m_flameRange.active && ( m_showFlameGraph || m_showRanges ) )
+    {
+        const auto px0 = ( m_flameRange.min - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_flameRange.max - m_vd.zvStart ) * pxns );
+        DrawStripedRect( draw, wpos, px0, linepos.y, px1, linepos.y + lineh, 10 * scale, 0x2288B5EE, true, false );
+        DrawLine( draw, ImVec2( dpos.x + px0, linepos.y + 0.5f ), ImVec2( dpos.x + px0, linepos.y + lineh + 0.5f ), m_flameRange.hiMin ? 0x9988B5EE : 0x3388B5EE, m_flameRange.hiMin ? 2 : 1 );
+        DrawLine( draw, ImVec2( dpos.x + px1, linepos.y + 0.5f ), ImVec2( dpos.x + px1, linepos.y + lineh + 0.5f ), m_flameRange.hiMax ? 0x9988B5EE : 0x3388B5EE, m_flameRange.hiMax ? 2 : 1 );
     }
 
     if( m_waitStackRange.active && ( m_showWaitStacks || m_showRanges ) )

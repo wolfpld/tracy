@@ -37,3 +37,4 @@ profiler/build/wasm/embed.tracy
 examples/ToyPathTracer/Windows/TestCpu
 examples/ToyPathTracer/Windows/x64
 examples/ToyPathTracer/Windows/TestCpu.vcxproj.user
+*.user

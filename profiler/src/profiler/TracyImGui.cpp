@@ -127,4 +127,39 @@ void PrintSource( const std::vector<Tokenizer::Line>& lines )
     }
 }
 
+bool PrintTextWrapped( const char* text, const char* end )
+{
+    bool hovered = false;
+
+    if( !end ) end = text + strlen( text );
+    auto firstWord = text;
+    while( firstWord < end && *firstWord != ' ' && *firstWord != '\n' ) firstWord++;
+
+    auto fontSize = ImGui::GetFontSize();
+    auto left = ImGui::GetContentRegionAvail().x;
+    auto fwLen = ImGui::CalcTextSize( text, firstWord ).x;
+    if( fwLen > left )
+    {
+        ImGui::NewLine();
+        left = ImGui::GetContentRegionAvail().x;
+    }
+
+    auto endLine = ImGui::GetFont()->CalcWordWrapPosition( fontSize, text, end, left );
+    ImGui::TextUnformatted( text, endLine );
+    if( !hovered ) hovered = ImGui::IsItemHovered();
+
+    left = ImGui::GetContentRegionAvail().x;
+    while( endLine < end )
+    {
+        text = endLine;
+        if( *text == ' ' ) text++;
+        endLine = ImGui::GetFont()->CalcWordWrapPosition( fontSize, text, end, left );
+        if( text == endLine ) endLine++;
+        ImGui::TextUnformatted( text, endLine );
+        if( !hovered ) hovered = ImGui::IsItemHovered();
+    }
+
+    return hovered;
+}
+
 }

@@ -3,6 +3,7 @@
 #include "TracyPrint.hpp"
 #include "TracyTimelineItem.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -226,13 +227,13 @@ void View::DrawNotificationArea()
     if( !m_worker.IsBackgroundDone() )
     {
         ImGui::SameLine();
-        TextDisabledUnformatted( ICON_FA_LIST_CHECK );
-        ImGui::SameLine();
         const auto pos = ImGui::GetCursorPos();
-        ImGui::TextUnformatted( "  " );
-        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.675f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+        auto draw = ImGui::GetWindowDrawList();
+        draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 0 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+        draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 1 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f        ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+        draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 2 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( s_time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+        ImGui::Dummy( ImVec2( ty * 3, ty ) );
         auto rmin = ImGui::GetItemRectMin();
-        rmin.x -= ty * 0.5f;
         const auto rmax = ImGui::GetItemRectMax();
         if( ImGui::IsMouseHoveringRect( rmin, rmax ) )
         {
@@ -254,7 +255,7 @@ void View::DrawNotificationArea()
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
 
-    ImGui::PushFont( m_smallFont );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     const auto wpos = ImGui::GetWindowPos();
     const auto w = ImGui::GetContentRegionAvail().x;
     const auto fps = RealToString( int( io.Framerate + 0.5f ) );

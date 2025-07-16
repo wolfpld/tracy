@@ -7,6 +7,7 @@
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -195,6 +196,11 @@ void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const
     {
         draw->AddRectFilled( ul, dr, 0x2DFF8888 );
         draw->AddRect( ul, dr, 0x4DFF8888 );
+    }
+    if( m_selectedThread == thread.id )
+    {
+        draw->AddRectFilled( ul, dr, 0x2D88AA88 );
+        draw->AddRect( ul, dr, 0x4D88AA88 );
     }
 }
 
@@ -564,7 +570,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                     }
                     if( normalized != origSymName && strcmp( normalized, origSymName ) != 0 )
                     {
-                        ImGui::PushFont( m_smallFont );
+                        ImGui::PushFont( g_fonts.normal, FontSmall );
                         TextDisabledUnformatted( origSymName );
                         ImGui::PopFont();
                     }

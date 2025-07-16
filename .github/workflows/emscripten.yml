@@ -19,7 +19,7 @@ jobs:
     - name: Setup emscripten
       uses: mymindstorm/setup-emsdk@v14
       with:
-        version: 3.1.67
+        version: 4.0.10
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - uses: actions/checkout@v4

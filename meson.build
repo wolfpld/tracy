@@ -1,4 +1,4 @@
-project('tracy', ['cpp'], version: '0.11.1', meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
+project('tracy', ['cpp'], version: '0.12.2', meson_version: '>=1.3.0', default_options : ['cpp_std=c++11'])
 
 # internal compiler flags
 tracy_compile_args = []
@@ -132,6 +132,7 @@ endif
 includes = [
     'public/tracy/TracyC.h',
     'public/tracy/Tracy.hpp',
+    'public/tracy/TracyCUDA.hpp',
     'public/tracy/TracyD3D11.hpp',
     'public/tracy/TracyD3D12.hpp',
     'public/tracy/TracyLua.hpp',

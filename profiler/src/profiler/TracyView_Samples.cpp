@@ -10,6 +10,7 @@
 #include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -109,7 +110,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
     if( data.empty() )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_HIPPO );
         TextCentered( "No entries to be displayed" );
@@ -843,13 +844,13 @@ void View::DrawSampleParents()
 
         const auto symName = m_worker.GetString( symbol->name );
         const char* normalized = m_vd.shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : nullptr;
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         TextFocused( "Function:", normalized ? normalized : symName );
         if( normalized )
         {
             ImGui::PopFont();
             TooltipNormalizedName( symName, normalized );
-            ImGui::PushFont( m_bigFont );
+            ImGui::PushFont( g_fonts.normal, FontBig );
         }
         if( symbol->isInline )
         {
@@ -1012,7 +1013,7 @@ void View::DrawSampleParents()
                         {
                             ImGui::TableNextRow();
                             ImGui::TableNextColumn();
-                            ImGui::PushFont( m_smallFont );
+                            ImGui::PushFont( g_fonts.normal, FontSmall );
                             TextDisabledUnformatted( "external" );
                             ImGui::TableNextColumn();
                             if( external == 1 )
@@ -1036,7 +1037,7 @@ void View::DrawSampleParents()
                         }
                         else
                         {
-                            ImGui::PushFont( m_smallFont );
+                            ImGui::PushFont( g_fonts.normal, FontSmall );
                             TextDisabledUnformatted( "inline" );
                             ImGui::PopFont();
                         }
@@ -1212,7 +1213,7 @@ void View::DrawSampleParents()
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::PushFont( m_smallFont );
+                    ImGui::PushFont( g_fonts.normal, FontSmall );
                     TextDisabledUnformatted( "external" );
                     ImGui::TableNextColumn();
                     if( external == 1 )

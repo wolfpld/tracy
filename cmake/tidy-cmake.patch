@@ -1,0 +1,39 @@
+diff --git i/CMakeLists.txt w/CMakeLists.txt
+index 8efec25..c1d101e 100644
+--- i/CMakeLists.txt
++++ w/CMakeLists.txt
+@@ -17,7 +17,7 @@
+ # @date    Consult git log.
+ ##############################################################################
+ 
+-cmake_minimum_required (VERSION 2.8.12)
++cmake_minimum_required (VERSION 3.10)
+ 
+ set(LIB_NAME tidy)
+ set(LIBTIDY_DESCRIPTION "${LIB_NAME} - HTML syntax checker")
+@@ -528,6 +528,7 @@ if (UNIX AND SUPPORT_CONSOLE_APP)
+  
+         # Run the built EXE to generate xml output .
+         add_custom_command(
++            POST_BUILD
+             TARGET man
+             COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME} -xml-help > ${TIDYHELP}
+             COMMENT "Generate ${TIDYHELP}"
+@@ -536,6 +537,7 @@ if (UNIX AND SUPPORT_CONSOLE_APP)
+ 
+         # Run the built EXE to generate more xml output.
+         add_custom_command(
++            POST_BUILD
+             TARGET man
+             COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME} -xml-config > ${TIDYCONFIG}
+             COMMENT "Generate ${TIDYCONFIG}"
+@@ -544,8 +546,8 @@ if (UNIX AND SUPPORT_CONSOLE_APP)
+ 
+         # Run xsltproc to generate the install files.
+         add_custom_command(
++            POST_BUILD
+             TARGET man
+-            DEPENDS ${TIDYHELP}
+             COMMAND xsltproc ARGS ${TIDY1XSL} ${TIDYHELP} > ${CMAKE_CURRENT_BINARY_DIR}/${TIDY_MANFILE}
+             COMMENT "Generate ${TIDY_MANFILE}"
+             VERBATIM

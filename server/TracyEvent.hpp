@@ -530,36 +530,93 @@ struct CrashEvent
 
 enum { CrashEventSize = sizeof( CrashEvent ) };
 
-
+/**
+* Represents a context switch.
+* Start is the when the thread wakes up (if known).
+* End is when the context switch to another thread (or idle) happens.
+*/
 struct ContextSwitchData
 {
-    enum : int8_t { Fiber = 99 };
-    enum : int8_t { NoState = 100 };
-    enum : int8_t { Wakeup = -2 };
+    enum CSReason : int8_t {
+        Wakeup = -2,
+        Fiber = 99,
+        NoState = 100,
 
-    tracy_force_inline int64_t Start() const { return int64_t( _start_cpu ) >> 16; }
-    tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_cpu)+2, &start, 4 ); memcpy( ((char*)&_start_cpu)+6, ((char*)&start)+4, 2 ); }
-    tracy_force_inline int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
-    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_reason_state)+2, &end, 4 ); memcpy( ((char*)&_end_reason_state)+6, ((char*)&end)+4, 2 ); }
-    tracy_force_inline bool IsEndValid() const { return ( _end_reason_state >> 63 ) == 0; }
-    tracy_force_inline uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
-    tracy_force_inline void SetCpu( uint8_t cpu ) { memcpy( &_start_cpu, &cpu, 1 ); }
-    tracy_force_inline int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
-    tracy_force_inline void SetReason( int8_t reason ) { memcpy( ((char*)&_end_reason_state)+1, &reason, 1 ); }
-    tracy_force_inline int8_t State() const { return int8_t( _end_reason_state & 0xFF ); }
-    tracy_force_inline void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
+        // See KWAIT_REASON in the WDK's wdm.h
+        Win32_Executive         = 0 ,
+        Win32_FreePage          = 1 ,
+        Win32_PageIn            = 2 ,
+        Win32_PoolAllocation    = 3 ,
+        Win32_DelayExecution    = 4 ,
+        Win32_Suspended         = 5 ,
+        Win32_UserRequest       = 6 ,
+        Win32_WrExecutive       = 7 ,
+        Win32_WrFreePage        = 8 ,
+        Win32_WrPageIn          = 9 ,
+        Win32_WrPoolAllocation  = 10,
+        Win32_WrDelayExecution  = 11,
+        Win32_WrSuspended       = 12,
+        Win32_WrUserRequest     = 13,
+        Win32_WrEventPair       = 14,
+        Win32_WrQueue           = 15,
+        Win32_WrLpcReceive      = 16,
+        Win32_WrLpcReply        = 17,
+        Win32_WrVirtualMemory   = 18,
+        Win32_WrPageOut         = 19,
+        Win32_WrRendezvous      = 20,
+        Win32_WrKeyedEvent      = 21,
+        Win32_WrTerminated      = 22,
+        Win32_WrProcessInSwap   = 23,
+        Win32_WrCpuRateControl  = 24,
+        Win32_WrCalloutStack    = 25,
+        Win32_WrKernel          = 26,
+        Win32_WrResource        = 27,
+        Win32_WrPushLock        = 28,
+        Win32_WrMutex           = 29,
+        Win32_WrQuantumEnd      = 30,
+        Win32_WrDispatchInt     = 31,
+        Win32_WrPreempted       = 32,
+        Win32_WrYieldExecution  = 33,
+        Win32_WrFastMutex       = 34,
+        Win32_WrGuardedMutex    = 35,
+        Win32_WrRundown         = 36,
+        Win32_WrAlertByThreadId = 37,
+        Win32_WrDeferredPreempt = 38,
+        Win32_WrPhysicalFault   = 39,
+        Win32_WrIoRing          = 40,
+        Win32_WrMdlCache        = 41,
+        Win32_WrRcu             = 42,
+        Win32_MaximumWaitReason,
+    };
+
+    tracy_force_inline int64_t Start() const { return _start.Val(); }
+    tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); _start.SetVal(start); }
+    tracy_force_inline int64_t End() const { return _end.Val(); }
+    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
+    tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
+    tracy_force_inline uint8_t Cpu() const { return _cpu; }
+    tracy_force_inline void SetCpu( uint8_t cpu ) { _cpu = cpu; }
+    tracy_force_inline uint8_t WakeupCpu() const { return _wakeupcpu; }
+    tracy_force_inline void SetWakeupCpu( uint8_t wakeupcpu) { _wakeupcpu = wakeupcpu; }
+    tracy_force_inline CSReason Reason() const { return CSReason( _reason ); }
+    tracy_force_inline void SetReason( int8_t reason ) { _reason = reason; }
+    tracy_force_inline int8_t State() const { return _state; }
+    tracy_force_inline void SetState( int8_t state ) { _state = state; }
     tracy_force_inline int64_t WakeupVal() const { return _wakeup.Val(); }
     tracy_force_inline void SetWakeup( int64_t wakeup ) { assert( wakeup < (int64_t)( 1ull << 47 ) ); _wakeup.SetVal( wakeup ); }
     tracy_force_inline uint16_t Thread() const { return _thread; }
     tracy_force_inline void SetThread( uint16_t thread ) { _thread = thread; }
 
-    tracy_force_inline void SetStartCpu( int64_t start, uint8_t cpu ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_cpu = ( uint64_t( start ) << 16 ) | cpu; }
-    tracy_force_inline void SetEndReasonState( int64_t end, int8_t reason, int8_t state ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_reason_state = ( uint64_t( end ) << 16 ) | ( uint64_t( reason ) << 8 ) | uint8_t( state ); }
-
-    uint64_t _start_cpu;
-    uint64_t _end_reason_state;
+    Int48 _start;
+    uint8_t _cpu;
+    uint8_t _wakeupcpu;
+    
+    Int48 _end;
+    int8_t _reason;
+    int8_t _state;
+    
     Int48 _wakeup;
-    uint16_t _thread;
+    uint16_t _thread; // currently unused ? Could store next thread or prios here.
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
@@ -809,6 +866,10 @@ struct SourceLocationComparator
 struct ContextSwitch
 {
     Vector<ContextSwitchData> v;
+    struct {
+        int64_t time = 0;
+        uint8_t cpu = -1;
+    } pendingWakeUp;
     int64_t runningTime = 0;
 };
 

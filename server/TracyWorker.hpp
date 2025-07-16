@@ -480,7 +480,6 @@ public:
     uint64_t GetCaptureTime() const { return m_captureTime; }
     uint64_t GetExecutableTime() const { return m_executableTime; }
     const std::string& GetHostInfo() const { return m_hostInfo; }
-    int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
     uint64_t GetPid() const { return m_pid; };
     CpuArchitecture GetCpuArch() const { return m_data.cpuArch; }
@@ -1010,7 +1009,6 @@ private:
     std::atomic<bool> m_backgroundDone { true };
     std::thread m_threadBackground;
 
-    int64_t m_delay;
     int64_t m_resolution;
     double m_timerMul;
     std::string m_captureName;

@@ -6,6 +6,8 @@
 #include "TracyTimelineController.hpp"
 #include "TracyView.hpp"
 
+#include "../Fonts.hpp"
+
 namespace tracy
 {
 
@@ -97,7 +99,7 @@ std::optional<int> TimelineController::CalculateScrollPosition() const
     return std::nullopt;
 }
 
-void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax, ImFont* smallFont )
+void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool vcenter, float yMin, float yMax )
 {
     auto shouldUpdateCenterItem = [&] () {
         const auto imguiChangedScroll = m_scroll != ImGui::GetScrollY();
@@ -123,7 +125,7 @@ void TimelineController::End( double pxns, const ImVec2& wpos, bool hover, bool 
     TimelineContext ctx;
     ctx.w = ImGui::GetContentRegionAvail().x - 1;
     ctx.ty = ImGui::GetTextLineHeight();
-    ImGui::PushFont( smallFont );
+    ImGui::PushFont( g_fonts.normal, FontSmall );
     ctx.sty = ImGui::GetTextLineHeight();
     ImGui::PopFont();
     ctx.scale = GetScale();

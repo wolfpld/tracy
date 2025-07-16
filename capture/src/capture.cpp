@@ -188,7 +188,7 @@ int main( int argc, char** argv )
         }
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
-    printf( "\nQueue delay: %s\nTimer resolution: %s\n", tracy::TimeToString( worker.GetDelay() ), tracy::TimeToString( worker.GetResolution() ) );
+    printf( "\nTimer resolution: %s\n", tracy::TimeToString( worker.GetResolution() ) );
 
 #ifdef _WIN32
     signal( SIGINT, SigInt );

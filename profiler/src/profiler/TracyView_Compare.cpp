@@ -9,6 +9,7 @@
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -135,32 +136,6 @@ bool View::FindMatchingZone( int prev0, int prev1, int flags )
     return found;
 }
 
-static std::vector<std::string> SplitLines( const char* data, size_t sz )
-{
-    std::vector<std::string> ret;
-    auto txt = data;
-    for(;;)
-    {
-        auto end = txt;
-        while( *end != '\n' && *end != '\r' && end - data < sz ) end++;
-        ret.emplace_back( std::string { txt, end } );
-        if( end - data == sz ) break;
-        if( *end == '\n' )
-        {
-            end++;
-            if( end - data < sz && *end == '\r' ) end++;
-        }
-        else if( *end == '\r' )
-        {
-            end++;
-            if( end - data < sz && *end == '\n' ) end++;
-        }
-        if( end - data == sz ) break;
-        txt = end;
-    }
-    return ret;
-}
-
 static void PrintFile( const char* data, size_t sz, uint32_t color )
 {
     auto lines = SplitLines( data, sz );
@@ -238,7 +213,7 @@ void View::DrawCompare()
     if( !m_compare.second )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 5 ) * 0.5f ) );
         TextCentered( ICON_FA_SCALE_BALANCED );
         TextCentered( "Please load a second trace to compare results" );
@@ -279,7 +254,7 @@ void View::DrawCompare()
                 }
             } );
         }
-        tracy::BadVersion( m_compare.badVer, m_bigFont );
+        tracy::BadVersion( m_compare.badVer );
         ImGui::End();
         return;
     }
@@ -289,7 +264,7 @@ void View::DrawCompare()
     if( !m_worker.AreSourceLocationZonesReady() || !m_compare.second->AreSourceLocationZonesReady() )
     {
         const auto ty = ImGui::GetTextLineHeight();
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_FROG );
         TextCentered( "Please wait, computing data..." );
@@ -439,7 +414,7 @@ void View::DrawCompare()
                         {
                             auto it = tfc.find( v );
                             assert( it != tfc.end() );
-                            ImGui::PushFont( m_fixedFont );
+                            ImGui::PushFont( g_fonts.mono, FontNormal );
                             ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintFile( it->second.data, it->second.len, 0xFF6666FF );
                             ImGui::PopStyleVar();
@@ -463,7 +438,7 @@ void View::DrawCompare()
                         {
                             auto it = ofc.find( v );
                             assert( it != ofc.end() );
-                            ImGui::PushFont( m_fixedFont );
+                            ImGui::PushFont( g_fonts.mono, FontNormal );
                             ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintFile( it->second.data, it->second.len, 0xFF66DD66 );
                             ImGui::PopStyleVar();
@@ -485,7 +460,7 @@ void View::DrawCompare()
                     {
                         if( ImGui::TreeNode( v.first ) )
                         {
-                            ImGui::PushFont( m_fixedFont );
+                            ImGui::PushFont( g_fonts.mono, FontNormal );
                             ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( 0, 0 ) );
                             PrintDiff( v.second );
                             ImGui::PopStyleVar();

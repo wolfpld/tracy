@@ -44,57 +44,102 @@ public:
         }
     }
 
+    static void escapeShellParam(std::string const& s, std::string& out)
+    {
+        out.reserve( s.size() + 2 );
+        out.push_back( '"' );
+        for( unsigned char c : s )
+        {
+            if( ' ' <= c and c <= '~' and c != '\\' and c != '"' )
+            {
+                out.push_back( c );
+            }
+            else
+            {
+                out.push_back( '\\' );
+                switch( c )
+                {
+                    case '"':  out.push_back( '"' );  break;
+                    case '\\': out.push_back( '\\' ); break;
+                    case '\t': out.push_back( 't' );  break;
+                    case '\r': out.push_back( 'r' );  break;
+                    case '\n': out.push_back( 'n' );  break;
+                    default:
+                        char const* const hexdig = "0123456789ABCDEF";
+                        out.push_back( 'x' );
+                        out.push_back( hexdig[c >> 4] );
+                        out.push_back( hexdig[c & 0xF] );
+                }
+            }
+        }
+        out.push_back( '"' );
+    }
+
     bool ResolveSymbols( const std::string& imagePath, const FrameEntryList& inputEntryList,
                          SymbolEntryList& resolvedEntries )
     {
-        if (!m_addr2LinePath.length()) return false;
+        if( !m_addr2LinePath.length() ) return false;
+        
+        std:: string escapedPath;
+        escapeShellParam( imagePath, escapedPath );
 
-        // generate a single addr2line cmd line for all addresses in one invocation
-        std::stringstream ss;
-        ss << m_addr2LinePath << " -C -f -e " << imagePath << " -a ";
-        for ( const FrameEntry& entry : inputEntryList )
+        size_t entryIdx = 0;
+        while( entryIdx < inputEntryList.size() )
         {
-            ss << " 0x" << std::hex << entry.symbolOffset;
-        }
+            const size_t startIdx = entryIdx;
+            const size_t batchEndIdx = std::min( inputEntryList.size(), startIdx + (size_t)1024 );
 
-        std::string resultStr = ExecShellCommand( ss.str().c_str() );
-        std::stringstream result(resultStr);
-        //printf("executing: '%s' got '%s'\n", ss.str().c_str(), result.str().c_str());
+            printf( "Resolving symbols [%zu-%zu]\n", startIdx, batchEndIdx );
 
-        // The output is 2 lines per entry with the following contents:
-        // hex_address_of_symbol
-        // symbol_name
-        // file:line
-
-        for( size_t i = 0; i < inputEntryList.size(); ++i )
-        {
-            const FrameEntry& inputEntry = inputEntryList[i];
-
-            SymbolEntry newEntry;
-
-            std::string addr;
-            std::getline( result, addr );
-            std::getline( result, newEntry.name );
-            if (newEntry.name == "??")
+            // generate a single addr2line cmd line for all addresses in one invocation
+            std::stringstream ss;
+            ss << m_addr2LinePath << " -C -f -e " << escapedPath << " -a ";
+            for( ; entryIdx < batchEndIdx; entryIdx++ )
             {
-                newEntry.name = "[unknown] + " + std::to_string(inputEntry.symbolOffset);
+                const FrameEntry& entry = inputEntryList[entryIdx];
+                ss << " 0x" << std::hex << entry.symbolOffset;
             }
 
-            std::string fileLine;
-            std::getline(result, fileLine);
-            if ( fileLine != "??:?" )
+            std::string resultStr = ExecShellCommand( ss.str().c_str() );
+            std::stringstream result( resultStr );
+            
+            //printf("executing: '%s' got '%s'\n", ss.str().c_str(), result.str().c_str());
+
+            // The output is 2 lines per entry with the following contents:
+            // hex_address_of_symbol
+            // symbol_name
+            // file:line
+
+            for( size_t i = startIdx ;i < batchEndIdx; i++ )
             {
-                size_t pos = fileLine.find_last_of(':');
-                if ( pos != std::string::npos )
+                const FrameEntry& inputEntry = inputEntryList[i];
+
+                SymbolEntry newEntry;
+
+                std::string addr;
+                std::getline( result, addr );
+                std::getline( result, newEntry.name );
+                if( newEntry.name == "??" )
                 {
-                    newEntry.file = fileLine.substr( 0, pos );
-                    std::string lineStr = fileLine.substr( pos + 1 );
-                    char* after = nullptr;
-                    newEntry.line = strtol( lineStr.c_str(), &after, 10 );
+                    newEntry.name = "[unknown] + " + std::to_string( inputEntry.symbolOffset );
                 }
-            }
 
-            resolvedEntries.push_back( std::move(newEntry) );
+                std::string fileLine;
+                std::getline( result, fileLine );
+                if( fileLine != "??:?" )
+                {
+                    size_t pos = fileLine.find_last_of( ':' );
+                    if( pos != std::string::npos )
+                    {
+                        newEntry.file = fileLine.substr( 0, pos );
+                        std::string lineStr = fileLine.substr( pos + 1 );
+                        char* after = nullptr;
+                        newEntry.line = strtol( lineStr.c_str(), &after, 10 );
+                    }
+                }
+
+                resolvedEntries.push_back( std::move( newEntry ) );
+            }
         }
 
         return true;

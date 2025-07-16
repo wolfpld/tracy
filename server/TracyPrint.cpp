@@ -155,6 +155,22 @@ static inline void PrintSecondsFrac( char*& buf, uint64_t v )
     }
 }
 
+uint64_t _int64_abs( int64_t x )
+{
+    if( x < 0 )
+    {
+        // `-x` does not work if `x` is `std::numeric_limits<int64_t>::min()`,
+        // see https://github.com/wolfpld/tracy/pull/1040
+        // This works though:
+        // https://graphics.stanford.edu/~seander/bithacks.html#IntegerAbs
+        return -(uint64_t)x;
+    }
+    else
+    {
+        return x;
+    }
+}
+
 const char* TimeToString( int64_t _ns )
 {
     enum { Pool = 8 };
@@ -164,16 +180,11 @@ const char* TimeToString( int64_t _ns )
     char* bufstart = buf;
     bufsel = ( bufsel + 1 ) % Pool;
 
-    uint64_t ns;
+    uint64_t ns = _int64_abs(_ns);
     if( _ns < 0 )
     {
         *buf = '-';
         buf++;
-        ns = -_ns;
-    }
-    else
-    {
-        ns = _ns;
     }
 
     if( ns < 1000 )
@@ -245,16 +256,11 @@ const char* TimeToStringExact( int64_t _ns )
     char* bufstart = buf;
     bufsel = ( bufsel + 1 ) % Pool;
 
-    uint64_t ns;
+    uint64_t ns = _int64_abs(_ns);
     if( _ns < 0 )
     {
         *buf = '-';
         buf++;
-        ns = -_ns;
-    }
-    else
-    {
-        ns = _ns;
     }
 
     const char* numStart = buf;

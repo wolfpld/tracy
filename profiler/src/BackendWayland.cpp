@@ -217,6 +217,8 @@ static struct wl_data_offer* s_newDataOffer;
 static bool s_newDataOfferValid;
 static struct xdg_toplevel_icon_manager_v1* s_iconMgr;
 static std::vector<int> s_iconSizes;
+static int s_keyRepeatRate = 0;
+static int s_keyRepeatDelay = 0;
 
 struct Output
 {
@@ -237,7 +239,15 @@ static uint64_t s_time;
 static wl_fixed_t s_wheelAxisX, s_wheelAxisY;
 static bool s_wheel;
 
-extern tracy::Config s_config;
+struct KeyRepeat
+{
+    bool active;
+    bool first;
+    ImGuiKey key;
+    char txt[8];
+    uint64_t time;
+};
+static KeyRepeat s_keyRepeat;
 
 
 static void RecomputeScale()
@@ -436,6 +446,12 @@ static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32
     if( key < ( sizeof( s_keyTable ) / sizeof( *s_keyTable ) ) )
     {
         io.AddKeyEvent( s_keyTable[key], state == WL_KEYBOARD_KEY_STATE_PRESSED );
+
+        *s_keyRepeat.txt = 0;
+        s_keyRepeat.key = s_keyTable[key];
+        s_keyRepeat.active = true;
+        s_keyRepeat.first = true;
+        s_keyRepeat.time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
     }
 
     if( state == WL_KEYBOARD_KEY_STATE_PRESSED )
@@ -448,9 +464,18 @@ static void KeyboardKey( void*, struct wl_keyboard* kbd, uint32_t serial, uint32
             if( xkb_keysym_to_utf8( sym, txt, sizeof( txt ) ) > 0 )
             {
                 ImGui::GetIO().AddInputCharactersUTF8( txt );
+
+                memcpy( s_keyRepeat.txt, txt, sizeof( s_keyRepeat.txt ) );
+                s_keyRepeat.active = true;
+                s_keyRepeat.first = true;
+                s_keyRepeat.time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
             }
         }
         s_dataSerial = serial;
+    }
+    else
+    {
+        s_keyRepeat.active = false;
     }
 }
 
@@ -468,6 +493,8 @@ static void KeyboardModifiers( void*, struct wl_keyboard* kbd, uint32_t serial, 
 
 static void KeyboardRepeatInfo( void*, struct wl_keyboard* kbd, int32_t rate, int32_t delay )
 {
+    s_keyRepeatRate = 1000000 / rate;
+    s_keyRepeatDelay = delay * 1000;
 }
 
 constexpr struct wl_keyboard_listener keyboardListener = {
@@ -741,8 +768,10 @@ static void SurfacePreferredBufferTransform( void*, struct wl_surface* surface, 
 constexpr struct wl_surface_listener surfaceListener = {
     .enter = SurfaceEnter,
     .leave = SurfaceLeave,
+#ifdef WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION
     .preferred_buffer_scale = SurfacePreferredBufferScale,
     .preferred_buffer_transform = SurfacePreferredBufferTransform
+#endif
 };
 
 static void FractionalPreferredScale( void*, struct wp_fractional_scale_v1* frac, uint32_t scale )
@@ -899,7 +928,7 @@ static void SetupCursor()
     s_cursorY = cursor->images[0]->hotspot_y * 120 / s_maxScale;
 }
 
-static void SetClipboard( void*, const char* text )
+static void SetClipboard( ImGuiContext*, const char* text )
 {
     s_clipboard = text;
 
@@ -910,7 +939,7 @@ static void SetClipboard( void*, const char* text )
     wl_data_device_set_selection( s_dataDev, s_dataSource, s_dataSerial );
 }
 
-static const char* GetClipboard( void* )
+static const char* GetClipboard( ImGuiContext* )
 {
     if( !s_dataOffer ) return nullptr;
     int fd[2];
@@ -1040,8 +1069,9 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         s_dataDev = wl_data_device_manager_get_data_device( s_dataDevMgr, s_seat );
         wl_data_device_add_listener( s_dataDev, &dataDeviceListener, nullptr );
 
-        io.SetClipboardTextFn = SetClipboard;
-        io.GetClipboardTextFn = GetClipboard;
+        auto& platform = ImGui::GetPlatformIO();
+        platform.Platform_SetClipboardTextFn = SetClipboard;
+        platform.Platform_GetClipboardTextFn = GetClipboard;
     }
 
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
@@ -1101,7 +1131,7 @@ void Backend::Run()
 {
     while( s_running && wl_display_dispatch( s_dpy ) != -1 )
     {
-        if( s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        if( tracy::s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
         s_redraw();
         s_mainThreadTasks->Run();
     }
@@ -1172,6 +1202,26 @@ void Backend::NewFrame( int& w, int& h )
     io.DeltaTime = std::min( 0.1f, ( time - s_time ) / 1000000.f );
     s_time = time;
 
+    if( s_keyRepeat.active )
+    {
+        tracy::s_wasActive = true;
+        const auto delta = s_time - s_keyRepeat.time;
+        if( ( s_keyRepeat.first && delta >= s_keyRepeatDelay ) ||
+            ( !s_keyRepeat.first && delta >= s_keyRepeatRate ) )
+        {
+            s_keyRepeat.first = false;
+            s_keyRepeat.time = s_time;
+            if( *s_keyRepeat.txt )
+            {
+                ImGui::GetIO().AddInputCharactersUTF8( s_keyRepeat.txt );
+            }
+            else
+            {
+                io.AddKeyEvent( s_keyRepeat.key, true );
+            }
+        }
+    }
+
     if( s_cursorShapeDev )
     {
         ImGuiMouseCursor cursor = ImGui::GetMouseCursor();
@@ -1214,6 +1264,9 @@ void Backend::NewFrame( int& w, int& h )
             break;
         case ImGuiMouseCursor_NotAllowed:
             shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_NOT_ALLOWED;
+            break;
+        case ImGuiMouseCursor_Hand:
+            shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER;
             break;
         default:
             shape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT;

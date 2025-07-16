@@ -737,6 +737,35 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
     return true;
 }
 
+bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, const RangeSlim& range, int64_t& time, uint64_t& cnt )
+{
+    const auto start = std::max( ev.Start(), range.min );
+    auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), start, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+    if( it == ctx->v.end() ) return false;
+    const auto end = std::min( m_worker.GetZoneEnd( ev ), range.max );
+    const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
+    if( eit == ctx->v.end() ) return false;
+    cnt = std::distance( it, eit );
+    if( cnt == 0 ) return false;
+    if( cnt == 1 )
+    {
+        time = end - start;
+    }
+    else
+    {
+        int64_t running = it->End() - start;
+        ++it;
+        for( uint64_t i=0; i<cnt-2; i++ )
+        {
+            running += it->End() - it->Start();
+            ++it;
+        }
+        running += end - it->Start();
+        time = running;
+    }
+    return true;
+}
+
 const char* View::SourceSubstitution( const char* srcFile ) const
 {
     if( !m_sourceRegexValid || m_sourceSubstitutions.empty() ) return srcFile;

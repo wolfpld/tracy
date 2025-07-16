@@ -389,6 +389,12 @@ int main(int argc, char** argv)
                 }
                 values[4] = std::to_string(timespan);
                 values[5] = std::to_string(tId);
+                if (worker.HasZoneExtra(*zone_event)) {
+                    const auto& text = worker.GetZoneExtra(*zone_event).text;
+                    if (text.Active()) {
+                        values[6] = worker.GetString(text);
+                    }
+                }
 
                 std::string row = join(values, args.separator);
                 printf("%s\n", row.data());

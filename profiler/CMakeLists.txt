@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.25)
 
 option(NO_FILESELECTOR "Disable the file selector" OFF)
 option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
@@ -6,6 +6,7 @@ option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
 option(NO_STATISTICS "Disable calculation of statistics" OFF)
 option(SELF_PROFILE "Enable self-profiling" OFF)
+option(SANITIZE "Sanitizer parameters" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
@@ -24,19 +25,50 @@ if(SELF_PROFILE)
     endif()
 endif()
 
+if(SANITIZE)
+    add_compile_options(-fsanitize=${SANITIZE} -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=${SANITIZE} -fno-omit-frame-pointer)
+endif()
+
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
+
+include(ExternalProject)
+ExternalProject_Add(embed
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/helpers
+    CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_command(
+    OUTPUT data
+    COMMAND ${CMAKE_COMMAND} -E make_directory data
+)
+
+function(Embed LIST NAME FILE)
+    add_custom_command(
+        OUTPUT data/${NAME}.cpp data/${NAME}.hpp
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
+        DEPENDS data ${CMAKE_CURRENT_BINARY_DIR}/embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
+    )
+    list(APPEND ${LIST} data/${NAME}.cpp)
+    return(PROPAGATE ${LIST})
+endfunction()
 
 set(SERVER_FILES
     TracyAchievementData.cpp
     TracyAchievements.cpp
     TracyBadVersion.cpp
     TracyColor.cpp
+    TracyConfig.cpp
+    TracyEmbed.cpp
     TracyEventDebug.cpp
     TracyFileselector.cpp
     TracyFilesystem.cpp
     TracyImGui.cpp
+    TracyMarkdown.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp
     TracyProtoHistory.cpp
@@ -85,6 +117,16 @@ set(SERVER_FILES
     TracyWeb.cpp
 )
 
+if(NOT EMSCRIPTEN)
+    list(APPEND SERVER_FILES
+        TracyLlm.cpp
+        TracyLlmApi.cpp
+        TracyLlmChat.cpp
+        TracyLlmEmbeddings.cpp
+        TracyLlmTools.cpp
+    )
+endif()
+
 list(TRANSFORM SERVER_FILES PREPEND "src/profiler/")
 
 set(PROFILER_FILES
@@ -103,11 +145,22 @@ set(PROFILER_FILES
     src/winmainArchDiscovery.cpp
 )
 
+Embed(PROFILER_FILES SystemPrompt src/llm/system.prompt.md)
+Embed(PROFILER_FILES SystemReminder src/llm/system.reminder.md)
+Embed(PROFILER_FILES FontFixed src/font/FiraCode-Retina.ttf)
+Embed(PROFILER_FILES FontIcons src/font/Font\ Awesome\ 6\ Free-Solid-900.otf)
+Embed(PROFILER_FILES FontNormal src/font/Roboto-Regular.ttf)
+Embed(PROFILER_FILES FontBold src/font/Roboto-Bold.ttf)
+Embed(PROFILER_FILES FontItalic src/font/Roboto-Italic.ttf)
+Embed(PROFILER_FILES FontBoldItalic src/font/Roboto-BoldItalic.ttf)
+Embed(PROFILER_FILES Manual ../manual/tracy.md)
+
 set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")
 
 if(USE_WAYLAND)
     pkg_check_modules(WAYLAND REQUIRED egl wayland-egl wayland-cursor xkbcommon)
+    set(INCLUDES "${INCLUDES};${WAYLAND_INCLUDE_DIRS}")
     set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendWayland.cpp
@@ -185,22 +238,61 @@ else()
     add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui)
+find_package(Threads REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    TracyServer
+    TracyImGui
+    Threads::Threads
+    nlohmann_json::nlohmann_json
+    md4c
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${tidy_SOURCE_DIR}/include
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${md4c_SOURCE_DIR}/src
+)
+
+if(NOT EMSCRIPTEN)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        TracyLibcurl
+        base64
+        tidy-static
+        TracyPugixml
+        usearch
+    )
+endif()
 
 if(NOT DEFINED GIT_REV)
     set(GIT_REV "HEAD")
 endif()
 
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-add_custom_target(git-ref
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/../extra/git-ref.py ${GIT_REV}
-    BYPRODUCTS GitRef.hpp
-)
-add_dependencies(${PROJECT_NAME} git-ref)
+find_package(Git)
+if(Git_FOUND)
+    add_custom_target(git-ref
+        COMMAND ${CMAKE_COMMAND} -E echo "#pragma once" > GitRef.hpp.tmp
+        COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} log -1 "--format=namespace tracy { static inline const char* GitRef = %x22%h%x22; }" ${GIT_REV} >> GitRef.hpp.tmp || echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp.tmp
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different GitRef.hpp.tmp GitRef.hpp
+        BYPRODUCTS GitRef.hpp GitRef.hpp.tmp
+        VERBATIM
+    )
+    add_dependencies(${PROJECT_NAME} git-ref)
+else()
+    message(WARNING "git not found, using 'unknown' as git ref.")
+    add_custom_command(
+        OUTPUT GitRef.hpp
+        COMMAND ${CMAKE_COMMAND} -E echo "#pragma once" > GitRef.hpp
+        COMMAND ${CMAKE_COMMAND} -E echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp
+        VERBATIM
+    )
+    target_sources(${PROJECT_NAME} PUBLIC GitRef.hpp)
+endif()
 
 if(NOT EMSCRIPTEN)
-    target_link_libraries(${PROJECT_NAME} PRIVATE TracyNfd)
-    if (NOT USE_WAYLAND)
+    if(NOT NO_FILESELECTOR)
+        target_link_libraries(${PROJECT_NAME} PRIVATE nfd::nfd)
+    endif()
+    if(NOT USE_WAYLAND)
         target_link_libraries(${PROJECT_NAME} PRIVATE TracyGlfw3)
     endif()
 endif()

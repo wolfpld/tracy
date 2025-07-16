@@ -9,6 +9,7 @@
 #include "TracyVector.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -27,7 +28,17 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
         {
             if( !v.IsEndValid() ) break;
             const auto srcloc = v.SrcLoc();
-            const auto duration = v.End() - v.Start();
+
+            auto start = v.Start();
+            auto end = v.End();
+
+            if ( m_flameGraphInvariant.range.active )
+            {
+                start = std::clamp(start, m_flameGraphInvariant.range.min, m_flameGraphInvariant.range.max);
+                end = std::clamp(end, m_flameGraphInvariant.range.min, m_flameGraphInvariant.range.max);
+            }
+
+            const auto duration = end - start;
             if( srcloc == last )
             {
                 cache->time += duration;
@@ -70,7 +81,17 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
         {
             if( !v->IsEndValid() ) break;
             const auto srcloc = v->SrcLoc();
-            const auto duration = v->End() - v->Start();
+
+            auto start = v->Start();
+            auto end = v->End();
+
+            if ( m_flameGraphInvariant.range.active )
+            {
+                start = std::clamp(start, m_flameGraphInvariant.range.min, m_flameGraphInvariant.range.max);
+                end = std::clamp(end, m_flameGraphInvariant.range.min, m_flameGraphInvariant.range.max);
+            }
+
+            const auto duration = end - start;
             if( srcloc == last )
             {
                 cache->time += duration;
@@ -124,7 +145,15 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             const auto srcloc = v.SrcLoc();
             int64_t duration;
             uint64_t cnt;
-            if( !GetZoneRunningTime( ctx, v, duration, cnt ) ) break;
+            if ( m_flameRange.active )
+            {
+                if( !GetZoneRunningTime( ctx, v, m_flameGraphInvariant.range, duration, cnt ) ) continue;
+            }
+            else
+            {
+                if( !GetZoneRunningTime( ctx, v, duration, cnt ) ) break;
+            }
+
             if( srcloc == last )
             {
                 cache->time += duration;
@@ -169,7 +198,15 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
             const auto srcloc = v->SrcLoc();
             int64_t duration;
             uint64_t cnt;
-            if( !GetZoneRunningTime( ctx, *v, duration, cnt ) ) break;
+            if ( m_flameRange.active )
+            {
+                if( !GetZoneRunningTime( ctx, *v, m_flameGraphInvariant.range, duration, cnt ) ) continue;
+            }
+            else
+            {
+                if( !GetZoneRunningTime( ctx, *v, duration, cnt ) ) break;
+            }
+
             if( srcloc == last )
             {
                 cache->time += duration;
@@ -221,6 +258,15 @@ void View::BuildFlameGraph( const Worker& worker, std::vector<FlameGraphItem>& d
 
     for( auto& v : samples )
     {
+        if ( m_flameGraphInvariant.range.active )
+        {
+            if ( v.time.Val() < m_flameGraphInvariant.range.min ||
+                 v.time.Val() > m_flameGraphInvariant.range.max )
+            {
+                continue;
+            }
+        }
+
         cache.clear();
 
         const auto cs = v.callstack.Val();
@@ -513,13 +559,13 @@ void View::DrawFlameGraphItem( const FlameGraphItem& item, FlameGraphContext& ct
                     TextDisabledUnformatted( ICON_FA_HAT_WIZARD " kernel" );
                 }
                 ImGui::SameLine();
-                ImGui::PushFont( m_smallFont );
+                ImGui::PushFont( g_fonts.normal, FontSmall );
                 ImGui::AlignTextToFramePadding();
                 ImGui::TextDisabled( "0x%" PRIx64, symAddr );
                 ImGui::PopFont();
                 if( normalized != name && strcmp( normalized, name ) != 0 )
                 {
-                    ImGui::PushFont( m_smallFont );
+                    ImGui::PushFont( g_fonts.normal, FontSmall );
                     TextDisabledUnformatted( name );
                     ImGui::PopFont();
                 }
@@ -730,6 +776,28 @@ void View::DrawFlameGraph()
         if( m_flameExternal ) ImGui::EndDisabled();
     }
 
+    ImGui::SameLine();
+    ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+    ImGui::SameLine();
+
+    if( ImGui::Checkbox( "Limit range", &m_flameRange.active ) )
+    {
+        if( m_flameRange.active && m_flameRange.min == 0 && m_flameRange.max == 0 )
+        {
+            m_flameRange.min = m_vd.zvStart;
+            m_flameRange.max = m_vd.zvEnd;
+        }
+
+        m_flameGraphInvariant.Reset();
+    }
+    if( m_flameRange.active )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
+        ImGui::SameLine();
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+    }
+
     auto& td = m_worker.GetThreadData();
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
@@ -791,8 +859,11 @@ void View::DrawFlameGraph()
     ImGui::PopStyleVar();
 
     if( m_flameMode == 0 && ( m_flameGraphInvariant.count != m_worker.GetZoneCount() || m_flameGraphInvariant.lastTime != m_worker.GetLastTime() ) ||
-        m_flameMode == 1 && ( m_flameGraphInvariant.count != m_worker.GetCallstackSampleCount() ) )
+        m_flameMode == 1 && ( m_flameGraphInvariant.count != m_worker.GetCallstackSampleCount() ) ||
+        m_flameGraphInvariant.range != m_flameRange )
     {
+        m_flameGraphInvariant.range = m_flameRange;
+
         size_t sz = 0;
         for( auto& thread : td ) if( FlameGraphThread( thread->id ) ) sz++;
 
@@ -868,7 +939,7 @@ void View::DrawFlameGraph()
 
     if( m_flameGraphData.empty() )
     {
-        ImGui::PushFont( m_bigFont );
+        ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( region.y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_CAT );
         TextCentered( "No data available to display" );

@@ -998,7 +998,6 @@ private:
 
     double m_timerMul;
     uint64_t m_resolution;
-    uint64_t m_delay;
     std::atomic<int64_t> m_timeBegin;
     uint32_t m_mainThread;
     uint64_t m_epoch, m_exectime;

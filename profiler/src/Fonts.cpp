@@ -5,55 +5,60 @@
 
 #include "Fonts.hpp"
 #include "profiler/IconsFontAwesome6.h"
+#include "profiler/TracyEmbed.hpp"
 
-#include "font/DroidSans.hpp"
-#include "font/FiraCodeRetina.hpp"
-#include "font/FontAwesomeSolid.hpp"
+#include "data/FontFixed.hpp"
+#include "data/FontIcons.hpp"
+#include "data/FontNormal.hpp"
+#include "data/FontBold.hpp"
+#include "data/FontBoldItalic.hpp"
+#include "data/FontItalic.hpp"
 
-ImFont* s_bigFont;
-ImFont* s_smallFont;
-ImFont* s_fixedWidth;
+FontData g_fonts;
+
+float FontNormal, FontSmall, FontBig;
 
 void LoadFonts( float scale )
 {
-    static const ImWchar rangesBasic[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
-        0x03BC, 0x03BC, // micro
-        0x03C3, 0x03C3, // small sigma
-        0x2013, 0x2013, // en dash
-        0x2026, 0x2026, // ellipsis
-        0x2264, 0x2264, // less-than or equal to
-        0,
-    };
-    static const ImWchar rangesIcons[] = {
-        ICON_MIN_FA, ICON_MAX_FA,
-        0
-    };
-    static const ImWchar rangesFixed[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
-        0x2026, 0x2026, // ellipsis
-        0
-    };
-
     ImGuiIO& io = ImGui::GetIO();
 
     ImFontConfig configBasic;
-    configBasic.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configBasic.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LightHinting;
+    configBasic.FontDataOwnedByAtlas = false;
     ImFontConfig configMerge;
     configMerge.MergeMode = true;
-    configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
+    configMerge.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LightHinting;
+    configMerge.FontDataOwnedByAtlas = false;
     ImFontConfig configFixed;
-    configFixed.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
-    configFixed.GlyphExtraSpacing.x = -1;
+    configFixed.FontLoaderFlags = ImGuiFreeTypeLoaderFlags_LightHinting;
+    configFixed.GlyphExtraAdvanceX = -1;
+    configFixed.FontDataOwnedByAtlas = false;
+
+    auto fontFixed = Unembed( FontFixed );
+    auto fontIcons = Unembed( FontIcons );
+    auto fontNormal = Unembed( FontNormal );
+    auto fontBold = Unembed( FontBold );
+    auto fontBoldItalic = Unembed( FontBoldItalic );
+    auto fontItalic = Unembed( FontItalic );
 
     io.Fonts->Clear();
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 15.0f * scale ), &configBasic, rangesBasic );
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, round( 14.0f * scale ), &configMerge, rangesIcons );
-    s_fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FiraCodeRetina_compressed_data, tracy::FiraCodeRetina_compressed_size, round( 15.0f * scale ), &configFixed, rangesFixed );
-    s_bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 21.0f * scale ), &configBasic );
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, round( 20.0f * scale ), &configMerge, rangesIcons );
-    s_smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 10.0f * scale ), &configBasic );
 
-    ImGui_ImplOpenGL3_DestroyFontsTexture();
-    ImGui_ImplOpenGL3_CreateFontsTexture();
+    g_fonts.normal = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 15.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+
+    g_fonts.mono = io.Fonts->AddFontFromMemoryTTF( (void*)fontFixed->data(), fontFixed->size(), round( 15.0f * scale ), &configFixed );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+
+    g_fonts.bold = io.Fonts->AddFontFromMemoryTTF( (void*)fontBold->data(), fontBold->size(), round( 15.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+
+    g_fonts.boldItalic = io.Fonts->AddFontFromMemoryTTF( (void*)fontBoldItalic->data(), fontBoldItalic->size(), round( 15.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+
+    g_fonts.italic = io.Fonts->AddFontFromMemoryTTF( (void*)fontItalic->data(), fontItalic->size(), round( 15.0f * scale ), &configBasic );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+
+    FontNormal = round( scale * 15.f );
+    FontSmall = round( scale * 15 * 2.f / 3.f );
+    FontBig = round( scale * 15 * 1.4f );
 }

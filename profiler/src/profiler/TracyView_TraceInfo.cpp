@@ -4,6 +4,7 @@
 #include "TracyPrint.hpp"
 #include "TracyView.hpp"
 #include "tracy_pdqsort.h"
+#include "../Fonts.hpp"
 
 namespace tracy
 {
@@ -16,7 +17,7 @@ void View::DrawInfo()
     ImGui::SetNextWindowSize( ImVec2( 400 * scale, 650 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
-    ImGui::PushFont( m_bigFont );
+    ImGui::PushFont( g_fonts.normal, FontBig );
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     ImGui::PopFont();
     const auto exectime = m_worker.GetExecutableTime();
@@ -76,7 +77,6 @@ void View::DrawInfo()
         ImGui::SameLine();
         const auto version = m_worker.GetTraceVersion();
         ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
-        TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
         TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
         TextFocused( "CPU zones:", RealToString( m_worker.GetZoneCount() ) );
         ImGui::SameLine();
@@ -696,7 +696,7 @@ void View::DrawInfo()
             char buf[128];
 
             const auto ty = ImGui::GetFontSize();
-            ImGui::PushFont( m_smallFont );
+            ImGui::PushFont( g_fonts.normal, FontSmall );
             const auto sty = ImGui::GetFontSize();
             ImGui::PopFont();
             const float margin = round( ty * 0.5 );
@@ -711,7 +711,7 @@ void View::DrawInfo()
             for( auto& package : topology )
             {
                 sprintf( buf, ICON_FA_BOX " Package %" PRIu32, package.first );
-                ImGui::PushFont( m_smallFont );
+                ImGui::PushFont( g_fonts.normal, FontSmall );
                 const auto psz = ImGui::CalcTextSize( buf ).x;
                 if( psz > ptsz ) ptsz = psz;
                 ImGui::PopFont();

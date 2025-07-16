@@ -5,8 +5,6 @@
 
 #include "../public/common/TracyForceInline.hpp"
 
-struct ImFont;
-
 namespace tracy
 {
 
@@ -29,10 +27,10 @@ struct BadVersionState
 
 namespace detail
 {
-void BadVersionImpl( BadVersionState& badVer, ImFont* big );
+void BadVersionImpl( BadVersionState& badVer );
 }
 
-tracy_force_inline void BadVersion( BadVersionState& badVer, ImFont* big ) { if( badVer.state != BadVersionState::Ok ) detail::BadVersionImpl( badVer, big ); }
+tracy_force_inline void BadVersion( BadVersionState& badVer ) { if( badVer.state != BadVersionState::Ok ) detail::BadVersionImpl( badVer ); }
 
 }
 

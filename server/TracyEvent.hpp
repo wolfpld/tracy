@@ -413,7 +413,6 @@ struct GpuEvent
     uint64_t _gpuEnd_child2;
     Int24 callstack;
     uint16_t query_id;
-    unordered_flat_map<int64_t, double> notes;
 };
 
 enum { GpuEventSize = sizeof( GpuEvent ) };
@@ -776,7 +775,8 @@ struct GpuCtxData
     uint32_t overflowMul;
     StringIdx name;
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
-    unordered_flat_map<int64_t, StringIdx> notes;
+    unordered_flat_map<int64_t, StringIdx> noteNames;
+    unordered_flat_map<uint16_t, unordered_flat_map<int64_t, double>> notes;
     short_ptr<GpuEvent> query[64*1024];
 };
 

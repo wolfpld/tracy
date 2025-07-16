@@ -1109,10 +1109,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         f.Read( notesz );
         for( uint64_t i = 0; i < notesz; i++ )
         {
-            decltype( ctx->notes )::key_type key;
-            decltype( ctx->notes )::mapped_type value;
+            decltype( ctx->noteNames )::key_type key;
+            decltype( ctx->noteNames )::mapped_type value;
             f.Read2( key, value );
-            ctx->notes[key] = value;
+            ctx->noteNames[key] = value;
         }
         ctx->hasCalibration = calibration;
         ctx->hasPeriod = ctx->period != 1.f;
@@ -1131,6 +1131,26 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime, childIdx );
             }
         }
+
+        f.Read( notesz );
+        ctx->notes.reserve( notesz );
+        for( uint64_t i = 0; i < notesz; i++ )
+        {
+            uint16_t query_id;
+            f.Read( query_id );
+            auto& notes = ctx->notes[query_id];
+            uint64_t note_count;
+            f.Read( note_count );
+            notes.reserve( note_count );
+            for( uint64_t i = 0; i < note_count; i++ )
+            {
+                int64_t id;
+                double value;
+                f.Read2( id, value );
+                notes[id] = value;
+            }
+        }
+
         m_data.gpuData[i] = ctx;
     }
 
@@ -5774,10 +5794,6 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     zone->callstack.SetVal( 0 );
     zone->SetChild( -1 );
     zone->query_id = ev.queryId;
-    // tracy allocates slab memory without invoking the constructor
-    new( &zone->notes ) unordered_flat_map<int64_t, double>();
-    // reserve space for all the counters we've been given a name for
-    zone->notes.reserve( ctx->notes.size() );
 
     uint64_t ztid;
     if( ctx->thread == 0 )
@@ -6038,26 +6054,18 @@ void Worker::ProcessGpuAnnotationName( const QueueGpuAnnotationName& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
     const auto idx = GetSingleStringIdx();
-    ctx->notes[ev.noteId] = StringIdx( idx );
+    ctx->noteNames[ev.noteId] = StringIdx( idx );
 }
 
 void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
 {
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
-    assert( ctx->threadData.contains( ev.thread ) );
-    auto& timeline = ctx->threadData.at( ev.thread ).timeline;
-    assert( timeline.size() );
-    uint64_t i = timeline.size() - 1;
-    for( ; i >= 0; i-- )
+    if( !ctx->notes.contains( ev.queryId ) )
     {
-        if( timeline[i]->query_id == ev.queryId )
-        {
-            break;
-        }
+        ctx->notes[ev.queryId].reserve( ctx->noteNames.size() );
     }
-    auto& zone = timeline[i];
-    zone->notes.insert_or_assign( ev.noteId, ev.value );
+    ctx->notes.at( ev.queryId )[ev.noteId] = ev.value;
 }
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
@@ -7836,17 +7844,6 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         zone->SetCpuEnd( refTime );
         zone->SetGpuEnd( refGpuTime );
         f.Read( zone->query_id );
-        uint64_t note_count;
-        f.Read( note_count );
-        new( &zone->notes ) unordered_flat_map<int64_t, double>();
-        zone->notes.reserve( note_count );
-        for( uint64_t i = 0; i < note_count; i++ )
-        {
-            int64_t id;
-            double value;
-            f.Read2( id, value );
-            zone->notes[id] = value;
-        }
     }
     while( ++zone != end );
 }
@@ -8184,9 +8181,9 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &ctx->type, sizeof( ctx->type ) );
         f.Write( &ctx->name, sizeof( ctx->name ) );
         f.Write( &ctx->overflow, sizeof( ctx->overflow ) );
-        sz = ctx->notes.size();
+        sz = ctx->noteNames.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& p : ctx->notes )
+        for( auto& p : ctx->noteNames )
         {
             f.Write( &p.first, sizeof( p.first ) );
             f.Write( &p.second, sizeof( p.second ) );
@@ -8200,6 +8197,20 @@ void Worker::Write( FileWrite& f, bool fiDict )
             uint64_t tid = td.first;
             f.Write( &tid, sizeof( tid ) );
             WriteTimeline( f, td.second.timeline, refTime, refGpuTime );
+        }
+
+        sz = ctx->notes.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& notes : ctx->notes )
+        {
+            f.Write( &notes.first, sizeof( notes.first ) );
+            sz = notes.second.size();
+            f.Write( &sz, sizeof( sz ) );
+            for( auto& note : notes.second )
+            {
+                f.Write( &note.first, sizeof( note.first ) );
+                f.Write( &note.second, sizeof( note.second ) );
+            }
         }
     }
 
@@ -8578,12 +8589,6 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
         WriteTimeOffset( f, refTime, v.CpuEnd() );
         WriteTimeOffset( f, refGpuTime, v.GpuEnd() );
         f.Write( &v.query_id, sizeof( v.query_id ) );
-        uint64_t note_count = v.notes.size();
-        f.Write( &note_count, sizeof( note_count ) );
-        for ( auto& p : v.notes ) {
-          f.Write( &p.first, sizeof( p.first ) );
-          f.Write( &p.second, sizeof( p.second ) );
-        }
     }
 }
 

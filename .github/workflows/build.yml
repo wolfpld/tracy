@@ -15,15 +15,13 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-15, ubuntu-latest]
-
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - if: startsWith(matrix.os, 'windows')
         uses: microsoft/setup-msbuild@v2
       - if: startsWith(matrix.os, 'windows')
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - uses: extractions/setup-just@v2
@@ -65,6 +63,9 @@ jobs:
       - name: Find Artifacts
         id: find_artifacts
         run: just copy_artifacts
+      - if: ${{ !startsWith(matrix.os, 'windows') }}
+        name: Symlink
+        run: just symlink
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}

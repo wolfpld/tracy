@@ -18,8 +18,6 @@
 #include "../public/common/TracyProtocol.hpp"
 #include "../public/common/TracySocket.hpp"
 #include "../public/common/TracyDebugModulesHeaderFile.hpp"
-#include "../public/common/TracyCallstack.hpp"
-#include "../public/client/tracy_SPSCQueue.h"
 
 #include "tracy_robin_hood.h"
 #include "TracyEvent.hpp"
@@ -918,11 +916,7 @@ private:
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
     void AddSourceCode( uint32_t id, const char* data, size_t sz );
 
-    void RunSymbolWorker();
-    void HandleSymbolWorkerJob();
     void TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySymbols = true );
-    void HandleCallStackEntryData( uint64_t symaddr, const CallstackEntryData& entry, DecodeCallStackPtrStatus decodeCallStackPtrStatus,  bool querySymbol = true);
-
     tracy_force_inline void AddCallstackPayload( const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( const char* data );
     uint32_t MergeCallstacks( uint32_t first, uint32_t second );
@@ -1009,7 +1003,6 @@ private:
 
     std::thread m_thread;
     std::thread m_threadNet;
-    std::thread m_symbolWorker;
     std::atomic<bool> m_connected { false };
     std::atomic<bool> m_hasData;
     std::atomic<bool> m_shutdown { false };
@@ -1142,17 +1135,6 @@ private:
     Vector<InlineStackData> m_inlineStack;
 
     std::vector<uint32_t> m_pendingThreadHints;
-    
-    SPSCQueue<uint64_t> m_symbolAddressWorkerQueue;
-
-    struct ResolvedCallStack
-    {
-        uint64_t symadd;
-        CallstackEntryData callstackEntryData;
-        DecodeCallStackPtrStatus decodeCallStackPtrStatus;
-    };
-    SPSCQueue<ResolvedCallStack> m_symAddrCallstackEntryDataQueu;
-
 };
 
 }

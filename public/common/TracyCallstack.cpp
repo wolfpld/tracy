@@ -481,7 +481,11 @@ void FormatImageName(char** moduleCacheName, const char* imageName, uint32_t ima
 
 #if TRACY_HAS_CALLSTACK == 1
 
+enum { MaxCbTrace = 64 };
+enum { MaxNameSize = 8*1024 };
 
+int cb_num;
+CallstackEntry cb_data[MaxCbTrace];
 
 HANDLE s_DbgHelpSymHandle = 0;
 
@@ -1100,15 +1104,14 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 
 static CallstackEntryData MakeUnresolvedCallstackEntryData( uint64_t ptr, ModuleNameAndBaseAddress moduleNameAndBaseAddress )
 {
-    CallstackEntry out;
-	out.symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
-	out.symLen = 0;
+	cb_data[0].symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
+	cb_data[0].symLen = 0;
 
-	out.name = CopyStringFast( "[unresolved]" );
-	out.file = CopyStringFast( "[unknown]" );
-	out.line = 0;
+	cb_data[0].name = CopyStringFast( "[unresolved]" );
+	cb_data[0].file = CopyStringFast( "[unknown]" );
+	cb_data[0].line = 0;
 
-	return { {out}, 1, moduleNameAndBaseAddress.name };
+	return { cb_data, 1, moduleNameAndBaseAddress.name };
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _decodeCallStackPtrStatus )
@@ -1160,9 +1163,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 
     int write;
     const auto proc = s_DbgHelpSymHandle;
-    CallstackEntryData outCallstackEntryData;
-    int data_cb = 0;
-
 
 #if !defined TRACY_NO_CALLSTACK_INLINES
     BOOL doInline = FALSE;
@@ -1178,13 +1178,13 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
     if( doInline )
     {
         write = inlineNum;
-        data_cb = 1 + inlineNum;
+        cb_num = 1 + inlineNum;
     }
     else
 #endif
     {
         write = 0;
-        data_cb = 1;
+        cb_num = 1;
     }
 
     char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
@@ -1222,25 +1222,25 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
         if( res == 0 || line.LineNumber >= 0xF00000 )
         {
             filename = "[unknown]";
-            outCallstackEntryData.data[write].line = 0;
+            cb_data[write].line = 0;
         }
         else
         {
             filename = line.FileName;
-            outCallstackEntryData.data[write].line = line.LineNumber;
+            cb_data[write].line = line.LineNumber;
         }
 
-        outCallstackEntryData.data[write].name = symValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleNameAndAddress.name );
-        outCallstackEntryData.data[write].file = CopyStringFast( filename );
+        cb_data[write].name = symValid ? CopyStringFast( si->Name, si->NameLen ) : CopyStringFast( moduleNameAndAddress.name );
+        cb_data[write].file = CopyStringFast( filename );
         if( symValid )
         {
-            outCallstackEntryData.data[write].symLen = si->Size;
-            outCallstackEntryData.data[write].symAddr = si->Address;
+            cb_data[write].symLen = si->Size;
+            cb_data[write].symAddr = si->Address;
         }
         else
         {
-            outCallstackEntryData.data[write].symLen = 0;
-            outCallstackEntryData.data[write].symAddr = 0;
+            cb_data[write].symLen = 0;
+            cb_data[write].symAddr = 0;
         }
     }
 
@@ -1249,7 +1249,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
     {
         for( DWORD i=0; i<inlineNum; i++ )
         {
-            auto& cb = outCallstackEntryData.data[i];
+            auto& cb = cb_data[i];
             const auto symInlineValid = _SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
             const char* filename;
             if( _SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
@@ -1283,10 +1283,9 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
 #endif
-    outCallstackEntryData.size = data_cb;
-    outCallstackEntryData.imageName = moduleNameAndAddress.name;
 
-    return outCallstackEntryData;
+
+    return { cb_data, uint8_t(cb_num), moduleNameAndAddress.name };
 }
 
 #elif defined(TRACY_USE_LIBBACKTRACE)

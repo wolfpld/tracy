@@ -86,9 +86,6 @@ inline void PreventSymbolResolution() { }
 
 namespace tracy
 {
-    
-enum { MaxCbTrace = 64 };
-enum { MaxNameSize = 8*1024 };
 
 static constexpr bool has_callstack() { return true; }
 
@@ -112,7 +109,7 @@ struct CallstackEntry
 
 struct CallstackEntryData
 {
-    CallstackEntry data[MaxCbTrace];
+    const CallstackEntry* data;
     uint8_t size;
     const char* imageName;
 };

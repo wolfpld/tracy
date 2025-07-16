@@ -27,7 +27,7 @@ jobs:
       - uses: extractions/setup-just@v2
       - if: startsWith(inputs.runningSystem, 'windows')
         uses: microsoft/setup-msbuild@v2
-      - if: inputs.webBuild == 'true'
+      - if: inputs.webBuild == true
         name: Setup emscripten
         uses: mymindstorm/setup-emsdk@v14
       - if: startsWith(inputs.runningSystem, 'windows')
@@ -53,7 +53,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Trust git repo
         run: git config --global --add safe.directory '*'
-      - if: ${{ !startsWith(inputs.runningSystem, 'windows') }} && inputs.webBuild == false
+      - if: ${{ !startsWith(inputs.runningSystem, 'windows') && inputs.webBuild == false }}
         name: Library
         run: just library
       - name: Profiler GUI
@@ -78,10 +78,10 @@ jobs:
         if: inputs.webBuild == false
         id: find_artifacts
         run: just copy_artifacts
-      - if: ${{ startsWith(inputs.runningSystem, 'ubuntu') }} && inputs.webBuild == false
+      - if: startsWith(inputs.runningSystem, 'ubuntu') && inputs.webBuild == false
         name: Strip binaries
         run: just strip_binary
-      - if: ${{ startsWith(inputs.runningSystem, 'macos') }} && inputs.webBuild == false
+      - if: startsWith(inputs.runningSystem, 'macos') && inputs.webBuild == false
         name: Symlink
         run: just symlink
       - if: inputs.webBuild == true

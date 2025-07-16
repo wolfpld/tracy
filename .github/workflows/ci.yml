@@ -24,7 +24,7 @@ jobs:
           - runningSystem: macos-15
             testCompilation: false
             webBuild: false
-    uses: ./.github/workflows/build_base.yml
+    uses: ./.github/workflows/build.yml
     with:
       runningSystem: ${{ matrix.runningSystem }}
       testCompilation: ${{ matrix.testCompilation }}

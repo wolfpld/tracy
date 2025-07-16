@@ -19,12 +19,9 @@ on:
         default: false
         type: boolean
 
-env:
-  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
-
 jobs:
   build:
-    uses: ./.github/workflows/build_base.yml
+    uses: ./.github/workflows/build.yml
     with:
       runningSystem: ubuntu-latest
       testCompilation: false

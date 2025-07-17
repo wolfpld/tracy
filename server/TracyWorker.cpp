@@ -3203,6 +3203,7 @@ void Worker::QueryCallstackFrame( uint64_t addr )
     if( m_data.callstackFrameMap.contains( packed ) ) return;
 
     m_pendingCallstackFrames++;
+    m_data.callstackFrameMap.emplace( packed, nullptr );
     Query( ServerQueryCallstackFrame, addr );
 }
 
@@ -6515,7 +6516,7 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
 
     // Frames may be duplicated due to recursion
     auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
-    if( fmit == m_data.callstackFrameMap.end() )
+    if( !fmit->second )
     {
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
         m_callstackFrameStaging->size = ev.size;
@@ -6628,8 +6629,10 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
 
         if( --m_pendingCallstackSubframes == 0 )
         {
-            assert( m_data.callstackFrameMap.find( frameId ) == m_data.callstackFrameMap.end() );
-            m_data.callstackFrameMap.emplace( frameId, m_callstackFrameStaging );
+            auto fit = m_data.callstackFrameMap.find( frameId );
+            assert( fit != m_data.callstackFrameMap.end() );
+            assert( !fit->second );
+            fit->second = m_callstackFrameStaging;
             m_data.codeSymbolMap.emplace( m_callstackFrameStagingPtr, m_callstackFrameStaging->data[0].symAddr );
             m_callstackFrameStaging = nullptr;
         }

@@ -1,4 +1,4 @@
-cmake_prepare_args := "-DCMAKE_BUILD_TYPE=Release"
+cmake_prepare_args := if os() == "windows" { "-DCMAKE_BUILD_TYPE=Release" } else { "-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache" }
 artifacts_files_pattern := if os() == "windows" { "*/build/Release/tracy*.exe" } else { "*/build/tracy-*" }
 
 # List all available commands

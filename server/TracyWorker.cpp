@@ -3889,10 +3889,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         {
             const auto& op = insn[i];
             const auto addr = op.address;
-            if( m_data.callstackFrameMap.find( PackPointer( addr ) ) == m_data.callstackFrameMap.end() )
-            {
-                QueryCallstackFrame( addr );
-            }
+            if( !m_data.callstackFrameMap.contains( PackPointer( addr ) ) ) QueryCallstackFrame( addr );
 
             uint64_t callAddr = 0;
             const auto& detail = *op.detail;
@@ -3928,10 +3925,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
                     if( callAddr != 0 ) break;
                 }
             }
-            if( callAddr != 0 && m_data.callstackFrameMap.find( PackPointer( callAddr ) ) == m_data.callstackFrameMap.end() )
-            {
-                QueryCallstackFrame( callAddr );
-            }
+            if( callAddr != 0 && !m_data.callstackFrameMap.contains( PackPointer( callAddr ) ) ) QueryCallstackFrame( callAddr );
         }
         cs_free( insn, cnt );
     }
@@ -3996,11 +3990,7 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
 
         for( auto& frame : *arr )
         {
-            auto fit = m_data.callstackFrameMap.find( frame );
-            if( fit == m_data.callstackFrameMap.end() )
-            {
-                QueryCallstackFrame( GetCanonicalPointer( frame ) );
-            }
+            if( !m_data.callstackFrameMap.contains( frame ) ) QueryCallstackFrame( GetCanonicalPointer( frame ) );
         }
     }
     else
@@ -4088,11 +4078,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
 
         for( auto& frame : *arr )
         {
-            auto fit = m_data.callstackFrameMap.find( frame );
-            if( fit == m_data.callstackFrameMap.end() )
-            {
-                QueryCallstackFrame( GetCanonicalPointer( frame ) );
-            }
+            if( !m_data.callstackFrameMap.contains( frame ) ) QueryCallstackFrame( GetCanonicalPointer( frame ) );
         }
     }
     else

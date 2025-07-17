@@ -45,13 +45,9 @@ bool PatchSymbolsWithRegex( tracy::Worker& worker, const PathSubstitutionList& p
     auto& callstackFrameMap = worker.GetCallstackFrameMap();
     for( auto it = callstackFrameMap.begin(); it != callstackFrameMap.end(); ++it )
     {
-        tracy::CallstackFrameData* frameDataPtr = it->second;
-        if( !frameDataPtr )
-        {
-            continue;
-        }
+        if( !it->second ) continue;
 
-        tracy::CallstackFrameData& frameData = *frameDataPtr;
+        tracy::CallstackFrameData& frameData = *it->second;
         const char* imageName = worker.GetString( frameData.imageName );
 
         const uint32_t imageNameIdx = frameData.imageName.Idx();

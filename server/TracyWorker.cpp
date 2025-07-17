@@ -3993,15 +3993,23 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
         for( auto& frame : *arr )
         {
             {
-                // we want to prevent sending queries about the a symbol over
-                // and over again, since the same symbol can be in different
-                // callstacks/backtraces 
-                auto it = m_data.callstackFrameRequestedAlreadyMap.find(frame);
-                if (it != m_data.callstackFrameRequestedAlreadyMap.end()) {
-                    continue; // skip; already requested
-                } else {
-                    m_data.callstackFrameRequestedAlreadyMap.emplace(frame);
-                }
+                static uint64_t skips = 0;
+                static uint64_t queries = 0;
+                {
+                    // we want to prevent sending queries about the a symbol over
+                    // and over again, since the same symbol can be in different
+                    // callstacks/backtraces 
+                    auto it = m_data.callstackFrameRequestedAlreadyMap.find(frame);
+                    if (it != m_data.callstackFrameRequestedAlreadyMap.end()) {
+                        skips++;
+                        continue; // skip; already requested
+                    } else {
+                        queries++;
+                        m_data.callstackFrameRequestedAlreadyMap.emplace(frame);
+                    }
+                    if ((queries + skips) % 1024 == 0) {
+                        fprintf(stderr, "Symbol Request Cache: Skips: %llu | Actual Queries: %llu | Cache Size: %llu\n", skips, queries, m_data.callstackFrameRequestedAlreadyMap.size());
+                    }
             }
             auto fit = m_data.callstackFrameMap.find( frame );
             if( fit == m_data.callstackFrameMap.end() )

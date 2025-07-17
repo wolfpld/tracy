@@ -3199,6 +3199,9 @@ void Worker::QueryDataTransfer( const void* ptr, size_t size )
 
 void Worker::QueryCallstackFrame( uint64_t addr )
 {
+    const auto packed = PackPointer( addr );
+    if( m_data.callstackFrameMap.contains( packed ) ) return;
+
     m_pendingCallstackFrames++;
     Query( ServerQueryCallstackFrame, addr );
 }
@@ -3889,7 +3892,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         {
             const auto& op = insn[i];
             const auto addr = op.address;
-            if( !m_data.callstackFrameMap.contains( PackPointer( addr ) ) ) QueryCallstackFrame( addr );
+            QueryCallstackFrame( addr );
 
             uint64_t callAddr = 0;
             const auto& detail = *op.detail;
@@ -3925,7 +3928,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
                     if( callAddr != 0 ) break;
                 }
             }
-            if( callAddr != 0 && !m_data.callstackFrameMap.contains( PackPointer( callAddr ) ) ) QueryCallstackFrame( callAddr );
+            if( callAddr != 0 ) QueryCallstackFrame( callAddr );
         }
         cs_free( insn, cnt );
     }
@@ -3990,7 +3993,7 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
 
         for( auto& frame : *arr )
         {
-            if( !m_data.callstackFrameMap.contains( frame ) ) QueryCallstackFrame( GetCanonicalPointer( frame ) );
+            QueryCallstackFrame( GetCanonicalPointer( frame ) );
         }
     }
     else
@@ -4078,7 +4081,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
 
         for( auto& frame : *arr )
         {
-            if( !m_data.callstackFrameMap.contains( frame ) ) QueryCallstackFrame( GetCanonicalPointer( frame ) );
+            QueryCallstackFrame( GetCanonicalPointer( frame ) );
         }
     }
     else

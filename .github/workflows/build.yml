@@ -202,7 +202,7 @@ jobs:
         run: just strip_binary
       - if: startsWith(inputs.runningSystem, 'macos')
         name: Add install info
-        run: echo "MacOS automatically adds quarantine attributes to binaries downloaded from the internet. To remove these attributes and make them executable, run the following command:\n\nxattr -d com.apple.quarantine ./tracy*" > bin/tracy_install_info.txt
+        run: echo "MacOS automatically adds quarantine attributes to binaries downloaded from the internet. To remove these attributes and make them executable, run the following command xattr -d com.apple.quarantine ./tracy*" > bin/tracy_install_info.txt
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.runningSystem }}

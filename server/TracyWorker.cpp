@@ -3996,7 +3996,7 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
                 static uint64_t skips = 0;
                 static uint64_t queries = 0;
                 {
-                    // we want to prevent sending queries about the a symbol over
+                    // we want to prevent sending queries about a symbol over
                     // and over again, since the same symbol can be in different
                     // callstacks/backtraces 
                     auto it = m_data.callstackFrameRequestedAlreadyMap.find(frame);

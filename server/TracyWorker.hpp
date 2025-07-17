@@ -688,6 +688,7 @@ private:
     void QueryTerminate();
     void QuerySourceFile( const char* fn, const char* image );
     void QueryDataTransfer( const void* ptr, size_t size );
+    void QueryCallstackFrame( uint64_t addr );
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, const char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );

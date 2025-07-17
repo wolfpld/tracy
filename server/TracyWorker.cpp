@@ -3197,6 +3197,12 @@ void Worker::QueryDataTransfer( const void* ptr, size_t size )
     }
 }
 
+void Worker::QueryCallstackFrame( uint64_t addr )
+{
+    m_pendingCallstackFrames++;
+    Query( ServerQueryCallstackFrame, addr );
+}
+
 bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     if( ev.hdr.idx >= (int)QueueType::StringData )
@@ -3885,8 +3891,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
             const auto addr = op.address;
             if( m_data.callstackFrameMap.find( PackPointer( addr ) ) == m_data.callstackFrameMap.end() )
             {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, addr );
+                QueryCallstackFrame( addr );
             }
 
             uint64_t callAddr = 0;
@@ -3925,8 +3930,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
             }
             if( callAddr != 0 && m_data.callstackFrameMap.find( PackPointer( callAddr ) ) == m_data.callstackFrameMap.end() )
             {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, callAddr );
+                QueryCallstackFrame( callAddr );
             }
         }
         cs_free( insn, cnt );
@@ -3995,8 +3999,7 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
             auto fit = m_data.callstackFrameMap.find( frame );
             if( fit == m_data.callstackFrameMap.end() )
             {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, GetCanonicalPointer( frame ) );
+                QueryCallstackFrame( GetCanonicalPointer( frame ) );
             }
         }
     }
@@ -4088,8 +4091,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
             auto fit = m_data.callstackFrameMap.find( frame );
             if( fit == m_data.callstackFrameMap.end() )
             {
-                m_pendingCallstackFrames++;
-                Query( ServerQueryCallstackFrame, GetCanonicalPointer( frame ) );
+                QueryCallstackFrame( GetCanonicalPointer( frame ) );
             }
         }
     }

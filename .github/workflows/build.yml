@@ -43,18 +43,13 @@ env:
 
 jobs:
   library:
-    if: inputs.regularBuilds == true
+    if: ${{ !startsWith(inputs.runningSystem, 'windows') && inputs.regularBuilds == true }}
     runs-on: ${{ inputs.runningSystem }}
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v2
       - if: startsWith(inputs.runningSystem, 'windows')
         run: pip install meson ninja
-      - name: ccache
-        if: ${{ !startsWith(inputs.runningSystem, 'windows') }}
-        uses: hendrikmuhs/ccache-action@v1.2.11
-        with:
-          key: ${{ inputs.runningSystem }}-${{ matrix.type }}
       - name: Cache CPM packages
         uses: actions/cache@v4
         with:
@@ -66,10 +61,10 @@ jobs:
             ${{ runner.os }}-cpm-
       - if: startsWith(inputs.runningSystem, 'macos')
         name: Install macos dependencies
-        run: brew install pkg-config glfw meson ccache
+        run: brew install pkg-config glfw meson
       - if: startsWith(inputs.runningSystem, 'ubuntu')
         name: Install linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y ccache pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Trust git repo
         run: git config --global --add safe.directory '*'
       - name: Library
@@ -103,15 +98,10 @@ jobs:
         run: pip install meson ninja
       - if: startsWith(inputs.runningSystem, 'macos')
         name: Install macos dependencies
-        run: brew install pkg-config glfw meson ccache
+        run: brew install pkg-config glfw meson
       - if: startsWith(inputs.runningSystem, 'ubuntu')
         name: Install linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y ccache pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
-      - name: ccache
-        if: ${{ !startsWith(inputs.runningSystem, 'windows') }}
-        uses: hendrikmuhs/ccache-action@v1.2.11
-        with:
-          key: ${{ inputs.runningSystem }}-${{ matrix.type }}
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Build ${{ matrix.component }}
         run: just build ${{ matrix.component }}
       - name: Get artifacts ${{ matrix.component }}
@@ -138,10 +128,10 @@ jobs:
         run: pip install meson ninja
       - if: startsWith(inputs.runningSystem, 'macos')
         name: Install macos dependencies
-        run: brew install pkg-config glfw meson ccache
+        run: brew install pkg-config glfw meson
       - if: startsWith(inputs.runningSystem, 'ubuntu')
         name: Install linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y ccache pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Test compilation with different flags
         run: just compile_tests
 
@@ -170,10 +160,10 @@ jobs:
         run: pip install meson ninja
       - if: startsWith(inputs.runningSystem, 'macos')
         name: Install macos dependencies
-        run: brew install pkg-config glfw meson ccache
+        run: brew install pkg-config glfw meson
       - if: startsWith(inputs.runningSystem, 'ubuntu')
         name: Install linux dependencies
-        run: sudo apt-get update && sudo apt-get install -y ccache pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
       - name: Setup emscripten
         uses: mymindstorm/setup-emsdk@v14
       - name: Web Build

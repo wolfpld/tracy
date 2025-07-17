@@ -1,4 +1,5 @@
 cmake_prepare_args := "-DCMAKE_BUILD_TYPE=Release"
+artifacts_files_pattern := if os() == "windows" { "*/build/Release/tracy*.exe" } else { "*/build/tracy-*" }
 
 # List all available commands
 list:
@@ -21,21 +22,12 @@ build_all: (build 'profiler') (build 'update') (build 'capture') (build 'csvexpo
 
 # Copy artifacts to bin directory
 [group('general')]
-[unix]
 copy_artifacts:
     mkdir -p bin
-    cp */build/tracy-* bin
-
-# Copy artifacts to bin directory
-[group('general')]
-[windows]
-copy_artifacts:
-    mkdir -p bin
-    cp */build/Release/tracy-*.exe bin
+    cp {{artifacts_files_pattern}} bin
 
 # Strip binaries artifacts
-[group('general')]
-[linux]
+[group('general'), unix]
 strip_binary:
     strip bin/tracy-*
 
@@ -54,7 +46,7 @@ _compile_test arguments: (_prepare "test" arguments)
 
 # Test compilation with different flags.
 # It clean the build folder to reset cached variables between runs.
-[group('general')]
+[group('tests')]
 compile_tests:
     just _compile_test "-DCMAKE_BUILD_TYPE=Release"
     just _compile_test "-DCMAKE_BUILD_TYPE=Release -DTRACY_ON_DEMAND=ON ."
@@ -84,10 +76,3 @@ web_copy_artifacts:
     cp profiler/build/tracy-profiler.js.zst bin
     cp profiler/build/tracy-profiler.wasm.gz bin
     cp profiler/build/tracy-profiler.wasm.zst bin
-
-# Creates a symlink to the Tracy executable artifact.
-[unix]
-[working-directory: 'bin']
-[group('general')]
-symlink:
-    ln -s tracy-profiler tracy

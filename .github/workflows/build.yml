@@ -197,12 +197,12 @@ jobs:
           mv capture-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
           mv csvexport-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
           mv import-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
-      - if: startsWith(inputs.runningSystem, 'ubuntu')
+      - if: ${{ !startsWith(inputs.runningSystem, 'windows') }}
         name: Strip binaries
         run: just strip_binary
       - if: startsWith(inputs.runningSystem, 'macos')
-        name: Symlink
-        run: just symlink
+        name: Add install info
+        run: echo "MacOS automatically adds quarantine attributes to binaries downloaded from the internet. To remove these attributes and make them executable, run the following command:\n\nxattr -d com.apple.quarantine ./tracy*" > bin/tracy_install_info.txt
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.runningSystem }}

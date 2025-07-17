@@ -3992,6 +3992,17 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
 
         for( auto& frame : *arr )
         {
+            {
+                // we want to prevent sending queries about the a symbol over
+                // and over again, since the same symbol can be in different
+                // callstacks/backtraces 
+                auto it = m_data.callstackFrameRequestedAlreadyMap.find(frame);
+                if (it != m_data.callstackFrameRequestedAlreadyMap.end()) {
+                    continue; // skip; already requested
+                } else {
+                    m_data.callstackFrameRequestedAlreadyMap.emplace(frame);
+                }
+            }
             auto fit = m_data.callstackFrameMap.find( frame );
             if( fit == m_data.callstackFrameMap.end() )
             {

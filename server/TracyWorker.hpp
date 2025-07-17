@@ -321,6 +321,7 @@ private:
         unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
         Vector<short_ptr<VarArray<CallstackFrameId>>> callstackPayload;
         unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
+        unordered_flat_set<CallstackFrameId, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameRequestedAlreadyMap;
         unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
         unordered_flat_map<uint64_t, SymbolData> symbolMap;
         unordered_flat_map<uint64_t, SymbolStats> symbolStats;

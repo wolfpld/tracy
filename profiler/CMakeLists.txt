@@ -49,7 +49,7 @@ function(Embed LIST NAME FILE)
     add_custom_command(
         OUTPUT data/${NAME}.cpp data/${NAME}.hpp
         COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
-        DEPENDS data ${CMAKE_CURRENT_BINARY_DIR}/embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
+        DEPENDS data embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
     )
     list(APPEND ${LIST} data/${NAME}.cpp)
     return(PROPAGATE ${LIST})

@@ -507,7 +507,7 @@ public:
     uint64_t GetCallstackParentPayloadCount() const { return m_data.parentCallstackPayload.size(); }
     uint64_t GetCallstackParentFrameCount() const { return m_callstackParentNextIdx; }
 #endif
-    uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
+    uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size() - m_pendingCallstackFrames; }
     uint64_t GetCallstackSampleCount() const { return m_data.samplesCnt; }
     uint64_t GetSymbolsCount() const { return m_data.symbolMap.size(); }
     uint64_t GetSymbolCodeCount() const { return m_data.symbolCode.size(); }
@@ -705,6 +705,7 @@ private:
     void QueryTerminate();
     void QuerySourceFile( const char* fn, const char* image );
     void QueryDataTransfer( const void* ptr, size_t size );
+    void QueryCallstackFrame( uint64_t addr );
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, const char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );
@@ -915,7 +916,6 @@ private:
     void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
     void AddSourceCode( uint32_t id, const char* data, size_t sz );
 
-    void TryResolveCallStackIfNeeded( CallstackFrameId frameId, bool querySymbols = true );
     tracy_force_inline void AddCallstackPayload( const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( const char* data );
     uint32_t MergeCallstacks( uint32_t first, uint32_t second );

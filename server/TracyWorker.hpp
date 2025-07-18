@@ -741,6 +741,8 @@ private:
     tracy_force_inline void ProcessGpuCalibration( const QueueGpuCalibration& ev );
     tracy_force_inline void ProcessGpuTimeSync( const QueueGpuTimeSync& ev );
     tracy_force_inline void ProcessGpuContextName( const QueueGpuContextName& ev );
+    tracy_force_inline void ProcessGpuAnnotationName( const QueueGpuAnnotationName& ev );
+    tracy_force_inline void ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev );
     tracy_force_inline MemEvent* ProcessMemAlloc( const QueueMemAlloc& ev );
     tracy_force_inline MemEvent* ProcessMemAllocNamed( const QueueMemAlloc& ev );
     tracy_force_inline MemEvent* ProcessMemFree( const QueueMemFree& ev );

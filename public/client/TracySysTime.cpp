@@ -4,6 +4,7 @@
 
 #  if defined _WIN32
 #    include <windows.h>
+#    include "../common/TracyWinFamily.hpp"
 #  elif defined __linux__
 #    include <stdio.h>
 #    include <inttypes.h>

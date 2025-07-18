@@ -84,6 +84,9 @@
 #include "TracySysTrace.hpp"
 #include "../tracy/TracyC.h"
 
+#include "../tracy/Tracy.hpp"
+constexpr bool s_instrument_symbol_worker = true;
+
 #if defined TRACY_MANUAL_LIFETIME && !defined(TRACY_DELAYED_INIT)
 #  error "TRACY_MANUAL_LIFETIME requires enabled TRACY_DELAYED_INIT"
 #endif
@@ -3446,10 +3449,12 @@ void Profiler::QueueSourceCodeQuery( uint32_t id )
 #ifdef TRACY_HAS_CALLSTACK
 void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 {
+    ZoneNamed( zone_top, s_instrument_symbol_worker );
     switch( si.type )
     {
     case SymbolQueueItemType::CallstackFrame:
     {
+        ZoneNamedN( zone_case, "SymbolQueueItemType::CallstackFrame", s_instrument_symbol_worker );
         const auto frameData = DecodeCallstackPtr( si.ptr );
         auto data = tracy_malloc_fast( sizeof( CallstackEntry ) * frameData.size );
         memcpy( data, frameData.data, sizeof( CallstackEntry ) * frameData.size );
@@ -3463,6 +3468,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
     }
     case SymbolQueueItemType::SymbolQuery:
     {
+        ZoneNamedN( zone_case, "SymbolQueueItemType::SymbolQuery", s_instrument_symbol_worker );
 #ifdef __ANDROID__
         // On Android it's common for code to be in mappings that are only executable
         // but not readable.
@@ -3485,6 +3491,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 #ifdef TRACY_HAS_SYSTEM_TRACING
     case SymbolQueueItemType::ExternalName:
     {
+        ZoneNamedN( zone_case, "SymbolQueueItemType::ExternalName", s_instrument_symbol_worker );
         const char* threadName;
         const char* name;
         SysTraceGetExternalName( si.ptr, threadName, name );
@@ -3498,6 +3505,7 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 #endif
     case SymbolQueueItemType::KernelCode:
     {
+        ZoneNamedN( zone_case, "SymbolQueueItemType::KernelCode", s_instrument_symbol_worker );
 #ifdef _WIN32
         auto mod = GetKernelModulePath( si.ptr );
         if( mod )
@@ -3542,8 +3550,11 @@ void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
         break;
     }
     case SymbolQueueItemType::SourceCode:
+    {
+        ZoneNamedN( zone_case, "SymbolQueueItemType::SourceCode", s_instrument_symbol_worker );
         HandleSourceCodeQuery( (char*)si.ptr, (char*)si.extra, si.id );
         break;
+    }
     default:
         assert( false );
         break;
@@ -3564,6 +3575,7 @@ void Profiler::SymbolWorker()
     InitCallstack();
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
+    SPSCQueue<SymbolQueueItem> low_priority (1024*1024);
     for(;;)
     {
         const auto shouldExit = ShouldExit();
@@ -3583,15 +3595,27 @@ void Profiler::SymbolWorker()
         auto si = m_symbolQueue.front();
         if( si )
         {
+            if (si->type == SymbolQueueItemType::ExternalName) {
+                low_priority.emplace( *si );
+                m_symbolQueue.pop();
+                continue;
+            }
             HandleSymbolQueueItem( *si );
             m_symbolQueue.pop();
         }
         else
         {
+            ZoneNamedN( zone_idle, "SymbolWorker::idle", s_instrument_symbol_worker );
             if( shouldExit )
             {
                 s_symbolThreadGone.store( true, std::memory_order_release );
                 return;
+            }
+            if( !low_priority.empty() )
+            {
+                auto lsi = low_priority.front();
+                HandleSymbolQueueItem( *lsi );
+                low_priority.pop();
             }
             std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
         }

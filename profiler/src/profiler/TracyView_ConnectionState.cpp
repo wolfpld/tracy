@@ -78,7 +78,7 @@ bool View::DrawConnection()
     }
 
     {
-        std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
+        Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetSendInFlight() ) );
         const auto sz = m_worker.GetFrameCount( *m_frames );
@@ -142,7 +142,7 @@ bool View::DrawConnection()
 
     ImGui::SameLine( 0, 2 * ty );
     const char* stopStr = ICON_FA_PLUG " Stop";
-    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
+    Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
     if( !m_disconnectIssued && m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )

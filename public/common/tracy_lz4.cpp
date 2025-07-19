@@ -345,7 +345,7 @@ namespace tracy
  * environments. This is needed when decompressing the Linux Kernel, for example.
  */
 #if !defined(LZ4_memcpy)
-#  if defined(__GNUC__) && (__GNUC__ >= 4)
+#  if (defined(__GNUC__) && (__GNUC__ >= 4)) || defined(__clang__)
 #    define LZ4_memcpy(dst, src, size) __builtin_memcpy(dst, src, size)
 #  else
 #    define LZ4_memcpy(dst, src, size) memcpy(dst, src, size)

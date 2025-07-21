@@ -1706,6 +1706,35 @@ Unlike other GPU backends in Tracy, there is no need to call \texttt{TracyCUDACo
 
 To stop profiling, call the \texttt{TracyCUDAStopProfiling(ctx)} macro.
 
+\subsubsection{ROCm}
+
+On Linux, if rocprofiler-sdk is installed, tracy can automatically trace GPU dispatches and collect
+performance counter values. If CMake can't find rocprofiler-sdk, you can set the CMake variable
+\texttt{rocprofiler-sdk\_DIR} to point it at the correct module directory. Use the
+\texttt{TRACY\_ROCPROF\_COUNTERS} environment variable with the desired counters separated by commas
+to control what values are collected. The results will appear for each dispatch in the tool tip and
+zone detail window. Results are summed across dimensions. You can get a list of the counters
+available for your hardware with this command:
+\begin{lstlisting}[language=sh]
+rocprofv3 -L
+\end{lstlisting}
+
+\subparagraph{Troubleshooting}
+\begin{itemize}
+\item If you are taking very long captures, you may see drift between the GPU and
+  CPU timelines. This may be mitigated by setting the CMake variable
+  \texttt{TRACY\_ROCPROF\_CALIBRATION}, which will refresh the time synchronization about every
+  second.
+\item The timeline drift may also be affected by network time synchronization, in which case the
+  drift will be reduced by disabling that, with the advantage that there is no application performance
+  cost.
+\item On some GPUs, you will need to change the the performance level to see non-zero results from
+  some counters. Use this command:
+\begin{lstlisting}[language=sh]
+sudo amd-smi set -g 0 -l stable_std
+\end{lstlisting}
+\end{itemize}
+
 \subsubsection{Multiple zones in one scope}
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).

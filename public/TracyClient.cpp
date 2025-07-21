@@ -33,7 +33,7 @@
 #include "client/TracyKCore.cpp"
 
 #ifdef TRACY_ROCPROF
-#include "client/TracyRocprof.cpp"
+#  include "client/TracyRocprof.cpp"
 #endif
 
 #if defined(TRACY_HAS_CALLSTACK)

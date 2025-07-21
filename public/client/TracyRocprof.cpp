@@ -29,8 +29,6 @@
         }                                                                                                              \
     }
 
-#define USE_CALIBRATION 0
-
 namespace
 {
 
@@ -78,7 +76,6 @@ uint8_t gpu_context_allocate( ToolData* data )
     clock_gettime( CLOCK_BOOTTIME, &ts );
     uint64_t cpu_timestamp = Profiler::GetTime();
     uint64_t gpu_timestamp = ( (uint64_t)ts.tv_sec * 1000000000 ) + ts.tv_nsec;
-    bool is_calibrated = USE_CALIBRATION;
     float timestamp_period = 1.0f;
     data->previous_cpu_time = cpu_timestamp;
 
@@ -92,13 +89,12 @@ uint8_t gpu_context_allocate( ToolData* data )
     }
 
     uint8_t context_flags = 0;
-    if( is_calibrated )
-    {
-        // Tell tracy we'll be passing calibrated timestamps and not to mess with
-        // the times. We'll periodically send GpuCalibration events in case the
-        // times drift.
-        context_flags |= tracy::GpuContextCalibration;
-    }
+#ifdef TRACY_ROCPROF_CALIBRATION
+    // Tell tracy we'll be passing calibrated timestamps and not to mess with
+    // the times. We'll periodically send GpuCalibration events in case the
+    // times drift.
+    context_flags |= tracy::GpuContextCalibration;
+#endif
     {
         auto* item = tracy::Profiler::QueueSerial();
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::GpuNewContext );
@@ -467,9 +463,11 @@ void calibration_thread( void* ptr )
     }
     data->init = true;
 
-#if USE_CALIBRATION
+#ifdef TRACY_ROCPROF_CALIBRATION
     while( data->init )
     {
+        sleep( 1 );
+
         timespec ts;
         // HSA performs a linear interpolation of GPU time to CLOCK_BOOTTIME. However, this is
         // subject to network time updates and can drift relative to tracy's clock.
@@ -488,8 +486,6 @@ void calibration_thread( void* ptr )
             tracy::Profiler::QueueSerialFinish();
             data->previous_cpu_time = cpu_timestamp;
         }
-
-        sleep( 1 );
     }
 #endif
 }

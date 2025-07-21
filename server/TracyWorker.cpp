@@ -6061,11 +6061,12 @@ void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
 {
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
-    if( !ctx->notes.contains( ev.queryId ) )
-    {
-        ctx->notes[ev.queryId].reserve( ctx->noteNames.size() );
+    auto note = ctx->notes.find( ev.queryId );
+    if( note == ctx->notes.end() ) {
+      note = ctx->notes.emplace( ev.queryId, decltype(ctx->notes)::mapped_type{} ).first;
+      note->second.reserve( ctx->noteNames.size() );
     }
-    ctx->notes.at( ev.queryId )[ev.noteId] = ev.value;
+    note->second[ev.noteId] = ev.value;
 }
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )

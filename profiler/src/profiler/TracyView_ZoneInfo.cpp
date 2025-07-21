@@ -1579,7 +1579,6 @@ void View::DrawGpuInfoWindow()
             TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
         }
 
-        TextFocused( "Query ID:", RealToString( ev.query_id ) );
         if( ctx->notes.contains( ev.query_id ) )
         {
             for( auto& p : ctx->notes.at( ev.query_id ) )
@@ -2062,7 +2061,6 @@ void View::ZoneTooltip( const GpuEvent& ev )
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
     }
 
-    TextFocused( "Query ID:", RealToString( ev.query_id ) );
     if( ctx->notes.contains( ev.query_id ) )
     {
         for( auto& p : ctx->notes.at( ev.query_id ) )

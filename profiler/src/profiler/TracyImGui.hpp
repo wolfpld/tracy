@@ -240,6 +240,15 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     return res;
 }
 
+[[maybe_unused]] static inline void TextFocusedClipboard( const char* label, const char* value, const char* clipboard, const int clipboardButtonId )
+{
+    TextDisabledUnformatted( label );
+    ImGui::SameLine();
+    if( ClipboardButton( clipboardButtonId ) ) ImGui::SetClipboardText( value );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( clipboard );
+}
+
 [[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, uint32_t col, float thickness = 1.0f )
 {
     const ImVec2 data[2] = { v1, v2 };

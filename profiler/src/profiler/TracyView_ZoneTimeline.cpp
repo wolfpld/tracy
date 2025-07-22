@@ -54,12 +54,13 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
 
     const auto yPos = wpos.y + offset;
-    const float radius = 4.0f * GetScale();
-    const float margin = wpos.x + 2.0f * radius + 3.0f * GetScale();
+    const float cropperWidth = ImGui::CalcTextSize(ICON_FA_CARET_DOWN).x;
+    const float radius = (cropperWidth - 2.0f * GetScale() ) / 2.0f ;
+    const float margin = wpos.x + cropperWidth;
     
     if( depth > 0 )
     {
-        depth = DrawThreadCropper( depth, thread.id, yPos, ostep, radius, wpos.x, hasCtxSwitch );
+        depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, radius, cropperWidth, hasCtxSwitch );
     }
     const auto* drawList = ImGui::GetWindowDrawList();
     ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( margin, 0 ), drawList->GetClipRectMax(), true );
@@ -627,66 +628,67 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
     }
 }
 
-int View::DrawThreadCropper( const int depth, const uint64_t tid, const float yPos, const float ostep, const float radius, const float margin, const bool hasCtxSwitches )
+int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float radius, const float cropperWidth, const bool hasCtxSwitches )
 {
-    ImVec2 mouse = ImGui::GetMousePos();
+    const ImVec2 mousePos = ImGui::GetMousePos();
     const bool clicked = ImGui::IsMouseClicked( 0 );
     auto draw = ImGui::GetWindowDrawList();
-    draw->Flags &= ~ImDrawListFlags_AntiAliasedLines;
-    draw->Flags &= ~ImDrawListFlags_AntiAliasedFill;
     auto foreground = ImGui::GetForegroundDrawList();
-    auto window = ImGui::GetWindowSize();
-    bool isCropped = ( m_threadMaxDisplayDepth.find( tid ) != m_threadMaxDisplayDepth.end() );
-    const float hoverCircle = 2.0f * GetScale();
-    int lineId = hasCtxSwitches? -1 : 0;
+    bool isCropped = ( m_threadDepthLimit.find( tid ) != m_threadDepthLimit.end() );
+    const int depthLimit = isCropped ? m_threadDepthLimit[tid] : depth;
+    // If user changes settings to hide Ctx Switches, he would be unable to remove the limit, so set the value to its minimum
+    if( !hasCtxSwitches && isCropped && depthLimit == 0 ) m_threadDepthLimit[tid] = 1;
 
-    for( lineId; lineId < ( isCropped ? m_threadMaxDisplayDepth[tid] : depth ); lineId++ )
+    const float cropperCenterX = xPos + cropperWidth / 2.0;
+    
+    const auto CircleCenterYForLine = [=]( int lane ) {
+        return yPos + ostep * ( lane + 0.5 );
+        };
+
+    // If cropped, we want the line to continue as a hint if something is hidden, hence why no -1 for depthLimit
+    const float lineEndY = std::min<int>( isCropped ? depthLimit : depth - 1, depth - 1);
+    DrawLine(draw,
+        ImVec2( cropperCenterX, CircleCenterYForLine( hasCtxSwitches ? -1 : 0 ) ),
+        ImVec2( cropperCenterX, CircleCenterYForLine( lineEndY ) ),
+        0xFF666666, 2.0f * GetScale()
+    );
+
+    // Allow to crop all the zones if we have context switches displayed
+    int lane = hasCtxSwitches ? -1 : 0;
+    for( ; lane < depthLimit; lane++ )
     {
-        ImVec2 center = ImVec2( margin + radius, yPos + ostep * (lineId + 0.5) );
-        const float hradius = radius + hoverCircle;
-        const float dx = mouse.x - center.x;
-        const float dy = mouse.y - center.y;
+        const ImVec2 center = ImVec2(cropperCenterX, CircleCenterYForLine( lane ) );
+        const float hradius = radius + 2.0f * GetScale();
+        const float dx = mousePos.x - center.x;
+        const float dy = mousePos.y - center.y;
 
         if( dx * dx + dy * dy <= hradius * hradius )
         {
             foreground->AddCircle( center, hradius, 0xFFFFFFFF, 0, GetScale() );
-            foreground->AddLine( ImVec2( 0, yPos + ( lineId + 1 ) * ostep ), ImVec2( window.x, yPos + ( lineId + 1 ) * ostep ), 0x880000FF, 2.0f * GetScale() );
+            foreground->AddLine( ImVec2( 0, yPos + ( lane + 1 ) * ostep ), ImVec2( ImGui::GetWindowSize().x, yPos + ( lane + 1 ) * ostep ), 0x880000FF, 2.0f * GetScale() );
             if( clicked )
             {
-                if( isCropped )
+                const int newDepthLimit = lane + 1;
+                if( depthLimit == newDepthLimit )
                 {
-                    if( m_threadMaxDisplayDepth[tid] >= 0 )
-                    {
-                        if( m_threadMaxDisplayDepth[tid] == lineId + 1 )
-                        {
-                            isCropped = false;
-                            m_threadMaxDisplayDepth.erase( tid );
-                        }
-                        else
-                        {
-                            m_threadMaxDisplayDepth[tid] = lineId + 1;
-                        }
-                    }
+                    m_threadDepthLimit.erase( tid );
                 }
                 else
                 {
-                    isCropped = true;
-                    m_threadMaxDisplayDepth[tid] = lineId + 1;
+                    m_threadDepthLimit[tid] = newDepthLimit;
                 }
             }
         }
         ImU32 color = 0xFF666666;
-        if( isCropped && lineId + 1 == m_threadMaxDisplayDepth[tid] )
+        if( isCropped && lane == depthLimit - 1 )
         {
             color = 0xFFFFFFFF;
         }
-        if( !isCropped || lineId < m_threadMaxDisplayDepth[tid] )
-        {
-            draw->AddCircleFilled( center, radius, color );
-        }
+        draw->AddCircleFilled( center, radius, color );
     }
-    draw->AddLine( ImVec2( margin + radius, yPos + ostep * ( hasCtxSwitches ? -0.5 : 0.5 ) - radius ), ImVec2( margin + radius, yPos + ostep * ( ( lineId - 1 ) + 0.5 ) - radius ), 0xFF666666, 2.0f * GetScale() );
-    return isCropped ? m_threadMaxDisplayDepth[tid] : depth;
+
+    // Need to take the minimum as depth may be lower after panning or zooming. We however keep the limit value
+    return isCropped && depthLimit < depth ? depthLimit : depth;
 }
 
 }

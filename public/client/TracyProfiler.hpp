@@ -114,39 +114,47 @@ struct LuaZoneState
 
 
 #define TracyLfqPrepare( _type ) \
-    tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
-    auto __token = tracy::GetToken(); \
-    auto& __tail = __token->get_tail_index(); \
-    auto item = __token->enqueue_begin( __magic ); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+        auto __token = tracy::GetToken(); \
+        auto& __tail = __token->get_tail_index(); \
+        auto item = __token->enqueue_begin( __magic ); \
+        tracy::MemWrite( &item->hdr.type, _type );
 
 #define TracyLfqCommit \
-    __tail.store( __magic + 1, std::memory_order_release );
+        __tail.store( __magic + 1, std::memory_order_release ); \
+    }
 
 #define TracyLfqPrepareC( _type ) \
-    tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
-    auto __token = tracy::GetToken(); \
-    auto& __tail = __token->get_tail_index(); \
-    auto item = __token->enqueue_begin( __magic ); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+        auto __token = tracy::GetToken(); \
+        auto& __tail = __token->get_tail_index(); \
+        auto item = __token->enqueue_begin( __magic ); \
+        tracy::MemWrite( &item->hdr.type, _type );
 
 #define TracyLfqCommitC \
-    __tail.store( __magic + 1, std::memory_order_release );
+        __tail.store( __magic + 1, std::memory_order_release ); \
+    }
 
 
 #ifdef TRACY_FIBERS
 #  define TracyQueuePrepare( _type ) \
-    auto item = tracy::Profiler::QueueSerial(); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        auto item = tracy::Profiler::QueueSerial(); \
+        tracy::MemWrite( &item->hdr.type, _type );
 #  define TracyQueueCommit( _name ) \
-    tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
-    tracy::Profiler::QueueSerialFinish();
+        tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
+        tracy::Profiler::QueueSerialFinish(); \
+    }
 #  define TracyQueuePrepareC( _type ) \
-    auto item = tracy::Profiler::QueueSerial(); \
-    tracy::MemWrite( &item->hdr.type, _type );
+    if (tracy::GetProfiler().IsActive()) { \
+        auto item = tracy::Profiler::QueueSerial(); \
+        tracy::MemWrite( &item->hdr.type, _type );
 #  define TracyQueueCommitC( _name ) \
-    tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
-    tracy::Profiler::QueueSerialFinish();
+        tracy::MemWrite( &item->_name.thread, tracy::GetThreadHandle() ); \
+        tracy::Profiler::QueueSerialFinish(); \
+    }
 #else
 #  define TracyQueuePrepare( _type ) TracyLfqPrepare( _type )
 #  define TracyQueueCommit( _name ) TracyLfqCommit
@@ -770,6 +778,10 @@ public:
     void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
+    void Suspend() { m_isActive.store( false, std::memory_order_relaxed ); }
+    void Resume() { m_isActive.store( true, std::memory_order_relaxed ); }
+    tracy_force_inline bool IsActive() const { return m_isActive.load( std::memory_order_relaxed ); }
+
     void SendString( uint64_t str, const char* ptr, QueueType type ) { SendString( str, ptr, strlen( ptr ), type ); }
     void SendString( uint64_t str, const char* ptr, size_t len, QueueType type );
     void SendSingleString( const char* ptr ) { SendSingleString( ptr, strlen( ptr ) ); }
@@ -997,6 +1009,7 @@ private:
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_shutdownManual;
     std::atomic<bool> m_shutdownFinished;
+    std::atomic<bool> m_isActive;
     Socket* m_sock;
     UdpBroadcast* m_broadcast;
     bool m_noExit;

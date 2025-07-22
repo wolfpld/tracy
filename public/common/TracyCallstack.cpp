@@ -134,13 +134,16 @@ namespace tracy
         else return defaultValue;
     }
 
-    // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
-    // simply resolve the offset and image name (which will be enough the resolving to be done offline)
+    // When "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, symbols are not fully resolved at runtime.
+    // Instead, only the offset and image name are recorded, which is sufficient for offline resolution.
+    // If the server flag ServerFlags::PreventSymbolResolution is true, symbol resolution by the application is prevented,
+    // and resolution is handled exclusively by the server.
 #ifdef TRACY_SYMBOL_OFFLINE_RESOLVE
     static bool s_shouldResolveSymbolsOffline = true;
 #else
     static bool s_shouldResolveSymbolsOffline = false;
 #endif // TRACY_SYMBOL_OFFLINE_RESOLVE
+
     void PreventSymbolResolution() { s_shouldResolveSymbolsOffline = true; }
 
     inline bool IsKernelAddress( uint64_t addr ) {
@@ -176,7 +179,7 @@ namespace tracy
         }
         ~ImageCache() { Clear(); }
 
-        ImageEntry* CacheModuleWithDebugInfo( const ImageEntry& entry )
+        ImageEntry* AddEntry( const ImageEntry& entry )
         {
             m_sorted &= m_modCache.empty() ? true : (entry.start < m_modCache.back().start);
             ImageEntry* newEntry = m_modCache.push_next();
@@ -349,7 +352,7 @@ private:
 
         }
         
-        cache->CacheModuleWithDebugInfo(image);
+        cache->AddEntry(image);
         cache->m_updated = true;
 
         return 0;
@@ -466,17 +469,20 @@ const FastVector<ImageEntry>* GetKernelImageInfos()
     return &s_krnlCache->GetModuleData();
 }
 
-void FormatImageName(char** moduleCacheName, const char* imageName, uint32_t imageNameLength)
+char* FormatImageName(const char* imageName, uint32_t imageNameLength)
 {
-    auto ptr = imageName + imageNameLength;
-    while (ptr > imageName && *ptr != '\\' && *ptr != '/') ptr--;
-    if (ptr > imageName) ptr++;
+    const char* ptr = imageName + imageNameLength;
+    while( ptr > imageName && *ptr != '\\' && *ptr != '/' ) ptr--;
+    if( ptr > imageName ) ptr++;
     const auto namelen = imageName + imageNameLength - ptr;
-    *moduleCacheName = (char*)tracy_malloc_fast(namelen + 3);
-    (*moduleCacheName)[0] = '[';
-    memcpy(*moduleCacheName + 1, ptr, namelen);
-    (*moduleCacheName)[namelen + 1] = ']';
-    (*moduleCacheName)[namelen + 2] = '\0';
+
+    char* alloc = (char*)tracy_malloc_fast( namelen + 3 );
+    alloc[0] = '[';
+    memcpy( alloc + 1, ptr, namelen );
+    alloc[namelen + 1] = ']';
+    alloc[namelen + 2] = '\0';
+
+    return alloc;
 }
 
 #if TRACY_HAS_CALLSTACK == 1
@@ -523,6 +529,7 @@ static constexpr DWORD CV_SIGNATURE_RSDS = 'SDSR'; // 'SDSR'
 
 bool GetModuleInfoFromPEHeaders( uint64_t baseOfDll, ImageDebugFormatId* debugFormat, uint8_t** debugInformationData, uint32_t* debugInformationSize )
 {
+    // always true for loaded executables
     static constexpr bool MappedAsImage = true;
 
     PVOID BaseAddress = (void*)baseOfDll;
@@ -541,14 +548,14 @@ bool GetModuleInfoFromPEHeaders( uint64_t baseOfDll, ImageDebugFormatId* debugFo
     }
     IMAGE_DEBUG_DIRECTORY* debugDirectory = static_cast<IMAGE_DEBUG_DIRECTORY*>( debugSectionData );
 
-    for( size_t i=0; (i * sizeof( IMAGE_DEBUG_DIRECTORY ) ) < debugDirectoryCount; i++ )
+    for( size_t i = 0; ( i * sizeof( IMAGE_DEBUG_DIRECTORY ) ) < debugDirectoryCount; i++ )
     {
 
         const IMAGE_DEBUG_DIRECTORY& curDebugDirectory = debugDirectory[i];
 
         if( debugDirectory[i].Type != IMAGE_DEBUG_TYPE_CODEVIEW ) continue;
 
-        CV_INFO_PDB70* pData = (CV_INFO_PDB70*)(uintptr_t( BaseAddress ) + 
+        CV_INFO_PDB70* pData = (CV_INFO_PDB70*)( uintptr_t( BaseAddress ) + 
             ( MappedAsImage 
             ? debugDirectory[i].AddressOfRawData
             : debugDirectory[i].PointerToRawData)
@@ -558,7 +565,7 @@ bool GetModuleInfoFromPEHeaders( uint64_t baseOfDll, ImageDebugFormatId* debugFo
 
         *debugFormat = ImageDebugFormatId::PdbDebugFormat;
 
-        const uint32_t pdbFileLength = strlen( (const char*)pData->PdbFileName );
+        const size_t pdbFileLength = strlen( (const char*)pData->PdbFileName );
         const uint32_t debugFormatSize = sizeof( PEImageDebugData ) + pdbFileLength + 1;
         *debugInformationData = (uint8_t*)tracy_malloc( debugFormatSize );
         *debugInformationSize = debugFormatSize;
@@ -622,8 +629,6 @@ void GetModuleInfoFromDbgHelp( const char* imageName, ImageEntry* moduleEntry )
         static_assert( sizeof( pdbInfo->Signature ) == sizeof( moduleInfo.PdbSig70 ), "GUID size must match" );
         memcpy( &pdbInfo->Signature, &moduleInfo.PdbSig70, sizeof( moduleInfo.PdbSig70 ) );
 
-        const GUID* guidd = reinterpret_cast<const GUID*>( &pdbInfo->Signature );
-
         char* pdbFileName = (char*)debugInfo.debugData + sizeof( PEImageDebugData );
         memcpy( pdbFileName, moduleInfo.CVData, pdbFileNameLen + 1 );
     }
@@ -635,7 +640,7 @@ ImageEntry* CacheModuleInfo( const char* imageName, uint32_t imageNameLength, ui
     moduleEntry.start = baseOfDll;
     moduleEntry.end = baseOfDll + dllSize;
     moduleEntry.path = CopyStringFast( imageName, imageNameLength );
-    FormatImageName( &moduleEntry.name, imageName, imageNameLength );
+    moduleEntry.name = FormatImageName( imageName, imageNameLength );
 
     ImageDebugFormatId debugFormat = ImageDebugFormatId::NoDebugFormat;
     uint8_t* debugData = nullptr;
@@ -651,7 +656,7 @@ ImageEntry* CacheModuleInfo( const char* imageName, uint32_t imageNameLength, ui
     }
 
     std::lock_guard<std::recursive_mutex> mutexguard{ s_cacheMutex };
-    return s_imageCache->CacheModuleWithDebugInfo( moduleEntry );
+    return s_imageCache->AddEntry( moduleEntry );
 }
 
 ImageEntry* LoadSymbolsForModuleAndCache( const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
@@ -758,7 +763,6 @@ void DbgHelpInit( HANDLE symHandle, bool invadeProcess )
 
     SymSetOptions(
         SYMOPT_LOAD_LINES
-        | SYMOPT_UNDNAME // TODO: check if tracy doesn't rely on this to find decorated names in the dissassembler
         | SYMOPT_DEFERRED_LOADS
 #ifndef NDEBUG
         | SYMOPT_DEBUG
@@ -833,7 +837,7 @@ static void CacheProcessDrivers()
                     }
                 }
 
-                s_krnlCache->CacheModuleWithDebugInfo( kernelDriver );
+                s_krnlCache->AddEntry( kernelDriver );
                 assert( kernelDriver.end == 0 && "kernel end should be zero" );
                 cnt++;
             }
@@ -1037,11 +1041,11 @@ void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo )
 {
     if ( IsKernelAddress( imageEntry.start ) )
     {
-        s_krnlCache->CacheModuleWithDebugInfo( imageEntry );
+        s_krnlCache->AddEntry( imageEntry );
     }
     else
     {
-        s_imageCache->CacheModuleWithDebugInfo( imageEntry );
+        s_imageCache->AddEntry( imageEntry );
     }
 
     bool hasSymbolInfo = false;
@@ -1092,7 +1096,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     DBGHELP_LOCK;
 #endif
     const auto res = SymGetLineFromAddr64( s_DbgHelpSymHandle, ptr, &displacement, &line );
-    if ( res == 0 || line.LineNumber >= 0xF00000 )
+    if( res == 0 || line.LineNumber >= 0xF00000 )
     {
         sym.file = "[unknown]";
         sym.line = 0;
@@ -1292,8 +1296,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr, DecodeCallStackPtrStatus* _
     DBGHELP_UNLOCK;
 #endif
 
-
-    return { cb_data, uint8_t(cb_num), moduleNameAndAddress.name };
+    return { cb_data, uint8_t( cb_num ), moduleNameAndAddress.name };
 }
 
 #elif defined(TRACY_USE_LIBBACKTRACE)
@@ -1412,7 +1415,7 @@ static void InitKernelSymbols()
         kernelSymbol.name = strname;
         kernelSymbol.path = strmod;
 
-        s_krnlSymbolsCache->CacheModuleWithDebugInfo( kernelSymbol );
+        s_krnlSymbolsCache->AddEntry( kernelSymbol );
 
     }
     tracy_free_fast( linebuf );

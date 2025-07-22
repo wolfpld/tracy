@@ -3301,7 +3301,7 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
 
 void Profiler::SendSingleDataPacket( void* ptr, size_t totalSize )
 {
-	assert(totalSize <= std::numeric_limits<decltype(QueueDataPacket::packetSize)>::max());
+	assert( totalSize <= std::numeric_limits<decltype( QueueDataPacket::packetSize )>::max() );
 
 	static_assert(sizeof(QueueHeader) + sizeof(QueueDataPacket) == QueueDataSize[(int)QueueType::DataPacket], "Size mismatch");
 
@@ -3309,13 +3309,13 @@ void Profiler::SendSingleDataPacket( void* ptr, size_t totalSize )
 	NeedDataSize(QueueDataSize[(int)QueueType::DataPacket] + totalSize);
 
 	QueueItem item;
-	tracy::MemWrite(&item.hdr.type, (int)QueueType::DataPacket);
+	tracy::MemWrite( &item.hdr.type, (int)QueueType::DataPacket );
 
 	uint16_t dataSize = uint16_t(totalSize);
-	tracy::MemWrite(&item.packet.packetSize, dataSize);
+	tracy::MemWrite( &item.packet.packetSize, dataSize );
 
-	AppendDataUnsafe(&item, QueueDataSize[(int)QueueType::DataPacket]);
-	AppendDataUnsafe(ptr, dataSize);
+	AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::DataPacket] );
+	AppendDataUnsafe( ptr, dataSize );
 
    
 }
@@ -3506,14 +3506,13 @@ static void SerializeImageEntry( const ImageEntry& imageEntry, void** outptr, si
     const uint32_t moduleNameLength = ( imageEntry.name ? strlen( imageEntry.name ) : 0 ) + EndOfString;
     const uint32_t modulePathLength = ( imageEntry.path ? strlen( imageEntry.path ) : 0 ) + EndOfString;
 
-   
     const size_t baseModuleInfo =  sizeof( imageEntry.start ) + sizeof( imageEntry.end ) +
         sizeof( moduleNameLength ) + moduleNameLength +
         sizeof( modulePathLength ) + modulePathLength +
         sizeof( imageEntry.imageDebugInfo.debugFormat );
 
-    const uint32_t debugFormatSize = 0 + sizeof( uint32_t )
-        + static_cast<uint32_t>( imageEntry.imageDebugInfo.debugDataSize );
+    const uint32_t debugFormatSize = sizeof( uint32_t )
+        + imageEntry.imageDebugInfo.debugDataSize;
 
     const size_t bufferSize = baseModuleInfo + debugFormatSize;
     void* queueBuffer = tracy_malloc( bufferSize );
@@ -3548,17 +3547,17 @@ void Profiler::SendImageInfo( const ImageEntry& imageEntry )
     void* serializePtr = nullptr;
     size_t size = 0;
     SerializeImageEntry( imageEntry, &serializePtr, &size );
-    
-   // First sending the Data
-     SendSingleDataPacket( serializePtr, size);
-     tracy_free( serializePtr );
 
-     // Then sending that he receveived a image Update 
-     QueueItem item;
-     tracy::MemWrite( &item.hdr.type, (int)QueueType::ImageUpdate);
-     NeedDataSize( QueueDataSize[(int)QueueType::ImageUpdate] );
+	// First send the Data
+	SendSingleDataPacket( serializePtr, size );
+	tracy_free( serializePtr );
 
-     AppendData( &item, QueueDataSize[(int)QueueType::ImageUpdate] );
+	// Then send that it received an image Update which will use the previous Data
+	QueueItem item;
+	tracy::MemWrite( &item.hdr.type, (int)QueueType::ImageUpdate );
+	NeedDataSize( QueueDataSize[(int)QueueType::ImageUpdate] );
+
+	AppendData( &item, QueueDataSize[(int)QueueType::ImageUpdate] );
    
 }
 
@@ -4207,9 +4206,6 @@ void Profiler::SendCachedModulesInformation()
     }
 #endif
 }
-
-
-
 
 void Profiler::SendCallstack( int32_t depth, const char* skipBefore )
 {

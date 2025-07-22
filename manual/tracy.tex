@@ -3458,6 +3458,14 @@ You will find the zones with locks and their associated threads on this combined
 
 \draw(7.5, -0.5) rectangle+(6.5, -0.5) node[midway] {Render};
 
+
+\draw[densely dotted,ultra thick,,color=lightgray] (0.11, -0.25) -- (0.11, -1.75);
+\draw(0.11, -0.25) node[circle,draw,fill,color=lightgray,inner sep=0pt,minimum size=3.5] {};
+\draw(0.11, -0.75) node[circle,draw,fill,color=lightgray,inner sep=0pt,minimum size=3.5] {};
+\draw(0.11, -1.25) node[circle,draw,fill,color=lightgray,inner sep=0pt,minimum size=3.5] {};
+\draw(0.11, -1.75) node[circle,draw,fill,color=lightgray,inner sep=0pt,minimum size=3.5] {};
+
+
 \draw(0, -2.5) node[anchor=north west] {Physics lock};
 \draw[pattern=crosshatch dots] (3.1, -2.5) rectangle+(2.5, -0.5);
 
@@ -3496,6 +3504,8 @@ Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view
 \begin{itemize}
 \item \emph{\faEyeSlash{}~Hide} -- Hides the label along with the content associated to it. To make the label visible again, you must find it in the options menu (section~\ref{options}).
 \end{itemize}
+
+Under the \faCaretDown{}~symbol are a series of points that allow to limit the depth of the zones displayed. Hover the~\faMousePointer{}~mouse pointer over a circle to display a line visualizing the cutting point, then click the \MMB{}~middle mouse button to apply or remove a zone depth limit.
 
 \subparagraph{Zones}
 

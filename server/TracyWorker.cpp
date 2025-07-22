@@ -1106,13 +1106,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         uint8_t calibration;
         f.Read7( ctx->thread, calibration, ctx->count, ctx->period, ctx->type, ctx->name, ctx->overflow );
         uint64_t notesz;
-        f.Read( notesz );
-        for( uint64_t i = 0; i < notesz; i++ )
+        if( fileVer >= FileVersion( 0, 12, 4 ) )
         {
-            decltype( ctx->noteNames )::key_type key;
-            decltype( ctx->noteNames )::mapped_type value;
-            f.Read2( key, value );
-            ctx->noteNames[key] = value;
+            f.Read( notesz );
+            for( uint64_t i = 0; i < notesz; i++ )
+            {
+                decltype( ctx->noteNames )::key_type key;
+                decltype( ctx->noteNames )::mapped_type value;
+                f.Read2( key, value );
+                ctx->noteNames[key] = value;
+            }
         }
         ctx->hasCalibration = calibration;
         ctx->hasPeriod = ctx->period != 1.f;
@@ -1128,26 +1131,29 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 int64_t refTime = 0;
                 int64_t refGpuTime = 0;
                 auto td = ctx->threadData.emplace( tid, GpuCtxThreadData {} ).first;
-                ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime, childIdx );
+                ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime, childIdx, fileVer >= FileVersion( 0, 12, 4 ) );
             }
         }
 
-        f.Read( notesz );
-        ctx->notes.reserve( notesz );
-        for( uint64_t i = 0; i < notesz; i++ )
+        if( fileVer >= FileVersion( 0, 12, 4 ) )
         {
-            uint16_t query_id;
-            f.Read( query_id );
-            auto& notes = ctx->notes[query_id];
-            uint64_t note_count;
-            f.Read( note_count );
-            notes.reserve( note_count );
-            for( uint64_t i = 0; i < note_count; i++ )
+            f.Read( notesz );
+            ctx->notes.reserve( notesz );
+            for( uint64_t i = 0; i < notesz; i++ )
             {
-                int64_t id;
-                double value;
-                f.Read2( id, value );
-                notes[id] = value;
+                uint16_t query_id;
+                f.Read( query_id );
+                auto& notes = ctx->notes[query_id];
+                uint64_t note_count;
+                f.Read( note_count );
+                notes.reserve( note_count );
+                for( uint64_t i = 0; i < note_count; i++ )
+                {
+                    int64_t id;
+                    double value;
+                    f.Read2( id, value );
+                    notes[id] = value;
+                }
             }
         }
 
@@ -7647,14 +7653,14 @@ int64_t Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t refT
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, bool hasQueryId )
 {
     uint64_t sz;
     f.Read( sz );
-    ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, sz );
+    ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, sz, hasQueryId );
 }
 
-void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz )
+void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz, bool hasQueryId )
 {
     if( sz == 0 )
     {
@@ -7665,7 +7671,7 @@ void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime
         const auto idx = childIdx;
         childIdx++;
         zone->SetChild( idx );
-        ReadTimeline( f, m_data.gpuChildren[idx], sz, refTime, refGpuTime, childIdx );
+        ReadTimeline( f, m_data.gpuChildren[idx], sz, refTime, refGpuTime, childIdx, hasQueryId );
     }
 }
 
@@ -7807,7 +7813,7 @@ int64_t Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, u
     return refTime;
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, bool hasQueryId )
 {
     assert( size != 0 );
     const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
@@ -7831,14 +7837,14 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         zone->SetCpuStart( refTime );
         zone->SetGpuStart( refGpuTime );
 
-        ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, childSz );
+        ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, childSz, hasQueryId );
 
         f.Read2( tcpu, tgpu );
         refTime += tcpu;
         refGpuTime += tgpu;
         zone->SetCpuEnd( refTime );
         zone->SetGpuEnd( refGpuTime );
-        f.Read( zone->query_id );
+        if( hasQueryId ) f.Read( zone->query_id );
     }
     while( ++zone != end );
 }

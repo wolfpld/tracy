@@ -33,6 +33,7 @@ else()
 endif()
 
 find_package(Threads REQUIRED)
+find_package(rocprofiler-sdk PATHS "/opt/rocm/lib/cmake")
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/public)
 
@@ -56,6 +57,10 @@ target_link_libraries(
         Threads::Threads
         ${CMAKE_DL_LIBS}
 )
+if(rocprofiler-sdk_FOUND)
+    target_compile_definitions(TracyClient PUBLIC TRACY_ROCPROF)
+    target_link_libraries(TracyClient PUBLIC rocprofiler-sdk::rocprofiler-sdk)
+endif()
 
 if(TRACY_Fortran)
     add_library(TracyClientF90 ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.F90")
@@ -142,6 +147,10 @@ set_option(TRACY_VERBOSE "[advanced] Verbose output from the profiler" OFF)
 mark_as_advanced(TRACY_VERBOSE)
 set_option(TRACY_DEMANGLE "[advanced] Don't use default demangling function - You'll need to provide your own" OFF)
 mark_as_advanced(TRACY_DEMANGLE)
+if(rocprofiler-sdk_FOUND)
+    set_option(TRACY_ROCPROF_CALIBRATION "[advanced] Use continuous calibration of the Rocprof GPU time." OFF)
+    mark_as_advanced(TRACY_ROCPROF_CALIBRATION)
+endif()
 
 # handle incompatible combinations
 if(TRACY_MANUAL_LIFETIME AND NOT TRACY_DELAYED_INIT)

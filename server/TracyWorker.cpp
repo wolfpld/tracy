@@ -741,7 +741,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     {
         m_data.stringData.reserve_exact( sz, m_slab );
     }
-    
+
     for( uint64_t i=0; i<sz; i++ )
     {
         uint64_t ptr, ssz;
@@ -1105,6 +1105,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         auto ctx = m_slab.AllocInit<GpuCtxData>();
         uint8_t calibration;
         f.Read7( ctx->thread, calibration, ctx->count, ctx->period, ctx->type, ctx->name, ctx->overflow );
+        uint64_t notesz;
+        f.Read( notesz );
+        for( uint64_t i = 0; i < notesz; i++ )
+        {
+            decltype( ctx->noteNames )::key_type key;
+            decltype( ctx->noteNames )::mapped_type value;
+            f.Read2( key, value );
+            ctx->noteNames[key] = value;
+        }
         ctx->hasCalibration = calibration;
         ctx->hasPeriod = ctx->period != 1.f;
         m_data.gpuCnt += ctx->count;
@@ -1122,6 +1131,26 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime, childIdx );
             }
         }
+
+        f.Read( notesz );
+        ctx->notes.reserve( notesz );
+        for( uint64_t i = 0; i < notesz; i++ )
+        {
+            uint16_t query_id;
+            f.Read( query_id );
+            auto& notes = ctx->notes[query_id];
+            uint64_t note_count;
+            f.Read( note_count );
+            notes.reserve( note_count );
+            for( uint64_t i = 0; i < note_count; i++ )
+            {
+                int64_t id;
+                double value;
+                f.Read2( id, value );
+                notes[id] = value;
+            }
+        }
+
         m_data.gpuData[i] = ctx;
     }
 
@@ -4614,6 +4643,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::GpuContextName:
         ProcessGpuContextName( ev.gpuContextName );
         break;
+    case QueueType::GpuAnnotationName:
+        ProcessGpuAnnotationName( ev.gpuAnnotationName );
+        break;
+    case QueueType::GpuZoneAnnotation:
+        ProcessGpuZoneAnnotation( ev.zoneAnnotation );
+        break;
     case QueueType::MemAlloc:
         ProcessMemAlloc( ev.memAlloc );
         break;
@@ -5750,6 +5785,7 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     zone->SetGpuEnd( -1 );
     zone->callstack.SetVal( 0 );
     zone->SetChild( -1 );
+    zone->query_id = ev.queryId;
 
     uint64_t ztid;
     if( ctx->thread == 0 )
@@ -5973,7 +6009,7 @@ void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )
     ctx->calibratedGpuTime = gpuTime;
     ctx->calibratedCpuTime = TscTime( ev.cpuTime );
 }
-    
+
 void Worker::ProcessGpuTimeSync( const QueueGpuTimeSync& ev )
 {
     auto ctx = m_gpuCtxMap[ev.context];
@@ -6003,6 +6039,26 @@ void Worker::ProcessGpuContextName( const QueueGpuContextName& ev )
     assert( ctx );
     const auto idx = GetSingleStringIdx();
     ctx->name = StringIdx( idx );
+}
+
+void Worker::ProcessGpuAnnotationName( const QueueGpuAnnotationName& ev )
+{
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
+    const auto idx = GetSingleStringIdx();
+    ctx->noteNames[ev.noteId] = StringIdx( idx );
+}
+
+void Worker::ProcessGpuZoneAnnotation( const QueueGpuZoneAnnotation& ev )
+{
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
+    auto note = ctx->notes.find( ev.queryId );
+    if( note == ctx->notes.end() ) {
+      note = ctx->notes.emplace( ev.queryId, decltype(ctx->notes)::mapped_type{} ).first;
+      note->second.reserve( ctx->noteNames.size() );
+    }
+    note->second[ev.noteId] = ev.value;
 }
 
 MemEvent* Worker::ProcessMemAllocImpl( MemData& memdata, const QueueMemAlloc& ev )
@@ -7782,6 +7838,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         refGpuTime += tgpu;
         zone->SetCpuEnd( refTime );
         zone->SetGpuEnd( refGpuTime );
+        f.Read( zone->query_id );
     }
     while( ++zone != end );
 }
@@ -8119,6 +8176,13 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &ctx->type, sizeof( ctx->type ) );
         f.Write( &ctx->name, sizeof( ctx->name ) );
         f.Write( &ctx->overflow, sizeof( ctx->overflow ) );
+        sz = ctx->noteNames.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& p : ctx->noteNames )
+        {
+            f.Write( &p.first, sizeof( p.first ) );
+            f.Write( &p.second, sizeof( p.second ) );
+        }
         sz = ctx->threadData.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& td : ctx->threadData )
@@ -8128,6 +8192,20 @@ void Worker::Write( FileWrite& f, bool fiDict )
             uint64_t tid = td.first;
             f.Write( &tid, sizeof( tid ) );
             WriteTimeline( f, td.second.timeline, refTime, refGpuTime );
+        }
+
+        sz = ctx->notes.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& notes : ctx->notes )
+        {
+            f.Write( &notes.first, sizeof( notes.first ) );
+            sz = notes.second.size();
+            f.Write( &sz, sizeof( sz ) );
+            for( auto& note : notes.second )
+            {
+                f.Write( &note.first, sizeof( note.first ) );
+                f.Write( &note.second, sizeof( note.second ) );
+            }
         }
     }
 
@@ -8509,6 +8587,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
 
         WriteTimeOffset( f, refTime, v.CpuEnd() );
         WriteTimeOffset( f, refGpuTime, v.GpuEnd() );
+        f.Write( &v.query_id, sizeof( v.query_id ) );
     }
 }
 

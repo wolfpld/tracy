@@ -54,13 +54,12 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
 
     const auto yPos = wpos.y + offset;
-    const float marginLeft = 5.5f;
-    const float radius = 4.5f *  GetScale();
-    const float margin = 2 * radius + marginLeft + 3.0f * GetScale();
+    const float radius = 4.0f * GetScale();
+    const float margin = wpos.x + 2.0f * radius + 3.0f * GetScale();
     
     if( depth > 0 )
     {
-        depth = DrawThreadCropper( depth, thread.id, yPos, ostep, radius, marginLeft, hasCtxSwitch );
+        depth = DrawThreadCropper( depth, thread.id, yPos, ostep, radius, wpos.x, hasCtxSwitch );
     }
     const auto* drawList = ImGui::GetWindowDrawList();
     ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( margin, 0 ), drawList->GetClipRectMax(), true );
@@ -633,6 +632,8 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float yP
     ImVec2 mouse = ImGui::GetMousePos();
     const bool clicked = ImGui::IsMouseClicked( 0 );
     auto draw = ImGui::GetWindowDrawList();
+    draw->Flags &= ~ImDrawListFlags_AntiAliasedLines;
+    draw->Flags &= ~ImDrawListFlags_AntiAliasedFill;
     auto foreground = ImGui::GetForegroundDrawList();
     auto window = ImGui::GetWindowSize();
     bool isCropped = ( m_threadMaxDisplayDepth.find( tid ) != m_threadMaxDisplayDepth.end() );

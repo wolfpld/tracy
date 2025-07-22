@@ -645,12 +645,14 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
         return yPos + ostep * ( lane + 0.5 );
         };
 
+    const uint32_t inactiveColor = 0xFF555555;
+
     // If cropped, we want the line to continue as a hint if something is hidden, hence why no -1 for depthLimit
     const float lineEndY = std::min<int>( isCropped ? depthLimit : depth - 1, depth - 1);
     DrawLine(draw,
         ImVec2( cropperCenterX, CircleCenterYForLine( hasCtxSwitches ? -1 : 0 ) ),
         ImVec2( cropperCenterX, CircleCenterYForLine( lineEndY ) ),
-        0xFF666666, 2.0f * GetScale()
+        inactiveColor, 2.0f * GetScale()
     );
 
     // Allow to crop all the zones if we have context switches displayed
@@ -679,10 +681,10 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
                 }
             }
         }
-        ImU32 color = 0xFF666666;
+        ImU32 color = inactiveColor;
         if( isCropped && lane == depthLimit - 1 )
         {
-            color = 0xFFFFFFFF;
+            color = 0xFF888888;
         }
         draw->AddCircleFilled( center, radius, color );
     }

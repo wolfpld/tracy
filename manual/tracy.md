@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-07-15 <https://github.com/wolfpld/tracy>
+2025-07-23 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -1498,6 +1498,26 @@ Unlike other GPU backends in Tracy, there is no need to call `TracyCUDACollect(c
 
 To stop profiling, call the `TracyCUDAStopProfiling(ctx)` macro.
 
+### ROCm
+
+On Linux, if rocprofiler-sdk is installed, tracy can automatically trace GPU dispatches and collect performance counter values. If CMake can't find rocprofiler-sdk, you can set the CMake variable `rocprofiler-sdk_DIR` to point it at the correct module directory. Use the `TRACY_ROCPROF_COUNTERS` environment variable with the desired counters separated by commas to control what values are collected. The results will appear for each dispatch in the tool tip and zone detail window. Results are summed across dimensions. You can get a list of the counters available for your hardware with this command:
+
+``` {.sh language="sh"}
+rocprofv3 -L
+```
+
+##### Troubleshooting
+
+-   If you are taking very long captures, you may see drift between the GPU and CPU timelines. This may be mitigated by setting the CMake variable `TRACY_ROCPROF_CALIBRATION`, which will refresh the time synchronization about every second.
+
+-   The timeline drift may also be affected by network time synchronization, in which case the drift will be reduced by disabling that, with the advantage that there is no application performance cost.
+
+-   On some GPUs, you will need to change the the performance level to see non-zero results from some counters. Use this command:
+
+    ``` {.sh language="sh"}
+    sudo amd-smi set -g 0 -l stable_std
+    ```
+
 ### Multiple zones in one scope {#multiple-zones-in-one-scope}
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the `ZoneScoped` macros, described in section [3.4.2](#multizone) (but this time the variable name is `___tracy_gpu_zone`).
@@ -2501,7 +2521,7 @@ You can capture a trace using a command line utility contained in the `capture` 
 
 If no client is running at the given address, the server will wait until it can make a connection. During the capture, the utility will display the following information:
 
-    % ./capture -a 127.0.0.1 -o trace
+    % ./tracy-capture -a 127.0.0.1 -o trace
     Connecting to 127.0.0.1:8086...
     Timer resolution: 3 ns
        1.33 Mbps / 40.4% = 3.29 Mbps | Net: 64.42 MB | Mem: 283.03 MB | Time: 10.6 s
@@ -2512,7 +2532,7 @@ You can disconnect from the client and save the captured trace by pressing Ctrl 
 
 ## Interactive profiling {#interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ((Book icon) *User manual*, (GlobeAmericas icon) *Web*, (Comment icon) *Join chat* and (Heart icon) *Sponsor*). The (GlobeAmericas icon) *Web* button opens a drop-down list with links to the profiler's *(Home icon) Home page* and a bunch of *(Video icon) Feature videos*.
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility `tracy-profiler` contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ((Book icon) *User manual*, (GlobeAmericas icon) *Web*, (Comment icon) *Join chat* and (Heart icon) *Sponsor*). The (GlobeAmericas icon) *Web* button opens a drop-down list with links to the profiler's *(Home icon) Home page* and a bunch of *(Video icon) Feature videos*.
 
 The *(Wrench icon) Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow)).
 
@@ -2608,7 +2628,7 @@ Each new release of Tracy changes the internal format of trace files. While ther
 
 To use it, you will need to provide the input file and the output file. The program will print a short summary when it finishes, with information about trace file versions, their respective sizes and the output trace file compression ratio:
 
-    % ./update old.tracy new.tracy
+    % ./tracy-update old.tracy new.tracy
     old.tracy (0.3.0) {916.4 MB} -> new.tracy (0.4.0) {349.4 MB, 31.53%}  9.7 s, 38.13% change
 
 The new file contains the same data as the old one but with an updated internal representation. Note that the whole trace needs to be loaded to memory to perform an upgrade.
@@ -4057,7 +4077,7 @@ Clicking on the *(User icon) User* role icon removes the chat content up to t
 
 # Exporting zone statistics to CSV {#csvexport}
 
-You can use a command-line utility in the `csvexport` directory to export primary zone statistics from a saved trace into a CSV format. The tool requires a single .tracy file as an argument and prints the result into the standard output (stdout), from where you can redirect it into a file or use it as an input into another tool. By default, the utility will list all zones with the following columns:
+You can use the command-line utility `tracy-csvexport` from the `csvexport` directory to export primary zone statistics from a saved trace into a CSV format. The tool requires a single .tracy file as an argument and prints the result into the standard output (stdout), from where you can redirect it into a file or use it as an input into another tool. By default, the utility will list all zones with the following columns:
 
 -   `name` -- Zone name
 
@@ -4097,20 +4117,20 @@ You can customize the output with the following command line options:
 
 Tracy can import data generated by other profilers. This external data cannot be directly loaded but must be converted first. Currently, there's support for the following formats:
 
--   chrome:tracing data through the `import-chrome` utility. The trace files typically have a `.json` or `.json.zst` extension. To use this tool to process a file named `mytracefile.json`, assuming it's compiled, run:
+-   chrome:tracing data through the `tracy-import-chrome` utility. The trace files typically have a `.json` or `.json.zst` extension. To use this tool to process a file named `mytracefile.json`, assuming it's compiled, run:
 
     ``` {.sh language="sh"}
-    $ import-chrome mytracefile.json mytracefile.tracy
-        $ tracy mytracefile.tracy
+    $ tracy-import-chrome mytracefile.json mytracefile.tracy
+        $ tracy-profiler mytracefile.tracy
     ```
 
--   Fuchsia's tracing format[^103] data through the `import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
+-   Fuchsia's tracing format[^103] data through the `tracy-import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
 
     To this this tool, assuming it's compiled, run:
 
     ``` {.sh language="sh"}
-    $ import-fuchsia mytracefile.fxt mytracefile.tracy
-        $ tracy mytracefile.tracy
+    $ tracy-import-fuchsia mytracefile.fxt mytracefile.tracy
+        $ tracy-profiler mytracefile.tracy
     ```
 
 [^103]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
@@ -4120,7 +4140,7 @@ Compressed traces Tracy can import traces compressed with the Zstandard algorith
 :::
 
 ::: bclogo
-Source locations Chrome tracing format doesn't document a way to provide source location data. The `import-chrome` and `import-fuchsia` utilities will however recognize a custom `loc` tag in the root of zone begin events. You should be formatting this data in the usual `filename:line` style, for example: `hello.c:42`. Providing the line number (including a colon) is optional but highly recommended.
+Source locations Chrome tracing format doesn't provide a well-defined way to provide source location data. The `tracy-import-chrome` and `tracy-import-fuchsia` utilities will however recognize a custom `loc` tag in the root of zone begin events. You should be formatting this data in the usual `filename:line` style, for example: `hello.c:42`. Providing the line number (including a colon) is optional but highly recommended.
 :::
 
 ::: bclogo

@@ -1682,16 +1682,14 @@ Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, Even
 
     auto DeserializeDebugField = [&]( ImageDebugInfo* debugField )
         {
-            ImageDebugFormatId debugFormat;
-            f.Read( debugFormat );
+            f.Read( debugField->debugFormat );
             
-            if( debugFormat == ImageDebugFormatId::NoDebugFormat )
+            if( debugField->debugFormat == ImageDebugFormatId::NoDebugFormat )
             {
                 debugField->debugDataSize = 0;
                 debugField->debugData = nullptr;
                 return;
             }
-           
             f.Read( debugField->debugDataSize );
             debugField->debugData = (uint8_t*)tracy_malloc( debugField->debugDataSize );
             f.Read( debugField->debugData, debugField->debugDataSize );

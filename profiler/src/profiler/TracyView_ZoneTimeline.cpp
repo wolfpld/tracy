@@ -57,18 +57,18 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
 
     const auto yPos = wpos.y + offset;
     const float cropperWidth = ImGui::CalcTextSize(ICON_FA_CARET_DOWN).x;
-    const float radius = (cropperWidth - 2.0f * GetScale() ) / 2.0f ;
-    const float margin = wpos.x + cropperWidth;
+    const float cropperCircleRadius = (cropperWidth - 2.0f * GetScale() ) / 2.0f ;
+    const float cropperAdditionalMargin = cropperWidth + wpos.x; // We add the left window margin for symmetry
     
     if( depth > 0 )
     {
-        depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, radius, cropperWidth, hasCtxSwitch );
+        depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, cropperCircleRadius, cropperWidth, hasCtxSwitch );
     }
     const auto* drawList = ImGui::GetWindowDrawList();
-    ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( margin, 0 ), drawList->GetClipRectMax(), true );
+    ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( cropperAdditionalMargin, 0 ), drawList->GetClipRectMax(), true );
     if( !draw.empty() && yPos <= yMax && yPos + ostep * depth >= yMin )
     {
-        DrawZoneList( ctx, draw, offset, thread.id, depth, margin );
+        DrawZoneList( ctx, draw, offset, thread.id, depth, cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ );
     }
     offset += ostep * depth;
 
@@ -218,7 +218,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ctx.w;
-    const auto& wpos = ctx.wpos;
+    const auto wpos = ctx.wpos + ImVec2( margin, 0.f );
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto ty = ctx.ty;
     const auto ostep = ty + 1;

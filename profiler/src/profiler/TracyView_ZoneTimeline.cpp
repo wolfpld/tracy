@@ -675,7 +675,7 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
             if( clicked )
             {
                 const int newDepthLimit = lane + 1;
-                if( depthLimit == newDepthLimit )
+                if( isCropped && depthLimit == newDepthLimit )
                 {
                     m_threadDepthLimit.erase( tid );
                 }

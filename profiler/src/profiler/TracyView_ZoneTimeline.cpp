@@ -60,15 +60,21 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     const float cropperCircleRadius = (cropperWidth - 2.0f * GetScale() ) / 2.0f ;
     const float cropperAdditionalMargin = cropperWidth + wpos.x; // We add the left window margin for symmetry
     
-    if( depth > 0 )
+    // Display cropper if currently limited or if hovering the cropper area
+    const auto threadDepthLimitIt = m_threadDepthLimit.find(thread.id);
+    const bool displayCropper = ( threadDepthLimitIt != m_threadDepthLimit.end() && threadDepthLimitIt->second <= depth )
+        || ( ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin );
+
+    if( displayCropper )
     {
-        depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, cropperCircleRadius, cropperWidth, hasCtxSwitch );
+        if(depth > 0) depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, cropperCircleRadius, cropperWidth, hasCtxSwitch );
+
+        const auto* drawList = ImGui::GetWindowDrawList();
+        ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( cropperAdditionalMargin, 0 ), drawList->GetClipRectMax(), true );
     }
-    const auto* drawList = ImGui::GetWindowDrawList();
-    ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( cropperAdditionalMargin, 0 ), drawList->GetClipRectMax(), true );
     if( !draw.empty() && yPos <= yMax && yPos + ostep * depth >= yMin )
     {
-        DrawZoneList( ctx, draw, offset, thread.id, depth, cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ );
+        DrawZoneList( ctx, draw, offset, thread.id, depth, displayCropper ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
     }
     offset += ostep * depth;
 
@@ -88,7 +94,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
         const auto lockDepth = DrawLocks( ctx, lockDraw, thread.id, offset, m_nextLockHighlight );
         offset += sstep * lockDepth;
     }
-    ImGui::PopClipRect();
+    if( displayCropper ) ImGui::PopClipRect();
 }
 
 void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid )

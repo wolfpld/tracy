@@ -32,6 +32,9 @@
 #include "client/TracyOverride.cpp"
 #include "client/TracyKCore.cpp"
 
+#ifdef TRACY_ROCPROF
+#  include "client/TracyRocprof.cpp"
+#endif
 #ifdef _MSC_VER
 #  pragma comment(lib, "ws2_32.lib")
 #  pragma comment(lib, "advapi32.lib")

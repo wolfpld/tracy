@@ -2780,7 +2780,7 @@ rpmalloc_initialize_config(const rpmalloc_config_t* config) {
 			_memory_huge_pages = 1;
 	}
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && !defined TRACY_GDK
 	if (_memory_config.enable_huge_pages) {
 		HANDLE token = 0;
 		size_t large_page_minimum = GetLargePageMinimum();

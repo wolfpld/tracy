@@ -219,8 +219,9 @@ public:
         m_ctx.CustomName( name, size );
     }
 
-private:
     T m_lockable;
+
+private:
     LockableCtx m_ctx;
 };
 
@@ -535,8 +536,9 @@ public:
         m_ctx.CustomName( name, size );
     }
 
-private:
     T m_lockable;
+
+private:
     SharedLockableCtx m_ctx;
 };
 

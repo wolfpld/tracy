@@ -8,8 +8,8 @@
 #  endif
 
 #  if defined _WIN32
-#    include "../common/TracyUwp.hpp"
-#    ifndef TRACY_UWP
+#    include "../common/TracyWinFamily.hpp"
+#    if !defined TRACY_WIN32_NO_DESKTOP
 #      define TRACY_HAS_CALLSTACK 1
 #    endif
 #  elif defined __ANDROID__

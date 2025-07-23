@@ -833,7 +833,7 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
     }
-    std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
+    Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
     m_worker.DoPostponedWork();
     if( !m_worker.IsDataStatic() )
     {
@@ -1435,7 +1435,7 @@ bool View::Save( const char* fn, FileCompression comp, int zlevel, bool buildDic
     m_userData.StateShouldBePreserved();
     m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
     m_saveThread = std::thread( [this, f{std::move( f )}, buildDict] {
-        std::lock_guard<std::mutex> lock( m_worker.GetDataLock() );
+        Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
         m_worker.Write( *f, buildDict );
         f->Finish();
         const auto stats = f->GetCompressionStatistics();

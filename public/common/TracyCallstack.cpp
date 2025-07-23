@@ -641,13 +641,13 @@ void GetModuleInfoFromDbgHelp( const char* imageName, ImageEntry* moduleEntry )
     }
 }
 
-ImageEntry* CacheModuleInfo( const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
+ImageEntry* CacheModuleInfo( const char* imagePath, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
 {
     ImageEntry moduleEntry = {};
     moduleEntry.start = baseOfDll;
     moduleEntry.end = baseOfDll + dllSize;
-    moduleEntry.path = CopyStringFast( imageName, imageNameLength );
-    moduleEntry.name = FormatImageName( imageName, imageNameLength );
+    moduleEntry.path = CopyStringFast( imagePath, imageNameLength );
+    moduleEntry.name = FormatImageName( imagePath, imageNameLength );
 
     ImageDebugFormatId debugFormat = ImageDebugFormatId::NoDebugFormat;
     uint8_t* debugData = nullptr;
@@ -666,12 +666,12 @@ ImageEntry* CacheModuleInfo( const char* imageName, uint32_t imageNameLength, ui
     return s_imageCache->AddEntry( moduleEntry );
 }
 
-ImageEntry* LoadSymbolsForModuleAndCache( const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
+ImageEntry* LoadSymbolsForModuleAndCache( const char* imagePath, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
 {
-    assert( s_DbgHelpSymHandle == GetCurrentProcess() ); // Only resolve we path if resolving current process
-    SymLoadModuleEx( s_DbgHelpSymHandle, nullptr, imageName, nullptr, baseOfDll, dllSize, nullptr, 0 );
+    assert( s_DbgHelpSymHandle == GetCurrentProcess() ); // Only resolve with path if s_DbgHelpSymHandle is current process
+    SymLoadModuleEx( s_DbgHelpSymHandle, nullptr, imagePath, nullptr, baseOfDll, dllSize, nullptr, 0 );
     
-    return CacheModuleInfo( imageName, imageNameLength, baseOfDll, dllSize );
+    return CacheModuleInfo( imagePath, imageNameLength, baseOfDll, dllSize );
 }
 
 struct ModuleNameAndBaseAddress

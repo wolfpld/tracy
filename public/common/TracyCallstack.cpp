@@ -607,6 +607,13 @@ void GetModuleInfoFromDbgHelp( const char* imageName, ImageEntry* moduleEntry )
             }
         }
 
+        // We now know the size of the module, which is needed for proper offline symbol resolution
+        // Otherwise DbgHelp may assume the module is of size 4096 (1page), leading to unresolved symbols.
+        if( moduleEntry->end == 0 && moduleInfo.ImageSize )
+        {
+            moduleEntry->end = moduleEntry->start + moduleInfo.ImageSize;
+        }
+
         if( moduleInfo.CVSig != CV_SIGNATURE_RSDS ) // Do we have a pdb ?
             return;
 

@@ -812,7 +812,7 @@ static void CacheProcessDrivers()
                 ImageEntry kernelDriver{};
 
                 kernelDriver.start = (uint64_t)dev[i];
-                kernelDriver.end = 0;
+                kernelDriver.end = 0; // Should be filled by GetModuleInfoFromDbgHelp
                 kernelDriver.name = buf;
                 kernelDriver.path = nullptr;
                 kernelDriver.imageDebugInfo = {};
@@ -845,7 +845,6 @@ static void CacheProcessDrivers()
                 }
 
                 s_krnlCache->AddEntry( kernelDriver );
-                assert( kernelDriver.end == 0 && "kernel end should be zero" );
                 cnt++;
             }
         }

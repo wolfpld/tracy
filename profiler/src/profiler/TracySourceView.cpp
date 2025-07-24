@@ -1158,8 +1158,17 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
 
     const auto shortenName = view.GetShortenName();
     auto sym = worker.GetSymbolData( m_symAddr );
-    assert( sym );
-    ImGui::PushFont( g_fonts.normal, FontBig );
+
+    if( sym == nullptr )
+    {
+        ImGui::PushFont( g_fonts.normal, FontNormal );
+        TextCenteredWindow( ICON_FA_PERSON_DIGGING "Waiting for symbols resolution" );
+        ImGui::PopFont();
+        return;
+    }
+
+    
+    ImGui::PushFont( g_fonts.normal, FontNormal );
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     if( ButtonDisablable( " " ICON_FA_CARET_LEFT " ", m_historyCursor <= 1 ) )
     {

@@ -20,7 +20,9 @@ project(
 
 if(SELF_PROFILE)
     add_definitions(-DTRACY_ENABLE)
-    add_compile_options(-g -O3 -fno-omit-frame-pointer)
+    if(NOT MSVC)
+        add_compile_options(-g -O3 -fno-omit-frame-pointer)
+    endif()
 endif()
 
 if(SANITIZE)

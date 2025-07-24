@@ -786,6 +786,18 @@ static void DrawContents()
                 if( ImGui::Checkbox( "Enable Tracy Assist", &tracy::s_config.llm ) ) tracy::SaveConfig();
 #endif
 
+                ImGui::TextUnformatted( "Symbol resolution" );
+                ImGui::Indent();
+                if( ImGui::Checkbox( "Attempt resolution by profiler", &tracy::s_config.symbolsAttemptResolutionByServer ) ) tracy::SaveConfig();
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "When enabled, the profiler will attempt to resolve symbols first before querying the application." );
+
+                if( ImGui::Checkbox( "Prevent resolution by application", &tracy::s_config.symbolsPreventResolutionByClient ) ) tracy::SaveConfig();
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "When enabled, the application will not attempt to resolve symbols at all. The profiler can do the resolution, or it will require to use the `update` tool." );
+
+                ImGui::Unindent();
+
                 ImGui::PopStyleVar();
                 ImGui::TreePop();
             }

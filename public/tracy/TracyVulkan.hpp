@@ -41,7 +41,7 @@ using TracyVkCtx = void*;
 #include <stdlib.h>
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 
 #include <atomic>
 

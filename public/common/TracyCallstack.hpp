@@ -1,9 +1,54 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
+#include <stdint.h>
+
 #include "../common/TracyApi.h"
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"
+
+namespace tracy
+{
+
+enum DecodeCallStackPtrStatusFlags : uint8_t
+{
+    Success = 0,
+    ModuleMissing = 1 << 0,
+    SymbolMissing = 1 << 1,
+
+    ErrorMask = 0b11,
+
+    NewModuleFound = 1 << 2,
+        
+    Count
+};
+
+using DecodeCallStackPtrStatus = uint8_t;
+enum struct ImageDebugFormatId : uint8_t
+{
+    NoDebugFormat,
+    PdbDebugFormat,
+    GNUDebugFormat,
+    ElfDebugFormat
+};
+
+struct ImageDebugInfo
+{
+    ImageDebugFormatId debugFormat;
+    uint32_t debugDataSize;
+    uint8_t* debugData;
+};
+
+struct ImageEntry
+{
+    uint64_t start;
+    uint64_t end;
+    char* name;
+    char* path;
+ 
+    ImageDebugInfo imageDebugInfo;
+};
+}
 
 #ifndef TRACY_HAS_CALLSTACK
 
@@ -11,6 +56,7 @@ namespace tracy
 {
 static constexpr bool has_callstack() { return false; }
 static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr; }
+inline void PreventSymbolResolution() { }
 }
 
 #else
@@ -33,13 +79,16 @@ static tracy_force_inline void* Callstack( int32_t /*depth*/ ) { return nullptr;
 
 #include <assert.h>
 #include <stdint.h>
+#include <mutex>
 
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyFastVector.hpp"
 
 namespace tracy
 {
 
 static constexpr bool has_callstack() { return true; }
+
 
 struct CallstackSymbolData
 {
@@ -55,7 +104,7 @@ struct CallstackEntry
     const char* file;
     uint32_t line;
     uint32_t symLen;
-    uint64_t symAddr;
+    uint64_t symAddr; // Relative address
 };
 
 struct CallstackEntryData
@@ -65,13 +114,25 @@ struct CallstackEntryData
     const char* imageName;
 };
 
+
+void PreventSymbolResolution();
+std::recursive_mutex& GetModuleCacheMutexForRead();
+const ImageEntry* GetImageEntryFromPtr( uint64_t ptr );
+
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr );
 const char* DecodeCallstackPtrFast( uint64_t ptr );
-CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr , DecodeCallStackPtrStatus* _decodeCallStackPtrStatus );
+
+
 void InitCallstack();
 void InitCallstackCritical();
 void EndCallstack();
 const char* GetKernelModulePath( uint64_t addr );
+
+void CacheImageAndLoadDebugInfo( ImageEntry& imageEntry, bool loadDebugInfo );
+const FastVector<ImageEntry>* GetUserImageInfos();
+const FastVector<ImageEntry>* GetKernelImageInfos();
+
 
 #ifdef TRACY_DEBUGINFOD
 const uint8_t* GetBuildIdForImage( const char* image, size_t& size );

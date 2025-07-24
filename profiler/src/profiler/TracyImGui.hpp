@@ -84,6 +84,22 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     ImGui::TextUnformatted( text );
 }
 
+[[maybe_unused]] static inline void TextCenteredWindow( const char* text )
+{
+    const ImGuiStyle& imguiStyle = ImGui::GetStyle();
+
+    const ImVec2 size = ImGui::CalcTextSize(text) + ImVec2(imguiStyle.FramePadding.x * 2.0f, imguiStyle.FramePadding.y * 2.0f);
+    const ImVec2 avail = ImGui::GetContentRegionAvail();
+
+    const ImVec2 off = ImVec2( (avail.x - size.x ) * 0.5f, ( avail.y - size.y ) * 0.5f);
+    if( off.x > 0.0f )
+            ImGui::SetCursorPosX( ImGui::GetCursorPosX() + off.x );
+    if( off.y > 0.0f )
+        ImGui::SetCursorPosY( ImGui::GetCursorPosY() + off.y );
+
+    ImGui::TextUnformatted( text );
+}
+
 [[maybe_unused]] static inline bool ButtonCentered( const char* text )
 {
     const auto tw = ImGui::CalcTextSize( text ).x + ImGui::GetStyle().FramePadding.x * 2;

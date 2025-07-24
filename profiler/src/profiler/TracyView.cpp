@@ -38,7 +38,7 @@ namespace tracy
 double s_time = 0;
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
-    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
+    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ), SymbolResolutionConfigFromConfig( s_config ) )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
     , m_viewModeHeuristicTry( true )
@@ -69,7 +69,7 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char*
 }
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
-    : m_worker( f )
+    : m_worker( f, SymbolResolutionConfigFromConfig( s_config ) )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
     , m_viewMode( ViewMode::Paused )
@@ -913,6 +913,18 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
     ImGui::SameLine();
+
+    if( m_filename.empty() ) // Can't modify when loading from file
+    {
+        ImGui::SameLine();
+        if (ImGui::Button( ICON_FA_USER_SECRET " Resolve Symbols"))
+        {
+            // TODO: Make it async ?
+            m_worker.ResolveSymbolLocally();        
+        }
+     
+    }
+
     if( ImGui::Button( ICON_FA_SCREWDRIVER_WRENCH ) ) ImGui::OpenPopup( "ToolsPopup" );
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {

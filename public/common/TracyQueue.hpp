@@ -69,6 +69,8 @@ enum class QueueType : uint8_t
     SourceCodeMetadata,
     FiberEnter,
     FiberLeave,
+    ImageUpdate,
+    DataPacket,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -724,6 +726,20 @@ struct QueueHeader
     };
 };
 
+static constexpr size_t MaxModule = 1024;
+
+
+struct QueueImageEntry
+{
+   uint64_t payload;
+   uint64_t payloadSize;
+};
+
+struct QueueDataPacket
+{
+    uint16_t packetSize;
+};
+
 struct QueueItem
 {
     QueueHeader hdr;
@@ -816,6 +832,8 @@ struct QueueItem
         QueueFiberEnter fiberEnter;
         QueueFiberLeave fiberLeave;
         QueueGpuZoneAnnotation zoneAnnotation;
+        QueueImageEntry imageEntry;
+        QueueDataPacket packet;
     };
 };
 #pragma pack( pop )
@@ -885,6 +903,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFiberEnter ),
     sizeof( QueueHeader ) + sizeof( QueueFiberLeave ),
     // above items must be first
+    sizeof( QueueHeader ) + sizeof( QueueImageEntry ),                                    // image datas,
+    sizeof( QueueHeader ) + sizeof( QueueDataPacket ),      // DataPacket
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
     sizeof( QueueHeader ) + sizeof( QueueThreadContext ),

@@ -74,8 +74,8 @@
 #include "../common/TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
-#include "TracyCallstack.hpp"
-#include "TracyDebug.hpp"
+#include "../common/TracyCallstack.hpp"
+#include "../common/TracyDebug.hpp"
 #include "TracyDxt1.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
@@ -1971,6 +1971,15 @@ void Profiler::Worker()
         LZ4_resetStream( (LZ4_stream_t*)m_stream );
         m_sock->Send( &welcome, sizeof( welcome ) );
 
+        uint32_t serverFlags = 0;
+        if( m_sock->ReadRaw( &serverFlags, sizeof( serverFlags ), 2000 ) )
+        {
+            if( serverFlags & ServerFlags::PreventSymbolResolution )
+            {
+                PreventSymbolResolution();
+            }
+        }
+
         m_threadCtx = 0;
         m_refTimeSerial = 0;
         m_refTimeCtx = 0;
@@ -2013,6 +2022,8 @@ void Profiler::Worker()
         }
         m_deferredLock.unlock();
 #endif
+        // Send all known modules information.
+        SendCachedModulesInformation();
 
         // Main communications loop
         int keepAlive = 0;
@@ -2715,6 +2726,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ++item;
                         continue;
                     }
+                    case QueueType::ImageUpdate:
+                    {
+                        void* ptr = (void*)item->imageEntry.payload;
+                        SendSingleDataPacket( ptr, item->imageEntry.payloadSize );
+                        tracy_free( ptr );
+                        break;
+                    }
                     default:
                         assert( false );
                         break;
@@ -3305,6 +3323,27 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueT
     AppendDataUnsafe( ptr, l32 );
 }
 
+void Profiler::SendSingleDataPacket( void* ptr, size_t totalSize )
+{
+	assert( totalSize <= std::numeric_limits<decltype( QueueDataPacket::packetSize )>::max() );
+
+	static_assert(sizeof(QueueHeader) + sizeof(QueueDataPacket) == QueueDataSize[(int)QueueType::DataPacket], "Size mismatch");
+
+
+	NeedDataSize(QueueDataSize[(int)QueueType::DataPacket] + totalSize);
+
+	QueueItem item;
+	tracy::MemWrite( &item.hdr.type, (int)QueueType::DataPacket );
+
+	uint16_t dataSize = uint16_t(totalSize);
+	tracy::MemWrite( &item.packet.packetSize, dataSize );
+
+	AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::DataPacket] );
+	AppendDataUnsafe( ptr, dataSize );
+
+   
+}
+
 void Profiler::SendSourceLocation( uint64_t ptr )
 {
     auto srcloc = (const SourceLocationData*)ptr;
@@ -3468,13 +3507,113 @@ void Profiler::QueueSourceCodeQuery( uint32_t id )
 }
 
 #ifdef TRACY_HAS_CALLSTACK
+
+static void WriteDebugFieldToPacket( uint8_t** ptr, const ImageDebugInfo& imageDebugInfo )
+{
+    MemWrite( *ptr, imageDebugInfo.debugFormat );
+    *ptr += sizeof( imageDebugInfo.debugFormat );
+    
+    const uint32_t dataSize = static_cast<uint32_t>( imageDebugInfo.debugDataSize );
+
+    MemWrite( *ptr, dataSize );
+    *ptr += sizeof( dataSize );
+
+    memcpy( *ptr, imageDebugInfo.debugData, dataSize );
+    *ptr += dataSize;
+}
+
+
+static void SerializeImageEntry( const ImageEntry& imageEntry, void** outptr, size_t* outsize )
+{
+    static constexpr int EndOfString = 1;
+
+    const uint32_t moduleNameLength = ( imageEntry.name ? strlen( imageEntry.name ) : 0 ) + EndOfString;
+    const uint32_t modulePathLength = ( imageEntry.path ? strlen( imageEntry.path ) : 0 ) + EndOfString;
+
+    const size_t baseModuleInfo =  sizeof( imageEntry.start ) + sizeof( imageEntry.end ) +
+        sizeof( moduleNameLength ) + moduleNameLength +
+        sizeof( modulePathLength ) + modulePathLength +
+        sizeof( imageEntry.imageDebugInfo.debugFormat );
+
+    const uint32_t debugFormatSize = sizeof( uint32_t )
+        + imageEntry.imageDebugInfo.debugDataSize;
+
+    const size_t bufferSize = baseModuleInfo + debugFormatSize;
+    void* queueBuffer = tracy_malloc( bufferSize );
+
+    uint8_t* ptr = (uint8_t*)queueBuffer;
+
+    MemWrite( ptr, imageEntry.start );
+    ptr += sizeof( imageEntry.start );
+
+    MemWrite( ptr, imageEntry.end );
+    ptr += sizeof( imageEntry.end );
+
+    MemWrite( ptr, moduleNameLength );
+    ptr += sizeof( moduleNameLength );
+
+    memcpy( ptr, imageEntry.name ? imageEntry.name : "", moduleNameLength );
+    ptr += moduleNameLength;
+
+    MemWrite( ptr, modulePathLength );
+    ptr += sizeof( modulePathLength );
+
+    memcpy( ptr, imageEntry.path ? imageEntry.path : "", modulePathLength );
+    ptr += modulePathLength;
+
+    WriteDebugFieldToPacket( &ptr, imageEntry.imageDebugInfo );
+
+    *outptr = queueBuffer;
+    *outsize = bufferSize;
+}
+void Profiler::SendImageInfo( const ImageEntry& imageEntry )
+{
+    void* serializePtr = nullptr;
+    size_t size = 0;
+    SerializeImageEntry( imageEntry, &serializePtr, &size );
+
+	// First send the Data
+	SendSingleDataPacket( serializePtr, size );
+	tracy_free( serializePtr );
+
+	// Then send that it received an image Update which will use the previous Data
+	QueueItem item;
+	tracy::MemWrite( &item.hdr.type, (int)QueueType::ImageUpdate );
+	NeedDataSize( QueueDataSize[(int)QueueType::ImageUpdate] );
+
+	AppendData( &item, QueueDataSize[(int)QueueType::ImageUpdate] );
+   
+}
+
 void Profiler::HandleSymbolQueueItem( const SymbolQueueItem& si )
 {
     switch( si.type )
     {
     case SymbolQueueItemType::CallstackFrame:
     {
-        const auto frameData = DecodeCallstackPtr( si.ptr );
+        DecodeCallStackPtrStatus mask = DecodeCallStackPtrStatusFlags::SymbolMissing;
+        const auto frameData = DecodeCallstackPtr( si.ptr, &mask );
+
+        
+        if ( mask & DecodeCallStackPtrStatusFlags::NewModuleFound )
+        {
+            
+           std::lock_guard<std::recursive_mutex> mutexguard{ GetModuleCacheMutexForRead() };
+
+            const ImageEntry* entry = GetImageEntryFromPtr(si.ptr);
+            assert( entry != nullptr );
+
+            void* imageData = nullptr;
+            size_t dataSize = 0;
+            SerializeImageEntry( *entry, &imageData, &dataSize );
+
+            TracyLfqPrepare( QueueType::ImageUpdate );
+            tracy::MemWrite( &item->imageEntry.payload, (uint64_t)imageData );
+            tracy::MemWrite( &item->imageEntry.payloadSize, (uint64_t)dataSize );
+            TracyLfqCommit;
+        }
+
+
         auto data = tracy_malloc_fast( sizeof( CallstackEntry ) * frameData.size );
         memcpy( data, frameData.data, sizeof( CallstackEntry ) * frameData.size );
         TracyLfqPrepare( QueueType::CallstackFrameSize );
@@ -4061,7 +4200,34 @@ void Profiler::ReportTopology()
     }
 
     tracy_free( cpuData );
-#endif
+#        endif
+#    endif
+}
+
+void Profiler::SendCachedModulesInformation()
+{
+#ifdef TRACY_HAS_CALLSTACK
+    // We are retrieving modules information from the Tracy Profiler thread
+    // But the Symbol Worker has ownership. Make sure it is not writing to the cache while we read it.
+    std::lock_guard<std::recursive_mutex> mutexguard{ GetModuleCacheMutexForRead() };
+
+    const FastVector<ImageEntry>* kernelDrivers = GetKernelImageInfos();
+    if( kernelDrivers )
+    {
+        for ( auto& it : *kernelDrivers )
+        {
+            SendImageInfo( it );
+        }
+    }
+
+	const FastVector<ImageEntry>* moduleCache = GetUserImageInfos();
+	if( moduleCache )
+	{
+        for ( auto& it : *moduleCache )
+        {
+            SendImageInfo( it );
+        }
+    }
 #endif
 }
 

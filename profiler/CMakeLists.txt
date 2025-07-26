@@ -169,7 +169,7 @@ if(USE_WAYLAND)
     CPMAddPackage(
         NAME wayland-protocols
         GIT_REPOSITORY https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-        GIT_TAG 1.37
+        GIT_TAG 1.45
         DOWNLOAD_ONLY YES
     )
 
@@ -204,6 +204,10 @@ if(USE_WAYLAND)
     ecm_add_wayland_client_protocol(PROFILER_FILES
         PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/xdg-toplevel-icon/xdg-toplevel-icon-v1.xml
         BASENAME xdg-toplevel-icon
+    )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/linux-drm-syncobj/linux-drm-syncobj-v1.xml
+        BASENAME linux-drm-syncobj
     )
 elseif(EMSCRIPTEN)
     set(PROFILER_FILES ${PROFILER_FILES}

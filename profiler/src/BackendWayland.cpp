@@ -18,6 +18,8 @@
 #include <wayland-client.h>
 #include <wayland-cursor.h>
 #include <wayland-egl.h>
+#include <sys/eventfd.h>
+#include <sys/epoll.h>
 
 #include "wayland-xdg-activation-client-protocol.h"
 #include "wayland-xdg-decoration-client-protocol.h"
@@ -26,6 +28,7 @@
 #include "wayland-viewporter-client-protocol.h"
 #include "wayland-cursor-shape-client-protocol.h"
 #include "wayland-xdg-toplevel-icon-client-protocol.h"
+#include "wayland-linux-drm-syncobj-client-protocol.h"
 
 #include "profiler/TracyImGui.hpp"
 #include "stb_image_resize.h"
@@ -220,6 +223,16 @@ static std::vector<int> s_iconSizes;
 static int s_keyRepeatRate = 0;
 static int s_keyRepeatDelay = 0;
 
+// Explicit sync support using linux-drm-syncobj-v1
+static struct wp_linux_drm_syncobj_manager_v1* s_syncobjMgr;
+static struct wp_linux_drm_syncobj_surface_v1* s_syncobjSurf;
+static struct wp_linux_drm_syncobj_timeline_v1* s_acquireTimeline;
+static struct wp_linux_drm_syncobj_timeline_v1* s_releaseTimeline;
+static int s_acquireTimelineFd = -1;
+static int s_releaseTimelineFd = -1;
+static uint64_t s_acquirePoint = 0;
+static bool s_explicitSyncEnabled = false;
+
 struct Output
 {
     int32_t scale;
@@ -249,6 +262,78 @@ struct KeyRepeat
 };
 static KeyRepeat s_keyRepeat;
 
+
+// Explicit sync helper functions
+static bool CreateSyncobjTimeline( int& fd, struct wp_linux_drm_syncobj_timeline_v1*& timeline )
+{
+    if( !s_syncobjMgr ) return false;
+
+    fd = eventfd( 0, EFD_CLOEXEC );
+    if( fd < 0 ) return false;
+
+    timeline = wp_linux_drm_syncobj_manager_v1_import_timeline( s_syncobjMgr, fd );
+    if( !timeline )
+    {
+        close( fd );
+        fd = -1;
+        return false;
+    }
+
+    return true;
+}
+
+static void SetupExplicitSync()
+{
+    if( !s_syncobjMgr || !s_surf ) return;
+
+    // Create syncobj surface
+    s_syncobjSurf = wp_linux_drm_syncobj_manager_v1_get_surface( s_syncobjMgr, s_surf );
+    if( !s_syncobjSurf ) return;
+
+    // Create acquire and release timelines
+    if( !CreateSyncobjTimeline( s_acquireTimelineFd, s_acquireTimeline ) ||
+        !CreateSyncobjTimeline( s_releaseTimelineFd, s_releaseTimeline ) )
+    {
+        return;
+    }
+
+    s_explicitSyncEnabled = true;
+}
+
+static void CleanupExplicitSync()
+{
+    if( s_syncobjSurf )
+    {
+        wp_linux_drm_syncobj_surface_v1_destroy( s_syncobjSurf );
+        s_syncobjSurf = nullptr;
+    }
+
+    if( s_acquireTimeline )
+    {
+        wp_linux_drm_syncobj_timeline_v1_destroy( s_acquireTimeline );
+        s_acquireTimeline = nullptr;
+    }
+
+    if( s_releaseTimeline )
+    {
+        wp_linux_drm_syncobj_timeline_v1_destroy( s_releaseTimeline );
+        s_releaseTimeline = nullptr;
+    }
+
+    if( s_acquireTimelineFd >= 0 )
+    {
+        close( s_acquireTimelineFd );
+        s_acquireTimelineFd = -1;
+    }
+
+    if( s_releaseTimelineFd >= 0 )
+    {
+        close( s_releaseTimelineFd );
+        s_releaseTimelineFd = -1;
+    }
+
+    s_explicitSyncEnabled = false;
+}
 
 static void RecomputeScale()
 {
@@ -670,6 +755,11 @@ static void RegistryGlobal( void*, struct wl_registry* reg, uint32_t name, const
         s_iconMgr = (xdg_toplevel_icon_manager_v1*)wl_registry_bind( reg, name, &xdg_toplevel_icon_manager_v1_interface, 1 );
         xdg_toplevel_icon_manager_v1_add_listener( s_iconMgr, &iconMgrListener, nullptr );
     }
+    else if( strcmp( interface, wp_linux_drm_syncobj_manager_v1_interface.name ) == 0 )
+    {
+        s_syncobjMgr = (wp_linux_drm_syncobj_manager_v1*)wl_registry_bind( reg, name, &wp_linux_drm_syncobj_manager_v1_interface, 1 );
+        SetupExplicitSync();
+    }
 }
 
 static void RegistryGlobalRemove( void*, struct wl_registry* reg, uint32_t name )
@@ -1081,6 +1171,10 @@ Backend::~Backend()
 {
     ImGui_ImplOpenGL3_Shutdown();
 
+    // Cleanup explicit sync resources
+    CleanupExplicitSync();
+    if( s_syncobjMgr ) wp_linux_drm_syncobj_manager_v1_destroy( s_syncobjMgr );
+
     if( s_iconMgr ) xdg_toplevel_icon_manager_v1_destroy( s_iconMgr );
     if( s_dataOffer ) wl_data_offer_destroy( s_dataOffer );
     if( s_dataSource ) wl_data_source_destroy( s_dataSource );
@@ -1292,6 +1386,18 @@ void Backend::EndFrame()
 {
     const ImVec4 clear_color = ImColor( 20, 20, 17 );
 
+    // Set explicit sync points if supported
+    if( s_explicitSyncEnabled && s_syncobjSurf )
+    {
+        // Set acquire point (GPU waits on this before reading from buffer)
+        if( s_acquireTimeline )
+        {
+            wp_linux_drm_syncobj_surface_v1_set_acquire_point( s_syncobjSurf, s_acquireTimeline,
+                                                               (uint32_t)( s_acquirePoint >> 32 ),
+                                                               (uint32_t)( s_acquirePoint & 0xFFFFFFFF ) );
+        }
+    }
+
     ImGui::Render();
     glViewport( 0, 0, s_width * s_maxScale / 120, s_height * s_maxScale / 120 );
     glClearColor( clear_color.x, clear_color.y, clear_color.z, clear_color.w );
@@ -1299,6 +1405,18 @@ void Backend::EndFrame()
     ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
 
     eglSwapBuffers( s_eglDpy, s_eglSurf );
+
+    // Set explicit sync points if supported
+    if (s_explicitSyncEnabled && s_syncobjSurf) {
+        // Set release point (signals when GPU is done with buffer)
+        if (s_releaseTimeline) {
+            s_acquirePoint++;
+            wp_linux_drm_syncobj_surface_v1_set_release_point(
+                s_syncobjSurf, s_releaseTimeline,
+                (uint32_t)(s_acquirePoint >> 32), (uint32_t)(s_acquirePoint & 0xFFFFFFFF));
+        }
+    }
+
 }
 
 void Backend::SetIcon( uint8_t* data, int w, int h )

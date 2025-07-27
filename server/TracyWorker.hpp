@@ -277,6 +277,8 @@ private:
 
     struct DataBlock
     {
+        std::atomic<bool> mainThreadWantsLock = false;
+        std::condition_variable lockCv;
         std::mutex lock;
         StringDiscovery<FrameData*> frames;
         FrameData* framesBase;
@@ -472,6 +474,31 @@ public:
     const char* GetCpuManufacturer() const { return m_data.cpuManufacturer; }
 
     std::mutex& GetDataLock() { return m_data.lock; }
+
+    // This guard helps prevent main thread starvation by coordinating lock acquisition between
+    // the main thread and worker threads. It uses an atomic flag (mainThreadWantsLock) to signal
+    // the main thread's intent to acquire the lock, and a condition variable to notify workers when
+    // the main thread is done. This prioritization reduces contention and ensures the main thread
+    // can acquire the lock promptly, especially during critical phases like initialization.
+    struct MainThreadDataLockGuard
+    {
+        MainThreadDataLockGuard( DataBlock& m_data )
+            : m_data( m_data )
+        {
+            m_data.mainThreadWantsLock = true;
+            m_data.lock.lock();
+        }
+        ~MainThreadDataLockGuard()
+        {
+            m_data.mainThreadWantsLock = false;
+            m_data.lock.unlock();
+            m_data.lockCv.notify_one();
+        }
+    private:
+        DataBlock& m_data;
+    };
+    MainThreadDataLockGuard ObtainLockForMainThread() { return { m_data }; }
+
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
     size_t GetFullFrameCount( const FrameData& fd ) const;
     bool AreFramesUsed() const;

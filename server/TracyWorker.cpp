@@ -2867,7 +2867,15 @@ void Worker::Exec()
         const char* end = ptr + netbuf.size;
 
         {
-            std::lock_guard<std::mutex> lock( m_data.lock );
+            std::unique_lock<std::mutex> lk( m_data.lock );
+            if( m_data.mainThreadWantsLock )
+            {
+                // Hand over the lock to the main thread to avoid starving it.
+                // Wait for a millisecond maximum to avoid the opposite 
+                // problem where main thread would never let us execute
+                m_data.lockCv.wait_for( lk, std::chrono::milliseconds( 1 ) );
+            }
+
             while( ptr < end )
             {
                 auto ev = (const QueueItem*)ptr;

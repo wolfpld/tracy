@@ -56,12 +56,12 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
 
     const auto yPos = wpos.y + offset;
-    const float cropperWidth = ImGui::CalcTextSize(ICON_FA_CARET_DOWN).x;
-    const float cropperCircleRadius = (cropperWidth - 2.0f * GetScale() ) / 2.0f ;
+    const float cropperWidth = ImGui::CalcTextSize( ICON_FA_CARET_DOWN ).x;
+    const float cropperCircleRadius = ( cropperWidth - 2.0f * GetScale() ) / 2.0f ;
     const float cropperAdditionalMargin = cropperWidth + wpos.x; // We add the left window margin for symmetry
     
     // Display cropper if currently limited or if hovering the cropper area
-    const auto threadDepthLimitIt = m_threadDepthLimit.find(thread.id);
+    const auto threadDepthLimitIt = m_threadDepthLimit.find( thread.id );
     const bool displayCropper = ( threadDepthLimitIt != m_threadDepthLimit.end() && threadDepthLimitIt->second <= depth )
         || ( ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin );
 
@@ -663,7 +663,7 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
     int lane = hasCtxSwitches ? -1 : 0;
     for( ; lane < depthLimit; lane++ )
     {
-        const ImVec2 center = ImVec2(cropperCenterX, CircleCenterYForLine( lane ) );
+        const ImVec2 center = ImVec2( cropperCenterX, CircleCenterYForLine( lane ) );
         const float hradius = radius + 2.0f * GetScale();
         const float dx = mousePos.x - center.x;
         const float dy = mousePos.y - center.y;

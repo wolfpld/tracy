@@ -48,6 +48,21 @@ void View::DrawNotificationArea()
             {
                 ImGui::BeginTooltip();
                 TextFocused( "Query backlog:", RealToString( sqs ) );
+                #define ShowTooltipText(metric) TextFocused(#metric":", RealToString(m_worker.metric));
+                ShowTooltipText(m_pendingCallstackFrames);
+                ShowTooltipText(m_data.callstackFrameMap.size());
+                ShowTooltipText(m_pendingCallstackSubframes);
+                ShowTooltipText(m_pendingExternalNames);
+                ShowTooltipText(m_pendingFibers);
+                ShowTooltipText(m_pendingFileStrings.size());
+                ShowTooltipText(m_pendingSourceLocation);
+                ShowTooltipText(m_pendingSourceLocationPayload);
+                ShowTooltipText(m_pendingStrings);
+                ShowTooltipText(m_pendingSymbolCode);
+                ShowTooltipText(m_pendingSymbols.size());
+                ShowTooltipText(m_pendingThreadHints.size());
+                ShowTooltipText(m_pendingThreads);
+                #undef ShowTooltipText
                 ImGui::EndTooltip();
             }
         }

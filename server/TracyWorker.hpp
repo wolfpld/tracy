@@ -1006,6 +1006,7 @@ private:
     bool m_inconsistentSamples;
     bool m_allowStringModification = false;
 
+public:
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint32_t m_pendingCallstackId = 0;
     int16_t m_pendingSourceLocationPayload = 0;

@@ -9,6 +9,7 @@
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracySystem.hpp"
 
+#include <set>
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -345,6 +346,8 @@ DWORD64 DbgHelpLoadSymbolsForModule( const char* imageName, uint64_t baseOfDll, 
 
 ModuleCache* LoadSymbolsForModuleAndCache( const char* imageName, uint32_t imageNameLength, uint64_t baseOfDll, uint32_t dllSize )
 {
+    ZoneNamed( zone, s_instrument_symbol_worker );
+
     DbgHelpLoadSymbolsForModule( imageName, baseOfDll, dllSize );
 
     ModuleCache* cachedModule = s_modCache->push_next();
@@ -532,26 +535,54 @@ struct ModuleNameAndBaseAddress
     uint64_t baseAddr;
 };
 
+template<typename... Args>
+decltype( auto ) TracyEnumProcessModules( Args&&... args )
+{
+    ZoneNamedN( zone_enum, "[Symbol]::[EnumProcessModules]", s_instrument_symbol_worker );
+    return EnumProcessModules( std::forward<Args>( args )... );
+}
+
+template<typename... Args>
+decltype( auto ) TracyGetModuleInformation( Args&&... args )
+{
+    ZoneNamedN( zone_info, "[Symbol]::[GetModuleInformation]", s_instrument_symbol_worker );
+    return GetModuleInformation( std::forward<Args>( args )... );
+}
+
+template<typename... Args>
+decltype( auto ) TracyGetModuleFileNameA( Args&&... args )
+{
+    ZoneNamedN( zone_file, "[Symbol]::[GetModuleFileName]", s_instrument_symbol_worker );
+    return GetModuleFileNameA( std::forward<Args>( args )... );
+}
+
 ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
 {
+    ZoneScoped;
     if( ( addr >> 63 ) != 0 )
     {
+        ZoneNamedN( zone_cache, "[Symbol]::[cache-kernel]", s_instrument_symbol_worker );
         if( s_krnlCache )
         {
             auto it = std::lower_bound( s_krnlCache, s_krnlCache + s_krnlCacheCnt, addr, []( const KernelDriver& lhs, const uint64_t& rhs ) { return lhs.addr > rhs; } );
             if( it != s_krnlCache + s_krnlCacheCnt )
             {
+                ZoneNamedN( zone_cache, "[Symbol]::[cache-kernel-hit]", s_instrument_symbol_worker );
                 return ModuleNameAndBaseAddress{ it->mod, it->addr };
             }
         }
         return ModuleNameAndBaseAddress{ "<kernel>", addr };
     }
-
-    for( auto& v : *s_modCache )
+    else 
     {
-        if( addr >= v.start && addr < v.end )
+        ZoneNamedN( zone_cache, "[Symbol]::[cache-user]", s_instrument_symbol_worker );
+        for( auto& v : *s_modCache )
         {
-            return ModuleNameAndBaseAddress{ v.name, v.start };
+            if( addr >= v.start && addr < v.end )
+            {
+                ZoneNamedN( zone_cache, "[Symbol]::[cache-user-hit]", s_instrument_symbol_worker );
+                return ModuleNameAndBaseAddress{ v.name, v.start };
+            }
         }
     }
 
@@ -560,19 +591,20 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
     HANDLE proc = GetCurrentProcess();
 
     InitRpmalloc();
-    if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+#if 0
+    if( TracyEnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );
         for( size_t i=0; i<sz; i++ )
         {
             MODULEINFO info;
-            if( GetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
+            if( TracyGetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
             {
                 const auto base = uint64_t( info.lpBaseOfDll );
                 if( addr >= base && addr < base + info.SizeOfImage )
                 {
                     char name[1024];
-                    const auto nameLength = GetModuleFileNameA( mod[i], name, 1021 );
+                    const auto nameLength = TracyGetModuleFileNameA( mod[i], name, 1021 );
                     if( nameLength > 0 )
                     {
                         // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
@@ -583,8 +615,38 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
             }
         }
     }
-
     return ModuleNameAndBaseAddress{ "[unknown]", 0x0 };
+#else
+    ModuleNameAndBaseAddress result { "[unknown]", 0x0 };
+    if( TracyEnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+    {
+        const auto sz = needed / sizeof( HMODULE );
+        for( size_t i=0; i<sz; i++ )
+        {
+            static std::set<HMODULE> modules;
+            if( modules.find( mod[i] ) != modules.end() ) continue;
+            modules.emplace( mod[i] );
+
+            MODULEINFO info;
+            if( TracyGetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
+            {
+                char name[1024];
+                const auto nameLength = TracyGetModuleFileNameA( mod[i], name, 1021 );
+                if( nameLength > 0 )
+                {
+                    // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
+                    ModuleCache* cachedModule = LoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
+                    const auto base = uint64_t( info.lpBaseOfDll );
+                    if( cachedModule && addr >= base && addr < base + info.SizeOfImage )
+                    {
+                        result = { cachedModule->name, cachedModule->start };
+                    }
+                }
+            }
+        }
+    }
+    return result;
+#endif
 }
 
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
@@ -626,6 +688,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
+    ZoneNamedN( decode, "[Symbol]::DecodeCallstackPtr", s_instrument_symbol_worker );
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_LOCK;
 #endif

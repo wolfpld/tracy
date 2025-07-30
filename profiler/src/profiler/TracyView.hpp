@@ -498,7 +498,6 @@ private:
     size_t m_prevMessages = 0;
     bool m_messagesShowCallstack = false;
     Vector<uint32_t> m_msgList;
-    bool m_disconnectIssued = false;
     uint64_t m_selectedThread = 0;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;

@@ -38,7 +38,7 @@ namespace tracy
 double s_time = 0;
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
-    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ), s_config.timeLimit == 0 ? -1 : s_config.maxDurationSeconds )
+    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ), s_config.timeLimit == 0 ? -1 : s_config.connectionTimeLimitSeconds )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
     , m_viewModeHeuristicTry( true )
@@ -825,9 +825,9 @@ bool View::DrawImpl()
         ImGui::SameLine();
         if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
         {
-            const bool wasDisconnectIssued = m_disconnectIssued;
+            const bool wasDisconnectIssued = m_worker.WasDisconnectIssued();
             const bool discardData = !DrawConnection();
-            const bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
+            const bool disconnectIssuedJustNow = m_worker.WasDisconnectIssued() != wasDisconnectIssued;
             if( discardData ) keepOpen = false;
             if( disconnectIssuedJustNow || discardData ) ImGui::CloseCurrentPopup();
             ImGui::EndPopup();

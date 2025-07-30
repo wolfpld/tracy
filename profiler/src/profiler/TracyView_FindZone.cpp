@@ -979,22 +979,6 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
-                        ImGui::SameLine();
-                        ImGui::Spacing();
-                        ImGui::SameLine();
-                        TextFocused( "P90:", TimeToString( m_findZone.p90 ) );
-                        ImGui::SameLine();
-                        ImGui::Spacing();
-                        ImGui::SameLine();
-                        TextFocused( "P99:", TimeToString( m_findZone.p99 ) );
-                        ImGui::SameLine();
-                        ImGui::Spacing();
-                        ImGui::SameLine();
-                        TextFocused( "P99.9:", TimeToString( m_findZone.p99_9 ) );
-                        ImGui::SameLine();
-                        ImGui::Spacing();
-                        ImGui::SameLine();
                         {
                             int64_t t0, t1;
                             if( m_findZone.logTime )
@@ -1024,6 +1008,19 @@ void View::DrawFindZone()
                             TextFocused( "\xcf\x83:", TimeToString( sd ) );
                             TooltipIfHovered( "Standard deviation" );
                         }
+                        TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P90:", TimeToString( m_findZone.p90 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P99:", TimeToString( m_findZone.p99 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P99.9:", TimeToString( m_findZone.p99_9 ) );
 
                         TextDisabledUnformatted( "Selection range:" );
                         ImGui::SameLine();

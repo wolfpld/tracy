@@ -1003,6 +1003,21 @@ module tracy
     end subroutine tracy_fiber_leave
   end interface
 #endif
+
+  interface
+    subroutine tracy_suspend() &
+      bind(C, name="___tracy_suspend")
+    end subroutine tracy_suspend
+    subroutine tracy_resume() &
+      bind(C, name="___tracy_resume")
+    end subroutine tracy_resume
+    function impl_tracy_is_active() &
+      bind(C, name="___tracy_is_active")
+      import
+      integer(c_int32_t) :: impl_tracy_is_active
+    end function impl_tracy_is_active
+  end interface
+
   !
   public :: tracy_zone_context
   public :: tracy_source_location_data
@@ -1014,6 +1029,7 @@ module tracy
   public :: tracy_set_thread_name
   public :: tracy_startup_profiler, tracy_shutdown_profiler, tracy_profiler_started
   public :: tracy_connected
+  public :: tracy_suspend, tracy_resume, tracy_is_active
   public :: tracy_appinfo
   public :: tracy_alloc_srcloc
   public :: tracy_zone_begin, tracy_zone_end
@@ -1289,4 +1305,8 @@ contains
     call impl_tracy_fiber_enter(c_loc(fiber_name))
   end subroutine tracy_fiber_enter
 #endif
+
+  logical(1) function tracy_is_active()
+    tracy_is_active = impl_tracy_is_active() /= 0_c_int32_t
+  end function tracy_is_active
 end module tracy

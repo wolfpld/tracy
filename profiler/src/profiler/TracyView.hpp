@@ -682,7 +682,7 @@ private:
         size_t sortedNum = 0, selSortNum, selSortActive;
         float average, selAverage;
         float median, selMedian;
-        float p75, p90;
+        float p75, p90, p99, p99_9;
         int64_t total, selTotal;
         int64_t selTime;
         bool drawAvgMed = true;
@@ -728,6 +728,8 @@ private:
             median = 0;
             p75 = 0;
             p90 = 0;
+            p99 = 0;
+            p99_9 = 0;
             total = 0;
             tmin = std::numeric_limits<int64_t>::max();
             tmax = std::numeric_limits<int64_t>::min();

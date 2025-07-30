@@ -557,6 +557,8 @@ void View::DrawFindZone()
                     m_findZone.median = vec[vsz/2];
                     m_findZone.p75 = vec[3 * (vsz / 4)];
                     m_findZone.p90 = vec[vsz / 10 * 9];
+                    m_findZone.p99 = vec[size_t(float(vsz * 0.99))];
+                    m_findZone.p99_9 = vec[size_t(float(vsz * 0.999))];
                     m_findZone.total = total;
                     m_findZone.sortedNum = i;
                     m_findZone.tmin = tmin;
@@ -982,6 +984,14 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "P90:", TimeToString( m_findZone.p90 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P99:", TimeToString( m_findZone.p99 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P99.9:", TimeToString( m_findZone.p99_9 ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();

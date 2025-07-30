@@ -410,14 +410,14 @@ void View::DrawZoneInfoWindow()
         else if( srcloc.name.active )
         {
             ImGui::PushFont( g_fonts.normal, FontBig );
-            TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1 );
+            TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
             ImGui::PopFont();
             TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 2 );
         }
         else
         {
             ImGui::PushFont( g_fonts.normal, FontBig );
-            TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 1 );
+            TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 1, g_fonts.normal, FontNormal );
             ImGui::PopFont();
         }
         SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( ev.SrcLoc() ), 0 ) );
@@ -1509,7 +1509,7 @@ void View::DrawGpuInfoWindow()
 
         const auto tid = GetZoneThread( ev );
         ImGui::PushFont( g_fonts.normal, FontBig );
-        TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1 );
+        TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
         ImGui::SameLine();
         ImGui::PopFont();
         TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 2 );

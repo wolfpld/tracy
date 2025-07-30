@@ -1,18 +1,35 @@
 # Empirical format config, based on observed style guide
 # Use this only as an help to fit the surrounding code style - don't reformat whole files at once
 ---
-BasedOnStyle: LLVM
-AllowShortIfStatementsOnASingleLine: WithoutElse
+BasedOnStyle: Microsoft
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: true
-AlwaysBreakTemplateDeclarations: Yes
-BreakBeforeBraces: Allman
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+# AllowShortEnumsOnASingleLine: true # Broken for some reason, even in last versions of clang-format... So don't use it or it may change formating in the future.
+AllowShortLambdasOnASingleLine: All
 BreakConstructorInitializers: BeforeComma
 BreakStringLiterals: false
-ColumnLimit: 120
+SpaceAfterTemplateKeyword: false
+AlwaysBreakTemplateDeclarations: Yes
+# Allman seems to break lambda formatting for some reason with `ColumnLimit: 0`. See https://github.com/llvm/llvm-project/issues/50275
+# Even though it is supposed to have been fixed, issue still remains in 20.1.8. (and is very much present in 18.x which is the one shipped by VS2022 and VSCord clangd as of 2025-07-27)
+# Things work fine with `BasedOnStyle: Microsoft` so use that instead
+#BreakBeforeBraces: Allman 
+ColumnLimit: 0
+# We'd like to use LeftWithLastLine but it's only available in >=19.x
+#AlignEscapedNewlines: LeftWithLastLine
+AlignEscapedNewlines: Left
 FixNamespaceComments: false
 IndentPPDirectives: AfterHash
+IndentAccessModifiers: false
+AccessModifierOffset: -4
+LambdaBodyIndentation: OuterScope
+PPIndentWidth: 2
 IndentWidth: 4
 PointerAlignment: Left
 SpaceBeforeParens: Never
 SpacesInParentheses: true
 TabWidth: 4
+AlignTrailingComments:
+  Kind: Leave

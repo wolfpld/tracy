@@ -1353,7 +1353,7 @@ void SysTraceWorker( void* ptr )
                 {
                     // Find the earliest event from the active buffers
                     int sel = -1;
-                    int selPos;
+                    int selPos = -1;
                     int64_t t0 = std::numeric_limits<int64_t>::max();
                     for( int i=0; i<activeNum; i++ )
                     {

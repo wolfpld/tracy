@@ -555,30 +555,28 @@ ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
         }
     }
 
-    HMODULE mod[1024];
-    DWORD needed;
     HANDLE proc = GetCurrentProcess();
+    // Do not use FreeLibrary because we set the flag GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT
+    // see https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandleexa to get more information
+    constexpr DWORD flag = GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT;
+    HMODULE mod = NULL;
 
     InitRpmalloc();
-    if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+    if( GetModuleHandleExA( flag, (char*)addr, &mod ) != 0 )
     {
-        const auto sz = needed / sizeof( HMODULE );
-        for( size_t i=0; i<sz; i++ )
+        MODULEINFO info;
+        if( GetModuleInformation( proc, mod, &info, sizeof( info ) ) != 0 )
         {
-            MODULEINFO info;
-            if( GetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
+            const auto base = uint64_t( info.lpBaseOfDll );
+            if( addr >= base && addr < ( base + info.SizeOfImage ) )
             {
-                const auto base = uint64_t( info.lpBaseOfDll );
-                if( addr >= base && addr < base + info.SizeOfImage )
+                char name[1024];
+                const auto nameLength = GetModuleFileNameA( mod, name, sizeof( name ) );
+                if( nameLength > 0 )
                 {
-                    char name[1024];
-                    const auto nameLength = GetModuleFileNameA( mod[i], name, 1021 );
-                    if( nameLength > 0 )
-                    {
-                        // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
-                        ModuleCache* cachedModule = LoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
-                        return ModuleNameAndBaseAddress{ cachedModule->name, cachedModule->start };
-                    }
+                    // since this is the first time we encounter this module, load its symbols (needed for modules loaded after SymInitialize)
+                    ModuleCache* cachedModule = LoadSymbolsForModuleAndCache( name, nameLength, (DWORD64)info.lpBaseOfDll, info.SizeOfImage );
+                    return ModuleNameAndBaseAddress{ cachedModule->name, cachedModule->start };
                 }
             }
         }

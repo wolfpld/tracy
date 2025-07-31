@@ -24,15 +24,33 @@
 #    pragma warning( disable : 4091 )
 #  endif
 #  include <dbghelp.h>
+#  pragma comment( lib, "dbghelp.lib" )
 #  ifdef _MSC_VER
 #    pragma warning( pop )
 #  endif
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
+#elif defined(TRACY_USE_LIBBACKTRACE)
+
 #  include "../libbacktrace/backtrace.hpp"
 #  include <algorithm>
 #  include <dlfcn.h>
 #  include <cxxabi.h>
 #  include <stdlib.h>
+
+// Implementation files
+#  include "../libbacktrace/alloc.cpp"
+#  include "../libbacktrace/dwarf.cpp"
+#  include "../libbacktrace/fileline.cpp"
+#  include "../libbacktrace/mmapio.cpp"
+#  include "../libbacktrace/posix.cpp"
+#  include "../libbacktrace/sort.cpp"
+#  include "../libbacktrace/state.cpp"
+#  if TRACY_HAS_CALLSTACK == 4
+#    include "../libbacktrace/macho.cpp"
+#  else
+#    include "../libbacktrace/elf.cpp"
+#  endif
+#  include "../common/TracyStackFrames.cpp"
+
 #elif TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>
@@ -53,7 +71,7 @@ extern "C"
 };
 #endif
 
-#if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 5 || TRACY_HAS_CALLSTACK == 6
+#if defined(TRACY_USE_LIBBACKTRACE) || TRACY_HAS_CALLSTACK == 5
 // If you want to use your own demangling functionality (e.g. for another language),
 // define TRACY_DEMANGLE and provide your own implementation of the __tracy_demangle
 // function. The input parameter is a function name. The demangle function must
@@ -91,7 +109,7 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #endif
 #endif
 
-#if TRACY_HAS_CALLSTACK == 3
+#if defined(TRACY_USE_LIBBACKTRACE) && TRACY_HAS_CALLSTACK != 4 // dl_iterate_phdr is required for the current image cache. Need to move it to libbacktrace?
 #   define TRACY_USE_IMAGE_CACHE
 #   include <link.h>
 #endif
@@ -758,7 +776,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     return { cb_data, uint8_t( cb_num ), moduleNameAndAddress.name };
 }
 
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
+#elif defined(TRACY_USE_LIBBACKTRACE)
 
 enum { MaxCbTrace = 64 };
 

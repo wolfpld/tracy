@@ -30,6 +30,8 @@ void LoadConfig()
     if( ini_sget( ini, "timeline", "verticalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.verticalScrollMultiplier = v1;
     if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
     if( ini_sget( ini, "memory", "percent", "%d", &v ) && v >= 1 && v < 1000 ) s_config.memoryLimitPercent = v;
+    if( ini_sget( ini, "connection", "durationLimitEnabled", "%d", &v ) && v >= 1 ) s_config.timeLimit = v;
+    if( ini_sget( ini, "connection", "durationLimitInSeconds", "%lf", &v1 ) ) s_config.connectionTimeLimitSeconds = v1;
     if( ini_sget( ini, "achievements", "enabled", "%d", &v ) ) s_config.achievements = v;
     if( ini_sget( ini, "achievements", "asked", "%d", &v ) ) s_config.achievementsAsked = v;
     if( ini_sget( ini, "ui", "saveUserScale", "%d", &v ) ) s_config.saveUserScale = v;
@@ -66,6 +68,10 @@ bool SaveConfig()
     fprintf( f, "\n[memory]\n" );
     fprintf( f, "limit = %i\n", (int)s_config.memoryLimit );
     fprintf( f, "percent = %i\n", s_config.memoryLimitPercent );
+
+    fprintf( f, "\n[connection]\n" );
+    fprintf( f, "durationLimitEnabled = %i\n", (int)s_config.timeLimit );
+    fprintf( f, "durationLimitInSeconds = %f\n", s_config.connectionTimeLimitSeconds );
 
     fprintf( f, "\n[achievements]\n" );
     fprintf( f, "enabled = %i\n", (int)s_config.achievements );

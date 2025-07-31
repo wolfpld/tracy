@@ -6,7 +6,7 @@
 #include <limits.h>
 #include <unistd.h>
 
-#include "TracyDebug.hpp"
+#include "../common/TracyDebug.hpp"
 #include "TracyKCore.hpp"
 #include "../common/TracyAlloc.hpp"
 

@@ -214,7 +214,9 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto worker = tracy::Worker(*f);
+    tracy::Worker::SymbolResolutionConfig symConfig{};
+    symConfig.m_attemptResolutionByWorker = false;
+    auto worker = tracy::Worker(*f, symConfig);
 
     if (args.unwrapMessages) 
     {

@@ -26,11 +26,17 @@
 #define ZDICT_STATIC_LINKING_ONLY
 #include <zdict.h>
 
+
+#include "../public/common/TracyCallstack.hpp"
+#include "../public/common/TracyFastVector.hpp"
 #include "../public/common/TracyProtocol.hpp"
-#include "../public/common/TracySystem.hpp"
-#include "../public/common/TracyYield.hpp"
 #include "../public/common/TracyStackFrames.hpp"
+#include "../public/common/TracySystem.hpp"
 #include "../public/common/TracyVersion.hpp"
+#include "../public/common/TracyYield.hpp"
+
+
+#include "TracyAlign.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyPrint.hpp"
@@ -38,6 +44,11 @@
 #include "TracyTaskDispatch.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_pdqsort.h"
+#include "TracyAlloc.hpp"
+
+#ifdef TRACY_ENABLE // The worker should only have TRACY_ENABLE when self profiling
+#define TRACY_SELF_PROFILE
+#endif
 
 namespace tracy
 {
@@ -255,7 +266,7 @@ static bool IsQueryPrio( ServerQuery type )
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
+Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, const SymbolResolutionConfig& symbolResConfig )
     : m_addr( addr )
     , m_port( port )
     , m_hasData( false )
@@ -263,6 +274,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
     , m_inconsistentSamples( false )
+    , m_symbolConfig( symbolResConfig )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
     , m_pendingFibers( 0 )
@@ -276,6 +288,9 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
 {
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
+    InitCallstack();
+#endif
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -299,7 +314,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
-Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames )
+Worker::Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig )
     : m_hasData( true )
     , m_resolution( 0 )
     , m_captureName( name )
@@ -312,9 +327,13 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_buffer( nullptr )
     , m_onDemand( false )
     , m_inconsistentSamples( false )
+    , m_symbolConfig( symbolResConfig )
     , m_memoryLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
+    InitCallstack();
+#endif
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
@@ -550,14 +569,18 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     }
 }
 
-Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allowStringModification )
+Worker::Worker( FileRead& f, const SymbolResolutionConfig& symbolResConfig, EventType::Type eventMask, bool bgTasks, bool allowStringModification )
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_inconsistentSamples( false )
     , m_memoryLimit( -1 )
     , m_allowStringModification( allowStringModification )
+    , m_symbolConfig( symbolResConfig )
 {
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
+    InitCallstack();
+#endif
     auto loadStart = std::chrono::high_resolution_clock::now();
 
     int fileVer = 0;
@@ -1692,6 +1715,64 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         }
     }
 
+    auto DeserializeDebugField = [&]( ImageDebugInfo* debugField )
+        {
+            f.Read( debugField->debugFormat );
+            
+            if( debugField->debugFormat == ImageDebugFormatId::NoDebugFormat )
+            {
+                debugField->debugDataSize = 0;
+                debugField->debugData = nullptr;
+                return;
+            }
+            f.Read( debugField->debugDataSize );
+            debugField->debugData = (uint8_t*)tracy_malloc( debugField->debugDataSize );
+            f.Read( debugField->debugData, debugField->debugDataSize );
+        };
+
+    auto DeserializeMallocedFastString = [&]( char** s )
+        {
+            int sLength = -1;
+            f.Read( sLength );
+            if (sLength == -1)
+            {
+                *s = nullptr;
+                return;
+            }
+
+            *s = (char*)tracy_malloc_fast( sLength );
+
+            f.Read( *s, sLength );
+        };
+
+    auto DeserializeImageEntries = [&]()
+        {
+            uint32_t moduleCount = 0;
+            f.Read( moduleCount );
+
+            for( size_t i=0; i<moduleCount; i++ )
+            {
+                ImageEntry imageEntry;
+                f.Read( imageEntry.start );
+                f.Read( imageEntry.end );
+                DeserializeMallocedFastString( &imageEntry.name );
+                DeserializeMallocedFastString( &imageEntry.path );
+
+                DeserializeDebugField( &imageEntry.imageDebugInfo );
+#ifdef TRACY_HAS_CALLSTACK
+                CacheImageAndLoadDebugInfo( imageEntry, m_symbolConfig.m_attemptResolutionByWorker );
+#endif
+            }
+        };
+
+    if ( CurrentVersion >= FileVersion( 0, 11, 3 ) )
+    {
+       DeserializeImageEntries(); // UserLandModules
+       DeserializeImageEntries(); // KernelModules
+    }
+
+    // Post read processing
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -1942,6 +2023,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
 
 Worker::~Worker()
 {
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
+    EndCallstack();
+#endif
     Shutdown();
 
     if( m_threadNet.joinable() ) m_threadNet.join();
@@ -2679,7 +2763,8 @@ const SymbolStats* Worker::GetSymbolStats( uint64_t symAddr ) const
     }
 }
 
-const unordered_flat_map<CallstackFrameId, uint32_t, Worker::CallstackFrameIdHash, Worker::CallstackFrameIdCompare>* Worker::GetSymbolInstructionPointers( uint64_t symAddr ) const
+const unordered_flat_map<CallstackFrameId, uint32_t, Worker::CallstackFrameIdHash, Worker::CallstackFrameIdCompare>*
+Worker::GetSymbolInstructionPointers( uint64_t symAddr ) const
 {
     assert( AreCallstackSamplesReady() );
     auto it = m_data.instructionPointersMap.find( symAddr );
@@ -2752,6 +2837,7 @@ void Worker::Exec()
     m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
     uint32_t protocolVersion = ProtocolVersion;
     m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
+    
     HandshakeStatus handshake;
     if( !m_sock.Read( &handshake, sizeof( handshake ), 10, ShouldExit ) )
     {
@@ -2819,6 +2905,16 @@ void Worker::Exec()
         m_captureName = tmp;
 
         m_hostInfo = welcome.hostInfo;
+
+        uint32_t serverFlags = 0;
+        if( m_symbolConfig.m_preventResolutionByClient )
+        {
+            // We could probably enable this automatically on windows when connected to localhost
+            // or based on some platform filter? For now, simply honor the config.
+            serverFlags |= ServerFlags::PreventSymbolResolution;
+        }
+        m_sock.Send( &serverFlags, sizeof(serverFlags) );
+
 
         if( m_onDemand )
         {
@@ -3146,6 +3242,15 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
             AddSecondString( ptr, sz );
             ptr += sz;
             break;
+        case QueueType::DataPacket:
+        {
+            const QueueDataPacket* packet = reinterpret_cast<const QueueDataPacket*>( ptr );
+            ptr += sizeof( QueueHeader );
+            ptr += sizeof( QueueDataPacket );
+            AddDataPacket( reinterpret_cast<const void*>( ptr ), packet->packetSize );
+            ptr += packet->packetSize;
+        }
+        break;
         default:
             ptr += QueueDataSize[ev.hdr.idx];
             switch( ev.hdr.type )
@@ -3242,12 +3347,61 @@ void Worker::QueryDataTransfer( const void* ptr, size_t size )
 
 void Worker::QueryCallstackFrame( uint64_t addr )
 {
-    const auto packed = PackPointer( addr );
-    if( m_data.callstackFrameMap.contains( packed ) ) return;
+	const auto packed = PackPointer(addr);
+	if (m_data.callstackFrameMap.contains(packed)) return;
 
     m_pendingCallstackFrames++;
-    m_data.callstackFrameMap.emplace( packed, nullptr );
-    Query( ServerQueryCallstackFrame, addr );
+    m_data.callstackFrameMap.emplace(packed, nullptr);
+
+	DecodeCallStackPtrStatus status = DecodeCallStackPtrStatusFlags::SymbolMissing;
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Self profiling will use the old path and query symbols
+	if (m_symbolConfig.m_attemptResolutionByWorker)
+	{
+
+		// TODO: offload to a worker thread
+		CallstackEntryData outCallStack = DecodeCallstackPtr(addr, &status);
+		if ((status & DecodeCallStackPtrStatusFlags::ErrorMask) == DecodeCallStackPtrStatusFlags::Success)
+		{
+			const uint32_t imageNameIdx = StoreString(outCallStack.imageName, strlen(outCallStack.imageName)).idx;
+			assert(outCallStack.size <= 255);
+			const QueueCallstackFrameSize queueCallstackFrameSize =
+			{
+				.ptr = addr,
+				.size = outCallStack.size,
+			};
+
+			ProcessCallstackFrameSize(queueCallstackFrameSize, imageNameIdx);
+
+			for (size_t i = 0; i < queueCallstackFrameSize.size; i++)
+			{
+				const auto& frame = outCallStack.data[i];
+				ProcessCallstackFrame(frame.line, frame.symAddr, frame.symLen,
+					StoreString(frame.name, strlen(frame.name)).idx, StoreString(frame.file, strlen(frame.file)).idx, true);
+
+				// We copied it, now free the content
+				tracy_free_fast((void*)frame.name);
+				tracy_free_fast((void*)frame.file);
+			}
+
+			assert(m_pendingCallstackSubframes == 0);
+            return;
+		}
+
+		if (status & DecodeCallStackPtrStatusFlags::SymbolMissing)
+		{
+			tracy_free_fast((void*)outCallStack.data[0].file);
+			tracy_free_fast((void*)outCallStack.data[0].name);
+		}
+
+	}
+#endif
+
+	if (status & DecodeCallStackPtrStatusFlags::ModuleMissing || status & DecodeCallStackPtrStatusFlags::SymbolMissing)
+	{
+		// TODO: actually only query module info, and then try to resolve again locally.
+	    //  Or we could just rely on the user triggering a new symbol resolution manually.
+		Query(ServerQueryCallstackFrame, addr);
+	}
 }
 
 bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
@@ -3351,6 +3505,15 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             AddSecondString( ptr, sz );
             ptr += sz;
             return true;
+        case QueueType::DataPacket:
+        {
+            ptr += sizeof( QueueHeader );
+            const QueueDataPacket* packet = reinterpret_cast<const QueueDataPacket*>( ptr );
+            ptr += sizeof( QueueDataPacket );
+            AddDataPacket( reinterpret_cast<const void*>( ptr ), packet->packetSize );
+            ptr += packet->packetSize;
+            return true;
+        }
         default:
             ptr += QueueDataSize[ev.hdr.idx];
             return Process( ev );
@@ -3856,6 +4019,12 @@ void Worker::AddSecondString( const char* str, size_t sz )
     m_pendingSecondString = StoreString( str, sz );
 }
 
+void Worker::AddDataPacket( const void* data, size_t size )
+{
+    m_pendingDataPacket.data = static_cast<uint8_t*>( tracy_malloc( size ) );
+    memcpy( m_pendingDataPacket.data, data, size );
+}
+
 void Worker::AddExternalName( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingExternalNames > 0 );
@@ -4035,9 +4204,10 @@ void Worker::AddCallstackPayload( const char* _data, size_t _sz )
         m_data.callstackMap.emplace( arr, idx );
         m_data.callstackPayload.push_back( arr );
 
-        for( auto& frame : *arr )
+
+        for ( CallstackFrameId frameId : *arr )
         {
-            QueryCallstackFrame( GetCanonicalPointer( frame ) );
+            QueryCallstackFrame( GetCanonicalPointer( frameId ) );
         }
     }
     else
@@ -4464,6 +4634,21 @@ uint32_t Worker::GetSecondStringIdx()
     return idx;
 }
 
+void Worker::AccessPendingData( uint8_t** ptr, size_t* sz)
+{
+    assert( m_pendingDataPacket.data != nullptr );
+
+    *ptr = m_pendingDataPacket.data;
+    *sz = m_pendingDataPacket.dataSize;
+}
+
+void Worker::FreePendingData()
+{
+    tracy_free( m_pendingDataPacket.data );
+    m_pendingDataPacket.data = nullptr;
+    m_pendingDataPacket.dataSize = 0;
+}
+
 StringLocation Worker::StoreString( const char* str, size_t sz )
 {
     StringLocation ret;
@@ -4789,7 +4974,12 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::FiberLeave:
         ProcessFiberLeave( ev.fiberLeave );
-        break;
+        break; 
+     case QueueType::ImageUpdate: 
+    {
+        DispatchImageEntry(ev.imageEntry);
+        break; 
+    }
     default:
         assert( false );
         break;
@@ -5093,6 +5283,55 @@ void Worker::FiberLeaveFailure()
 void Worker::SourceLocationOverflowFailure()
 {
     m_failure = Failure::SourceLocationOverflow;
+}
+
+void Worker::ResolveSymbolLocally()
+{
+#if defined(TRACY_HAS_CALLSTACK) && !defined( TRACY_SELF_PROFILE) // Would be racy by design when self profiling, need to offload this to the Symbol Worker
+    const char * unresolvedStr = "[unresolved]";
+    StringIdx unresolvedStrIdx = StoreString(unresolvedStr, strlen(unresolvedStr) ).idx;
+
+    if(!m_symbolConfig.m_attemptResolutionByWorker)
+    {
+        // TODO: Load debug info.
+    }
+    
+    for (auto& it : m_data.callstackFrameMap)
+    {
+        CallstackFrameData& toResolveData = *it.second;
+        if(toResolveData.data[0].name.Idx() == unresolvedStrIdx.Idx())
+        {            
+            uint64_t symbolAddress = GetCanonicalPointer( it.first );
+            DecodeCallStackPtrStatus status;
+            CallstackEntryData outCallStack = DecodeCallstackPtr( symbolAddress, &status );
+            if ( ( status & DecodeCallStackPtrStatusFlags::ErrorMask ) == DecodeCallStackPtrStatusFlags::Success )
+            {
+                assert( outCallStack.size <= 255 );
+                assert( toResolveData.imageName.Idx() == StoreString( outCallStack.imageName, strlen(outCallStack.imageName)).idx);
+                if( toResolveData.size != outCallStack.size )
+                {
+                    // We're "leaking" the unresolved data until slab is reset
+                    toResolveData.data = m_slab.Alloc<CallstackFrame>( outCallStack.size );
+                }
+
+                for( size_t idx=0; idx<outCallStack.size ; idx++ )
+                {
+                    const auto& frameData = outCallStack.data[idx];
+                    toResolveData.data[idx].name = StoreString( frameData.name, strlen(frameData.name) ).idx;
+                    toResolveData.data[idx].file = StoreString( frameData.file, strlen(frameData.file) ).idx;
+                    toResolveData.data[idx].line = frameData.line;
+                    toResolveData.data[idx].symAddr = frameData.symAddr;
+
+                    // TODO: source code / binary.
+
+                    // We copied it, now free the content
+                    tracy_free_fast( (void*)frameData.name );
+                    tracy_free_fast( (void*)frameData.file );
+                }
+            }
+        }
+    }
+#endif
 }
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
@@ -6571,7 +6810,7 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
     td.ctxSwitchSamples.push_back( sd );
 }
 
-void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
+void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev, uint32_t imageNameIdx )
 {
     assert( !m_callstackFrameStaging );
     assert( m_pendingCallstackSubframes == 0 );
@@ -6582,8 +6821,6 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     m_data.newFramesWereReceived = true;
 #endif
 
-    const auto idx = GetSingleStringIdx();
-
     // Frames may be duplicated due to recursion
     auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
     if( !fmit->second )
@@ -6591,18 +6828,28 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
         m_callstackFrameStaging->size = ev.size;
         m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>( ev.size );
-        m_callstackFrameStaging->imageName = StringIdx( idx );
+        m_callstackFrameStaging->imageName = StringIdx( imageNameIdx );
 
         m_callstackFrameStagingPtr = ev.ptr;
     }
 }
 
+void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
+{
+    ProcessCallstackFrameSize( ev, GetSingleStringIdx() );
+}
+
 void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols )
 {
-    assert( m_pendingCallstackSubframes > 0 );
+    const uint32_t nitidx = GetSingleStringIdx();
+    const uint32_t fitidx = GetSecondStringIdx();
 
-    const auto nitidx = GetSingleStringIdx();
-    const auto fitidx = GetSecondStringIdx();
+    ProcessCallstackFrame( ev.line, ev.symAddr, ev.symLen, nitidx, fitidx, querySymbols );
+}
+
+void Worker::ProcessCallstackFrame( uint32_t line, uint64_t symAddr, uint32_t symLen, uint32_t nitidx, uint32_t fitidx, bool querySymbols )
+{
+    assert( m_pendingCallstackSubframes > 0 );
 
     if( m_callstackFrameStaging )
     {
@@ -6633,13 +6880,18 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
         const auto name = StringIdx( nitidx );
         m_callstackFrameStaging->data[idx].name = name;
         m_callstackFrameStaging->data[idx].file = file;
-        m_callstackFrameStaging->data[idx].line = ev.line;
-        m_callstackFrameStaging->data[idx].symAddr = ev.symAddr;
+        m_callstackFrameStaging->data[idx].line = line;
+        m_callstackFrameStaging->data[idx].symAddr = symAddr;
 
-        if( querySymbols && ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
+        if(querySymbols && symAddr!= 0 && m_data.symbolMap.find(symAddr) == m_data.symbolMap.end() &&
+            m_pendingSymbols.find(symAddr) == m_pendingSymbols.end())
         {
-            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, ev.symLen, idx < m_callstackFrameStaging->size - 1 } );
-            Query( ServerQuerySymbol, ev.symAddr );
+            m_pendingSymbols.emplace(symAddr,
+                                      SymbolPending{ name, m_callstackFrameStaging->imageName, file, line, symLen,
+                                                     idx < m_callstackFrameStaging->size - 1 } );
+
+           
+          Query( ServerQuerySymbol, symAddr );
         }
 
         StringRef ref( StringRef::Idx, fitidx );
@@ -6647,16 +6899,22 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
         if( cit == m_checkedFileStrings.end() ) CacheSource( ref, m_callstackFrameStaging->imageName );
 
         const auto frameId = PackPointer( m_callstackFrameStagingPtr );
+
 #ifndef TRACY_NO_STATISTICS
+
+
         auto it = m_data.pendingInstructionPointers.find( frameId );
         if( it != m_data.pendingInstructionPointers.end() )
         {
-            if( ev.symAddr != 0 )
+            if( symAddr != 0 )
             {
-                auto sit = m_data.instructionPointersMap.find( ev.symAddr );
+                auto sit = m_data.instructionPointersMap.find( symAddr );
                 if( sit == m_data.instructionPointersMap.end() )
                 {
-                    m_data.instructionPointersMap.emplace( ev.symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { it->first, it->second } } );
+                    m_data.instructionPointersMap.emplace(
+                        symAddr,
+                        unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>{
+                            { it->first, it->second } } );
                 }
                 else
                 {
@@ -6666,16 +6924,19 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySym
             }
             m_data.pendingInstructionPointers.erase( it );
         }
+
+
         auto pit = m_data.pendingSymbolSamples.find( frameId );
         if( pit != m_data.pendingSymbolSamples.end() )
         {
-            if( ev.symAddr != 0 )
+            if( symAddr != 0 )
             {
-                auto sit = m_data.symbolSamples.find( ev.symAddr );
+                auto sit = m_data.symbolSamples.find( symAddr );
                 if( sit == m_data.symbolSamples.end() )
-                {
-                    pdqsort_branchless( pit->second.begin(), pit->second.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
-                    m_data.symbolSamples.emplace( ev.symAddr, std::move( pit->second ) );
+                {               
+                    pdqsort_branchless( pit->second.begin(), pit->second.end(), []( const auto& lhs, const auto& rhs )
+                                        { return lhs.time.Val() < rhs.time.Val(); } );
+                    m_data.symbolSamples.emplace( symAddr, std::move( pit->second ) );
                 }
                 else
                 {
@@ -8519,6 +8780,57 @@ void Worker::Write( FileWrite& f, bool fiDict )
         f.Write( &v.second.len, sizeof( v.second.len ) );
         f.Write( v.second.data, v.second.len );
     }
+
+
+#ifdef TRACY_HAS_CALLSTACK
+    auto SerializeDebugModuleField = [&]( const ImageDebugInfo& debugField )
+        {
+            f.Write( &debugField.debugFormat, sizeof( debugField.debugFormat ) );
+            if( debugField.debugFormat == ImageDebugFormatId::NoDebugFormat )
+               return;
+           
+            f.Write( &debugField.debugDataSize, sizeof( debugField.debugDataSize ) );
+            f.Write( debugField.debugData, debugField.debugDataSize );
+        };
+
+    auto SerializeString = [&]( const char* s )
+        {
+           int sLength = s != nullptr ? strlen( s ) + 1 : -1;
+           f.Write( &sLength, sizeof( sLength ) );
+
+            if ( sLength == -1 )
+                return;
+           
+            f.Write( s, sLength );
+        };
+
+    auto SerializeImageEntries = [&]( const FastVector<ImageEntry>* imagesEntries )
+        {
+            uint32_t moduleCount = static_cast<uint32_t>( imagesEntries ? imagesEntries->size() : 0 );
+            f.Write( &moduleCount, sizeof( moduleCount ) );
+
+            if( imagesEntries )
+            {
+                for (const auto& m : *imagesEntries)
+                {
+                    f.Write( &m.start, sizeof( m.start ) );
+                    f.Write( &m.end, sizeof( m.end ) );
+                    SerializeString( m.name );
+                    SerializeString( m.path );
+
+                    SerializeDebugModuleField( m.imageDebugInfo );
+                }
+            }
+        };
+
+    SerializeImageEntries( GetUserImageInfos() );
+    SerializeImageEntries( GetKernelImageInfos() );
+#else
+    uint32_t moduleCount = 0;
+    f.Write( &moduleCount, sizeof( moduleCount ) ); // User images count
+    f.Write( &moduleCount, sizeof( moduleCount ) ); // Kernel images count
+#endif
+    
 }
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<ZoneEvent>>& vec, int64_t& refTime )
@@ -8766,6 +9078,69 @@ void Worker::CacheSourceFiles()
             if( SourceFileValid( file, execTime != 0 ? execTime : GetCaptureTime() ) ) CacheSourceFromFile( file );
         }
     }
+}
+
+void Worker::DispatchImageEntry( const QueueImageEntry& ev )
+{
+	uint8_t* ptrToData = nullptr;
+	size_t s = 0;
+	AccessPendingData(&ptrToData, &s);
+
+
+	uint64_t baseAddress = MemRead<uint64_t>(ptrToData);
+	ptrToData += sizeof(baseAddress);
+
+	uint64_t end = MemRead<uint64_t>(ptrToData);
+	ptrToData += sizeof(end);
+
+	uint32_t moduleNameSize = MemRead<uint32_t>(ptrToData);
+	ptrToData += sizeof(moduleNameSize);
+
+	assert((char)(ptrToData[moduleNameSize - 1]) == '\0' && "missing end of string");
+	char* moduleName = (char*)tracy_malloc_fast(moduleNameSize);
+	memcpy(moduleName, ptrToData, moduleNameSize);
+	ptrToData += moduleNameSize;
+
+	uint32_t modulePathSize = MemRead<uint32_t>(ptrToData);
+	ptrToData += sizeof(modulePathSize);
+
+	assert((char)(ptrToData[modulePathSize - 1]) == '\0' && "missing end of string");
+	char* modulePath = (char*)tracy_malloc_fast(modulePathSize);
+	memcpy(modulePath, ptrToData, modulePathSize);
+	ptrToData += modulePathSize;
+
+	ImageDebugFormatId debugFormat = MemRead<ImageDebugFormatId>(ptrToData);
+	ptrToData += sizeof(ImageDebugFormatId);
+
+	ImageEntry moduleCacheEntry =
+	{
+		.start = baseAddress,
+		.end = end,
+		.name = moduleName,
+		.path = modulePath,
+	};
+	moduleCacheEntry.imageDebugInfo.debugFormat = debugFormat;
+
+	if (debugFormat != ImageDebugFormatId::NoDebugFormat)
+	{
+
+		uint32_t debugFormatSize = MemRead<uint32_t>(ptrToData);
+		ptrToData += sizeof(debugFormatSize);
+
+		uint8_t* debugData = (uint8_t*)tracy_malloc(debugFormatSize);
+		memcpy(debugData, ptrToData, debugFormatSize);
+		ptrToData += debugFormatSize;
+
+		ImageDebugInfo& imageDebugInfo = moduleCacheEntry.imageDebugInfo;
+
+		imageDebugInfo.debugData = debugData;
+		imageDebugInfo.debugDataSize = debugFormatSize;
+
+	}
+#ifdef TRACY_HAS_CALLSTACK
+	CacheImageAndLoadDebugInfo(moduleCacheEntry, m_symbolConfig.m_attemptResolutionByWorker);
+#endif
+	FreePendingData();
 }
 
 }

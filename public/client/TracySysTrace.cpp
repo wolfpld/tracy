@@ -1,5 +1,5 @@
-#include "TracyDebug.hpp"
-#include "TracyStringHelpers.hpp"
+#include "../common/TracyDebug.hpp"
+#include "../common/TracyStringHelpers.hpp"
 #include "TracySysTrace.hpp"
 #include "../common/TracySystem.hpp"
 

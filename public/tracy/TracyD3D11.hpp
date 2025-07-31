@@ -38,7 +38,7 @@ using TracyD3D11Ctx = void*;
 
 #include "Tracy.hpp"
 #include "../client/TracyProfiler.hpp"
-#include "../client/TracyCallstack.hpp"
+#include "../common/TracyCallstack.hpp"
 #include "../common/TracyYield.hpp"
 
 #include <d3d11.h>
@@ -431,7 +431,7 @@ using TracyD3D11Ctx = tracy::D3D11Ctx*;
 #define TracyD3D11SrcLocSymbol TracyConcat(__tracy_gpu_d3d11_source_location,TracyLine)
 #define TracyD3D11SrcLocObject(name, color) static constexpr tracy::SourceLocationData TracyD3D11SrcLocSymbol { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color };
 
-#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
 #  define TracyD3D11Zone( ctx, name ) TracyD3D11NamedZoneS( ctx, TracyD3D11UnnamedZone, name, TRACY_CALLSTACK, true )
 #  define TracyD3D11ZoneC( ctx, name, color ) TracyD3D11NamedZoneCS( ctx, TracyD3D11UnnamedZone, name, color, TRACY_CALLSTACK, true )
 #  define TracyD3D11NamedZone( ctx, varname, name, active ) TracyD3D11SrcLocObject(name, 0); tracy::D3D11ZoneScope varname( ctx, &TracyD3D11SrcLocSymbol, TRACY_CALLSTACK, active );

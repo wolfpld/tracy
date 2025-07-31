@@ -164,7 +164,10 @@ int main( int argc, char** argv )
 
     printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );
-    tracy::Worker worker( address, port, memoryLimit );
+
+    tracy::Worker::SymbolResolutionConfig symConfig{};
+    symConfig.m_attemptResolutionByWorker = false;
+    tracy::Worker worker( address, port, memoryLimit, symConfig );
     while( !worker.HasData() )
     {
         const auto handshake = worker.GetHandshakeStatus();

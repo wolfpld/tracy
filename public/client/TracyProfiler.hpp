@@ -9,11 +9,11 @@
 
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
-#include "TracyCallstack.hpp"
 #include "TracyKCore.hpp"
 #include "TracySysPower.hpp"
 #include "TracySysTime.hpp"
-#include "TracyFastVector.hpp"
+#include "../common/TracyCallstack.hpp"
+#include "../common/TracyFastVector.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
@@ -777,6 +777,7 @@ public:
     void SendSecondString( const char* ptr ) { SendSecondString( ptr, strlen( ptr ) ); }
     void SendSecondString( const char* ptr, size_t len );
 
+    void SendSingleDataPacket( void* ptr, size_t totalSize );
 
     // Allocated source location data layout:
     //  2b  payload size
@@ -917,6 +918,12 @@ private:
     void CalibrateTimer();
     void CalibrateDelay();
     void ReportTopology();
+
+    void SendCachedModulesInformation();
+
+#ifdef TRACY_HAS_CALLSTACK
+    void SendImageInfo( const ImageEntry& moduleCacheEntry);
+#endif
 
     static tracy_force_inline void SendCallstackSerial( void* ptr )
     {

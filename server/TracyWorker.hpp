@@ -17,6 +17,8 @@
 #include "../public/common/TracyQueue.hpp"
 #include "../public/common/TracyProtocol.hpp"
 #include "../public/common/TracySocket.hpp"
+#include "../public/common/TracyDebugModulesHeaderFile.hpp"
+
 #include "tracy_robin_hood.h"
 #include "TracyEvent.hpp"
 #include "TracyShortPtr.hpp"
@@ -287,6 +289,7 @@ private:
         StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         Vector<ZoneExtra> zoneExtra;
+        Vector<uint64_t> modulesBaseAddress;
         MemData* memory;
         unordered_flat_map<uint64_t, MemData*> memNameMap;
         uint64_t zonesCnt = 0;
@@ -433,6 +436,12 @@ private:
         const char* image;
         uint32_t csz;
     };
+ 
+    struct PendingDataPacket
+    {
+        size_t dataSize;
+        uint8_t* data;
+    };
 
 public:
     enum class Failure
@@ -455,9 +464,15 @@ public:
         NUM_FAILURES
     };
 
-    Worker( const char* addr, uint16_t port, int64_t memoryLimit );
-    Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames );
-    Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true, bool allowStringModification = false);
+    struct SymbolResolutionConfig
+    {
+        bool m_attemptResolutionByWorker;
+        bool m_preventResolutionByClient;
+    };
+
+    Worker(const char* addr, uint16_t port, int64_t memoryLimit, const SymbolResolutionConfig& symbolResConfig);
+    Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames, const SymbolResolutionConfig& symbolResConfig);
+    Worker(FileRead& f, const SymbolResolutionConfig& symbolResConfig, EventType::Type eventMask = EventType::All, bool bgTasks = true, bool allowStringModification = false);
     ~Worker();
 
     const std::string& GetAddr() const { return m_addr; }
@@ -579,6 +594,7 @@ public:
     const char* GetSymbolCode( uint64_t sym, uint32_t& len ) const;
     uint64_t GetSymbolForAddress( uint64_t address );
     uint64_t GetSymbolForAddress( uint64_t address, uint32_t& offset );
+
     uint64_t GetInlineSymbolForAddress( uint64_t address ) const;
     bool HasInlineSymbolAddresses() const { return !m_data.codeSymbolMap.empty(); }
     StringIdx GetLocationForAddress( uint64_t address, uint32_t& line ) const;
@@ -700,6 +716,7 @@ public:
     void DoPostponedInlineSymbols();
     void DoPostponedWork();
     void DoPostponedWorkAll();
+    void ResolveSymbolLocally();
 
     void CacheSourceFiles();
 
@@ -784,8 +801,11 @@ private:
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev, uint32_t imageNameIdx );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols );
+    tracy_force_inline void ProcessCallstackFrame(uint32_t line, uint64_t symAddr, uint32_t symLen, uint32_t nitidx, uint32_t fitidx, bool querySymbols);
+
     tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
@@ -806,6 +826,8 @@ private:
     tracy_force_inline void ProcessThreadGroupHint( const QueueThreadGroupHint& ev );
     tracy_force_inline void ProcessFiberEnter( const QueueFiberEnter& ev );
     tracy_force_inline void ProcessFiberLeave( const QueueFiberLeave& ev );
+
+    tracy_force_inline void DispatchImageEntry( const QueueImageEntry& ev);
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
@@ -916,6 +938,7 @@ private:
     void AddSingleString( const char* str, size_t sz );
     void AddSingleStringFailure( const char* str, size_t sz );
     void AddSecondString( const char* str, size_t sz );
+    void AddDataPacket( const void* data, size_t size );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( const char* data, size_t sz );
@@ -942,6 +965,10 @@ private:
 
     uint32_t GetSingleStringIdx();
     uint32_t GetSecondStringIdx();
+
+    void AccessPendingData( uint8_t** ptr, size_t* sz );
+    void FreePendingData();
+
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
     void CacheSource( const StringRef& str, const StringIdx& image = StringIdx() );
@@ -1034,6 +1061,7 @@ private:
     bool m_identifySamples = false;
     bool m_inconsistentSamples;
     bool m_allowStringModification = false;
+    SymbolResolutionConfig m_symbolConfig;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint32_t m_pendingCallstackId = 0;
@@ -1048,6 +1076,7 @@ private:
     unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_checkedFileStrings;
     StringLocation m_pendingSingleString = {};
     StringLocation m_pendingSecondString = {};
+    PendingDataPacket m_pendingDataPacket = {};
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

@@ -671,9 +671,11 @@ int main(int argc, char **argv) {
       out--;
     return out;
   };
-
+  
+  tracy::Worker::SymbolResolutionConfig symConfig{};
+  symConfig.m_attemptResolutionByWorker = false;
   tracy::Worker worker(getFilename(output), getFilename(input), timeline,
-                       messages, plots, std::move(dec.threadNames));
+                       messages, plots, std::move(dec.threadNames), symConfig);
 
   auto w =
       std::unique_ptr<tracy::FileWrite>(tracy::FileWrite::Open(output, clev));

@@ -2742,6 +2742,8 @@ By default, sampling is performed at 8 kHz frequency on Windows (the maximum pos
 
 Call stack sampling may be disabled by using the \texttt{TRACY\_NO\_SAMPLING} define.
 
+When enabled, by default, sampling starts at the beginning of the application and ends with it. You can instead have programmatic (manual) control over when sampling should begin and end by defining \texttt{TRACY\_SAMPLING\_PROFILER\_MANUAL\_START} when compiling \texttt{TracyClient.cpp}. Use \texttt{tracy::BeginSamplingProfiling()} and \texttt{tracy::EndSamplingProfiling()} to control it. There are C interfaces for it as well: \texttt{TracyCBeginSamplingProfiling()} and \texttt{TracyCEndSamplingProfiling()}.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

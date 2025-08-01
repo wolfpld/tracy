@@ -114,6 +114,9 @@ typedef const void* TracyCLockCtx;
 #define TracyCIsConnected 0
 #define TracyCIsStarted 0
 
+#define TracyCBeginSamplingProfiling() 0
+#define TracyCEndSamplingProfiling()
+
 #ifdef TRACY_FIBERS
 #  define TracyCFiberEnter(fiber)
 #  define TracyCFiberLeave
@@ -366,6 +369,12 @@ TRACY_API void ___tracy_custom_name_lockable_ctx( struct __tracy_lockable_contex
 #define TracyCLockCustomName( lock, name, nameSz ) ___tracy_custom_name_lockable_ctx( lock, name, nameSz );
 
 #define TracyCIsConnected ___tracy_connected()
+
+TRACY_API int ___tracy_begin_sampling_profiler( void );
+TRACY_API void ___tracy_end_sampling_profiler( void );
+
+#define TracyCBeginSamplingProfiling() ___tracy_begin_sampling_profiling()
+#define TracyCEndSamplingProfiling() ___tracy_end_sampling_profiling()
 
 #ifdef TRACY_FIBERS
 TRACY_API void ___tracy_fiber_enter( const char* fiber );

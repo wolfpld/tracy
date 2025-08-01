@@ -58,6 +58,9 @@ TRACY_API bool IsProfilerStarted();
 #  define TracyIsStarted true
 #endif
 
+TRACY_API bool BeginSamplingProfiling();
+TRACY_API void EndSamplingProfiling();
+
 class GpuCtx;
 class Profiler;
 class Socket;
@@ -251,6 +254,9 @@ public:
         return 0;  // unreachable branch
 #endif
     }
+
+    bool BeginSamplingProfiling();
+    void EndSamplingProfiling();
 
     tracy_force_inline uint32_t GetNextZoneId()
     {

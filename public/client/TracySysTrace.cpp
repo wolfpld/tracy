@@ -527,25 +527,23 @@ void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const ch
                 const auto phnd = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid );
                 if( phnd != INVALID_HANDLE_VALUE )
                 {
-                    HMODULE modules[1024];
-                    DWORD needed;
-                    if( _EnumProcessModules( phnd, modules, 1024 * sizeof( HMODULE ), &needed ) != 0 )
+                    MEMORY_BASIC_INFORMATION vmeminfo;
+                    SIZE_T infosize = VirtualQueryEx( phnd, ptr, &vmeminfo, sizeof( vmeminfo ) );
+                    if( infosize == sizeof( vmeminfo ) )
                     {
-                        const auto sz = std::min( DWORD( needed / sizeof( HMODULE ) ), DWORD( 1024 ) );
-                        for( DWORD i=0; i<sz; i++ )
+                        if (vmeminfo.Type == MEM_IMAGE)
                         {
+                            // for MEM_IMAGE regions, vmeminfo.AllocationBase _is_ the HMODULE
+                            HMODULE mod = (HMODULE)vmeminfo.AllocationBase;
                             MODULEINFO info;
-                            if( _GetModuleInformation( phnd, modules[i], &info, sizeof( info ) ) != 0 )
+                            if( _GetModuleInformation( phnd, mod, &info, sizeof( info ) ) != 0 )
                             {
-                                if( (uint64_t)ptr >= (uint64_t)info.lpBaseOfDll && (uint64_t)ptr <= (uint64_t)info.lpBaseOfDll + (uint64_t)info.SizeOfImage )
+                                char buf2[1024];
+                                const auto modlen = _GetModuleBaseNameA( phnd, mod, buf2, 1024 );
+                                if( modlen != 0 )
                                 {
-                                    char buf2[1024];
-                                    const auto modlen = _GetModuleBaseNameA( phnd, modules[i], buf2, 1024 );
-                                    if( modlen != 0 )
-                                    {
-                                        threadName = CopyString( buf2, modlen );
-                                        threadSent = true;
-                                    }
+                                    threadName = CopyString( buf2, modlen );
+                                    threadSent = true;
                                 }
                             }
                         }

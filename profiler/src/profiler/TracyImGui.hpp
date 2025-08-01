@@ -240,6 +240,26 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     return res;
 }
 
+[[maybe_unused]] static inline void TextFocusedClipboard( const char* label, const char* value, const char* clipboard, const int clipboardButtonId, ImFont* font = nullptr, float fontSizeBase = 0.f )
+{
+    TextDisabledUnformatted( label );
+    ImGui::SameLine();
+    // Due to the font size change, we need to realign the button vertically by hand
+    // We center-align it based on the previous font.
+    // This is apparently the recommended (only) way to do it: https://github.com/ocornut/imgui/issues/1284
+    ImVec2 cursorPos = ImGui::GetCursorPos();
+    const float previousFontSize = ImGui::GetFontSize();
+    ImGui::PushFont( font, fontSizeBase );
+    const float buttonFontSize = ImGui::GetFontSize();
+    cursorPos.y += ( previousFontSize - buttonFontSize ) / 2.f;
+    ImGui::SetCursorPos( cursorPos );
+    if( ClipboardButton( clipboardButtonId ) ) ImGui::SetClipboardText( value );
+    ImGui::PopFont();
+
+    ImGui::SameLine();
+    ImGui::TextUnformatted( clipboard );
+}
+
 [[maybe_unused]] static tracy_force_inline void DrawLine( ImDrawList* draw, const ImVec2& v1, const ImVec2& v2, uint32_t col, float thickness = 1.0f )
 {
     const ImVec2 data[2] = { v1, v2 };

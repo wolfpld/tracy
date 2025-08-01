@@ -410,31 +410,26 @@ void View::DrawZoneInfoWindow()
         else if( srcloc.name.active )
         {
             ImGui::PushFont( g_fonts.normal, FontBig );
-            TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+            TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
             ImGui::PopFont();
-            ImGui::SameLine();
-            if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
-            TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-            ImGui::SameLine();
-            if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
+            TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 2 );
         }
         else
         {
             ImGui::PushFont( g_fonts.normal, FontBig );
-            TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+            TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 1, g_fonts.normal, FontNormal );
             ImGui::PopFont();
-            ImGui::SameLine();
-            if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
         }
         SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( ev.SrcLoc() ), 0 ) );
         ImGui::SameLine();
-        TextDisabledUnformatted( "Location:" );
-        ImGui::SameLine();
-        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-        ImGui::SameLine();
-        if( ClipboardButton( 3 ) )
+        TextFocusedClipboard( "Location:", LocationToString( fileName, srcloc.line ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ), 3 );
+        if( ImGui::IsItemHovered() )
         {
-            ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
+            DrawSourceTooltip( fileName, srcloc.line );
+            if( ImGui::IsItemClicked( ImGuiMouseButton_Right ) && SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+            {
+                ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
+            }
         }
         SmallColorBox( GetThreadColor( tid, 0 ) );
         ImGui::SameLine();
@@ -1514,23 +1509,11 @@ void View::DrawGpuInfoWindow()
 
         const auto tid = GetZoneThread( ev );
         ImGui::PushFont( g_fonts.normal, FontBig );
-        TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+        TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
+        ImGui::SameLine();
         ImGui::PopFont();
-        ImGui::SameLine();
-        if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
-        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-        ImGui::SameLine();
-        if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
-        SmallColorBox( GetZoneColor( ev ) );
-        ImGui::SameLine();
-        TextDisabledUnformatted( "Location:" );
-        ImGui::SameLine();
-        ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-        ImGui::SameLine();
-        if( ClipboardButton( 3 ) )
-        {
-            ImGui::SetClipboardText( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-        }
+        TextFocusedClipboard( "Function:", m_worker.GetString( srcloc.function ), m_worker.GetString( srcloc.function ), 2 );
+        TextFocusedClipboard( "Location:", LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ), 3 );
         SmallColorBox( GetThreadColor( tid, 0 ) );
         ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadName( tid ) );

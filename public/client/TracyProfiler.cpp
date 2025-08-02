@@ -5024,11 +5024,11 @@ TRACY_API int32_t ___tracy_profiler_started( void )
 }
 #  endif
 
-extern "C" TRACY_API int ___tracy_begin_sampling_profiling( void ) {
+TRACY_API int ___tracy_begin_sampling_profiling( void ) {
     return tracy::BeginSamplingProfiling() ? 1 : 0;
 }
 
-extern "C" TRACY_API void ___tracy_end_sampling_profiling( void ) {
+TRACY_API void ___tracy_end_sampling_profiling( void ) {
     tracy::EndSamplingProfiling();
 }
 

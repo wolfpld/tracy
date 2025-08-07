@@ -37,19 +37,6 @@
 namespace tracy
 {
 
-constexpr const char* GpuContextNames[] = {
-    "Invalid",
-    "OpenGL",
-    "Vulkan",
-    "OpenCL",
-    "Direct3D 12",
-    "Direct3D 11",
-    "Metal",
-    "Custom",
-    "CUDA",
-    "Rocprof"
-};
-
 struct MemoryPage;
 class FileRead;
 class SourceView;
@@ -177,6 +164,8 @@ public:
     Range m_flameRange;
     Range m_waitStackRange;
 
+    uint64_t GetZoneThread( const ZoneEvent& zone ) const;
+
 private:
     enum class ShortcutAction : uint8_t
     {
@@ -252,14 +241,14 @@ private:
     void DrawTimelineFrames( const FrameData& frames );
     void DrawTimeline();
     void DrawSampleList( const TimelineContext& ctx, const std::vector<SamplesDraw>& drawList, const Vector<SampleData>& vec, int offset );
-    void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid, int maxDepth, double margin );
+    void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, const ThreadData& thread, int maxDepth, double margin );
     void DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches );
     void DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber );
-    int DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int DispatchGpuZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, const ThreadData& thread, float yMin, float yMax, int64_t begin, int drift );
     template<typename Adapter, typename V>
-    int DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, const ThreadData& thread, float yMin, float yMax, int64_t begin, int drift );
     template<typename Adapter, typename V>
-    int SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, const ThreadData& thread, float yMin, float yMax, int64_t begin, int drift );
     void DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint8_t tid );
     int DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, uint64_t tid, int _offset, LockHighlight& highlight );
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem& item, double prev, PlotType type, PlotValueFormatting format, float PlotHeight, uint64_t name );
@@ -318,7 +307,7 @@ private:
     void DrawGpuInfoWindow();
 
     template<typename Adapter, typename V>
-    void DrawZoneInfoChildren( const V& children, int64_t ztime );
+    void DrawZoneInfoChildren( const V& children, int64_t ztime, const ThreadData& thread );
     template<typename Adapter, typename V>
     void DrawGpuInfoChildren( const V& children, int64_t ztime );
 
@@ -333,21 +322,16 @@ private:
     uint32_t GetSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
-    uint32_t GetZoneColor( const GpuEvent& ev );
     ZoneColorData GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t inheritedColor );
-    ZoneColorData GetZoneColorData( const GpuEvent& ev );
 
     void ZoomToZone( const ZoneEvent& ev );
-    void ZoomToZone( const GpuEvent& ev );
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
     void CenterAtTime( int64_t t );
 
     void ShowZoneInfo( const ZoneEvent& ev );
-    void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );
 
-    void ZoneTooltip( const ZoneEvent& ev );
-    void ZoneTooltip( const GpuEvent& ev );
+    void ZoneTooltip( const ZoneEvent& ev, const ThreadData& thread );
     void CallstackTooltip( uint32_t idx );
     void CallstackTooltipContents( uint32_t idx );
     void CrashTooltip();
@@ -356,14 +340,11 @@ private:
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone, uint64_t tid ) const;
     const ZoneEvent* GetZoneChild( const ZoneEvent& zone, int64_t time ) const;
     bool IsZoneReentry( const ZoneEvent& zone ) const;
-    bool IsZoneReentry( const ZoneEvent& zone, uint64_t tid ) const;
-    const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
+    bool IsZoneReentry( const ZoneEvent& zone, uint64_t tid, const ZoneContext* ctx ) const;
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
-    uint64_t GetZoneThread( const ZoneEvent& zone ) const;
-    uint64_t GetZoneThread( const GpuEvent& zone ) const;
-    const GpuCtxData* GetZoneCtx( const GpuEvent& zone ) const;
+    const ZoneContext* GetZoneCtx( const ZoneEvent& zone ) const;
     bool FindMatchingZone( int prev0, int prev1, int flags );
-    const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
+    const pair<const ZoneEvent*, const ThreadData*> FindZoneAtTime( uint64_t thread, int64_t time ) const;
     uint64_t GetFrameNumber( const FrameData& fd, int i ) const;
     const char* GetFrameText( const FrameData& fd, int i, uint64_t ftime ) const;
     const char* GetFrameSetName( const FrameData& fd ) const;
@@ -380,11 +361,9 @@ private:
     void DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const;
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );
-    int64_t GetZoneChildTime( const GpuEvent& zone );
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
     int64_t GetZoneChildTimeFastClamped( const ZoneEvent& zone, int64_t t0, int64_t t1 );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
-    int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, const RangeSlim& range, int64_t& time, uint64_t& cnt );
     const char* GetThreadContextData( uint64_t thread, bool& local, bool& untracked, const char*& program );
@@ -401,11 +380,12 @@ private:
 
     void Attention( bool& alreadyDone );
     void UpdateTitle();
+    void ContextCombo( const std::string* ctxName, uint8_t* ctxIdx );
 
     unordered_flat_map<uint64_t, int> m_threadDepthLimit;
     unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
     unordered_flat_map<uint64_t, bool> m_waitStackThread;
-    unordered_flat_map<uint64_t, bool> m_flameGraphThread;
+    unordered_flat_map<ZoneContext*, unordered_flat_map<uint64_t, bool>> m_flameGraphThread;
     unordered_flat_map<const void*, int> m_gpuDrift;
     unordered_flat_map<const PlotData*, PlotView> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
@@ -432,14 +412,19 @@ private:
         return it->second;
     }
 
-    tracy_force_inline bool& FlameGraphThread( uint64_t thread )
+    tracy_force_inline bool& FlameGraphThread( ZoneContext* ctx, uint64_t thread )
     {
-        auto it = m_flameGraphThread.find( thread );
+        auto it = m_flameGraphThread.find( ctx );
         if( it == m_flameGraphThread.end() )
         {
-            it = m_flameGraphThread.emplace( thread, true ).first;
+            it = m_flameGraphThread.emplace( ctx, decltype( m_flameGraphThread )::mapped_type() ).first;
         }
-        return it->second;
+        auto it2 = it->second.find( thread );
+        if( it2 == it->second.end() )
+        {
+            it2 = it->second.emplace( thread, true ).first;
+        }
+        return it2->second;
     }
 
     tracy_force_inline int& GpuDrift( const void* ptr )
@@ -479,9 +464,6 @@ private:
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
     DecayValue<const MessageData*> m_msgToFocus = nullptr;
-    const GpuEvent* m_gpuInfoWindow = nullptr;
-    const GpuEvent* m_gpuHighlight;
-    uint64_t m_gpuInfoWindowThread;
     uint32_t m_callstackInfoWindow = 0;
     int64_t m_memoryAllocInfoWindow = -1;
     uint64_t m_memoryAllocInfoPool = 0;
@@ -511,7 +493,7 @@ private:
     ImGuiTextFilter m_statisticsFilter;
     ImGuiTextFilter m_statisticsImageFilter;
     ImGuiTextFilter m_userTextFilter;
-    unordered_flat_set<Worker::ZoneThreadData*> m_filteredZones;
+    unordered_flat_set<ZoneContext::ZoneThreadData*> m_filteredZones;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -530,8 +512,12 @@ private:
     bool m_showAnnotationList = false;
     bool m_showWaitStacks = false;
     bool m_showFlameGraph = false;
+    std::string* m_flameCtxName;
+    uint8_t m_flameCtx = 0;
 
     AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
+    std::string* m_statCtxName;
+    uint8_t m_statCtx = 0;
     bool m_statSampleTime = true;
     int m_statMode = 0;
     bool m_shortImageNames = true;
@@ -575,7 +561,6 @@ private:
     BuzzAnim<uint32_t> m_statBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
-    Vector<const GpuEvent*> m_gpuInfoStack;
 
     SourceContents m_srcHintCache;
     std::unique_ptr<SourceView> m_sourceView;
@@ -782,7 +767,7 @@ private:
         }
     } m_findZone;
 
-    tracy_force_inline uint64_t GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const;
+    tracy_force_inline uint64_t GetSelectionTarget( const ZoneContext::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const;
 
     struct CompVal
     {
@@ -877,8 +862,6 @@ private:
     struct {
         std::pair<const ZoneEvent*, int64_t> zoneSelfTime = { nullptr, 0 };
         std::pair<const ZoneEvent*, int64_t> zoneSelfTime2 = { nullptr, 0 };
-        std::pair<const GpuEvent*, int64_t> gpuSelfTime = { nullptr, 0 };
-        std::pair<const GpuEvent*, int64_t> gpuSelfTime2 = { nullptr, 0 };
     } m_cache;
 
     struct {

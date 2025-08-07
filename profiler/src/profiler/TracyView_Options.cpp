@@ -102,7 +102,7 @@ void View::DrawOptions()
         DefaultMarker(default_markers_active);
     }
 
-    const auto& gpuData = m_worker.GetGpuData();
+    const auto& gpuData = m_worker.GetCtxData();
     if( !gpuData.empty() )
     {
         ImGui::Separator();
@@ -112,7 +112,11 @@ void View::DrawOptions()
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();
         size_t visibleGpu = 0;
-        for( const auto& gd : gpuData ) if( m_tc.GetItem( gd ).IsVisible() ) visibleGpu++;
+        for( const auto& gd : gpuData )
+        {
+            if( gd->type == ZoneContextType::CPU ) continue;
+            if( m_tc.GetItem( gd ).IsVisible() ) visibleGpu++;
+        }
         if( visibleGpu == gpuData.size() )
         {
             ImGui::TextDisabled( "(%zu)", gpuData.size() );
@@ -125,7 +129,8 @@ void View::DrawOptions()
         {
             for( size_t i=0; i<gpuData.size(); i++ )
             {
-                const auto& timeline = gpuData[i]->threadData.begin()->second.timeline;
+                if ( gpuData[i]->type == ZoneContextType::CPU ) continue;
+                const auto& timeline = gpuData[i]->threadData.begin()->second->timeline;
                 m_tc.GetItem( gpuData[i] ).VisibilityCheckbox();
                 ImGui::SameLine();
                 if( gpuData[i]->threadData.size() == 1 )
@@ -140,12 +145,12 @@ void View::DrawOptions()
                 {
                     char buf[64];
                     auto& item = (TimelineItemGpu&)( m_tc.GetItem( gpuData[i] ) );
-                    sprintf( buf, "%s context %i", GpuContextNames[(int)gpuData[i]->type], item.GetIdx() );
+                    sprintf( buf, "%s context %i", ZoneContextNames[(int)gpuData[i]->type], item.GetIdx() );
                     ImGui::PushFont( g_fonts.normal, FontSmall );
                     ImGui::TextUnformatted( buf );
                     ImGui::PopFont();
                 }
-                if( !gpuData[i]->hasCalibration )
+                if( !static_cast<GpuCtxData*>(gpuData[i])->hasCalibration )
                 {
                     ImGui::TreePush( (void*)nullptr );
                     auto& drift = GpuDrift( gpuData[i] );
@@ -161,10 +166,10 @@ void View::DrawOptions()
                             size_t lastidx = 0;
                             if( timeline.is_magic() )
                             {
-                                auto& tl = *((Vector<GpuEvent>*)&timeline);
+                                auto& tl = *((Vector<ZoneEvent>*)&timeline);
                                 for( size_t j=tl.size()-1; j > 0; j-- )
                                 {
-                                    if( tl[j].GpuEnd() >= 0 )
+                                    if( tl[j].End() >= 0 )
                                     {
                                         lastidx = j;
                                         break;
@@ -175,7 +180,7 @@ void View::DrawOptions()
                             {
                                 for( size_t j=timeline.size()-1; j > 0; j-- )
                                 {
-                                    if( timeline[j]->GpuEnd() >= 0 )
+                                    if( timeline[j]->End() >= 0 )
                                     {
                                         lastidx = j;
                                         break;
@@ -191,14 +196,16 @@ void View::DrawOptions()
                             size_t idx = 0;
                             if( timeline.is_magic() )
                             {
-                                auto& tl = *((Vector<GpuEvent>*)&timeline);
+                                auto& tl = *((Vector<ZoneEvent>*)&timeline);
                                 do
                                 {
                                     const auto p0 = dist( gen );
                                     const auto p1 = dist( gen );
                                     if( p0 != p1 )
                                     {
-                                        slopes[idx++] = float( 1.0 - double( tl[p1].GpuStart() - tl[p0].GpuStart() ) / double( tl[p1].CpuStart() - tl[p0].CpuStart() ) );
+                                        const auto e1 = m_worker.GetZoneExtra( tl[p1] );
+                                        const auto e0 = m_worker.GetZoneExtra( tl[p0] );
+                                        slopes[idx++] = float( 1.0 - double( tl[p1].Start() - tl[p0].Start() ) / double( e1.otherStart.Val() - e0.otherStart.Val() ) );
                                     }
                                 }
                                 while( idx < NumSlopes );
@@ -211,7 +218,9 @@ void View::DrawOptions()
                                     const auto p1 = dist( gen );
                                     if( p0 != p1 )
                                     {
-                                        slopes[idx++] = float( 1.0 - double( timeline[p1]->GpuStart() - timeline[p0]->GpuStart() ) / double( timeline[p1]->CpuStart() - timeline[p0]->CpuStart() ) );
+                                        const auto e1 = m_worker.GetZoneExtra( *timeline[p1].get() );
+                                        const auto e0 = m_worker.GetZoneExtra( *timeline[p0].get() );
+                                        slopes[idx++] = float( 1.0 - double( timeline[p1]->Start() - timeline[p0]->Start() ) / double( e1.otherStart.Val() - e0.otherStart.Val() ) );
                                     }
                                 }
                                 while( idx < NumSlopes );

@@ -1243,7 +1243,7 @@ struct ProfilerData
     moodycamel::ConcurrentQueue<QueueItem> queue;
     Profiler profiler;
     std::atomic<uint32_t> lockCounter { 0 };
-    std::atomic<uint8_t> gpuCtxCounter { 0 };
+    std::atomic<uint8_t> gpuCtxCounter { 1 }; // 0 reserved for default context
     std::atomic<ThreadNameData*> threadNameData { nullptr };
 };
 
@@ -1425,7 +1425,7 @@ thread_local bool RpThreadInitDone = false;
 thread_local bool RpThreadShutdown = false;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
-std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
+std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 1 ); // 0 reserved for default context
 
 thread_local GpuCtxWrapper init_order(104) s_gpuCtx { nullptr };
 

@@ -7,6 +7,7 @@
 
 #include "imgui.h"
 #include "../server/TracyEvent.hpp"
+#include "../server/TracyContext.hpp"
 
 namespace tracy
 {

@@ -389,7 +389,7 @@ bool View::DrawCpuData( const TimelineContext& ctx, const std::vector<CpuUsageDr
 
                         if( local && IsMouseClicked( 0 ) )
                         {
-                            auto& item = m_tc.GetItem( m_worker.GetThreadData( thread ) );
+                            auto& item = m_tc.GetItem( m_worker.GetDefaultCtx().GetThreadData( thread ) );
                             item.SetVisible( true );
                             item.SetShowFull( true );
                         }

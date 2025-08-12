@@ -220,11 +220,12 @@ void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const
     }
 }
 
-void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, const int maxDepth, const double margin )
+
+void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid, int maxDepth, double margin )
 {
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ctx.w;
-    const auto wpos = ctx.wpos + ImVec2( margin, 0.f );
+    const auto wpos = ctx.wpos;
     const auto dpos = wpos + ImVec2( 0.5f, 0.5f );
     const auto ty = ctx.ty;
     const auto ostep = ty + 1;
@@ -233,6 +234,39 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
     const auto pxns = ctx.pxns;
     const auto hover = ctx.hover;
     const auto vStart = ctx.vStart;
+    
+    const auto DrawZoneText = [&]( uint32_t color, const char* zoneName, ImVec2 tsz, double pr0, double pr1, double px0, double px1, double offset ){
+        // pr0 and pr1 are the real locations of the zone start/end
+        // px0 and px1 are the rendered locations of the zone (taking into account minsize and window clamping)
+        const auto tpx0 = std::max( px0, margin );
+        const auto zsz = std::max( pr1 - pr0, pxns * 0.5 );
+        if( tsz.x < zsz )
+        {
+            // Zone is big enough to contain text, attempt to draw text centered
+            const auto x = pr0 + ( pr1 - pr0 - tsz.x ) / 2;
+            if( x < margin || x > w - tsz.x ) // Would draw outside of the window, align to border.
+            {
+                ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                DrawTextContrast( draw, wpos + ImVec2( std::max( tpx0, std::min( double( w - tsz.x ), x ) ), offset ), color, zoneName );
+                ImGui::PopClipRect();
+            }
+            else if( pr1 == pr0 ) // Fits inside pxns * 0.5 => Use zone center.
+            {
+                DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), color, zoneName );
+            }
+            else // Draw at the center of the zone.
+            {
+                DrawTextContrast( draw, wpos + ImVec2( x, offset ), color, zoneName );
+            }
+        }
+        else
+        {
+            // Draw clipped since zone is too small to contain the text.
+            ImGui::PushClipRect( wpos + ImVec2( tpx0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+            DrawTextContrast( draw, wpos + ImVec2( tpx0, offset ), color, zoneName );
+            ImGui::PopClipRect();
+        }
+    };
 
     for( auto& v : drawList )
     {
@@ -295,9 +329,10 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             }
             const auto tmp = RealToString( v.num );
             const auto tsz = ImGui::CalcTextSize( tmp );
-            if( tsz.x < px1 - px0 )
+            const auto tpx0 = std::max( px0, margin );
+            if( tsz.x < px1 - tpx0)
             {
-                const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
+                const auto x = tpx0 + ( px1 - tpx0 - tsz.x ) / 2;
                 DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
             }
             break;
@@ -306,7 +341,10 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
         {
             auto& ev = *(const ZoneEvent*)v.ev.get();
             const auto end = m_worker.GetZoneEnd( ev );
-            const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
+            const auto pr0 = ( ev.Start() - vStart ) * pxns;
+            const auto pr1 = ( end - vStart ) * pxns;
+            const auto zsz = std::max( pr1 - pr0, pxns * 0.5 );
+
             const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
@@ -316,8 +354,6 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 zoneName = ShortenZoneName( m_vd.shortenName, zoneName, tsz, zsz );
             }
 
-            const auto pr0 = ( ev.Start() - m_vd.zvStart ) * pxns;
-            const auto pr1 = ( end - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
@@ -338,30 +374,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), zoneColor.accentColor, zoneColor.thickness );
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, zoneColor.thickness );
             }
-            if( tsz.x < zsz )
-            {
-                const auto x = ( ev.Start() - m_vd.zvStart ) * pxns + ( ( end - ev.Start() ) * pxns - tsz.x ) / 2;
-                if( x < 0 || x > w - tsz.x )
-                {
-                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
-                    ImGui::PopClipRect();
-                }
-                else if( ev.Start() == ev.End() )
-                {
-                    DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
-                }
-                else
-                {
-                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
-                }
-            }
-            else
-            {
-                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                DrawTextContrast( draw, wpos + ImVec2( std::max( int64_t( 0 ), ev.Start() - m_vd.zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
-                ImGui::PopClipRect();
-            }
+            DrawZoneText( 0xFFFFFFFF, zoneName, tsz, pr0, pr1, px0, px1, offset );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
             {
@@ -460,30 +473,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px0, offset ), dpos + ImVec2( px1-1, offset ), accentColor, 1.f );
                 DrawLine( draw, dpos + ImVec2( px0, offset + tsz.y ), dpos + ImVec2( px1-1, offset + tsz.y ), dpos + ImVec2( px1-1, offset ), darkColor, 1.f );
 
-                if( tsz.x < zsz )
-                {
-                    const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
-                    if( x < 0 || x > w - tsz.x )
-                    {
-                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), txtColor, symName );
-                        ImGui::PopClipRect();
-                    }
-                    else if( ev.start.Val() == ev.end.Val() )
-                    {
-                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), txtColor, symName );
-                    }
-                    else
-                    {
-                        DrawTextContrast( draw, wpos + ImVec2( x, offset ), txtColor, symName );
-                    }
-                }
-                else
-                {
-                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    DrawTextContrast( draw, wpos + ImVec2( ( ev.start.Val() - m_vd.zvStart ) * pxns, offset ), txtColor, symName );
-                    ImGui::PopClipRect();
-                }
+                DrawZoneText( txtColor, symName, tsz, pr0, pr1, px0, px1, offset );
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
                 {
@@ -542,30 +532,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                     symName = ShortenZoneName( m_vd.shortenName, symName, tsz, zsz );
                 }
 
-                if( tsz.x < zsz )
-                {
-                    const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
-                    if( x < 0 || x > w - tsz.x )
-                    {
-                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), txtColor, symName );
-                        ImGui::PopClipRect();
-                    }
-                    else if( ev.start.Val() == ev.end.Val() )
-                    {
-                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), txtColor, symName );
-                    }
-                    else
-                    {
-                        DrawTextContrast( draw, wpos + ImVec2( x, offset ), txtColor, symName );
-                    }
-                }
-                else
-                {
-                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    DrawTextContrast( draw, wpos + ImVec2( std::max( int64_t( 0 ), ev.start.Val() - m_vd.zvStart ) * pxns, offset ), txtColor, symName );
-                    ImGui::PopClipRect();
-                }
+                DrawZoneText( txtColor, symName, tsz, pr0, pr1, px0, px1, offset );
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
                 {

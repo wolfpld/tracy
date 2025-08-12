@@ -62,9 +62,10 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     
     // Display cropper if currently limited or if hovering the cropper area
     const auto threadDepthLimitIt = m_threadDepthLimit.find( thread.id );
-    const bool displayCropper = ( threadDepthLimitIt != m_threadDepthLimit.end() && threadDepthLimitIt->second <= depth )
-        || ( ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin );
-
+    const bool croppingActive = ( threadDepthLimitIt != m_threadDepthLimit.end() && threadDepthLimitIt->second <= depth );
+    const bool mouseInCropperDisplayZone = ImGui::GetMousePos().x >= 0 && ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin && ImGui::GetMousePos().y > ctx.yMin && ImGui::GetMousePos().y < ctx.yMax;
+    
+    const bool displayCropper = croppingActive || mouseInCropperDisplayZone;
     if( displayCropper )
     {
         if(depth > 0) depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, cropperCircleRadius, cropperWidth, hasCtxSwitch );
@@ -74,7 +75,8 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
     if( !draw.empty() && yPos <= yMax && yPos + ostep * depth >= yMin )
     {
-        DrawZoneList( ctx, draw, offset, thread.id, depth, displayCropper ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
+        // Only apply margin when croppingActive to avoid text moving around when mouse is getting close to the cropper widget
+        DrawZoneList( ctx, draw, offset, thread.id, depth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
     }
     offset += ostep * depth;
 

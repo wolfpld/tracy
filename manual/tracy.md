@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-07-23 <https://github.com/wolfpld/tracy>
+2025-08-14 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -2109,33 +2109,26 @@ Please not the use of ids as way to cope with the need for unique pointers for c
 
 ### Building the Python package
 
-To build the Python package, you will need to use the CMake build system to compile the Tracy-Client. The CMake option `-D TRACY_CLIENT_PYTHON=ON` is used to enable the generation of the Python bindings in conjunction with a mandatory creation of a shared Tracy-Client library via one of the CMake options `-D BUILD_SHARED_LIBS=ON` or `-D DEFAULT_STATIC=OFF`.
+To build the Python package, run the following commands:
 
-The following other variables are available in addition:
+    cd ../python
+    pip wheel .
 
--   `EXTERNAL_PYBIND11` --- Can be used to disable the download of pybind11 when Tracy is embedded in another CMake project that already uses pybind11.
+This will create a wheel package in the `python` folder. Please note that this requires CMake and a C++ compiler installed on the system, as the Tracy-Client library is built in the background.
 
--   `TRACY_CLIENT_PYTHON_TARGET` --- Optional directory to copy Tracy Python bindings to when Tracy is embedded in another CMake project.
+You can pass additional CMake options to the package build to configure the Tracy-Client library:
+
+    pip wheel . --config-settings cmake.define.TRACY_ENABLE=OFF
+
+The following additional CMake options are available when building the Python package:
 
 -   `BUFFER_SIZE` --- The size of the global pointer buffer (defaults to 128) for naming Tracy profiling entities like frame marks, plots, and memory locations.
 
 -   `NAME_LENGTH` --- The maximum length (defaults to 128) of a name stored in the global pointer buffer.
 
+-   `EXTERNAL_PYBIND11` --- Can be used to disable the download of pybind11 when Tracy is embedded in another CMake project that already uses pybind11.
+
 Be aware that the memory allocated by this buffer is global and is not freed, see section [3.1.2](#uniquepointers).
-
-See below for example steps to build the Python bindings using CMake:
-
-    mkdir build
-    cd build
-    cmake -DTRACY_STATIC=OFF -DTRACY_CLIENT_PYTHON=ON ../
-    make -j$(nproc)
-
-Once this has finished building the Python package can be built as follows:
-
-    cd ../python
-    python3 setup.py bdist_wheel
-
-The created package will be in the folder `python/dist`.
 
 ## Fortran API {#fortranapi}
 
@@ -2394,6 +2387,8 @@ By default, sampling is performed at 8 kHz frequency on Windows (the maximum pos
 [^60]: The maximum sampling frequency is limited by the `kernel.perf_event_max_sample_rate` sysctl parameter.
 
 Call stack sampling may be disabled by using the `TRACY_NO_SAMPLING` define.
+
+When enabled, by default, sampling starts at the beginning of the application and ends with it. You can instead have programmatic (manual) control over when sampling should begin and end by defining `TRACY_SAMPLING_PROFILER_MANUAL_START` when compiling `TracyClient.cpp`. Use `tracy::BeginSamplingProfiling()` and `tracy::EndSamplingProfiling()` to control it. There are C interfaces for it as well: `TracyCBeginSamplingProfiling()` and `TracyCEndSamplingProfiling()`.
 
 ::: bclogo
 Linux sampling rate limits The operating system may decide that sampling takes too much CPU time and reduce the allowed sampling rate. This can be seen in `dmesg` output as:

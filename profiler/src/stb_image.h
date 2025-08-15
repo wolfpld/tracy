@@ -622,7 +622,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 #ifndef STBI_NO_THREAD_LOCALS
    #if defined(__cplusplus) &&  __cplusplus >= 201103L
       #define STBI_THREAD_LOCAL       thread_local
-   #elif defined(__GNUC__) && __GNUC__ < 5
+   #elif defined(__GNUC__) && __GNUC__ < 5 && !defined(__clang__)
       #define STBI_THREAD_LOCAL       __thread
    #elif defined(_MSC_VER)
       #define STBI_THREAD_LOCAL       __declspec(thread)
@@ -631,7 +631,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
    #endif
 
    #ifndef STBI_THREAD_LOCAL
-      #if defined(__GNUC__)
+      #if defined(__GNUC__) && !defined(__clang__)
         #define STBI_THREAD_LOCAL       __thread
       #endif
    #endif
@@ -660,13 +660,13 @@ typedef unsigned char validate_uint32[sizeof(stbi__uint32)==4 ? 1 : -1];
 #endif
 
 #ifdef _MSC_VER
-#define STBI_HAS_LROTL
-#endif
-
-#ifdef STBI_HAS_LROTL
-   #define stbi_lrot(x,y)  _lrotl(x,y)
+   	#define stbi_lrot(x,y)  _lrotl(x,y)
+#elif defined __clang__
+	// 32bit version of function as stb image uses this function to rotate 32bit integers
+	#define stbi_lrot(x,y) __builtin_rotateleft32(x,y)
 #else
-   #define stbi_lrot(x,y)  (((x) << (y)) | ((x) >> (-(y) & 31)))
+	// gcc does not provide builtin rotate left funciton for C++ (__builtin_stdc_rotate_left is available only in C)
+   	#define stbi_lrot(x,y)  (((x) << (y)) | ((x) >> (-(y) & 31)))
 #endif
 
 #if defined(STBI_MALLOC) && defined(STBI_FREE) && (defined(STBI_REALLOC) || defined(STBI_REALLOC_SIZED))

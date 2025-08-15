@@ -81,7 +81,7 @@
 *  Control library symbols visibility.
 */
 #ifndef LZ4LIB_VISIBILITY
-#  if defined(__GNUC__) && (__GNUC__ >= 4)
+#  if (defined(__GNUC__) && (__GNUC__ >= 4)) || defined(__clang__)
 #    define LZ4LIB_VISIBILITY __attribute__ ((visibility ("default")))
 #  else
 #    define LZ4LIB_VISIBILITY

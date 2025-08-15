@@ -17,6 +17,8 @@ struct Config
     double verticalScrollMultiplier = 1.0;
     bool memoryLimit = false;
     int memoryLimitPercent = 80;
+    bool timeLimit = false;
+    float connectionTimeLimitSeconds = 10.f;
     bool achievements = false;
     bool achievementsAsked = false;
     int dynamicColors = 1;

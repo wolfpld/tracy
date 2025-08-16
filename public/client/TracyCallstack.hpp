@@ -1,9 +1,24 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
+#include <stdint.h>
+
 #include "../common/TracyApi.h"
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"
+
+namespace tracy
+{
+
+struct ImageEntry
+{
+    uint64_t start;
+    uint64_t end;
+    char* name;
+    char* path;
+};
+
+}
 
 #ifndef TRACY_HAS_CALLSTACK
 

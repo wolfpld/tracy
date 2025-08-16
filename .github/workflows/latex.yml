@@ -1,24 +1,33 @@
 name: Manual
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy artifacts"
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    inputs:
+      deploy:
+        description: "Deploy artifacts"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Compile LaTeX
-      uses: xu-cheng/latex-action@v3
-      with:
-        working_directory: manual
-        root_file: tracy.tex
-    - uses: actions/upload-artifact@v4
-      with:
-        name: manual
-        path: manual/tracy.pdf
+      - uses: actions/checkout@v4
+      - name: Compile LaTeX
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: manual
+          root_file: tracy.tex
+      - uses: actions/upload-artifact@v4
+        if: inputs.deploy == true
+        with:
+          name: manual
+          path: manual/tracy.pdf

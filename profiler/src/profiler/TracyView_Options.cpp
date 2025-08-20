@@ -8,6 +8,7 @@
 #include "TracyTimelineItemGpu.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
+#include "TracyStorage.hpp"
 #include "tracy_pdqsort.h"
 #include "../Fonts.hpp"
 
@@ -824,6 +825,34 @@ void View::DrawOptions()
             ImGui::TreePop();
         }
     }
+
+    ImGui::Spacing();
+    if( ImGui::Button( "Save defaults" ) )
+    {
+        // Keep in sync with TracyView.cpp View::SetupConfig()
+        s_config.targetFps = m_vd.frameTarget;
+        s_config.dynamicColors = m_vd.dynamicColors;
+        s_config.forceColors = m_vd.forceColors;
+        s_config.ghostZones = m_vd.ghostZones;
+        s_config.shortenName = (int)m_vd.shortenName;
+        s_config.drawSamples = m_vd.drawSamples;
+        s_config.drawContextSwitches = m_vd.drawContextSwitches;
+        SaveConfig();
+    }
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        const auto fn = tracy::GetSavePath( "tracy.ini" );
+        ImGui::TextUnformatted(
+            "A handful of the options above have configurable default values.\n"
+            "There is no UI yet to set those items, except this button which saves the default for all of them.\n\n"
+            "For now, you can also manually adjust those defaults by editing the config file at:"
+        );
+        TextDisabledUnformatted(fn);
+        ImGui::EndTooltip();
+
+    }
+
     ImGui::End();
 }
 

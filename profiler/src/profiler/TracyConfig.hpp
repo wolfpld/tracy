@@ -23,8 +23,12 @@ struct Config
     bool forceColors = false;
     bool ghostZones = true;
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
+    bool drawSamples = true;
+    bool drawContextSwitches = true;
     bool saveUserScale = false;
     float userScale = 1.0f;
+
+    // LLM assistant settings
 #ifdef __EMSCRIPTEN__
     bool llm = false;
 #else

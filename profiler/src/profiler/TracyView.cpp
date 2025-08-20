@@ -143,6 +143,7 @@ void View::SetupConfig()
     m_vd.shortenName = (ShortenName)s_config.shortenName;
     m_vd.drawSamples = s_config.drawSamples;
     m_vd.drawContextSwitches = s_config.drawContextSwitches;
+    m_vd.plotHeight = s_config.plotHeight;
 }
 
 void View::Achieve( const char* id )

@@ -27,6 +27,9 @@ void LoadConfig()
     if( ini_sget( ini, "timeline", "forceColors", "%d", &v ) ) s_config.forceColors = v;
     if( ini_sget( ini, "timeline", "ghostZones", "%d", &v ) ) s_config.ghostZones = v;
     if( ini_sget( ini, "timeline", "shortenName", "%d", &v ) ) s_config.shortenName = v;
+    if( ini_sget( ini, "timeline", "drawSamples", "%d", &v ) ) s_config.drawSamples = v;
+    if( ini_sget( ini, "timeline", "drawContextSwitches", "%d", &v ) ) s_config.drawContextSwitches = v;
+    if( ini_sget( ini, "timeline", "plotHeight", "%d", &v ) ) s_config.plotHeight = v;
     if( ini_sget( ini, "timeline", "horizontalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.horizontalScrollMultiplier = v1;
     if( ini_sget( ini, "timeline", "verticalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.verticalScrollMultiplier = v1;
     if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
@@ -62,6 +65,9 @@ bool SaveConfig()
     fprintf( f, "forceColors = %i\n", (int)s_config.forceColors );
     fprintf( f, "ghostZones = %i\n", (int)s_config.ghostZones );
     fprintf( f, "shortenName = %i\n", s_config.shortenName );
+    fprintf( f, "drawSamples = %i\n", s_config.drawSamples );
+    fprintf( f, "drawContextSwitches = %i\n", s_config.drawContextSwitches );
+    fprintf( f, "plotHeight = %i\n", s_config.plotHeight );
     fprintf( f, "horizontalScrollMultiplier = %lf\n", s_config.horizontalScrollMultiplier );
     fprintf( f, "verticalScrollMultiplier = %lf\n", s_config.verticalScrollMultiplier );
 

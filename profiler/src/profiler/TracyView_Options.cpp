@@ -848,7 +848,7 @@ void View::DrawOptions()
             "There is no UI yet to set those items, except this button which saves the default for all of them.\n\n"
             "For now, you can also manually adjust those defaults by editing the config file at:"
         );
-        TextDisabledUnformatted(fn);
+        TextDisabledUnformatted( fn );
         ImGui::EndTooltip();
 
     }

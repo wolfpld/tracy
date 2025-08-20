@@ -25,6 +25,7 @@ struct Config
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
     bool drawSamples = true;
     bool drawContextSwitches = true;
+    int plotHeight = 100;
     bool saveUserScale = false;
     float userScale = 1.0f;
 

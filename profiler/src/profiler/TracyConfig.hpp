@@ -21,6 +21,7 @@ struct Config
     bool achievementsAsked = false;
     int dynamicColors = 1;
     bool forceColors = false;
+    bool ghostZones = true;
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
     bool saveUserScale = false;
     float userScale = 1.0f;

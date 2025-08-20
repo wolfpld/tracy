@@ -25,6 +25,7 @@ void LoadConfig()
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
     if( ini_sget( ini, "timeline", "dynamicColors", "%d", &v ) ) s_config.dynamicColors = v;
     if( ini_sget( ini, "timeline", "forceColors", "%d", &v ) ) s_config.forceColors = v;
+    if( ini_sget( ini, "timeline", "ghostZones", "%d", &v ) ) s_config.ghostZones = v;
     if( ini_sget( ini, "timeline", "shortenName", "%d", &v ) ) s_config.shortenName = v;
     if( ini_sget( ini, "timeline", "horizontalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.horizontalScrollMultiplier = v1;
     if( ini_sget( ini, "timeline", "verticalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.verticalScrollMultiplier = v1;
@@ -59,6 +60,7 @@ bool SaveConfig()
     fprintf( f, "targetFps = %i\n", s_config.targetFps );
     fprintf( f, "dynamicColors = %i\n", s_config.dynamicColors );
     fprintf( f, "forceColors = %i\n", (int)s_config.forceColors );
+    fprintf( f, "ghostZones = %i\n", (int)s_config.ghostZones );
     fprintf( f, "shortenName = %i\n", s_config.shortenName );
     fprintf( f, "horizontalScrollMultiplier = %lf\n", s_config.horizontalScrollMultiplier );
     fprintf( f, "verticalScrollMultiplier = %lf\n", s_config.verticalScrollMultiplier );

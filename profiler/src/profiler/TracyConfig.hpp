@@ -13,6 +13,7 @@ struct Config
     bool threadedRendering = true;
     bool focusLostLimit = true;
     int targetFps = 60;
+    bool drawFrameTargets = false;
     double horizontalScrollMultiplier = 1.0;
     double verticalScrollMultiplier = 1.0;
     bool memoryLimit = false;

@@ -15,8 +15,15 @@
 namespace tracy
 {
 
+static void DefaultMarker() {
+    // Add a red * to indicate that the default value for this setting can be configured.
+    ImGui::SameLine(0.0f, 2.0f);
+    TextColoredUnformatted( ImVec4(0.9f, 0.05f, 0.1f, 0.8f), "*" );
+}
+
 void View::DrawOptions()
 {
+
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
@@ -27,6 +34,7 @@ void View::DrawOptions()
     val = m_vd.drawFrameTargets;
     ImGui::Checkbox( ICON_FA_FLAG_CHECKERED " Draw frame targets", &val );
     m_vd.drawFrameTargets = val;
+    DefaultMarker();
     ImGui::Indent();
     int tmp = m_vd.frameTarget;
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -36,6 +44,7 @@ void View::DrawOptions()
         if( tmp < 1 ) tmp = 1;
         m_vd.frameTarget = tmp;
     }
+    DefaultMarker();
     ImGui::SameLine();
     TextDisabledUnformatted( TimeToString( 1000*1000*1000 / tmp ) );
     ImGui::PopStyleVar();
@@ -61,6 +70,7 @@ void View::DrawOptions()
         val = m_vd.drawContextSwitches;
         ImGui::Checkbox( ICON_FA_PERSON_HIKING " Draw context switches", &val );
         m_vd.drawContextSwitches = val;
+        DefaultMarker();
         ImGui::Indent();
         val = m_vd.darkenContextSwitches;
         SmallCheckbox( ICON_FA_MOON " Darken inactive threads", &val );
@@ -81,6 +91,7 @@ void View::DrawOptions()
         val = m_vd.drawSamples;
         ImGui::Checkbox( ICON_FA_EYE_DROPPER " Draw stack samples", &val );
         m_vd.drawSamples = val;
+        DefaultMarker();
     }
 
     const auto& gpuData = m_worker.GetGpuData();
@@ -220,6 +231,7 @@ void View::DrawOptions()
         val = m_vd.ghostZones;
         SmallCheckbox( ICON_FA_GHOST " Draw ghost zones", &val );
         m_vd.ghostZones = val;
+        DefaultMarker();
     }
 #endif
 
@@ -228,6 +240,7 @@ void View::DrawOptions()
     ImGui::SameLine();
     bool forceColors = m_vd.forceColors;
     if( SmallCheckbox( "Ignore custom", &forceColors ) ) m_vd.forceColors = forceColors;
+    DefaultMarker();
     ImGui::SameLine();
     bool inheritColors = m_vd.inheritParentColors;
     if( SmallCheckbox( "Inherit parent colors", &inheritColors ) ) m_vd.inheritParentColors = inheritColors;
@@ -241,6 +254,7 @@ void View::DrawOptions()
     m_vd.dynamicColors = ival;
     ival = (int)m_vd.shortenName;
     ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
+    DefaultMarker();
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Disabled", &ival, (uint8_t)ShortenName::Never );
@@ -597,6 +611,7 @@ void View::DrawOptions()
         int pH = m_vd.plotHeight;
         ImGui::SliderInt("Plot heights", &pH, 30, 200);
         m_vd.plotHeight = pH;
+        DefaultMarker();
 
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
@@ -826,7 +841,13 @@ void View::DrawOptions()
         }
     }
 
-    ImGui::Spacing();
+    ImGui::Separator();
+
+    ImGui::TextUnformatted("");
+    DefaultMarker();
+    ImGui::SameLine(0.0f, 1.0f);
+    ImGui::TextUnformatted( ": The default value for this option is configurable." );
+
     if( ImGui::Button( "Save defaults" ) )
     {
         // Keep in sync with TracyView.cpp View::SetupConfig()
@@ -843,8 +864,12 @@ void View::DrawOptions()
     {
         ImGui::BeginTooltip();
         const auto fn = tracy::GetSavePath( "tracy.ini" );
+
+        ImGui::TextUnformatted( "The options above marked with " );
+        DefaultMarker();
+        ImGui::SameLine();
+        ImGui::TextUnformatted( "have configurable default values." );
         ImGui::TextUnformatted(
-            "A handful of the options above have configurable default values.\n"
             "There is no UI yet to set those items, except this button which saves the default for all of them.\n\n"
             "For now, you can also manually adjust those defaults by editing the config file at:"
         );

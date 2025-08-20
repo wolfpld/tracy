@@ -137,6 +137,7 @@ void View::SetupConfig()
 {
     // Keep in sync with TracyView_Options.cpp View::DrawOptions(), bottom of the file.
     m_vd.frameTarget = s_config.targetFps;
+    m_vd.drawFrameTargets = s_config.drawFrameTargets;
     m_vd.dynamicColors = s_config.dynamicColors;
     m_vd.forceColors = s_config.forceColors;
     m_vd.ghostZones = s_config.ghostZones;

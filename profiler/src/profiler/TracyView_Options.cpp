@@ -17,8 +17,8 @@ namespace tracy
 
 static void DefaultMarker() {
     // Add a red * to indicate that the default value for this setting can be configured.
-    ImGui::SameLine(0.0f, 2.0f);
-    TextColoredUnformatted( ImVec4(0.9f, 0.05f, 0.1f, 0.8f), "*" );
+    ImGui::SameLine( 0.0f, 2.0f );
+    TextColoredUnformatted( ImVec4( 0.9f, 0.05f, 0.1f, 0.8f ), "*" );
 }
 
 void View::DrawOptions()
@@ -843,12 +843,12 @@ void View::DrawOptions()
 
     ImGui::Separator();
 
-    ImGui::TextUnformatted("");
+    ImGui::TextUnformatted( "" );
     DefaultMarker();
-    ImGui::SameLine(0.0f, 1.0f);
+    ImGui::SameLine( 0.0f, 1.0f );
     ImGui::TextUnformatted( ": The default value for this option is configurable." );
 
-    if( ImGui::Button( "Save defaults" ) )
+    if( ImGui::Button( "Save current options as defaults" ) )
     {
         // Keep in sync with TracyView.cpp View::SetupConfig()
         s_config.targetFps = m_vd.frameTarget;
@@ -870,12 +870,10 @@ void View::DrawOptions()
         ImGui::SameLine();
         ImGui::TextUnformatted( "have configurable default values." );
         ImGui::TextUnformatted(
-            "There is no UI yet to set those items, except this button which saves the default for all of them.\n\n"
-            "For now, you can also manually adjust those defaults by editing the config file at:"
-        );
+            "Pressing this button stores their current values as the default values.\n\n"
+            "Alternatively, you can manually adjust those default values by editing the config file at:" );
         TextDisabledUnformatted( fn );
         ImGui::EndTooltip();
-
     }
 
     ImGui::End();

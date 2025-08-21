@@ -873,6 +873,8 @@ void View::DrawOptions()
             "Pressing this button stores their current values as the default values.\n\n"
             "Alternatively, you can manually adjust those default values by editing the config file at:" );
         TextDisabledUnformatted( fn );
+        ImGui::Spacing();
+        ImGui::TextUnformatted( "For now, to restore the default values, you may delete this configuration file." );
         ImGui::EndTooltip();
     }
 

@@ -855,9 +855,10 @@ void View::DrawOptions()
     DefaultMarker( default_markers_active, false );
     ImGui::SameLine( 0.0f, 1.0f );
     ImGui::TextUnformatted( ": The default value for this option is configurable." );
+    bool highlight = false;
     if( ImGui::IsItemHovered() )
     {
-        default_markers_active = true;
+        highlight = true;
     }
 
     if( ImGui::Button( "Save current options as defaults" ) )
@@ -872,9 +873,10 @@ void View::DrawOptions()
         s_config.drawContextSwitches = m_vd.drawContextSwitches;
         SaveConfig();
     }
+
     if( ImGui::IsItemHovered() )
     {
-        default_markers_active = true;
+        highlight = true;
         ImGui::BeginTooltip();
         const auto fn = tracy::GetSavePath( "tracy.ini" );
 
@@ -890,10 +892,8 @@ void View::DrawOptions()
         ImGui::TextUnformatted( "For now, to restore the default values, you may delete this configuration file." );
         ImGui::EndTooltip();
     }
-    else
-    {
-        default_markers_active = false;
-    }
+
+    default_markers_active = highlight;
 
     ImGui::End();
 }

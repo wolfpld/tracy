@@ -23,9 +23,14 @@ void LoadConfig()
     if( ini_sget( ini, "core", "threadedRendering", "%d", &v ) ) s_config.threadedRendering = v;
     if( ini_sget( ini, "core", "focusLostLimit", "%d", &v ) ) s_config.focusLostLimit = v;
     if( ini_sget( ini, "timeline", "targetFps", "%d", &v ) && v >= 1 && v < 10000 ) s_config.targetFps = v;
+    if( ini_sget( ini, "timeline", "drawFrameTargets", "%d", &v ) ) s_config.drawFrameTargets = v;
     if( ini_sget( ini, "timeline", "dynamicColors", "%d", &v ) ) s_config.dynamicColors = v;
     if( ini_sget( ini, "timeline", "forceColors", "%d", &v ) ) s_config.forceColors = v;
+    if( ini_sget( ini, "timeline", "ghostZones", "%d", &v ) ) s_config.ghostZones = v;
     if( ini_sget( ini, "timeline", "shortenName", "%d", &v ) ) s_config.shortenName = v;
+    if( ini_sget( ini, "timeline", "drawSamples", "%d", &v ) ) s_config.drawSamples = v;
+    if( ini_sget( ini, "timeline", "drawContextSwitches", "%d", &v ) ) s_config.drawContextSwitches = v;
+    if( ini_sget( ini, "timeline", "plotHeight", "%d", &v ) ) s_config.plotHeight = v;
     if( ini_sget( ini, "timeline", "horizontalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.horizontalScrollMultiplier = v1;
     if( ini_sget( ini, "timeline", "verticalScrollMultiplier", "%lf", &v1 ) && v1 > 0.0 ) s_config.verticalScrollMultiplier = v1;
     if( ini_sget( ini, "memory", "limit", "%d", &v ) ) s_config.memoryLimit = v;
@@ -57,9 +62,14 @@ bool SaveConfig()
 
     fprintf( f, "\n[timeline]\n" );
     fprintf( f, "targetFps = %i\n", s_config.targetFps );
+    fprintf( f, "drawFrameTargets = %i\n", s_config.drawFrameTargets );
     fprintf( f, "dynamicColors = %i\n", s_config.dynamicColors );
     fprintf( f, "forceColors = %i\n", (int)s_config.forceColors );
+    fprintf( f, "ghostZones = %i\n", (int)s_config.ghostZones );
     fprintf( f, "shortenName = %i\n", s_config.shortenName );
+    fprintf( f, "drawSamples = %i\n", s_config.drawSamples );
+    fprintf( f, "drawContextSwitches = %i\n", s_config.drawContextSwitches );
+    fprintf( f, "plotHeight = %i\n", s_config.plotHeight );
     fprintf( f, "horizontalScrollMultiplier = %lf\n", s_config.horizontalScrollMultiplier );
     fprintf( f, "verticalScrollMultiplier = %lf\n", s_config.verticalScrollMultiplier );
 

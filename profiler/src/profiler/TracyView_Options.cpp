@@ -8,14 +8,30 @@
 #include "TracyTimelineItemGpu.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
+#include "TracyStorage.hpp"
 #include "tracy_pdqsort.h"
 #include "../Fonts.hpp"
 
 namespace tracy
 {
 
+static void DefaultMarker( bool active, bool tooltip = true )
+{
+    // Add a red * to indicate that the default value for this setting can be configured.
+    ImGui::SameLine( 0.0f, 2.0f );
+    TextColoredUnformatted( active ? ImVec4( 0.9f, 0.05f, 0.1f, 0.8f ) : ImVec4( 0.6f, 0.6f, 0.6f, 0.4f ), "*" );
+    if( tooltip && ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted( "Has a default value loaded when starting Tracy (see below)." );
+        ImGui::EndTooltip();
+    }
+}
+
 void View::DrawOptions()
 {
+    static bool default_markers_active = false;
+
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
@@ -26,6 +42,7 @@ void View::DrawOptions()
     val = m_vd.drawFrameTargets;
     ImGui::Checkbox( ICON_FA_FLAG_CHECKERED " Draw frame targets", &val );
     m_vd.drawFrameTargets = val;
+    DefaultMarker(default_markers_active);
     ImGui::Indent();
     int tmp = m_vd.frameTarget;
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -35,6 +52,7 @@ void View::DrawOptions()
         if( tmp < 1 ) tmp = 1;
         m_vd.frameTarget = tmp;
     }
+    DefaultMarker(default_markers_active);
     ImGui::SameLine();
     TextDisabledUnformatted( TimeToString( 1000*1000*1000 / tmp ) );
     ImGui::PopStyleVar();
@@ -60,6 +78,7 @@ void View::DrawOptions()
         val = m_vd.drawContextSwitches;
         ImGui::Checkbox( ICON_FA_PERSON_HIKING " Draw context switches", &val );
         m_vd.drawContextSwitches = val;
+        DefaultMarker(default_markers_active);
         ImGui::Indent();
         val = m_vd.darkenContextSwitches;
         SmallCheckbox( ICON_FA_MOON " Darken inactive threads", &val );
@@ -80,6 +99,7 @@ void View::DrawOptions()
         val = m_vd.drawSamples;
         ImGui::Checkbox( ICON_FA_EYE_DROPPER " Draw stack samples", &val );
         m_vd.drawSamples = val;
+        DefaultMarker(default_markers_active);
     }
 
     const auto& gpuData = m_worker.GetGpuData();
@@ -219,6 +239,7 @@ void View::DrawOptions()
         val = m_vd.ghostZones;
         SmallCheckbox( ICON_FA_GHOST " Draw ghost zones", &val );
         m_vd.ghostZones = val;
+        DefaultMarker(default_markers_active);
     }
 #endif
 
@@ -227,6 +248,7 @@ void View::DrawOptions()
     ImGui::SameLine();
     bool forceColors = m_vd.forceColors;
     if( SmallCheckbox( "Ignore custom", &forceColors ) ) m_vd.forceColors = forceColors;
+    DefaultMarker(default_markers_active);
     ImGui::SameLine();
     bool inheritColors = m_vd.inheritParentColors;
     if( SmallCheckbox( "Inherit parent colors", &inheritColors ) ) m_vd.inheritParentColors = inheritColors;
@@ -240,6 +262,7 @@ void View::DrawOptions()
     m_vd.dynamicColors = ival;
     ival = (int)m_vd.shortenName;
     ImGui::TextUnformatted( ICON_FA_RULER_HORIZONTAL " Zone name shortening" );
+    DefaultMarker(default_markers_active);
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Disabled", &ival, (uint8_t)ShortenName::Never );
@@ -596,6 +619,7 @@ void View::DrawOptions()
         int pH = m_vd.plotHeight;
         ImGui::SliderInt("Plot heights", &pH, 30, 200);
         m_vd.plotHeight = pH;
+        DefaultMarker(default_markers_active);
 
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
@@ -824,6 +848,53 @@ void View::DrawOptions()
             ImGui::TreePop();
         }
     }
+
+    ImGui::Separator();
+
+    ImGui::TextUnformatted( "" );
+    DefaultMarker( default_markers_active, false );
+    ImGui::SameLine( 0.0f, 1.0f );
+    ImGui::TextUnformatted( ": The default value for this option is configurable." );
+    bool highlight = false;
+    if( ImGui::IsItemHovered() )
+    {
+        highlight = true;
+    }
+
+    if( ImGui::Button( "Save current options as defaults" ) )
+    {
+        // Keep in sync with TracyView.cpp View::SetupConfig()
+        s_config.targetFps = m_vd.frameTarget;
+        s_config.dynamicColors = m_vd.dynamicColors;
+        s_config.forceColors = m_vd.forceColors;
+        s_config.ghostZones = m_vd.ghostZones;
+        s_config.shortenName = (int)m_vd.shortenName;
+        s_config.drawSamples = m_vd.drawSamples;
+        s_config.drawContextSwitches = m_vd.drawContextSwitches;
+        SaveConfig();
+    }
+
+    if( ImGui::IsItemHovered() )
+    {
+        highlight = true;
+        ImGui::BeginTooltip();
+        const auto fn = tracy::GetSavePath( "tracy.ini" );
+
+        ImGui::TextUnformatted( "The options above marked with " );
+        DefaultMarker( true, false );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( "have configurable default values." );
+        ImGui::TextUnformatted(
+            "Pressing this button stores their current values as the default values.\n\n"
+            "Alternatively, you can manually adjust those default values by editing the config file at:" );
+        TextDisabledUnformatted( fn );
+        ImGui::Spacing();
+        ImGui::TextUnformatted( "For now, to restore the default values, you may delete this configuration file." );
+        ImGui::EndTooltip();
+    }
+
+    default_markers_active = highlight;
+
     ImGui::End();
 }
 

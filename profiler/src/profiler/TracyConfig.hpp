@@ -13,6 +13,7 @@ struct Config
     bool threadedRendering = true;
     bool focusLostLimit = true;
     int targetFps = 60;
+    bool drawFrameTargets = false;
     double horizontalScrollMultiplier = 1.0;
     double verticalScrollMultiplier = 1.0;
     bool memoryLimit = false;
@@ -21,9 +22,15 @@ struct Config
     bool achievementsAsked = false;
     int dynamicColors = 1;
     bool forceColors = false;
+    bool ghostZones = true;
     int shortenName = (int)ShortenName::NoSpaceAndNormalize;
+    bool drawSamples = true;
+    bool drawContextSwitches = true;
+    int plotHeight = 100;
     bool saveUserScale = false;
     float userScale = 1.0f;
+
+    // LLM assistant settings
 #ifdef __EMSCRIPTEN__
     bool llm = false;
 #else

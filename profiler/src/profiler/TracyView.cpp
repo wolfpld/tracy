@@ -135,10 +135,16 @@ void View::InitTextEditor()
 
 void View::SetupConfig()
 {
+    // Keep in sync with TracyView_Options.cpp View::DrawOptions(), bottom of the file.
     m_vd.frameTarget = s_config.targetFps;
+    m_vd.drawFrameTargets = s_config.drawFrameTargets;
     m_vd.dynamicColors = s_config.dynamicColors;
     m_vd.forceColors = s_config.forceColors;
+    m_vd.ghostZones = s_config.ghostZones;
     m_vd.shortenName = (ShortenName)s_config.shortenName;
+    m_vd.drawSamples = s_config.drawSamples;
+    m_vd.drawContextSwitches = s_config.drawContextSwitches;
+    m_vd.plotHeight = s_config.plotHeight;
 }
 
 void View::Achieve( const char* id )

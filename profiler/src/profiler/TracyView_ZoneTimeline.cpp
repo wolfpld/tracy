@@ -614,9 +614,9 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
 
     const float cropperCenterX = xPos + cropperWidth / 2.0;
     
-    const auto CircleCenterYForLine = [=]( int lane ) {
+    const auto CircleCenterYForLine = [=]( int lane ){
         return yPos + ostep * ( lane + 0.5 );
-        };
+    };
 
     const uint32_t inactiveColor = 0xFF555555;
 

@@ -850,13 +850,17 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     const auto& str = content.get_ref<const std::string&>();
 
     std::string responseStr;
-    bool done;
+    bool done = false;
     try
     {
-        auto& node = json["choices"][0];
-        auto& delta = node["delta"];
-        if( delta.contains( "content" ) && delta["content"].is_string() ) responseStr = delta["content"].get_ref<const std::string&>();
-        done = !node["finish_reason"].empty();
+        auto& choices = json["choices"];
+        if( !choices.empty() )
+        {
+            auto& node = choices[0];
+            auto& delta = node["delta"];
+            if( delta.contains( "content" ) && delta["content"].is_string() ) responseStr = delta["content"].get_ref<const std::string&>();
+            done = !node["finish_reason"].empty();
+        }
     }
     catch( const nlohmann::json::exception& e )
     {

@@ -1129,9 +1129,27 @@ void Backend::Show()
 
 void Backend::Run()
 {
-    while( s_running && wl_display_dispatch( s_dpy ) != -1 )
+    wl_display_dispatch( s_dpy );
+    while( s_running )
     {
-        if( tracy::s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        // First, dispatch any pending events that have already been received.
+        while( wl_display_prepare_read( s_dpy ) != 0 )
+        {
+            wl_display_dispatch_pending( s_dpy );
+        }
+
+        if( wl_display_read_events( s_dpy ) < 0 )
+        {
+            s_running = false;
+            break;
+        }
+        wl_display_dispatch_pending( s_dpy );
+
+        if( tracy::s_config.focusLostLimit && !s_hasFocus )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        }
+
         s_redraw();
         s_mainThreadTasks->Run();
     }
@@ -1147,7 +1165,7 @@ static void TokenDone( void*, xdg_activation_token_v1* token, const char* str )
 
 constexpr struct xdg_activation_token_v1_listener tokenListener = {
     .done = TokenDone
-}; 
+};
 
 
 void Backend::Attention()

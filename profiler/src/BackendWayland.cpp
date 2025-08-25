@@ -1129,26 +1129,28 @@ void Backend::Show()
 
 void Backend::Run()
 {
+    struct timespec no_deadline{0};
+    // See discussion in PR #1141, and this libwayland commit:
+    // https://gitlab.freedesktop.org/wayland/wayland/-/commit/ddd348da7ea0889056843cf252729185d306b7b8
+    // Once this version of libwayland is rolled out for long enough on all distros, we can delete this other branch
+    // and always assume the new protocol function with timeout exists.
+    // This function should be present from libwayland 1.23.93, released May 22, 2025.
+    // This got rolled out to Fedora 42 at 2025-08-05.
+    constexpr bool new_timeout_protocol = requires { wl_display_dispatch_timeout( s_dpy, &no_deadline ); };
+
     wl_display_dispatch( s_dpy );
     while( s_running )
     {
-        // First, dispatch any pending events that have already been received.
-        while( wl_display_prepare_read( s_dpy ) != 0 )
+        if constexpr( new_timeout_protocol )
         {
-            wl_display_dispatch_pending( s_dpy );
+            if( wl_display_dispatch_timeout( s_dpy, &no_deadline ) == -1 ) break;
+        }
+        else
+        {
+            if( wl_display_dispatch( s_dpy ) == -1 ) break;
         }
 
-        if( wl_display_read_events( s_dpy ) < 0 )
-        {
-            s_running = false;
-            break;
-        }
-        wl_display_dispatch_pending( s_dpy );
-
-        if( tracy::s_config.focusLostLimit && !s_hasFocus )
-        {
-            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
-        }
+        if( tracy::s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
         s_redraw();
         s_mainThreadTasks->Run();

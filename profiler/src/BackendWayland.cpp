@@ -1129,7 +1129,8 @@ void Backend::Show()
 
 void Backend::Run()
 {
-    while( s_running && wl_display_dispatch( s_dpy ) != -1 )
+    timespec zero = {};
+    while( s_running && wl_display_dispatch_timeout( s_dpy, &zero ) != -1 )
     {
         if( tracy::s_config.focusLostLimit && !s_hasFocus ) std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
         s_redraw();

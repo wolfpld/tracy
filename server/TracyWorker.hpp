@@ -407,6 +407,8 @@ private:
         bool hasBranchRetirement = false;
 
         unordered_flat_map<uint64_t, uint64_t> fiberToThreadMap;
+
+        std::chrono::time_point<std::chrono::steady_clock> startTime;
     };
 
     struct MbpsBlock
@@ -455,7 +457,7 @@ public:
         NUM_FAILURES
     };
 
-    Worker( const char* addr, uint16_t port, int64_t memoryLimit );
+    Worker( const char* addr, uint16_t port, int64_t memoryLimit, float timeLimit );
     Worker( const char* name, const char* program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots, const std::unordered_map<uint64_t, std::string>& threadNames );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true, bool allowStringModification = false);
     ~Worker();
@@ -671,6 +673,8 @@ public:
     void Disconnect();
     bool WasDisconnectIssued() const { return m_disconnect; }
     int64_t GetMemoryLimit() const { return m_memoryLimit; }
+    std::chrono::duration<float> GetTimeLimit() const { return m_timeLimit; }
+    std::chrono::steady_clock::time_point GetStartTime() const { return m_data.startTime; }
 
     void Write( FileWrite& f, bool fiDict );
     int GetTraceVersion() const { return m_traceVersion; }
@@ -1068,6 +1072,7 @@ private:
 
     Slab<64*1024*1024> m_slab;
     int64_t m_memoryLimit;
+    std::chrono::duration<float> m_timeLimit;
 
     DataBlock m_data;
     MbpsBlock m_mbpsData;

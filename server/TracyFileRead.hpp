@@ -18,7 +18,7 @@
 #ifdef _MSC_VER
 #  define stat64 _stat64
 #endif
-#if defined __APPLE__ || defined __FreeBSD__
+#if defined __APPLE__ || defined __FreeBSD__ || (defined __linux__ && !defined __GLIBC__)
 #  define stat64 stat
 #endif
 

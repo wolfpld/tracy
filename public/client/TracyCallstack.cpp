@@ -146,7 +146,7 @@ namespace tracy
 
         ImageEntry* AddEntry( const ImageEntry& entry )
         {
-            m_sorted &= m_modCache.empty() ? true : ( entry.start < m_modCache.back().start );
+            m_sorted &= m_modCache.empty() || ( entry.start < m_modCache.back().start );
             ImageEntry* newEntry = m_modCache.push_next();
             *newEntry = entry;
             return newEntry;

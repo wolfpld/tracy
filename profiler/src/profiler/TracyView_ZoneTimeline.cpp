@@ -64,7 +64,7 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     // Display cropper if currently limited or if hovering the cropper area
     const auto threadDepthLimitIt = m_threadDepthLimit.find( thread.id );
     const bool croppingActive = ( threadDepthLimitIt != m_threadDepthLimit.end() && threadDepthLimitIt->second <= depth );
-    const bool mouseInCropperDisplayZone = ImGui::GetMousePos().x >= 0 && ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin && ImGui::GetMousePos().y > ctx.yMin && ImGui::GetMousePos().y < ctx.yMax;
+    const bool mouseInCropperDisplayZone = ctx.hover && ImGui::GetMousePos().x >= wpos.x && ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin && ImGui::GetMousePos().y > ctx.yMin && ImGui::GetMousePos().y < ctx.yMax;
     
     const bool displayCropper = croppingActive || mouseInCropperDisplayZone;
     if( displayCropper )

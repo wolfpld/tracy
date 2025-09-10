@@ -2851,7 +2851,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     const auto sz = m_serialDequeue.size();
     if( sz > 0 )
     {
-         dequeueStatus = DequeueStatus::DataDequeued;
+        dequeueStatus = DequeueStatus::DataDequeued;
 
         InitRpmalloc();
         int64_t refSerial = m_refTimeSerial;
@@ -3149,7 +3149,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 }
             }
 #endif
-            if(dequeueStatus != DequeueStatus::ConnectionLost && !AppendData( item, QueueDataSize[idx] ) )
+            if( dequeueStatus != DequeueStatus::ConnectionLost && !AppendData( item, QueueDataSize[idx] ) )
             {
                 dequeueStatus = DequeueStatus::ConnectionLost;
             }

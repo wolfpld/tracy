@@ -2851,6 +2851,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     const auto sz = m_serialDequeue.size();
     if( sz > 0 )
     {
+         dequeueStatus = DequeueStatus::DataDequeued;
+
         InitRpmalloc();
         int64_t refSerial = m_refTimeSerial;
         int64_t refGpu = m_refTimeGpu;

@@ -2846,6 +2846,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         }
     }
 
+    DequeueStatus dequeueStatus = DequeueStatus::QueueEmpty;
+
     const auto sz = m_serialDequeue.size();
     if( sz > 0 )
     {
@@ -3145,7 +3147,10 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 }
             }
 #endif
-            if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
+            if(dequeueStatus != DequeueStatus::ConnectionLost && !AppendData( item, QueueDataSize[idx] ) )
+            {
+                dequeueStatus = DequeueStatus::ConnectionLost;
+            }
             item++;
         }
         m_refTimeSerial = refSerial;
@@ -3155,11 +3160,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
 #endif
         m_serialDequeue.clear();
     }
-    else
-    {
-        return DequeueStatus::QueueEmpty;
-    }
-    return DequeueStatus::DataDequeued;
+    return dequeueStatus;
 }
 
 Profiler::ThreadCtxStatus Profiler::ThreadCtxCheck( uint32_t threadId )

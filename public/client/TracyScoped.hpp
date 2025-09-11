@@ -12,6 +12,12 @@
 #include "TracyProfiler.hpp"
 #include "TracyCallstack.hpp"
 
+#if (defined(__GNUC__) || defined(__clang__))
+#  define TRACY_ATTRIBUTE_FORMAT_PRINTF(fmt_idx, arg_idx) \
+     __attribute__((format(printf, fmt_idx, arg_idx)))
+#else
+#  define TRACY_ATTRIBUTE_FORMAT_PRINTF(fmt_idx, arg_idx)
+#endif
 namespace tracy
 {
 
@@ -99,7 +105,7 @@ public:
         TracyQueueCommit( zoneTextFatThread );
     }
 
-    void TextFmt( const char* fmt, ... )
+    void TextFmt( const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF(2, 3)
     {
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
@@ -138,7 +144,7 @@ public:
         TracyQueueCommit( zoneTextFatThread );
     }
 
-    void NameFmt( const char* fmt, ... )
+    void NameFmt( const char* fmt, ... ) TRACY_ATTRIBUTE_FORMAT_PRINTF(2, 3)
     {
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND

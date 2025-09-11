@@ -57,29 +57,28 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
     }
 
     const auto yPos = wpos.y + offset;
-    const float cropperWidth = ImGui::CalcTextSize( ICON_FA_CARET_DOWN ).x;
-    const float cropperCircleRadius = ( cropperWidth - 2.0f * GetScale() ) / 2.0f ;
-    const float cropperAdditionalMargin = cropperWidth + wpos.x; // We add the left window margin for symmetry
-    
+    const auto* drawList = ImGui::GetWindowDrawList();
+    const float croppperPosX = wpos.x;
+    const float cropperWidth = ImGui::CalcTextSize( ICON_FA_CARET_DOWN ).x + 2.0f * GetScale();
+    const float cropperAdditionalMargin = cropperWidth + ImGui::GetStyle().WindowBorderSize; // We add the left window margin for symmetry
+
     // Display cropper if currently limited or if hovering the cropper area
     const auto threadDepthLimitIt = m_threadDepthLimit.find( thread.id );
     const bool croppingActive = ( threadDepthLimitIt != m_threadDepthLimit.end() && threadDepthLimitIt->second <= depth );
-    const bool mouseInCropperDisplayZone = ImGui::GetMousePos().x >= 0 && ImGui::GetMousePos().x < wpos.x + cropperAdditionalMargin && ImGui::GetMousePos().y > ctx.yMin && ImGui::GetMousePos().y < ctx.yMax;
+    const int croppedDepth = croppingActive ? threadDepthLimitIt->second : depth;
+    const bool mouseInCropperDisplayZone = ctx.hover && ImGui::GetMousePos().x >= croppperPosX && ImGui::GetMousePos().x < croppperPosX + cropperWidth && ImGui::GetMousePos().y > ctx.yMin && ImGui::GetMousePos().y < ctx.yMax;
     
     const bool displayCropper = croppingActive || mouseInCropperDisplayZone;
     if( displayCropper )
     {
-        if(depth > 0) depth = DrawThreadCropper( depth, thread.id, wpos.x, yPos, ostep, cropperCircleRadius, cropperWidth, hasCtxSwitch );
-
-        const auto* drawList = ImGui::GetWindowDrawList();
-        ImGui::PushClipRect( drawList->GetClipRectMin() + ImVec2( cropperAdditionalMargin, 0 ), drawList->GetClipRectMax(), true );
+        ImGui::PushClipRect( ImVec2( croppperPosX + cropperAdditionalMargin, drawList->GetClipRectMin().y ), drawList->GetClipRectMax(), true );
     }
-    if( !draw.empty() && yPos <= yMax && yPos + ostep * depth >= yMin )
+    if( !draw.empty() && yPos <= yMax && yPos + ostep * croppedDepth >= yMin )
     {
         // Only apply margin when croppingActive to avoid text moving around when mouse is getting close to the cropper widget
-        DrawZoneList( ctx, draw, offset, thread.id, depth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
+        DrawZoneList( ctx, draw, offset, thread.id, croppedDepth, croppingActive ? cropperAdditionalMargin + GetScale() /* Ensure text has a bit of space for text */ : 0.f );
     }
-    offset += ostep * depth;
+    offset += ostep * croppedDepth;
 
     if( hasCtxSwitch && !ctxDraw.empty() )
     {
@@ -97,7 +96,11 @@ void View::DrawThread( const TimelineContext& ctx, const ThreadData& thread, con
         const auto lockDepth = DrawLocks( ctx, lockDraw, thread.id, offset, m_nextLockHighlight );
         offset += sstep * lockDepth;
     }
-    if( displayCropper ) ImGui::PopClipRect();
+    if( displayCropper ) 
+    {
+        ImGui::PopClipRect();
+        if( depth > 0 ) DrawThreadCropper( depth, thread.id, croppperPosX, yPos, ostep, cropperWidth, hasCtxSwitch );
+    }
 }
 
 void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector<MessagesDraw>& drawList, int offset, uint64_t tid )
@@ -602,18 +605,19 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
     }
 }
 
-int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float radius, const float cropperWidth, const bool hasCtxSwitches )
+void View::DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches )
 {
     const ImVec2 mousePos = ImGui::GetMousePos();
     const bool clicked = ImGui::IsMouseClicked( 0 );
     auto draw = ImGui::GetWindowDrawList();
-    auto foreground = ImGui::GetForegroundDrawList();
     bool isCropped = ( m_threadDepthLimit.find( tid ) != m_threadDepthLimit.end() );
     const int depthLimit = isCropped ? m_threadDepthLimit[tid] : depth;
     // If user changes settings to hide Ctx Switches, he would be unable to remove the limit, so set the value to its minimum
     if( !hasCtxSwitches && isCropped && depthLimit == 0 ) m_threadDepthLimit[tid] = 1;
 
     const float cropperCenterX = xPos + cropperWidth / 2.0;
+    const float hoverCircleThickness = GetScale();
+    const float circleRadius = cropperWidth / 2.0 - 2.0f * GetScale();
     
     const auto CircleCenterYForLine = [=]( int lane ){
         return yPos + ostep * ( lane + 0.5 );
@@ -634,14 +638,16 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
     for( ; lane < depthLimit; lane++ )
     {
         const ImVec2 center = ImVec2( cropperCenterX, CircleCenterYForLine( lane ) );
-        const float hradius = radius + 2.0f * GetScale();
+        const float hradius = circleRadius + 2.0f * GetScale();
         const float dx = mousePos.x - center.x;
         const float dy = mousePos.y - center.y;
 
         if( dx * dx + dy * dy <= hradius * hradius )
         {
-            foreground->AddCircle( center, hradius, 0xFFFFFFFF, 0, GetScale() );
-            foreground->AddLine( ImVec2( 0, yPos + ( lane + 1 ) * ostep ), ImVec2( ImGui::GetWindowSize().x, yPos + ( lane + 1 ) * ostep ), 0x880000FF, 2.0f * GetScale() );
+            draw->AddCircle( center, hradius, 0xFFFFFFFF, 0, hoverCircleThickness );
+            const float wPosX = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMin().x;
+            const float wSizeX = ImGui::GetWindowContentRegionMax().x;
+            draw->AddLine( ImVec2( wPosX, yPos + ( lane + 1 ) * ostep ), ImVec2( wPosX + wSizeX, yPos + ( lane + 1 ) * ostep ), 0x880000FF, 2.0f * GetScale() );
             if( clicked )
             {
                 const int newDepthLimit = lane + 1;
@@ -660,11 +666,8 @@ int View::DrawThreadCropper( const int depth, const uint64_t tid, const float xP
         {
             color = 0xFF888888;
         }
-        draw->AddCircleFilled( center, radius, color );
+        draw->AddCircleFilled( center, circleRadius, color );
     }
-
-    // Need to take the minimum as depth may be lower after panning or zooming. We however keep the limit value
-    return isCropped && depthLimit < depth ? depthLimit : depth;
 }
 
 }

@@ -2,6 +2,7 @@
 #define __TRACYTIMELINEITEMGPU_HPP__
 
 #include "TracyEvent.hpp"
+#include "TracyContext.hpp"
 #include "TracyTimelineItem.hpp"
 
 namespace tracy

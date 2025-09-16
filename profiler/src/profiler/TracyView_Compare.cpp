@@ -25,7 +25,8 @@ extern double s_time;
             auto it = m_compare.match[0].begin();
             while( it != m_compare.match[0].end() )
             {
-                if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
+                auto p = m_worker.GetZonesForSourceLocation( *it );
+                if( p.second == nullptr || p.first.zones.empty() )
                 {
                     it = m_compare.match[0].erase( it );
                 }
@@ -42,7 +43,8 @@ extern double s_time;
             auto it = m_compare.match[1].begin();
             while( it != m_compare.match[1].end() )
             {
-                if( m_compare.second->GetZonesForSourceLocation( *it ).zones.empty() )
+                auto p = m_compare.second->GetZonesForSourceLocation( *it );
+                if( p.second == nullptr || p.first.zones.empty() )
                 {
                     it = m_compare.match[1].erase( it );
                 }
@@ -533,14 +535,17 @@ void View::DrawCompare()
                 int idx = 0;
                 for( auto& v : m_compare.match[0] )
                 {
+                    auto p = m_worker.GetZonesForSourceLocation( v );
                     auto& srcloc = m_worker.GetSourceLocation( v );
-                    auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                    auto& zones = p.first.zones;
                     SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                     ImGui::SameLine();
                     ImGui::PushID( idx );
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
                     ImGui::PopStyleVar();
+                    ImGui::SameLine();
+                    ImGui::TextColored( ImVec4( 1.0, 1.0, 0.0, 1 ), "[%s]", m_worker.GetCtxName( p.second ).c_str() );
                     ImGui::SameLine();
                     ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
                     ImGui::PopID();
@@ -551,12 +556,15 @@ void View::DrawCompare()
                 idx = 0;
                 for( auto& v : m_compare.match[1] )
                 {
+                    auto p = m_compare.second->GetZonesForSourceLocation( v );
                     auto& srcloc = m_compare.second->GetSourceLocation( v );
-                    auto& zones = m_compare.second->GetZonesForSourceLocation( v ).zones;
+                    auto& zones = p.first.zones;
                     ImGui::PushID( -1 - idx );
                     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                     ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
                     ImGui::PopStyleVar();
+                    ImGui::SameLine();
+                    ImGui::TextColored( ImVec4( 1.0, 0.0, 0.0, 1 ), "[%s]", m_compare.second->GetCtxName( p.second ).c_str() );
                     ImGui::SameLine();
                     ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( m_compare.second->GetString( srcloc.file ), srcloc.line ) );
                     ImGui::PopID();
@@ -705,8 +713,8 @@ void View::DrawCompare()
 
             if( m_compare.compareMode == 0 )
             {
-                auto& zoneData0 = m_worker.GetZonesForSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
-                auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+                auto& zoneData0 = m_worker.GetZonesForSourceLocation( m_compare.match[0][m_compare.selMatch[0]] ).first;
+                auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] ).first;
                 auto& zones0 = zoneData0.zones;
                 auto& zones1 = zoneData1.zones;
                 zones0.ensure_sorted();

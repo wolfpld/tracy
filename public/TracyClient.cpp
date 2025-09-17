@@ -36,6 +36,7 @@
 #  include "client/TracyRocprof.cpp"
 #endif
 #ifdef _MSC_VER
+// for gcc and clang added with linker options
 #  pragma comment(lib, "ws2_32.lib")
 #  pragma comment(lib, "advapi32.lib")
 #  pragma comment(lib, "user32.lib")

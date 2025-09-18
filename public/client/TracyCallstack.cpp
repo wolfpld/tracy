@@ -165,11 +165,10 @@ namespace tracy
 
         void Sort()
         {
-            if( !m_sorted )
-            {
-                std::sort( m_modCache.begin(), m_modCache.end(), []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.start > rhs.start; } );
-                m_sorted = true;
-            }
+            if( m_sorted ) return;
+
+            std::sort( m_modCache.begin(), m_modCache.end(), []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.start > rhs.start; } );
+            m_sorted = true;
         }
 
         void Clear()

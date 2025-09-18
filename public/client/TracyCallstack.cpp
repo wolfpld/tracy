@@ -181,7 +181,7 @@ namespace tracy
             m_sorted = true;
         }
 
-        bool ContainsModule( uint64_t startAddress )
+        bool ContainsImage( uint64_t startAddress )
         {
             const ImageEntry* moduleInfo = FindEntryFromAddr( startAddress );
             return moduleInfo && moduleInfo->start == startAddress;
@@ -237,7 +237,7 @@ private:
         ImageCacheDlIteratePhdr* cache = reinterpret_cast<ImageCacheDlIteratePhdr*>( data );
 
         const uint64_t startAddress = reinterpret_cast<uint64_t>( info->dlpi_addr );
-        if( cache->ContainsModule( startAddress ) ) return 0;
+        if( cache->ContainsImage( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
         assert( headerCount > 0);

@@ -134,13 +134,6 @@ namespace tracy
         ImageCache( size_t moduleCacheCapacity = 512 )
             : m_modCache( moduleCacheCapacity ) 
         {
-            for( auto& it : m_modCache ) 
-            {
-                it.start = 0;
-                it.end = 0;
-                it.name = nullptr;
-                it.path = nullptr;
-            }            
         }
         ~ImageCache() { Clear(); }
 

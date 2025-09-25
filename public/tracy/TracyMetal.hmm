@@ -95,13 +95,13 @@ using TracyMetalCtx = void;
 #endif
 
 #if TRACY_METAL_DEBUG_MASK & (1 << 1)
-    #define TracyMetalDebug_0b00010(...) __VA_ARGS__;
+    #define TracyMetalDebug_0b00010(...) __VA_ARGS__
 #else
     #define TracyMetalDebug_0b00010(...)
 #endif
 
 #if TRACY_METAL_DEBUG_MASK & (1 << 4)
-    #define TracyMetalDebug_0b10000(...) __VA_ARGS__;
+    #define TracyMetalDebug_0b10000(...) __VA_ARGS__
 #else
     #define TracyMetalDebug_0b10000(...)
 #endif
@@ -623,10 +623,10 @@ using TracyMetalCtx = tracy::MetalCtx;
 
 #define TracyMetalZone( ctx, encoderDesc, name ) TracyMetalNamedZone( ctx, ___tracy_gpu_zone, encoderDesc, name, true )
 #define TracyMetalZoneC( ctx, encoderDesc, name, color ) TracyMetalNamedZoneC( ctx, ___tracy_gpu_zone, encoderDesc, name, color, true )
-#define TracyMetalNamedZone( ctx, varname, encoderDesc, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, encoderDesc, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
-#define TracyMetalNamedZoneC( ctx, varname, encoderDesc, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, encoderDesc, &TracyConcat(__tracy_gpu_source_location,TracyLine), active );
+#define TracyMetalNamedZone( ctx, varname, encoderDesc, name, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::MetalZoneScope varname( ctx, encoderDesc, &TracyConcat(__tracy_gpu_source_location,TracyLine), active )
+#define TracyMetalNamedZoneC( ctx, varname, encoderDesc, name, color, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,TracyLine) { name, TracyFunction, TracyFile, (uint32_t)TracyLine, color }; tracy::MetalZoneScope varname( ctx, encoderDesc, &TracyConcat(__tracy_gpu_source_location,TracyLine), active )
 
-#define TracyMetalCollect( ctx ) ctx->Collect();
+#define TracyMetalCollect( ctx ) ctx->Collect()
 
 
 

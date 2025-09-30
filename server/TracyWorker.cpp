@@ -280,6 +280,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
+    m_data.gpuExtra.push_back( GpuExtra {} );
     m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
     m_data.memory = m_slab.AllocInit<MemData>();
     m_data.memNameMap.emplace( 0, m_data.memory );
@@ -319,6 +320,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
+    m_data.gpuExtra.push_back( GpuExtra {} );
     m_data.symbolLocInline.push_back( std::numeric_limits<uint64_t>::max() );
     m_data.memory = m_slab.AllocInit<MemData>();
     m_data.memNameMap.emplace( 0, m_data.memory );
@@ -864,7 +866,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
         int16_t id;
         uint64_t cnt;
         f.Read2( id, cnt );
-        auto status = m_data.gpuSourceLocationZones.emplace( id, GpuSourceLocationZones() );
+        auto status = m_data.gpuSourceLocationZones.emplace( id, SourceLocationZones() );
         assert( status.second );
         status.first->second.zones.reserve( cnt );
     }
@@ -1096,10 +1098,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
     f.Read( sz );
     m_data.gpuChildren.reserve_exact( sz, m_slab );
-    memset( (char*)m_data.gpuChildren.data(), 0, sizeof( Vector<short_ptr<GpuEvent>> ) * sz );
+    memset( (char*)m_data.gpuChildren.data(), 0, sizeof( Vector<short_ptr<ZoneEvent>> ) * sz );
     childIdx = 0;
     f.Read( sz );
     m_data.gpuData.reserve_exact( sz, m_slab );
+    m_data.gpuExtra.push_back( GpuExtra {} );
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
@@ -1749,15 +1752,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 m_data.sourceLocationZonesReady = true;
             } ) );
 
-            std::function<void(Vector<short_ptr<GpuEvent>>&, uint16_t)> ProcessTimelineGpu;
-            ProcessTimelineGpu = [this, &ProcessTimelineGpu] ( Vector<short_ptr<GpuEvent>>& _vec, uint16_t thread )
+            std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimelineGpu;
+            ProcessTimelineGpu = [this, &ProcessTimelineGpu] ( Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 assert( _vec.is_magic() );
-                auto& vec = *(Vector<GpuEvent>*)( &_vec );
+                auto& vec = *(Vector<ZoneEvent>*)( &_vec );
                 for( auto& zone : vec )
                 {
-                    if( zone.GpuEnd() >= 0 ) ReconstructZoneStatistics( zone, thread );
+                    if( zone.End() >= 0 ) ReconstructZoneStatistics( zone, thread );
                     if( zone.Child() >= 0 )
                     {
                         ProcessTimelineGpu( GetGpuChildrenMutable( zone.Child() ), thread );
@@ -2356,14 +2359,14 @@ const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len )
     return it;
 }
 
-int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev )
+int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev, const Vector<Vector<short_ptr<ZoneEvent>>>& childArray )
 {
     assert( !ev.IsEndValid() );
     auto ptr = &ev;
     for(;;)
     {
-        if( !ptr->HasChildren() ) return ptr->Start();
-        auto& children = GetZoneChildren( ptr->Child() );
+        if( !ptr->HasChildren() ) return ptr->Start() >= 0 ? ptr->Start() : m_data.lastTime;
+        auto& children = childArray[ ptr->Child() ];
         if( children.is_magic() )
         {
             auto& c = *(Vector<ZoneEvent>*)&children;
@@ -2374,27 +2377,6 @@ int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev )
             ptr = children.back();
         }
         if( ptr->IsEndValid() ) return ptr->End();
-    }
-}
-
-int64_t Worker::GetZoneEndImpl( const GpuEvent& ev )
-{
-    assert( ev.GpuEnd() < 0 );
-    auto ptr = &ev;
-    for(;;)
-    {
-        if( ptr->Child() < 0 ) return ptr->GpuStart() >= 0 ? ptr->GpuStart() : m_data.lastTime;
-        auto& children = GetGpuChildren( ptr->Child() );
-        if( children.is_magic() )
-        {
-            auto& c = *(Vector<GpuEvent>*)&children;
-            ptr = &c.back();
-        }
-        else
-        {
-            ptr = children.back();
-        }
-        if( ptr->GpuEnd() >= 0 ) return ptr->GpuEnd();
     }
 }
 
@@ -2572,12 +2554,6 @@ const char* Worker::GetZoneName( const ZoneEvent& ev, const SourceLocation& srcl
     {
         return GetString( srcloc.function );
     }
-}
-
-const char* Worker::GetZoneName( const GpuEvent& ev ) const
-{
-    auto& srcloc = GetSourceLocation( ev.SrcLoc() );
-    return GetZoneName( srcloc );
 }
 
 static bool strstr_nocase( const char* l, const char* r )
@@ -3507,12 +3483,12 @@ Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc
     return &it->second;
 }
 
-Worker::GpuSourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
+Worker::SourceLocationZones* Worker::GetGpuSourceLocationZonesReal( uint16_t srcloc )
 {
     auto it = m_data.gpuSourceLocationZones.find( srcloc );
     if( it == m_data.gpuSourceLocationZones.end() )
     {
-        it = m_data.gpuSourceLocationZones.emplace( srcloc, GpuSourceLocationZones() ).first;
+        it = m_data.gpuSourceLocationZones.emplace( srcloc, SourceLocationZones() ).first;
     }
     m_data.gpuZonesLast.first = srcloc;
     m_data.gpuZonesLast.second = &it->second;
@@ -5761,14 +5737,30 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     m_gpuCtxMap[ev.context] = gpu;
 }
 
-void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial )
+GpuExtra& Worker::AllocGpuExtra( ZoneEvent& ev )
+{
+    assert( ev.extra == 0 );
+    ev.extra = uint32_t( m_data.gpuExtra.size() );
+    auto& extra = m_data.gpuExtra.push_next();
+    memset( (char*)&extra, 0, sizeof( extra ) );
+    return extra;
+}
+
+EventAdapter<false> Worker::AllocGpuEvent()
+{
+    auto zone = AllocZoneEvent();
+    auto& extra = AllocGpuExtra(*zone);
+    return { *zone, extra };
+};
+
+void Worker::ProcessGpuZoneBeginImpl( EventAdapter<false> zone, const QueueGpuZoneBegin& ev, bool serial )
 {
     CheckSourceLocation( ev.srcloc );
     zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     ProcessGpuZoneBeginImplCommon( zone, ev, serial );
 }
 
-void Worker::ProcessGpuZoneBeginAllocSrcLocImpl( GpuEvent* zone, const QueueGpuZoneBeginLean& ev, bool serial )
+void Worker::ProcessGpuZoneBeginAllocSrcLocImpl( EventAdapter<false> zone, const QueueGpuZoneBeginLean& ev, bool serial )
 {
     assert( m_pendingSourceLocationPayload != 0 );
     zone->SetSrcLoc( m_pendingSourceLocationPayload );
@@ -5776,7 +5768,7 @@ void Worker::ProcessGpuZoneBeginAllocSrcLocImpl( GpuEvent* zone, const QueueGpuZ
     m_pendingSourceLocationPayload = 0;
 }
 
-void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBeginLean& ev, bool serial )
+void Worker::ProcessGpuZoneBeginImplCommon( EventAdapter<false> zone, const QueueGpuZoneBeginLean& ev, bool serial )
 {
     m_data.gpuCnt++;
 
@@ -5792,12 +5784,13 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
     {
         cpuTime = RefTime( m_refTimeThread, ev.cpuTime );
     }
+
     const auto time = TscTime( cpuTime );
     zone->SetCpuStart( time );
     zone->SetCpuEnd( -1 );
     zone->SetGpuStart( -1 );
     zone->SetGpuEnd( -1 );
-    zone->callstack.SetVal( 0 );
+    zone->callstack.SetVal(0);
     zone->SetChild( -1 );
     zone->query_id = ev.queryId;
 
@@ -5831,7 +5824,7 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
         if( back->Child() < 0 )
         {
             back->SetChild( int32_t( m_data.gpuChildren.size() ) );
-            m_data.gpuChildren.push_back( Vector<short_ptr<GpuEvent>>() );
+            m_data.gpuChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
         }
         timeline = &m_data.gpuChildren[back->Child()];
     }
@@ -5845,13 +5838,13 @@ void Worker::ProcessGpuZoneBeginImplCommon( GpuEvent* zone, const QueueGpuZoneBe
 
 void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev, bool serial )
 {
-    auto zone = m_slab.Alloc<GpuEvent>();
+    auto zone = AllocGpuEvent();
     ProcessGpuZoneBeginImpl( zone, ev, serial );
 }
 
 void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool serial )
 {
-    auto zone = m_slab.Alloc<GpuEvent>();
+    auto zone = AllocGpuEvent();
     ProcessGpuZoneBeginImpl( zone, ev, serial );
     if( serial )
     {
@@ -5871,13 +5864,13 @@ void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool ser
 
 void Worker::ProcessGpuZoneBeginAllocSrcLoc( const QueueGpuZoneBeginLean& ev, bool serial )
 {
-    auto zone = m_slab.Alloc<GpuEvent>();
+    auto zone = AllocGpuEvent();
     ProcessGpuZoneBeginAllocSrcLocImpl( zone, ev, serial );
 }
 
 void Worker::ProcessGpuZoneBeginAllocSrcLocCallstack( const QueueGpuZoneBeginLean& ev, bool serial )
 {
-    auto zone = m_slab.Alloc<GpuEvent>();
+    auto zone = AllocGpuEvent();
     ProcessGpuZoneBeginAllocSrcLocImpl( zone, ev, serial );
     if( serial )
     {
@@ -5919,7 +5912,7 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
         cpuTime = RefTime( m_refTimeThread, ev.cpuTime );
     }
     const auto time = TscTime( cpuTime );
-    zone->SetCpuEnd( time );
+    GetGpuExtraMutable(*zone).SetCpuEnd(time);
     if( m_data.lastTime < time ) m_data.lastTime = time;
 }
 
@@ -5967,8 +5960,9 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
         }
     }
 
-    auto zone = ctx->query[ev.queryId];
-    assert( zone );
+    auto evt = ctx->query[ev.queryId];
+    assert( evt );
+    auto zone = GetGpuExtraMutable(*evt);
     ctx->query[ev.queryId] = nullptr;
 
     if( zone->GpuStart() < 0 )
@@ -5984,7 +5978,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
         const auto timeSpan = gpuTime - gpuStart;
         if( timeSpan > 0 )
         {
-            GpuZoneThreadData ztd;
+            ZoneThreadData ztd;
             ztd.SetZone( zone );
             ztd.SetThread( zone->Thread() );
             auto slz = GetGpuSourceLocationZones( zone->SrcLoc() );
@@ -7661,14 +7655,14 @@ int64_t Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t refT
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, bool hasQueryId )
+void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, bool hasQueryId )
 {
     uint64_t sz;
     f.Read( sz );
     ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, sz, hasQueryId );
 }
 
-void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz, bool hasQueryId )
+void Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz, bool hasQueryId )
 {
     if( sz == 0 )
     {
@@ -7740,18 +7734,18 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
     }
 }
 
-void Worker::ReconstructZoneStatistics( GpuEvent& zone, uint16_t thread )
+void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
 {
-    assert( zone.GpuEnd() >= 0 );
-    auto timeSpan = zone.GpuEnd() - zone.GpuStart();
+    assert( zone.End() >= 0 );
+    auto timeSpan = zone.End() - zone.Start();
     if( timeSpan > 0 )
     {
         auto it = m_data.gpuSourceLocationZones.find( zone.SrcLoc() );
         if( it == m_data.gpuSourceLocationZones.end() )
         {
-            it = m_data.gpuSourceLocationZones.emplace( zone.SrcLoc(), GpuSourceLocationZones {} ).first;
+            it = m_data.gpuSourceLocationZones.emplace( zone.SrcLoc(), SourceLocationZones {} ).first;
         }
-        GpuZoneThreadData ztd;
+        ZoneThreadData ztd;
         ztd.SetZone( &zone );
         ztd.SetThread( thread );
         auto& slz = it->second;
@@ -7766,12 +7760,6 @@ void Worker::ReconstructZoneStatistics( GpuEvent& zone, uint16_t thread )
 void Worker::CountZoneStatistics( ZoneEvent* zone )
 {
     auto cnt = GetSourceLocationZonesCnt( zone->SrcLoc() );
-    (*cnt)++;
-}
-
-void Worker::CountZoneStatistics( GpuEvent* zone )
-{
-    auto cnt = GetGpuSourceLocationZonesCnt( zone->SrcLoc() );
     (*cnt)++;
 }
 #endif
@@ -7821,15 +7809,15 @@ int64_t Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, u
     return refTime;
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, bool hasQueryId )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, bool hasQueryId )
 {
     assert( size != 0 );
     const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
     s_loadProgress.subProgress.store( lp + size, std::memory_order_relaxed );
-    auto& vec = *(Vector<GpuEvent>*)( &_vec );
+    auto& vec = *(Vector<ZoneEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
-    auto zone = vec.begin();
+    auto zonePtr = vec.begin();
     auto end = vec.end();
     do
     {
@@ -7837,6 +7825,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         int16_t srcloc;
         uint16_t thread;
         uint64_t childSz;
+        auto zone = EventAdapter<false>(*zonePtr, AllocGpuExtra(*zonePtr));
         f.Read6( tcpu, tgpu, srcloc, zone->callstack, thread, childSz );
         zone->SetSrcLoc( srcloc );
         zone->SetThread( thread );
@@ -7854,7 +7843,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         zone->SetGpuEnd( refGpuTime );
         if( hasQueryId ) f.Read( zone->query_id );
     }
-    while( ++zone != end );
+    while( ++zonePtr != end );
 }
 
 void Worker::Disconnect()
@@ -8560,17 +8549,17 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
     }
 }
 
-void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<GpuEvent>>& vec, int64_t& refTime, int64_t& refGpuTime )
+void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<ZoneEvent>>& vec, int64_t& refTime, int64_t& refGpuTime )
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );
     if( vec.is_magic() )
     {
-        WriteTimelineImpl<VectorAdapterDirect<GpuEvent>>( f, *(Vector<GpuEvent>*)( &vec ), refTime, refGpuTime );
+        WriteTimelineImpl<VectorAdapterDirect<ZoneEvent>>( f, *(Vector<ZoneEvent>*)( &vec ), refTime, refGpuTime );
     }
     else
     {
-        WriteTimelineImpl<VectorAdapterPointer<GpuEvent>>( f, vec, refTime, refGpuTime );
+        WriteTimelineImpl<VectorAdapterPointer<ZoneEvent>>( f, vec, refTime, refGpuTime );
     }
 }
 
@@ -8580,7 +8569,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
     Adapter a;
     for( auto& val : vec )
     {
-        auto& v = a(val);
+        auto& v = GetGpuExtra(a(val));
         WriteTimeOffset( f, refTime, v.CpuStart() );
         WriteTimeOffset( f, refGpuTime, v.GpuStart() );
         const int16_t srcloc = v.SrcLoc();

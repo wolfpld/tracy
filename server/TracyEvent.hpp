@@ -236,6 +236,13 @@ struct ZoneExtra
 
 enum { ZoneExtraSize = sizeof( ZoneExtra ) };
 
+struct GpuExtra : public ZoneExtra
+{
+    uint16_t query_id;
+    uint16_t thread;
+    Int48 otherStart;
+    Int48 otherEnd;
+};
 
 // This union exploits the fact that the current implementations of x64 and arm64 do not provide
 // full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
@@ -389,35 +396,43 @@ struct LockHighlight
     bool blocked;
 };
 
-
-struct GpuEvent
+// Makes a ZoneEvent and GpuExtra look like the old GpuEvent, for syntactical convenience. Not for
+// bulk data structures. Template parameter `is_const` makes the members const (otherwise the
+// adapter can't be constructed from const references).
+template<bool is_const>
+struct EventAdapter
 {
-    tracy_force_inline int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
-    tracy_force_inline void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuStart_srcloc)+2, &cpuStart, 4 ); memcpy( ((char*)&_cpuStart_srcloc)+6, ((char*)&cpuStart)+4, 2 ); }
-    tracy_force_inline int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
-    tracy_force_inline void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 4 ); memcpy( ((char*)&_cpuEnd_thread)+6, ((char*)&cpuEnd)+4, 2 ); }
-    tracy_force_inline int64_t GpuStart() const { return int64_t( _gpuStart_child1 ) >> 16; }
-    tracy_force_inline void SetGpuStart( int64_t gpuStart ) { /*assert( gpuStart < (int64_t)( 1ull << 47 ) );*/ memcpy( ((char*)&_gpuStart_child1)+2, &gpuStart, 4 ); memcpy( ((char*)&_gpuStart_child1)+6, ((char*)&gpuStart)+4, 2 ); }
-    tracy_force_inline int64_t GpuEnd() const { return int64_t( _gpuEnd_child2 ) >> 16; }
-    tracy_force_inline void SetGpuEnd( int64_t gpuEnd ) { assert( gpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_gpuEnd_child2)+2, &gpuEnd, 4 ); memcpy( ((char*)&_gpuEnd_child2)+6, ((char*)&gpuEnd)+4, 2 ); }
-    tracy_force_inline int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
-    tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_cpuStart_srcloc, &srcloc, 2 ); }
-    tracy_force_inline uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
-    tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_cpuEnd_thread, &thread, 2 ); }
-    tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _gpuStart_child1 & 0xFFFF ) | ( uint32_t( _gpuEnd_child2 & 0xFFFF ) << 16 ) ); }
-    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_gpuStart_child1, &child, 2 ); memcpy( &_gpuEnd_child2, ((char*)&child)+2, 2 ); }
+    using event_type = std::conditional<is_const, const ZoneEvent, ZoneEvent>::type;
+    using extra_type = std::conditional<is_const, const GpuExtra, GpuExtra>::type;
+    tracy_force_inline EventAdapter( event_type& ev, extra_type& ex ) : event( ev ) , extra( ex ) , thread( ex.thread ) , callstack( ex.callstack ) , query_id( ex.query_id ) {}
 
-    uint64_t _cpuStart_srcloc;
-    uint64_t _cpuEnd_thread;
-    uint64_t _gpuStart_child1;
-    uint64_t _gpuEnd_child2;
-    Int24 callstack;
-    uint16_t query_id;
+    // GpuEvent compatibility functions
+    tracy_force_inline int64_t CpuStart() const { return extra.otherStart.Val(); }
+    tracy_force_inline void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); extra.otherStart.SetVal( cpuStart ); }
+    tracy_force_inline int64_t CpuEnd() const { return extra.otherEnd.Val(); }
+    tracy_force_inline void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); extra.otherEnd.SetVal( cpuEnd ); }
+    tracy_force_inline int64_t GpuStart() const { return event.Start(); }
+    tracy_force_inline void SetGpuStart( int64_t gpuStart ) { event.SetStart( gpuStart ); }
+    tracy_force_inline int64_t GpuEnd() const { return event.End(); }
+    tracy_force_inline void SetGpuEnd( int64_t gpuEnd ) { event.SetEnd( gpuEnd ); }
+    tracy_force_inline int16_t SrcLoc() const { return event.SrcLoc(); }
+    tracy_force_inline void SetSrcLoc( int16_t srcloc ) { event.SetSrcLoc( srcloc ); }
+    tracy_force_inline uint16_t Thread() const { return extra.thread; }
+    tracy_force_inline void SetThread( uint16_t thread ) { extra.thread = thread; }
+    tracy_force_inline int32_t Child() const { return event.Child(); }
+    tracy_force_inline void SetChild( int32_t child ) { event.SetChild( child ); }
+
+    tracy_force_inline operator short_ptr<event_type>() { return &event; }
+    tracy_force_inline operator event_type*() { return &event; }
+    tracy_force_inline operator event_type&() { return event; }
+    tracy_force_inline operator event_type&() const { return event; }
+    tracy_force_inline EventAdapter* operator->() { return this; }
+    event_type& event;
+    extra_type& extra;
+    std::conditional<is_const, typename std::add_const<decltype( extra.thread )>::type&, decltype( extra.thread )&>::type thread;
+    std::conditional<is_const, typename std::add_const<decltype( extra.callstack )>::type&, decltype( extra.callstack )&>::type callstack;
+    std::conditional<is_const, typename std::add_const<decltype( extra.query_id )>::type&, decltype( extra.query_id )&>::type query_id;
 };
-
-enum { GpuEventSize = sizeof( GpuEvent ) };
-static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standard layout" );
-
 
 struct MemEvent
 {
@@ -754,8 +769,8 @@ struct ThreadData
 
 struct GpuCtxThreadData
 {
-    Vector<short_ptr<GpuEvent>> timeline;
-    Vector<short_ptr<GpuEvent>> stack;
+    Vector<short_ptr<ZoneEvent>> timeline;
+    Vector<short_ptr<ZoneEvent>> stack;
 };
 
 struct GpuCtxData
@@ -777,7 +792,7 @@ struct GpuCtxData
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     unordered_flat_map<int64_t, StringIdx> noteNames;
     unordered_flat_map<uint16_t, unordered_flat_map<int64_t, double>> notes;
-    short_ptr<GpuEvent> query[64*1024];
+    short_ptr<ZoneEvent> query[64*1024];
 };
 
 enum { GpuCtxDataSize = sizeof( GpuCtxData ) };

@@ -22,12 +22,6 @@ inline uint32_t GetZoneCallstack<ZoneEvent>( const ZoneEvent& ev, const Worker& 
     return worker.GetZoneExtra( ev ).callstack.Val();
 }
 
-template<>
-inline uint32_t GetZoneCallstack<GpuEvent>( const GpuEvent& ev, const Worker& worker )
-{
-    return ev.callstack.Val();
-}
-
 void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
@@ -1439,7 +1433,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
 void View::DrawGpuInfoWindow()
 {
-    auto& ev = *m_gpuInfoWindow;
+    auto& ev = m_worker.GetGpuExtra(*m_gpuInfoWindow);
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
     const auto scale = GetScale();
@@ -1450,9 +1444,9 @@ void View::DrawGpuInfoWindow()
     {
         if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
         {
-            ZoomToZone( ev );
+            ZoomToZoneGPU( ev );
         }
-        auto parent = GetZoneParent( ev );
+        auto parent = GetZoneParentGPU( ev );
         if( parent )
         {
             ImGui::SameLine();
@@ -1507,7 +1501,7 @@ void View::DrawGpuInfoWindow()
 
         ImGui::Separator();
 
-        const auto tid = GetZoneThread( ev );
+        const auto tid = GetZoneThreadGPU( ev );
         ImGui::PushFont( g_fonts.normal, FontBig );
         TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
         ImGui::SameLine();
@@ -1527,9 +1521,9 @@ void View::DrawGpuInfoWindow()
         ImGui::Separator();
         ImGui::BeginChild( "##gpuinfo" );
 
-        const auto end = m_worker.GetZoneEnd( ev );
+        const auto end = m_worker.GetZoneEndGPU( ev );
         const auto ztime = end - ev.GpuStart();
-        const auto selftime = GetZoneSelfTime( ev );
+        const auto selftime = GetZoneSelfTime( ev, true );
         TextFocused( "Time from start of program:", TimeToStringExact( ev.GpuStart() ) );
         TextFocused( "GPU execution time:", TimeToString( ztime ) );
         TextFocused( "GPU self time:", TimeToString( selftime ) );
@@ -1553,11 +1547,11 @@ void View::DrawGpuInfoWindow()
             int64_t begin;
             if( td->second.timeline.is_magic() )
             {
-                begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+                begin = ((Vector<ZoneEvent>*)&td->second.timeline)->front().Start();
             }
             else
             {
-                begin = td->second.timeline.front()->GpuStart();
+                begin = td->second.timeline.front()->Start();
             }
             const auto drift = GpuDrift( ctx );
             TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
@@ -1580,14 +1574,14 @@ void View::DrawGpuInfoWindow()
 
         ImGui::Separator();
 
-        std::vector<const GpuEvent*> zoneTrace;
+        std::vector<const ZoneEvent*> zoneTrace;
         while( parent )
         {
             zoneTrace.emplace_back( parent );
-            parent = GetZoneParent( *parent );
+            parent = GetZoneParentGPU( *parent );
         }
         int idx = 0;
-        DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v, int& fidx ) {
+        DrawZoneTrace<const ZoneEvent*>( &ev.event, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
@@ -1606,7 +1600,7 @@ void View::DrawGpuInfoWindow()
             {
                 ImGui::SameLine();
             }
-            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), LocationToString( fileName, srcloc.line ) );
+            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEndGPU( *v ) - v->Start() ), LocationToString( fileName, srcloc.line ) );
             ImGui::PopID();
             if( ImGui::IsItemClicked( 1 ) )
             {
@@ -1628,9 +1622,9 @@ void View::DrawGpuInfoWindow()
                 m_gpuHighlight = v;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZone( *v );
+                    ZoomToZoneGPU( *v );
                 }
-                ZoneTooltip( *v );
+                ZoneTooltipGPU( *v );
             }
             } );
 
@@ -1644,11 +1638,11 @@ void View::DrawGpuInfoWindow()
             {
                 if( children.is_magic() )
                 {
-                    DrawGpuInfoChildren<VectorAdapterDirect<GpuEvent>>( *(Vector<GpuEvent>*)( &children ), ztime );
+                    DrawGpuInfoChildren<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ztime );
                 }
                 else
                 {
-                    DrawGpuInfoChildren<VectorAdapterPointer<GpuEvent>>( children, ztime );
+                    DrawGpuInfoChildren<VectorAdapterPointer<ZoneEvent>>( children, ztime );
                 }
                 ImGui::TreePop();
             }
@@ -1689,8 +1683,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         for( size_t i=0; i<children.size(); i++ )
         {
             const auto& child = a(children[i]);
-            const auto cend = m_worker.GetZoneEnd( child );
-            const auto ct = cend - child.GpuStart();
+            const auto cend = m_worker.GetZoneEndGPU( child );
+            const auto ct = cend - child.Start();
             const auto srcloc = child.SrcLoc();
             ctime += ct;
 
@@ -1742,9 +1736,9 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     m_gpuHighlight = &cev;
                     if( IsMouseClicked( 2 ) )
                     {
-                        ZoomToZone( cev );
+                        ZoomToZoneGPU( cev );
                     }
-                    ZoneTooltip( cev );
+                    ZoneTooltipGPU( cev );
                 }
                 ImGui::PopID();
             }
@@ -1781,8 +1775,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 for( size_t i=0; i<cgr.v.size(); i++ )
                 {
                     const auto& child = a(children[cgr.v[i]]);
-                    const auto cend = m_worker.GetZoneEnd( child );
-                    const auto ct = cend - child.GpuStart();
+                    const auto cend = m_worker.GetZoneEndGPU( child );
+                    const auto ct = cend - child.Start();
                     ctt[i] = ct;
                     cti[i] = uint32_t( i );
                 }
@@ -1805,9 +1799,9 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                         m_gpuHighlight = &cev;
                         if( IsMouseClicked( 2 ) )
                         {
-                            ZoomToZone( cev );
+                            ZoomToZoneGPU( cev );
                         }
-                        ZoneTooltip( cev );
+                        ZoneTooltipGPU( cev );
                     }
                     ImGui::PopID();
                     ImGui::Unindent();
@@ -1831,8 +1825,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         for( size_t i=0; i<children.size(); i++ )
         {
             const auto& child = a(children[i]);
-            const auto cend = m_worker.GetZoneEnd( child );
-            const auto ct = cend - child.GpuStart();
+            const auto cend = m_worker.GetZoneEndGPU( child );
+            const auto ct = cend - child.Start();
             ctime += ct;
             ctt[i] = ct;
             cti[i] = uint32_t( i );
@@ -1861,9 +1855,9 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 m_gpuHighlight = &cev;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZone( cev );
+                    ZoomToZoneGPU( cev );
                 }
-                ZoneTooltip( cev );
+                ZoneTooltipGPU( cev );
             }
             ImGui::PopID();
             ImGui::NextColumn();
@@ -1892,7 +1886,7 @@ void View::ShowZoneInfo( const ZoneEvent& ev )
     }
 }
 
-void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
+void View::ShowZoneInfo( const ZoneEvent& ev, uint64_t thread )
 {
     if( m_gpuInfoWindow && m_gpuInfoWindow != &ev )
     {
@@ -1987,13 +1981,14 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::EndTooltip();
 }
 
-void View::ZoneTooltip( const GpuEvent& ev )
+void View::ZoneTooltipGPU( const ZoneEvent& evt )
 {
-    const auto tid = GetZoneThread( ev );
+    const auto& ev = m_worker.GetGpuExtra(evt);
+    const auto tid = GetZoneThreadGPU( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
-    const auto end = m_worker.GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEndGPU( ev );
     const auto ztime = end - ev.GpuStart();
-    const auto selftime = GetZoneSelfTime( ev );
+    const auto selftime = GetZoneSelfTime( ev, true );
 
     ImGui::BeginTooltip();
     ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
@@ -2035,11 +2030,11 @@ void View::ZoneTooltip( const GpuEvent& ev )
         int64_t begin;
         if( td->second.timeline.is_magic() )
         {
-            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+            begin = ((Vector<ZoneEvent>*)&td->second.timeline)->front().Start();
         }
         else
         {
-            begin = td->second.timeline.front()->GpuStart();
+            begin = td->second.timeline.front()->Start();
         }
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );

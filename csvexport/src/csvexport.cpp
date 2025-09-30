@@ -299,9 +299,9 @@ int main(int argc, char** argv)
             const auto& zone_data = it->second;
             for (const auto& zone_thread_data : zone_data.zones)
             {
-                tracy::GpuEvent* gpu_event = zone_thread_data.Zone();
-                const auto start = gpu_event->GpuStart();
-                const auto end = gpu_event->GpuEnd();
+                auto& gpu_event = worker.GetGpuExtra( *zone_thread_data.Zone() );
+                const auto start = gpu_event.GpuStart();
+                const auto end = gpu_event.GpuEnd();
 
                 values[2] = std::to_string( start );
 

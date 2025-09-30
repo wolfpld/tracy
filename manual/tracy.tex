@@ -2240,6 +2240,15 @@ CPU and GPU timestamps may be periodically resynchronized via the \texttt{\_\_\_
 
 To see how you should use this API, you should look at the reference implementation contained in API-specific C++ headers provided by Tracy. For example, to see how to write your instrumentation of OpenGL, you should closely follow the contents of the \texttt{TracyOpenGL.hpp} implementation.
 
+
+\begin{bclogo}[
+	noborder=true,
+	couleur=black!5,
+	logo=\bcbombe
+	]{Important}
+A common mistake is to skip the zone "\texttt{isActive}" check. When using \texttt{TRACY\_ON\_DEMAND}, you need to read the value of \texttt{TracyCIsConnected} once, and check the same value for both \newline \texttt{\_\_\_tracy\_emit\_gpu\_zone\_begin\_alloc} and \texttt{\_\_\_tracy\_emit\_gpu\_zone\_end}. Tracy may otherwise receive a zone end without a zone begin.
+\end{bclogo}
+
 \subsubsection{Fibers}
 
 Fibers are available in the C API through the \texttt{TracyCFiberEnter} and \texttt{TracyCFiberLeave} macros. To use them, you should observe the requirements listed in section~\ref{fibers}.

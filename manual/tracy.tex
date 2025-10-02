@@ -1397,7 +1397,7 @@ void Function()
 }
 \end{lstlisting}
 
-This doesn't stop some compilers from dispensing \emph{fashion advice} about variable shadowing (as both \texttt{ZoneScoped} calls create a variable with the same name, with the inner scope one shadowing the one in the outer scope). If you want to avoid these warnings, you will also need to use the \texttt{ZoneNamed} macros.
+This doesn't stop some compilers from dispensing \emph{fashion advice} about variable shadowing (as both \texttt{ZoneScoped} calls create a variable with the same name, with the inner scope one shadowing the one in the outer scope). By default the produced warnings are suppressed when using clang, gcc or MSVC. This behavior can be opted out of by defining \texttt{TRACY\_ALLOW\_SHADOW\_WARNING}. An alternative approach avoids variable name shadowing by manually defining zone names with \texttt{ZoneNamed}. Using this approach requires using the V variants of zone macros like \texttt{ZoneTextV}.
 
 \subsubsection{Exiting program from within a zone}
 

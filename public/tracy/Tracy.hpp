@@ -149,24 +149,26 @@
 #define ZoneTransientN( varname, name, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), TRACY_CALLSTACK, active )
 #define ZoneTransientNC( varname, name, color, active ) tracy::ScopedZone varname( TracyLine, TracyFile, strlen( TracyFile ), TracyFunction, strlen( TracyFunction ), name, strlen( name ), color, TRACY_CALLSTACK, active )
 
-#if defined(__clang__)
+#if defined(TRACY_ALLOW_SHADOW_WARNING)
+    #define SuppressVarShadowWarning(Expr) Expr
+#elif defined(__clang__)
     #define SuppressVarShadowWarning(Expr) \
-        _Pragma("clang diagnostic push"); \
-        _Pragma("clang diagnostic ignored \"-Wshadow\""); \
-        Expr; \
-        _Pragma("clang diagnostic pop");
+        _Pragma("clang diagnostic push") \
+        _Pragma("clang diagnostic ignored \"-Wshadow\"") \
+        Expr \
+        _Pragma("clang diagnostic pop")
 #elif defined(__GNU__)
     #define SuppressVarShadowWarning(Expr) \
-        _Pragma("GCC diagnostic push"); \
-        _Pragma("GCC diagnostic ignored \"-Wshadow\""); \
-        Expr; \
-        _Pragma("GCC diagnostic pop");
+        _Pragma("GCC diagnostic push") \
+        _Pragma("GCC diagnostic ignored \"-Wshadow\"") \
+        Expr \
+        _Pragma("GCC diagnostic pop")
 #elif defined(_MSC_VER) 
     #define SuppressVarShadowWarning(Expr) \
-        _Pragma("warning(push)"); \
-        _Pragma("warning(disable : 4456)"); \
-        Expr; \
-        _Pragma("warning(pop)");
+        _Pragma("warning(push)") \
+        _Pragma("warning(disable : 4456)") \
+        Expr \
+        _Pragma("warning(pop)")
 #else
     #define SuppressVarShadowWarning(Expr) Expr
 #endif

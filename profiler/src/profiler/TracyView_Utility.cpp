@@ -395,42 +395,41 @@ bool View::IsZoneReentry( const ZoneEvent& zone, uint64_t tid ) const
     return false;
 }
 
-const ZoneEvent* View::GetZoneParentGPU( const ZoneEvent& zone ) const
+ZoneEventC View::GetZoneParentGPU( const ZoneEventC zoneC ) const
 {
-    for( const auto& ctx : m_worker.GetGpuData() )
+    auto& zone = *zoneC.event;
+    auto ctx = zoneC.ctx;
+    for( const auto& td : ctx->threadData )
     {
-        for( const auto& td : ctx->threadData )
+        const ZoneEvent* parent = nullptr;
+        const Vector<short_ptr<ZoneEvent>>* timeline = &td.second.timeline;
+        if( timeline->empty() ) continue;
+        for(;;)
         {
-            const ZoneEvent* parent = nullptr;
-            const Vector<short_ptr<ZoneEvent>>* timeline = &td.second.timeline;
-            if( timeline->empty() ) continue;
-            for(;;)
+            if( timeline->is_magic() )
             {
-                if( timeline->is_magic() )
-                {
-                    auto vec = (Vector<ZoneEvent>*)timeline;
-                    auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r.Start(); } );
-                    if( it != vec->begin() ) --it;
-                    if( zone.End() >= 0 && it->Start() > zone.End() ) break;
-                    if( it == &zone ) return parent;
-                    if( it->Child() < 0 ) break;
-                    parent = it;
-                    timeline = &m_worker.GetGpuChildren( parent->Child() );
-                }
-                else
-                {
-                    auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->Start(); } );
-                    if( it != timeline->begin() ) --it;
-                    if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
-                    if( *it == &zone ) return parent;
-                    if( (*it)->Child() < 0 ) break;
-                    parent = *it;
-                    timeline = &m_worker.GetGpuChildren( parent->Child() );
-                }
+                auto vec = (Vector<ZoneEvent>*)timeline;
+                auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r.Start(); } );
+                if( it != vec->begin() ) --it;
+                if( zone.End() >= 0 && it->Start() > zone.End() ) break;
+                if( it == &zone ) return { parent, ctx };
+                if( it->Child() < 0 ) break;
+                parent = it;
+                timeline = &m_worker.GetGpuChildren( parent->Child() );
+            }
+            else
+            {
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->Start(); } );
+                if( it != timeline->begin() ) --it;
+                if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
+                if( *it == &zone ) return { parent, ctx };
+                if( (*it)->Child() < 0 ) break;
+                parent = *it;
+                timeline = &m_worker.GetGpuChildren( parent->Child() );
             }
         }
     }
-    return nullptr;
+    return { nullptr, nullptr };
 }
 
 const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
@@ -524,41 +523,6 @@ uint64_t View::GetZoneThreadGPU( const EventAdapter<true>& zone ) const
     {
         return m_worker.DecompressThread( zone.Thread() );
     }
-}
-
-const GpuCtxData* View::GetZoneCtx( const ZoneEvent& zone ) const
-{
-    for( const auto& ctx : m_worker.GetGpuData() )
-    {
-        for( const auto& td : ctx->threadData )
-        {
-            const Vector<short_ptr<ZoneEvent>>* timeline = &td.second.timeline;
-            if( timeline->empty() ) continue;
-            for(;;)
-            {
-                if( timeline->is_magic() )
-                {
-                    auto vec = (Vector<ZoneEvent>*)timeline;
-                    auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r.Start(); } );
-                    if( it != vec->begin() ) --it;
-                    if( zone.End() >= 0 && it->Start() > zone.End() ) break;
-                    if( it == &zone ) return ctx;
-                    if( it->Child() < 0 ) break;
-                    timeline = &m_worker.GetGpuChildren( it->Child() );
-                }
-                else
-                {
-                    auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->Start(); } );
-                    if( it != timeline->begin() ) --it;
-                    if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
-                    if( *it == &zone ) return ctx;
-                    if( (*it)->Child() < 0 ) break;
-                    timeline = &m_worker.GetGpuChildren( (*it)->Child() );
-                }
-            }
-        }
-    }
-    return nullptr;
 }
 
 int64_t View::GetZoneChildTime( const ZoneEvent& zone, bool gpu )

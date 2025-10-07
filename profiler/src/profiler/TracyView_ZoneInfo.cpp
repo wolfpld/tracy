@@ -1433,7 +1433,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
 void View::DrawGpuInfoWindow()
 {
-    auto& ev = m_worker.GetGpuExtra(*m_gpuInfoWindow);
+    auto& ev = m_worker.GetGpuExtra(*m_gpuInfoWindow.event);
+    auto ctx = m_gpuInfoWindow.ctx;
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
     const auto scale = GetScale();
@@ -1444,15 +1445,15 @@ void View::DrawGpuInfoWindow()
     {
         if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
         {
-            ZoomToZoneGPU( ev );
+            ZoomToZoneGPU( m_gpuInfoWindow );
         }
-        auto parent = GetZoneParentGPU( ev );
+        auto parent = GetZoneParentGPU( m_gpuInfoWindow );
         if( parent )
         {
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
             {
-                ShowZoneInfo( *parent, m_gpuInfoWindowThread );
+                ShowZoneInfo( parent, m_gpuInfoWindowThread );
             }
         }
         if( ev.callstack.Val() != 0 )
@@ -1535,7 +1536,6 @@ void View::DrawGpuInfoWindow()
             TextDisabledUnformatted( buf );
         }
         TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
-        auto ctx = GetZoneCtx( ev );
         if( !ctx )
         {
             TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
@@ -1577,11 +1577,11 @@ void View::DrawGpuInfoWindow()
         std::vector<const ZoneEvent*> zoneTrace;
         while( parent )
         {
-            zoneTrace.emplace_back( parent );
-            parent = GetZoneParentGPU( *parent );
+            zoneTrace.emplace_back( parent.event );
+            parent = GetZoneParentGPU( parent );
         }
         int idx = 0;
-        DrawZoneTrace<const ZoneEvent*>( &ev.event, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
+        DrawZoneTrace<const ZoneEvent*>( &ev.event, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this, ctx] ( const ZoneEvent* v, int& fidx ) {
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
@@ -1615,16 +1615,16 @@ void View::DrawGpuInfoWindow()
             }
             if( sel )
             {
-                ShowZoneInfo( *v, m_gpuInfoWindowThread );
+                ShowZoneInfo( { v, ctx }, m_gpuInfoWindowThread );
             }
             if( hover )
             {
                 m_gpuHighlight = v;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZoneGPU( *v );
+                    ZoomToZoneGPU( { v, ctx } );
                 }
-                ZoneTooltipGPU( *v );
+                ZoneTooltipGPU( { v, ctx } );
             }
             } );
 
@@ -1638,11 +1638,11 @@ void View::DrawGpuInfoWindow()
             {
                 if( children.is_magic() )
                 {
-                    DrawGpuInfoChildren<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ztime );
+                    DrawGpuInfoChildren<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ztime, ctx );
                 }
                 else
                 {
-                    DrawGpuInfoChildren<VectorAdapterPointer<ZoneEvent>>( children, ztime );
+                    DrawGpuInfoChildren<VectorAdapterPointer<ZoneEvent>>( children, ztime, ctx );
                 }
                 ImGui::TreePop();
             }
@@ -1654,13 +1654,13 @@ void View::DrawGpuInfoWindow()
 
     if( !show )
     {
-        m_gpuInfoWindow = nullptr;
+        m_gpuInfoWindow = { nullptr, nullptr };
         m_gpuInfoStack.clear();
     }
 }
 
 template<typename Adapter, typename V>
-void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
+void View::DrawGpuInfoChildren( const V& children, int64_t ztime, const GpuCtxData* ctx )
 {
     Adapter a;
     const auto rztime = 1.0 / ztime;
@@ -1729,16 +1729,16 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 ImGui::TreeNodeEx( txt, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen );
                 if( ImGui::IsItemClicked() )
                 {
-                    ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                    ShowZoneInfo( { &cev, ctx }, m_gpuInfoWindowThread );
                 }
                 if( ImGui::IsItemHovered() )
                 {
                     m_gpuHighlight = &cev;
                     if( IsMouseClicked( 2 ) )
                     {
-                        ZoomToZoneGPU( cev );
+                        ZoomToZoneGPU( { &cev, ctx } );
                     }
-                    ZoneTooltipGPU( cev );
+                    ZoneTooltipGPU( { &cev, ctx } );
                 }
                 ImGui::PopID();
             }
@@ -1792,16 +1792,16 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     ImGui::PushID( (int)cgr.v[cti[i]] );
                     if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
-                        ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                        ShowZoneInfo( { &cev, ctx }, m_gpuInfoWindowThread );
                     }
                     if( ImGui::IsItemHovered() )
                     {
                         m_gpuHighlight = &cev;
                         if( IsMouseClicked( 2 ) )
                         {
-                            ZoomToZoneGPU( cev );
+                            ZoomToZoneGPU( { &cev, ctx } );
                         }
-                        ZoneTooltipGPU( cev );
+                        ZoneTooltipGPU( { &cev, ctx } );
                     }
                     ImGui::PopID();
                     ImGui::Unindent();
@@ -1848,16 +1848,16 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             ImGui::PushID( (int)i );
             if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
             {
-                ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                ShowZoneInfo( { &cev, ctx }, m_gpuInfoWindowThread );
             }
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZoneGPU( cev );
+                    ZoomToZoneGPU( { &cev, ctx } );
                 }
-                ZoneTooltipGPU( cev );
+                ZoneTooltipGPU( { &cev, ctx } );
             }
             ImGui::PopID();
             ImGui::NextColumn();
@@ -1881,18 +1881,18 @@ void View::ShowZoneInfo( const ZoneEvent& ev )
 
     if( m_gpuInfoWindow )
     {
-        m_gpuInfoWindow = nullptr;
+        m_gpuInfoWindow = { nullptr, nullptr };
         m_gpuInfoStack.clear();
     }
 }
 
-void View::ShowZoneInfo( const ZoneEvent& ev, uint64_t thread )
+void View::ShowZoneInfo( const ZoneEventC ev, uint64_t thread )
 {
-    if( m_gpuInfoWindow && m_gpuInfoWindow != &ev )
+    if( m_gpuInfoWindow && m_gpuInfoWindow != ev )
     {
         m_gpuInfoStack.push_back( m_gpuInfoWindow );
     }
-    m_gpuInfoWindow = &ev;
+    m_gpuInfoWindow = ev;
     m_gpuInfoWindowThread = thread;
 
     if( m_zoneInfoWindow )
@@ -1981,9 +1981,10 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::EndTooltip();
 }
 
-void View::ZoneTooltipGPU( const ZoneEvent& evt )
+void View::ZoneTooltipGPU( const ZoneEventC evtC )
 {
-    const auto& ev = m_worker.GetGpuExtra(evt);
+    const auto& ev = m_worker.GetGpuExtra(*evtC.event);
+    auto ctx = evtC.ctx;
     const auto tid = GetZoneThreadGPU( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto end = m_worker.GetZoneEndGPU( ev );
@@ -2018,7 +2019,6 @@ void View::ZoneTooltipGPU( const ZoneEvent& evt )
         TextDisabledUnformatted( buf );
     }
     TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
-    auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
         TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );

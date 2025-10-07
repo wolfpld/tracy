@@ -797,6 +797,17 @@ struct GpuCtxData
 
 enum { GpuCtxDataSize = sizeof( GpuCtxData ) };
 
+struct ZoneEventC
+{
+    tracy_force_inline ZoneEventC(const ZoneEvent* event, const GpuCtxData* ctx): event(event), ctx(ctx) {}
+
+    tracy_force_inline operator bool() const { return event != nullptr; }
+    tracy_force_inline bool operator==( const ZoneEventC& other ) const { return other.event == event; }
+    tracy_force_inline bool operator==( const ZoneEvent* other ) const { return other == event; }
+
+    const ZoneEvent* event;
+    const GpuCtxData* ctx;
+};
 
 enum class PlotType : uint8_t
 {

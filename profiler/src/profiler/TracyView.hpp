@@ -255,11 +255,11 @@ private:
     void DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int offset, uint64_t tid, int maxDepth, double margin );
     void DrawThreadCropper( const int depth, const uint64_t tid, const float xPos, const float yPos, const float ostep, const float cropperWidth, const bool hasCtxSwitches );
     void DrawContextSwitchList( const TimelineContext& ctx, const std::vector<ContextSwitchDraw>& drawList, const Vector<ContextSwitchData>& ctxSwitch, int offset, int endOffset, bool isFiber );
-    int DispatchGpuZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int DispatchGpuZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, const GpuCtxData* ctx, float yMin, float yMax, int64_t begin, int drift );
     template<typename Adapter, typename V>
-    int DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, const GpuCtxData* ctx, float yMin, float yMax, int64_t begin, int drift );
     template<typename Adapter, typename V>
-    int SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, const GpuCtxData* ctx, float yMin, float yMax, int64_t begin, int drift );
     void DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint8_t tid );
     int DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_ptr<LockDraw>>& lockDraw, uint64_t tid, int _offset, LockHighlight& highlight );
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem& item, double prev, PlotType type, PlotValueFormatting format, float PlotHeight, uint64_t name );
@@ -320,7 +320,7 @@ private:
     template<typename Adapter, typename V>
     void DrawZoneInfoChildren( const V& children, int64_t ztime );
     template<typename Adapter, typename V>
-    void DrawGpuInfoChildren( const V& children, int64_t ztime );
+    void DrawGpuInfoChildren( const V& children, int64_t ztime, const GpuCtxData* ctx );
 
     void HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w );
     void HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w );
@@ -338,16 +338,16 @@ private:
     ZoneColorData GetZoneColorData( const ZoneEvent& ev );
 
     void ZoomToZone( const ZoneEvent& ev );
-    void ZoomToZoneGPU( const ZoneEvent& ev );
+    void ZoomToZoneGPU( const ZoneEventC ev );
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
     void CenterAtTime( int64_t t );
 
     void ShowZoneInfo( const ZoneEvent& ev );
-    void ShowZoneInfo( const ZoneEvent& ev, uint64_t thread );
+    void ShowZoneInfo( const ZoneEventC ev, uint64_t thread );
 
     void ZoneTooltip( const ZoneEvent& ev );
-    void ZoneTooltipGPU( const ZoneEvent& ev );
+    void ZoneTooltipGPU( const ZoneEventC ev );
     void CallstackTooltip( uint32_t idx );
     void CallstackTooltipContents( uint32_t idx );
     void CrashTooltip();
@@ -357,11 +357,10 @@ private:
     const ZoneEvent* GetZoneChild( const ZoneEvent& zone, int64_t time ) const;
     bool IsZoneReentry( const ZoneEvent& zone ) const;
     bool IsZoneReentry( const ZoneEvent& zone, uint64_t tid ) const;
-    const ZoneEvent* GetZoneParentGPU( const ZoneEvent& zone ) const;
+    ZoneEventC GetZoneParentGPU( const ZoneEventC zone ) const;
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
     uint64_t GetZoneThreadGPU( const EventAdapter<true>& zone ) const;
-    const GpuCtxData* GetZoneCtx( const ZoneEvent& zone ) const;
     bool FindMatchingZone( int prev0, int prev1, int flags );
     const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
     uint64_t GetFrameNumber( const FrameData& fd, int i ) const;
@@ -477,7 +476,7 @@ private:
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
     DecayValue<const MessageData*> m_msgToFocus = nullptr;
-    const ZoneEvent* m_gpuInfoWindow = nullptr;
+    ZoneEventC m_gpuInfoWindow = {nullptr, nullptr};
     const ZoneEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
     uint32_t m_callstackInfoWindow = 0;
@@ -573,7 +572,7 @@ private:
     BuzzAnim<uint32_t> m_statBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
-    Vector<const ZoneEvent*> m_gpuInfoStack;
+    Vector<ZoneEventC> m_gpuInfoStack;
 
     SourceContents m_srcHintCache;
     std::unique_ptr<SourceView> m_sourceView;

@@ -10,11 +10,12 @@ void View::ZoomToZone( const ZoneEvent& ev )
     ZoomToRange( ev.Start(), end );
 }
 
-void View::ZoomToZoneGPU( const ZoneEvent& ev )
+void View::ZoomToZoneGPU( const ZoneEventC evC )
 {
+    auto& ev = *evC.event;
+    auto ctx = evC.ctx;
     const auto end = m_worker.GetZoneEndGPU( ev );
     if( end - ev.Start() <= 0 ) return;
-    auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
         ZoomToRange( ev.Start(), end );

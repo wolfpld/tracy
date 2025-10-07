@@ -2359,7 +2359,7 @@ const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len )
     return it;
 }
 
-int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev, const Vector<Vector<short_ptr<ZoneEvent>>>& childArray )
+int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev, const Vector<Vector<short_ptr<ZoneEvent>>>& childArray ) const
 {
     assert( !ev.IsEndValid() );
     auto ptr = &ev;

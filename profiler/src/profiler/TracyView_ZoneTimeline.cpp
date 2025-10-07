@@ -351,7 +351,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             const auto pr1 = ( end - vStart ) * pxns;
             const auto zsz = std::max( pr1 - pr0, pxns * 0.5 );
 
-            const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
+            const auto zoneColor = GetZoneColorData( { &ev, nullptr }, tid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );

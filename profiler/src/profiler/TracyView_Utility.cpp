@@ -49,13 +49,13 @@ uint32_t View::GetSrcLocColor( const SourceLocation& srcloc, int depth )
     return GetRawSrcLocColor( srcloc, depth );
 }
 
-uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
+uint32_t View::GetZoneColor( const ZoneEventC ev, uint64_t thread, int depth )
 {
     const auto sl = ev.SrcLoc();
     const auto& srcloc = m_worker.GetSourceLocation( sl );
     if( !m_vd.forceColors )
     {
-        if( m_worker.HasZoneExtra( ev ) )
+        if( m_worker.HasZoneExtra( *ev.event ) )
         {
             const auto custom_color = m_worker.GetZoneExtra( ev ).color.Val();
             if( custom_color != 0 ) return custom_color | 0xFF000000;
@@ -77,25 +77,18 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
     }
 }
 
-uint32_t View::GetZoneColor( const ZoneEvent& ev )
-{
-    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
-    const auto color = srcloc.color;
-    return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
-}
-
-View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t inheritedColor )
+View::ZoneColorData View::GetZoneColorData( const ZoneEventC ev, uint64_t thread, int depth, uint32_t inheritedColor )
 {
     ZoneColorData ret;
     const auto& srcloc = ev.SrcLoc();
-    if( m_zoneInfoWindow == &ev )
+    if( m_zoneInfoWindow == ev.event )
     {
         ret.color = inheritedColor ? inheritedColor : GetZoneColor( ev, thread, depth );
         ret.accentColor = 0xFF44DD44;
         ret.thickness = 3.f;
         ret.highlight = true;
     }
-    else if( m_zoneHighlight == &ev )
+    else if( m_zoneHighlight == ev.event )
     {
         ret.color = inheritedColor ? inheritedColor : GetZoneColor( ev, thread, depth );
         ret.accentColor = 0xFF4444FF;
@@ -135,33 +128,6 @@ View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread
     }
     return ret;
 }
-
-View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev )
-{
-    ZoneColorData ret;
-    const auto color = GetZoneColor( ev );
-    ret.color = color;
-    if( m_gpuInfoWindow == &ev )
-    {
-        ret.accentColor = 0xFF44DD44;
-        ret.thickness = 3.f;
-        ret.highlight = true;
-    }
-    else if( m_gpuHighlight == &ev )
-    {
-        ret.accentColor = 0xFF4444FF;
-        ret.thickness = 3.f;
-        ret.highlight = true;
-    }
-    else
-    {
-        ret.accentColor = HighlightColor( color );
-        ret.thickness = 1.f;
-        ret.highlight = false;
-    }
-    return ret;
-}
-
 
 const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
 {

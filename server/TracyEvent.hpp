@@ -801,6 +801,14 @@ struct ZoneEventC
 {
     tracy_force_inline ZoneEventC(const ZoneEvent* event, const GpuCtxData* ctx): event(event), ctx(ctx) {}
 
+    tracy_force_inline int64_t Start() const { return event->Start(); }
+    tracy_force_inline int64_t End() const { return event->End(); }
+    tracy_force_inline bool IsEndValid() const { return event->IsEndValid(); }
+    tracy_force_inline int16_t SrcLoc() const { return event->SrcLoc(); }
+    tracy_force_inline int32_t Child() const { return event->Child(); }
+    tracy_force_inline bool HasChildren() const { return event->HasChildren(); }
+    tracy_force_inline bool IsGpu() const { return ctx != nullptr; }
+
     tracy_force_inline operator bool() const { return event != nullptr; }
     tracy_force_inline bool operator==( const ZoneEventC& other ) const { return other.event == event; }
     tracy_force_inline bool operator==( const ZoneEvent* other ) const { return other == event; }

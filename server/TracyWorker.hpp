@@ -579,6 +579,7 @@ public:
     //     before its children have ended).
     // GetZoneEndDirect() will only return zone's direct timing data, without looking at children.
     tracy_force_inline int64_t GetZoneEnd( const ZoneEvent& ev ) { return ev.IsEndValid() ? ev.End() : GetZoneEndImpl( ev, m_data.zoneChildren ); }
+    tracy_force_inline int64_t GetZoneEnd( const ZoneEventC ev ) const { return ev.IsEndValid() ? ev.End() : GetZoneEndImpl( *ev.event, ev.IsGpu() ? m_data.gpuChildren : m_data.zoneChildren ); }
     tracy_force_inline int64_t GetZoneEndGPU( const ZoneEvent& ev ) { return ev.IsEndValid() ? ev.End() : GetZoneEndImpl( ev, m_data.gpuChildren ); }
     static tracy_force_inline int64_t GetZoneEndDirect( const ZoneEvent& ev ) { return ev.IsEndValid() ? ev.End() : ev.Start(); }
 
@@ -606,6 +607,7 @@ public:
     tracy_force_inline const bool HasZoneExtra( const ZoneEvent& ev ) const { return ev.extra != 0; }
     tracy_force_inline const ZoneExtra& GetZoneExtra( const ZoneEvent& ev ) const { return m_data.zoneExtra[ev.extra]; }
     tracy_force_inline const EventAdapter<true> GetGpuExtra( const ZoneEvent& ev ) const { return { ev, m_data.gpuExtra[ev.extra] }; }
+    tracy_force_inline const ZoneExtra& GetZoneExtra( const ZoneEventC ev ) const { return ev.IsGpu() ? m_data.gpuExtra[ev.event->extra] : m_data.zoneExtra[ev.event->extra]; }
 
     std::vector<int16_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
@@ -959,7 +961,7 @@ private:
     tracy_force_inline ZoneExtra& AllocZoneExtra( ZoneEvent& ev );
     tracy_force_inline ZoneExtra& RequestZoneExtra( ZoneEvent& ev );
 
-    int64_t GetZoneEndImpl( const ZoneEvent& ev, const Vector<Vector<short_ptr<ZoneEvent>>>& childArray );
+    int64_t GetZoneEndImpl( const ZoneEvent& ev, const Vector<Vector<short_ptr<ZoneEvent>>>& childArray ) const;
 
     void UpdateMbps( int64_t td );
 

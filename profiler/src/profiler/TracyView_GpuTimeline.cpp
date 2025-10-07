@@ -162,7 +162,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
         const auto zoneThread = ctx->thread != 0 ? ctx->thread : m_worker.DecompressThread( ev.Thread() );
         if( zsz < MinVisSize )
         {
-            const auto color = GetZoneColor( ev );
+            const auto color = GetZoneColor( { &ev.event, ctx }, zoneThread, depth );
             const auto MinVisNs = MinVisSize * nspx;
             int num = 0;
             const auto px0 = ( start - m_vd.zvStart ) * pxns;
@@ -242,7 +242,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
             const auto pr1 = ( end - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
-            const auto zoneColor = GetZoneColorData( ev );
+            const auto zoneColor = GetZoneColorData( { &ev.event, ctx }, zoneThread, depth, 0 );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), zoneColor.color );
             if( zoneColor.highlight )
             {

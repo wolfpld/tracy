@@ -358,43 +358,49 @@ void View::DrawTimeline()
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
-    if( m_vd.drawGpuZones )
+    for( auto& v : m_worker.GetCtxData() )
     {
-        for( auto& v : m_worker.GetGpuData() )
+        // TODO: Consolidate handling here.
+        if( m_vd.drawGpuZones && v->type != ZoneContextType::CPU )
         {
-            m_tc.AddItem<TimelineItemGpu>( v );
+            m_tc.AddItem<TimelineItemGpu>( static_cast<GpuCtxData*>( v ) );
         }
-    }
-    if( m_vd.drawCpuData && m_worker.HasContextSwitches() )
-    {
-        static char uptr;
-        m_tc.AddItem<TimelineItemCpuData>( &uptr );
-    }
-    if( m_vd.drawZones )
-    {
-        const auto& threadData = m_worker.GetThreadData();
-        if( threadData.size() != m_threadOrder.size() )
+        else if( v->type == ZoneContextType::CPU )
         {
-            m_threadOrder.reserve( threadData.size() );
-            // Only new threads are in the end of the worker's ThreadData vector.
-            // Threads which get reordered by received thread hints are not new, yet removed from m_threadOrder.
-            // Therefore, those are kept in the m_threadReinsert vector. As such, we will gather first threads from the
-            // reinsert vector, and afterwards the remaining ones must be new (and thus found at the end of threadData).
-            size_t numReinsert = m_threadReinsert.size();
-            size_t numNew = threadData.size() - m_threadOrder.size() - numReinsert;
-            for( size_t i = 0; i < numReinsert + numNew; i++ )
+            if( m_vd.drawCpuData && m_worker.HasContextSwitches() )
             {
-                const ThreadData *td = i < numReinsert ? m_threadReinsert[i] : threadData[m_threadOrder.size()];
-                auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [td]( const auto t ) { return td->groupHint < t->groupHint; } );
-                m_threadOrder.insert( it, td );
+                static char uptr;
+                m_tc.AddItem<TimelineItemCpuData>( &uptr );
             }
-            m_threadReinsert.clear();
-        }
-        for( const auto& v : m_threadOrder )
-        {
-            m_tc.AddItem<TimelineItemThread>( v );
+
+            if( m_vd.drawZones )
+            {
+                const auto& threadData = v->threads;
+                if( threadData.size() != m_threadOrder.size() )
+                {
+                    m_threadOrder.reserve( threadData.size() );
+                    // Only new threads are in the end of the worker's ThreadData vector.
+                    // Threads which get reordered by received thread hints are not new, yet removed from m_threadOrder.
+                    // Therefore, those are kept in the m_threadReinsert vector. As such, we will gather first threads from the
+                    // reinsert vector, and afterwards the remaining ones must be new (and thus found at the end of threadData).
+                    size_t numReinsert = m_threadReinsert.size();
+                    size_t numNew = threadData.size() - m_threadOrder.size() - numReinsert;
+                    for( size_t i = 0; i < numReinsert + numNew; i++ )
+                    {
+                        const ThreadData* td = i < numReinsert ? m_threadReinsert[i] : threadData[m_threadOrder.size()];
+                        auto it = std::find_if( m_threadOrder.begin(), m_threadOrder.end(), [td]( const auto t ) { return td->groupHint < t->groupHint; } );
+                        m_threadOrder.insert( it, td );
+                    }
+                    m_threadReinsert.clear();
+                }
+                for( const auto& v : m_threadOrder )
+                {
+                    m_tc.AddItem<TimelineItemThread>( v );
+                }
+            }
         }
     }
+
     if( m_vd.drawPlots )
     {
         for( const auto& v : m_worker.GetPlots() )
@@ -470,13 +476,6 @@ void View::DrawTimeline()
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuEnd - m_vd.zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x228888DD );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x448888DD );
-    }
-    if( m_gpuInfoWindow )
-    {
-        const auto px0 = ( m_gpuInfoWindow->CpuStart() - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->CpuEnd() - m_vd.zvStart ) * pxns );
-        draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DD88 );
-        draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
     const auto scale = GetScale();

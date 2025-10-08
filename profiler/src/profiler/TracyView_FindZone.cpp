@@ -27,7 +27,8 @@ void View::FindZones()
     auto it = m_findZone.match.begin();
     while( it != m_findZone.match.end() )
     {
-        if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
+        auto p = m_worker.GetZonesForSourceLocation( *it );
+        if( p.second == nullptr || p.first.zones.empty() )
         {
             it = m_findZone.match.erase( it );
         }
@@ -39,7 +40,7 @@ void View::FindZones()
 }
 #endif
 
-uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const
+uint64_t View::GetSelectionTarget( const ZoneContext::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const
 {
     switch( groupBy )
     {
@@ -230,7 +231,7 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
                 {
                     ZoomToZone( *ev );
                 }
-                ZoneTooltip( *ev );
+                ZoneTooltip( *ev, *GetZoneThreadData( *ev ) );
                 m_zoneHover2 = ev;
             }
 
@@ -378,8 +379,9 @@ void View::DrawFindZone()
             int idx = 0;
             for( auto& v : m_findZone.match )
             {
+                auto p = m_worker.GetZonesForSourceLocation( v );
                 auto& srcloc = m_worker.GetSourceLocation( v );
-                auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                auto& zones = p.first.zones;
                 SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                 ImGui::SameLine();
                 ImGui::PushID( idx );
@@ -396,6 +398,8 @@ void View::DrawFindZone()
                 {
                     ImGui::SameLine();
                 }
+                ImGui::TextColored( ImVec4( 1.0, 1.0, 0.0, 1 ), "[%s]", m_worker.GetCtxName( p.second ).c_str() );
+                ImGui::SameLine();
                 const auto fileName = m_worker.GetString( srcloc.file );
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s", RealToString( zones.size() ), LocationToString( fileName, srcloc.line ) );
                 if( ImGui::IsItemHovered() )
@@ -430,7 +434,7 @@ void View::DrawFindZone()
 
         ImGui::Separator();
 
-        auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+        auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).first;
         auto& zones = zoneData.zones;
         zones.ensure_sorted();
         if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )

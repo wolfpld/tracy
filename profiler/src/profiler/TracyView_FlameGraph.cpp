@@ -735,6 +735,11 @@ void View::DrawFlameGraph()
     ImGui::Begin( "Flame graph", &m_showFlameGraph, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
+    ContextCombo( m_flameCtxName, &m_flameCtx );
+    auto ctx = m_worker.GetCtxData()[m_flameCtx];
+
+    ImGui::SameLine();
+
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
     if( ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_flameMode, 0 ) ) m_flameGraphInvariant.Reset();
 
@@ -798,14 +803,14 @@ void View::DrawFlameGraph()
         ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
 
-    auto& td = m_worker.GetThreadData();
+    auto& td = ctx->threads;
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
     size_t visibleThreads = 0;
     size_t tsz = 0;
     for( const auto& t : td )
     {
-        if( FlameGraphThread( t->id ) ) visibleThreads++;
+        if( FlameGraphThread( ctx, t->id ) ) visibleThreads++;
         tsz++;
     }
     if( visibleThreads == tsz )
@@ -823,7 +828,7 @@ void View::DrawFlameGraph()
         {
             for( const auto& t : td )
             {
-                FlameGraphThread( t->id ) = true;
+                FlameGraphThread( ctx, t->id ) = true;
             }
             m_flameGraphInvariant.Reset();
         }
@@ -832,7 +837,7 @@ void View::DrawFlameGraph()
         {
             for( const auto& t : td )
             {
-                FlameGraphThread( t->id ) = false;
+                FlameGraphThread( ctx, t->id ) = false;
             }
             m_flameGraphInvariant.Reset();
         }
@@ -844,7 +849,7 @@ void View::DrawFlameGraph()
             const auto threadColor = GetThreadColor( t->id, 0 );
             SmallColorBox( threadColor );
             ImGui::SameLine();
-            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) ) m_flameGraphInvariant.Reset();
+            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( ctx, t->id ) ) ) m_flameGraphInvariant.Reset();
             ImGui::PopID();
             if( t->isFiber )
             {
@@ -865,7 +870,7 @@ void View::DrawFlameGraph()
         m_flameGraphInvariant.range = m_flameRange;
 
         size_t sz = 0;
-        for( auto& thread : td ) if( FlameGraphThread( thread->id ) ) sz++;
+        for( auto& thread : td ) if( FlameGraphThread( ctx, thread->id ) ) sz++;
 
         std::vector<std::vector<FlameGraphItem>> threadData;
         threadData.resize( sz );
@@ -875,7 +880,7 @@ void View::DrawFlameGraph()
         {
             for( auto& thread : td )
             {
-                if( FlameGraphThread( thread->id ) )
+                if( FlameGraphThread( ctx, thread->id ) )
                 {
                     if( m_flameRunningTime )
                     {
@@ -904,10 +909,14 @@ void View::DrawFlameGraph()
         {
             for( auto& thread : td )
             {
-                if( FlameGraphThread( thread->id ) )
+                if( FlameGraphThread( ctx, thread->id ) )
                 {
                     m_td.Queue( [this, idx, thread, &threadData] {
-                        BuildFlameGraph( m_worker, threadData[idx], thread->samples );
+                        if( thread->ctx->type == ZoneContextType::CPU )
+                        {
+                            const Vector<SampleData>& sampleData = static_cast<const CPUThreadData*>( thread )->samples;
+                            BuildFlameGraph( m_worker, threadData[idx], sampleData );
+                        }
                     } );
                     idx++;
                 }

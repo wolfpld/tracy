@@ -1049,14 +1049,14 @@ private:
     StringLocation m_pendingSingleString = {};
     StringLocation m_pendingSecondString = {};
 
-    uint32_t m_pendingStrings;
-    uint32_t m_pendingThreads;
-    uint32_t m_pendingFibers;
-    uint32_t m_pendingExternalNames;
-    uint32_t m_pendingSourceLocation;
-    uint32_t m_pendingCallstackFrames;
-    uint8_t m_pendingCallstackSubframes;
-    uint32_t m_pendingSymbolCode;
+    uint32_t m_pendingStrings = 0;
+    uint32_t m_pendingThreads = 0;
+    uint32_t m_pendingFibers = 0;
+    uint32_t m_pendingExternalNames = 0;
+    uint32_t m_pendingSourceLocation = 0;
+    uint32_t m_pendingCallstackFrames = 0;
+    uint8_t m_pendingCallstackSubframes = 0;
+    uint32_t m_pendingSymbolCode = 0;
 
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;

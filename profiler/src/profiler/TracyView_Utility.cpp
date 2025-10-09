@@ -491,6 +491,11 @@ uint64_t View::GetZoneThreadGPU( const EventAdapter<true>& zone ) const
     }
 }
 
+uint64_t View::GetZoneThread( const ZoneEventC evC ) const
+{
+    return evC.IsGpu() ? GetZoneThreadGPU( m_worker.GetGpuExtra( *evC.event ) ) : GetZoneThread( *evC.event );
+}
+
 int64_t View::GetZoneChildTime( const ZoneEvent& zone, bool gpu )
 {
     int64_t time = 0;

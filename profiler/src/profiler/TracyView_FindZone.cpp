@@ -230,7 +230,7 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
                 {
                     ZoomToZone( *ev );
                 }
-                ZoneTooltip( *ev );
+                ZoneTooltip( { ev, nullptr } );
                 m_zoneHover2 = ev;
             }
 

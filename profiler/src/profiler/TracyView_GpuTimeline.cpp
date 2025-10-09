@@ -203,7 +203,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 }
                 else
                 {
-                    ZoneTooltipGPU( { &ev.event, ctx } );
+                    ZoneTooltip( { &ev.event, ctx } );
 
                     if( IsMouseClicked( 2 ) && rend - start > 0 )
                     {
@@ -288,7 +288,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
             {
-                ZoneTooltipGPU( { &ev.event, ctx } );
+                ZoneTooltip( { &ev.event, ctx } );
 
                 if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                 {

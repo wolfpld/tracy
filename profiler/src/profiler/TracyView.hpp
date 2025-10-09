@@ -344,8 +344,7 @@ private:
     void ShowZoneInfo( const ZoneEvent& ev );
     void ShowZoneInfo( const ZoneEventC ev, uint64_t thread );
 
-    void ZoneTooltip( const ZoneEvent& ev );
-    void ZoneTooltipGPU( const ZoneEventC ev );
+    void ZoneTooltip( const ZoneEventC ev );
     void CallstackTooltip( uint32_t idx );
     void CallstackTooltipContents( uint32_t idx );
     void CrashTooltip();
@@ -359,6 +358,7 @@ private:
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
     uint64_t GetZoneThreadGPU( const EventAdapter<true>& zone ) const;
+    uint64_t GetZoneThread( const ZoneEventC evC ) const;
     bool FindMatchingZone( int prev0, int prev1, int flags );
     const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
     uint64_t GetFrameNumber( const FrameData& fd, int i ) const;

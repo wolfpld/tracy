@@ -1727,7 +1727,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 auto& vec = *(Vector<ZoneEvent>*)( &_vec );
                 for( auto& zone : vec )
                 {
-                    if( zone.IsEndValid() ) ReconstructZoneStatistics( countMap, zone, thread );
+                    if( zone.IsEndValid() ) ReconstructZoneStatistics( countMap, zone, thread, false );
                     if( zone.HasChildren() )
                     {
                         countMap[uint16_t(zone.SrcLoc())]++;
@@ -1752,18 +1752,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 m_data.sourceLocationZonesReady = true;
             } ) );
 
-            std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimelineGpu;
-            ProcessTimelineGpu = [this, &ProcessTimelineGpu] ( Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
+            std::function<void(uint8_t*, Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimelineGpu;
+            ProcessTimelineGpu = [this, &ProcessTimelineGpu] ( uint8_t* countMap, Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 assert( _vec.is_magic() );
                 auto& vec = *(Vector<ZoneEvent>*)( &_vec );
                 for( auto& zone : vec )
                 {
-                    if( zone.End() >= 0 ) ReconstructZoneStatistics( zone, thread );
+                    if( zone.IsEndValid() ) ReconstructZoneStatistics( countMap, zone, thread, true );
                     if( zone.Child() >= 0 )
                     {
-                        ProcessTimelineGpu( GetGpuChildrenMutable( zone.Child() ), thread );
+                        countMap[uint16_t(zone.SrcLoc())]++;
+                        ProcessTimelineGpu( countMap, GetGpuChildrenMutable( zone.Child() ), thread );
+                        countMap[uint16_t(zone.SrcLoc())]--;
                     }
                 }
             };
@@ -1776,7 +1778,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                         if( !td.second.timeline.empty() )
                         {
-                            ProcessTimelineGpu( td.second.timeline, td.first );
+                            uint8_t countMap[64*1024];
+                            ProcessTimelineGpu( countMap, td.second.timeline, td.first );
                         }
                     }
                 }
@@ -7686,14 +7689,15 @@ void Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t& refTim
 }
 
 #ifndef TRACY_NO_STATISTICS
-void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint16_t thread )
+void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint16_t thread, bool is_gpu )
 {
     assert( zone.IsEndValid() );
     auto timeSpan = zone.End() - zone.Start();
     if( timeSpan > 0 )
     {
-        auto it = m_data.sourceLocationZones.find( zone.SrcLoc() );
-        assert( it != m_data.sourceLocationZones.end() );
+        auto& slzMap = is_gpu ? m_data.gpuSourceLocationZones : m_data.sourceLocationZones;
+        auto it = slzMap.find( zone.SrcLoc() );
+        assert( it != slzMap.end() );
 
         ZoneThreadData ztd;
         ztd.SetZone( &zone );
@@ -7716,7 +7720,7 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
 
         if( zone.HasChildren() )
         {
-            auto& children = GetZoneChildren( zone.Child() );
+            auto& children = is_gpu ? GetGpuChildren( zone.Child() ) : GetZoneChildren( zone.Child() );
             assert( children.is_magic() );
             auto& c = *(Vector<ZoneEvent>*)( &children );
             for( auto& v : c )
@@ -7742,28 +7746,6 @@ void Worker::ReconstructZoneStatistics( uint8_t* countMap, ZoneEvent& zone, uint
     }
 }
 
-void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
-{
-    assert( zone.End() >= 0 );
-    auto timeSpan = zone.End() - zone.Start();
-    if( timeSpan > 0 )
-    {
-        auto it = m_data.gpuSourceLocationZones.find( zone.SrcLoc() );
-        if( it == m_data.gpuSourceLocationZones.end() )
-        {
-            it = m_data.gpuSourceLocationZones.emplace( zone.SrcLoc(), SourceLocationZones {} ).first;
-        }
-        ZoneThreadData ztd;
-        ztd.SetZone( &zone );
-        ztd.SetThread( thread );
-        auto& slz = it->second;
-        slz.zones.push_back( ztd );
-        if( slz.min > timeSpan ) slz.min = timeSpan;
-        if( slz.max < timeSpan ) slz.max = timeSpan;
-        slz.total += timeSpan;
-        slz.sumSq += double( timeSpan ) * timeSpan;
-    }
-}
 #else
 void Worker::CountZoneStatistics( ZoneEvent* zone )
 {

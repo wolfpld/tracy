@@ -364,8 +364,8 @@ void View::DrawStatistics()
                             for( auto& v : it->second.zones )
                             {
                                 auto& z = *v.Zone();
-                                const auto start = z.GpuStart();
-                                const auto end = z.GpuEnd();
+                                const auto start = z.Start();
+                                const auto end = z.End();
                                 if( start >= min && end <= max )
                                 {
                                     const auto zt = end - start;
@@ -403,8 +403,8 @@ void View::DrawStatistics()
                                 for( auto& v : it->second.zones )
                                 {
                                     auto& z = *v.Zone();
-                                    const auto start = z.GpuStart();
-                                    const auto end = z.GpuEnd();
+                                    const auto start = z.Start();
+                                    const auto end = z.End();
                                     if( start >= min && end <= max )
                                     {
                                         const auto zt = end - start;

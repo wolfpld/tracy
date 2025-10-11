@@ -123,44 +123,85 @@ void DestroyImageEntry( ImageEntry& entry )
     tracy_free( entry.m_name );
 }
 
-#ifdef TRACY_USE_IMAGE_CACHE
-// when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
-// so we can quickly determine which image an address falls into.
-// We refresh this cache only when we hit an address that doesn't fall into any known range.
 class ImageCache
 {
 public:
-
-    ImageCache()
-        : m_images( 512 )
+    
+    ImageCache( size_t imageCacheCapacity = 512 )
+        : m_images( imageCacheCapacity )
     {
-        Refresh();
     }
 
     ~ImageCache()
     {
         Clear();
     }
+    
+    const ImageEntry* GetImageForAddress( uint64_t address ) const
+    {
+        auto it = std::lower_bound( m_images.begin(), m_images.end(), address,
+            []( const ImageEntry& lhs, const uint64_t rhs ) { return lhs.m_startAddress > rhs; } );
+
+        if( it != m_images.end() && address < it->m_endAddress )
+        {
+            return it;
+        }
+        return nullptr;
+    }
+
+    void Clear()
+    {
+        for( ImageEntry& entry : m_images )
+        {
+            DestroyImageEntry( entry );
+        }
+
+        m_images.clear();
+    }
+
+    bool ContainsImage( uint64_t startAddress ) const
+    {
+        return std::any_of( m_images.begin(), m_images.end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
+    }
+protected:
+    tracy::FastVector<ImageEntry> m_images;
+};
+
+#ifdef TRACY_USE_IMAGE_CACHE
+// when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
+// so we can quickly determine which image an address falls into.
+// We refresh this cache only when we hit an address that doesn't fall into any known range.
+class ImageCacheDlIteratePhdr : public ImageCache
+{
+public:
+
+    ImageCacheDlIteratePhdr()
+    {
+        Refresh();
+    }
+
+    ~ImageCacheDlIteratePhdr()
+    {
+    }
 
     const ImageEntry* GetImageForAddress( uint64_t address )
     {
-        const ImageEntry* entry = GetImageForAddressImpl( address );
+        const ImageEntry* entry = ImageCache::GetImageForAddress( address );
         if( !entry )
         {
             Refresh();
-            return GetImageForAddressImpl( address );
+            return ImageCache::GetImageForAddress( address );
         }
         return entry;
     }
 
 private:
-    tracy::FastVector<ImageEntry> m_images;
     bool m_updated = false;
     bool m_haveMainImageName = false;
 
     static int Callback( struct dl_phdr_info* info, size_t size, void* data )
     {
-        ImageCache* cache = reinterpret_cast<ImageCache*>( data );
+        ImageCacheDlIteratePhdr* cache = reinterpret_cast<ImageCacheDlIteratePhdr*>( data );
 
         const auto startAddress = static_cast<uint64_t>( info->dlpi_addr );
         if( cache->ContainsImage( startAddress ) ) return 0;
@@ -190,11 +231,6 @@ private:
         cache->m_updated = true;
 
         return 0;
-    }
-
-    bool ContainsImage( uint64_t startAddress ) const
-    {
-        return std::any_of( m_images.begin(), m_images.end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
     }
 
     void Refresh()
@@ -241,27 +277,9 @@ private:
 
         m_haveMainImageName = true;
     }
-
-    const ImageEntry* GetImageForAddressImpl( uint64_t address ) const
-    {
-        auto it = std::lower_bound( m_images.begin(), m_images.end(), address,
-            []( const ImageEntry& lhs, const uint64_t rhs ) { return lhs.m_startAddress > rhs; } );
-
-        if( it != m_images.end() && address < it->m_endAddress )
-        {
-            return it;
-        }
-        return nullptr;
-    }
-
     void Clear()
     {
-        for( ImageEntry& entry : m_images )
-        {
-            DestroyImageEntry( entry );
-        }
-
-        m_images.clear();
+        ImageCache::Clear();
         m_haveMainImageName = false;
     }
 };
@@ -784,7 +802,7 @@ int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
 #ifdef TRACY_USE_IMAGE_CACHE
-static ImageCache* s_imageCache = nullptr;
+static ImageCacheDlIteratePhdr* s_imageCache = nullptr;
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 
 #ifdef TRACY_DEBUGINFOD
@@ -981,8 +999,8 @@ void InitCallstack()
     InitRpmalloc();
 
 #ifdef TRACY_USE_IMAGE_CACHE
-    s_imageCache = (ImageCache*)tracy_malloc( sizeof( ImageCache ) );
-    new(s_imageCache) ImageCache();
+    s_imageCache = (ImageCacheDlIteratePhdr*)tracy_malloc( sizeof( ImageCacheDlIteratePhdr ) );
+    new(s_imageCache) ImageCacheDlIteratePhdr();
 #endif //#ifdef TRACY_USE_IMAGE_CACHE
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
@@ -1080,7 +1098,7 @@ void EndCallstack()
 #ifdef TRACY_USE_IMAGE_CACHE
     if( s_imageCache )
     {
-        s_imageCache->~ImageCache();
+        s_imageCache->~ImageCacheDlIteratePhdr();
         tracy_free( s_imageCache );
     }
 #endif //#ifdef TRACY_USE_IMAGE_CACHE

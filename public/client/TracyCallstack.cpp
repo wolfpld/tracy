@@ -117,6 +117,10 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 namespace tracy
 {
 
+static bool IsKernelAddress(uint64_t addr) {
+    return (addr >> 63) != 0;
+}
+
 void DestroyImageEntry( ImageEntry& entry )
 {
     tracy_free( entry.m_path );
@@ -600,7 +604,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 const char* GetKernelModulePath( uint64_t addr )
 {
-    assert( addr >> 63 != 0 );
+    assert( IsKernelAddress( addr ) );
     if( !s_krnlCache ) return nullptr;
     const ImageEntry* imageEntry = s_krnlCache->GetImageForAddress( addr );
     if( imageEntry ) return imageEntry->m_path;
@@ -615,7 +619,7 @@ struct ModuleNameAndBaseAddress
 
 ModuleNameAndBaseAddress GetModuleNameAndPrepareSymbols( uint64_t addr )
 {
-    if( ( addr >> 63 ) != 0 )
+    if( IsKernelAddress( addr ) )
     {
         const ImageEntry* entry = s_krnlCache->GetImageForAddress( addr );
         if( entry != nullptr ) return ModuleNameAndBaseAddress{ entry->m_name, entry->m_startAddress };
@@ -1317,7 +1321,7 @@ void GetSymbolForOfflineResolve(void* address, uint64_t imageBaseAddress, Callst
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     InitRpmalloc();
-    if( ptr >> 63 == 0 )
+    if ( !IsKernelAddress( ptr ) )
     {
         const char* imageName = nullptr;
         uint64_t imageBaseAddress = 0x0;

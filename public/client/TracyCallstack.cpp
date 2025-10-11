@@ -110,7 +110,7 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 #endif
 
 #if defined(TRACY_USE_LIBBACKTRACE) && TRACY_HAS_CALLSTACK != 4 // dl_iterate_phdr is required for the current image cache. Need to move it to libbacktrace?
-#   define TRACY_USE_IMAGE_CACHE
+#   define TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 #   include <link.h>
 #endif
 
@@ -188,7 +188,7 @@ protected:
     bool m_sorted = true;
 };
 
-#ifdef TRACY_USE_IMAGE_CACHE
+#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 // when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
 // so we can quickly determine which image an address falls into.
 // We refresh this cache only when we hit an address that doesn't fall into any known range.
@@ -294,7 +294,7 @@ private:
         m_haveMainImageName = false;
     }
 };
-#endif //#ifdef TRACY_USE_IMAGE_CACHE
+#endif //#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 
 // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,
 // simply resolve the offset and image name (which will be enough the resolving to be done offline)
@@ -812,9 +812,9 @@ struct backtrace_state* cb_bts = nullptr;
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 int cb_fixup;
-#ifdef TRACY_USE_IMAGE_CACHE
+#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 static ImageCacheDlIteratePhdr* s_imageCache = nullptr;
-#endif //#ifdef TRACY_USE_IMAGE_CACHE
+#endif //#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 
 #ifdef TRACY_DEBUGINFOD
 debuginfod_client* s_debuginfod;
@@ -1009,10 +1009,10 @@ void InitCallstack()
 {
     InitRpmalloc();
 
-#ifdef TRACY_USE_IMAGE_CACHE
+#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
     s_imageCache = (ImageCacheDlIteratePhdr*)tracy_malloc( sizeof( ImageCacheDlIteratePhdr ) );
     new(s_imageCache) ImageCacheDlIteratePhdr();
-#endif //#ifdef TRACY_USE_IMAGE_CACHE
+#endif //#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 
 #ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
@@ -1106,13 +1106,13 @@ debuginfod_client* GetDebuginfodClient()
 
 void EndCallstack()
 {
-#ifdef TRACY_USE_IMAGE_CACHE
+#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
     if( s_imageCache )
     {
         s_imageCache->~ImageCacheDlIteratePhdr();
         tracy_free( s_imageCache );
     }
-#endif //#ifdef TRACY_USE_IMAGE_CACHE
+#endif //#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
 #ifndef TRACY_DEMANGLE
     ___tracy_free_demangle_buffer();
 #endif
@@ -1307,7 +1307,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         const char* imageName = nullptr;
         uint64_t imageBaseAddress = 0x0;
 
-#ifdef TRACY_USE_IMAGE_CACHE
+#ifdef TRACY_HAS_DL_ITERATE_PHDR_TO_REFRESH_IMAGE_CACHE
         const auto* image = s_imageCache->GetImageForAddress( ptr );
         if( image )
         {

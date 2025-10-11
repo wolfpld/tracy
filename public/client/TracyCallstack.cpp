@@ -445,38 +445,11 @@ ImageEntry* LoadSymbolsForModuleAndCache( const char* imagePath, uint32_t imageN
     return CacheModuleInfo( imagePath, imageNameLength, baseOfDll, dllSize );
 }
 
-void InitCallstack()
+static void CacheProcessDrivers()
 {
-#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
-    s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
-#endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
-    if( s_shouldResolveSymbolsOffline )
-    {
-        TracyDebug("TRACY: enabling offline symbol resolving!\n");
-    }
-
-    CreateImageCaches();
-
-    DbgHelpInit();
-
-#ifdef TRACY_DBGHELP_LOCK
-    DBGHELP_LOCK;
-#endif
-
-    // use TRACY_NO_DBGHELP_INIT_LOAD=1 to disable preloading of driver
-    // and process module symbol loading at startup time - they will be loaded on demand later
-    // Sometimes this process can take a very long time and prevent resolving callstack frames
-    // symbols during that time.
-    const char* noInitLoadEnv = GetEnvVar( "TRACY_NO_DBGHELP_INIT_LOAD" );
-    const bool initTimeModuleLoad = !( noInitLoadEnv && noInitLoadEnv[0] == '1' );
-    if ( !initTimeModuleLoad )
-    {
-        TracyDebug("TRACY: skipping init time dbghelper module load\n");
-    }
-
     DWORD needed;
     LPVOID dev[4096];
-    if( initTimeModuleLoad && EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
+    if( EnumDeviceDrivers( dev, sizeof(dev), &needed ) != 0 )
     {
         char windir[MAX_PATH];
         if( !GetWindowsDirectoryA( windir, sizeof( windir ) ) ) memcpy( windir, "c:\\windows", 11 );
@@ -523,10 +496,14 @@ void InitCallstack()
         }
         s_krnlCache->Sort();
     }
+}
 
+static void CacheProcessModules()
+{
+    DWORD needed;
     HANDLE proc = GetCurrentProcess();
     HMODULE mod[1024];
-    if( initTimeModuleLoad && EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+    if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );
         for( size_t i=0; i<sz; i++ )
@@ -544,6 +521,41 @@ void InitCallstack()
                 }
             }
         }
+    }
+}
+
+void InitCallstack()
+{
+#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
+    s_shouldResolveSymbolsOffline = ShouldResolveSymbolsOffline();
+#endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
+    if( s_shouldResolveSymbolsOffline )
+    {
+        TracyDebug("TRACY: enabling offline symbol resolving!\n");
+    }
+
+    CreateImageCaches();
+
+    DbgHelpInit();
+
+#ifdef TRACY_DBGHELP_LOCK
+    DBGHELP_LOCK;
+#endif
+
+    // use TRACY_NO_DBGHELP_INIT_LOAD=1 to disable preloading of driver
+    // and process module symbol loading at startup time - they will be loaded on demand later
+    // Sometimes this process can take a very long time and prevent resolving callstack frames
+    // symbols during that time.
+    const char* noInitLoadEnv = GetEnvVar( "TRACY_NO_DBGHELP_INIT_LOAD" );
+    const bool initTimeModuleLoad = !( noInitLoadEnv && noInitLoadEnv[0] == '1' );
+    if ( !initTimeModuleLoad )
+    {
+        TracyDebug("TRACY: skipping init time dbghelper module load\n");
+    }
+    else
+    {
+        CacheProcessDrivers();
+        CacheProcessModules();
     }
 
 #ifdef TRACY_DBGHELP_LOCK

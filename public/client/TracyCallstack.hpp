@@ -1,6 +1,8 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
+#include <stdint.h>
+
 #include "../common/TracyApi.h"
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"
@@ -10,8 +12,8 @@ namespace tracy
 
 struct ImageEntry
 {
-    void* m_startAddress = nullptr;
-    void* m_endAddress = nullptr;
+    uint64_t m_startAddress = 0;
+    uint64_t m_endAddress = 0;
     char* m_name = nullptr;
 };
 

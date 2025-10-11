@@ -136,7 +136,7 @@ public:
         Clear();
     }
 
-    const ImageEntry* GetImageForAddress( void* address )
+    const ImageEntry* GetImageForAddress( uint64_t address )
     {
         const ImageEntry* entry = GetImageForAddressImpl( address );
         if( !entry )
@@ -156,12 +156,12 @@ private:
     {
         ImageCache* cache = reinterpret_cast<ImageCache*>( data );
 
-        const auto startAddress = reinterpret_cast<void*>( info->dlpi_addr );
+        const auto startAddress = static_cast<uint64_t>( info->dlpi_addr );
         if( cache->Contains( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
         assert( headerCount > 0);
-        const auto endAddress = reinterpret_cast<void*>( info->dlpi_addr +
+        const auto endAddress = static_cast<uint64_t>( info->dlpi_addr +
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
 
         ImageEntry* image = cache->m_images.push_next();
@@ -186,7 +186,7 @@ private:
         return 0;
     }
 
-    bool Contains( void* startAddress ) const
+    bool Contains( uint64_t startAddress ) const
     {
         return std::any_of( m_images.begin(), m_images.end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
     }
@@ -236,10 +236,10 @@ private:
         m_haveMainImageName = true;
     }
 
-    const ImageEntry* GetImageForAddressImpl( void* address ) const
+    const ImageEntry* GetImageForAddressImpl( uint64_t address ) const
     {
         auto it = std::lower_bound( m_images.begin(), m_images.end(), address,
-            []( const ImageEntry& lhs, const void* rhs ) { return lhs.m_startAddress > rhs; } );
+            []( const ImageEntry& lhs, const uint64_t rhs ) { return lhs.m_startAddress > rhs; } );
 
         if( it != m_images.end() && address < it->m_endAddress )
         {
@@ -1273,7 +1273,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         uint64_t imageBaseAddress = 0x0;
 
 #ifdef TRACY_USE_IMAGE_CACHE
-        const auto* image = s_imageCache->GetImageForAddress((void*)ptr);
+        const auto* image = s_imageCache->GetImageForAddress( ptr );
         if( image )
         {
             imageName = image->m_name;

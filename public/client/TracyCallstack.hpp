@@ -5,6 +5,18 @@
 #include "../common/TracyForceInline.hpp"
 #include "TracyCallstack.h"
 
+namespace tracy
+{
+
+struct ImageEntry
+{
+    void* m_startAddress = nullptr;
+    void* m_endAddress = nullptr;
+    char* m_name = nullptr;
+};
+
+}
+
 #ifndef TRACY_HAS_CALLSTACK
 
 namespace tracy

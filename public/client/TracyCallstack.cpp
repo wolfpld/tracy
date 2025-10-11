@@ -124,12 +124,6 @@ namespace tracy
 class ImageCache
 {
 public:
-    struct ImageEntry
-    {
-        void* m_startAddress = nullptr;
-        void* m_endAddress = nullptr;
-        char* m_name = nullptr;
-    };
 
     ImageCache()
         : m_images( 512 )

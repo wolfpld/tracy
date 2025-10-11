@@ -238,16 +238,7 @@ private:
 
         // the base executable name isn't provided when iterating with dl_iterate_phdr,
         // we will have to patch the executable image name outside this callback
-        if( info->dlpi_name && info->dlpi_name[0] != '\0' )
-        {
-            size_t sz = strlen( info->dlpi_name ) + 1;
-            image.m_name = (char*)tracy_malloc( sz );
-            memcpy( image.m_name,  info->dlpi_name, sz );
-        }
-        else
-        {
-            image.m_name = nullptr;
-        }
+        image.m_name = info->dlpi_name && info->dlpi_name[0] != '\0' ? CopyStringFast( info->dlpi_name ) : nullptr;
 
         cache->AddEntry( image );
         cache->m_updated = true;

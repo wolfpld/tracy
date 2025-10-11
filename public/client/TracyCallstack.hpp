@@ -15,6 +15,7 @@ struct ImageEntry
     uint64_t m_startAddress = 0;
     uint64_t m_endAddress = 0;
     char* m_name = nullptr;
+    char* m_path = nullptr;
 };
 
 }

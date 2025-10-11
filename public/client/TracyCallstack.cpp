@@ -157,7 +157,7 @@ private:
         ImageCache* cache = reinterpret_cast<ImageCache*>( data );
 
         const auto startAddress = static_cast<uint64_t>( info->dlpi_addr );
-        if( cache->Contains( startAddress ) ) return 0;
+        if( cache->ContainsImage( startAddress ) ) return 0;
 
         const uint32_t headerCount = info->dlpi_phnum;
         assert( headerCount > 0);
@@ -186,7 +186,7 @@ private:
         return 0;
     }
 
-    bool Contains( uint64_t startAddress ) const
+    bool ContainsImage( uint64_t startAddress ) const
     {
         return std::any_of( m_images.begin(), m_images.end(), [startAddress]( const ImageEntry& entry ) { return startAddress == entry.m_startAddress; } );
     }

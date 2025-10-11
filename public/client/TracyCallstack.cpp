@@ -117,6 +117,12 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
 namespace tracy
 {
 
+void DestroyImageEntry( ImageEntry& entry )
+{
+    tracy_free( entry.m_path );
+    tracy_free( entry.m_name );
+}
+
 #ifdef TRACY_USE_IMAGE_CACHE
 // when we have access to dl_iterate_phdr(), we can build a cache of address ranges to image paths
 // so we can quickly determine which image an address falls into.
@@ -252,7 +258,7 @@ private:
     {
         for( ImageEntry& entry : m_images )
         {
-            tracy_free( entry.m_name );
+            DestroyImageEntry( entry );
         }
 
         m_images.clear();

@@ -137,8 +137,18 @@ public:
         Clear();
     }
     
-    const ImageEntry* GetImageForAddress( uint64_t address ) const
+    ImageEntry* AddEntry( const ImageEntry& entry )
     {
+        if( m_sorted ) m_sorted = m_images.empty() || ( entry.m_startAddress < m_images.back().m_startAddress );
+        ImageEntry* newEntry = m_images.push_next();
+        *newEntry = entry;
+        return newEntry;
+    }
+
+    const ImageEntry* GetImageForAddress( uint64_t address )
+    {
+        Sort();
+
         auto it = std::lower_bound( m_images.begin(), m_images.end(), address,
             []( const ImageEntry& lhs, const uint64_t rhs ) { return lhs.m_startAddress > rhs; } );
 
@@ -148,6 +158,15 @@ public:
         }
         return nullptr;
     }
+    
+    void Sort()
+    {
+        if( m_sorted ) return;
+
+        std::sort( m_images.begin(), m_images.end(),
+            []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
+        m_sorted = true;
+    }
 
     void Clear()
     {
@@ -156,6 +175,7 @@ public:
             DestroyImageEntry( entry );
         }
 
+        m_sorted = true;
         m_images.clear();
     }
 
@@ -165,6 +185,7 @@ public:
     }
 protected:
     tracy::FastVector<ImageEntry> m_images;
+    bool m_sorted = true;
 };
 
 #ifdef TRACY_USE_IMAGE_CACHE
@@ -211,23 +232,24 @@ private:
         const auto endAddress = static_cast<uint64_t>( info->dlpi_addr +
             info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr + info->dlpi_phdr[info->dlpi_phnum - 1].p_memsz);
 
-        ImageEntry* image = cache->m_images.push_next();
-        image->m_startAddress = startAddress;
-        image->m_endAddress = endAddress;
+        ImageEntry image{};
+        image.m_startAddress = startAddress;
+        image.m_endAddress = endAddress;
 
         // the base executable name isn't provided when iterating with dl_iterate_phdr,
         // we will have to patch the executable image name outside this callback
         if( info->dlpi_name && info->dlpi_name[0] != '\0' )
         {
             size_t sz = strlen( info->dlpi_name ) + 1;
-            image->m_name = (char*)tracy_malloc( sz );
-            memcpy( image->m_name,  info->dlpi_name, sz );
+            image.m_name = (char*)tracy_malloc( sz );
+            memcpy( image.m_name,  info->dlpi_name, sz );
         }
         else
         {
-            image->m_name = nullptr;
+            image.m_name = nullptr;
         }
 
+        cache->AddEntry( image );
         cache->m_updated = true;
 
         return 0;
@@ -240,9 +262,7 @@ private:
 
         if( m_updated )
         {
-            std::sort( m_images.begin(), m_images.end(),
-                []( const ImageEntry& lhs, const ImageEntry& rhs ) { return lhs.m_startAddress > rhs.m_startAddress; } );
-
+            Sort();
             // patch the main executable image name here, as calling dl_* functions inside the dl_iterate_phdr callback might cause deadlocks
             UpdateMainImageName();
         }

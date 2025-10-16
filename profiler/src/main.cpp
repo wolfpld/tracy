@@ -100,6 +100,7 @@ static double animTime = 0;
 static float dpiScale = -1.f;
 static bool dpiScaleOverriddenFromEnv = false;
 static float prevScale = 1.f;
+static float prevFontScale = 1.f;
 static int dpiChanged = 0;
 static bool dpiFirstSetup = true;
 static Filters* filt;
@@ -158,42 +159,65 @@ static void ScaleWindow(ImGuiWindow* window, float scale)
 
 static void SetupDPIScale()
 {
-    auto scale = dpiScale * tracy::s_config.userScale;
+    float effectiveDpi = dpiScale;
 
-    if( !dpiFirstSetup && prevScale == scale ) return;
+#ifdef __APPLE__
+    if( !dpiScaleOverriddenFromEnv )
+    {
+        effectiveDpi = 1.f;
+    }
+#endif
+
+    const auto fontScale = effectiveDpi * tracy::s_config.userScale;
+    auto styleScale = fontScale;
+
+#ifdef __APPLE__
+    if( !dpiScaleOverriddenFromEnv )
+    {
+        styleScale = tracy::s_config.userScale;
+    }
+#endif
+
+    if( !dpiFirstSetup && prevFontScale == fontScale && prevScale == styleScale ) return;
+
+    const bool fontsChanged = dpiFirstSetup || prevFontScale != fontScale;
+
     dpiFirstSetup = false;
     dpiChanged = 2;
 
-    LoadFonts( scale );
-
-#ifdef __APPLE__
-    scale = 1.0f;
-#endif
+    if( fontsChanged )
+    {
+        LoadFonts( fontScale );
+    }
 
     auto& style = ImGui::GetStyle();
     style = ImGuiStyle();
     ImGui::StyleColorsDark();
-    style.WindowBorderSize = 1.f * scale;
-    style.FrameBorderSize = 1.f * scale;
+    style.WindowBorderSize = 1.f * styleScale;
+    style.FrameBorderSize = 1.f * styleScale;
     style.FrameRounding = 5.f;
     style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
     style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
     style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
     style.Colors[ImGuiCol_TitleBgCollapsed] = style.Colors[ImGuiCol_TitleBg];
-    style.ScaleAllSizes( scale );
+    style.ScaleAllSizes( styleScale );
 
-    const auto ty = int( 80 * scale );
+    const auto ty = int( 80 * styleScale );
     iconTexSz = ty;
     auto scaleIcon = new uint8_t[4*ty*ty];
     stbir_resize_uint8( iconPx, iconX, iconY, 0, scaleIcon, ty, ty, 0, 4 );
     tracy::UpdateTextureRGBA( iconTex, scaleIcon, ty, ty );
     delete[] scaleIcon;
 
-    const auto ratio = scale / prevScale;
-    prevScale = scale;
-    auto ctx = ImGui::GetCurrentContext();
-    for( auto& w : ctx->Windows ) ScaleWindow( w, ratio );
+    const auto ratio = prevScale != 0.f ? styleScale / prevScale : styleScale;
+    prevScale = styleScale;
+    prevFontScale = fontScale;
+    if( ratio != 1.f )
+    {
+        auto ctx = ImGui::GetCurrentContext();
+        for( auto& w : ctx->Windows ) ScaleWindow( w, ratio );
+    }
 }
 
 static int IsBusy()

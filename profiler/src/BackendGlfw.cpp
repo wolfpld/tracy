@@ -14,6 +14,13 @@
 #include "Backend.hpp"
 #include "RunQueue.hpp"
 
+#ifdef __APPLE__
+#include <objc/objc.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
+#include "icon.hpp"
+#endif
+
 
 static GLFWwindow* s_window;
 static std::function<void()> s_redraw;
@@ -22,6 +29,50 @@ static RunQueue* s_mainThreadTasks;
 static WindowPosition* s_winPos;
 static bool s_iconified;
 static float s_prevScale = -1;
+
+#ifdef __APPLE__
+typedef long NSInteger;
+typedef unsigned long NSUInteger;
+
+namespace
+{
+
+static void EnsureMacAppRegistration()
+{
+    static bool initialized = false;
+    if( initialized ) return;
+    initialized = true;
+
+    id pool = ((id (*)(Class, SEL))objc_msgSend)((Class)objc_getClass("NSAutoreleasePool"), sel_getUid("alloc"));
+    pool = ((id (*)(id, SEL))objc_msgSend)(pool, sel_getUid("init"));
+
+    id app = ((id (*)(Class, SEL))objc_msgSend)((Class)objc_getClass("NSApplication"), sel_getUid("sharedApplication"));
+    ((void (*)(id, SEL, NSInteger))objc_msgSend)(app, sel_getUid("setActivationPolicy:"), (NSInteger)0);
+    ((void (*)(id, SEL, BOOL))objc_msgSend)(app, sel_getUid("activateIgnoringOtherApps:"), (BOOL)1);
+
+    ((void (*)(id, SEL))objc_msgSend)(pool, sel_getUid("release"));
+}
+
+static void SetMacAppIcon()
+{
+    id pool = ((id (*)(Class, SEL))objc_msgSend)((Class)objc_getClass("NSAutoreleasePool"), sel_getUid("alloc"));
+    pool = ((id (*)(id, SEL))objc_msgSend)(pool, sel_getUid("init"));
+
+    id data = ((id (*)(Class, SEL, const void*, NSUInteger))objc_msgSend)((Class)objc_getClass("NSData"), sel_getUid("dataWithBytes:length:"), (const void*)Icon_data, (NSUInteger)Icon_size);
+    id image = ((id (*)(Class, SEL))objc_msgSend)((Class)objc_getClass("NSImage"), sel_getUid("alloc"));
+    image = ((id (*)(id, SEL, id))objc_msgSend)(image, sel_getUid("initWithData:"), data);
+    if( image )
+    {
+        id app = ((id (*)(Class, SEL))objc_msgSend)((Class)objc_getClass("NSApplication"), sel_getUid("sharedApplication"));
+        ((void (*)(id, SEL, id))objc_msgSend)(app, sel_getUid("setApplicationIconImage:"), image);
+        ((void (*)(id, SEL))objc_msgSend)(image, sel_getUid("release"));
+    }
+
+    ((void (*)(id, SEL))objc_msgSend)(pool, sel_getUid("release"));
+}
+
+}
+#endif
 
 
 static void glfw_error_callback( int error, const char* description )
@@ -109,6 +160,10 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     glfwSetWindowMaximizeCallback( s_window, glfw_window_maximize_callback );
 #endif
     glfwSetWindowIconifyCallback( s_window, glfw_window_iconify_callback );
+
+#ifdef __APPLE__
+    EnsureMacAppRegistration();
+#endif
 }
 
 Backend::~Backend()
@@ -190,11 +245,16 @@ void Backend::EndFrame()
 
 void Backend::SetIcon( uint8_t* data, int w, int h )
 {
+#ifdef __APPLE__
+    EnsureMacAppRegistration();
+    SetMacAppIcon();
+#else
     GLFWimage icon;
     icon.width = w;
     icon.height = h;
     icon.pixels = data;
     glfwSetWindowIcon( s_window, 1, &icon );
+#endif
 }
 
 void Backend::SetTitle( const char* title )

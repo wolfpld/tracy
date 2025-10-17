@@ -7,33 +7,26 @@ void View::ZoomToZone( const ZoneEvent& ev )
 {
     const auto end = m_worker.GetZoneEnd( ev );
     if( end - ev.Start() <= 0 ) return;
-    ZoomToRange( ev.Start(), end );
-}
-
-void View::ZoomToZone( const GpuEvent& ev )
-{
-    const auto end = m_worker.GetZoneEnd( ev );
-    if( end - ev.GpuStart() <= 0 ) return;
-    auto ctx = GetZoneCtx( ev );
-    if( !ctx )
+    auto td = GetZoneThreadData( ev );
+    auto ctx = td->ctx;
+    if ( !ctx || ctx->type == ZoneContextType::CPU)
     {
-        ZoomToRange( ev.GpuStart(), end );
+        ZoomToRange( ev.Start(), end );
     }
     else
     {
-        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
-        assert( td != ctx->threadData.end() );
+        assert( td );
         int64_t begin;
-        if( td->second.timeline.is_magic() )
+        if( td->timeline.is_magic() )
         {
-            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+            begin = ( (Vector<ZoneEvent>*)&td->timeline )->front().Start();
         }
         else
         {
-            begin = td->second.timeline.front()->GpuStart();
+            begin = td->timeline.front()->Start();
         }
         const auto drift = GpuDrift( ctx );
-        ZoomToRange( AdjustGpuTime( ev.GpuStart(), begin, drift ), AdjustGpuTime( end, begin, drift ) );
+        ZoomToRange( AdjustGpuTime( ev.Start(), begin, drift ), AdjustGpuTime( end, begin, drift ) );
     }
 }
 

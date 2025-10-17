@@ -45,7 +45,12 @@ void View::DrawStatistics()
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
 #else
-    if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
+    ContextCombo( m_statCtxName, &m_statCtx );
+    auto ctx = m_worker.GetCtxData()[m_statCtx];
+
+    ImGui::SameLine();
+
+    if( !ctx->AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
     {
         const auto ty = ImGui::GetTextLineHeight();
         ImGui::PushFont( g_fonts.normal, FontBig );
@@ -78,13 +83,6 @@ void View::DrawStatistics()
             ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
         }
     }
-    if( m_worker.GetGpuZoneCount() > 0 )
-    {
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        ImGui::RadioButton( ICON_FA_EYE " GPU", &m_statMode, 2 );
-    }
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
@@ -99,7 +97,7 @@ void View::DrawStatistics()
     bool copySrclocsToClipboard = false;
     if( m_statMode == 0 )
     {
-        if( !m_worker.AreSourceLocationZonesReady() )
+        if( !ctx->AreSourceLocationZonesReady() )
         {
             ImGui::Spacing();
             ImGui::Separator();
@@ -111,7 +109,7 @@ void View::DrawStatistics()
         }
 
         const auto filterActive = m_statisticsFilter.IsActive();
-        auto& slz = m_worker.GetSourceLocationZones();
+        auto& slz = ctx->GetSourceLocationZones();
         srcloc.reserve( slz.size() );
         uint32_t slzcnt = 0;
         if( m_statRange.active )
@@ -321,6 +319,8 @@ void View::DrawStatistics()
     }
     else
     {
+      assert(0);
+      /*
         assert( m_statMode == 2 );
         if( !m_worker.AreGpuSourceLocationZonesReady() )
         {
@@ -456,6 +456,7 @@ void View::DrawStatistics()
         TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
         ImGui::SameLine();
         copySrclocsToClipboard = ClipboardButton();
+      */
     }
 
     ImGui::Separator();

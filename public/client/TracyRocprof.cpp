@@ -104,7 +104,7 @@ uint8_t gpu_context_allocate( ToolData* data )
         tracy::MemWrite( &item->gpuNewContext.period, timestamp_period );
         tracy::MemWrite( &item->gpuNewContext.context, context_id );
         tracy::MemWrite( &item->gpuNewContext.flags, context_flags );
-        tracy::MemWrite( &item->gpuNewContext.type, tracy::GpuContextType::Rocprof );
+        tracy::MemWrite( &item->gpuNewContext.type, tracy::ZoneContextType::Rocprof );
         tracy::Profiler::QueueSerialFinish();
     }
 
@@ -451,6 +451,7 @@ void calibration_thread( void* ptr )
 {
     while( !TracyIsStarted )
         ;
+    SetThreadName( "rocprofiler calibration" );
     ToolData* data = static_cast<ToolData*>( ptr );
     data->context_id = gpu_context_allocate( data );
     const char* user_counters = GetEnvVar( "TRACY_ROCPROF_COUNTERS" );

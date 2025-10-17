@@ -597,11 +597,11 @@ void View::DrawMemoryAllocWindow()
 
         bool sep = false;
         auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.TimeAlloc() );
-        if( zoneAlloc )
+        if( zoneAlloc.first )
         {
             ImGui::Separator();
             sep = true;
-            const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc->SrcLoc() );
+            const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc.first->SrcLoc() );
             const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
             ImGui::PushID( idx++ );
             TextFocused( "Zone alloc:", txt );
@@ -609,41 +609,41 @@ void View::DrawMemoryAllocWindow()
             ImGui::PopID();
             if( ImGui::IsItemClicked() )
             {
-                ShowZoneInfo( *zoneAlloc );
+                ShowZoneInfo( *zoneAlloc.first );
             }
             if( hover )
             {
-                m_zoneHighlight = zoneAlloc;
+                m_zoneHighlight = zoneAlloc.first;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZone( *zoneAlloc );
+                    ZoomToZone( *zoneAlloc.first );
                 }
-                ZoneTooltip( *zoneAlloc );
+                ZoneTooltip( *zoneAlloc.first, *zoneAlloc.second );
             }
         }
 
         if( ev.TimeFree() >= 0 )
         {
             auto zoneFree = FindZoneAtTime( tidFree, ev.TimeFree() );
-            if( zoneFree )
+            if( zoneFree.first )
             {
                 if( !sep ) ImGui::Separator();
-                const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
+                const auto& srcloc = m_worker.GetSourceLocation( zoneFree.first->SrcLoc() );
                 const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
                 TextFocused( "Zone free:", txt );
                 auto hover = ImGui::IsItemHovered();
                 if( ImGui::IsItemClicked() )
                 {
-                    ShowZoneInfo( *zoneFree );
+                    ShowZoneInfo( *zoneFree.first );
                 }
                 if( hover )
                 {
-                    m_zoneHighlight = zoneFree;
+                    m_zoneHighlight = zoneFree.first;
                     if( IsMouseClicked( 2 ) )
                     {
-                        ZoomToZone( *zoneFree );
+                        ZoomToZone( *zoneFree.first );
                     }
-                    ZoneTooltip( *zoneFree );
+                    ZoneTooltip( *zoneFree.first, *zoneAlloc.second );
                 }
                 if( zoneAlloc == zoneFree )
                 {
@@ -810,30 +810,30 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                 }
                 ImGui::TableNextColumn();
                 auto zone = FindZoneAtTime( m_worker.DecompressThread( v->ThreadAlloc() ), v->TimeAlloc() );
-                if( !zone )
+                if( !zone.first )
                 {
                     ImGui::TextUnformatted( "-" );
                 }
                 else
                 {
-                    const auto& srcloc = m_worker.GetSourceLocation( zone->SrcLoc() );
+                    const auto& srcloc = m_worker.GetSourceLocation( zone.first->SrcLoc() );
                     const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
                     ImGui::PushID( idx++ );
-                    auto sel = ImGui::Selectable( txt, m_zoneInfoWindow == zone );
+                    auto sel = ImGui::Selectable( txt, m_zoneInfoWindow == zone.first );
                     auto hover = ImGui::IsItemHovered();
                     ImGui::PopID();
                     if( sel )
                     {
-                        ShowZoneInfo( *zone );
+                        ShowZoneInfo( *zone.first );
                     }
                     if( hover )
                     {
-                        m_zoneHighlight = zone;
+                        m_zoneHighlight = zone.first;
                         if( IsMouseClicked( 2 ) )
                         {
-                            ZoomToZone( *zone );
+                            ZoomToZone( *zone.first );
                         }
-                        ZoneTooltip( *zone );
+                        ZoneTooltip( *zone.first, *zone.second );
                     }
                 }
                 ImGui::TableNextColumn();
@@ -844,40 +844,40 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                 else
                 {
                     auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->ThreadFree() ), v->TimeFree() );
-                    if( !zoneFree )
+                    if( !zoneFree.first )
                     {
                         ImGui::TextUnformatted( "-" );
                     }
                     else
                     {
-                        const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
+                        const auto& srcloc = m_worker.GetSourceLocation( zoneFree.first->SrcLoc() );
                         const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
                         ImGui::PushID( idx++ );
                         bool sel;
                         if( zoneFree == zone )
                         {
                             ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.6f, 1.f ) );
-                            sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
+                            sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree.first );
                             ImGui::PopStyleColor( 1 );
                         }
                         else
                         {
-                            sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
+                            sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree.first );
                         }
                         auto hover = ImGui::IsItemHovered();
                         ImGui::PopID();
                         if( sel )
                         {
-                            ShowZoneInfo( *zoneFree );
+                            ShowZoneInfo( *zoneFree.first );
                         }
                         if( hover )
                         {
-                            m_zoneHighlight = zoneFree;
+                            m_zoneHighlight = zoneFree.first;
                             if( IsMouseClicked( 2 ) )
                             {
-                                ZoomToZone( *zoneFree );
+                                ZoomToZone( *zoneFree.first );
                             }
-                            ZoneTooltip( *zoneFree );
+                            ZoneTooltip( *zoneFree.first, *zoneFree.second );
                         }
                     }
                 }

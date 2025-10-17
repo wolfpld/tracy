@@ -69,7 +69,7 @@ const char* View::DecodeContextSwitchReason( uint8_t reason )
     {
     case ContextSwitchData::Win32_Executive: return "(Thread is waiting for the scheduler)";
     case ContextSwitchData::Win32_FreePage: return "(Thread is waiting for a free virtual memory page)";
-    case ContextSwitchData::Win32_PageIn: return "(Thread is waiting for a virtual memory page to arrive in memory)";    
+    case ContextSwitchData::Win32_PageIn: return "(Thread is waiting for a virtual memory page to arrive in memory)";
     case ContextSwitchData::Win32_PoolAllocation: return "(Thread is waiting for a system allocation)";
     case ContextSwitchData::Win32_DelayExecution: return "(Thread execution is delayed)";
     case ContextSwitchData::Win32_Suspended: return "(Thread execution is suspended)";
@@ -399,6 +399,7 @@ void View::DrawWaitStacks()
     {
         if( WaitStackThread( t->id ) )
         {
+            const CPUThreadData* t = static_cast<const CPUThreadData*>(t);
             auto it = t->ctxSwitchSamples.begin();
             auto end = t->ctxSwitchSamples.end();
             if( m_waitStackRange.active )
@@ -507,8 +508,9 @@ void View::DrawWaitStacks()
         }
 
         int idx = 0;
-        for( const auto& t : m_threadOrder )
+        for( const auto& td : m_threadOrder )
         {
+            const CPUThreadData* t = static_cast<const CPUThreadData*>(td);
             if( t->ctxSwitchSamples.empty() ) continue;
             ImGui::PushID( idx++ );
             const auto threadColor = GetThreadColor( t->id, 0 );

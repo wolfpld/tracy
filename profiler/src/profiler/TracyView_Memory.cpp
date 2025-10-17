@@ -618,7 +618,7 @@ void View::DrawMemoryAllocWindow()
                 {
                     ZoomToZone( *zoneAlloc );
                 }
-                ZoneTooltip( *zoneAlloc );
+                ZoneTooltip( { zoneAlloc, nullptr } );
             }
         }
 
@@ -643,7 +643,7 @@ void View::DrawMemoryAllocWindow()
                     {
                         ZoomToZone( *zoneFree );
                     }
-                    ZoneTooltip( *zoneFree );
+                    ZoneTooltip( { zoneFree, nullptr } );
                 }
                 if( zoneAlloc == zoneFree )
                 {
@@ -833,7 +833,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                         {
                             ZoomToZone( *zone );
                         }
-                        ZoneTooltip( *zone );
+                        ZoneTooltip( { zone, nullptr } );
                     }
                 }
                 ImGui::TableNextColumn();
@@ -877,7 +877,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, const std::function<v
                             {
                                 ZoomToZone( *zoneFree );
                             }
-                            ZoneTooltip( *zoneFree );
+                            ZoneTooltip( { zoneFree, nullptr } );
                         }
                     }
                 }

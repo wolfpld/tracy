@@ -310,7 +310,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
                 }
                 else
                 {
-                    ZoneTooltip( ev );
+                    ZoneTooltip( { &ev, nullptr} );
 
                     if( IsMouseClicked( 2 ) && rend - ev.Start() > 0 )
                     {
@@ -351,7 +351,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             const auto pr1 = ( end - vStart ) * pxns;
             const auto zsz = std::max( pr1 - pr0, pxns * 0.5 );
 
-            const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
+            const auto zoneColor = GetZoneColorData( { &ev, nullptr }, tid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );
@@ -384,7 +384,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y + 1 ) ) )
             {
-                ZoneTooltip( ev );
+                ZoneTooltip( { &ev, nullptr} );
                 if( IsMouseClickReleased( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
 
                 if( !m_zoomAnim.active && IsMouseClicked( 2 ) )

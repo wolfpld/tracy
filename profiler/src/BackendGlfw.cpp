@@ -246,9 +246,6 @@ void Backend::EndFrame()
 void Backend::SetIcon( uint8_t* data, int w, int h )
 {
 #ifdef __APPLE__
-    (void)data;
-    (void)w;
-    (void)h;
     EnsureMacAppRegistration();
     SetMacAppIcon();
 #else

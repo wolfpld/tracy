@@ -749,13 +749,13 @@ private:
     tracy_force_inline void ProcessPlotDataFloat( const QueuePlotDataFloat& ev );
     tracy_force_inline void ProcessPlotDataDouble( const QueuePlotDataDouble& ev );
     tracy_force_inline void ProcessPlotConfig( const QueuePlotConfig& ev );
-    tracy_force_inline void ProcessMessage( const QueueMessage& ev );
+    tracy_force_inline void ProcessMessage( const QueueMessageMetadata& ev );
     tracy_force_inline void ProcessMessageLiteral( const QueueMessageLiteral& ev );
-    tracy_force_inline void ProcessMessageColor( const QueueMessageColor& ev );
+    tracy_force_inline void ProcessMessageColor( const QueueMessageColorMetadata& ev );
     tracy_force_inline void ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev );
-    tracy_force_inline void ProcessMessageCallstack( const QueueMessage& ev );
+    tracy_force_inline void ProcessMessageCallstack( const QueueMessageMetadata& ev );
     tracy_force_inline void ProcessMessageLiteralCallstack( const QueueMessageLiteral& ev );
-    tracy_force_inline void ProcessMessageColorCallstack( const QueueMessageColor& ev );
+    tracy_force_inline void ProcessMessageColorCallstack( const QueueMessageColorMetadata& ev );
     tracy_force_inline void ProcessMessageLiteralColorCallstack( const QueueMessageColorLiteral& ev );
     tracy_force_inline void ProcessMessageAppInfo( const QueueMessage& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );

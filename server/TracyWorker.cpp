@@ -4578,25 +4578,25 @@ bool Worker::Process( const QueueItem& ev )
         ProcessPlotConfig( ev.plotConfig );
         break;
     case QueueType::Message:
-        ProcessMessage( ev.message );
+        ProcessMessage( ev.messageMetadata );
         break;
     case QueueType::MessageLiteral:
         ProcessMessageLiteral( ev.messageLiteral );
         break;
     case QueueType::MessageColor:
-        ProcessMessageColor( ev.messageColor );
+        ProcessMessageColor( ev.messageColorMetadata );
         break;
     case QueueType::MessageLiteralColor:
         ProcessMessageLiteralColor( ev.messageColorLiteral );
         break;
     case QueueType::MessageCallstack:
-        ProcessMessageCallstack( ev.message );
+        ProcessMessageCallstack( ev.messageMetadata );
         break;
     case QueueType::MessageLiteralCallstack:
         ProcessMessageLiteralCallstack( ev.messageLiteral );
         break;
     case QueueType::MessageColorCallstack:
-        ProcessMessageColorCallstack( ev.messageColor );
+        ProcessMessageColorCallstack( ev.messageColorMetadata );
         break;
     case QueueType::MessageLiteralColorCallstack:
         ProcessMessageLiteralColorCallstack( ev.messageColorLiteral );
@@ -5613,7 +5613,7 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
     plot->color = ev.color & 0xFFFFFF;
 }
 
-void Worker::ProcessMessage( const QueueMessage& ev )
+void Worker::ProcessMessage( const QueueMessageMetadata& ev )
 {
     auto td = GetCurrentThreadData();
     auto msg = m_slab.Alloc<MessageData>();
@@ -5630,11 +5630,11 @@ void Worker::ProcessMessage( const QueueMessage& ev )
 void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
 {
     auto td = GetCurrentThreadData();
-    CheckString( ev.text );
+    CheckString( ev.textAndMetadata.GetAddress() );
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time );
     msg->time = time;
-    msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
+    msg->ref = StringRef( StringRef::Type::Ptr, ev.textAndMetadata.GetAddress() );
     msg->thread = CompressThread( td->id );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
@@ -5642,7 +5642,7 @@ void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
     InsertMessageData( msg );
 }
 
-void Worker::ProcessMessageColor( const QueueMessageColor& ev )
+void Worker::ProcessMessageColor( const QueueMessageColorMetadata& ev )
 {
     auto td = GetCurrentThreadData();
     auto msg = m_slab.Alloc<MessageData>();
@@ -5659,11 +5659,11 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
 void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
 {
     auto td = GetCurrentThreadData();
-    CheckString( ev.text );
+    CheckString( ev.textAndMetadata.GetAddress() );
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time );
     msg->time = time;
-    msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
+    msg->ref = StringRef( StringRef::Type::Ptr, ev.textAndMetadata.GetAddress() );
     msg->thread = CompressThread( td->id );
     msg->color = 0xFF000000 | ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
     msg->callstack.SetVal( 0 );
@@ -5671,7 +5671,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
     InsertMessageData( msg );
 }
 
-void Worker::ProcessMessageCallstack( const QueueMessage& ev )
+void Worker::ProcessMessageCallstack( const QueueMessageMetadata& ev )
 {
     auto td = GetCurrentThreadData();
     ProcessMessage( ev );
@@ -5691,7 +5691,7 @@ void Worker::ProcessMessageLiteralCallstack( const QueueMessageLiteral& ev )
     it->second = 0;
 }
 
-void Worker::ProcessMessageColorCallstack( const QueueMessageColor& ev )
+void Worker::ProcessMessageColorCallstack( const QueueMessageColorMetadata& ev )
 {
     auto td = GetCurrentThreadData();
     ProcessMessageColor( ev );

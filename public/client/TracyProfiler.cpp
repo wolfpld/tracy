@@ -2014,7 +2014,7 @@ void Profiler::Worker()
             switch( (QueueType)idx )
             {
             case QueueType::MessageAppInfo:
-                ptr = MemRead<uint64_t>( &item.messageFat.text );
+                ptr = MemRead<TaggedUserlandAddress>( &item.messageFat.textAndMetadata ).GetAddress();
                 size = MemRead<uint16_t>( &item.messageFat.size );
                 SendSingleString( (const char*)ptr, size );
                 break;
@@ -2328,7 +2328,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         break;
     case QueueType::MessageColor:
     case QueueType::MessageColorCallstack:
-        ptr = MemRead<uint64_t>( &item.messageColorFat.text );
+        ptr = MemRead<TaggedUserlandAddress>( &item.messageColorFat.textAndMetadata ).GetAddress();
         tracy_free( (void*)ptr );
         break;
     case QueueType::Message:
@@ -2336,7 +2336,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
 #ifndef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
 #endif
-        ptr = MemRead<uint64_t>( &item.messageFat.text );
+        ptr = MemRead<TaggedUserlandAddress>( &item.messageFat.textAndMetadata ).GetAddress();
         tracy_free( (void*)ptr );
         break;
     case QueueType::ZoneBeginAllocSrcLoc:
@@ -2505,20 +2505,42 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         break;
                     case QueueType::Message:
                     case QueueType::MessageCallstack:
-                        ptr = MemRead<uint64_t>( &item->messageFat.text );
+                    {
+                        TaggedUserlandAddress taggedPtr = MemRead<TaggedUserlandAddress>( &item->messageFat.textAndMetadata );
+                        ptr = taggedPtr.GetAddress();
                         size = MemRead<uint16_t>( &item->messageFat.size );
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
-                        break;
+                        
+                        const MessageMetadata metadata = (MessageMetadata)taggedPtr.GetTag();
+                        QueueItem itemWithMetadata;
+                        MemWrite( &itemWithMetadata.hdr, item->hdr );
+                        MemWrite( &itemWithMetadata.messageMetadata, item->message );
+                        MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
+                        AppendData( &itemWithMetadata, QueueDataSize[idx] );
+                        ++item;
+                        continue; // Next item since we sent it manually
+                    }
                     case QueueType::MessageColor:
                     case QueueType::MessageColorCallstack:
-                        ptr = MemRead<uint64_t>( &item->messageColorFat.text );
+                    {
+                        TaggedUserlandAddress taggedPtr = MemRead<TaggedUserlandAddress>( &item->messageColorFat.textAndMetadata );
+                        ptr = taggedPtr.GetAddress();
                         size = MemRead<uint16_t>( &item->messageColorFat.size );
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
-                        break;
+
+                        const MessageMetadata metadata = (MessageMetadata)taggedPtr.GetTag();
+                        QueueItem itemWithMetadata;
+                        MemWrite( &itemWithMetadata.hdr, item->hdr );
+                        MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );
+                        MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
+                        AppendData( &itemWithMetadata, QueueDataSize[idx] );
+                        ++item;
+                        continue; // Next item since we sent it manually
+                    }
                     case QueueType::MessageAppInfo:
-                        ptr = MemRead<uint64_t>( &item->messageFat.text );
+                        ptr = MemRead<TaggedUserlandAddress>( &item->messageFat.textAndMetadata ).GetAddress();
                         size = MemRead<uint16_t>( &item->messageFat.size );
                         SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
@@ -3053,7 +3075,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::MessageCallstack:
                 {
                     ThreadCtxCheckSerial( messageFatThread );
-                    ptr = MemRead<uint64_t>( &item->messageFat.text );
+                    ptr = MemRead<TaggedUserlandAddress>( &item->messageFat.textAndMetadata ).GetAddress();
                     uint16_t size = MemRead<uint16_t>( &item->messageFat.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
@@ -3063,7 +3085,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::MessageColorCallstack:
                 {
                     ThreadCtxCheckSerial( messageColorFatThread );
-                    ptr = MemRead<uint64_t>( &item->messageColorFat.text );
+                    ptr = MemRead<TaggedUserlandAddress>( &item->messageColorFat.textAndMetadata ).GetAddress();
                     uint16_t size = MemRead<uint16_t>( &item->messageColorFat.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );

@@ -214,6 +214,8 @@
 
 #define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size )
 
+#define TracyLogString( severity, color, depth, ... ) tracy::Profiler::LogString( tracy::MessageSourceType::User, severity, color, depth, __VA_ARGS__ )
+
 #define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, TRACY_CALLSTACK )
 #define TracyMessageL( txt ) tracy::Profiler::Message( txt, TRACY_CALLSTACK )
 #define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK )

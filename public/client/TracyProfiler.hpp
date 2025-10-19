@@ -406,10 +406,11 @@ public:
 
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
+        TaggedUserlandAddress taggedPtr{ (uint64_t)ptr };
 
         TracyQueuePrepare( callstack_depth == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->messageFat.time, GetTime() );
-        MemWrite( &item->messageFat.text, (uint64_t)ptr );
+        MemWrite( &item->messageFat.textAndMetadata, taggedPtr );
         MemWrite( &item->messageFat.size, (uint16_t)size );
         TracyQueueCommit( messageFatThread );
     }
@@ -423,10 +424,12 @@ public:
         {
             tracy::GetProfiler().SendCallstack( callstack_depth );
         }
+        
+        TaggedUserlandAddress taggedPtr{ (uint64_t)txt };
 
         TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->messageLiteral.time, GetTime() );
-        MemWrite( &item->messageLiteral.text, (uint64_t)txt );
+        MemWrite( &item->messageLiteral.textAndMetadata, taggedPtr );
         TracyQueueCommit( messageLiteralThread );
     }
 
@@ -443,10 +446,11 @@ public:
 
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
+        TaggedUserlandAddress taggedPtr{ (uint64_t)ptr };
 
         TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColorFat.time, GetTime() );
-        MemWrite( &item->messageColorFat.text, (uint64_t)ptr );
+        MemWrite( &item->messageColorFat.textAndMetadata, taggedPtr );
         MemWrite( &item->messageColorFat.b, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColorFat.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColorFat.r, uint8_t( ( color >> 16 ) & 0xFF ) );
@@ -463,10 +467,11 @@ public:
         {
             tracy::GetProfiler().SendCallstack( callstack_depth );
         }
+        TaggedUserlandAddress taggedPtr{ (uint64_t)txt };
 
         TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColorLiteral.time, GetTime() );
-        MemWrite( &item->messageColorLiteral.text, (uint64_t)txt );
+        MemWrite( &item->messageColorLiteral.textAndMetadata, taggedPtr );
         MemWrite( &item->messageColorLiteral.b, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColorLiteral.r, uint8_t( ( color >> 16 ) & 0xFF ) );
@@ -478,9 +483,11 @@ public:
         assert( size < (std::numeric_limits<uint16_t>::max)() );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
+        TaggedUserlandAddress taggedPtr{ (uint64_t)txt };
+
         TracyLfqPrepare( QueueType::MessageAppInfo );
         MemWrite( &item->messageFat.time, GetTime() );
-        MemWrite( &item->messageFat.text, (uint64_t)ptr );
+        MemWrite( &item->messageFat.textAndMetadata, taggedPtr );
         MemWrite( &item->messageFat.size, (uint16_t)size );
 
 #ifdef TRACY_ON_DEMAND

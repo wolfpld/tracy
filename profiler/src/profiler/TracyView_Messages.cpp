@@ -122,77 +122,28 @@ void View::DrawMessages()
         ImGui::TreePop();
     }
 
-    const bool msgsChanged = msgs.size() != m_prevMessages;
     if( filterChanged || threadsChanged )
     {
-        bool showCallstack = false;
-        m_msgList.reserve( msgs.size() );
+        m_prevMessages = 0;
+        m_messagesShowCallstack = false;
         m_msgList.clear();
-        if( m_messageFilter.IsActive() )
-        {
-            for( size_t i=0; i<msgs.size(); i++ )
-            {
-                const auto& v = msgs[i];
-                const auto tid = m_worker.DecompressThread( v->thread );
-                if( VisibleMsgThread( tid ) )
-                {
-                    const auto text = m_worker.GetString( msgs[i]->ref );
-                    if( m_messageFilter.PassFilter( text ) )
-                    {
-                        if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
-                        m_msgList.push_back_no_space_check( uint32_t( i ) );
-                    }
-                }
-            }
-        }
-        else
-        {
-            for( size_t i=0; i<msgs.size(); i++ )
-            {
-                const auto& v = msgs[i];
-                const auto tid = m_worker.DecompressThread( v->thread );
-                if( VisibleMsgThread( tid ) )
-                {
-                    if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
-                    m_msgList.push_back_no_space_check( uint32_t( i ) );
-                }
-            }
-        }
-        m_messagesShowCallstack = showCallstack;
-        m_visibleMessages = m_msgList.size();
-        if( msgsChanged ) m_prevMessages = msgs.size();
     }
-    else if( msgsChanged )
+
+    if( m_prevMessages < msgs.size() )
     {
-        assert( m_prevMessages < msgs.size() );
         bool showCallstack = m_messagesShowCallstack;
         m_msgList.reserve( msgs.size() );
-        if( m_messageFilter.IsActive() )
+        
+        for( size_t i=m_prevMessages; i<msgs.size(); i++ )
         {
-            for( size_t i=m_prevMessages; i<msgs.size(); i++ )
+            const auto& v = msgs[i];
+            const auto tid = m_worker.DecompressThread( v->thread );
+            if( VisibleMsgThread( tid ) )
             {
-                const auto& v = msgs[i];
-                const auto tid = m_worker.DecompressThread( v->thread );
-                if( VisibleMsgThread( tid ) )
+                const auto text = m_worker.GetString( v->ref );
+                if( m_messageFilter.PassFilter( text ) )
                 {
-                    const auto text = m_worker.GetString( msgs[i]->ref );
-                    if( m_messageFilter.PassFilter( text ) )
-                    {
-                        if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
-                        m_msgList.push_back_no_space_check( uint32_t( i ) );
-                    }
-                }
-            }
-        }
-        else
-        {
-            for( size_t i=m_prevMessages; i<msgs.size(); i++ )
-            {
-                const auto& v = msgs[i];
-                const auto tid = m_worker.DecompressThread( v->thread );
-                if( VisibleMsgThread( tid ) )
-                {
-                    if( !showCallstack && msgs[i]->callstack.Val() != 0 ) showCallstack = true;
+                    if( !showCallstack && v->callstack.Val() != 0 ) showCallstack = true;
                     m_msgList.push_back_no_space_check( uint32_t( i ) );
                 }
             }

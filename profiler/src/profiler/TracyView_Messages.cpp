@@ -134,11 +134,19 @@ void View::DrawMessages()
         bool showCallstack = m_messagesShowCallstack;
         m_msgList.reserve( msgs.size() );
         
+        bool isThreadVisible = true;
+        uint16_t previousThread = msgs[m_prevMessages]->thread + 1; // Value different from first entry since + 1
+
         for( size_t i=m_prevMessages; i<msgs.size(); i++ )
         {
             const auto& v = msgs[i];
-            const auto tid = m_worker.DecompressThread( v->thread );
-            if( VisibleMsgThread( tid ) )
+            if( previousThread != v->thread )
+            {
+                previousThread = v->thread;
+                const auto tid = m_worker.DecompressThread( v->thread );
+                isThreadVisible = VisibleMsgThread( tid );
+            }
+            if( isThreadVisible )
             {
                 const auto text = m_worker.GetString( v->ref );
                 if( m_messageFilter.PassFilter( text ) )

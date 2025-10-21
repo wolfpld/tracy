@@ -687,10 +687,13 @@ constexpr struct wl_registry_listener registryListener = {
 };
 
 
+static bool s_configureAcked = false;
+
 static void XdgSurfaceConfigure( void*, struct xdg_surface* surf, uint32_t serial )
 {
     tracy::s_wasActive = true;
     xdg_surface_ack_configure( surf, serial );
+    s_configureAcked = true;
 }
 
 constexpr struct xdg_surface_listener xdgSurfaceListener = {
@@ -986,7 +989,6 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 
     s_surf = wl_compositor_create_surface( s_comp );
     wl_surface_add_listener( s_surf, &surfaceListener, nullptr );
-    s_eglWin = wl_egl_window_create( s_surf, m_winPos.w, m_winPos.h );
     s_xdgSurf = xdg_wm_base_get_xdg_surface( s_wm, s_surf );
     xdg_surface_add_listener( s_xdgSurf, &xdgSurfaceListener, nullptr );
 
@@ -1021,6 +1023,15 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     res = eglBindAPI( EGL_OPENGL_API );
     if( res != EGL_TRUE ) { fprintf( stderr, "Cannot use OpenGL through EGL!\n" ); exit( 1 ); }
 
+    wl_display_roundtrip( s_dpy );
+    s_toplevel = xdg_surface_get_toplevel( s_xdgSurf );
+    xdg_toplevel_add_listener( s_toplevel, &toplevelListener, nullptr );
+    xdg_toplevel_set_title( s_toplevel, title );
+    xdg_toplevel_set_app_id( s_toplevel, "tracy" );
+    wl_surface_commit( s_surf );
+    while( !s_configureAcked ) wl_display_roundtrip( s_dpy );
+
+    s_eglWin = wl_egl_window_create( s_surf, s_width, s_height );
     s_eglSurf = eglCreatePlatformWindowSurface( s_eglDpy, eglConfig, s_eglWin, nullptr );
 
     constexpr EGLint eglCtxAttrib[] = {
@@ -1036,12 +1047,6 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     if( res != EGL_TRUE ) { fprintf( stderr, "Cannot make EGL context current!\n" ); exit( 1 ); }
 
     ImGui_ImplOpenGL3_Init( "#version 150" );
-
-    wl_display_roundtrip( s_dpy );
-    s_toplevel = xdg_surface_get_toplevel( s_xdgSurf );
-    xdg_toplevel_add_listener( s_toplevel, &toplevelListener, nullptr );
-    xdg_toplevel_set_title( s_toplevel, title );
-    xdg_toplevel_set_app_id( s_toplevel, "tracy" );
 
     if( s_activation )
     {

@@ -1043,6 +1043,7 @@ private:
     std::atomic<bool> m_isConnected;
 #ifdef TRACY_ON_DEMAND
     std::atomic<uint64_t> m_connectionId;
+    std::atomic<bool> m_symbolsBusy;
 
     TracyMutex m_deferredLock;
     FastVector<QueueItem> m_deferredQueue;

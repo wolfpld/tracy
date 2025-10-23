@@ -1031,7 +1031,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     wl_surface_commit( s_surf );
     while( !s_configureAcked ) wl_display_roundtrip( s_dpy );
 
-    s_eglWin = wl_egl_window_create( s_surf, s_width, s_height );
+    s_eglWin = wl_egl_window_create( s_surf, s_width * s_maxScale / 120, s_height * s_maxScale / 120 );
     s_eglSurf = eglCreatePlatformWindowSurface( s_eglDpy, eglConfig, s_eglWin, nullptr );
 
     constexpr EGLint eglCtxAttrib[] = {

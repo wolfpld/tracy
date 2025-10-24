@@ -441,6 +441,8 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
             msg->thread = CompressThread( v.tid );
             msg->color = 0xFFFFFFFF;
             msg->callstack.SetVal( 0 );
+            msg->source = MessageSourceType::User;
+            msg->severity = MessageSeverity::Info;
 
             if( m_threadCtx != v.tid )
             {
@@ -972,6 +974,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
             auto msgdata = m_slab.Alloc<MessageData>();
             msgdata->time = ReadTimeOffset( f, refTime );
             f.Read3( msgdata->ref, msgdata->color, msgdata->callstack );
+            if( fileVer >= FileVersion( 0, 13, 2 ) )
+            {
+                f.Read2( msgdata->source, msgdata->severity );
+            }
+            else
+            {
+                msgdata->source = MessageSourceType::User;
+                msgdata->severity = MessageSeverity::Info;
+            }
             m_data.messages[i] = msgdata;
             msgMap.emplace( ptr, msgdata );
         }
@@ -979,6 +990,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
     else
     {
         f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) + sizeof( MessageData::color ) + sizeof( MessageData::callstack ) ) );
+        if( fileVer >= FileVersion( 0, 13, 2 ) )
+        {
+            f.Skip( sz * ( sizeof( MessageData::source ) + sizeof( MessageData::severity ) ) );
+        }
     }
 
     f.Read( sz );
@@ -5623,6 +5638,8 @@ void Worker::ProcessMessage( const QueueMessageMetadata& ev )
     msg->thread = CompressThread( td->id );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
+    msg->source = MessageSourceFromMetadata( ev.metadata );
+    msg->severity = MessageSeverityFromMetadata( ev.metadata );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
 }
@@ -5638,6 +5655,9 @@ void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
     msg->thread = CompressThread( td->id );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
+    const MessageMetadata metadata = ev.textAndMetadata.GetTag();
+    msg->source = MessageSourceFromMetadata( metadata );
+    msg->severity = MessageSeverityFromMetadata( metadata );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
 }
@@ -5652,6 +5672,8 @@ void Worker::ProcessMessageColor( const QueueMessageColorMetadata& ev )
     msg->thread = CompressThread( td->id );
     msg->color = 0xFF000000 | ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
     msg->callstack.SetVal( 0 );
+    msg->source = MessageSourceFromMetadata( ev.metadata );
+    msg->severity = MessageSeverityFromMetadata( ev.metadata );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
 }
@@ -5667,6 +5689,9 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
     msg->thread = CompressThread( td->id );
     msg->color = 0xFF000000 | ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
     msg->callstack.SetVal( 0 );
+    const MessageMetadata metadata = ev.textAndMetadata.GetTag();
+    msg->source = MessageSourceFromMetadata( metadata );
+    msg->severity = MessageSeverityFromMetadata( metadata );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
 }
@@ -8109,6 +8134,8 @@ void Worker::Write( FileWrite& f, bool fiDict )
             f.Write( &v->ref, sizeof( v->ref ) );
             f.Write( &v->color, sizeof( v->color ) );
             f.Write( &v->callstack, sizeof( v->callstack ) );
+            f.Write( &v->source, sizeof( v->source ) );
+            f.Write( &v->severity, sizeof( v->severity ) );
         }
     }
 

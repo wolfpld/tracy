@@ -667,6 +667,8 @@ struct MessageData
     uint16_t thread;
     uint32_t color;
     Int24 callstack;
+    MessageSourceType source;
+    MessageSeverity severity;
 };
 
 enum { MessageDataSize = sizeof( MessageData ) };

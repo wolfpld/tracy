@@ -410,11 +410,8 @@ char* FormatImageName( const char* imageName, uint32_t imageNameLength )
 {
     // when doing offline symbol resolution, we must store the full path of the dll for the resolving to work
     if( s_shouldResolveSymbolsOffline )
-    {    
-        char* alloc = (char*)tracy_malloc_fast( imageNameLength + 1 );
-        memcpy( alloc, imageName, imageNameLength );
-        alloc[imageNameLength] = '\0';
-        return alloc;
+    {
+        return CopyStringFast( imageName, imageNameLength );
     }
     else
     {

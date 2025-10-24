@@ -1031,7 +1031,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     wl_surface_commit( s_surf );
     while( !s_configureAcked ) wl_display_roundtrip( s_dpy );
 
-    s_eglWin = wl_egl_window_create( s_surf, s_width * s_maxScale / 120, s_height * s_maxScale / 120 );
+    s_eglWin = wl_egl_window_create( s_surf, int( round( s_width * s_maxScale / 120.f ) ), int( round( s_height * s_maxScale / 120.f ) ) );
     s_eglSurf = eglCreatePlatformWindowSurface( s_eglDpy, eglConfig, s_eglWin, nullptr );
 
     constexpr EGLint eglCtxAttrib[] = {
@@ -1172,12 +1172,8 @@ void Backend::NewFrame( int& w, int& h )
     {
         s_prevWidth = s_width;
         s_prevHeight = s_height;
-        wl_egl_window_resize( s_eglWin, s_width * s_maxScale / 120, s_height * s_maxScale / 120, 0, 0 );
-        if( s_fracSurf )
-        {
-            wp_viewport_set_source( s_viewport, 0, 0, wl_fixed_from_double( s_width * s_maxScale / 120. ), wl_fixed_from_double( s_height * s_maxScale / 120. ) );
-            wp_viewport_set_destination( s_viewport, s_width, s_height );
-        }
+        wl_egl_window_resize( s_eglWin, int( round( s_width * s_maxScale / 120.f ) ), int( round( s_height * s_maxScale / 120.f ) ), 0, 0 );
+        if( s_fracSurf ) wp_viewport_set_destination( s_viewport, s_width, s_height );
     }
 
     if( s_prevScale != s_maxScale )
@@ -1195,8 +1191,8 @@ void Backend::NewFrame( int& w, int& h )
         m_winPos.h = s_height;
     }
 
-    w = s_width * s_maxScale / 120;
-    h = s_height * s_maxScale / 120;
+    w = int( round ( s_width * s_maxScale / 120.f ) );
+    h = int( round ( s_height * s_maxScale / 120.f ) );
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize = ImVec2( w, h );
@@ -1299,7 +1295,7 @@ void Backend::EndFrame()
     const ImVec4 clear_color = ImColor( 20, 20, 17 );
 
     ImGui::Render();
-    glViewport( 0, 0, s_width * s_maxScale / 120, s_height * s_maxScale / 120 );
+    glViewport( 0, 0, GLsizei( round( s_width * s_maxScale / 120.f ) ), GLsizei( round ( s_height * s_maxScale / 120.f ) ) );
     glClearColor( clear_color.x, clear_color.y, clear_color.z, clear_color.w );
     glClear( GL_COLOR_BUFFER_BIT );
     ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );

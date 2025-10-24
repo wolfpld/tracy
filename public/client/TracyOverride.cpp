@@ -12,11 +12,11 @@ extern "C" int dlclose( void* hnd )
     struct link_map* lm;
     if( dlinfo( hnd, RTLD_DI_LINKMAP, &lm ) == 0 )
     {
-        TracyDebug( "Overriding dlclose for %s\n", lm->l_name );
+        TracyDebug( "Overriding dlclose for %s", lm->l_name );
     }
     else
     {
-        TracyDebug( "Overriding dlclose for unknown object (%s)\n", dlerror() );
+        TracyDebug( "Overriding dlclose for unknown object (%s)", dlerror() );
     }
 #endif
     return 0;

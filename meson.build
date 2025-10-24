@@ -114,6 +114,10 @@ if get_option('verbose')
   tracy_common_args += ['-DTRACY_VERBOSE']
 endif
 
+if get_option('no_internal_message')
+  tracy_common_args += ['-DTRACY_NO_INTERNAL_MESSAGE']
+endif
+
 if get_option('debuginfod')
   tracy_common_args += ['-DTRACY_DEBUGINFOD']
   tracy_public_deps += dependency('libdebuginfod')

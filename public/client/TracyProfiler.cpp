@@ -1180,7 +1180,7 @@ static void StartSystemTracing( int64_t& samplingPeriod )
     const bool disableSystrace = ( noSysTrace && noSysTrace[0] == '1' );
     if( disableSystrace )
     {
-        TracyDebug( "TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n" );
+        TracyDebug( "TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'" );
     }
     else if( SysTraceStart( samplingPeriod ) )
     {
@@ -4239,7 +4239,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
         if( buildid )
         {
             auto d = debuginfod_find_source( GetDebuginfodClient(), buildid, size, data, nullptr );
-            TracyDebug( "DebugInfo source query: %s, fn: %s, image: %s\n", d >= 0 ? " ok " : "fail", data, image );
+            TracyDebug( "DebugInfo source query: %s, fn: %s, image: %s", d >= 0 ? " ok " : "fail", data, image );
             if( d >= 0 )
             {
                 struct stat st;
@@ -4269,7 +4269,7 @@ void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
     }
     else
     {
-        TracyDebug( "DebugInfo invalid query fn: %s, image: %s\n", data, image );
+        TracyDebug( "DebugInfo invalid query fn: %s, image: %s", data, image );
     }
 #endif
 

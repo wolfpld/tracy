@@ -133,11 +133,13 @@ constexpr uint32_t Color_Red4 = 0x8b0000;   // TracyColor.hpp
 
 static void ETWErrorAction( ULONG error_code, const char* message, int length )
 {
+#ifndef TRACY_NO_INTERNAL_MESSAGE
 #ifdef TRACY_HAS_CALLSTACK
     tracy::InitCallstackCritical();
     tracy::Profiler::MessageColor( MessageSourceType::Tracy, MessageSeverity::Error, message, length, Color_Red4, 60 );
 #else
     tracy::Profiler::MessageColor( MessageSourceType::Tracy, MessageSeverity::Error, message, length, Color_Red4, 0 );
+#endif
 #endif
 #ifdef __cpp_exceptions
     // TODO: should we throw an exception?

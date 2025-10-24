@@ -493,7 +493,7 @@ static void ProbePreciseIp( perf_event_attr& pe, unsigned long long config0, uns
         }
         pe.precise_ip--;
     }
-    TracyDebug( "  Probed precise_ip: %i\n", pe.precise_ip );
+    TracyDebug( "  Probed precise_ip: %i", pe.precise_ip );
 }
 
 static void ProbePreciseIp( perf_event_attr& pe, pid_t pid )
@@ -509,7 +509,7 @@ static void ProbePreciseIp( perf_event_attr& pe, pid_t pid )
         }
         pe.precise_ip--;
     }
-    TracyDebug( "  Probed precise_ip: %i\n", pe.precise_ip );
+    TracyDebug( "  Probed precise_ip: %i", pe.precise_ip );
 }
 
 static bool IsGenuineIntel()
@@ -587,12 +587,12 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #ifdef TRACY_VERBOSE
     int paranoidLevel = 2;
     paranoidLevel = atoi( paranoidLevelStr );
-    TracyDebug( "perf_event_paranoid: %i\n", paranoidLevel );
+    TracyDebug( "perf_event_paranoid: %i", paranoidLevel );
 #endif
 
     auto traceFsPath = GetTraceFsPath();
     if( !traceFsPath ) return false;
-    TracyDebug( "tracefs path: %s\n", traceFsPath );
+    TracyDebug( "tracefs path: %s", traceFsPath );
 
     int switchId = -1, wakingId = -1, vsyncId = -1;
     const auto switchIdStr = ReadFile( traceFsPath, "/events/sched/sched_switch/id" );
@@ -604,9 +604,9 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     tracy_free( traceFsPath );
 
-    TracyDebug( "sched_switch id: %i\n", switchId );
-    TracyDebug( "sched_waking id: %i\n", wakingId );
-    TracyDebug( "drm_vblank_event id: %i\n", vsyncId );
+    TracyDebug( "sched_switch id: %i", switchId );
+    TracyDebug( "sched_waking id: %i", wakingId );
+    TracyDebug( "drm_vblank_event id: %i", vsyncId );
 
 #ifdef TRACY_NO_SAMPLING
     const bool noSoftwareSampling = true;
@@ -686,7 +686,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     if( !noSoftwareSampling )
     {
-        TracyDebug( "Setup software sampling\n" );
+        TracyDebug( "Setup software sampling" );
         ProbePreciseIp( pe, currentPid );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -698,16 +698,16 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 fd = perf_event_open( &pe, currentPid, i, -1, PERF_FLAG_FD_CLOEXEC );
                 if( fd == -1 )
                 {
-                    TracyDebug( "  Failed to setup!\n");
+                    TracyDebug( "  Failed to setup!");
                     break;
                 }
-                TracyDebug( "  No access to kernel samples\n" );
+                TracyDebug( "  No access to kernel samples" );
             }
             new( s_ring+s_numBuffers ) RingBuffer( 64*1024, fd, EventCallstack );
             if( s_ring[s_numBuffers].IsValid() )
             {
                 s_numBuffers++;
-                TracyDebug( "  Core %i ok\n", i );
+                TracyDebug( "  Core %i ok", i );
             }
         }
     }
@@ -731,7 +731,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     if( !noRetirement )
     {
-        TracyDebug( "Setup sampling cycles + retirement\n" );
+        TracyDebug( "Setup sampling cycles + retirement" );
         ProbePreciseIp( pe, PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, currentPid );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -742,7 +742,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -757,7 +757,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -766,12 +766,12 @@ bool SysTraceStart( int64_t& samplingPeriod )
     // cache reference + miss
     if( !noCache )
     {
-        TracyDebug( "Setup sampling CPU cache references + misses\n" );
+        TracyDebug( "Setup sampling CPU cache references + misses" );
         ProbePreciseIp( pe, PERF_COUNT_HW_CACHE_REFERENCES, PERF_COUNT_HW_CACHE_MISSES, currentPid );
         if( IsGenuineIntel() )
         {
             pe.precise_ip = 0;
-            TracyDebug( "  CPU is GenuineIntel, forcing precise_ip down to 0\n" );
+            TracyDebug( "  CPU is GenuineIntel, forcing precise_ip down to 0" );
         }
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -782,7 +782,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -797,7 +797,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -806,7 +806,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     // branch retired + miss
     if( !noBranch )
     {
-        TracyDebug( "Setup sampling CPU branch retirements + misses\n" );
+        TracyDebug( "Setup sampling CPU branch retirements + misses" );
         ProbePreciseIp( pe, PERF_COUNT_HW_BRANCH_INSTRUCTIONS, PERF_COUNT_HW_BRANCH_MISSES, currentPid );
         for( int i=0; i<s_numCpus; i++ )
         {
@@ -817,7 +817,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -832,7 +832,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -855,7 +855,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
 
-        TracyDebug( "Setup vsync capture\n" );
+        TracyDebug( "Setup vsync capture" );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -865,7 +865,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -890,7 +890,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
         pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
 
-        TracyDebug( "Setup context switch capture\n" );
+        TracyDebug( "Setup context switch capture" );
         for( int i=0; i<s_numCpus; i++ )
         {
             const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -900,7 +900,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
                 if( s_ring[s_numBuffers].IsValid() )
                 {
                     s_numBuffers++;
-                    TracyDebug( "  Core %i ok\n", i );
+                    TracyDebug( "  Core %i ok", i );
                 }
             }
         }
@@ -923,7 +923,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
             pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
 
-            TracyDebug( "Setup waking up capture\n" );
+            TracyDebug( "Setup waking up capture" );
             for( int i=0; i<s_numCpus; i++ )
             {
                 const int fd = perf_event_open( &pe, -1, i, -1, PERF_FLAG_FD_CLOEXEC );
@@ -933,14 +933,14 @@ bool SysTraceStart( int64_t& samplingPeriod )
                     if( s_ring[s_numBuffers].IsValid() )
                     {
                         s_numBuffers++;
-                        TracyDebug( "  Core %i ok\n", i );
+                        TracyDebug( "  Core %i ok", i );
                     }
                 }
             }
         }
     }
 
-    TracyDebug( "Ringbuffers in use: %i\n", s_numBuffers );
+    TracyDebug( "Ringbuffers in use: %i", s_numBuffers );
 
     traceActive.store( true, std::memory_order_relaxed );
     return true;
@@ -994,7 +994,7 @@ void SysTraceWorker( void* ptr )
     SetThreadName( "Tracy Sampling" );
     InitRpmalloc();
     sched_param sp = { 99 };
-    if( pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp ) != 0 ) TracyDebug( "Failed to increase SysTraceWorker thread priority!\n" );
+    if( pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp ) != 0 ) TracyDebug( "Failed to increase SysTraceWorker thread priority!" );
     auto ctxBufferIdx = s_ctxBufferIdx;
     auto ringArray = s_ring;
     auto numBuffers = s_numBuffers;

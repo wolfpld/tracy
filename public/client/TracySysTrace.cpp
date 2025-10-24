@@ -370,7 +370,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
     CloseHandle( pt );
     if( adjust == 0 ) return false;
     const auto status = GetLastError();
-    if( status != ERROR_SUCCESS ) return false;
+    if( status != ERROR_SUCCESS )
+    {
+        TracyDebug( "Could not obtain profiling privileges. System trace will be disabled." );
+        return false;
+    }
 
     if( isOs64Bit )
     {

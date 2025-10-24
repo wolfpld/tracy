@@ -17,6 +17,8 @@ struct static_init_test_t
     {
         ZoneScoped;
         ZoneTextF( "Static %s", "init test" );
+        tracy::Profiler::Message( "Static init", TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Info );
+
         new char[64*1024];
     }
 };
@@ -149,13 +151,13 @@ void RecLock()
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 7 ) );
         std::lock_guard<LockableBase( std::recursive_mutex )> lock1( recmutex );
-        TracyMessageL( "First lock" );
+        tracy::Profiler::Message( "First lock", TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Trace );
         LockMark( recmutex );
         ZoneScoped;
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
             std::lock_guard<LockableBase( std::recursive_mutex )> lock2( recmutex );
-            TracyMessageL( "Second lock" );
+            tracy::Profiler::Message( "Second lock", TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Trace );
             LockMark( recmutex );
             std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         }
@@ -205,6 +207,7 @@ void DepthTest()
     tracy::SetThreadName( "Depth test" );
     for(;;)
     {
+        tracy::Profiler::Message( "Fibonacci", TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Debug );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
         ZoneScoped;
         const auto txt = "Fibonacci (15)";
@@ -322,16 +325,18 @@ void ArenaAllocatorTest()
     auto arena = (char*)0x12345678;
     auto aptr = arena;
 
+    // We need to have the same pointer for both TracyAllocN and TracyMemoryDiscard
+    static const char* arenaAllocName = "Arena alloc";
     for( int i=0; i<10; i++ )
     {
         for( int j=0; j<10; j++ )
         {
             const auto allocSize = 1024 + j * 128 - i * 64;
-            TracyAllocN( aptr, allocSize, "Arena alloc" );
+            TracyAllocN( aptr, allocSize, arenaAllocName );
             aptr += allocSize;
             std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
         }
-        TracyMemoryDiscard( "Arena alloc" );
+        TracyMemoryDiscard( arenaAllocName );
         aptr = arena;
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
@@ -371,7 +376,7 @@ int main()
     auto t18 = std::thread( SharedWrite2 );
 #endif
     auto t19 = std::thread( CallstackTime );
-    auto t20 = std::thread( OnlyMemory );
+    //auto t20 = std::thread( OnlyMemory );
     auto t21 = std::thread( DeadlockTest1 );
     auto t22 = std::thread( DeadlockTest2 );
     auto t23 = std::thread( ArenaAllocatorTest );
@@ -385,6 +390,13 @@ int main()
     for(;;)
     {
         TracyMessageL( "Tick" );
+
+        if((rand()%350)==0) 
+            tracy::Profiler::Message( "Random warning", TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Warning );
+
+        if((rand()%3000)==0) 
+            tracy::Profiler::Message( "Random error", TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Error );
+    
         std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         {
             ZoneScoped;

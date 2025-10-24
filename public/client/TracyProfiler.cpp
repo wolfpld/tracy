@@ -1180,7 +1180,7 @@ static void StartSystemTracing( int64_t& samplingPeriod )
     const bool disableSystrace = ( noSysTrace && noSysTrace[0] == '1' );
     if( disableSystrace )
     {
-        TracyDebug( "TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n" );
+        TracyDebug( "TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'" );
     }
     else if( SysTraceStart( samplingPeriod ) )
     {

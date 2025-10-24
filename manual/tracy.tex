@@ -646,7 +646,8 @@ Although the basic features will work without them, you'll have to grant elevate
 
 \subsubsection{Troubleshooting}
 
-Setting the \texttt{TRACY\_VERBOSE} variable will make the client display advanced information about the detected features. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
+By default, Tracy's diagnostics will be sent as Message logs (section~\ref{messagelog}) to the server.
+Setting the \texttt{TRACY\_NO\_INTERNAL\_MESSAGE} define will disable this feature, but setting the \texttt{TRACY\_VERBOSE} will make the client print advanced information about the detected features to the standard output. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
 
 \subsubsection{Changing network port}
 

@@ -22,12 +22,6 @@ inline uint32_t GetZoneCallstack<ZoneEvent>( const ZoneEvent& ev, const Worker& 
     return worker.GetZoneExtra( ev ).callstack.Val();
 }
 
-template<>
-inline uint32_t GetZoneCallstack<GpuEvent>( const GpuEvent& ev, const Worker& worker )
-{
-    return ev.callstack.Val();
-}
-
 void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
@@ -1055,7 +1049,7 @@ void View::DrawZoneInfoWindow()
                 {
                     ZoomToZone( *v );
                 }
-                ZoneTooltip( *v );
+                ZoneTooltip( { v, nullptr } );
             }
             } );
 
@@ -1287,7 +1281,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     {
                         ZoomToZone( cev );
                     }
-                    ZoneTooltip( cev );
+                    ZoneTooltip( { &cev, nullptr } );
                 }
                 ImGui::PopID();
             }
@@ -1356,7 +1350,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                             {
                                 ZoomToZone( cev );
                             }
-                            ZoneTooltip( cev );
+                            ZoneTooltip( { &cev, nullptr } );
                         }
                         ImGui::PopID();
                         ImGui::Unindent();
@@ -1422,7 +1416,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     {
                         ZoomToZone( cev );
                     }
-                    ZoneTooltip( cev );
+                    ZoneTooltip( { &cev, nullptr } );
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
@@ -1439,7 +1433,8 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
 void View::DrawGpuInfoWindow()
 {
-    auto& ev = *m_gpuInfoWindow;
+    auto& ev = m_worker.GetGpuExtra(*m_gpuInfoWindow.event);
+    auto ctx = m_gpuInfoWindow.ctx;
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
     const auto scale = GetScale();
@@ -1450,15 +1445,15 @@ void View::DrawGpuInfoWindow()
     {
         if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
         {
-            ZoomToZone( ev );
+            ZoomToZoneGPU( m_gpuInfoWindow );
         }
-        auto parent = GetZoneParent( ev );
+        auto parent = GetZoneParentGPU( m_gpuInfoWindow );
         if( parent )
         {
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
             {
-                ShowZoneInfo( *parent, m_gpuInfoWindowThread );
+                ShowZoneInfo( parent, m_gpuInfoWindowThread );
             }
         }
         if( ev.callstack.Val() != 0 )
@@ -1507,7 +1502,7 @@ void View::DrawGpuInfoWindow()
 
         ImGui::Separator();
 
-        const auto tid = GetZoneThread( ev );
+        const auto tid = GetZoneThreadGPU( ev );
         ImGui::PushFont( g_fonts.normal, FontBig );
         TextFocusedClipboard( "Zone name:", m_worker.GetString( srcloc.name ), m_worker.GetString( srcloc.name ), 1, g_fonts.normal, FontNormal );
         ImGui::SameLine();
@@ -1527,9 +1522,9 @@ void View::DrawGpuInfoWindow()
         ImGui::Separator();
         ImGui::BeginChild( "##gpuinfo" );
 
-        const auto end = m_worker.GetZoneEnd( ev );
+        const auto end = m_worker.GetZoneEndGPU( ev );
         const auto ztime = end - ev.GpuStart();
-        const auto selftime = GetZoneSelfTime( ev );
+        const auto selftime = GetZoneSelfTime( ev, true );
         TextFocused( "Time from start of program:", TimeToStringExact( ev.GpuStart() ) );
         TextFocused( "GPU execution time:", TimeToString( ztime ) );
         TextFocused( "GPU self time:", TimeToString( selftime ) );
@@ -1541,7 +1536,6 @@ void View::DrawGpuInfoWindow()
             TextDisabledUnformatted( buf );
         }
         TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
-        auto ctx = GetZoneCtx( ev );
         if( !ctx )
         {
             TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
@@ -1553,11 +1547,11 @@ void View::DrawGpuInfoWindow()
             int64_t begin;
             if( td->second.timeline.is_magic() )
             {
-                begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+                begin = ((Vector<ZoneEvent>*)&td->second.timeline)->front().Start();
             }
             else
             {
-                begin = td->second.timeline.front()->GpuStart();
+                begin = td->second.timeline.front()->Start();
             }
             const auto drift = GpuDrift( ctx );
             TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
@@ -1580,14 +1574,14 @@ void View::DrawGpuInfoWindow()
 
         ImGui::Separator();
 
-        std::vector<const GpuEvent*> zoneTrace;
+        std::vector<const ZoneEvent*> zoneTrace;
         while( parent )
         {
-            zoneTrace.emplace_back( parent );
-            parent = GetZoneParent( *parent );
+            zoneTrace.emplace_back( parent.event );
+            parent = GetZoneParentGPU( parent );
         }
         int idx = 0;
-        DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v, int& fidx ) {
+        DrawZoneTrace<const ZoneEvent*>( &ev.event, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this, ctx] ( const ZoneEvent* v, int& fidx ) {
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
@@ -1606,7 +1600,7 @@ void View::DrawGpuInfoWindow()
             {
                 ImGui::SameLine();
             }
-            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), LocationToString( fileName, srcloc.line ) );
+            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEndGPU( *v ) - v->Start() ), LocationToString( fileName, srcloc.line ) );
             ImGui::PopID();
             if( ImGui::IsItemClicked( 1 ) )
             {
@@ -1621,16 +1615,16 @@ void View::DrawGpuInfoWindow()
             }
             if( sel )
             {
-                ShowZoneInfo( *v, m_gpuInfoWindowThread );
+                ShowZoneInfo( { v, ctx }, m_gpuInfoWindowThread );
             }
             if( hover )
             {
                 m_gpuHighlight = v;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZone( *v );
+                    ZoomToZoneGPU( { v, ctx } );
                 }
-                ZoneTooltip( *v );
+                ZoneTooltip( { v, ctx } );
             }
             } );
 
@@ -1644,11 +1638,11 @@ void View::DrawGpuInfoWindow()
             {
                 if( children.is_magic() )
                 {
-                    DrawGpuInfoChildren<VectorAdapterDirect<GpuEvent>>( *(Vector<GpuEvent>*)( &children ), ztime );
+                    DrawGpuInfoChildren<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ztime, ctx );
                 }
                 else
                 {
-                    DrawGpuInfoChildren<VectorAdapterPointer<GpuEvent>>( children, ztime );
+                    DrawGpuInfoChildren<VectorAdapterPointer<ZoneEvent>>( children, ztime, ctx );
                 }
                 ImGui::TreePop();
             }
@@ -1660,13 +1654,13 @@ void View::DrawGpuInfoWindow()
 
     if( !show )
     {
-        m_gpuInfoWindow = nullptr;
+        m_gpuInfoWindow = { nullptr, nullptr };
         m_gpuInfoStack.clear();
     }
 }
 
 template<typename Adapter, typename V>
-void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
+void View::DrawGpuInfoChildren( const V& children, int64_t ztime, const GpuCtxData* ctx )
 {
     Adapter a;
     const auto rztime = 1.0 / ztime;
@@ -1689,8 +1683,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         for( size_t i=0; i<children.size(); i++ )
         {
             const auto& child = a(children[i]);
-            const auto cend = m_worker.GetZoneEnd( child );
-            const auto ct = cend - child.GpuStart();
+            const auto cend = m_worker.GetZoneEndGPU( child );
+            const auto ct = cend - child.Start();
             const auto srcloc = child.SrcLoc();
             ctime += ct;
 
@@ -1735,16 +1729,16 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 ImGui::TreeNodeEx( txt, ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen );
                 if( ImGui::IsItemClicked() )
                 {
-                    ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                    ShowZoneInfo( { &cev, ctx }, m_gpuInfoWindowThread );
                 }
                 if( ImGui::IsItemHovered() )
                 {
                     m_gpuHighlight = &cev;
                     if( IsMouseClicked( 2 ) )
                     {
-                        ZoomToZone( cev );
+                        ZoomToZoneGPU( { &cev, ctx } );
                     }
-                    ZoneTooltip( cev );
+                    ZoneTooltip( { &cev, ctx } );
                 }
                 ImGui::PopID();
             }
@@ -1781,8 +1775,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 for( size_t i=0; i<cgr.v.size(); i++ )
                 {
                     const auto& child = a(children[cgr.v[i]]);
-                    const auto cend = m_worker.GetZoneEnd( child );
-                    const auto ct = cend - child.GpuStart();
+                    const auto cend = m_worker.GetZoneEndGPU( child );
+                    const auto ct = cend - child.Start();
                     ctt[i] = ct;
                     cti[i] = uint32_t( i );
                 }
@@ -1798,16 +1792,16 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     ImGui::PushID( (int)cgr.v[cti[i]] );
                     if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
-                        ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                        ShowZoneInfo( { &cev, ctx }, m_gpuInfoWindowThread );
                     }
                     if( ImGui::IsItemHovered() )
                     {
                         m_gpuHighlight = &cev;
                         if( IsMouseClicked( 2 ) )
                         {
-                            ZoomToZone( cev );
+                            ZoomToZoneGPU( { &cev, ctx } );
                         }
-                        ZoneTooltip( cev );
+                        ZoneTooltip( { &cev, ctx } );
                     }
                     ImGui::PopID();
                     ImGui::Unindent();
@@ -1831,8 +1825,8 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         for( size_t i=0; i<children.size(); i++ )
         {
             const auto& child = a(children[i]);
-            const auto cend = m_worker.GetZoneEnd( child );
-            const auto ct = cend - child.GpuStart();
+            const auto cend = m_worker.GetZoneEndGPU( child );
+            const auto ct = cend - child.Start();
             ctime += ct;
             ctt[i] = ct;
             cti[i] = uint32_t( i );
@@ -1854,16 +1848,16 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             ImGui::PushID( (int)i );
             if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
             {
-                ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                ShowZoneInfo( { &cev, ctx }, m_gpuInfoWindowThread );
             }
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
                 if( IsMouseClicked( 2 ) )
                 {
-                    ZoomToZone( cev );
+                    ZoomToZoneGPU( { &cev, ctx } );
                 }
-                ZoneTooltip( cev );
+                ZoneTooltip( { &cev, ctx } );
             }
             ImGui::PopID();
             ImGui::NextColumn();
@@ -1887,18 +1881,18 @@ void View::ShowZoneInfo( const ZoneEvent& ev )
 
     if( m_gpuInfoWindow )
     {
-        m_gpuInfoWindow = nullptr;
+        m_gpuInfoWindow = { nullptr, nullptr };
         m_gpuInfoStack.clear();
     }
 }
 
-void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
+void View::ShowZoneInfo( const ZoneEventC ev, uint64_t thread )
 {
-    if( m_gpuInfoWindow && m_gpuInfoWindow != &ev )
+    if( m_gpuInfoWindow && m_gpuInfoWindow != ev )
     {
         m_gpuInfoStack.push_back( m_gpuInfoWindow );
     }
-    m_gpuInfoWindow = &ev;
+    m_gpuInfoWindow = ev;
     m_gpuInfoWindowThread = thread;
 
     if( m_zoneInfoWindow )
@@ -1908,16 +1902,16 @@ void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
     }
 }
 
-void View::ZoneTooltip( const ZoneEvent& ev )
+void View::ZoneTooltip( const ZoneEventC ev )
 {
     const auto tid = GetZoneThread( ev );
     auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.Start();
-    const auto selftime = GetZoneSelfTime( ev );
+    const auto selftime = GetZoneSelfTime( *ev.event, ev.IsGpu() );
 
     ImGui::BeginTooltip();
-    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).name.Active() )
+    if( m_worker.HasZoneExtra( *ev.event ) && m_worker.GetZoneExtra( ev ).name.Active() )
     {
         ImGui::TextUnformatted( m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
     }
@@ -1943,13 +1937,25 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
-    if( m_worker.AreSourceLocationZonesReady() )
-    {
-        auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
-        if( zoneData.total > 0 )
+    if( ev.IsGpu() ) {
+        if( m_worker.AreGpuSourceLocationZonesReady() )
         {
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+            auto& zoneData = m_worker.GetGpuZonesForSourceLocation( ev.SrcLoc() );
+            if( zoneData.total > 0 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+            }
+        }
+    } else {
+        if( m_worker.AreSourceLocationZonesReady() )
+        {
+            auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
+            if( zoneData.total > 0 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+            }
         }
     }
 #endif
@@ -1961,105 +1967,74 @@ void View::ZoneTooltip( const ZoneEvent& ev )
         ImGui::SameLine();
         TextDisabledUnformatted( buf );
     }
-    const auto ctx = m_worker.GetContextSwitchData( tid );
-    if( ctx )
+    if( ev.IsGpu() )
     {
-        int64_t time;
-        uint64_t cnt;
-        if( GetZoneRunningTime( ctx, ev, time, cnt ) )
+        auto ctx = ev.ctx;
+        const auto& ex = m_worker.GetGpuExtra(*ev.event);
+        TextFocused( "CPU command setup time:", TimeToString( ex.CpuEnd() - ex.CpuStart() ) );
+        if( !ctx )
         {
-            TextFocused( "Running state time:", TimeToString( time ) );
-            if( ztime != 0 )
+            TextFocused( "Delay to execution:", TimeToString( ex.GpuStart() - ex.CpuStart() ) );
+        }
+        else
+        {
+            const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ex.Thread() ) );
+            assert( td != ctx->threadData.end() );
+            int64_t begin;
+            if( td->second.timeline.is_magic() )
             {
-                char buf[64];
-                PrintStringPercent( buf, 100.f * time / ztime );
-                ImGui::SameLine();
-                TextDisabledUnformatted( buf );
+                begin = ( (Vector<ZoneEvent>*)&td->second.timeline )->front().Start();
             }
-            TextFocused( "Running state regions:", RealToString( cnt ) );
+            else
+            {
+                begin = td->second.timeline.front()->Start();
+            }
+            const auto drift = GpuDrift( ctx );
+            TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ex.GpuStart(), begin, drift ) - ex.CpuStart() ) );
+        }
+
+        if( ctx->notes.contains( ex.query_id ) )
+        {
+            for( auto& p : ctx->notes.at( ex.query_id ) )
+            {
+                if( ctx->noteNames.count( p.first ) )
+                {
+                    TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
+                }
+                else
+                {
+                    TextFocused( RealToString( p.first ), RealToString( p.second ) );
+                }
+            }
         }
     }
-    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
+    else
+    {
+        const auto ctx = m_worker.GetContextSwitchData( tid );
+        if( ctx )
+        {
+            int64_t time;
+            uint64_t cnt;
+            if( GetZoneRunningTime( ctx, *ev.event, time, cnt ) )
+            {
+                TextFocused( "Running state time:", TimeToString( time ) );
+                if( ztime != 0 )
+                {
+                    char buf[64];
+                    PrintStringPercent( buf, 100.f * time / ztime );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( buf );
+                }
+                TextFocused( "Running state regions:", RealToString( cnt ) );
+            }
+        }
+    }
+
+    if( m_worker.HasZoneExtra( *ev.event ) && m_worker.GetZoneExtra( ev ).text.Active() )
     {
         ImGui::NewLine();
         TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
     }
-    ImGui::EndTooltip();
-}
-
-void View::ZoneTooltip( const GpuEvent& ev )
-{
-    const auto tid = GetZoneThread( ev );
-    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
-    const auto end = m_worker.GetZoneEnd( ev );
-    const auto ztime = end - ev.GpuStart();
-    const auto selftime = GetZoneSelfTime( ev );
-
-    ImGui::BeginTooltip();
-    ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
-    ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
-    ImGui::Separator();
-    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
-    ImGui::SameLine();
-    ImGui::TextUnformatted( LocationToString( m_worker.GetString( srcloc.file ), srcloc.line ) );
-    SmallColorBox( GetThreadColor( tid, 0 ) );
-    ImGui::SameLine();
-    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-    if( m_worker.IsThreadFiber( tid ) )
-    {
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
-    }
-    ImGui::Separator();
-    TextFocused( "GPU execution time:", TimeToString( ztime ) );
-    TextFocused( "GPU self time:", TimeToString( selftime ) );
-    if( ztime != 0 )
-    {
-        char buf[64];
-        PrintStringPercent( buf, 100.f * selftime / ztime );
-        ImGui::SameLine();
-        TextDisabledUnformatted( buf );
-    }
-    TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
-    auto ctx = GetZoneCtx( ev );
-    if( !ctx )
-    {
-        TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
-    }
-    else
-    {
-        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
-        assert( td != ctx->threadData.end() );
-        int64_t begin;
-        if( td->second.timeline.is_magic() )
-        {
-            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
-        }
-        else
-        {
-            begin = td->second.timeline.front()->GpuStart();
-        }
-        const auto drift = GpuDrift( ctx );
-        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
-    }
-
-    if( ctx->notes.contains( ev.query_id ) )
-    {
-        for( auto& p : ctx->notes.at( ev.query_id ) )
-        {
-            if( ctx->noteNames.count( p.first ) )
-            {
-                TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
-            }
-            else
-            {
-                TextFocused( RealToString( p.first ), RealToString( p.second ) );
-            }
-        }
-    }
-
     ImGui::EndTooltip();
 }
 

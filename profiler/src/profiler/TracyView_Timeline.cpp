@@ -473,8 +473,9 @@ void View::DrawTimeline()
     }
     if( m_gpuInfoWindow )
     {
-        const auto px0 = ( m_gpuInfoWindow->CpuStart() - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->CpuEnd() - m_vd.zvStart ) * pxns );
+        const auto ex = m_worker.GetGpuExtra( *m_gpuInfoWindow.event );
+        const auto px0 = ( ex.CpuStart() - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( ex.CpuEnd() - m_vd.zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DD88 );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }

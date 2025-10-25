@@ -70,12 +70,12 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
                 {
                     if( it->second.timeline.is_magic() )
                     {
-                        auto& tl = *(Vector<GpuEvent>*)&it->second.timeline;
-                        tid = m_worker.DecompressThread( tl.begin()->Thread() );
+                        auto& tl = *(Vector<ZoneEvent>*)&it->second.timeline;
+                        tid = m_worker.DecompressThread( m_worker.GetGpuExtra( *tl.begin() ).Thread() );
                     }
                     else
                     {
-                        tid = m_worker.DecompressThread( (*it->second.timeline.begin())->Thread() );
+                        tid = m_worker.DecompressThread( m_worker.GetGpuExtra( **it->second.timeline.begin() ).Thread() );
                     }
                 }
             }
@@ -147,11 +147,11 @@ int64_t TimelineItemGpu::RangeBegin() const
         int64_t t0;
         if( td.second.timeline.is_magic() )
         {
-            t0 = ((Vector<GpuEvent>*)&td.second.timeline)->front().GpuStart();
+            t0 = ((Vector<ZoneEvent>*)&td.second.timeline)->front().Start();
         }
         else
         {
-            t0 = td.second.timeline.front()->GpuStart();
+            t0 = td.second.timeline.front()->Start();
         }
         if( t0 >= 0 )
         {
@@ -169,21 +169,21 @@ int64_t TimelineItemGpu::RangeEnd() const
         int64_t t0;
         if( td.second.timeline.is_magic() )
         {
-            t0 = ((Vector<GpuEvent>*)&td.second.timeline)->front().GpuStart();
+            t0 = ((Vector<ZoneEvent>*)&td.second.timeline)->front().Start();
         }
         else
         {
-            t0 = td.second.timeline.front()->GpuStart();
+            t0 = td.second.timeline.front()->Start();
         }
         if( t0 >= 0 )
         {
             if( td.second.timeline.is_magic() )
             {
-                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( ((Vector<GpuEvent>*)&td.second.timeline)->back() ) ) );
+                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEndGPU( ((Vector<ZoneEvent>*)&td.second.timeline)->back() ) ) );
             }
             else
             {
-                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *td.second.timeline.back() ) ) );
+                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEndGPU( *td.second.timeline.back() ) ) );
             }
         }
     }

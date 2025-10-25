@@ -398,7 +398,7 @@ struct QueueMessageColorFatThread : public QueueMessageColorFat
 };
 
 // Don't change order, only add new entries at the end, this is also used on trace dumps!
-enum class GpuContextType : uint8_t
+enum class ZoneContextType : uint8_t
 {
     Invalid,
     OpenGl,
@@ -409,7 +409,8 @@ enum class GpuContextType : uint8_t
     Metal,
     Custom,
     CUDA,
-    Rocprof
+    Rocprof,
+    CPU
 };
 
 enum GpuContextFlags : uint8_t
@@ -425,7 +426,7 @@ struct QueueGpuNewContext
     float period;
     uint8_t context;
     GpuContextFlags flags;
-    GpuContextType type;
+    ZoneContextType type;
 };
 
 struct QueueGpuZoneBeginLean

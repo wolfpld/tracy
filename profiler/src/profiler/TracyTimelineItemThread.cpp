@@ -34,9 +34,10 @@ bool TimelineItemThread::IsEmpty() const
 {
     auto& crash = m_worker.GetCrashEvent();
     return crash.thread != m_thread->id &&
-        m_thread->timeline.empty() &&
-        m_thread->messages.empty() &&
-        m_thread->ghostZones.empty();
+           m_thread->timeline.empty() &&
+           m_thread->messages.empty() &&
+           ( m_thread->ctx->type != ZoneContextType::CPU ||
+             static_cast<const CPUThreadData*>( m_thread )->ghostZones.empty() );
 }
 
 uint32_t TimelineItemThread::HeaderColor() const
@@ -220,14 +221,18 @@ void TimelineItemThread::HeaderTooltip( const char* label ) const
     {
         TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
     }
-    if( !m_thread->samples.empty() )
+    if( m_thread->ctx->type != ZoneContextType::CPU )
     {
-        TextFocused( "Call stack samples:", RealToString( m_thread->samples.size() ) );
-        if( m_thread->kernelSampleCnt != 0 )
+        auto cpu_thread = static_cast<const CPUThreadData*>( m_thread );
+        if( !cpu_thread->samples.empty() )
         {
-            TextFocused( "Kernel samples:", RealToString( m_thread->kernelSampleCnt ) );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%.2f%%)", 100.f * m_thread->kernelSampleCnt / m_thread->samples.size() );
+            TextFocused( "Call stack samples:", RealToString( cpu_thread->samples.size() ) );
+            if( cpu_thread->kernelSampleCnt != 0 )
+            {
+                TextFocused( "Kernel samples:", RealToString( cpu_thread->kernelSampleCnt ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%%)", 100.f * cpu_thread->kernelSampleCnt / cpu_thread->samples.size() );
+            }
         }
     }
     ImGui::EndTooltip();
@@ -238,21 +243,25 @@ void TimelineItemThread::HeaderExtraContents( const TimelineContext& ctx, int of
     m_view.DrawThreadMessagesList( ctx, m_msgDraw, offset, m_thread->id );
 
 #ifndef TRACY_NO_STATISTICS
-    const bool hasGhostZones = m_worker.AreGhostZonesReady() && !m_thread->ghostZones.empty();
-    if( hasGhostZones && !m_thread->timeline.empty() )
+    if( m_thread->ctx->type == ZoneContextType::CPU )
     {
-        auto draw = ImGui::GetWindowDrawList();
-        const auto ty = ImGui::GetTextLineHeight();
-
-        const auto color = m_ghost ? 0xFFAA9999 : 0x88AA7777;
-        draw->AddText( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), color, ICON_FA_GHOST );
-        float ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
-
-        if( ctx.hover && ImGui::IsMouseHoveringRect( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), ctx.wpos + ImVec2( 1.5f * ty + labelWidth + ghostSz, offset + ty ) ) )
+        auto cpu_thread = static_cast<const CPUThreadData*>( m_thread );
+        const bool hasGhostZones = m_worker.AreGhostZonesReady() && !cpu_thread->ghostZones.empty();
+        if( hasGhostZones && !m_thread->timeline.empty() )
         {
-            if( IsMouseClicked( 0 ) )
+            auto draw = ImGui::GetWindowDrawList();
+            const auto ty = ImGui::GetTextLineHeight();
+
+            const auto color = m_ghost ? 0xFFAA9999 : 0x88AA7777;
+            draw->AddText( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), color, ICON_FA_GHOST );
+            float ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
+
+            if( ctx.hover && ImGui::IsMouseHoveringRect( ctx.wpos + ImVec2( 1.5f * ty + labelWidth, offset ), ctx.wpos + ImVec2( 1.5f * ty + labelWidth + ghostSz, offset + ty ) ) )
             {
-                m_ghost = !m_ghost;
+                if( IsMouseClicked( 0 ) )
+                {
+                    m_ghost = !m_ghost;
+                }
             }
         }
     }
@@ -309,9 +318,10 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
 
     td.Queue( [this, &ctx, visible] {
 #ifndef TRACY_NO_STATISTICS
-        if( m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
+        if( m_thread->ctx->type == ZoneContextType::CPU && m_worker.AreGhostZonesReady() && ( m_ghost || ( m_view.GetViewData().ghostZones && m_thread->timeline.empty() ) ) )
         {
-            m_depth = PreprocessGhostLevel( ctx, m_thread->ghostZones, 0, visible );
+            auto cpu_thread = static_cast<const CPUThreadData*>( m_thread );
+            m_depth = PreprocessGhostLevel( ctx, cpu_thread->ghostZones, 0, visible );
         }
         else
 #endif
@@ -336,12 +346,16 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         }
     }
 
-    m_hasSamples = false;
-    if( vd.drawSamples && !m_thread->samples.empty() )
+    if( m_thread->ctx->type == ZoneContextType::CPU )
     {
-        td.Queue( [this, &ctx, visible, yPos] {
-            PreprocessSamples( ctx, m_thread->samples, visible, yPos );
-        } );
+        auto cpu_thread = static_cast<const CPUThreadData*>( m_thread );
+        m_hasSamples = false;
+        if( vd.drawSamples && !cpu_thread->samples.empty() )
+        {
+            td.Queue( [this, &ctx, visible, yPos, cpu_thread] {
+                PreprocessSamples( ctx, cpu_thread->samples, visible, yPos );
+            } );
+        }
     }
 
     m_hasMessages = false;
@@ -525,7 +539,6 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
     if( !visible ) return;
 
     const auto MinCtxNs = int64_t( round( GetScale() * MinCtxSize * nspx ) );
-    const auto& sampleData = m_thread->samples;
 
     bool first = true;
     while( it < citend )
@@ -535,8 +548,9 @@ void TimelineItemThread::PreprocessContextSwitches( const TimelineContext& ctx, 
         {
             first = false;
         }
-        else
+        else if ( m_thread->ctx->type == ZoneContextType::CPU )
         {
+            const Vector<SampleData>& sampleData = static_cast<const CPUThreadData*>( m_thread )->samples;
             uint32_t waitStack = 0;
             if( !sampleData.empty() )
             {

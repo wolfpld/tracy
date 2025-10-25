@@ -31,7 +31,7 @@ const char* TimelineItemGpu::HeaderLabel() const
     }
     else
     {
-        sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+        sprintf( buf, "%s context %i", ZoneContextNames[(int)m_gpu->type], m_idx );
     }
     return buf;
 }
@@ -40,13 +40,13 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
 {
     const bool dynamicColors = m_view.GetViewData().dynamicColors;
     const bool isMultithreaded =
-        ( m_gpu->type == GpuContextType::Vulkan ) ||
-        ( m_gpu->type == GpuContextType::OpenCL ) ||
-        ( m_gpu->type == GpuContextType::Direct3D12 ) ||
-        ( m_gpu->type == GpuContextType::Metal );
+        ( m_gpu->type == ZoneContextType::Vulkan ) ||
+        ( m_gpu->type == ZoneContextType::OpenCL ) ||
+        ( m_gpu->type == ZoneContextType::Direct3D12 ) ||
+        ( m_gpu->type == ZoneContextType::Metal );
 
     char buf[64];
-    sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+    sprintf( buf, "%s context %i", ZoneContextNames[(int)m_gpu->type], m_idx );
 
     ImGui::BeginTooltip();
     if( m_gpu->name.Active() ) TextFocused( "Name:", m_worker.GetString( m_gpu->name ) );
@@ -66,18 +66,7 @@ void TimelineItemGpu::HeaderTooltip( const char* label ) const
             auto tid = it->first;
             if( tid == 0 )
             {
-                if( !it->second.timeline.empty() )
-                {
-                    if( it->second.timeline.is_magic() )
-                    {
-                        auto& tl = *(Vector<GpuEvent>*)&it->second.timeline;
-                        tid = m_worker.DecompressThread( tl.begin()->Thread() );
-                    }
-                    else
-                    {
-                        tid = m_worker.DecompressThread( (*it->second.timeline.begin())->Thread() );
-                    }
-                }
+                tid = it->second->id;
             }
             SmallColorBox( GetThreadColor( tid, 0, dynamicColors ) );
             ImGui::SameLine();
@@ -134,7 +123,7 @@ void TimelineItemGpu::HeaderExtraContents( const TimelineContext& ctx, int offse
         const auto ty = ImGui::GetTextLineHeight();
 
         char buf[64];
-        sprintf( buf, "%s context %i", GpuContextNames[(int)m_gpu->type], m_idx );
+        sprintf( buf, "%s context %i", ZoneContextNames[(int)m_gpu->type], m_idx );
         draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), HeaderColorInactive(), buf );
     }
 }
@@ -145,13 +134,13 @@ int64_t TimelineItemGpu::RangeBegin() const
     for( auto& td : m_gpu->threadData )
     {
         int64_t t0;
-        if( td.second.timeline.is_magic() )
+        if( td.second->timeline.is_magic() )
         {
-            t0 = ((Vector<GpuEvent>*)&td.second.timeline)->front().GpuStart();
+            t0 = ((Vector<ZoneEvent>*)&td.second->timeline)->front().Start();
         }
         else
         {
-            t0 = td.second.timeline.front()->GpuStart();
+            t0 = td.second->timeline.front()->Start();
         }
         if( t0 >= 0 )
         {
@@ -167,23 +156,23 @@ int64_t TimelineItemGpu::RangeEnd() const
     for( auto& td : m_gpu->threadData )
     {
         int64_t t0;
-        if( td.second.timeline.is_magic() )
+        if( td.second->timeline.is_magic() )
         {
-            t0 = ((Vector<GpuEvent>*)&td.second.timeline)->front().GpuStart();
+            t0 = ((Vector<ZoneEvent>*)&td.second->timeline)->front().Start();
         }
         else
         {
-            t0 = td.second.timeline.front()->GpuStart();
+            t0 = td.second->timeline.front()->Start();
         }
         if( t0 >= 0 )
         {
-            if( td.second.timeline.is_magic() )
+            if( td.second->timeline.is_magic() )
             {
-                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( ((Vector<GpuEvent>*)&td.second.timeline)->back() ) ) );
+                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( ((Vector<ZoneEvent>*)&td.second->timeline)->back() ) ) );
             }
             else
             {
-                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *td.second.timeline.back() ) ) );
+                t = std::max( t, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *td.second->timeline.back() ) ) );
             }
         }
     }

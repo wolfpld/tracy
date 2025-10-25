@@ -1140,7 +1140,6 @@ bool View::DrawImpl()
     ImGui::End();
 
     m_zoneHighlight = nullptr;
-    m_gpuHighlight = nullptr;
 
     DrawInfoWindow();
 

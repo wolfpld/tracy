@@ -1561,19 +1561,19 @@ void View::DrawGpuInfoWindow()
             }
             const auto drift = GpuDrift( ctx );
             TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
-        }
 
-        if( ctx->notes.contains( ev.query_id ) )
-        {
-            for( auto& p : ctx->notes.at( ev.query_id ) )
+            if( ctx->notes.contains( ev.query_id ) )
             {
-                if( ctx->noteNames.count( p.first ) )
+                for( auto& p : ctx->notes.at( ev.query_id ) )
                 {
-                    TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
-                }
-                else
-                {
-                    TextFocused( RealToString( p.first ), RealToString( p.second ) );
+                    if( ctx->noteNames.count( p.first ) )
+                    {
+                        TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
+                    }
+                    else
+                    {
+                        TextFocused( RealToString( p.first ), RealToString( p.second ) );
+                    }
                 }
             }
         }
@@ -2043,19 +2043,19 @@ void View::ZoneTooltip( const GpuEvent& ev )
         }
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
-    }
 
-    if( ctx->notes.contains( ev.query_id ) )
-    {
-        for( auto& p : ctx->notes.at( ev.query_id ) )
+        if( ctx->notes.contains( ev.query_id ) )
         {
-            if( ctx->noteNames.count( p.first ) )
+            for( auto& p : ctx->notes.at( ev.query_id ) )
             {
-                TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
-            }
-            else
-            {
-                TextFocused( RealToString( p.first ), RealToString( p.second ) );
+                if( ctx->noteNames.count( p.first ) )
+                {
+                    TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
+                }
+                else
+                {
+                    TextFocused( RealToString( p.first ), RealToString( p.second ) );
+                }
             }
         }
     }

@@ -778,6 +778,15 @@ static void DrawContents()
                 }
 
                 ImGui::Spacing();
+                if( ImGui::Checkbox( "Time limit", &tracy::s_config.timeLimit ) ) tracy::SaveConfig();
+                ImGui::SameLine();
+                tracy::DrawHelpMarker( "When enabled, the profiler will stop recording data once the connection duration exceeds the specified value (in seconds). Note that the capture duration itself is not correlated to the connection duration." );
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth( 70 * dpiScale );
+                if( ImGui::InputFloat( "##timelimit", &tracy::s_config.connectionTimeLimitSeconds, 0.f, 0.f, "%.2f" ) ) { tracy::s_config.connectionTimeLimitSeconds = std::max( tracy::s_config.connectionTimeLimitSeconds, 0.f ); tracy::SaveConfig(); }
+                ImGui::SameLine();
+                ImGui::TextUnformatted( "s" );
+                ImGui::Spacing();
                 if( ImGui::Checkbox( "Enable achievements", &tracy::s_config.achievements ) ) tracy::SaveConfig();
                 ImGui::Spacing();
                 if( ImGui::Checkbox( "Save UI scale", &tracy::s_config.saveUserScale) ) tracy::SaveConfig();
@@ -970,11 +979,18 @@ static void DrawContents()
                 }
             }
         }
-        if( tracy::s_config.memoryLimit )
+        if( tracy::s_config.memoryLimit || tracy::s_config.timeLimit )
         {
             ImGui::SameLine();
             tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_TRIANGLE_EXCLAMATION );
-            tracy::TooltipIfHovered( "Memory limit is active" );
+            if( tracy::s_config.memoryLimit )
+            {
+                tracy::TooltipIfHovered( "Memory limit is active" );
+            }
+            if( tracy::s_config.timeLimit )
+            {
+                tracy::TooltipIfHovered( "Capture duration limit is active" );
+            }
         }
         ImGui::SameLine( 0, ImGui::GetTextLineHeight() * 2 );
 

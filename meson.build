@@ -220,7 +220,8 @@ endif
 pkg = import('pkgconfig')
 pkg.generate(tracy,
   extra_cflags : tracy_dep_compile_args,
-  requires     : tracy_public_deps)
+  requires     : tracy_public_deps,
+  libraries: [tracy])
 
 tracy_dep = declare_dependency(
     compile_args        : tracy_dep_compile_args,

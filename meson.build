@@ -17,8 +17,8 @@ if get_option('on_demand')
   tracy_common_args += ['-DTRACY_ON_DEMAND']
 endif
 
-if get_option('callstack')
-  tracy_common_args += ['-DTRACY_CALLSTACK']
+if get_option('callstack') > 0
+  tracy_common_args += ['-DTRACY_CALLSTACK='+get_option('callstack').to_string()]
 endif
 
 if get_option('no_callstack')

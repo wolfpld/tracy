@@ -69,7 +69,7 @@ void SourceContents::Parse( const char* fileName, const Worker& worker, const Vi
 void SourceContents::Parse( const char* source )
 {
     if( source == m_data ) return;
-    Parse( m_data, strlen( source ) );
+    Parse( source, strlen( source ) );
 }
 
 void SourceContents::Parse( const char* source, size_t len )

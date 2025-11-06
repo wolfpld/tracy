@@ -214,10 +214,10 @@
 
 #define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size )
 
-#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, TRACY_CALLSTACK )
-#define TracyMessageL( txt ) tracy::Profiler::Message( txt, TRACY_CALLSTACK )
-#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK )
-#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, TRACY_CALLSTACK )
+#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
+#define TracyMessageL( txt ) tracy::Profiler::Message( txt, TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
+#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
+#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, TRACY_CALLSTACK, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
 
 #define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK, false )
 #define TracyFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK, false )
@@ -256,10 +256,10 @@
 #define TracySecureFreeNS( ptr, depth, name ) tracy::Profiler::MemFreeCallstackNamed( ptr, depth, true, name )
 #define TracySecureMemoryDiscardS( name, depth ) tracy::Profiler::MemDiscardCallstack( name, true, depth )
 
-#define TracyMessageS( txt, size, depth ) tracy::Profiler::Message( txt, size, depth )
-#define TracyMessageLS( txt, depth ) tracy::Profiler::Message( txt, depth )
-#define TracyMessageCS( txt, size, color, depth ) tracy::Profiler::MessageColor( txt, size, color, depth )
-#define TracyMessageLCS( txt, color, depth ) tracy::Profiler::MessageColor( txt, color, depth )
+#define TracyMessageS( txt, size, depth ) tracy::Profiler::Message( txt, size, depth, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
+#define TracyMessageLS( txt, depth ) tracy::Profiler::Message( txt, depth, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
+#define TracyMessageCS( txt, size, color, depth ) tracy::Profiler::MessageColor( txt, size, color, depth, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
+#define TracyMessageLCS( txt, color, depth ) tracy::Profiler::MessageColor( txt, color, depth, tracy::MessageSourceType::User, tracy::MessageSeverity::Info )
 
 #define TracySourceCallbackRegister( cb, data ) tracy::Profiler::SourceCallbackRegister( cb, data )
 #define TracyParameterRegister( cb, data ) tracy::Profiler::ParameterRegister( cb, data )

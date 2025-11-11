@@ -2,6 +2,55 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.13.0 (2025-11-11)
+--------------------
+
+- Added optional LLM integration.
+  - Can be completely disabled in options.
+  - Requires you to provide a local LLM service.
+  - Can be used to retrieve information from the user manual.
+  - Can answer queries about application call stacks, assembly code, other
+    general questions.
+  - Will refer to network resources to obtain information.
+  - The required setup is detailed in the user manual.
+- Added support for Microsoft Game Development Kit (GDK).
+- Added support for ROCm / Rocprof.
+- Default values for certain settings can be now saved in the options
+  window.
+- The display height of any timeline thread can be limited with a thread
+  cropper widget at the left border of the screen.
+- System tracing is now stopped when the profiled program wants to exit.
+- System tracing can be now enabled and disabled by the profile program.
+- Added support for host query reset when collecting Vulkan traces.
+- The find zone statistics now also show P99 and P99.9.
+- Timeline for a thread will no longer hide if there are no zones to show,
+  but samples are visible.
+- Fixed problems with Wayland integration.
+  - Proper order of operations is now ensured during initialization.
+  - The window size calculations for fractional scaling are now done
+    correctly.
+- The Linux tracefs mount path is now properly detected, instead of relying
+  on a hardcoded value.
+- Fixed LockMark macro expansion.
+- Fixed invalid reported fiber enter time.
+- Properly handle fiber enter and leave events in the on demand mode.
+- Removed calibration of queue delay time. It served no real purpose.
+- Various improvements have been made to speed up symbol and executable
+  image queries.
+- Exposed internal mutex variable in Lockable and SharedLockable.
+- Fixed problems with Linux systems that do not use glibc.
+- Fixed edge case that could corrupt rpmalloc state in the profiled
+  application.
+- Extended ZoneNameF macro with compiler checks for proper printf args.
+- Warnings about variable redefinition by nested zone macros are now
+  supressed by default. The old behavior can be restored by adding the
+  TRACY_ALLOW_SHADOW_WARNING define during compilation of your program.
+- Fixed window icon and dock integration on macOS.
+- Fixed edge case with symbols thread not behaving as expected when on
+  demand mode was used and a rapid reconnection was made.
+- Properly defer GPU context events in serial C API.
+
+
 v0.12.2 (2025-06-25)
 --------------------
 

@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "tracy_client"
-version = "0.12.2"
+version = "0.13.0"
 description = "A real time, nanosecond resolution, remote telemetry, hybrid frame and sampling profiler for games and other applications."
 authors = [
   { name = "Bartosz Taudul", email = "wolf@nereid.pl" },

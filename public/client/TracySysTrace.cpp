@@ -777,11 +777,21 @@ static char* GetTraceFsPath()
     int fd = open( "/proc/mounts", O_RDONLY );
     if( fd < 0 ) return nullptr;
 
-    constexpr size_t BufSize = 64 * 1024;
+    constexpr ssize_t BufSize = 64 * 1024;
     auto tmp = (char*)tracy_malloc( BufSize );
-    const auto cnt = read( fd, tmp, BufSize-1 );
+
+    ssize_t cnt = 0;
+    ssize_t readRetVal = 0;
+    while (cnt < BufSize - 1)
+    {
+        const ssize_t bufBytesRemaining = BufSize - 1 - cnt;
+        readRetVal = read( fd, tmp + cnt, bufBytesRemaining );
+        if (readRetVal <= 0) break;
+        cnt += readRetVal;
+    }
+
     close( fd );
-    if( cnt < 0 )
+    if( readRetVal < 0 )
     {
         tracy_free( tmp );
         return nullptr;

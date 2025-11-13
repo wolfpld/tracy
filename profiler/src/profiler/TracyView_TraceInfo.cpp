@@ -899,8 +899,9 @@ void View::DrawInfo()
         const auto stepping = cpuId & 0xF;
         const auto baseModel = ( cpuId >> 4 ) & 0xF;
         const auto baseFamily = ( cpuId >> 8 ) & 0xF;
-        const auto extModel = ( cpuId >> 12 ) & 0xF;
-        const auto extFamily = ( cpuId >> 16 );
+        // 12-15 unused
+        const auto extModel = ( cpuId >> 16 ) & 0xF;
+        const auto extFamily = ( cpuId >> 20 ) & 0xFF;
 
         const uint32_t model = ( baseFamily == 6 || baseFamily == 15 ) ? ( ( extModel << 4 ) | baseModel ) : baseModel;
         const uint32_t family = baseFamily == 15 ? baseFamily + extFamily : baseFamily;

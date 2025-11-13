@@ -75,7 +75,7 @@ namespace tracy
 {
 
 #ifdef TRACY_DEBUGINFOD
-int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size );
+int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const char* filename );
 #endif
 
 #if !defined(HAVE_DECL_STRNLEN) || !HAVE_DECL_STRNLEN

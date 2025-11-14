@@ -25,8 +25,8 @@ index 4ca0536..a1ff572 100644
  
  /* gl3w internal state */
  union ImGL3WProcs {
--    GL3WglProc ptr[60];
-+    GL3WglProc ptr[61];
+-    GL3WglProc ptr[63];
++    GL3WglProc ptr[64];
      struct {
          PFNGLACTIVETEXTUREPROC            ActiveTexture;
          PFNGLATTACHSHADERPROC             AttachShader;

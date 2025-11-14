@@ -26,10 +26,11 @@ else()
     CPMAddPackage(
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
-        GIT_TAG 6.0.0-Alpha1
+        GIT_TAG 6.0.0-Alpha5
         OPTIONS
             "CAPSTONE_X86_ATT_DISABLE ON"
             "CAPSTONE_ALPHA_SUPPORT OFF"
+            "CAPSTONE_ARC_SUPPORT OFF"
             "CAPSTONE_HPPA_SUPPORT OFF"
             "CAPSTONE_LOONGARCH_SUPPORT OFF"
             "CAPSTONE_M680X_SUPPORT OFF"
@@ -54,7 +55,7 @@ else()
     )
     add_library(TracyCapstone INTERFACE)
     target_include_directories(TracyCapstone INTERFACE ${capstone_SOURCE_DIR}/include/capstone)
-    target_link_libraries(TracyCapstone INTERFACE capstone)
+    target_link_libraries(TracyCapstone INTERFACE capstone_static)
 endif()
 
 # GLFW

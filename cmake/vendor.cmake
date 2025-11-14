@@ -280,7 +280,7 @@ if(NOT EMSCRIPTEN)
         CPMAddPackage(
             NAME libcurl
             GITHUB_REPOSITORY curl/curl
-            GIT_TAG curl-8_14_1
+            GIT_TAG curl-8_17_0
             OPTIONS
                 "BUILD_STATIC_LIBS ON"
                 "BUILD_SHARED_LIBS OFF"

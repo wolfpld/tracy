@@ -157,7 +157,7 @@
         _Pragma("clang diagnostic ignored \"-Wshadow\"") \
         Expr \
         _Pragma("clang diagnostic pop")
-#elif defined(__GNU__)
+#elif defined(__GNUC__)
     #define SuppressVarShadowWarning(Expr) \
         _Pragma("GCC diagnostic push") \
         _Pragma("GCC diagnostic ignored \"-Wshadow\"") \

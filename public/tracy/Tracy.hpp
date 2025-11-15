@@ -155,19 +155,19 @@
     #define SuppressVarShadowWarning(Expr) \
         _Pragma("clang diagnostic push") \
         _Pragma("clang diagnostic ignored \"-Wshadow\"") \
-        Expr \
+        Expr; \
         _Pragma("clang diagnostic pop")
 #elif defined(__GNUC__)
     #define SuppressVarShadowWarning(Expr) \
         _Pragma("GCC diagnostic push") \
         _Pragma("GCC diagnostic ignored \"-Wshadow\"") \
-        Expr \
+        Expr; \
         _Pragma("GCC diagnostic pop")
 #elif defined(_MSC_VER) 
     #define SuppressVarShadowWarning(Expr) \
         _Pragma("warning(push)") \
         _Pragma("warning(disable : 4456)") \
-        Expr \
+        Expr; \
         _Pragma("warning(pop)")
 #else
     #define SuppressVarShadowWarning(Expr) Expr

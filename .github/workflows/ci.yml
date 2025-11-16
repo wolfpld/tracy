@@ -1,0 +1,38 @@
+name: Build all platforms
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - runningSystem: windows-latest
+            testCompilation: false
+            webBuild: false
+            regularBuilds: true
+          - runningSystem: ubuntu-latest
+            testCompilation: true
+            webBuild: true
+            regularBuilds: true
+          - runningSystem: macos-15
+            testCompilation: false
+            webBuild: false
+            regularBuilds: true
+    uses: ./.github/workflows/build.yml
+    with:
+      runningSystem: ${{ matrix.runningSystem }}
+      testCompilation: ${{ matrix.testCompilation }}
+      webBuild: ${{ matrix.webBuild }}
+      regularBuilds: ${{ matrix.regularBuilds }}
+  manual:
+    needs:
+      - build
+    uses: ./.github/workflows/latex.yml
+    with:
+      deploy: false

@@ -3630,7 +3630,7 @@ Each line in the thread execution display represents a separate logical CPU thre
 \item \emph{Gray} -- Threads assigned to other programs running in the system.
 \end{itemize}
 
-When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores. 
+When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to quickly see how the thread migrated across the CPU cores.
 
 It will also add lines starting with a filed circle to denote wake up events. Those are useful to pinpoint the origin of a thread waking up, especially when holding locks. It may also start from an empty region, denoting the time at which the kernel chose to schedule or boost the priority of your thread. Wake ups will have a different color based on the reason for which the thread was waiting to be scheduled.
 
@@ -3668,7 +3668,7 @@ It will also add lines starting with a filed circle to denote wake up events. Th
 
 In the above picture, \emph{Thread B} migrates from \emph{Core 3} to \emph{Core 4} due to a wake up from \emph{Thread A}. Then it migrates from \emph{Core 4} to \emph{Core 1}.
 
-Clicking the \LMB{}~left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before. It will also lock the selected thread so that you may pan and explore data while retaining the visualization of thread migrations and wake up events. 
+Clicking the \LMB{}~left mouse button on a tracked thread will make it visible on the timeline if it was either hidden or collapsed before. It will also lock the selected thread so that you may pan and explore data while retaining the visualization of thread migrations and wake up events.
 Clicking again somewhere empty on the timeline with the \LMB{}~left mouse button will unlock the selection.
 
 Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironmentos}) or give you a hint to add more instrumentation macros.
@@ -4717,7 +4717,7 @@ Tracy will not issue commands to download any model on its own.
 There are many factors to take into consideration when choosing a model to use. First, you should determine which model family you want to use:
 
 \begin{itemize}
-\item \emph{Gemma 3} (\url{https://blog.google/technology/developers/gemma-3/}) is a well rounded model that can converse in multiple languages. 
+\item \emph{Gemma 3} (\url{https://blog.google/technology/developers/gemma-3/}) is a well rounded model that can converse in multiple languages.
 \item \emph{Qwen3} (\url{https://qwenlm.github.io/blog/qwen3/}) has a more technical feeling to it, it likes to write bullet point lists.
 \item \emph{Mistral Small} (\url{https://mistral.ai/news/mistral-small-3-1}) may also be considered. Despite the name, it is not small.
 \end{itemize}

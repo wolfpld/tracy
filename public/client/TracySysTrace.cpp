@@ -238,6 +238,10 @@ void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
 #endif
 
     const auto& hdr = record->EventHeader;
+
+    // Check for Lost_Event (6a399ae0-4bc6-4de9-870b-3657f8947e7e)
+    if( hdr.ProviderId.Data1 == 0x6A399AE0 ) return;
+
     assert( hdr.ProviderId.Data1 == 0x802EC45A );
     assert( hdr.EventDescriptor.Id == 0x0011 );
 

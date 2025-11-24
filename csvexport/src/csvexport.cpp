@@ -8,10 +8,12 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
+
 
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyWorker.hpp"
@@ -162,6 +164,20 @@ std::string join(const T& v, const char* sep) {
     }
     return s.str();
 }
+double Percentile(std::vector<int64_t>& data, double p)
+{
+    if (data.empty()) return 0.0;
+
+    std::sort(data.begin(), data.end());
+
+    const double idx = p * (data.size() - 1);
+    const size_t idxLow = (size_t)idx;
+    const size_t idxHigh = std::min(idxLow + 1, data.size() - 1);
+    const double frac = idx - idxLow;
+
+    return data[idxLow] + (data[idxHigh] - data[idxLow]) * frac;
+}
+
 
 // From TracyView.cpp
 int64_t GetZoneChildTimeFast(
@@ -347,13 +363,15 @@ int main(int argc, char** argv)
             "name", "src_file", "src_line", "ns_since_start", "exec_time_ns", "thread", "value"
         };
     }
-    else
+        else
     {
         columns = {
             "name", "src_file", "src_line", "total_ns", "total_perc",
-            "counts", "mean_ns", "min_ns", "max_ns", "std_ns"
+            "counts", "mean_ns", "min_ns", "max_ns", "std_ns",
+            "p75_ns", "p90_ns"
         };
     }
+
     std::string header = join(columns, args.separator);
     printf("%s\n", header.data());
 
@@ -398,16 +416,16 @@ int main(int argc, char** argv)
                 printf("%s\n", row.data());
             }
         }
-        else
+                else
         {
             const auto time = args.self_time ? zone_data.selfTotal : zone_data.total;
             values[3] = std::to_string(time);
             values[4] = std::to_string(100. * time / last_time);
 
-            values[5] = std::to_string(zone_data.zones.size());
+            const auto sz = zone_data.zones.size();
+            values[5] = std::to_string(sz);
 
-            const auto avg = (args.self_time ? zone_data.selfTotal : zone_data.total)
-                / zone_data.zones.size();
+            const auto avg = time / sz;
             values[6] = std::to_string(avg);
 
             const auto tmin = args.self_time ? zone_data.selfMin : zone_data.min;
@@ -415,7 +433,6 @@ int main(int argc, char** argv)
             values[7] = std::to_string(tmin);
             values[8] = std::to_string(tmax);
 
-            const auto sz = zone_data.zones.size();
             const auto ss = zone_data.sumSq
                 - 2. * zone_data.total * avg
                 + avg * avg * sz;
@@ -424,10 +441,29 @@ int main(int argc, char** argv)
                 std = sqrt(ss / (sz - 1));
             values[9] = std::to_string(std);
 
+            // Build individual samples to compute percentiles
+            std::vector<int64_t> samples;
+            samples.reserve( zone_data.zones.size() );
+            for( const auto& zone_thread_data : zone_data.zones )
+            {
+                const auto zone_event = zone_thread_data.Zone();
+                auto timespan = zone_event->End() - zone_event->Start();
+                if( args.self_time )
+                {
+                    timespan -= GetZoneChildTimeFast( worker, *zone_event );
+                }
+                samples.push_back( timespan );
+            }
+
+            const auto p75 = Percentile( samples, 0.75 );
+            const auto p90 = Percentile( samples, 0.90 );
+            values[10] = std::to_string( p75 );
+            values[11] = std::to_string( p90 );
+
             std::string row = join(values, args.separator);
             printf("%s\n", row.data());
         }
-    }
+
 
     if(args.plot && args.unwrap)
     {

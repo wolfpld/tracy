@@ -23,15 +23,16 @@ void print_usage_exit(int e)
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  extract [OPTION...] <trace file>\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -h, --help        Print usage\n");
-    fprintf(stderr, "  -f, --filter arg  Filter zone names (default: "")\n");
-    fprintf(stderr, "  -s, --sep arg     CSV separator (default: ,)\n");
-    fprintf(stderr, "  -c, --case        Case sensitive filtering\n");
-    fprintf(stderr, "  -e, --self        Get self times\n");
-    fprintf(stderr, "  -u, --unwrap      Report each cpu zone event\n");
-    fprintf(stderr, "  -g, --gpu         Report each gpu zone event\n" );
-    fprintf(stderr, "  -m, --messages    Report only messages\n");
-    fprintf(stderr, "  -p, --plot        Report plot data (only with -u)\n");
+    fprintf(stderr, "  -h, --help               Print usage\n");
+    fprintf(stderr, "  -f, --filter arg         Filter zone names (default: "")\n");
+    fprintf(stderr, "  -s, --sep arg            CSV separator (default: ,)\n");
+    fprintf(stderr, "  -c, --case               Case sensitive filtering\n");
+    fprintf(stderr, "  -e, --self               Get self times\n");
+    fprintf(stderr, "  -u, --unwrap             Report each cpu zone event\n");
+    fprintf(stderr, "  -g, --gpu                Report each gpu zone event\n" );
+    fprintf(stderr, "  -m, --messages           Report only messages\n");
+    fprintf(stderr, "  -p, --plot               Report plot data (only with -u)\n");
+    fprintf(stderr, "  -t, --truncated_mean arg Report truncated mean (arg is the percentile. Default is 90)\n");
 
     exit(e);
 }
@@ -46,6 +47,7 @@ struct Args {
     bool show_gpu;
     bool unwrapMessages;
     bool plot;
+    int truncated_mean_percentile;
 };
 
 Args parse_args(int argc, char** argv)
@@ -55,7 +57,7 @@ Args parse_args(int argc, char** argv)
         print_usage_exit(1);
     }
 
-    Args args = { "", ",", "", false, false, false, false, false, false };
+    Args args = { "", ",", "", false, false, false, false, false, false, 0};
 
     struct option long_opts[] = {
         { "help", no_argument, NULL, 'h' },
@@ -67,6 +69,7 @@ Args parse_args(int argc, char** argv)
         { "gpu", no_argument, NULL, 'g' },
         { "messages", no_argument, NULL, 'm' },
         { "plot", no_argument, NULL, 'p' },
+        { "truncated_mean", optional_argument, NULL, 't' },
         { NULL, 0, NULL, 0 }
     };
 
@@ -101,6 +104,9 @@ Args parse_args(int argc, char** argv)
             break;
         case 'p':
             args.plot = true;
+            break;
+        case 't':
+            args.truncated_mean_percentile = std::clamp<int>(optarg ? std::atoi(optarg) : 90, 1, 99);
             break;
         default:
             print_usage_exit(1);
@@ -162,6 +168,53 @@ std::string join(const T& v, const char* sep) {
     }
     return s.str();
 }
+
+// Returns {pN, truncated_mean}
+std::pair<int64_t, int64_t> percentile_and_truncated_mean(std::vector<int64_t>& data, const double p)
+{
+    assert(p >= 0.0 && p <= 1.0);
+
+    if (data.empty()) {
+        return {0, 0};
+    }
+
+    std::sort(data.begin(), data.end());
+
+    const std::size_t n = data.size();
+    const double idx = p * (static_cast<double>(n) - 1.0);
+    const std::size_t idxLow = static_cast<std::size_t>(std::floor(idx));
+    const std::size_t idxHigh = std::min(idxLow + 1, n - 1);
+    const double frac = idx - static_cast<double>(idxLow);
+
+    const double low = static_cast<double>(data[idxLow]);
+    const double high = static_cast<double>(data[idxHigh]);
+
+    // percentile value
+    const double pval_double = low + (high - low) * frac;
+    const int64_t pval_int = static_cast<int64_t>(std::llround(pval_double));
+
+    // Compute truncated mean: average of all values <= pval_double
+    int64_t sum = 0;
+    std::size_t count = 0;
+    for (std::size_t i = 0; i < n; ++i) {
+        if (static_cast<double>(data[i]) <= pval_double) {
+            sum += data[i];
+            ++count;
+        } else {
+            break; // sorted, so we can stop once we hit > pval_double
+        }
+    }
+
+    if (count == 0) {
+        // should not happen for p in [0,1] unless data empty, but keep defensive behaviour
+        return {pval_int, 0};
+    }
+
+    const int64_t truncated_mean = sum / count;
+
+    return {pval_int, truncated_mean};
+}
+
 
 // From TracyView.cpp
 int64_t GetZoneChildTimeFast(
@@ -353,6 +406,12 @@ int main(int argc, char** argv)
             "name", "src_file", "src_line", "total_ns", "total_perc",
             "counts", "mean_ns", "min_ns", "max_ns", "std_ns"
         };
+
+        if(args.truncated_mean_percentile)
+        {
+            columns.push_back("percentile_ns");
+            columns.push_back("truncated_mean_ns");
+        }
     }
     std::string header = join(columns, args.separator);
     printf("%s\n", header.data());
@@ -404,10 +463,11 @@ int main(int argc, char** argv)
             values[3] = std::to_string(time);
             values[4] = std::to_string(100. * time / last_time);
 
-            values[5] = std::to_string(zone_data.zones.size());
+            const auto sz = zone_data.zones.size();
+            values[5] = std::to_string(sz);
 
-            const auto avg = (args.self_time ? zone_data.selfTotal : zone_data.total)
-                / zone_data.zones.size();
+            const auto avg = time / sz;
+
             values[6] = std::to_string(avg);
 
             const auto tmin = args.self_time ? zone_data.selfMin : zone_data.min;
@@ -415,7 +475,6 @@ int main(int argc, char** argv)
             values[7] = std::to_string(tmin);
             values[8] = std::to_string(tmax);
 
-            const auto sz = zone_data.zones.size();
             const auto ss = zone_data.sumSq
                 - 2. * zone_data.total * avg
                 + avg * avg * sz;
@@ -423,6 +482,24 @@ int main(int argc, char** argv)
             if( sz > 1 )
                 std = sqrt(ss / (sz - 1));
             values[9] = std::to_string(std);
+
+            if(args.truncated_mean_percentile)
+            {
+                std::vector<int64_t> samples;
+                samples.reserve( zone_data.zones.size() );
+                for(const auto& zone_thread_data : zone_data.zones)
+                {
+                    const auto zone_event = zone_thread_data.Zone();
+                    auto timespan = zone_event->End() - zone_event->Start();
+                    if(args.self_time)
+                        timespan -= GetZoneChildTimeFast( worker, *zone_event );
+                    samples.push_back( timespan );
+                }
+
+                std::pair<int64_t, int64_t> pN = percentile_and_truncated_mean(samples, args.truncated_mean_percentile / 100.0);
+                values[10] = std::to_string(pN.first);
+                values[11] = std::to_string(pN.second);
+            }
 
             std::string row = join(values, args.separator);
             printf("%s\n", row.data());

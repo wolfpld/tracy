@@ -196,7 +196,7 @@ TracyLlmTools::TracyLlmTools( Worker& worker )
         for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
         manualChunk += "\n\n";
         manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-        m_manualChunks.emplace_back( std::move( manualChunk ) );
+        m_manualChunks.emplace_back( ManualChunk{std::move( manualChunk ), "", "", ""} );
     }
 }
 

@@ -143,12 +143,11 @@ bool View::DrawConnection()
     ImGui::SameLine( 0, 2 * ty );
     const char* stopStr = ICON_FA_PLUG " Stop";
     Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
-    if( !m_disconnectIssued && m_worker.IsConnected() )
+    if( !m_worker.WasDisconnectIssued() && m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )
         {
             m_worker.Disconnect();
-            m_disconnectIssued = true;
         }
     }
     else

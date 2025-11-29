@@ -9,15 +9,12 @@
 #include <time.h>
 
 #include "TracyConfig.hpp"
-#include "TracyEmbed.hpp"
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
+#include "TracyManualData.hpp"
 #include "TracyStorage.hpp"
 #include "TracyUtility.hpp"
 #include "TracyWorker.hpp"
-#include "tracy_xxhash.h"
-
-#include "data/Manual.hpp"
 
 constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. You may inform the user that he can enable it in the settings, so that you can use the tools to gather information.";
 
@@ -81,122 +78,29 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     return doc;
 }
 
-TracyLlmTools::TracyLlmTools( Worker& worker )
-    : m_manual( Unembed( Manual ) )
-    , m_worker( worker )
+TracyLlmTools::TracyLlmTools( Worker& worker, const TracyManualData& manual )
+    : m_worker( worker )
+    , m_manual( manual )
 {
-    std::string_view manual( m_manual->data(), m_manual->size() );
-    const auto sz = (int)m_manual->size();
-
-    std::vector<int> levels = { 0 };
-    std::vector<std::string> chapterNames = { "Title Page" };
-
-    int manualChunkPos = 0;
-    int pos = 0;
-    while( pos < sz )
+    int idx = 0;
+    for( auto& chunk : m_manual.GetChunks() )
     {
-        std::string::size_type next = pos;
-        for(;;)
+        std::string hdr;
+        if( !chunk.section.empty() ) hdr += "Section " + chunk.section;
+        if( !chunk.title.empty() )
         {
-            next = manual.find( '\n', next );
-            if( next == std::string_view::npos )
-            {
-                next = sz;
-                break;
-            }
-            if( next+1 >= sz || manual[next+1] == '\n' ) break;
-            next++;
+            if( !chunk.section.empty() ) hdr += ": ";
+            hdr += chunk.title;
         }
-        if( next != pos )
+        hdr += '\n';
+
+        for( auto& line : SplitLines( chunk.text.c_str(), chunk.text.size() ) )
         {
-            std::string_view line( manual.data() + pos, next - pos );
-            if( line != "---" && line != ":::" && line != "::: bclogo" )
-            {
-                if( line[0] == '#' )
-                {
-                    if( manualChunkPos != pos )
-                    {
-                        auto start = manualChunkPos;
-                        auto end = pos;
-                        manualChunkPos = pos;
-
-                        while( manual[start] != '\n' ) start++;
-                        while( manual[start] == '\n' ) start++;
-                        while( manual[end-1] == '\n' ) end--;
-
-                        if( end > start )
-                        {
-                            std::string text, section, title, parents;
-                            text = std::string( manual.data() + start, end - start );
-                            if( levels[0] != 0 )
-                            {
-                                section = std::to_string( levels[0] );
-                                for( size_t i=1; i<levels.size(); i++ ) section += "." + std::to_string( levels[i] );
-                            }
-                            if( levels.size() == 1 )
-                            {
-                                title = chapterNames[0];
-                            }
-                            else
-                            {
-                                title = chapterNames[levels.size()-1];
-                                parents = chapterNames[0];
-                                for( size_t i=1; i<levels.size() - 1; i++ ) parents += " > " + chapterNames[i];
-                            }
-                            m_manualChunks.emplace_back( ManualChunk {
-                                .text = std::move( text ),
-                                .section = std::move( section ),
-                                .title = std::move( title ),
-                                .parents = std::move( parents )
-                            } );
-                        }
-                    }
-
-                    int level = 1;
-                    if( line.find( ".unnumbered}" ) == std::string_view::npos )
-                    {
-                        while( level < line.size() && line[level] == '#' ) level++;
-                        if( level != levels.size() )
-                        {
-                            levels.resize( level, 0 );
-                            chapterNames.resize( level );
-                        }
-                        levels[level - 1]++;
-                        chapterNames[level - 1] = line.substr( level + 1 );
-                    }
-                }
-                else
-                {
-                    std::string chunk;
-                    if( levels[0] != 0 )
-                    {
-                        chunk += "Section " + std::to_string( levels[0] );
-                        for( size_t i=1; i<levels.size(); i++ ) chunk += "." + std::to_string( levels[i] );
-                        chunk += "\n";
-                    }
-                    chunk += chapterNames[levels.size()-1] + "\n\n";
-                    chunk += std::string( line );
-                    m_chunkData.emplace_back( std::move( chunk ), m_manualChunks.size() );
-                }
-            }
+            if( line.empty() ) continue;
+            if( line == "---" || line == ":::" || line == "::: bclogo" ) continue;
+            m_chunkData.emplace_back( hdr + line, idx );
         }
-        pos = next + 1;
-        while( pos < sz && manual[pos] == '\n' ) pos++;
-    }
-    if( manualChunkPos != pos )
-    {
-        std::string manualChunk;
-        if( levels[0] != 0 )
-        {
-            manualChunk += "Section " + std::to_string( levels[0] );
-            for( size_t i=1; i<levels.size(); i++ ) manualChunk += "." + std::to_string( levels[i] );
-            manualChunk += "\n";
-        }
-        manualChunk += "Navigation: " + chapterNames[0];
-        for( size_t i=1; i<levels.size(); i++ ) manualChunk += " > " + chapterNames[i];
-        manualChunk += "\n\n";
-        manualChunk += std::string( manual.data() + manualChunkPos, pos - manualChunkPos );
-        m_manualChunks.emplace_back( ManualChunk{std::move( manualChunk ), "", "", ""} );
+        idx++;
     }
 }
 
@@ -288,12 +192,11 @@ void TracyLlmTools::SelectManualEmbeddings( const std::string& model )
     assert( !m_manualEmbeddingState.inProgress );
     if( m_manualEmbeddingState.done && m_manualEmbeddingState.model == model ) return;
 
-    const uint64_t hash = XXH3_64bits( m_manual->data(), m_manual->size() );
     auto cache = GetCachePath( model.c_str() );
 
     try
     {
-        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, hash );
+        m_manualEmbeddings = std::make_unique<TracyLlmEmbeddings>( cache, m_manual.GetHash() );
         m_manualEmbeddingState = { .model = model, .done = true };
     }
     catch( std::exception& ) {}
@@ -315,7 +218,6 @@ void TracyLlmTools::BuildManualEmbeddings( const std::string& model, TracyLlmApi
 
 void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
 {
-    const uint64_t hash = XXH3_64bits( m_manual->data(), m_manual->size() );
     auto cache = GetCachePath( m_manualEmbeddingState.model.c_str() );
 
     std::unique_lock lock( m_lock );
@@ -395,7 +297,7 @@ void TracyLlmTools::ManualEmbeddingsWorker( TracyLlmApi& api )
         i += bsz;
     }
 
-    m_manualEmbeddings->Save( cache, hash );
+    m_manualEmbeddings->Save( cache, m_manual.GetHash() );
 
     lock.lock();
     m_manualEmbeddingState.inProgress = false;
@@ -825,12 +727,13 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     }
     if( chunks.size() > MaxOutputChunks ) chunks.resize( MaxOutputChunks );
 
+    auto& manualChunks = m_manual.GetChunks();
     const auto maxSize = CalcMaxSize();
     int totalSize = 0;
     int idx;
     for( idx = 0; idx < chunks.size(); idx++ )
     {
-        totalSize += m_manualChunks[chunks[idx].first].text.size();
+        totalSize += manualChunks[chunks[idx].first].text.size();
         if( totalSize >= maxSize ) break;
     }
     if( idx < chunks.size() ) chunks.resize( idx );
@@ -838,7 +741,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     nlohmann::json json;
     for( auto& chunk : chunks )
     {
-        auto& m = m_manualChunks[chunk.first];
+        auto& m = manualChunks[chunk.first];
         nlohmann::json r;
         r["distance"] = chunk.second;
         r["content"] = m.text;

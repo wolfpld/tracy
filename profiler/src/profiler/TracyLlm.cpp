@@ -24,7 +24,7 @@ extern double s_time;
 
 constexpr size_t InputBufferSize = 1024;
 
-TracyLlm::TracyLlm( Worker& worker )
+TracyLlm::TracyLlm( Worker& worker, const TracyManualData& manual )
     : m_exit( false )
     , m_input( nullptr )
 {
@@ -47,7 +47,7 @@ TracyLlm::TracyLlm( Worker& worker )
 
     m_api = std::make_unique<TracyLlmApi>();
     m_chatUi = std::make_unique<TracyLlmChat>();
-    m_tools = std::make_unique<TracyLlmTools>( worker );
+    m_tools = std::make_unique<TracyLlmTools>( worker, manual );
 
     m_busy = true;
     QueueConnect();

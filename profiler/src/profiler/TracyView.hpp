@@ -63,6 +63,7 @@ struct CpuCtxDraw;
 struct LockDraw;
 struct PlotDraw;
 struct FlameGraphContext;
+class TracyManualData;
 
 
 class View
@@ -928,6 +929,8 @@ private:
 
     double m_horizontalScrollMultiplier = 1.0;
     double m_verticalScrollMultiplier = 1.0;
+
+    std::shared_ptr<TracyManualData> m_manualData;
 
     TaskDispatch m_td;
     std::vector<FlameGraphItem> m_flameGraphData;

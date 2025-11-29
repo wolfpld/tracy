@@ -17,6 +17,7 @@ namespace tracy
 {
 
 class TracyLlmApi;
+class TracyManualData;
 class Worker;
 
 class TracyLlmTools
@@ -36,15 +37,7 @@ public:
         float progress = 0;
     };
 
-    struct ManualChunk
-    {
-        std::string text;
-        std::string section;
-        std::string title;
-        std::string parents;
-    };
-
-    TracyLlmTools( Worker& worker );
+    TracyLlmTools( Worker& worker, const TracyManualData& manual );
     ~TracyLlmTools();
 
     ToolReply HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
@@ -82,11 +75,10 @@ private:
     EmbeddingState m_manualEmbeddingState;
     std::unique_ptr<TracyLlmEmbeddings> m_manualEmbeddings;
 
-    std::shared_ptr<EmbedData> m_manual;
-    std::vector<ManualChunk> m_manualChunks;
     std::vector<std::pair<std::string, uint32_t>> m_chunkData;
 
     Worker& m_worker;
+    const TracyManualData& m_manual;
 };
 
 }

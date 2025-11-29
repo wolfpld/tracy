@@ -66,6 +66,7 @@ set(SERVER_FILES
     TracyFileselector.cpp
     TracyFilesystem.cpp
     TracyImGui.cpp
+    TracyManualData.cpp
     TracyMarkdown.cpp
     TracyMicroArchitecture.cpp
     TracyMouse.cpp

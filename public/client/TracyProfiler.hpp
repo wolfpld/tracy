@@ -1079,6 +1079,10 @@ private:
 
 #if defined _WIN32
     void* m_prevHandler;
+	#if defined __GNUC__
+		int m_pipe[2];
+		int m_pipeBufSize;
+	#endif
 #else
     int m_pipe[2];
     int m_pipeBufSize;

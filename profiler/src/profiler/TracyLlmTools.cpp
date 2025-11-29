@@ -838,12 +838,13 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     nlohmann::json json;
     for( auto& chunk : chunks )
     {
+        auto& m = m_manualChunks[chunk.first];
         nlohmann::json r;
         r["distance"] = chunk.second;
-        r["content"] = m_manualChunks[chunk.first].text;
-        r["section"] = m_manualChunks[chunk.first].section;
-        r["title"] = m_manualChunks[chunk.first].title;
-        r["parents"] = m_manualChunks[chunk.first].parents;
+        r["content"] = m.text;
+        r["section"] = m.section;
+        r["title"] = m.title;
+        r["parents"] = m.parents;
         json.emplace_back( std::move( r ) );
     }
 

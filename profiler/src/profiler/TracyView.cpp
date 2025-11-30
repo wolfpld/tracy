@@ -944,6 +944,8 @@ bool View::DrawImpl()
         }
         ImGui::EndPopup();
     }
+    ImGui::SameLine();
+    ToggleButton( ICON_FA_BOOK, m_showManual );
     if( m_sscb )
     {
         ImGui::SameLine();
@@ -1167,6 +1169,7 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
     if( m_showWaitStacks ) DrawWaitStacks();
+    if( m_showManual ) DrawManual();
 #ifndef __EMSCRIPTEN__
     if( m_llm.m_show ) m_llm.Draw();
 #endif

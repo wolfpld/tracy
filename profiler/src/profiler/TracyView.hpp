@@ -18,6 +18,7 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyConfig.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyMarkdown.hpp"
 #include "TracySourceContents.hpp"
 #include "TracyTimelineController.hpp"
 #include "TracyUserData.hpp"
@@ -290,6 +291,7 @@ private:
     void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id );
     void DrawSourceTooltip( const char* filename, uint32_t line, int before = 3, int after = 3, bool separateTooltip = true );
     void DrawWaitStacks();
+    void DrawManual();
     void DrawFlameGraph();
     void DrawFlameGraphHeader( uint64_t timespan );
     void DrawFlameGraphLevel( const std::vector<FlameGraphItem>& data, FlameGraphContext& ctx, int depth, bool samples );
@@ -531,6 +533,7 @@ private:
     bool m_showAnnotationList = false;
     bool m_showWaitStacks = false;
     bool m_showFlameGraph = false;
+    bool m_showManual = false;
 
     AccumulationMode m_statAccumulationMode = AccumulationMode::SelfOnly;
     bool m_statSampleTime = true;
@@ -931,6 +934,8 @@ private:
     double m_verticalScrollMultiplier = 1.0;
 
     std::shared_ptr<TracyManualData> m_manualData;
+    size_t m_activeManualChunk = 0;
+    Markdown m_markdown;
 
     TaskDispatch m_td;
     std::vector<FlameGraphItem> m_flameGraphData;

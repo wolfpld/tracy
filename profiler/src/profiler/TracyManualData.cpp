@@ -57,8 +57,9 @@ TracyManualData::TracyManualData()
                         chapterNames.resize( level );
                     }
                     levels[level - 1]++;
-                    chapterNames[level - 1] = line.substr( level + 1 );
                 }
+
+                chapterNames[level - 1] = line.substr( level + 1 );
             }
         }
         pos = next + 1;

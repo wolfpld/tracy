@@ -18,6 +18,7 @@ public:
         std::string section;
         std::string title;
         std::string parents;
+        int level;
     };
 
     TracyManualData();

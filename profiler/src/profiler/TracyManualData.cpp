@@ -100,7 +100,8 @@ void TracyManualData::AddManualChunk( const std::string_view& manual, int start,
             .text = std::move( text ),
             .section = std::move( section ),
             .title = std::move( title ),
-            .parents = std::move( parents )
+            .parents = std::move( parents ),
+            .level = (int)levels.size() - 1
         } );
     }
 }

@@ -96,11 +96,20 @@ void TracyManualData::AddManualChunk( const std::string_view& manual, int start,
             parents = chapterNames[0];
             for( size_t i=1; i<levels.size() - 1; i++ ) parents += " > " + chapterNames[i];
         }
+        std::string link;
+        auto linkpos = title.find( '{' );
+        if( linkpos != std::string::npos )
+        {
+            link = title.substr( linkpos + 1, title.size() - linkpos - 2 );
+            title = title.substr( 0, linkpos - 1 );
+            if( link.ends_with( ".unnumbered" ) ) link = link.substr( 0, link.size() - 12 );
+        }
         m_manualChunks.emplace_back( ManualChunk {
             .text = std::move( text ),
             .section = std::move( section ),
             .title = std::move( title ),
             .parents = std::move( parents ),
+            .link = std::move( link ),
             .level = (int)levels.size() - 1
         } );
     }

@@ -18,6 +18,7 @@ public:
         std::string section;
         std::string title;
         std::string parents;
+        std::string link;
         int level;
     };
 

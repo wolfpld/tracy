@@ -249,20 +249,20 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return false;
 
 #ifndef TRACY_NO_CONTEXT_SWITCH
-    if (etw::EnableContextSwitchMonitoring(session) != ERROR_SUCCESS)
-        return etw::StopSession(session), false;
+    if ( etw::EnableContextSwitchMonitoring(session) != ERROR_SUCCESS )
+        return etw::StopSession( session ), false;
 #endif
 
 #ifndef TRACY_NO_SAMPLING
     int microseconds = GetSamplingInterval() / 10;
-    if (etw::EnableCPUProfiling(session, microseconds) != ERROR_SUCCESS)
-        return etw::StopSession(session), false;
+    if ( etw::EnableCPUProfiling(session, microseconds) != ERROR_SUCCESS )
+        return etw::StopSession( session ), false;
     samplingPeriod = GetSamplingPeriod();
 #endif
 
 #ifndef TRACY_NO_VSYNC_CAPTURE
-    if (etw::EnableVSyncMonitoring(session) != ERROR_SUCCESS)
-        return etw::StopSession(session), false;
+    if ( etw::EnableVSyncMonitoring(session) != ERROR_SUCCESS )
+        return etw::StopSession( session ), false;
 #endif
 
     return true;
@@ -270,7 +270,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
 void SysTraceStop()
 {
-    etw::StopSession(session);
+    etw::StopSession( session );
 }
 
 void SysTraceWorker( void* ptr )
@@ -278,7 +278,7 @@ void SysTraceWorker( void* ptr )
     ThreadExitHandler threadExitHandler;
     SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
     SetThreadName( "Tracy SysTrace (ETW)" );
-    etw::EventConsumerLoop(session, EventRecordCallback);
+    etw::EventConsumerLoop( session, EventRecordCallback );
 }
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )

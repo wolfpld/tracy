@@ -1,11 +1,14 @@
-#include <windows.h>
-#include <evntrace.h>
 #include <evntcons.h>
+#include <evntrace.h>
+#include <windows.h>
 
-#include <thread>
 #include <stdio.h>
+#include <thread>
 
-namespace tracy { namespace etw {
+namespace tracy
+{
+namespace etw
+{
 
 constexpr GUID NullGuid      = {};
 constexpr GUID ThreadGuid    = { 0x3D6FA8D1, 0xFE05, 0x11D0, { 0x9D, 0xDA, 0x00, 0xC0, 0x4F, 0xD7, 0xBA, 0x7C } };
@@ -14,79 +17,83 @@ constexpr GUID StackWalkGuid = { 0xDEF2FE46, 0x7BD6, 0x4B80, { 0xBD, 0x94, 0xF5,
 constexpr GUID DxgKrnlGuid   = { 0x802EC45A, 0x1E99, 0x4B83, { 0x99, 0x20, 0x87, 0xC9, 0x82, 0x77, 0xBA, 0x9D } };
 constexpr GUID LostEventGuid = { 0x6A399AE0, 0x4BC6, 0x4DE9, { 0x87, 0x0B, 0x36, 0x57, 0xF8, 0x94, 0x7E, 0x7E } };
 
-struct Session {
+struct Session
+{
     EVENT_TRACE_PROPERTIES properties = {};
     CHAR name[64] = {};
     CONTROLTRACE_ID handle = 0;
 };
 
-static void ETWErrorAction(ULONG error_code, const char* message, int length) {
+static void ETWErrorAction( ULONG error_code, const char* message, int length )
+{
 #ifdef TRACY_HAS_CALLSTACK
     tracy::InitCallstackCritical();
-    TracyMessageCS(message, length, tracy::Color::Red4, 60);
+    TracyMessageCS( message, length, tracy::Color::Red4, 60 );
 #else
-    TracyMessageC(message, length, tracy::Color::Red4);
+    TracyMessageC( message, length, tracy::Color::Red4 );
 #endif
 #ifdef __cpp_exceptions
     // TODO: should we throw an exception?
 #endif
 }
 
-static ULONG ETWError(ULONG result) {
-    if (result == ERROR_SUCCESS)
+static ULONG ETWError( ULONG result )
+{
+    if( result == ERROR_SUCCESS )
         return result;
-    ZoneScopedC(tracy::Color::Red4);
-    char message [128] = {};
-    size_t written = snprintf(message, sizeof(message), "ETW Error %u (0x%x): ", result, result);
+    ZoneScopedC( tracy::Color::Red4 );
+    char message[128] = {};
+    size_t written = snprintf( message, sizeof( message ), "ETW Error %u (0x%x): ", result, result );
     written += FormatMessageA(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         result,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ),
         (LPSTR)&message[written],
-        sizeof(message)-written,
-        NULL
-    );
-    ETWErrorAction(result, message, written);
+        sizeof( message ) - written,
+        NULL );
+    ETWErrorAction( result, message, written );
     return result;
 }
 
-static DWORD ElevatePrivilege(LPCTSTR PrivilegeName) {
+static DWORD ElevatePrivilege( LPCTSTR PrivilegeName )
+{
     TOKEN_PRIVILEGES tp = {};
     tp.PrivilegeCount = 1;
     tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-    if (LookupPrivilegeValue(nullptr, PrivilegeName, &tp.Privileges[0].Luid) == FALSE) {
-        return ETWError(GetLastError());
-    }
+    if( LookupPrivilegeValue( nullptr, PrivilegeName, &tp.Privileges[0].Luid ) == FALSE )
+        return ETWError( GetLastError() );
     HANDLE hToken = {};
-    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken) == FALSE) {
-        return ETWError(GetLastError());
-    }
-    BOOL adjusted = AdjustTokenPrivileges(hToken, FALSE, &tp, 0, nullptr, nullptr);
+    if( OpenProcessToken( GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken ) == FALSE )
+        return ETWError( GetLastError() );
+    BOOL adjusted = AdjustTokenPrivileges( hToken, FALSE, &tp, 0, nullptr, nullptr );
     DWORD status = GetLastError();
-    CloseHandle(hToken);    // NOTE: skipping error handling for CloseHandle()
-    return ETWError(status);
+    CloseHandle( hToken );    // NOTE: skipping error handling for CloseHandle()
+    return ETWError( status );
 }
 
-static ULONG StartSession(Session& session) {
-    ULONG status = StartTraceA(&session.handle, session.name, &session.properties);
-    if (status == ERROR_ALREADY_EXISTS) {
+static ULONG StartSession( Session& session )
+{
+    ULONG status = StartTraceA( &session.handle, session.name, &session.properties );
+    if( status == ERROR_ALREADY_EXISTS )
+    {
         // Session is already running (likely from a previous run that did not terminate
         // gracefully). There are two options: take control of the existing session with
         // ControlSession(UPDATE), or stop the session and start fresh again. The latter
         // is better because it also resets the event providers.
-        status = ControlTraceA(session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP);
-        if (status != ERROR_SUCCESS)
-            return ETWError(status);
-        status = StartTraceA(&session.handle, session.name, &session.properties);
+        status = ControlTraceA( session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP );
+        if( status != ERROR_SUCCESS )
+            return ETWError( status );
+        status = StartTraceA( &session.handle, session.name, &session.properties );
     }
-    return ETWError(status);
+    return ETWError( status );
 }
 
-static ULONG StopSession(Session& session) {
-    ULONG status = ControlTraceA(session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP);
-    if (status != ERROR_SUCCESS)
-        return ETWError(status);
+static ULONG StopSession( Session& session )
+{
+    ULONG status = ControlTraceA( session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP );
+    if( status != ERROR_SUCCESS )
+        return ETWError( status );
     // once stopped, the session handle becomes invalid
     session.handle = 0;
     return ERROR_SUCCESS;
@@ -100,12 +107,14 @@ static ULONG EnableProvider(
     ULONGLONG MatchAnyKeyword = 0,
     ULONGLONG MatchAllKeyword = 0,
     ULONG Timeout = 0,
-    PENABLE_TRACE_PARAMETERS EnableParameters = NULL) {
-    ULONG status = EnableTraceEx2(session.handle, &ProviderId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, Timeout, EnableParameters);
-    return ETWError(status);
+    PENABLE_TRACE_PARAMETERS EnableParameters = NULL )
+{
+    ULONG status = EnableTraceEx2( session.handle, &ProviderId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, Timeout, EnableParameters );
+    return ETWError( status );
 }
 
-static ULONG EnableStackWalk(Session& session, GUID EventGuid, UCHAR Opcode) {
+static ULONG EnableStackWalk( Session& session, GUID EventGuid, UCHAR Opcode )
+{
 #if defined _WIN64
     constexpr bool isOs64Bit = true;
 #else
@@ -113,27 +122,28 @@ static ULONG EnableStackWalk(Session& session, GUID EventGuid, UCHAR Opcode) {
     IsWow64Process( GetCurrentProcess(), &_iswow64 );
     const bool isOs64Bit = _iswow64;
 #endif
-    if (!isOs64Bit)
+    if( !isOs64Bit )
         return 0 /* ERROR_SUCCESS */;   // TODO: return error instead?
     CLASSIC_EVENT_ID stackId[1] = {};
     stackId[0].EventGuid = EventGuid;
     stackId[0].Type = Opcode;
-    ULONG status = TraceSetInformation(session.handle, TraceStackTracingInfo, &stackId, sizeof(stackId));
-    return ETWError(status);
+    ULONG status = TraceSetInformation( session.handle, TraceStackTracingInfo, &stackId, sizeof( stackId ) );
+    return ETWError( status );
 }
 
 static Session StartPrivateKernelSession( const CHAR* name )
 {
     Session session = {};
 
-    size_t maxlen = std::size(session.name);
-    for (size_t i = 0; i < maxlen && name[i] != 0; ++i) {
+    size_t maxlen = sizeof( session.name );
+    for( size_t i = 0; i < maxlen && name[i] != 0; ++i )
+    {
         session.name[i] = name[i];
     }
 
     auto& props = session.properties;
-    props.LoggerNameOffset = offsetof(Session, name);
-    props.Wnode.BufferSize = sizeof(Session);
+    props.LoggerNameOffset = offsetof( Session, name );
+    props.Wnode.BufferSize = sizeof( Session );
     props.Wnode.Guid = NullGuid;
 #ifdef TRACY_TIMER_QPC
     props.Wnode.ClientContext = 1;  // 1: QueryPerformanceCounter
@@ -149,55 +159,59 @@ static Session StartPrivateKernelSession( const CHAR* name )
     props.MinimumBuffers = std::thread::hardware_concurrency() * 4;
     props.MaximumBuffers = std::thread::hardware_concurrency() * 6;
 
-    ULONG status = StartSession(session);
-    if (status != ERROR_SUCCESS)
+    ULONG status = StartSession( session );
+    if( status != ERROR_SUCCESS )
         return {};
 
     return session;
 }
 
-static ULONG EnableCPUProfiling(Session& session, int microseconds = 125 /* 8KHz = 125us */) {
+static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KHz = 125us */ )
+{
     // CPU Profiling requires special privileges on top of admin privileges
-    DWORD access = ElevatePrivilege(SE_SYSTEM_PROFILE_NAME);
-    if (access != ERROR_SUCCESS)
+    DWORD access = ElevatePrivilege( SE_SYSTEM_PROFILE_NAME );
+    if( access != ERROR_SUCCESS )
         return access;
 
-    ULONG status = EnableProvider(session, SystemProfileProviderGuid);
-    if (status != ERROR_SUCCESS)
+    ULONG status = EnableProvider( session, SystemProfileProviderGuid );
+    if( status != ERROR_SUCCESS )
         return status;
 
     TRACE_PROFILE_INTERVAL interval = {};
     interval.Source = 0; // 0: ProfileTime
-    interval.Interval = (microseconds * 1000) / 100; // in 100's of nanoseconds
+    interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
     CONTROLTRACE_ID TraceId = 0; // must be zero for TraceSampledProfileIntervalInfo
-    status = TraceSetInformation(TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof(interval));
-    if (status != ERROR_SUCCESS)
+    status = TraceSetInformation( TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
+    if( status != ERROR_SUCCESS )
         return status;
 
-    status = EnableStackWalk(session, PerfInfoGuid, 46);  // PerfInfoGuid Opcode 46: SampledProfile event
+    status = EnableStackWalk( session, PerfInfoGuid, 46 );  // PerfInfoGuid Opcode 46: SampledProfile event
     return status;
 }
 
-static ULONG EnableContextSwitchMonitoring(Session& session) {
+static ULONG EnableContextSwitchMonitoring( Session& session )
+{
     ULONGLONG MatchAnyKeyword = SYSTEM_SCHEDULER_KW_CONTEXT_SWITCH;
-    ULONG status = EnableProvider(session, SystemSchedulerProviderGuid,
-        EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword);
-    if (status != ERROR_SUCCESS)
+    ULONG status = EnableProvider( session, SystemSchedulerProviderGuid,
+                                   EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
+    if( status != ERROR_SUCCESS )
         return status;
-    status = EnableStackWalk(session, ThreadGuid, 36);  // ThreadGuid Opcode 36: CSwitch event
+    status = EnableStackWalk( session, ThreadGuid, 36 );  // ThreadGuid Opcode 36: CSwitch event
     return status;
 }
 
-static ULONG EnableVSyncMonitoring(Session& session) {
+static ULONG EnableVSyncMonitoring( Session& session )
+{
 // TODO: is this correct?
-#if (_WIN32_WINNT < _WIN32_WINNT_WINBLUE) || defined(__MINGW32__)
-    return ETWError(ERROR_NOT_SUPPORTED);
+#if ( _WIN32_WINNT < _WIN32_WINNT_WINBLUE ) || defined( __MINGW32__ )
+    return ETWError( ERROR_NOT_SUPPORTED );
 #endif
 
-    enum Keyword : ULONGLONG {
-        DxgKrnlBase    = 0x0000'0000'0000'0001,    // Microsoft-Windows-DxgKrnl: Base
-        DxgKrnlPresent = 0x0000'0000'0800'0000,    // Microsoft-Windows-DxgKrnl: Present
-        MSFTReserved62 = 0x4000'0000'0000'0000     // winmeta.h: WINEVENT_KEYWORD_RESERVED_62
+    enum Keyword : ULONGLONG
+    {
+        DxgKrnlBase = 0x0000'0000'0000'0001,    // Microsoft-Windows-DxgKrnl: Base
+        DxgKrnlPresent = 0x0000'0000'0800'0000, // Microsoft-Windows-DxgKrnl: Present
+        MSFTReserved62 = 0x4000'0000'0000'0000  // winmeta.h: WINEVENT_KEYWORD_RESERVED_62
     };
     ULONGLONG MatchAnyKeyword = Keyword::MSFTReserved62 | Keyword::DxgKrnlPresent | Keyword::DxgKrnlBase;
     ULONGLONG MatchAllKeyword = MatchAnyKeyword;
@@ -208,7 +222,7 @@ static ULONG EnableVSyncMonitoring(Session& session) {
     fe.Events[0] = 0x0011;  // 0x11 = 17 : VSyncDPC_Info
     EVENT_FILTER_DESCRIPTOR desc = {};
     desc.Ptr = (ULONGLONG)&fe;
-    desc.Size = sizeof(fe);
+    desc.Size = sizeof( fe );
     desc.Type = EVENT_FILTER_TYPE_EVENT_ID;
     ENABLE_TRACE_PARAMETERS EnableParameters = {};
     EnableParameters.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
@@ -217,22 +231,24 @@ static ULONG EnableVSyncMonitoring(Session& session) {
     EnableParameters.EnableFilterDesc = &desc;
     EnableParameters.FilterDescCount = 1;
 
-    ULONG status = EnableProvider(session, DxgKrnlGuid,
-        EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION,
-        MatchAnyKeyword, MatchAllKeyword, 0, &EnableParameters);
+    ULONG status = EnableProvider( session, DxgKrnlGuid,
+                                   EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION,
+                                   MatchAnyKeyword, MatchAllKeyword, 0, &EnableParameters );
     return status;
 }
 
-static ULONG WINAPI OnBufferComplete(PEVENT_TRACE_LOGFILEA Buffer) {
-    if (Buffer->EventsLost > 0) {
-        char buffer [64] = {};
-        int length = snprintf(buffer, sizeof(buffer), "ETW Warning: %u events have been lost.", Buffer->EventsLost);
-        ETWErrorAction(ERROR_BUFFER_OVERFLOW, buffer, length);
+static ULONG WINAPI OnBufferComplete( PEVENT_TRACE_LOGFILEA Buffer )
+{
+    if( Buffer->EventsLost > 0 )
+    {
+        char buffer[64] = {};
+        int length = snprintf( buffer, sizeof( buffer ), "ETW Warning: %u events have been lost.", Buffer->EventsLost );
+        ETWErrorAction( ERROR_BUFFER_OVERFLOW, buffer, length );
     }
     return TRUE;    // or FALSE to break out of ProcessTrace()
 }
 
-static ULONG EventConsumerLoop(const Session& session, PEVENT_RECORD_CALLBACK callback = NULL)
+static ULONG EventConsumerLoop( const Session& session, PEVENT_RECORD_CALLBACK callback = NULL )
 {
     EVENT_TRACE_LOGFILEA trace = {};
     trace.LoggerName = (LPSTR)session.name;
@@ -242,18 +258,19 @@ static ULONG EventConsumerLoop(const Session& session, PEVENT_RECORD_CALLBACK ca
     trace.EventRecordCallback = callback;
     trace.BufferCallback = OnBufferComplete;
 
-    PROCESSTRACE_HANDLE hConsumer = OpenTraceA(&trace);
-    if (hConsumer == INVALID_PROCESSTRACE_HANDLE)
-        return ETWError(GetLastError());
+    PROCESSTRACE_HANDLE hConsumer = OpenTraceA( &trace );
+    if( hConsumer == INVALID_PROCESSTRACE_HANDLE )
+        return ETWError( GetLastError() );
 
-    ULONG status = ProcessTrace(&hConsumer, 1, NULL, NULL);
-    if (status != ERROR_SUCCESS && status != ERROR_CANCELLED)
-        return ETWError(status);
+    ULONG status = ProcessTrace( &hConsumer, 1, NULL, NULL );
+    if( status != ERROR_SUCCESS && status != ERROR_CANCELLED )
+        return ETWError( status );
 
-    status = CloseTrace(hConsumer);
-    ETWError(status);
+    status = CloseTrace( hConsumer );
+    ETWError( status );
 
     return status;
 }
 
-} }
+}
+}

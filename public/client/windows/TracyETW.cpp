@@ -20,6 +20,18 @@ struct Session {
     CONTROLTRACE_ID handle = 0;
 };
 
+static void ETWErrorAction(ULONG error_code, const char* message, int length) {
+#ifdef TRACY_HAS_CALLSTACK
+    tracy::InitCallstackCritical();
+    TracyMessageCS(message, length, tracy::Color::Red4, 60);
+#else
+    TracyMessageC(message, length, tracy::Color::Red4);
+#endif
+#ifdef __cpp_exceptions
+    // TODO: should we throw an exception?
+#endif
+}
+
 static ULONG ETWError(ULONG result) {
     if (result == ERROR_SUCCESS)
         return result;
@@ -35,11 +47,7 @@ static ULONG ETWError(ULONG result) {
         sizeof(message)-written,
         NULL
     );
-    tracy::InitCallstackCritical();
-    TracyMessageCS(message, written, tracy::Color::Red4, 60);
-#ifdef __cpp_exceptions
-    // TODO: should we throw an exception?
-#endif
+    ETWErrorAction(result, message, written);
     return result;
 }
 

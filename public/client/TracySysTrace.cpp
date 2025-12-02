@@ -147,6 +147,10 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
 #endif
 
     const auto& hdr = record->EventHeader;
+    // WARN: doing a fast switch-match below with the top 32 bits of the GUID
+    // (Data1 is the leading 32bit word of the 128bit GUID).
+    // Ideally, we should be using 'IsEqualGUID()' inside each case match to be
+    // inequivocally sure we are dealing the correct event provider.
     switch( hdr.ProviderId.Data1 )
     {
     case etw::ThreadGuid.Data1:

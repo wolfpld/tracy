@@ -25,3 +25,4 @@ option('fibers', type : 'boolean', value : false, description : 'Enable fibers s
 option('no_crash_handler', type : 'boolean', value : false, description : 'Disable crash handling')
 option('verbose', type : 'boolean', value : false, description : 'Enable verbose logging')
 option('debuginfod', type : 'boolean', value : false, description : 'Enable debuginfod support')
+option('ignore_memory_faults', type : 'boolean', value : false, description : 'Ignore instrumentation errors from memory free events that do not have a matching allocation')

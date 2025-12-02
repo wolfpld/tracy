@@ -1765,8 +1765,8 @@ void Profiler::Worker()
 #ifdef TRACY_ON_DEMAND
     flags |= WelcomeFlag::OnDemand;
 #endif
-#ifdef __APPLE__
-    flags |= WelcomeFlag::IsApple;
+#if defined TRACY_IGNORE_MEMORY_FAULTS || defined __APPLE__
+    flags |= WelcomeFlag::IgnoreMemFaults;
 #endif
 #ifndef TRACY_NO_CODE_TRANSFER
     flags |= WelcomeFlag::CodeTransfer;

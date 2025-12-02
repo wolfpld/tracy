@@ -104,7 +104,7 @@ static ULONG EnableProvider(
     const GUID& ProviderId,
     ULONG ControlCode = EVENT_CONTROL_CODE_ENABLE_PROVIDER,
     UCHAR Level = TRACE_LEVEL_INFORMATION,
-    ULONGLONG MatchAnyKeyword = 0,
+    ULONGLONG MatchAnyKeyword = 0,  // NOTE: a MatchAnyKeyword of 0 actually means "all bits set", according to the EnableTraceEx2 docs
     ULONGLONG MatchAllKeyword = 0,
     ULONG Timeout = 0,
     PENABLE_TRACE_PARAMETERS EnableParameters = NULL )

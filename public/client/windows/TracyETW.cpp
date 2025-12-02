@@ -222,9 +222,11 @@ static ULONG EnableVSyncMonitoring(Session& session) {
     return status;
 }
 
-static ULONG WINAPI OnBufferComplete(PEVENT_TRACE_LOGFILE Buffer) {
+static ULONG WINAPI OnBufferComplete(PEVENT_TRACE_LOGFILEA Buffer) {
     if (Buffer->EventsLost > 0) {
-        fprintf(stderr, "WARNING: %u events have been lost...\n", Buffer->EventsLost);
+        char buffer [64] = {};
+        int length = snprintf(buffer, sizeof(buffer), "ETW Warning: %u events have been lost.", Buffer->EventsLost);
+        ETWErrorAction(ERROR_BUFFER_OVERFLOW, buffer, length);
     }
     return TRUE;    // or FALSE to break out of ProcessTrace()
 }

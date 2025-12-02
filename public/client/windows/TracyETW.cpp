@@ -248,7 +248,7 @@ static ULONG WINAPI OnBufferComplete( PEVENT_TRACE_LOGFILEA Buffer )
     return TRUE;    // or FALSE to break out of ProcessTrace()
 }
 
-static ULONG EventConsumerLoop( const Session& session, PEVENT_RECORD_CALLBACK callback = NULL )
+static PROCESSTRACE_HANDLE SetupEventConsumer( const Session& session, PEVENT_RECORD_CALLBACK callback )
 {
     EVENT_TRACE_LOGFILEA trace = {};
     trace.LoggerName = (LPSTR)session.name;
@@ -260,15 +260,22 @@ static ULONG EventConsumerLoop( const Session& session, PEVENT_RECORD_CALLBACK c
 
     PROCESSTRACE_HANDLE hConsumer = OpenTraceA( &trace );
     if( hConsumer == INVALID_PROCESSTRACE_HANDLE )
-        return ETWError( GetLastError() );
+        ETWError( GetLastError() );
 
-    ULONG status = ProcessTrace( &hConsumer, 1, NULL, NULL );
+    return hConsumer;
+}
+
+static ULONG StopEventConsumer( PROCESSTRACE_HANDLE hEventConsumer )
+{
+    ULONG status = CloseTrace( hEventConsumer );
+    return ETWError( status );
+}
+
+static ULONG EventConsumerLoop( PROCESSTRACE_HANDLE hEventConsumer )
+{
+    ULONG status = ProcessTrace( &hEventConsumer, 1, NULL, NULL );
     if( status != ERROR_SUCCESS && status != ERROR_CANCELLED )
         return ETWError( status );
-
-    status = CloseTrace( hConsumer );
-    ETWError( status );
-
     return status;
 }
 

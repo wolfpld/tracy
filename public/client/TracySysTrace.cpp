@@ -237,6 +237,7 @@ static int GetSamplingInterval()
 }
 
 static etw::Session session = {};
+static PROCESSTRACE_HANDLE consumer = INVALID_PROCESSTRACE_HANDLE;
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
@@ -265,11 +266,16 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return etw::StopSession( session ), false;
 #endif
 
+    consumer = etw::SetupEventConsumer( session, EventRecordCallback );
+    if (consumer == INVALID_PROCESSTRACE_HANDLE)
+        return etw::StopSession(session), false;
+
     return true;
 }
 
 void SysTraceStop()
 {
+    etw::StopEventConsumer( consumer );
     etw::StopSession( session );
 }
 
@@ -278,7 +284,7 @@ void SysTraceWorker( void* ptr )
     ThreadExitHandler threadExitHandler;
     SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
     SetThreadName( "Tracy SysTrace (ETW)" );
-    etw::EventConsumerLoop( session, EventRecordCallback );
+    etw::EventConsumerLoop( consumer );
 }
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )

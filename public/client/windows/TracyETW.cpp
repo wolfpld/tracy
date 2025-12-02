@@ -16,7 +16,7 @@ constexpr GUID LostEventGuid = { 0x6A399AE0, 0x4BC6, 0x4DE9, { 0x87, 0x0B, 0x36,
 
 struct Session {
     EVENT_TRACE_PROPERTIES properties = {};
-    TCHAR name[64] = {};
+    CHAR name[64] = {};
     CONTROLTRACE_ID handle = 0;
 };
 
@@ -61,22 +61,22 @@ static DWORD ElevatePrivilege(LPCTSTR PrivilegeName) {
 }
 
 static ULONG StartSession(Session& session) {
-    ULONG status = StartTrace(&session.handle, session.name, &session.properties);
+    ULONG status = StartTraceA(&session.handle, session.name, &session.properties);
     if (status == ERROR_ALREADY_EXISTS) {
         // Session is already running (likely from a previous run that did not terminate
         // gracefully). There are two options: take control of the existing session with
         // ControlSession(UPDATE), or stop the session and start fresh again. The latter
         // is better because it also resets the event providers.
-        status = ControlTrace(session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP);
+        status = ControlTraceA(session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP);
         if (status != ERROR_SUCCESS)
             return ETWError(status);
-        status = StartTrace(&session.handle, session.name, &session.properties);
+        status = StartTraceA(&session.handle, session.name, &session.properties);
     }
     return ETWError(status);
 }
 
 static ULONG StopSession(Session& session) {
-    ULONG status = ControlTrace(session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP);
+    ULONG status = ControlTraceA(session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP);
     if (status != ERROR_SUCCESS)
         return ETWError(status);
     // once stopped, the session handle becomes invalid
@@ -223,15 +223,15 @@ static ULONG WINAPI OnBufferComplete(PEVENT_TRACE_LOGFILE Buffer) {
 
 static ULONG EventConsumerLoop(const Session& session, PEVENT_RECORD_CALLBACK callback = NULL)
 {
-    EVENT_TRACE_LOGFILE trace = {};
-    trace.LoggerName = (LPTSTR)session.name;
+    EVENT_TRACE_LOGFILEA trace = {};
+    trace.LoggerName = (LPSTR)session.name;
     trace.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME;
     trace.ProcessTraceMode |= PROCESS_TRACE_MODE_EVENT_RECORD;  // request EVENT_RECORD, not EVENT_TRACE (legacy)
     trace.ProcessTraceMode |= PROCESS_TRACE_MODE_RAW_TIMESTAMP; // no timestamp conversions (use whatever the session is using)
     trace.EventRecordCallback = callback;
     trace.BufferCallback = OnBufferComplete;
 
-    PROCESSTRACE_HANDLE hConsumer = OpenTrace(&trace);
+    PROCESSTRACE_HANDLE hConsumer = OpenTraceA(&trace);
     if (hConsumer == INVALID_PROCESSTRACE_HANDLE)
         return ETWError(GetLastError());
 

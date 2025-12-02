@@ -201,16 +201,16 @@ static ULONG EnableVSyncMonitoring(Session& session) {
     desc.Ptr = (ULONGLONG)&fe;
     desc.Size = sizeof(fe);
     desc.Type = EVENT_FILTER_TYPE_EVENT_ID;
-    ENABLE_TRACE_PARAMETERS EnableParamaters = {};
-    EnableParamaters.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
-    EnableParamaters.EnableProperty = EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0;
-    EnableParamaters.SourceId = DxgKrnlGuid;    // or NullGuid? Does it even matter?
-    EnableParamaters.EnableFilterDesc = &desc;
-    EnableParamaters.FilterDescCount = 1;
+    ENABLE_TRACE_PARAMETERS EnableParameters = {};
+    EnableParameters.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
+    EnableParameters.EnableProperty = EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0;
+    EnableParameters.SourceId = DxgKrnlGuid;    // or NullGuid? Does it even matter?
+    EnableParameters.EnableFilterDesc = &desc;
+    EnableParameters.FilterDescCount = 1;
 
     ULONG status = EnableProvider(session, DxgKrnlGuid,
         EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION,
-        MatchAnyKeyword, MatchAllKeyword, 0, &EnableParamaters);
+        MatchAnyKeyword, MatchAllKeyword, 0, &EnableParameters);
     return status;
 }
 

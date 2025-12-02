@@ -122,7 +122,8 @@ static ULONG EnableStackWalk(Session& session, GUID EventGuid, UCHAR Opcode) {
     return ETWError(status);
 }
 
-static Session StartPrivateKernelSession(const TCHAR* name) {
+static Session StartPrivateKernelSession( const CHAR* name )
+{
     Session session = {};
 
     size_t maxlen = std::size(session.name);

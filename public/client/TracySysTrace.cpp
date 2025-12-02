@@ -244,7 +244,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     s_pid = GetCurrentProcessId();
 
-    session = etw::StartPrivateKernelSession(TEXT("TracySysTrace"));
+    session = etw::StartPrivateKernelSession( "TracySysTrace" );
     if (session.handle == 0)
         return false;
 

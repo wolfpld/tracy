@@ -183,7 +183,7 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
     CONTROLTRACE_ID TraceId = 0; // must be zero for TraceSampledProfileIntervalInfo
     status = TraceSetInformation( TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
     if( status != ERROR_SUCCESS )
-        return status;
+        return ETWError( status );
 
     status = EnableStackWalk( session, PerfInfoGuid, 46 );  // PerfInfoGuid Opcode 46: SampledProfile event
     return status;
@@ -209,9 +209,10 @@ static ULONG EnableVSyncMonitoring( Session& session )
 
     enum Keyword : ULONGLONG
     {
-        DxgKrnlBase = 0x0000'0000'0000'0001,    // Microsoft-Windows-DxgKrnl: Base
+        DxgKrnlBase    = 0x0000'0000'0000'0001, // Microsoft-Windows-DxgKrnl: Base
         DxgKrnlPresent = 0x0000'0000'0800'0000, // Microsoft-Windows-DxgKrnl: Present
         MSFTReserved62 = 0x4000'0000'0000'0000  // winmeta.h: WINEVENT_KEYWORD_RESERVED_62
+                                                // (Microsoft-Windows-DxgKrnl/Performance, according to logman)
     };
     ULONGLONG MatchAnyKeyword = Keyword::MSFTReserved62 | Keyword::DxgKrnlPresent | Keyword::DxgKrnlBase;
     ULONGLONG MatchAllKeyword = MatchAnyKeyword;

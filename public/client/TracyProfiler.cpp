@@ -1177,24 +1177,24 @@ static void StartSystemTracing( int64_t& samplingPeriod )
     // use TRACY_NO_SYS_TRACE=1 to force disabling sys tracing (even if available in the underlying system)
     // as it can have significant impact on the size of the traces
     const char* noSysTrace = GetEnvVar( "TRACY_NO_SYS_TRACE" );
-    const bool disableSystrace = (noSysTrace && noSysTrace[0] == '1');
+    const bool disableSystrace = ( noSysTrace && noSysTrace[0] == '1' );
     if( disableSystrace )
     {
-        TracyDebug("TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n");
+        TracyDebug( "TRACY: Sys Trace was disabled by 'TRACY_NO_SYS_TRACE=1'\n" );
     }
     else if( SysTraceStart( samplingPeriod ) )
     {
         Thread* sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
-        new(sysTraceThread) Thread(SysTraceWorker, nullptr);
-        Thread* prev = s_sysTraceThread.exchange(sysTraceThread);
-        assert(prev == nullptr);
+        new( sysTraceThread ) Thread( SysTraceWorker, nullptr );
+        Thread* prev = s_sysTraceThread.exchange( sysTraceThread );
+        assert( prev == nullptr );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }
 
 static void StopSystemTracing()
 {
-    Thread* sysTraceThread = s_sysTraceThread.exchange(nullptr);
+    Thread* sysTraceThread = s_sysTraceThread.exchange( nullptr );
     if( sysTraceThread )
     {
         SysTraceStop();

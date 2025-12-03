@@ -933,7 +933,7 @@ static Thread* s_symbolThread;
 std::atomic<bool> s_symbolThreadGone { false };
 #endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
-static Thread* s_sysTraceThread = nullptr;
+static std::atomic<Thread*> s_sysTraceThread = nullptr;
 #endif
 
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
@@ -1184,20 +1184,22 @@ static void StartSystemTracing( int64_t& samplingPeriod )
     }
     else if( SysTraceStart( samplingPeriod ) )
     {
-        s_sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
-        new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );
+        Thread* sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+        new(sysTraceThread) Thread(SysTraceWorker, nullptr);
+        Thread* prev = s_sysTraceThread.exchange(sysTraceThread);
+        assert(prev == nullptr);
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }
 
 static void StopSystemTracing()
 {
-    if( s_sysTraceThread )
+    Thread* sysTraceThread = s_sysTraceThread.exchange(nullptr);
+    if( sysTraceThread )
     {
         SysTraceStop();
-        s_sysTraceThread->~Thread();
-        tracy_free( s_sysTraceThread );
-        s_sysTraceThread = nullptr;
+        sysTraceThread->~Thread();
+        tracy_free( sysTraceThread );
     }
 }
 #endif

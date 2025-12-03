@@ -269,7 +269,9 @@ static PROCESSTRACE_HANDLE SetupEventConsumer( const Session& session, PEVENT_RE
 static ULONG StopEventConsumer( PROCESSTRACE_HANDLE hEventConsumer )
 {
     ULONG status = CloseTrace( hEventConsumer );
-    return ETWError( status );
+    if ((status != ERROR_SUCCESS) && (status != ERROR_CTX_CLOSE_PENDING))
+        return ETWError( status );
+    return status;
 }
 
 static ULONG EventConsumerLoop( PROCESSTRACE_HANDLE hEventConsumer )

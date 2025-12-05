@@ -190,6 +190,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return false;
 
 #ifndef TRACY_NO_CONTEXT_SWITCH
+    if ( etw::EnableProcessAndThreadMonitoring(session) != ERROR_SUCCESS )
+        return etw::StopSession(session), false;
     if ( etw::EnableContextSwitchMonitoring(session) != ERROR_SUCCESS )
         return etw::StopSession( session ), false;
 #endif

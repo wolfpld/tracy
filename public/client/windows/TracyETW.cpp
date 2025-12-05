@@ -167,6 +167,15 @@ static Session StartPrivateKernelSession( const CHAR* name )
     return session;
 }
 
+static ULONG EnableProcessAndThreadMonitoring(Session& session) {
+    ULONGLONG MatchAnyKeyword = SYSTEM_PROCESS_KW_THREAD;   // ThreadStart and ThreadDCStart events
+    ULONG status = EnableProvider( session, SystemProcessProviderGuid,
+                                   EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
+    if (status != ERROR_SUCCESS)
+        return status;
+    return status;
+}
+
 static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KHz = 125us */ )
 {
     // CPU Profiling requires special privileges on top of admin privileges
@@ -192,7 +201,9 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
 
 static ULONG EnableContextSwitchMonitoring( Session& session )
 {
-    ULONGLONG MatchAnyKeyword = SYSTEM_SCHEDULER_KW_CONTEXT_SWITCH;
+    ULONGLONG MatchAnyKeyword = 0;
+    MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_CONTEXT_SWITCH;  // CSwitch events
+    MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_DISPATCHER;      // ReadyThread events
     ULONG status = EnableProvider( session, SystemSchedulerProviderGuid,
                                    EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
     if( status != ERROR_SUCCESS )

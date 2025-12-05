@@ -1,6 +1,7 @@
+#include <windows.h>
+#include <guiddef.h>
 #include <evntcons.h>
 #include <evntrace.h>
-#include <windows.h>
 
 #include <stdio.h>
 #include <thread>
@@ -43,7 +44,7 @@ static ULONG ETWError( ULONG result )
         return result;
     ZoneScopedC( tracy::Color::Red4 );
     char message[128] = {};
-    size_t written = snprintf( message, sizeof( message ), "ETW Error %u (0x%x): ", result, result );
+    int written = snprintf( message, sizeof( message ), "ETW Error %u (0x%x): ", result, result );
     written += FormatMessageA(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
@@ -281,6 +282,92 @@ static ULONG EventConsumerLoop( PROCESSTRACE_HANDLE hEventConsumer )
         return ETWError( status );
     return status;
 }
+
+struct CSwitch
+{
+    // V2 fields:
+    static constexpr UCHAR Opcode = 36;
+    uint32_t    newThreadId;
+    uint32_t    oldThreadId;
+    int8_t      newThreadPriority;
+    int8_t      oldThreadPriority;
+    uint8_t     previousCState;
+    int8_t      spareByte;
+    int8_t      oldThreadWaitReason;
+    int8_t      oldThreadWaitMode;
+    int8_t      oldThreadState;
+    int8_t      oldThreadWaitIdealProcessor;
+    uint32_t    newThreadWaitTime;
+    uint32_t    reserved;
+};
+static_assert(sizeof(CSwitch) == 24, "unexpected CSwitch struct size/alignment");
+
+struct ReadyThread
+{
+    // V2 fields:
+    static constexpr UCHAR Opcode = 50;
+    uint32_t    threadId;
+    int8_t      adjustReason;
+    int8_t      adjustIncrement;
+    int8_t      flag;
+    int8_t      reserverd;
+};
+static_assert(sizeof(ReadyThread) == 8, "unexpected ReadyThread struct size/alignment");
+
+struct ThreadInfo
+{
+    // V0 (Thread_V0_TypeGroup1) fields:
+    uint32_t processId;
+    uint32_t threadId;
+    // NOTE: we only care about PID and TID for now, and these two are "invariant"
+    // across all revisions (versions) of this event. As such, let's omit the other
+    // fields since they vary based on the event version; their sizes also vary by
+    // target architecture (32bit or 64bit), and this is not even mentioned in the
+    // MSDN documentation, and worse, have not been updated in the official schemas
+    // either (which ETW Explorer uses), but can be introspected via the TDH API.
+};
+static_assert(sizeof(ThreadInfo) == 8, "unexpected ThreadInfo struct size/alignment");
+
+struct ThreadStart : public ThreadInfo
+{
+    static constexpr UCHAR Opcode = 1;
+};
+static_assert(sizeof(ThreadStart) == 8, "unexpected ThreadStart struct size/alignment");
+
+// DC: Data Collection (associated with the "rundown" phase)
+struct ThreadDCStart : public ThreadInfo
+{
+    static constexpr UCHAR Opcode = 3;
+};
+static_assert(sizeof(ThreadDCStart) == 8, "unexpected ThreadDCStart struct size/alignment");
+
+struct StackWalkEvent
+{
+    // V2 fields:
+    static constexpr UCHAR Opcode = 32;
+    uint64_t eventTimeStamp;
+    uint32_t stackProcess;
+    uint32_t stackThread;
+    uint64_t stack[192];    // arbitrary upperbound limit; schema stops at [32]
+};
+static_assert(offsetof(StackWalkEvent, stackProcess) == 8, "unexpected StackWalkEvent struct size/alignment");
+static_assert(offsetof(StackWalkEvent, stackThread) == 12, "unexpected StackWalkEvent struct size/alignment");
+static_assert(offsetof(StackWalkEvent, stack) == 16, "unexpected StackWalkEvent struct size/alignment");
+
+struct VSyncInfo
+{
+    static constexpr USHORT EventId = 17; // 0x11
+    void*       dxgAdapter;
+    uint32_t    vidPnTargetId;
+    uint64_t    scannedPhysicalAddress;
+    uint32_t    vidPnSourceId;
+    uint32_t    frameNumber;
+    int64_t     frameQpcTime;
+    void*       hFlipDevice;
+    uint32_t    flipType;
+    uint64_t    flipFenceId;
+};
+static_assert(sizeof(VSyncInfo) == 64, "unexpected VSyncInfo struct size/alignment");
 
 }
 }

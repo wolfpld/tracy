@@ -66,66 +66,6 @@ namespace tracy
 
 static DWORD s_pid;
 
-struct CSwitch
-{
-    uint32_t    newThreadId;
-    uint32_t    oldThreadId;
-    int8_t      newThreadPriority;
-    int8_t      oldThreadPriority;
-    uint8_t     previousCState;
-    int8_t      spareByte;
-    int8_t      oldThreadWaitReason;
-    int8_t      oldThreadWaitMode;
-    int8_t      oldThreadState;
-    int8_t      oldThreadWaitIdealProcessor;
-    uint32_t    newThreadWaitTime;
-    uint32_t    reserved;
-};
-
-struct ReadyThread
-{
-    uint32_t    threadId;
-    int8_t      adjustReason;
-    int8_t      adjustIncrement;
-    int8_t      flag;
-    int8_t      reserverd;
-};
-
-struct ThreadTrace
-{
-    uint32_t processId;
-    uint32_t threadId;
-    uint32_t stackBase;
-    uint32_t stackLimit;
-    uint32_t userStackBase;
-    uint32_t userStackLimit;
-    uint32_t startAddr;
-    uint32_t win32StartAddr;
-    uint32_t tebBase;
-    uint32_t subProcessTag;
-};
-
-struct StackWalkEvent
-{
-    uint64_t eventTimeStamp;
-    uint32_t stackProcess;
-    uint32_t stackThread;
-    uint64_t stack[192];
-};
-
-struct VSyncInfo
-{
-    void*       dxgAdapter;
-    uint32_t    vidPnTargetId;
-    uint64_t    scannedPhysicalAddress;
-    uint32_t    vidPnSourceId;
-    uint32_t    frameNumber;
-    int64_t     frameQpcTime;
-    void*       hFlipDevice;
-    uint32_t    flipType;
-    uint64_t    flipFenceId;
-};
-
 extern "C" typedef NTSTATUS (WINAPI *t_NtQueryInformationThread)( HANDLE, THREADINFOCLASS, PVOID, ULONG, PULONG );
 extern "C" typedef BOOL (WINAPI *t_EnumProcessModules)( HANDLE, HMODULE*, DWORD, LPDWORD );
 extern "C" typedef BOOL (WINAPI *t_GetModuleInformation)( HANDLE, HMODULE, LPMODULEINFO, DWORD );
@@ -154,9 +94,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     switch( hdr.ProviderId.Data1 )
     {
     case etw::ThreadGuid.Data1:
-        if( hdr.EventDescriptor.Opcode == 36 )
+        if( hdr.EventDescriptor.Opcode == etw::CSwitch::Opcode )
         {
-            const auto cswitch = (const CSwitch*)record->UserData;
+            const auto cswitch = (const etw::CSwitch*)record->UserData;
 
             TracyLfqPrepare( QueueType::ContextSwitch );
             MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
@@ -170,9 +110,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
             MemWrite( &item->contextSwitch.previousCState, cswitch->previousCState );
             TracyLfqCommit;
         }
-        else if( hdr.EventDescriptor.Opcode == 50 )
+        else if( hdr.EventDescriptor.Opcode == etw::ReadyThread::Opcode )
         {
-            const auto rt = (const ReadyThread*)record->UserData;
+            const auto rt = (const etw::ReadyThread*)record->UserData;
 
             TracyLfqPrepare( QueueType::ThreadWakeup );
             MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
@@ -182,13 +122,13 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
             MemWrite( &item->threadWakeup.adjustIncrement, rt->adjustIncrement );
             TracyLfqCommit;
         }
-        else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
+        else if( hdr.EventDescriptor.Opcode == etw::ThreadStart::Opcode || hdr.EventDescriptor.Opcode == etw::ThreadDCStart::Opcode )
         {
-            const auto tt = (const ThreadTrace*)record->UserData;
+            const auto ti = (const etw::ThreadInfo*)record->UserData;
 
-            uint64_t tid = tt->threadId;
+            uint64_t tid = ti->threadId;
             if( tid == 0 ) return;
-            uint64_t pid = tt->processId;
+            uint64_t pid = ti->processId;
             TracyLfqPrepare( QueueType::TidToPid );
             MemWrite( &item->tidToPid.tid, tid );
             MemWrite( &item->tidToPid.pid, pid );
@@ -196,9 +136,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         }
         break;
     case etw::StackWalkGuid.Data1:
-        if( hdr.EventDescriptor.Opcode == 32 )
+        if( hdr.EventDescriptor.Opcode == etw::StackWalkEvent::Opcode )
         {
-            const auto sw = (const StackWalkEvent*)record->UserData;
+            const auto sw = (const etw::StackWalkEvent*)record->UserData;
             if( sw->stackProcess == s_pid )
             {
                 const uint64_t sz = ( record->UserDataLength - 16 ) / 8;
@@ -217,9 +157,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         }
         break;
     case etw::DxgKrnlGuid.Data1:
-        assert( hdr.EventDescriptor.Id == 0x0011 );
+        assert( hdr.EventDescriptor.Id == etw::VSyncInfo::EventId );
         {
-            const auto vs = (const VSyncInfo*)record->UserData;
+            const auto vs = (const etw::VSyncInfo*)record->UserData;
             TracyLfqPrepare( QueueType::FrameVsync );
             MemWrite( &item->frameVsync.time, hdr.TimeStamp.QuadPart );
             MemWrite( &item->frameVsync.id, vs->vidPnTargetId );

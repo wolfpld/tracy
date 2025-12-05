@@ -271,7 +271,7 @@ if(NOT EMSCRIPTEN)
 
     # libcurl
 
-    pkg_check_modules(LIBCURL libcurl)
+    pkg_check_modules(LIBCURL libcurl>=7.87.0)
     if (LIBCURL_FOUND AND NOT DOWNLOAD_LIBCURL)
         add_library(TracyLibcurl INTERFACE)
         target_include_directories(TracyLibcurl INTERFACE ${LIBCURL_INCLUDE_DIRS})

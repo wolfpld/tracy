@@ -95,8 +95,72 @@ void TimelineItemPlot::HeaderExtraContents( const TimelineContext& ctx, int offs
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetTextLineHeight();
 
-    char tmp[128];
-    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( m_plot->rMax - m_plot->rMin, m_plot->format ), RealToString( m_plot->num ) );
+    char tmp[256];
+    const auto dataPoints = m_plot->data.size();
+
+    if( dataPoints == 0 )
+    {
+        sprintf( tmp, "(no data)" );
+    }
+    else
+    {
+        const auto avg = m_plot->sum / dataPoints;
+
+        // Helper function to format time value (assuming ns input)
+        auto formatTimeValue = [](double ns, char* buf) {
+            if( ns >= 1000000000.0 ) {
+                sprintf( buf, "%.1fs", ns / 1000000000.0 );
+            } else if( ns >= 1000000.0 ) {
+                sprintf( buf, "%.1fms", ns / 1000000.0 );
+            } else if( ns >= 1000.0 ) {
+                sprintf( buf, "%.1fus", ns / 1000.0 );
+            } else {
+                sprintf( buf, "%.1fns", ns );
+            }
+        };
+
+        char avgBuf[64], minBuf[64], maxBuf[64];
+
+        if( m_plot->format == PlotValueFormatting::Number )
+        {
+            // For Number format, assume ns and convert to appropriate time unit
+            formatTimeValue( avg, avgBuf );
+            formatTimeValue( m_plot->min, minBuf );
+            formatTimeValue( m_plot->max, maxBuf );
+        }
+        else if( m_plot->format == PlotValueFormatting::Memory )
+        {
+            // For Memory format, use MemSizeToString
+            sprintf( avgBuf, "%s", MemSizeToString( int64_t( avg ) ) );
+            sprintf( minBuf, "%s", MemSizeToString( int64_t( m_plot->min ) ) );
+            sprintf( maxBuf, "%s", MemSizeToString( int64_t( m_plot->max ) ) );
+        }
+        else if( m_plot->format == PlotValueFormatting::Percentage )
+        {
+            // For Percentage format
+            sprintf( avgBuf, "%.2f%%", avg );
+            sprintf( minBuf, "%.2f%%", m_plot->min );
+            sprintf( maxBuf, "%.2f%%", m_plot->max );
+        }
+        else if( m_plot->format == PlotValueFormatting::Watt )
+        {
+            // For Watt format
+            sprintf( avgBuf, "%.2f W", avg );
+            sprintf( minBuf, "%.2f W", m_plot->min );
+            sprintf( maxBuf, "%.2f W", m_plot->max );
+        }
+        else
+        {
+            // Fallback for unknown formats
+            sprintf( avgBuf, "%.2f", avg );
+            sprintf( minBuf, "%.2f", m_plot->min );
+            sprintf( maxBuf, "%.2f", m_plot->max );
+        }
+
+        sprintf( tmp, "(avg: %s, min: %s, max: %s, count: %s)",
+                 avgBuf, minBuf, maxBuf, RealToString( dataPoints ) );
+    }
+
     draw->AddText( ctx.wpos + ImVec2( ty * 1.5f + labelWidth, offset ), 0xFF226E6E, tmp );
 }
 

@@ -652,13 +652,107 @@ void View::DrawOptions()
                 }
             }
 
+            // Prepare plots list for display (sorted or original order)
+            ImGui::SameLine();
+            if( ImGui::SmallButton( "Sort by name" ) )
+            {
+                m_plotsSortMode = 1;
+            }
+            ImGui::SameLine();
+            if( ImGui::SmallButton( "Sort by avg" ) )
+            {
+                m_plotsSortMode = 2;
+            }
+
+            // Build and sort the list based on current sort mode
+            m_plotsList.clear();
             for( const auto& p : m_worker.GetPlots() )
+            {
+                m_plotsList.push_back_non_empty( p );
+            }
+
+            if( m_plotsSortMode == 1 )
+            {
+                // Sort by name
+                pdqsort_branchless( m_plotsList.begin(), m_plotsList.end(), [this] ( const auto& lhs, const auto& rhs ) {
+                    return strcmp( m_worker.GetString( lhs->name ), m_worker.GetString( rhs->name ) ) < 0;
+                } );
+            }
+            else if( m_plotsSortMode == 2 )
+            {
+                // Sort by average value (descending)
+                pdqsort_branchless( m_plotsList.begin(), m_plotsList.end(), [] ( const auto& lhs, const auto& rhs ) {
+                    const auto lhsAvg = lhs->data.size() > 0 ? lhs->sum / lhs->data.size() : 0.0;
+                    const auto rhsAvg = rhs->data.size() > 0 ? rhs->sum / rhs->data.size() : 0.0;
+                    return lhsAvg > rhsAvg;
+                } );
+            }
+
+            for( const auto& p : m_plotsList )
             {
                 SmallColorBox( GetPlotColor( *p, m_worker ) );
                 ImGui::SameLine();
                 m_tc.GetItem( p ).VisibilityCheckbox();
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );
+
+                // Display avg, min, max, counts
+                const auto dataPoints = p->data.size();
+                if( dataPoints == 0 )
+                {
+                    ImGui::TextDisabled( "(no data)" );
+                }
+                else
+                {
+                    const auto avg = p->sum / dataPoints;
+                    char buf[128];
+
+                    // Helper function to format time value (assuming ns input)
+                    auto formatTimeValue = [](double ns, char* outBuf) {
+                        if( ns >= 1000000000.0 ) {
+                            sprintf( outBuf, "%.1fs", ns / 1000000000.0 );
+                        } else if( ns >= 1000000.0 ) {
+                            sprintf( outBuf, "%.1fms", ns / 1000000.0 );
+                        } else if( ns >= 1000.0 ) {
+                            sprintf( outBuf, "%.1fus", ns / 1000.0 );
+                        } else {
+                            sprintf( outBuf, "%.1fns", ns );
+                        }
+                    };
+
+                    if( p->format == PlotValueFormatting::Number )
+                    {
+                        char avgBuf[32], minBuf[32], maxBuf[32];
+                        formatTimeValue( avg, avgBuf );
+                        formatTimeValue( p->min, minBuf );
+                        formatTimeValue( p->max, maxBuf );
+                        sprintf( buf, "avg: %s, min: %s, max: %s, n=%s", avgBuf, minBuf, maxBuf, RealToString( dataPoints ) );
+                    }
+                    else if( p->format == PlotValueFormatting::Memory )
+                    {
+                        sprintf( buf, "avg: %s, min: %s, max: %s, n=%s",
+                                 MemSizeToString( int64_t( avg ) ),
+                                 MemSizeToString( int64_t( p->min ) ),
+                                 MemSizeToString( int64_t( p->max ) ),
+                                 RealToString( dataPoints ) );
+                    }
+                    else if( p->format == PlotValueFormatting::Percentage )
+                    {
+                        sprintf( buf, "avg: %.2f%%, min: %.2f%%, max: %.2f%%, n=%s",
+                                 avg, p->min, p->max, RealToString( dataPoints ) );
+                    }
+                    else if( p->format == PlotValueFormatting::Watt )
+                    {
+                        sprintf( buf, "avg: %.2fW, min: %.2fW, max: %.2fW, n=%s",
+                                 avg, p->min, p->max, RealToString( dataPoints ) );
+                    }
+                    else
+                    {
+                        sprintf( buf, "avg: %.2f, min: %.2f, max: %.2f, n=%s",
+                                 avg, p->min, p->max, RealToString( dataPoints ) );
+                    }
+
+                    ImGui::TextDisabled( "%s", buf );
+                }
             }
             ImGui::TreePop();
         }

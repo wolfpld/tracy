@@ -411,6 +411,8 @@ private:
     Vector<const ThreadData*> m_threadOrder;
     Vector<const ThreadData*> m_threadReinsert;
     Vector<float> m_threadDnd;
+    Vector<PlotData*> m_plotsList;
+    int m_plotsSortMode = 0;
 
     tracy_force_inline bool& VisibleMsgThread( uint64_t thread )
     {

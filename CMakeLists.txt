@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
-
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(TRACY_STATIC ON)
 # Run version helper script
 include(cmake/version.cmake)
 

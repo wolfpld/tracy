@@ -1,83 +1,230 @@
-name: build
+name: Build Tracy
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  workflow_call:
+    inputs:
+      runningSystem:
+        description: "System to run the job on"
+        required: true
+        type: string
+      testCompilation:
+        description: "Whether to test compilation with different flags"
+        required: true
+        type: boolean
+      webBuild:
+        description: "Build web version"
+        required: true
+        type: boolean
+      regularBuilds:
+        description: "Build regular version"
+        required: true
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      runningSystem:
+        description: "System to run the job on"
+        required: true
+        type: string
+      testCompilation:
+        description: "Whether to test compilation with different flags"
+        required: true
+        type: boolean
+      webBuild:
+        description: "Build web version"
+        required: true
+        type: boolean
+      regularBuilds:
+        description: "Build regular version"
+        required: true
+        type: boolean
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
 
 jobs:
-  build:
+  library:
+    if: ${{ !startsWith(inputs.runningSystem, 'windows') && inputs.regularBuilds == true }}
+    runs-on: ${{ inputs.runningSystem }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - if: startsWith(inputs.runningSystem, 'windows')
+        run: pip install meson ninja
+      - name: Cache CPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/cpm-cache
+            ~/.cache/CPM
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+      - if: startsWith(inputs.runningSystem, 'macos')
+        name: Install macos dependencies
+        run: brew install pkg-config glfw meson
+      - if: startsWith(inputs.runningSystem, 'ubuntu')
+        name: Install linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+      - name: Trust git repo
+        run: git config --global --add safe.directory '*'
+      - name: Library
+        run: just library
+
+  build-matrix:
+    if: inputs.regularBuilds == true
+    runs-on: ${{ inputs.runningSystem }}
     strategy:
       matrix:
-        os: [ windows-latest, macos-15 ]
-
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
+        component: [profiler, update, capture, csvexport, import]
     steps:
-    - uses: actions/checkout@v4
-    - if: startsWith(matrix.os, 'windows')
-      uses: microsoft/setup-msbuild@v2
-    - if: startsWith(matrix.os, 'windows')
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - if: startsWith(matrix.os, 'windows')
-      run: pip install meson ninja
-    - if: startsWith(matrix.os, 'macos')
-      name: Install macos dependencies
-      run: brew install pkg-config glfw meson
-    - name: Trust git repo
-      run: git config --global --add safe.directory '*'
-    - name: Profiler GUI
-      run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build profiler/build --parallel --config Release
-    - name: Update utility
-      run: |
-        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release
-        cmake --build update/build --parallel --config Release
-    - name: Capture utility
-      run: |
-        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release
-        cmake --build capture/build --parallel --config Release
-    - name: Csvexport utility
-      run: |
-        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
-        cmake --build csvexport/build --parallel --config Release
-    - name: Import utilities
-      run: |
-        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release
-        cmake --build import/build --parallel --config Release
-    - if: ${{ !startsWith(matrix.os, 'windows') }}
-      name: Library
-      run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
-    - if: ${{ !startsWith(matrix.os, 'windows') }}
-      name: Find Artifacts
-      id: find_artifacts
-      run: |
-        mkdir -p bin
-        cp profiler/build/tracy-profiler bin
-        cp update/build/tracy-update bin
-        cp capture/build/tracy-capture bin
-        cp csvexport/build/tracy-csvexport bin
-        cp import/build/tracy-import-chrome bin
-        cp import/build/tracy-import-fuchsia bin
-    - if: startsWith(matrix.os, 'windows')
-      name: Find Artifacts
-      id: find_artifacts_windows
-      run: |
-        mkdir bin
-        copy profiler\build\Release\tracy-profiler.exe bin
-        copy update\build\Release\tracy-update.exe bin
-        copy capture\build\Release\tracy-capture.exe bin
-        copy csvexport\build\Release\tracy-csvexport.exe bin
-        copy import\build\Release\tracy-import-chrome.exe bin
-        copy import\build\Release\tracy-import-fuchsia.exe bin
-    - uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.os }}
-        path: bin
+      - uses: actions/checkout@v4
+      - name: Cache CPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/cpm-cache
+            ~/.cache/CPM
+          key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-cpm-
+      - uses: extractions/setup-just@v2
+      - if: startsWith(inputs.runningSystem, 'windows')
+        uses: microsoft/setup-msbuild@v2
+      - if: startsWith(inputs.runningSystem, 'windows')
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - if: startsWith(inputs.runningSystem, 'windows')
+        run: pip install meson ninja
+      - if: startsWith(inputs.runningSystem, 'macos')
+        name: Install macos dependencies
+        run: brew install pkg-config glfw meson
+      - if: startsWith(inputs.runningSystem, 'ubuntu')
+        name: Install linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+      - name: Build ${{ matrix.component }}
+        run: just build ${{ matrix.component }}
+      - name: Get artifacts ${{ matrix.component }}
+        run: just copy_artifacts
+      - name: Upload ${{ matrix.component }} artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.component }}-${{ inputs.runningSystem }}-${{ github.run_id }}
+          path: bin/*
+
+  compile-tests:
+    if: inputs.testCompilation == true
+    runs-on: ${{ inputs.runningSystem }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - if: startsWith(inputs.runningSystem, 'windows')
+        uses: microsoft/setup-msbuild@v2
+      - if: startsWith(inputs.runningSystem, 'windows')
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - if: startsWith(inputs.runningSystem, 'windows')
+        run: pip install meson ninja
+      - if: startsWith(inputs.runningSystem, 'macos')
+        name: Install macos dependencies
+        run: brew install pkg-config glfw meson
+      - if: startsWith(inputs.runningSystem, 'ubuntu')
+        name: Install linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+      - name: Test compilation with different flags
+        run: just compile_tests
+
+  web-build:
+    if: inputs.webBuild == true
+    runs-on: ${{ inputs.runningSystem }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - name: Cache CPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/cpm-cache
+            ~/.cache/CPM
+          key: ${{ runner.os }}-web-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-web-cpm-
+      - if: startsWith(inputs.runningSystem, 'windows')
+        uses: microsoft/setup-msbuild@v2
+      - if: startsWith(inputs.runningSystem, 'windows')
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - if: startsWith(inputs.runningSystem, 'windows')
+        run: pip install meson ninja
+      - if: startsWith(inputs.runningSystem, 'macos')
+        name: Install macos dependencies
+        run: brew install pkg-config glfw meson
+      - if: startsWith(inputs.runningSystem, 'ubuntu')
+        name: Install linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglfw3-dev meson ninja-build libdbus-1-dev libxkbcommon-dev libfreetype-dev libtbb-dev libwayland-dev libglvnd-dev zstd
+      - name: Setup emscripten
+        uses: mymindstorm/setup-emsdk@v14
+      - name: Web Build
+        run: just web_build ${{ github.sha }}
+      - name: Web Copy and Compress artifacts
+        run: |
+          just web_compress_artifacts
+          just web_copy_artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.runningSystem }}-web
+          path: bin
+
+  finalize:
+    if: inputs.regularBuilds == true
+    needs: build-matrix
+    runs-on: ${{ inputs.runningSystem }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - name: Download all component artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-${{ inputs.runningSystem }}-${{ github.run_id }}"
+      - name: Restore build directories
+        run: |
+          ls -R
+          mkdir -p bin
+          mv profiler-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
+          mv update-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
+          mv capture-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
+          mv csvexport-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
+          mv import-${{ inputs.runningSystem }}-${{ github.run_id }}/* bin/ || true
+      - if: ${{ !startsWith(inputs.runningSystem, 'windows') }}
+        name: Strip binaries
+        run: just strip_binary
+      - if: startsWith(inputs.runningSystem, 'macos')
+        name: Add install info
+        run: echo "MacOS automatically adds quarantine attributes to binaries downloaded from the internet. To remove these attributes and make them executable, run the following command xattr -d com.apple.quarantine ./tracy*" > bin/tracy_install_info.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.runningSystem }}
+          path: bin
+
+  cleanup:
+    if: always()
+    needs: [library, build-matrix, compile-tests, web-build, finalize]
+    runs-on: ${{ inputs.runningSystem }}
+    steps:
+      - name: Delete workspace artifact
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: workspace-${{ inputs.runningSystem }}-${{ github.run_id }}
+          failOnError: false
+      - name: Delete component artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            profiler-${{ inputs.runningSystem }}-${{ github.run_id }}
+            update-${{ inputs.runningSystem }}-${{ github.run_id }}
+            capture-${{ inputs.runningSystem }}-${{ github.run_id }}
+            csvexport-${{ inputs.runningSystem }}-${{ github.run_id }}
+            import-${{ inputs.runningSystem }}-${{ github.run_id }}
+          failOnError: false

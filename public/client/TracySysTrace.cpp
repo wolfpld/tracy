@@ -157,9 +157,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         }
         break;
     case etw::DxgKrnlGuid.Data1:
-        assert( hdr.EventDescriptor.Id == etw::VSyncInfo::EventId );
+        assert( hdr.EventDescriptor.Id == etw::VSyncDPC::EventId );
         {
-            const auto vs = (const etw::VSyncInfo*)record->UserData;
+            const auto vs = (const etw::VSyncDPC*)record->UserData;
             TracyLfqPrepare( QueueType::FrameVsync );
             MemWrite( &item->frameVsync.time, hdr.TimeStamp.QuadPart );
             MemWrite( &item->frameVsync.id, vs->vidPnTargetId );

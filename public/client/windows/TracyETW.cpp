@@ -25,6 +25,109 @@ struct Session
     CONTROLTRACE_ID handle = 0;
 };
 
+// ---- ETW Events ----------
+
+struct CSwitch
+{
+    // V2 fields:
+    static constexpr UCHAR Opcode = 36;
+    uint32_t    newThreadId;
+    uint32_t    oldThreadId;
+    int8_t      newThreadPriority;
+    int8_t      oldThreadPriority;
+    uint8_t     previousCState;
+    int8_t      spareByte;
+    int8_t      oldThreadWaitReason;
+    int8_t      oldThreadWaitMode;
+    int8_t      oldThreadState;
+    int8_t      oldThreadWaitIdealProcessor;
+    uint32_t    newThreadWaitTime;
+    uint32_t    reserved;
+};
+static_assert( sizeof( CSwitch ) == 24, "unexpected CSwitch struct size/alignment" );
+
+struct ReadyThread
+{
+    // V2 fields:
+    static constexpr UCHAR Opcode = 50;
+    uint32_t    threadId;
+    int8_t      adjustReason;
+    int8_t      adjustIncrement;
+    int8_t      flag;
+    int8_t      reserverd;
+};
+static_assert( sizeof( ReadyThread ) == 8, "unexpected ReadyThread struct size/alignment" );
+
+struct ThreadInfo
+{
+    // V0 (Thread_V0_TypeGroup1) fields:
+    uint32_t processId;
+    uint32_t threadId;
+    // NOTE: we only care about PID and TID for now, and these two are "invariant"
+    // across all revisions (versions) of this event. As such, let's omit the other
+    // fields since they vary based on the event version; their sizes also vary by
+    // target architecture (32bit or 64bit), and this is not even mentioned in the
+    // MSDN documentation, and worse, have not been updated in the official schemas
+    // either (which ETW Explorer uses), but can be introspected via the TDH API.
+};
+static_assert( sizeof( ThreadInfo ) == 8, "unexpected ThreadInfo struct size/alignment" );
+
+struct ThreadStart : public ThreadInfo
+{
+    static constexpr UCHAR Opcode = 1;
+};
+static_assert( sizeof( ThreadStart ) == 8, "unexpected ThreadStart struct size/alignment") ;
+
+// DC: Data Collection (associated with the "rundown" phase)
+struct ThreadDCStart : public ThreadInfo
+{
+    static constexpr UCHAR Opcode = 3;
+};
+static_assert( sizeof( ThreadDCStart ) == 8, "unexpected ThreadDCStart struct size/alignment" );
+
+struct SampledProfile
+{
+    static constexpr UCHAR Opcode = 46;
+    // NOTE: we don't handle SampledProfile events directly; instead, we handle
+    // the StackWalk event associated with each SampledProfile event. Just like
+    // ThreadInfo, the data layout varies based on the target architecture, and
+    // the MSDN documentation and schemas are outdated.
+    //uint64_t instructionPointer;    // 32/64 bits
+    //uint32_t threadId;
+    //uint32_t count;                 // Not used.
+};
+static_assert( sizeof( SampledProfile ) == 1, "unexpected SampledProfile struct size/alignment" );
+
+struct StackWalkEvent
+{
+    // V2 fields:
+    static constexpr UCHAR Opcode = 32;
+    uint64_t eventTimeStamp;
+    uint32_t stackProcess;
+    uint32_t stackThread;
+    uint64_t stack[192];    // arbitrary upperbound limit; schema stops at [32]
+};
+static_assert( offsetof( StackWalkEvent, stackProcess ) == 8, "unexpected StackWalkEvent struct size/alignment" );
+static_assert( offsetof( StackWalkEvent, stackThread ) == 12, "unexpected StackWalkEvent struct size/alignment" );
+static_assert( offsetof( StackWalkEvent, stack ) == 16, "unexpected StackWalkEvent struct size/alignment" );
+
+struct VSyncDPC
+{
+    static constexpr USHORT EventId = 17; // 0x11
+    void*       dxgAdapter;
+    uint32_t    vidPnTargetId;
+    uint64_t    scannedPhysicalAddress;
+    uint32_t    vidPnSourceId;
+    uint32_t    frameNumber;
+    int64_t     frameQpcTime;
+    void*       hFlipDevice;
+    uint32_t    flipType;
+    uint64_t    flipFenceId;
+};
+static_assert( sizeof( VSyncDPC ) == 64, "unexpected VSyncInfo struct size/alignment" );
+
+// --------------------------
+
 static void ETWErrorAction( ULONG error_code, const char* message, int length )
 {
 #ifdef TRACY_HAS_CALLSTACK
@@ -73,6 +176,18 @@ static DWORD ElevatePrivilege( LPCTSTR PrivilegeName )
     return ETWError( status );
 }
 
+static bool IsOS64Bit()
+{
+#if defined _WIN64
+    constexpr bool isOs64Bit = true;
+#else
+    BOOL _iswow64;
+    IsWow64Process(GetCurrentProcess(), &_iswow64);
+    const bool isOs64Bit = _iswow64;
+#endif
+    return isOs64Bit;
+}
+
 static ULONG StartSession( Session& session )
 {
     ULONG status = StartTraceA( &session.handle, session.name, &session.properties );
@@ -116,14 +231,7 @@ static ULONG EnableProvider(
 
 static ULONG EnableStackWalk( Session& session, GUID EventGuid, UCHAR Opcode )
 {
-#if defined _WIN64
-    constexpr bool isOs64Bit = true;
-#else
-    BOOL _iswow64;
-    IsWow64Process( GetCurrentProcess(), &_iswow64 );
-    const bool isOs64Bit = _iswow64;
-#endif
-    if( !isOs64Bit )
+    if( !IsOS64Bit() )
         return 0 /* ERROR_SUCCESS */;   // TODO: return error instead?
     CLASSIC_EVENT_ID stackId[1] = {};
     stackId[0].EventGuid = EventGuid;
@@ -136,11 +244,9 @@ static Session StartPrivateKernelSession( const CHAR* name )
 {
     Session session = {};
 
-    size_t maxlen = sizeof( session.name );
-    for( size_t i = 0; i < maxlen && name[i] != 0; ++i )
-    {
-        session.name[i] = name[i];
-    }
+    size_t maxlen = sizeof( session.name ) - 1;
+    strncpy(session.name, name, maxlen);
+    session.name[maxlen] = '\0';
 
     auto& props = session.properties;
     props.LoggerNameOffset = offsetof( Session, name );
@@ -156,7 +262,7 @@ static Session StartPrivateKernelSession( const CHAR* name )
     props.LogFileMode |= EVENT_TRACE_REAL_TIME_MODE;
 
     // TODO: should we really be tweaking the buffering parameters?
-    props.BufferSize = 1024;
+    props.BufferSize = 1024;    // in KB
     props.MinimumBuffers = std::thread::hardware_concurrency() * 4;
     props.MaximumBuffers = std::thread::hardware_concurrency() * 6;
 
@@ -187,15 +293,18 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
     if( status != ERROR_SUCCESS )
         return status;
 
-    TRACE_PROFILE_INTERVAL interval = {};
-    interval.Source = 0; // 0: ProfileTime
-    interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
-    CONTROLTRACE_ID TraceId = 0; // must be zero for TraceSampledProfileIntervalInfo
-    status = TraceSetInformation( TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
-    if( status != ERROR_SUCCESS )
-        return ETWError( status );
+    if ( IsOS64Bit() )
+    { 
+        TRACE_PROFILE_INTERVAL interval = {};
+        interval.Source = 0; // 0: ProfileTime (from enum KPROFILE_SOURCE in wdm.h)
+        interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
+        CONTROLTRACE_ID TraceId = 0; // must be zero for TraceSampledProfileIntervalInfo
+        status = TraceSetInformation( TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
+        if( status != ERROR_SUCCESS )
+            return ETWError( status );
+    }
 
-    status = EnableStackWalk( session, PerfInfoGuid, 46 );  // PerfInfoGuid Opcode 46: SampledProfile event
+    status = EnableStackWalk( session, PerfInfoGuid, SampledProfile::Opcode );
     return status;
 }
 
@@ -208,7 +317,7 @@ static ULONG EnableContextSwitchMonitoring( Session& session )
                                    EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
     if( status != ERROR_SUCCESS )
         return status;
-    status = EnableStackWalk( session, ThreadGuid, 36 );  // ThreadGuid Opcode 36: CSwitch event
+    status = EnableStackWalk( session, ThreadGuid, CSwitch::Opcode );
     return status;
 }
 
@@ -232,7 +341,7 @@ static ULONG EnableVSyncMonitoring( Session& session )
     EVENT_FILTER_EVENT_ID fe = {};
     fe.FilterIn = TRUE;
     fe.Count = 1;
-    fe.Events[0] = 0x0011;  // 0x11 = 17 : VSyncDPC_Info
+    fe.Events[0] = VSyncDPC::EventId;
     EVENT_FILTER_DESCRIPTOR desc = {};
     desc.Ptr = (ULONGLONG)&fe;
     desc.Size = sizeof( fe );
@@ -293,92 +402,6 @@ static ULONG EventConsumerLoop( PROCESSTRACE_HANDLE hEventConsumer )
         return ETWError( status );
     return status;
 }
-
-struct CSwitch
-{
-    // V2 fields:
-    static constexpr UCHAR Opcode = 36;
-    uint32_t    newThreadId;
-    uint32_t    oldThreadId;
-    int8_t      newThreadPriority;
-    int8_t      oldThreadPriority;
-    uint8_t     previousCState;
-    int8_t      spareByte;
-    int8_t      oldThreadWaitReason;
-    int8_t      oldThreadWaitMode;
-    int8_t      oldThreadState;
-    int8_t      oldThreadWaitIdealProcessor;
-    uint32_t    newThreadWaitTime;
-    uint32_t    reserved;
-};
-static_assert(sizeof(CSwitch) == 24, "unexpected CSwitch struct size/alignment");
-
-struct ReadyThread
-{
-    // V2 fields:
-    static constexpr UCHAR Opcode = 50;
-    uint32_t    threadId;
-    int8_t      adjustReason;
-    int8_t      adjustIncrement;
-    int8_t      flag;
-    int8_t      reserverd;
-};
-static_assert(sizeof(ReadyThread) == 8, "unexpected ReadyThread struct size/alignment");
-
-struct ThreadInfo
-{
-    // V0 (Thread_V0_TypeGroup1) fields:
-    uint32_t processId;
-    uint32_t threadId;
-    // NOTE: we only care about PID and TID for now, and these two are "invariant"
-    // across all revisions (versions) of this event. As such, let's omit the other
-    // fields since they vary based on the event version; their sizes also vary by
-    // target architecture (32bit or 64bit), and this is not even mentioned in the
-    // MSDN documentation, and worse, have not been updated in the official schemas
-    // either (which ETW Explorer uses), but can be introspected via the TDH API.
-};
-static_assert(sizeof(ThreadInfo) == 8, "unexpected ThreadInfo struct size/alignment");
-
-struct ThreadStart : public ThreadInfo
-{
-    static constexpr UCHAR Opcode = 1;
-};
-static_assert(sizeof(ThreadStart) == 8, "unexpected ThreadStart struct size/alignment");
-
-// DC: Data Collection (associated with the "rundown" phase)
-struct ThreadDCStart : public ThreadInfo
-{
-    static constexpr UCHAR Opcode = 3;
-};
-static_assert(sizeof(ThreadDCStart) == 8, "unexpected ThreadDCStart struct size/alignment");
-
-struct StackWalkEvent
-{
-    // V2 fields:
-    static constexpr UCHAR Opcode = 32;
-    uint64_t eventTimeStamp;
-    uint32_t stackProcess;
-    uint32_t stackThread;
-    uint64_t stack[192];    // arbitrary upperbound limit; schema stops at [32]
-};
-static_assert(offsetof(StackWalkEvent, stackProcess) == 8, "unexpected StackWalkEvent struct size/alignment");
-static_assert(offsetof(StackWalkEvent, stackThread) == 12, "unexpected StackWalkEvent struct size/alignment");
-static_assert(offsetof(StackWalkEvent, stack) == 16, "unexpected StackWalkEvent struct size/alignment");
-
-struct VSyncInfo
-{
-    static constexpr USHORT EventId = 17; // 0x11
-    void*       dxgAdapter;
-    uint32_t    vidPnTargetId;
-    uint64_t    scannedPhysicalAddress;
-    uint32_t    vidPnSourceId;
-    uint32_t    frameNumber;
-    int64_t     frameQpcTime;
-    void*       hFlipDevice;
-    uint32_t    flipType;
-    uint64_t    flipFenceId;
-};
-static_assert(sizeof(VSyncInfo) == 64, "unexpected VSyncInfo struct size/alignment");
 
 }
 }

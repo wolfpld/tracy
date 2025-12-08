@@ -160,6 +160,19 @@ static ULONG ETWError( ULONG result )
     return result;
 }
 
+static bool CheckAdminPrivilege()
+{
+    HANDLE hToken = NULL;
+    if ( OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &hToken ) == FALSE )
+        return ETWError( GetLastError() ), false;
+    TOKEN_ELEVATION_TYPE elevationType = TokenElevationTypeDefault;
+    DWORD ReturnLength = 0;
+    if ( GetTokenInformation( hToken, TokenElevationType, &elevationType, sizeof( elevationType ), &ReturnLength ) == FALSE )
+        ETWError( GetLastError() ), false;
+    CloseHandle( hToken );
+    return ( elevationType == TokenElevationTypeFull );
+}
+
 static DWORD ElevatePrivilege( LPCTSTR PrivilegeName )
 {
     TOKEN_PRIVILEGES tp = {};

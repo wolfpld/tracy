@@ -185,6 +185,9 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     s_pid = GetCurrentProcessId();
 
+    if ( !etw::CheckAdminPrivilege() )
+        return false;
+
     session = etw::StartPrivateKernelSession( "TracySysTrace" );
     if (session.handle == 0)
         return false;

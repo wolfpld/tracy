@@ -76,7 +76,7 @@ struct ThreadStart : public ThreadInfo
 {
     static constexpr UCHAR Opcode = 1;
 };
-static_assert( sizeof( ThreadStart ) == 8, "unexpected ThreadStart struct size/alignment") ;
+static_assert( sizeof( ThreadStart ) == 8, "unexpected ThreadStart struct size/alignment" );
 
 // DC: Data Collection (associated with the "rundown" phase)
 struct ThreadDCStart : public ThreadInfo
@@ -147,7 +147,7 @@ static ULONG ETWError( ULONG result )
 {
     if( result == ERROR_SUCCESS )
         return result;
-    static constexpr tracy::SourceLocationData srcLocHere { nullptr, __FUNCTION__, __FILE__, __LINE__, Color_Red4 };
+    static constexpr tracy::SourceLocationData srcLocHere{ nullptr, __FUNCTION__, __FILE__, __LINE__, Color_Red4 };
     tracy::ScopedZone ___tracy_scoped_zone( &srcLocHere, 0, true );
     char message[128] = {};
     int written = snprintf( message, sizeof( message ), "ETW Error %u (0x%x): ", result, result );
@@ -166,11 +166,11 @@ static ULONG ETWError( ULONG result )
 static bool CheckAdminPrivilege()
 {
     HANDLE hToken = NULL;
-    if ( OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &hToken ) == FALSE )
+    if( OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &hToken ) == FALSE )
         return ETWError( GetLastError() ), false;
     TOKEN_ELEVATION_TYPE elevationType = TokenElevationTypeDefault;
     DWORD ReturnLength = 0;
-    if ( GetTokenInformation( hToken, TokenElevationType, &elevationType, sizeof( elevationType ), &ReturnLength ) == FALSE )
+    if( GetTokenInformation( hToken, TokenElevationType, &elevationType, sizeof( elevationType ), &ReturnLength ) == FALSE )
         ETWError( GetLastError() ), false;
     CloseHandle( hToken );
     return ( elevationType == TokenElevationTypeFull );
@@ -198,7 +198,7 @@ static bool IsOS64Bit()
     constexpr bool isOs64Bit = true;
 #else
     BOOL _iswow64;
-    IsWow64Process(GetCurrentProcess(), &_iswow64);
+    IsWow64Process( GetCurrentProcess(), &_iswow64 );
     const bool isOs64Bit = _iswow64;
 #endif
     return isOs64Bit;
@@ -261,7 +261,7 @@ static Session StartPrivateKernelSession( const CHAR* name )
     Session session = {};
 
     size_t maxlen = sizeof( session.name ) - 1;
-    strncpy(session.name, name, maxlen);
+    strncpy( session.name, name, maxlen );
     session.name[maxlen] = '\0';
 
     auto& props = session.properties;
@@ -289,11 +289,12 @@ static Session StartPrivateKernelSession( const CHAR* name )
     return session;
 }
 
-static ULONG EnableProcessAndThreadMonitoring(Session& session) {
+static ULONG EnableProcessAndThreadMonitoring( Session& session )
+{
     ULONGLONG MatchAnyKeyword = SYSTEM_PROCESS_KW_THREAD;   // ThreadStart and ThreadDCStart events
     ULONG status = EnableProvider( session, SystemProcessProviderGuid,
                                    EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
-    if (status != ERROR_SUCCESS)
+    if( status != ERROR_SUCCESS )
         return status;
     return status;
 }
@@ -309,8 +310,8 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
     if( status != ERROR_SUCCESS )
         return status;
 
-    if ( IsOS64Bit() )
-    { 
+    if( IsOS64Bit() )
+    {
         TRACE_PROFILE_INTERVAL interval = {};
         interval.Source = 0; // 0: ProfileTime (from enum KPROFILE_SOURCE in wdm.h)
         interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
@@ -406,7 +407,7 @@ static PROCESSTRACE_HANDLE SetupEventConsumer( const Session& session, PEVENT_RE
 static ULONG StopEventConsumer( PROCESSTRACE_HANDLE hEventConsumer )
 {
     ULONG status = CloseTrace( hEventConsumer );
-    if ((status != ERROR_SUCCESS) && (status != ERROR_CTX_CLOSE_PENDING))
+    if( ( status != ERROR_SUCCESS ) && ( status != ERROR_CTX_CLOSE_PENDING ) )
         return ETWError( status );
     return status;
 }

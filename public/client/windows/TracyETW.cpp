@@ -231,6 +231,44 @@ static ULONG StopSession( Session& session )
     return ERROR_SUCCESS;
 }
 
+static ULONG CheckProviderSessions( GUID provider, ULONGLONG MatchAnyKeyword )
+{
+    MatchAnyKeyword = ( MatchAnyKeyword != 0 ) ? MatchAnyKeyword : ~ULONGLONG( 0 );
+    char buffer[4096] = {};
+    auto Info = (PTRACE_GUID_INFO)buffer;
+    ULONG ActualSize = 0;
+    ULONG result = EnumerateTraceGuidsEx( TraceGuidQueryInfo, &provider, sizeof( provider ), Info, sizeof( buffer ), &ActualSize );
+    if( result != ERROR_SUCCESS )
+        return ETWError( result );
+    TRACE_ENABLE_INFO sessions[8] = {};
+    // Info->InstanceCount is typically 1, but can be more when the provider is registered from within a DLL
+    for( ULONG i = 0, offset = 0; i < Info->InstanceCount; ++i )
+    {
+        auto instance = (PTRACE_PROVIDER_INSTANCE_INFO)&buffer[sizeof( *Info ) + offset];
+        auto first = (PTRACE_ENABLE_INFO)&buffer[sizeof( *Info ) + offset + sizeof( *instance )];
+        for( ULONG j = 0; j < instance->EnableCount; ++j )
+        {
+            auto session = &first[j];
+            for( auto&& entry : sessions )
+            {
+                if( entry.LoggerId == session->LoggerId )
+                    continue;
+                if( entry.LoggerId != 0 )
+                    continue;
+                if( ( MatchAnyKeyword & session->MatchAnyKeyword ) != 0 )
+                    entry = *session;
+                break;
+            }
+        }
+        offset += instance->NextOffset;
+    }
+    if( sessions[0].LoggerId == 0 )
+        return ERROR_SUCCESS;
+    int length = snprintf( buffer, sizeof( buffer ), "ETW Warning: provider (0x%08X) already enabled by other session(s); Tracy may miss events.", provider.Data1 );
+    ETWErrorAction( 0, buffer, length );
+    return ERROR_SUCCESS;
+}
+
 static ULONG EnableProvider(
     Session& session,
     const GUID& ProviderId,
@@ -306,6 +344,7 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
     if( access != ERROR_SUCCESS )
         return access;
 
+    CheckProviderSessions( SystemProfileProviderGuid, 0 );
     ULONG status = EnableProvider( session, SystemProfileProviderGuid );
     if( status != ERROR_SUCCESS )
         return status;
@@ -330,6 +369,7 @@ static ULONG EnableContextSwitchMonitoring( Session& session )
     ULONGLONG MatchAnyKeyword = 0;
     MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_CONTEXT_SWITCH;  // CSwitch events
     MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_DISPATCHER;      // ReadyThread events
+    CheckProviderSessions( SystemSchedulerProviderGuid, MatchAnyKeyword );
     ULONG status = EnableProvider( session, SystemSchedulerProviderGuid,
                                    EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
     if( status != ERROR_SUCCESS )
@@ -370,6 +410,7 @@ static ULONG EnableVSyncMonitoring( Session& session )
     EnableParameters.EnableFilterDesc = &desc;
     EnableParameters.FilterDescCount = 1;
 
+    CheckProviderSessions( DxgKrnlGuid, MatchAnyKeyword );
     ULONG status = EnableProvider( session, DxgKrnlGuid,
                                    EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION,
                                    MatchAnyKeyword, MatchAllKeyword, 0, &EnableParameters );

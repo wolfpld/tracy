@@ -2,6 +2,24 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.13.1 (2025-12-11)
+--------------------
+
+- Fixed parsing of extended model and family of x86 CPUID.
+- Fixed memory corruption when a "long" user name was used on Android.
+- Fixed wrong function signature when TRACY_DEBUGINFOD was enabled.
+- Mount list is now read using proper API instead of processing /proc/mounts.
+- Fixed shadow warning supression not being enabled on gcc.
+- Silently ignore lost ETW Vsync events instead of asserting.
+- Worked around few cases where old macOS machines do not support C++20
+  properly. Thanks Tim Apple!
+- Added truncated mean parameter to csvexport.
+- Added experimental viewer for the user manual.
+- Memory free faults can be now ignored with the TRACY_IGNORE_MEMORY_FAULTS
+  option.
+- Fixed race condition during profiler shutdown.
+
+
 v0.13.0 (2025-11-11)
 --------------------
 

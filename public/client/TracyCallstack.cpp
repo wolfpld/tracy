@@ -532,7 +532,7 @@ void InitCallstack()
 #endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     if( s_shouldResolveSymbolsOffline )
     {
-        TracyDebug("TRACY: enabling offline symbol resolving!\n");
+        TracyDebug( "TRACY: enabling offline symbol resolving!" );
     }
 
     CreateImageCaches();
@@ -551,7 +551,7 @@ void InitCallstack()
     const bool initTimeModuleLoad = !( noInitLoadEnv && noInitLoadEnv[0] == '1' );
     if ( !initTimeModuleLoad )
     {
-        TracyDebug("TRACY: skipping init time dbghelper module load\n");
+        TracyDebug( "TRACY: skipping init time dbghelper module load" );
     }
     else
     {

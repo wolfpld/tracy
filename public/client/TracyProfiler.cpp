@@ -12,6 +12,7 @@
 #  include "../common/TracyWinFamily.hpp"
 #  ifndef _MSC_VER
 #    include <excpt.h>
+#    include <exception>
 #  endif
 #else
 #  include <sys/time.h>
@@ -115,6 +116,12 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PROCESSOR_RELATIONSHIP, PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, PDWORD );
 extern "C" typedef char* (WINAPI *t_WineGetVersion)();
 extern "C" typedef char* (WINAPI *t_WineGetBuildId)();
+
+#  if defined __GNUC__
+	  // _WIN32
+#     include <fcntl.h>
+#endif
+
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -1539,7 +1546,36 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#ifndef _WIN32
+#if defined _WIN32 && defined __GNUC__
+
+	m_pipeBufSize = (int)(ptrdiff_t)SafeSendBufferSize;
+
+	{ // scope for temporary variable originalHandlesCount
+		int originalHandlesCount = _getmaxstdio();
+
+		while(_pipe(m_pipe, m_pipeBufSize, _O_BINARY) != 0)
+		{
+			if ((errno == EMFILE) || (errno == ENFILE))
+			{
+				// safe upper bound for exceptional situations
+				if(_getmaxstdio() > (originalHandlesCount + 10))
+				{
+					throw std::runtime_error("Failed to create communication pipe!");
+				}
+
+				// as described by Raymond Chen (https://devblogs.microsoft.com/oldnewthing/20070718-00/?p=25963)
+				// max number of handles in windows is 10000,
+				// _getmaxstdio() at the start returns 512, so no fear of too much handles
+				_setmaxstdio(_getmaxstdio() + 1);
+			}
+			else
+			{
+				m_pipeBufSize /= 2;
+			}
+		}
+	}
+
+#elif !defined _WIN32
     pipe(m_pipe);
 #  if defined __APPLE__ || defined BSD
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
@@ -1686,6 +1722,10 @@ Profiler::~Profiler()
 #ifndef _WIN32
     close( m_pipe[0] );
     close( m_pipe[1] );
+#elif defined __GNUC__
+	// _WIN32
+	_close(m_pipe[0]);
+	_close(m_pipe[1]);
 #endif
     tracy_free( m_safeSendBuffer );
 
@@ -3205,6 +3245,7 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     if( size > SafeSendBufferSize ) buf = (char*)tracy_malloc( size );
 
 #ifdef _WIN32
+
 #  ifdef _MSC_VER
     __try
     {
@@ -3214,9 +3255,37 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     {
         success = false;
     }
-#  else
-    memcpy( buf, data, size );
+#  elif defined __GNUC__
+    // Send through the pipe to ensure safe reads on compilers with no __try/__except
+	for( size_t offset = 0; offset != size; /*in loop*/ )
+	{
+		size_t sendsize = size - offset;
+		int result1, result2;
+
+		// ENOSPC indicates that there is no more space to execute write operation
+		// other possible values:
+		// EBADF - invalid file descriptor or not opened for writing
+		// EINVAL - null buffer or odd number of bytes in unicode mode
+		while( ( result1 = _write( m_pipe[1], data + offset, sendsize ) ) < 0 && errno != ENOSPC ) { /* retry */ }
+		if( result1 < 0 )
+		{
+			success = false;
+			break;
+		}
+
+		// EBADF - errno set to this value if pipe is not opened for reading or locked
+		// other possible values:
+		// EINVAL - result1 > INT_MAX
+		while( ( result2 = _read( m_pipe[0], buf + offset, result1 ) ) < 0 && errno != EBADF ) { /* retry */ }
+		if( result2 != result1 )
+		{
+			success = false;
+			break;
+		}
+		offset += result1;
+	}
 #  endif
+
 #else
     // Send through the pipe to ensure safe reads
     for( size_t offset = 0; offset != size; /*in loop*/ )

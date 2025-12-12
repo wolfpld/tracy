@@ -322,16 +322,18 @@ void ArenaAllocatorTest()
     auto arena = (char*)0x12345678;
     auto aptr = arena;
 
+    // We need to have the same pointer for both TracyAllocN and TracyMemoryDiscard
+    static const char* arenaAllocName = "Arena alloc";
     for( int i=0; i<10; i++ )
     {
         for( int j=0; j<10; j++ )
         {
             const auto allocSize = 1024 + j * 128 - i * 64;
-            TracyAllocN( aptr, allocSize, "Arena alloc" );
+            TracyAllocN( aptr, allocSize, arenaAllocName );
             aptr += allocSize;
             std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
         }
-        TracyMemoryDiscard( "Arena alloc" );
+        TracyMemoryDiscard( arenaAllocName );
         aptr = arena;
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }

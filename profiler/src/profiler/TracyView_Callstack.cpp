@@ -566,6 +566,10 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
     {
         const auto frameData = m_worker.GetCallstackFrame( v );
         if( !frameData ) break;
+        const auto& frame = frameData->data[frameData->size - 1];
+        auto filename = m_worker.GetString( frame.file );
+        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+        if( IsFrameExternal( filename, image ) ) continue;
         if( first )
         {
             first = false;
@@ -576,7 +580,6 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
             TextDisabledUnformatted( ICON_FA_LEFT_LONG );
             ImGui::SameLine();
         }
-        const auto& frame = frameData->data[frameData->size - 1];
         auto txt = m_worker.GetString( frame.name );
         if( txt[0] == '[' )
         {

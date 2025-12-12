@@ -36,6 +36,8 @@ TRACY_API void ___tracy_set_thread_name( const char* name );
 
 #ifndef TRACY_ENABLE
 
+#define TracyCEnabled() 0
+
 typedef const void* TracyCZoneCtx;
 
 typedef const void* TracyCLockCtx;
@@ -122,7 +124,14 @@ typedef const void* TracyCLockCtx;
 #  define TracyCFiberLeave
 #endif
 
+#ifdef TRACY_NAME_BUFFER
+#  define TracyCNameBufferAdd(name, id) 0
+#  define TracyCNameBufferGet(id) 0
+#endif
+
 #else
+
+#define TracyCEnabled() 1
 
 #ifndef TracyConcat
 #  define TracyConcat(x,y) TracyConcatIndirect(x,y)
@@ -382,6 +391,14 @@ TRACY_API void ___tracy_fiber_leave( void );
 
 #  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
+#endif
+
+#ifdef TRACY_NAME_BUFFER
+TRACY_API const char* ___tracy_name_buffer_add( const char* name, uint16_t* id );
+TRACY_API const char* ___tracy_name_buffer_get( uint16_t id );
+
+#  define TracyCNameBufferAdd(name, id) ___tracy_name_buffer_add( name, id );
+#  define TracyCNameBufferGet(id) ___tracy_name_buffer_get( id );
 #endif
 
 #endif

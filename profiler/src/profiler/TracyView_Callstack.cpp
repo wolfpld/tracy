@@ -561,11 +561,10 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx,
 void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
 {
     const auto& csdata = m_worker.GetCallstack( callstack );
-    const auto cssz = std::min( csdata.size(), limit );
     bool first = true;
-    for( uint16_t i=0; i<cssz; i++ )
+    for( auto& v : csdata )
     {
-        const auto frameData = m_worker.GetCallstackFrame( csdata[i] );
+        const auto frameData = m_worker.GetCallstackFrame( v );
         if( !frameData ) break;
         if( first )
         {
@@ -591,6 +590,7 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
         {
             ImGui::TextUnformatted( ShortenZoneName( ShortenName::Always, txt ) );
         }
+        if( --limit == 0 ) break;
     }
 }
 

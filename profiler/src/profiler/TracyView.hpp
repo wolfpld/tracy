@@ -331,7 +331,7 @@ private:
 
     void AddAnnotation( int64_t start, int64_t end );
 
-    bool IsFrameExternal( const char* filename, const char* image );
+    bool IsFrameExternal( const char* filename, const char* image ) const;
     uint32_t GetThreadColor( uint64_t thread, int depth );
     uint32_t GetSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );

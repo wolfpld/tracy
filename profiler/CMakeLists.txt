@@ -269,24 +269,43 @@ endif()
 
 find_package(Git)
 if(Git_FOUND)
-    add_custom_target(git-ref
-        COMMAND ${CMAKE_COMMAND} -E echo "#pragma once" > GitRef.hpp.tmp
-        COMMAND ${GIT_EXECUTABLE} -C ${CMAKE_CURRENT_SOURCE_DIR} log -1 "--format=namespace tracy { static inline const char* GitRef = %x22%h%x22; }" ${GIT_REV} >> GitRef.hpp.tmp || echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp.tmp
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different GitRef.hpp.tmp GitRef.hpp
-        BYPRODUCTS GitRef.hpp GitRef.hpp.tmp
-        VERBATIM
-    )
-    add_dependencies(${PROJECT_NAME} git-ref)
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} rev-parse --short ${GIT_REV}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		OUTPUT_VARIABLE GIT_COMMIT_HASH
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		RESULT_VARIABLE GIT_RESULT
+	)
+
+	if (GIT_RESULT)
+		message(WARNING "Failed to fetch git ref. Using 'unknown' instead.")
+		set(GIT_COMMIT_HASH "unknown")
+	endif()
 else()
-    message(WARNING "git not found, using 'unknown' as git ref.")
-    add_custom_command(
-        OUTPUT GitRef.hpp
-        COMMAND ${CMAKE_COMMAND} -E echo "#pragma once" > GitRef.hpp
-        COMMAND ${CMAKE_COMMAND} -E echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp
-        VERBATIM
-    )
-    target_sources(${PROJECT_NAME} PUBLIC GitRef.hpp)
+	message(WARNING "git not found, using 'unknown' as git ref.")
+	set(GIT_COMMIT_HASH "unknown")
 endif()
+
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/src/GitRef.hpp.in
+	${CMAKE_CURRENT_BINARY_DIR}/GitRef.hpp
+)
+
+set(GITREF_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/GitRef.hpp.in)
+set(GITREF_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/GitRef.hpp)
+
+add_custom_target(git-ref
+	COMMAND ${CMAKE_COMMAND}
+		-D GIT_COMMIT_HASH=${GIT_COMMIT_HASH}
+		-D INPUT_FILE=${GITREF_INPUT}
+		-D OUTPUT_FILE=${GITREF_OUTPUT}
+		-P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenerateGitRef.cmake
+	MAIN_DEPENDENCY ${GITREF_INPUT}
+	COMMENT "Generating GitRef.hpp"
+	VERBATIM
+)
+add_dependencies(${PROJECT_NAME} git-ref)
 
 if(NOT EMSCRIPTEN)
     if(NOT NO_FILESELECTOR)

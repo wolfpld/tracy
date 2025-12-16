@@ -135,9 +135,9 @@ static void ETWErrorAction( ULONG error_code, const char* message, int length )
 {
 #ifdef TRACY_HAS_CALLSTACK
     tracy::InitCallstackCritical();
-    tracy::Profiler::MessageColor( message, length, Color_Red4, 60 );
+    tracy::Profiler::MessageColor( MessageSourceType::Tracy, MessageSeverity::Error, message, length, Color_Red4, 60 );
 #else
-    tracy::Profiler::MessageColor( message, length, Color_Red4, 0 );
+    tracy::Profiler::MessageColor( MessageSourceType::Tracy, MessageSeverity::Error, message, length, Color_Red4, 0 );
 #endif
 #ifdef __cpp_exceptions
     // TODO: should we throw an exception?

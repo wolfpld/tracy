@@ -294,6 +294,52 @@ static ULONG EnableStackWalk( Session& session, GUID EventGuid, UCHAR Opcode )
     return ETWError( status );
 }
 
+static ULONG SetCPUProfilingInterval(int microseconds)
+{
+    if( !IsOS64Bit() )
+        return 0 /* ERROR_SUCCESS */;   // TODO: return error instead?
+    TRACE_PROFILE_INTERVAL interval = {};
+    interval.Source = 0; // 0: ProfileTime (from enum KPROFILE_SOURCE in wdm.h)
+    interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
+    CONTROLTRACE_ID TraceId = 0; // must be zero for TraceSampledProfileIntervalInfo
+    ULONG status = TraceSetInformation( TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
+    return ETWError( status );
+}
+
+static Session StartSingletonKernelLoggerSession( ULONGLONG EnableFlags )
+{
+    Session session = {};
+
+    size_t maxlen = sizeof( session.name ) - 1;
+    strncpy( session.name, KERNEL_LOGGER_NAMEA, maxlen );
+    session.name[maxlen] = '\0';
+
+    auto& props = session.properties;
+    props.LoggerNameOffset = offsetof( Session, name );
+    props.Wnode.BufferSize = sizeof( Session );
+    props.Wnode.Guid = SystemTraceControlGuid;
+#ifdef TRACY_TIMER_QPC
+    props.Wnode.ClientContext = 1;  // 1: QueryPerformanceCounter
+#else
+    props.Wnode.ClientContext = 3;  // 3: CPU Ticks (e.g., rdtsc)
+#endif
+    props.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+    props.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+
+    props.EnableFlags = EnableFlags;
+
+    // TODO: should we really be tweaking the buffering parameters?
+    props.BufferSize = 1024;    // in KB
+    props.MinimumBuffers = std::thread::hardware_concurrency() * 4;
+    props.MaximumBuffers = std::thread::hardware_concurrency() * 6;
+
+    ULONG status = StartSession( session );
+    if( status != ERROR_SUCCESS )
+        return {};
+
+    return session;
+}
+
 static Session StartPrivateKernelSession( const CHAR* name )
 {
     Session session = {};
@@ -312,6 +358,7 @@ static Session StartPrivateKernelSession( const CHAR* name )
     props.Wnode.ClientContext = 3;  // 3: CPU Ticks (e.g., rdtsc)
 #endif
     props.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+    props.LogFileMode = 0;
     props.LogFileMode |= EVENT_TRACE_SYSTEM_LOGGER_MODE;
     props.LogFileMode |= EVENT_TRACE_REAL_TIME_MODE;
 
@@ -319,6 +366,33 @@ static Session StartPrivateKernelSession( const CHAR* name )
     props.BufferSize = 1024;    // in KB
     props.MinimumBuffers = std::thread::hardware_concurrency() * 4;
     props.MaximumBuffers = std::thread::hardware_concurrency() * 6;
+
+    ULONG status = StartSession( session );
+    if( status != ERROR_SUCCESS )
+        return {};
+
+    return session;
+}
+
+static Session StartUserSession( const CHAR* name )
+{
+    Session session = {};
+
+    size_t maxlen = sizeof( session.name ) - 1;
+    strncpy( session.name, name, maxlen );
+    session.name[maxlen] = '\0';
+
+    auto& props = session.properties;
+    props.LoggerNameOffset = offsetof( Session, name );
+    props.Wnode.BufferSize = sizeof( Session );
+    props.Wnode.Guid = NullGuid;
+#ifdef TRACY_TIMER_QPC
+    props.Wnode.ClientContext = 1;  // 1: QueryPerformanceCounter
+#else
+    props.Wnode.ClientContext = 3;  // 3: CPU Ticks (e.g., rdtsc)
+#endif
+    //props.Wnode.Flags = WNODE_FLAG_TRACED_GUID; // unnecessary for user sessions, apparently
+    props.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
 
     ULONG status = StartSession( session );
     if( status != ERROR_SUCCESS )
@@ -349,16 +423,9 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
     if( status != ERROR_SUCCESS )
         return status;
 
-    if( IsOS64Bit() )
-    {
-        TRACE_PROFILE_INTERVAL interval = {};
-        interval.Source = 0; // 0: ProfileTime (from enum KPROFILE_SOURCE in wdm.h)
-        interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
-        CONTROLTRACE_ID TraceId = 0; // must be zero for TraceSampledProfileIntervalInfo
-        status = TraceSetInformation( TraceId, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
-        if( status != ERROR_SUCCESS )
-            return ETWError( status );
-    }
+    status = SetCPUProfilingInterval(microseconds);
+    if( status != ERROR_SUCCESS )
+        return status;
 
     status = EnableStackWalk( session, PerfInfoGuid, SampledProfile::Opcode );
     return status;

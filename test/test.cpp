@@ -49,16 +49,18 @@ void operator delete( void* ptr ) noexcept
     free( ptr );
 }
 
+// We need to have the same pointer for both TracyAllocNS and TracyFreeNS
+static const char* customAllocStr = "Custom alloc";
 void* CustomAlloc( size_t count )
 {
     auto ptr = malloc( count );
-    TracyAllocNS( ptr, count, 10, "Custom alloc" );
+    TracyAllocNS( ptr, count, 10, customAllocStr );
     return ptr;
 }
 
 void CustomFree( void* ptr )
 {
-    TracyFreeNS( ptr, 10, "Custom alloc" );
+    TracyFreeNS( ptr, 10, customAllocStr );
     free( ptr );
 }
 

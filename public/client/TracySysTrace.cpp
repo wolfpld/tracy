@@ -209,14 +209,15 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return false;
 
 #ifndef TRACY_NO_CONTEXT_SWITCH
-    if ( etw::EnableStackWalk( session_kernel, etw::ThreadGuid, etw::CSwitch::Opcode ) )
+    if ( etw::EnableStackWalk( session_kernel, etw::ThreadGuid, etw::CSwitch::Opcode ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
 #endif
+
 #ifndef TRACY_NO_SAMPLING
-    if ( etw::EnableStackWalk( session_kernel, etw::PerfInfoGuid, etw::SampledProfile::Opcode ) )
+    if ( etw::EnableStackWalk( session_kernel, etw::PerfInfoGuid, etw::SampledProfile::Opcode ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
     int microseconds = GetSamplingInterval() / 10;
-    if ( etw::SetCPUProfilingInterval( microseconds ) )
+    if ( etw::SetCPUProfilingInterval( microseconds ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
     samplingPeriod = GetSamplingPeriod();
 #endif

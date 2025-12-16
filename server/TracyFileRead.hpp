@@ -15,7 +15,8 @@
 #include <vector>
 #include <zstd.h>
 
-#ifdef _MSC_VER
+#if defined _MSC_VER || (defined _WIN32 && defined __GNUC__)
+// MSCV, gcc and clang compilers contain _stat64
 #  define stat64 _stat64
 #endif
 #if defined __APPLE__ || defined __FreeBSD__ || (defined __linux__ && !defined __GLIBC__)

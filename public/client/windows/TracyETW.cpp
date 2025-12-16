@@ -155,7 +155,7 @@ static ULONG ETWError( ULONG result )
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         result,
-        MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ),
+        MAKELANGID( LANG_ENGLISH, SUBLANG_ENGLISH_US ),
         (LPSTR)&message[written],
         sizeof( message ) - written,
         NULL );

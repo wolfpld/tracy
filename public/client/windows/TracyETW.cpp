@@ -204,6 +204,18 @@ static bool IsOS64Bit()
     return isOs64Bit;
 }
 
+static ULONG StopSession( Session& session )
+{
+    // Use a copy of the session properties, because ControlTrace() will write stuff to it
+    Session temp = session;
+    ULONG status = ControlTraceA( temp.handle, temp.name, &temp.properties, EVENT_TRACE_CONTROL_STOP );
+    if( status != ERROR_SUCCESS )
+        return ETWError( status );
+    // once stopped, the session handle becomes invalid
+    session.handle = 0;
+    return ERROR_SUCCESS;
+}
+
 static ULONG StartSession( Session& session )
 {
     ULONG status = StartTraceA( &session.handle, session.name, &session.properties );
@@ -213,22 +225,12 @@ static ULONG StartSession( Session& session )
         // gracefully). There are two options: take control of the existing session with
         // ControlSession(UPDATE), or stop the session and start fresh again. The latter
         // is better because it also resets the event providers.
-        status = ControlTraceA( session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP );
+        status = StopSession( session );
         if( status != ERROR_SUCCESS )
-            return ETWError( status );
+            return status;
         status = StartTraceA( &session.handle, session.name, &session.properties );
     }
     return ETWError( status );
-}
-
-static ULONG StopSession( Session& session )
-{
-    ULONG status = ControlTraceA( session.handle, session.name, &session.properties, EVENT_TRACE_CONTROL_STOP );
-    if( status != ERROR_SUCCESS )
-        return ETWError( status );
-    // once stopped, the session handle becomes invalid
-    session.handle = 0;
-    return ERROR_SUCCESS;
 }
 
 static ULONG CheckProviderSessions( GUID provider, ULONGLONG MatchAnyKeyword )

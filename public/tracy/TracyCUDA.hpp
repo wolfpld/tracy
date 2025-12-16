@@ -12,6 +12,10 @@
 
 #define TracyCUDACollect(ctx)
 
+namespace tracy{
+using CUDACtx = std::nullptr_t;
+} // namespace tracy
+
 #else
 #include <cupti.h>
 
@@ -31,7 +35,7 @@
 #include <cxxabi.h>
 #endif
 
-#include <tracy/Tracy.hpp>
+#include "Tracy.hpp>"
 
 #ifndef UNREFERENCED
 #define UNREFERENCED(x) (void)x

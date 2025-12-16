@@ -227,20 +227,23 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
 #ifndef TRACY_NO_VSYNC_CAPTURE
     session_vsync = etw::StartUserSession( "TracyVsync" );
-    if ( etw::EnableVSyncMonitoring( session_vsync ) != ERROR_SUCCESS )
-        etw::StopSession( session_vsync );
-    else
+    if ( session_vsync.handle != 0 )
     {
-        consumer_vsync = etw::SetupEventConsumer( session_vsync, EventRecordCallback );
-        if ( consumer_vsync != INVALID_PROCESSTRACE_HANDLE )
+        if ( etw::EnableVSyncMonitoring( session_vsync ) != ERROR_SUCCESS )
+            etw::StopSession( session_vsync );
+        else
         {
-            s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
-            new(s_threadVsync) Thread( [] (void*) {
-                ThreadExitHandler threadExitHandler;
-                SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
-                SetThreadName( "Tracy Vsync (ETW)" );
-                etw::EventConsumerLoop( consumer_vsync );
-            }, nullptr );
+            consumer_vsync = etw::SetupEventConsumer( session_vsync, EventRecordCallback );
+            if ( consumer_vsync != INVALID_PROCESSTRACE_HANDLE )
+            {
+                s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
+                new(s_threadVsync) Thread( [] (void*) {
+                    ThreadExitHandler threadExitHandler;
+                    SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
+                    SetThreadName( "Tracy Vsync (ETW)" );
+                    etw::EventConsumerLoop( consumer_vsync );
+                }, nullptr );
+            }
         }
     }
 #endif

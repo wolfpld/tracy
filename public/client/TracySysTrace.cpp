@@ -176,8 +176,11 @@ static int GetSamplingInterval()
     return GetSamplingPeriod() / 100;
 }
 
-static etw::Session session = {};
-static PROCESSTRACE_HANDLE consumer = INVALID_PROCESSTRACE_HANDLE;
+static etw::Session session_kernel = {};
+static etw::Session session_vsync = {};
+static PROCESSTRACE_HANDLE consumer_kernel = INVALID_PROCESSTRACE_HANDLE;
+static PROCESSTRACE_HANDLE consumer_vsync = INVALID_PROCESSTRACE_HANDLE;
+static Thread* s_threadVsync = nullptr;
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
@@ -188,40 +191,74 @@ bool SysTraceStart( int64_t& samplingPeriod )
     if ( !etw::CheckAdminPrivilege() )
         return false;
 
-    session = etw::StartPrivateKernelSession( "TracySysTrace" );
-    if (session.handle == 0)
+    ULONGLONG EnableFlags = 0;
+#ifndef TRACY_NO_CONTEXT_SWITCH
+    EnableFlags |= EVENT_TRACE_FLAG_CSWITCH;
+    EnableFlags |= EVENT_TRACE_FLAG_DISPATCHER;
+    EnableFlags |= EVENT_TRACE_FLAG_THREAD;
+#endif
+#ifndef TRACY_NO_SAMPLING
+    DWORD access = etw::ElevatePrivilege( SE_SYSTEM_PROFILE_NAME );
+    if( access != ERROR_SUCCESS )
+        return access;
+    EnableFlags |= etw::IsOS64Bit() ? EVENT_TRACE_FLAG_PROFILE : 0;
+#endif
+
+    session_kernel = etw::StartSingletonKernelLoggerSession( EnableFlags );
+    if ( session_kernel.handle == 0 )
         return false;
 
 #ifndef TRACY_NO_CONTEXT_SWITCH
-    if ( etw::EnableProcessAndThreadMonitoring(session) != ERROR_SUCCESS )
-        return etw::StopSession(session), false;
-    if ( etw::EnableContextSwitchMonitoring(session) != ERROR_SUCCESS )
-        return etw::StopSession( session ), false;
+    if ( etw::EnableStackWalk( session_kernel, etw::ThreadGuid, etw::CSwitch::Opcode ) )
+        return etw::StopSession( session_kernel ), false;
 #endif
-
 #ifndef TRACY_NO_SAMPLING
+    if ( etw::EnableStackWalk( session_kernel, etw::PerfInfoGuid, etw::SampledProfile::Opcode ) )
+        return etw::StopSession( session_kernel ), false;
     int microseconds = GetSamplingInterval() / 10;
-    if ( etw::EnableCPUProfiling(session, microseconds) != ERROR_SUCCESS )
-        return etw::StopSession( session ), false;
+    if ( etw::SetCPUProfilingInterval( microseconds ) )
+        return etw::StopSession( session_kernel ), false;
     samplingPeriod = GetSamplingPeriod();
 #endif
 
-#ifndef TRACY_NO_VSYNC_CAPTURE
-    if ( etw::EnableVSyncMonitoring(session) != ERROR_SUCCESS )
-        return etw::StopSession( session ), false;
-#endif
+    consumer_kernel = etw::SetupEventConsumer( session_kernel, EventRecordCallback );
+    if ( consumer_kernel == INVALID_PROCESSTRACE_HANDLE )
+        return etw::StopSession( session_kernel ), false;
 
-    consumer = etw::SetupEventConsumer( session, EventRecordCallback );
-    if (consumer == INVALID_PROCESSTRACE_HANDLE)
-        return etw::StopSession(session), false;
+#ifndef TRACY_NO_VSYNC_CAPTURE
+    session_vsync = etw::StartUserSession( "TracyVsync" );
+    if ( etw::EnableVSyncMonitoring( session_vsync ) != ERROR_SUCCESS )
+        etw::StopSession( session_vsync );
+    else
+    {
+        consumer_vsync = etw::SetupEventConsumer( session_vsync, EventRecordCallback );
+        if ( consumer_vsync != INVALID_PROCESSTRACE_HANDLE )
+        {
+            s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
+            new(s_threadVsync) Thread( [] (void*) {
+                ThreadExitHandler threadExitHandler;
+                SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
+                SetThreadName( "Tracy Vsync (ETW)" );
+                etw::EventConsumerLoop( consumer_vsync );
+            }, nullptr );
+        }
+    }
+#endif
 
     return true;
 }
 
 void SysTraceStop()
 {
-    etw::StopEventConsumer( consumer );
-    etw::StopSession( session );
+    if( s_threadVsync )
+    {
+        etw::StopEventConsumer( consumer_vsync );
+        etw::StopSession( session_vsync );
+        s_threadVsync->~Thread();
+        tracy_free( s_threadVsync );
+    }
+    etw::StopEventConsumer( consumer_kernel );
+    etw::StopSession( session_kernel );
 }
 
 void SysTraceWorker( void* ptr )
@@ -229,7 +266,7 @@ void SysTraceWorker( void* ptr )
     ThreadExitHandler threadExitHandler;
     SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
     SetThreadName( "Tracy SysTrace (ETW)" );
-    etw::EventConsumerLoop( consumer );
+    etw::EventConsumerLoop( consumer_kernel );
 }
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )

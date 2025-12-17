@@ -461,7 +461,8 @@ static ULONG EnableVSyncMonitoring( Session& session )
         MSFTReserved62 = 0x4000'0000'0000'0000  // winmeta.h: WINEVENT_KEYWORD_RESERVED_62
                                                 // (Microsoft-Windows-DxgKrnl/Performance, according to logman)
     };
-    ULONGLONG MatchAnyKeyword = Keyword::MSFTReserved62 | Keyword::DxgKrnlPresent | Keyword::DxgKrnlBase;
+    // DxgKrnlPresent bit was added in Win11, but we do not want to break Win10, so do not put it in MatchAllKeyword
+    ULONGLONG MatchAnyKeyword = Keyword::MSFTReserved62 /*| Keyword::DxgKrnlPresent*/ | Keyword::DxgKrnlBase;
     ULONGLONG MatchAllKeyword = MatchAnyKeyword;
 
     EVENT_FILTER_EVENT_ID fe = {};

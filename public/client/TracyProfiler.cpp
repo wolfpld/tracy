@@ -933,7 +933,7 @@ static Thread* s_symbolThread;
 std::atomic<bool> s_symbolThreadGone { false };
 #endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
-static std::atomic<Thread*> s_sysTraceThread = nullptr;
+static std::atomic<Thread*> s_sysTraceThread {nullptr};
 #endif
 
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER

@@ -35,7 +35,7 @@ using CUDACtx = std::nullptr_t;
 #include <cxxabi.h>
 #endif
 
-#include "Tracy.hpp>"
+#include "Tracy.hpp"
 
 #ifndef UNREFERENCED
 #define UNREFERENCED(x) (void)x

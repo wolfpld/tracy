@@ -1493,7 +1493,7 @@ Fast navigation in large data sets and correlating zones with what was happening
 If you want to include color coding of the messages (for example to make critical messages easily visible), you can use \texttt{TracyMessageC(text, size, color)} or \texttt{TracyMessageLC(text, color)} macros.
 
 Messages can also have different severity levels: \texttt{Trace}, \texttt{Debug}, \texttt{Info}, \texttt{Warning}, \texttt{Error} or \texttt{Fatal}. 
-The previous macros will log messages with the severity "Info". To log a message with a different severity, you may use the \texttt{TracyLogString} macro that regroups all the functionalities from the previous macros. We recommend writing your own macros, wrapping the different severities for easier use. You may provide a color of 0 if you do not want to set a color for this message.
+The \texttt{TracyMessage} macros will log messages with the severity \texttt{Info}. To log a message with a different severity, you may use the \texttt{TracyLogString} macro that regroups all the functionalities from the previous macros. We recommend writing your own macros, wrapping the different severities for easier use. You may provide a color of 0 if you do not want to set a color for this message.
 
 Examples:
 \begin{lstlisting}

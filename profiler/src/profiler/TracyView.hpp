@@ -106,6 +106,12 @@ class View
         int64_t total;
         uint16_t threadNum;
     };
+    
+    struct FrameImageCache
+    {
+        ImTextureID textureId = 0;
+        const void* dataPtr = nullptr;
+    };
 
 public:
     struct PlotView
@@ -247,6 +253,7 @@ private:
     void Achieve( const char* id );
 
     bool DrawImpl();
+    void DrawFrameImage( FrameImageCache& cache, const FrameImage& fi, float scale = GetScale() );
     void DrawNotificationArea();
     bool DrawConnection();
     void DrawFrames();
@@ -619,11 +626,8 @@ private:
     std::atomic<size_t> m_srcFileBytes { 0 };
     std::atomic<size_t> m_dstFileBytes { 0 };
 
-    ImTextureID m_frameTexture = 0;
-    const void* m_frameTexturePtr = nullptr;
-
-    ImTextureID m_frameTextureConn = 0;
-    const void* m_frameTextureConnPtr = nullptr;
+    FrameImageCache m_FrameTextureCache;
+    FrameImageCache m_FrameTextureCacheConnection;
 
     std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;

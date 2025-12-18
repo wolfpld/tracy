@@ -268,20 +268,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
             if( fi )
             {
                 ImGui::BeginTooltip();
-                if( fi != m_frameTexturePtr )
-                {
-                    if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
-                    m_frameTexturePtr = fi;
-                }
-                if( fi->flip )
-                {
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
-                }
-                else
-                {
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
-                }
+                DrawFrameImage( m_FrameTextureCache , *fi );
                 ImGui::EndTooltip();
             }
         }

@@ -126,7 +126,9 @@ View::~View()
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();
 
-    if( m_frameTexture ) FreeTexture( m_frameTexture, m_cbMainThread );
+    if( m_FrameTextureCache.textureId ) FreeTexture( m_FrameTextureCache.textureId, m_cbMainThread );
+    if( m_FrameTextureCacheConnection.textureId ) FreeTexture( m_FrameTextureCacheConnection.textureId, m_cbMainThread );
+
     if( m_playback.texture ) FreeTexture( m_playback.texture, m_cbMainThread );
 }
 
@@ -1357,6 +1359,24 @@ bool View::DrawImpl()
     }
 
     return keepOpen;
+}
+
+void View::DrawFrameImage( FrameImageCache& cache, const FrameImage& fi, float scale )
+{
+    if ( fi.ptr != cache.dataPtr )
+    {
+        if( !cache.textureId ) cache.textureId = MakeTexture();
+        UpdateTexture( cache.textureId, m_worker.UnpackFrameImage( fi ), fi.w, fi.h );
+        cache.dataPtr = fi.ptr;
+    }
+    if( fi.flip )
+    {
+        ImGui::Image( cache.textureId, ImVec2( fi.w * scale, fi.h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+    }
+    else
+    {
+        ImGui::Image( cache.textureId, ImVec2( fi.w * scale, fi.h * scale ) );
+    }
 }
 
 void View::DrawTextEditor()

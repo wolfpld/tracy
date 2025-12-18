@@ -75,13 +75,16 @@ void View::DrawMessages()
             ImGui::PopStyleVar();
         }
     };
-
-    static const char* const sourceNames[] = { ICON_FA_USER, ICON_FA_MICROSCOPE };
+    
+    static const char* const sourceNames[] = { "User", "Tracy" };
     static_assert( std::size( sourceNames ) == (size_t)MessageSourceType::COUNT, "Please provide a name for each source" );
+    static const char* const sourceIcons[] = { ICON_FA_USER, ICON_FA_MICROSCOPE };
+    static_assert( std::size( sourceIcons ) == (size_t)MessageSourceType::COUNT, "Please provide an icon for each source" );
     for( int i=0; i<(int)MessageSourceType::COUNT; i++ )
     {
         ImGui::SameLine( 0.0, buttonSpacing );
-        FilterButton( sourceNames[i], ImVec2( frameheight, frameheight ), m_messageFilter.m_showMessageSourceFilter[i] );
+        FilterButton( sourceIcons[i], ImVec2( frameheight, frameheight ), m_messageFilter.m_showMessageSourceFilter[i] );
+        tracy::TooltipIfHovered( sourceNames[i] );
     }
 
     ImGui::SameLine( 0.0, buttonSpacing );

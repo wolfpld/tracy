@@ -77,6 +77,7 @@ bool View::DrawConnection()
         }
     }
 
+    FrameImage lastFrameImage{};
     {
         Worker::MainThreadDataLockGuard lock = m_worker.ObtainLockForMainThread();
         ImGui::SameLine();
@@ -91,29 +92,16 @@ bool View::DrawConnection()
             ImGui::Text( "%6.1f", fps );
             ImGui::SameLine();
             TextFocused( "Frame time:", TimeToString( dt ) );
-        }
+        }        
+        const auto& fis = m_worker.GetFrameImages();
+        // Keep a copy here since the worker may modify the frame images vector while we do not own the lock
+        if( !fis.empty() ) lastFrameImage = *fis.back();
     }
 
-    const auto& fis = m_worker.GetFrameImages();
-    if( !fis.empty() )
+    if( lastFrameImage.ptr.get() )
     {
-        const auto fiScale = scale * 0.5f;
-        const auto& fi = fis.back();
-        if( fi != m_frameTextureConnPtr )
-        {
-            if( !m_frameTextureConn ) m_frameTextureConn = MakeTexture();
-            UpdateTexture( m_frameTextureConn, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
-            m_frameTextureConnPtr = fi;
-        }
         ImGui::Separator();
-        if( fi->flip )
-        {
-            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * fiScale, fi->h * fiScale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
-        }
-        else
-        {
-            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * fiScale, fi->h * fiScale ) );
-        }
+        DrawFrameImage( m_FrameTextureCacheConnection, lastFrameImage, scale * 0.5f );
     }
 
     ImGui::Separator();

@@ -153,22 +153,8 @@ void View::DrawTimelineFrames( const FrameData& frames )
                 auto fi = m_worker.GetFrameImage( frames, i );
                 if( fi )
                 {
-                    const auto scale = GetScale();
-                    if( fi != m_frameTexturePtr )
-                    {
-                        if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
-                        m_frameTexturePtr = fi;
-                    }
                     ImGui::Separator();
-                    if( fi->flip )
-                    {
-                        ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
-                    }
-                    else
-                    {
-                        ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ) );
-                    }
+                    DrawFrameImage( m_FrameTextureCache, *fi );
 
                     if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 0 ) )
                     {

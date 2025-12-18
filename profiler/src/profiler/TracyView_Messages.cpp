@@ -107,6 +107,7 @@ void View::DrawMessages()
             snprintf( buffer, sizeof( buffer ), "%s  %s / %s###%s", severityIcons[i], RealToString( m_visibleMessagesPerSeverity[i] ), RealToString( m_messagesPerSeverity[i] ), severityIcons[i] );
         }
         FilterButton( buffer, ImVec2( 0, 0 ), m_messageFilter.m_showMessageSeverityFilter[i] );
+        tracy::TooltipIfHovered( severityNames[i] );
     }
     ImGui::SameLine( 0.0, buttonSpacing );
     if( ImGui::Button( ICON_FA_DELETE_LEFT " Reset" ) )

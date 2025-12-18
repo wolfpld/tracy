@@ -36,7 +36,10 @@ endif()
 
 if(WIN32)
     add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
-    add_compile_options(/MP)
+    # /MP is MSVC-specific for multi-processor compilation
+    if(MSVC)
+        add_compile_options(/MP)
+    endif()
 endif()
 
 if(EMSCRIPTEN)

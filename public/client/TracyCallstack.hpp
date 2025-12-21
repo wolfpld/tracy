@@ -149,7 +149,7 @@ static tracy_force_inline void* Callstack( int32_t depth )
     assert( depth >= 1 );
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + (size_t)depth ) * sizeof( uintptr_t ) );
-
+    tracy::DirectAlloc lock;
 #ifdef TRACY_LIBUNWIND_BACKTRACE
     size_t num =  unw_backtrace( (void**)(trace+1), depth );
 #else

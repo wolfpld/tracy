@@ -3,8 +3,8 @@
 
 #include <stdlib.h>
 
+#include "TracyApi.h"
 #if defined TRACY_ENABLE && !defined __EMSCRIPTEN__
-#  include "TracyApi.h"
 #  include "TracyForceInline.hpp"
 #  include "../client/tracy_rpmalloc.hpp"
 #  define TRACY_USE_RPMALLOC
@@ -13,59 +13,24 @@
 namespace tracy
 {
 
+struct DirectAlloc
+{
+    inline DirectAlloc() { ++s_direct; }
+    inline ~DirectAlloc() { --s_direct; }
+    static thread_local int s_direct;
+};
+
 #ifdef TRACY_USE_RPMALLOC
 TRACY_API void InitRpmalloc();
 #else
 static inline void InitRpmalloc() {}
 #endif
 
-static inline void* tracy_malloc( size_t size )
-{
-#ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
-    return rpmalloc( size );
-#else
-    return malloc( size );
-#endif
-}
-
-static inline void* tracy_malloc_fast( size_t size )
-{
-#ifdef TRACY_USE_RPMALLOC
-    return rpmalloc( size );
-#else
-    return malloc( size );
-#endif
-}
-
-static inline void tracy_free( void* ptr )
-{
-#ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
-    rpfree( ptr );
-#else
-    free( ptr );
-#endif
-}
-
-static inline void tracy_free_fast( void* ptr )
-{
-#ifdef TRACY_USE_RPMALLOC
-    rpfree( ptr );
-#else
-    free( ptr );
-#endif
-}
-
-static inline void* tracy_realloc( void* ptr, size_t size )
-{
-#ifdef TRACY_USE_RPMALLOC
-    InitRpmalloc();
-    return rprealloc( ptr, size );
-#else
-    return realloc( ptr, size );
-#endif
-}
+TRACY_API void* tracy_malloc( size_t size );
+TRACY_API void* tracy_malloc_fast( size_t size );
+TRACY_API void tracy_free( void* ptr );
+TRACY_API void tracy_free_fast( void* ptr );
+TRACY_API void* tracy_realloc( void* ptr, size_t size );
 
 }
 

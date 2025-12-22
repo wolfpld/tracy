@@ -200,7 +200,7 @@ public:
 #ifdef TRACY_HW_TIMER
 #  if defined TARGET_OS_IOS && TARGET_OS_IOS == 1
         if( HardwareSupportsInvariantTSC() ) return mach_absolute_time();
-#  elif defined(__APPLE__) && defined(__MACH__) && TARGET_CPU_ARM64
+#  elif defined __APPLE__ && defined __MACH__ && TARGET_CPU_ARM64
         if( HardwareSupportsInvariantTSC() )
         {
             uint64_t value;

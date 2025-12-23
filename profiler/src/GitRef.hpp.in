@@ -1,0 +1,2 @@
+#pragma once
+namespace tracy { static inline const char* GitRef = "@GIT_COMMIT_HASH@"; }

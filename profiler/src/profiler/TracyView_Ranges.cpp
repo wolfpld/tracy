@@ -24,6 +24,7 @@ void View::DrawRanges()
 
 void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id )
 {
+    ImGui::PushID( id );
     SmallColorBox( color );
     ImGui::SameLine();
     if( SmallCheckbox( label, &range.active ) )
@@ -94,6 +95,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
             if( SmallButtonDisablable( ICON_FA_MEMORY " Copy from memory", m_memInfo.range.min == 0 && m_memInfo.range.max == 0 ) ) range = m_memInfo.range;
         }
     }
+    ImGui::PopID();
 }
 
 void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w )

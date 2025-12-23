@@ -28,7 +28,7 @@
 #  include <mach/mach_time.h>
 #endif
 
-#if ( (defined _WIN32 && !(defined _M_ARM64 || defined _M_ARM)) || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) )
+#if ( (defined _WIN32 && !(defined _M_ARM64 || defined _M_ARM)) || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) || ( defined __APPLE__  && defined __MACH__ && TARGET_CPU_ARM64 ) )
 #  define TRACY_HW_TIMER
 #endif
 
@@ -200,6 +200,19 @@ public:
 #ifdef TRACY_HW_TIMER
 #  if defined TARGET_OS_IOS && TARGET_OS_IOS == 1
         if( HardwareSupportsInvariantTSC() ) return mach_absolute_time();
+#  elif defined __APPLE__ && defined __MACH__ && TARGET_CPU_ARM64
+        if( HardwareSupportsInvariantTSC() )
+        {
+            uint64_t value;
+            __asm__ __volatile__(
+               //"isb \n"              // ommitting "Instruction Synchronization Barrier"
+                "mrs %0, CNTVCT_EL0" 
+                : "=r" (value)          // Output: write 'register %0' to 'value'
+                :                       // No inputs
+                : "memory"              // Clobber list: memory (e.g., compiler barrier)
+            );
+            return value;
+        }
 #  elif defined _WIN32
 #    ifdef TRACY_TIMER_QPC
         return GetTimeQpc();

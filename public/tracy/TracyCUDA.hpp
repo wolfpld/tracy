@@ -795,6 +795,44 @@ namespace tracy
                         { CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz,   GET_STREAM_FUNC(cuLaunchKernel_ptsz_params, hStream)} ,
                         { CUPTI_DRIVER_TRACE_CBID_cuLaunchKernelEx,      GET_STREAM_FUNC(cuLaunchKernelEx_params, config->hStream) },
                         { CUPTI_DRIVER_TRACE_CBID_cuLaunchKernelEx_ptsz, GET_STREAM_FUNC(cuLaunchKernelEx_params, config->hStream) },
+                        // Driver: Memory
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2,         NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemAllocManaged,     NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2,    NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemFree_v2,          NON_STREAM_FUNC() },
+                        // Driver: Memcpy - Synchronous
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpy,              NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2,       NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2,       NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2,       NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2,         NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2,         NON_STREAM_FUNC() },
+                        // Driver: Memcpy - Asynchronous
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync,         GET_STREAM_FUNC(cuMemcpyAsync_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2,  GET_STREAM_FUNC(cuMemcpyHtoDAsync_v2_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2,  GET_STREAM_FUNC(cuMemcpyDtoHAsync_v2_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2,  GET_STREAM_FUNC(cuMemcpyDtoDAsync_v2_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2,    GET_STREAM_FUNC(cuMemcpy2DAsync_v2_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2,    GET_STREAM_FUNC(cuMemcpy3DAsync_v2_params, hStream) },
+                        // Driver: Memset - Synchronous
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD8_v2,         NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD16_v2,        NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD32_v2,        NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8_v2,       NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16_v2,      NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32_v2,      NON_STREAM_FUNC() },
+                        // Driver: Memset - Asynchronous
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD8Async,       GET_STREAM_FUNC(cuMemsetD8Async_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD16Async,      GET_STREAM_FUNC(cuMemsetD16Async_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD32Async,      GET_STREAM_FUNC(cuMemsetD32Async_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8Async,     GET_STREAM_FUNC(cuMemsetD2D8Async_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16Async,    GET_STREAM_FUNC(cuMemsetD2D16Async_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32Async,    GET_STREAM_FUNC(cuMemsetD2D32Async_params, hStream) },
+                        // Driver: Synchronization
+                        { CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize,   GET_STREAM_FUNC(cuStreamSynchronize_params, hStream) },
+                        { CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize,    NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize,      NON_STREAM_FUNC() },
+                        { CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent,     GET_STREAM_FUNC(cuStreamWaitEvent_params, hStream) },
                     };
                     #undef NON_STREAM_FUNC
                     #undef GET_STREAM_FUNC

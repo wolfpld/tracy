@@ -171,6 +171,7 @@ struct MappingInfo {
    // vector is sorted by ascending address too.
 static std::vector<MappingInfo> ParseMappings()
 {
+    tracy::DirectAlloc lock;
     std::vector<MappingInfo> result;
     FILE* file = fopen( "/proc/self/maps", "r" );
     if( !file ) return result;
@@ -513,6 +514,7 @@ static uint32_t GetHex( char*& ptr, int skip )
 
 static const char* GetHostInfo()
 {
+    tracy::DirectAlloc lock;
     static char buf[1024];
     auto ptr = buf;
 #if defined _WIN32
@@ -3889,7 +3891,8 @@ void Profiler::CalibrateDelay()
 
 void Profiler::ReportTopology()
 {
-#ifndef TRACY_DELAYED_INIT
+    DirectAlloc lock;
+#  ifndef TRACY_DELAYED_INIT
     struct CpuData
     {
         uint32_t package;
@@ -4183,6 +4186,7 @@ void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 
 void Profiler::HandleSourceCodeQuery( char* data, char* image, uint32_t id )
 {
+    tracy::DirectAlloc lock;
     bool ok = false;
     FILE* f = fopen( data, "rb" );
     if( f )

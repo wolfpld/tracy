@@ -990,6 +990,7 @@ static uint64_t* GetCallstackBlock( uint64_t cnt, RingBuffer& ring, uint64_t off
 
 void SysTraceWorker( void* ptr )
 {
+    tracy::DirectAlloc lock;
     ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy Sampling" );
     InitRpmalloc();
@@ -1397,6 +1398,7 @@ void SysTraceWorker( void* ptr )
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )
 {
+    tracy::DirectAlloc lock;
     FILE* f;
     char fn[256];
     sprintf( fn, "/proc/%" PRIu64 "/comm", thread );

@@ -104,6 +104,7 @@ extern "C" const char* ___tracy_demangle( const char* mangled )
     if( strlen( mangled ) > ___tracy_demangle_buffer_len ) return nullptr;
     int status;
     size_t len = ___tracy_demangle_buffer_len;
+    tracy::DirectAlloc lock;
     return abi::__cxa_demangle( mangled, ___tracy_demangle_buffer, &len, &status );
 }
 #endif
@@ -865,6 +866,7 @@ size_t s_kernelSymCnt;
 
 static void InitKernelSymbols()
 {
+    tracy::DirectAlloc lock;
     FILE* f = fopen( "/proc/kallsyms", "rb" );
     if( !f ) return;
     tracy::FastVector<KernelSymbol> tmpSym( 512 * 1024 );

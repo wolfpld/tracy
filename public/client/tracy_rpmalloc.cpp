@@ -2705,11 +2705,13 @@ rpmalloc_initialize(void) {
 
 int
 rpmalloc_initialize_config(const rpmalloc_config_t* config) {
-	if (_rpmalloc_initialized) {
-		rpmalloc_thread_initialize();
+    tracy::DirectAlloc lock;
+    if( _rpmalloc_initialized )
+    {
+        rpmalloc_thread_initialize();
 		return 0;
-	}
-	_rpmalloc_initialized = 1;
+    }
+    _rpmalloc_initialized = 1;
 
 	if (config)
 		memcpy(&_memory_config, config, sizeof(rpmalloc_config_t));

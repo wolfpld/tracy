@@ -220,9 +220,15 @@ void  LZ4_free(void* p);
 # define FREEMEM(p)        LZ4_free(p)
 #else
 # include <stdlib.h>   /* malloc, calloc, free */
-# define ALLOC(s)          malloc(s)
-# define ALLOC_AND_ZERO(s) calloc(1,s)
-# define FREEMEM(p)        free(p)
+#  ifdef TRACY_ENABLE_DEFAULT_MEMORY_PROFLER
+#    define ALLOC( s ) _malloc( s )
+#    define ALLOC_AND_ZERO( s ) _calloc( 1, s )
+#    define FREEMEM( p ) _free( p )
+#  else
+#    define ALLOC( s ) malloc( s )
+#    define ALLOC_AND_ZERO( s ) calloc( 1, s )
+#    define FREEMEM( p ) free( p )
+#  endif
 #endif
 
 #if ! LZ4_FREESTANDING

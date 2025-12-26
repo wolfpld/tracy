@@ -4613,10 +4613,16 @@ TRACY_API void ___tracy_emit_plot( const char* name, double val ) { tracy::Profi
 TRACY_API void ___tracy_emit_plot_float( const char* name, float val ) { tracy::Profiler::PlotData( name, val ); }
 TRACY_API void ___tracy_emit_plot_int( const char* name, int64_t val ) { tracy::Profiler::PlotData( name, val ); }
 TRACY_API void ___tracy_emit_plot_config( const char* name, int32_t type, int32_t step, int32_t fill, uint32_t color ) { tracy::Profiler::ConfigurePlot( name, tracy::PlotFormatType(type), step != 0, fill != 0, color ); }
-TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int32_t callstack_depth ) { tracy::Profiler::Message( txt, size, callstack_depth ); }
-TRACY_API void ___tracy_emit_messageL( const char* txt, int32_t callstack_depth ) { tracy::Profiler::Message( txt, callstack_depth ); }
-TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int32_t callstack_depth ) { tracy::Profiler::MessageColor( txt, size, color, callstack_depth ); }
-TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int32_t callstack_depth ) { tracy::Profiler::MessageColor( txt, color, callstack_depth ); }
+
+static_assert( TracyMessageSeverityTrace == int(tracy::MessageSeverity::Trace), "Mismatch between C and C++ versions of message severity" );
+static_assert( TracyMessageSeverityDebug == int(tracy::MessageSeverity::Debug), "Mismatch between C and C++ versions of message severity" );
+static_assert( TracyMessageSeverityInfo == int(tracy::MessageSeverity::Info), "Mismatch between C and C++ versions of message severity" );
+static_assert( TracyMessageSeverityWarning == int(tracy::MessageSeverity::Warning), "Mismatch between C and C++ versions of message severity" );
+static_assert( TracyMessageSeverityError == int(tracy::MessageSeverity::Error), "Mismatch between C and C++ versions of message severity" );
+static_assert( TracyMessageSeverityFatal == int(tracy::MessageSeverity::Fatal), "Mismatch between C and C++ versions of message severity" );
+
+TRACY_API void ___tracy_emit_logString( int8_t severity, int32_t color, int32_t callstack_depth, size_t size, const char* txt ) { tracy::Profiler::LogString( tracy::MessageSourceType::User, tracy::MessageSeverity(severity), color, callstack_depth, size, txt ); }
+TRACY_API void ___tracy_emit_logStringL( int8_t severity, int32_t color, int32_t callstack_depth, const char* txt ) { tracy::Profiler::LogString( tracy::MessageSourceType::User, tracy::MessageSeverity(severity), color, callstack_depth, txt ); }
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size ) { tracy::Profiler::MessageAppInfo( txt, size ); }
 
 TRACY_API uint64_t ___tracy_alloc_srcloc( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, uint32_t color ) {

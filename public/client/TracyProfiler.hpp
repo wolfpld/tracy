@@ -405,10 +405,10 @@ public:
 
         TracyLfqCommit;
     }
-
-    static tracy_force_inline void Message( MessageSourceType source, MessageSeverity severity, const char* txt, size_t size, int32_t callstack_depth )
+    
+    static tracy_force_inline void LogString( MessageSourceType source, MessageSeverity severity, uint32_t color, int32_t callstack_depth, size_t txtLength, const char* txt )
     {
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
+        assert( txtLength < (std::numeric_limits<uint16_t>::max)() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -417,106 +417,60 @@ public:
             tracy::GetProfiler().SendCallstack( callstack_depth );
         }
 
-        auto ptr = (char*)tracy_malloc( size );
-        memcpy( ptr, txt, size );
+        auto ptr = (char*)tracy_malloc( txtLength );
+        memcpy( ptr, txt, txtLength );
         TaggedUserlandAddress taggedPtr{ (uint64_t)ptr, MakeMessageMetadata( source, severity ) };
 
-        TracyQueuePrepare( callstack_depth == 0 ? QueueType::Message : QueueType::MessageCallstack );
-        MemWrite( &item->messageFat.time, GetTime() );
-        MemWrite( &item->messageFat.textAndMetadata, taggedPtr );
-        MemWrite( &item->messageFat.size, (uint16_t)size );
-        TracyQueueCommit( messageFatThread );
-    }
-    static tracy_force_inline void Message(const char* txt, size_t size, int32_t callstack_depth)
-    {
-        Message(tracy::MessageSourceType::User, tracy::MessageSeverity::Info, txt, size, callstack_depth);
-    }
-
-    static tracy_force_inline void Message( MessageSourceType source, MessageSeverity severity, const char* txt, int32_t callstack_depth )
-    {
-#ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) return;
-#endif
-        if( callstack_depth != 0 && has_callstack() )
+        if( color != 0 )
         {
-            tracy::GetProfiler().SendCallstack( callstack_depth );
+            TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
+            MemWrite( &item->messageColorFat.time, GetTime() );
+            MemWrite( &item->messageColorFat.textAndMetadata, taggedPtr );
+            MemWrite( &item->messageColorFat.b, uint8_t( ( color       ) & 0xFF ) );
+            MemWrite( &item->messageColorFat.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+            MemWrite( &item->messageColorFat.r, uint8_t( ( color >> 16 ) & 0xFF ) );
+            MemWrite( &item->messageColorFat.size, (uint16_t)txtLength );
+            TracyQueueCommit( messageColorFatThread );
         }
-        
-        TaggedUserlandAddress taggedPtr{ (uint64_t)txt, MakeMessageMetadata( source, severity ) };
-
-        TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
-        MemWrite( &item->messageLiteral.time, GetTime() );
-        MemWrite( &item->messageLiteral.textAndMetadata, taggedPtr );
-        TracyQueueCommit( messageLiteralThread );
-    }
-    static tracy_force_inline void Message( const char* txt, int32_t callstack_depth )
-    {
-        Message( tracy::MessageSourceType::User, tracy::MessageSeverity::Info, txt, callstack_depth );
-    }
-
-    static tracy_force_inline void MessageColor( MessageSourceType source, MessageSeverity severity, const char* txt, size_t size, uint32_t color, int32_t callstack_depth )
-    {
-        assert( size < (std::numeric_limits<uint16_t>::max)() );
-#ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) return;
-#endif
-        if( callstack_depth != 0 && has_callstack() )
+        else
         {
-            tracy::GetProfiler().SendCallstack( callstack_depth );
+            TracyQueuePrepare( callstack_depth == 0 ? QueueType::Message : QueueType::MessageCallstack );
+            MemWrite( &item->messageFat.time, GetTime() );
+            MemWrite( &item->messageFat.textAndMetadata, taggedPtr );
+            MemWrite( &item->messageFat.size, (uint16_t)txtLength );
+            TracyQueueCommit( messageFatThread );
         }
-
-        auto ptr = (char*)tracy_malloc( size );
-        memcpy( ptr, txt, size );
-        TaggedUserlandAddress taggedPtr{ (uint64_t)ptr, MakeMessageMetadata( source, severity ) };
-
-        TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
-        MemWrite( &item->messageColorFat.time, GetTime() );
-        MemWrite( &item->messageColorFat.textAndMetadata, taggedPtr );
-        MemWrite( &item->messageColorFat.b, uint8_t( ( color       ) & 0xFF ) );
-        MemWrite( &item->messageColorFat.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->messageColorFat.r, uint8_t( ( color >> 16 ) & 0xFF ) );
-        MemWrite( &item->messageColorFat.size, (uint16_t)size );
-        TracyQueueCommit( messageColorFatThread );
-    }
-    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int32_t callstack_depth )
-    {
-        MessageColor( tracy::MessageSourceType::User, tracy::MessageSeverity::Info, txt, size, color, callstack_depth );
-    }
-
-    static tracy_force_inline void MessageColor( MessageSourceType source, MessageSeverity severity, const char* txt, uint32_t color, int32_t callstack_depth )
-    {
-#ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) return;
-#endif
-        if( callstack_depth != 0 && has_callstack() )
-        {
-            tracy::GetProfiler().SendCallstack( callstack_depth );
-        }
-        TaggedUserlandAddress taggedPtr{ (uint64_t)txt, MakeMessageMetadata( source, severity ) };
-
-        TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
-        MemWrite( &item->messageColorLiteral.time, GetTime() );
-        MemWrite( &item->messageColorLiteral.textAndMetadata, taggedPtr );
-        MemWrite( &item->messageColorLiteral.b, uint8_t( ( color       ) & 0xFF ) );
-        MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->messageColorLiteral.r, uint8_t( ( color >> 16 ) & 0xFF ) );
-        TracyQueueCommit( messageColorLiteralThread );
-    }
-    static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int32_t callstack_depth )
-    {
-        MessageColor( tracy::MessageSourceType::User, tracy::MessageSeverity::Info, txt, color, callstack_depth );
     }
 
     static tracy_force_inline void LogString( MessageSourceType source, MessageSeverity severity, uint32_t color, int32_t callstack_depth, const char* txt )
     {
-        if( color != 0 ) MessageColor( source, severity, txt, color, callstack_depth );
-        else Message( source, severity, txt, callstack_depth );
-    }
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        if( callstack_depth != 0 && has_callstack() )
+        {
+            tracy::GetProfiler().SendCallstack( callstack_depth );
+        }
 
-    static tracy_force_inline void LogString( MessageSourceType source, MessageSeverity severity, uint32_t color, int32_t callstack_depth, size_t txtLength, const char* txt )
-    {
-        if( color != 0 ) MessageColor( source, severity, txt, txtLength, color, callstack_depth );
-        else Message( source, severity, txt, txtLength, callstack_depth );
+        TaggedUserlandAddress taggedPtr{ (uint64_t)txt, MakeMessageMetadata( source, severity ) };
+
+        if( color != 0 )
+        {
+            TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
+            MemWrite( &item->messageColorLiteral.time, GetTime() );
+            MemWrite( &item->messageColorLiteral.textAndMetadata, taggedPtr );
+            MemWrite( &item->messageColorLiteral.b, uint8_t( ( color       ) & 0xFF ) );
+            MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+            MemWrite( &item->messageColorLiteral.r, uint8_t( ( color >> 16 ) & 0xFF ) );
+            TracyQueueCommit( messageColorLiteral );
+        }
+        else
+        {
+            TracyQueuePrepare( callstack_depth == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
+            MemWrite( &item->messageLiteral.time, GetTime() );
+            MemWrite( &item->messageLiteral.textAndMetadata, taggedPtr );
+            TracyQueueCommit( messageLiteralThread );
+        }
     }
 
 

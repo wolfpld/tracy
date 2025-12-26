@@ -18,6 +18,16 @@ enum TracyPlotFormatEnum
     TracyPlotFormatWatt
 };
 
+enum TracyMessageSeverity
+{
+    TracyMessageSeverityTrace,   // Broadly track variable states and events in the software program.
+    TracyMessageSeverityDebug,   // Describes variable states and details about specific internal events in the software, that are useful for investigations.
+    TracyMessageSeverityInfo,    // Describes normal events, which inform on the expected progress and state of your software.
+    TracyMessageSeverityWarning, // Describes potentially dangerous situations caused by unexpected events and states.
+    TracyMessageSeverityError,   // Describes the occurance of unexpected behavior. Does not interrupt the execution of the software.
+    TracyMessageSeverityFatal,   // Describes a critical event that will lead to a software failure/crash.
+};
+
 TRACY_API void ___tracy_set_thread_name( const char* name );
 
 #define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
@@ -279,10 +289,8 @@ TRACY_API void ___tracy_emit_memory_free_callstack_named( const void* ptr, int32
 TRACY_API void ___tracy_emit_memory_discard( const char* name, int32_t secure );
 TRACY_API void ___tracy_emit_memory_discard_callstack( const char* name, int32_t secure, int32_t depth );
 
-TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int32_t callstack_depth );
-TRACY_API void ___tracy_emit_messageL( const char* txt, int32_t callstack_depth );
-TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int32_t callstack_depth );
-TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int32_t callstack_depth );
+TRACY_API void ___tracy_emit_logString( int8_t severity, int32_t color, int32_t callstack_depth, size_t size, const char* txt );
+TRACY_API void ___tracy_emit_logStringL( int8_t severity, int32_t color, int32_t callstack_depth, const char* txt );
 
 #define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK, 0 )
 #define TracyCFree( ptr ) ___tracy_emit_memory_free_callstack( ptr, TRACY_CALLSTACK, 0 )
@@ -296,10 +304,10 @@ TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int32_t
 #define TracyCSecureAllocN( ptr, size, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, TRACY_CALLSTACK, 1, name )
 #define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 1, name )
 
-#define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, TRACY_CALLSTACK );
-#define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, TRACY_CALLSTACK );
-#define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, TRACY_CALLSTACK );
-#define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color, TRACY_CALLSTACK );
+#define TracyCMessage( txt, size ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, size, txt )
+#define TracyCMessageL( txt ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, txt )
+#define TracyCMessageC( txt, size, color ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, TRACY_CALLSTACK, size, txt )
+#define TracyCMessageLC( txt, color ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, TRACY_CALLSTACK, txt )
 
 
 TRACY_API void ___tracy_emit_frame_mark( const char* name );
@@ -344,10 +352,10 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #define TracyCSecureAllocNS( ptr, size, depth, name ) ___tracy_emit_memory_alloc_callstack_named( ptr, size, depth, 1, name )
 #define TracyCSecureFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 1, name )
 
-#define TracyCMessageS( txt, size, depth ) ___tracy_emit_message( txt, size, depth );
-#define TracyCMessageLS( txt, depth ) ___tracy_emit_messageL( txt, depth );
-#define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_messageC( txt, size, color, depth );
-#define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_messageLC( txt, color, depth );
+#define TracyCMessageS( txt, size, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, depth, size, txt )
+#define TracyCMessageLS( txt, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, depth, txt )
+#define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, depth, size, txt )
+#define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, depth, txt )
 
 
 TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx( const struct ___tracy_source_location_data* srcloc );

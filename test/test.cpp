@@ -17,6 +17,8 @@ struct static_init_test_t
     {
         ZoneScoped;
         ZoneTextF( "Static %s", "init test" );
+        TracyLogString( tracy::MessageSeverity::Info, 0, TRACY_CALLSTACK, "Static init" );
+
         new char[64*1024];
     }
 };
@@ -151,13 +153,13 @@ void RecLock()
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 7 ) );
         std::lock_guard<LockableBase( std::recursive_mutex )> lock1( recmutex );
-        TracyMessageL( "First lock" );
+        TracyLogString( tracy::MessageSeverity::Trace, 0, TRACY_CALLSTACK, "First lock" );
         LockMark( recmutex );
         ZoneScoped;
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
             std::lock_guard<LockableBase( std::recursive_mutex )> lock2( recmutex );
-            TracyMessageL( "Second lock" );
+            TracyLogString( tracy::MessageSeverity::Trace, 0, TRACY_CALLSTACK, "Second lock" );
             LockMark( recmutex );
             std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         }
@@ -207,6 +209,7 @@ void DepthTest()
     tracy::SetThreadName( "Depth test" );
     for(;;)
     {
+        TracyLogString( tracy::MessageSeverity::Debug, 0, TRACY_CALLSTACK, "Fibonacci Sleep" );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
         ZoneScoped;
         const auto txt = "Fibonacci (15)";
@@ -389,6 +392,17 @@ int main()
     for(;;)
     {
         TracyMessageL( "Tick" );
+
+        const int randValue = rand();
+        if( ( randValue % 100 ) == 0 ) 
+            TracyLogString( tracy::MessageSeverity::Warning, 0, TRACY_CALLSTACK, "Random warning" );
+
+        if( ( randValue % 500 ) == 0 ) 
+            TracyLogString( tracy::MessageSeverity::Error, 0, TRACY_CALLSTACK, "Random error" );
+
+        if( ( randValue % 1000 ) == 0 ) 
+            TracyLogString( tracy::MessageSeverity::Fatal, 0, TRACY_CALLSTACK, "Random fatal error" );
+    
         std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         {
             ZoneScoped;

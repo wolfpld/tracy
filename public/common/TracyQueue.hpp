@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "TracyTaggedUserlandAddress.hpp"
 
 namespace tracy
 {
@@ -343,6 +344,47 @@ struct QueuePlotDataDouble : public QueuePlotDataBase
     double val;
 };
 
+using MessageMetadata = uint8_t;
+
+enum class MessageSourceType : MessageMetadata
+{
+    User,
+    Tracy,
+    COUNT
+};
+
+enum class MessageSeverity : MessageMetadata
+{
+    Trace,   // Broadly track variable states and events in the software program.
+    Debug,   // Describes variable states and details about specific internal events in the software, that are useful for investigations.
+    Info,    // Describes normal events, which inform on the expected progress and state of your software.
+    Warning, // Describes potentially dangerous situations caused by unexpected events and states.
+    Error,   // Describes the occurance of unexpected behavior. Does not interrupt the execution of the software.
+    Fatal,   // Describes a critical event that will lead to a software failure/crash.
+    COUNT
+};
+
+inline MessageMetadata MakeMessageMetadata(MessageSourceType source, MessageSeverity severity)
+{
+    static_assert( (MessageMetadata)MessageSourceType::COUNT < ( 1 << 4 ), "We use 4 bits for the messages source." );
+    static_assert( (MessageMetadata)MessageSeverity::COUNT < ( 1 << 4 ), "We use 4 bits for the messages severity." );
+    return ( (MessageMetadata)severity ) << 4 | (MessageMetadata)source;
+}
+
+inline MessageSourceType MessageSourceFromMetadata(MessageMetadata metadata)
+{
+    assert( ( metadata & 0x0F ) < (MessageMetadata)MessageSourceType::COUNT );
+    return (MessageSourceType)( metadata & 0x0F );
+}
+
+inline MessageSeverity MessageSeverityFromMetadata(MessageMetadata metadata)
+{
+    assert( ( ( metadata & 0xF0 ) >> 4 ) < (MessageMetadata)MessageSeverity::COUNT );
+    return (MessageSeverity)( ( metadata & 0xF0 ) >> 4 );
+}
+
+// QueueMessage*Metadata and QueMessageLiteral* are the only structures sent over the wire
+// All other variants are used only internally to dispatch from the thread to the profiler and interpreted by Profiler::Dequeue
 struct QueueMessage
 {
     int64_t time;
@@ -355,9 +397,19 @@ struct QueueMessageColor : public QueueMessage
     uint8_t r;
 };
 
+struct QueueMessageMetadata : public QueueMessage
+{
+    MessageMetadata metadata;
+};
+
+struct QueueMessageColorMetadata : public QueueMessageColor
+{
+    MessageMetadata metadata;
+};
+
 struct QueueMessageLiteral : public QueueMessage
 {
-    uint64_t text;      // ptr
+    TaggedUserlandAddress textAndMetadata;      // ptr + log level/channels
 };
 
 struct QueueMessageLiteralThread : public QueueMessageLiteral
@@ -367,7 +419,7 @@ struct QueueMessageLiteralThread : public QueueMessageLiteral
 
 struct QueueMessageColorLiteral : public QueueMessageColor
 {
-    uint64_t text;      // ptr
+    TaggedUserlandAddress textAndMetadata;      // ptr + log level/channels
 };
 
 struct QueueMessageColorLiteralThread : public QueueMessageColorLiteral
@@ -377,7 +429,7 @@ struct QueueMessageColorLiteralThread : public QueueMessageColorLiteral
 
 struct QueueMessageFat : public QueueMessage
 {
-    uint64_t text;      // ptr
+    TaggedUserlandAddress textAndMetadata;      // ptr + log level/channels
     uint16_t size;
 };
 
@@ -388,7 +440,7 @@ struct QueueMessageFatThread : public QueueMessageFat
 
 struct QueueMessageColorFat : public QueueMessageColor
 {
-    uint64_t text;      // ptr
+    TaggedUserlandAddress textAndMetadata;      // ptr + log level/channels
     uint16_t size;
 };
 
@@ -762,7 +814,9 @@ struct QueueItem
         QueuePlotDataFloat plotDataFloat;
         QueuePlotDataDouble plotDataDouble;
         QueueMessage message;
+        QueueMessageMetadata messageMetadata;
         QueueMessageColor messageColor;
+        QueueMessageColorMetadata messageColorMetadata;
         QueueMessageLiteral messageLiteral;
         QueueMessageLiteralThread messageLiteralThread;
         QueueMessageColorLiteral messageColorLiteral;
@@ -826,10 +880,10 @@ enum { QueueItemSize = sizeof( QueueItem ) };
 static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // zone text
     sizeof( QueueHeader ),                                  // zone name
-    sizeof( QueueHeader ) + sizeof( QueueMessage ),
-    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),
-    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack
-    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageMetadata ),     // Message
+    sizeof( QueueHeader ) + sizeof( QueueMessageColorMetadata ),// MessageColor
+    sizeof( QueueHeader ) + sizeof( QueueMessageMetadata ),     // MessageCallstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageColorMetadata ),// MessageColorCallstack
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // app info
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location, callstack

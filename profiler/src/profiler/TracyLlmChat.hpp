@@ -19,7 +19,6 @@ public:
         UserDebug,
         Attachment,
         Assistant,
-        AssistantDebug,
         Error,
         // virtual roles below
         Trash,

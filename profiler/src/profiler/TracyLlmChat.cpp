@@ -26,7 +26,6 @@ constexpr std::array roles = {
     RoleData { ICON_FA_TERMINAL, ImVec4( 1.f, 0.5f, 0.5f, 1.f ), ImVec4( 1.f, 0.65f, 0.65f, 1.f ) },
     RoleData { ICON_FA_FILE, ImVec4( 0.5f, 0.75f, 1.f, 1.f ), ImVec4( 0.65f, 0.75f, 1.f, 1.f ) },
     RoleData { ICON_FA_ROBOT, ImVec4( 0.4f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
-    RoleData { ICON_FA_CODE, ImVec4( 1.0f, 0.5f, 1.f, 1.f ), ImVec4( 1.f, 0.65f, 1.f, 1.f ) },
     RoleData { ICON_FA_CIRCLE_EXCLAMATION, ImVec4( 1.f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 0.25f, 0.25f, 1.f ) },
     RoleData { ICON_FA_TRASH, ImVec4( 1.0f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
     RoleData { ICON_FA_ARROWS_ROTATE, ImVec4( 1.0f, 0.25f, 0.25f, 1.f ), ImVec4( 1.f, 1.f, 1.f, 1.f ) },
@@ -95,7 +94,7 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
             m_role = role;
             ImGui::Spacing();
         }
-        int trashIdx = ( role == TurnRole::Assistant || role == TurnRole::AssistantDebug ) ? (int)TurnRole::Regenerate : (int)TurnRole::Trash;
+        int trashIdx = role == TurnRole::Assistant ? (int)TurnRole::Regenerate : (int)TurnRole::Trash;
         ImGui::PushID( m_roleIdx++ );
         auto diff = m_maxWidth - m_width[(int)role];
         if( ImGui::IsMouseHoveringRect( ImGui::GetCursorScreenPos(), ImGui::GetCursorScreenPos() + ImVec2( m_maxWidth, ImGui::GetTextLineHeight() ) ) )

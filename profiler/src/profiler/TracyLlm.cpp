@@ -446,15 +446,11 @@ void TracyLlm::Draw()
                 else if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::UserDebug;
                 else if( content.starts_with( "<attachment>\n" ) ) role = TracyLlmChat::TurnRole::Attachment;
             }
-            else if( role == TracyLlmChat::TurnRole::Assistant )
-            {
-                if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::AssistantDebug;
-            }
 
             ImGui::PushID( turnIdx++ );
             if( !m_chatUi->Turn( role, content ) )
             {
-                if( role == TracyLlmChat::TurnRole::Assistant || role == TracyLlmChat::TurnRole::AssistantDebug )
+                if( role == TracyLlmChat::TurnRole::Assistant )
                 {
                     QueueSendMessage();
                 }

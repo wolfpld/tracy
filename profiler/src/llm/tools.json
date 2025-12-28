@@ -1,0 +1,137 @@
+[
+{
+  "type": "function",
+  "function": {
+    "name": "search_wikipedia",
+    "description": "Search the Wikipedia with given query. The `key` field in the response is the Wikipedia page name. Uses network.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The search terms in the language matching the second parameter."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code matching the search query. For example, `en` for English or `pl` for Polish."
+        }
+      },
+      "required": ["query", "language"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "get_wikipedia",
+    "description": "Retrieve the Wikipedia article on given subject. The response may be trimmed. Uses network.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "string",
+          "description": "The Wikipedia page name."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code."
+        }
+      },
+      "required": ["page", "language"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "get_dictionary",
+    "description": "Retrieve description of a word from dictionary. Uses network.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "word": {
+          "type": "string",
+          "description": "Word to describe."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code."
+        }
+      },
+      "required": ["word", "language"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "search_web",
+    "description": "Search the web with given query. Uses network.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query."
+        }
+      },
+      "required": ["query"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "get_webpage",
+    "description": "Download web page at given URL. Uses network.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Web page to download."
+        }
+      },
+      "required": ["url"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "user_manual",
+    "description": "Search the Tracy Profiler user manual with given query.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Verbose search query in English language."
+        }
+      },
+      "required": ["query"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "source_file",
+    "description": "Retrieve the source file contents.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Path to the file."
+        },
+        "line": {
+          "type": "integer",
+          "description": "Line number that should be retrieved."
+        }
+      },
+      "required": ["file", "line"]
+    }
+  }
+}
+]

@@ -14,6 +14,7 @@
 #include "../Fonts.hpp"
 
 #include "data/SystemPrompt.hpp"
+#include "data/ToolsJson.hpp"
 
 namespace tracy
 {
@@ -37,6 +38,8 @@ TracyLlm::TracyLlm( Worker& worker, const TracyManualData& manual )
     }
 
     m_systemPrompt = Unembed( SystemPrompt );
+    auto toolsJson = Unembed( ToolsJson );
+    m_toolsJson = nlohmann::json::parse( toolsJson->data(), toolsJson->data() + toolsJson->size() );
 
     m_input = new char[InputBufferSize];
     m_apiInput = new char[InputBufferSize];
@@ -788,6 +791,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         req["model"] = m_api->GetModels()[m_modelIdx].name;
         req["messages"] = std::move( chat );
         req["stream"] = true;
+        req["tools"] = m_toolsJson;
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
         res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );

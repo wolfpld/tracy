@@ -94,6 +94,7 @@ private:
     std::vector<nlohmann::json> m_chat;
 
     std::shared_ptr<EmbedData> m_systemPrompt;
+    nlohmann::json m_toolsJson;
 };
 
 }

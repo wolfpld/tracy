@@ -2,7 +2,6 @@
 #include <curl/curl.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <ranges>
 
 #include "TracyConfig.hpp"
 #include "TracyImGui.hpp"

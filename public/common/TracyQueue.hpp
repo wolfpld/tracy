@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "TracyTaggedUserlandAddress.hpp"
+#include "TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -364,20 +365,20 @@ enum class MessageSeverity : MessageMetadata
     COUNT
 };
 
-inline MessageMetadata MakeMessageMetadata(MessageSourceType source, MessageSeverity severity)
+tracy_force_inline MessageMetadata MakeMessageMetadata(MessageSourceType source, MessageSeverity severity)
 {
     static_assert( (MessageMetadata)MessageSourceType::COUNT < ( 1 << 4 ), "We use 4 bits for the messages source." );
     static_assert( (MessageMetadata)MessageSeverity::COUNT < ( 1 << 4 ), "We use 4 bits for the messages severity." );
     return ( (MessageMetadata)severity ) << 4 | (MessageMetadata)source;
 }
 
-inline MessageSourceType MessageSourceFromMetadata(MessageMetadata metadata)
+tracy_force_inline MessageSourceType MessageSourceFromMetadata(MessageMetadata metadata)
 {
     assert( ( metadata & 0x0F ) < (MessageMetadata)MessageSourceType::COUNT );
     return (MessageSourceType)( metadata & 0x0F );
 }
 
-inline MessageSeverity MessageSeverityFromMetadata(MessageMetadata metadata)
+tracy_force_inline MessageSeverity MessageSeverityFromMetadata(MessageMetadata metadata)
 {
     assert( ( ( metadata & 0xF0 ) >> 4 ) < (MessageMetadata)MessageSeverity::COUNT );
     return (MessageSeverity)( ( metadata & 0xF0 ) >> 4 );

@@ -532,7 +532,7 @@ void InitCallstack()
 #endif //#ifndef TRACY_SYMBOL_OFFLINE_RESOLVE
     if( s_shouldResolveSymbolsOffline )
     {
-        TracyDebug("TRACY: enabling offline symbol resolving!\n");
+        TracyDebug( "TRACY: enabling offline symbol resolving!" );
     }
 
     CreateImageCaches();
@@ -551,7 +551,7 @@ void InitCallstack()
     const bool initTimeModuleLoad = !( noInitLoadEnv && noInitLoadEnv[0] == '1' );
     if ( !initTimeModuleLoad )
     {
-        TracyDebug("TRACY: skipping init time dbghelper module load\n");
+        TracyDebug( "TRACY: skipping init time dbghelper module load" );
     }
     else
     {
@@ -963,7 +963,7 @@ static void InitKernelSymbols()
     }
     assert( dst == s_kernelSym + validCnt );
 
-    TracyDebug( "Loaded %zu kernel symbols (%zu code sections)\n", tmpSym.size(), validCnt );
+    TracyDebug( "Loaded %zu kernel symbols (%zu code sections)", tmpSym.size(), validCnt );
 }
 #endif
 
@@ -1040,7 +1040,7 @@ void InitCallstack()
     if( s_shouldResolveSymbolsOffline )
     {
         cb_bts = nullptr; // disable use of libbacktrace calls
-        TracyDebug("TRACY: enabling offline symbol resolving!\n");
+        TracyDebug( "TRACY: enabling offline symbol resolving!" );
     }
     else
     {
@@ -1100,7 +1100,7 @@ int GetDebugInfoDescriptor( const char* buildid_data, size_t buildid_size, const
     it->filename = (char*)tracy_malloc( fnsz );
     memcpy( it->filename, filename, fnsz );
     it->fd = fd >= 0 ? fd : -1;
-    TracyDebug( "DebugInfo descriptor query: %i, fn: %s\n", fd, filename );
+    TracyDebug( "DebugInfo descriptor query: %i, fn: %s", fd, filename );
     return it->fd;
 }
 

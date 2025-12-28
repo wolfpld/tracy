@@ -646,7 +646,8 @@ Although the basic features will work without them, you'll have to grant elevate
 
 \subsubsection{Troubleshooting}
 
-Setting the \texttt{TRACY\_VERBOSE} variable will make the client display advanced information about the detected features. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
+By default, Tracy's diagnostics will be sent as Message logs (section~\ref{messagelog}) to the server.
+Setting the \texttt{TRACY\_NO\_INTERNAL\_MESSAGE} define will disable this feature, but setting the \texttt{TRACY\_VERBOSE} will make the client print advanced information about the detected features to the standard error output. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
 
 \subsubsection{Changing network port}
 
@@ -1490,6 +1491,17 @@ It is beneficial but not required to use a unique pointer for name string litera
 Fast navigation in large data sets and correlating zones with what was happening in the application may be difficult. To ease these issues, Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro. Alternatively, use \texttt{TracyMessageL(text)} for string literal messages.
 
 If you want to include color coding of the messages (for example to make critical messages easily visible), you can use \texttt{TracyMessageC(text, size, color)} or \texttt{TracyMessageLC(text, color)} macros.
+
+Messages can also have different severity levels: \texttt{Trace}, \texttt{Debug}, \texttt{Info}, \texttt{Warning}, \texttt{Error} or \texttt{Fatal}. 
+The \texttt{TracyMessage} macros will log messages with the severity \texttt{Info}. To log a message with a different severity, you may use the \texttt{TracyLogString} macro that regroups all the functionalities from the previous macros. We recommend writing your own macros, wrapping the different severities for easier use. You may provide a color of 0 if you do not want to set a color for this message.
+
+Examples:
+\begin{lstlisting}
+std::string dynStr = "Trace using a dynamic string, blue color, no callstack";
+TracyLogString( tracy::MessageSeverity::Trace, 0xFF, 0, dynStr.size(), dynStr.c_str() );
+TracyLogString( tracy::MessageSeverity::Warning, 0, TRACY_CALLSTACK, "Warning using a string litteral, no color, capturing the callstack to a depth of TRACY_CALLSTACK" );
+\end{lstlisting}
+
 
 \subsubsection{Application information}
 \label{appinfo}

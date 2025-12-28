@@ -504,9 +504,34 @@ private:
     DecayValue<const ZoneEvent*> m_zoneHover2 = nullptr;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
-    ImGuiTextFilter m_messageFilter;
+
+    struct MessageFilter
+    {
+        ImGuiTextFilter m_text;
+        bool m_showMessageSourceFilter[(size_t)MessageSourceType::COUNT];
+        bool m_showMessageSeverityFilter[(size_t)MessageSeverity::COUNT];
+
+        MessageFilter() { Clear(); }
+
+        void Clear()
+        {
+            m_text.Clear();
+            for( bool& show : m_showMessageSourceFilter ) show = true;
+            for( bool& show : m_showMessageSeverityFilter ) show = true;
+        }
+
+        bool PassFilter( const MessageData& msg, const Worker& worker ) const
+        {
+            return m_showMessageSourceFilter[(size_t)msg.source] 
+                && m_showMessageSeverityFilter[(size_t)msg.severity]
+                && m_text.PassFilter( worker.GetString( msg.ref ) );
+        }
+    };
+    MessageFilter m_messageFilter;
     bool m_showMessageImages = false;
     int m_visibleMessages = 0;
+    int m_messagesPerSeverity[(size_t)MessageSeverity::COUNT] = {};
+    int m_visibleMessagesPerSeverity[(size_t)MessageSeverity::COUNT] = {};
     size_t m_prevMessages = 0;
     bool m_messagesShowCallstack = false;
     Vector<uint32_t> m_msgList;

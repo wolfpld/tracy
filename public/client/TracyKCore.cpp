@@ -87,7 +87,7 @@ KCore::KCore()
     }
 
     std::sort( m_offsets.begin(), m_offsets.end(), []( const Offset& lhs, const Offset& rhs ) { return lhs.start < rhs.start; } );
-    TracyDebug( "KCore: %zu segments found\n", m_offsets.size() );
+    TracyDebug( "KCore: %zu segments found", m_offsets.size() );
     return;
 
 err:

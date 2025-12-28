@@ -91,8 +91,8 @@ void View::DrawMessages()
     ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
     ImGui::SameLine( 0.0, buttonSpacing );
 
-    static const char* const severityNames[(size_t)MessageSeverity::COUNT] = { "Trace", "Debug", "Info", "Warning", "Error", "Fatal" };
-    static const char* const severityIcons[(size_t)MessageSeverity::COUNT] = { ICON_FA_SHOE_PRINTS, ICON_FA_BUG, ICON_FA_INFO, ICON_FA_TRIANGLE_EXCLAMATION, ICON_FA_CIRCLE_XMARK, ICON_FA_SKULL_CROSSBONES };
+    constexpr const char* severityNames[(size_t)MessageSeverity::COUNT] = { "Trace", "Debug", "Info", "Warning", "Error", "Fatal" };
+    constexpr const char* severityIcons[(size_t)MessageSeverity::COUNT] = { ICON_FA_SHOE_PRINTS, ICON_FA_BUG, ICON_FA_INFO, ICON_FA_TRIANGLE_EXCLAMATION, ICON_FA_CIRCLE_XMARK, ICON_FA_SKULL_CROSSBONES };
     static_assert( std::size( severityNames ) == (size_t)MessageSeverity::COUNT, "Please provide a name for each severity" );
     static_assert( std::size( severityIcons ) == (size_t)MessageSeverity::COUNT, "Please provide an icon for each severity" );
 

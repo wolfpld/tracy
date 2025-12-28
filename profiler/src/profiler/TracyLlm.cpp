@@ -15,7 +15,6 @@
 #include "../Fonts.hpp"
 
 #include "data/SystemPrompt.hpp"
-#include "data/SystemReminder.hpp"
 
 namespace tracy
 {
@@ -39,7 +38,6 @@ TracyLlm::TracyLlm( Worker& worker, const TracyManualData& manual )
     }
 
     m_systemPrompt = Unembed( SystemPrompt );
-    m_systemReminder = Unembed( SystemReminder );
 
     m_input = new char[InputBufferSize];
     m_apiInput = new char[InputBufferSize];

@@ -61,7 +61,7 @@ void View::DrawMessages()
         if( sideText )
         {
             ImGui::SameLine();
-            ImGui::Text( sideText );
+            ImGui::TextUnformatted( sideText );
             if( ImGui::IsItemClicked() )
             {
                 value = !value;

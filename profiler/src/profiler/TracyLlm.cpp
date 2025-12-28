@@ -781,10 +781,9 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     bool res;
     try
     {
+        m_chat.back()["content"].get_ref<std::string&>().append( "\n\n<SYSTEM_PROMPT>\nThe current time is: " + m_tools->GetCurrentTime() + "\n</SYSTEM_PROMPT>\n" );
         auto chat = m_chat;
         AddMessageBlocking( "", "assistant", lock );
-
-        chat.front()["content"].get_ref<std::string&>().append( "\n\nThe current time is: " + m_tools->GetCurrentTime() + "\n" );
 
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;

@@ -780,36 +780,13 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     }
 #endif
 
-    if( debug )
-    {
-        AddMessageBlocking( "<debug>\n", "assistant", lock );
-    }
-    else
-    {
-        AddMessageBlocking( "<think>", "assistant", lock );
-    }
-
     bool res;
     try
     {
         auto chat = m_chat;
-
-        std::string inject;
-        if( debug )
-        {
-            inject += "<SYSTEM_REMINDER>\n";
-            inject += "You are in debug mode.\n";
-            inject += "</SYSTEM_REMINDER>\n";
-        }
-        else
-        {
-            inject += "<SYSTEM_REMINDER>\n";
-            inject += std::string( m_systemReminder->data(), m_systemReminder->size() );
-            inject += "</SYSTEM_REMINDER>\n";
-        }
+        AddMessageBlocking( "", "assistant", lock );
 
         chat.front()["content"].get_ref<std::string&>().append( "\n\nThe current time is: " + m_tools->GetCurrentTime() + "\n" );
-        chat.back()["content"].get_ref<std::string&>().insert( 0, inject );
 
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;

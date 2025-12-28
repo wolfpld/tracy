@@ -2512,7 +2512,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
                         
-                        const MessageMetadata metadata = (MessageMetadata)taggedPtr.GetTag();
+                        const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
                         MemWrite( &itemWithMetadata.hdr, item->hdr );
                         MemWrite( &itemWithMetadata.messageMetadata, item->message );
@@ -2530,7 +2530,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         SendSingleString( (const char*)ptr, size );
                         tracy_free_fast( (void*)ptr );
 
-                        const MessageMetadata metadata = (MessageMetadata)taggedPtr.GetTag();
+                        const uint8_t metadata = (uint8_t)taggedPtr.GetTag();
                         QueueItem itemWithMetadata;
                         MemWrite( &itemWithMetadata.hdr, item->hdr );
                         MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );

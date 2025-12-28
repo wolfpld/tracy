@@ -345,16 +345,14 @@ struct QueuePlotDataDouble : public QueuePlotDataBase
     double val;
 };
 
-using MessageMetadata = uint8_t;
-
-enum class MessageSourceType : MessageMetadata
+enum class MessageSourceType : uint8_t
 {
     User,
     Tracy,
     COUNT
 };
 
-enum class MessageSeverity : MessageMetadata
+enum class MessageSeverity : uint8_t
 {
     Trace,   // Broadly track variable states and events in the software program.
     Debug,   // Describes variable states and details about specific internal events in the software, that are useful for investigations.
@@ -365,22 +363,22 @@ enum class MessageSeverity : MessageMetadata
     COUNT
 };
 
-tracy_force_inline MessageMetadata MakeMessageMetadata(MessageSourceType source, MessageSeverity severity)
+tracy_force_inline uint8_t MakeMessageMetadata(MessageSourceType source, MessageSeverity severity)
 {
-    static_assert( (MessageMetadata)MessageSourceType::COUNT < ( 1 << 4 ), "We use 4 bits for the messages source." );
-    static_assert( (MessageMetadata)MessageSeverity::COUNT < ( 1 << 4 ), "We use 4 bits for the messages severity." );
-    return ( (MessageMetadata)severity ) << 4 | (MessageMetadata)source;
+    static_assert( (uint8_t)MessageSourceType::COUNT < ( 1 << 4 ), "We use 4 bits for the messages source." );
+    static_assert( (uint8_t)MessageSeverity::COUNT < ( 1 << 4 ), "We use 4 bits for the messages severity." );
+    return ( (uint8_t)severity ) << 4 | (uint8_t)source;
 }
 
-tracy_force_inline MessageSourceType MessageSourceFromMetadata(MessageMetadata metadata)
+tracy_force_inline MessageSourceType MessageSourceFromMetadata(uint8_t metadata)
 {
-    assert( ( metadata & 0x0F ) < (MessageMetadata)MessageSourceType::COUNT );
+    assert( ( metadata & 0x0F ) < (uint8_t)MessageSourceType::COUNT );
     return (MessageSourceType)( metadata & 0x0F );
 }
 
-tracy_force_inline MessageSeverity MessageSeverityFromMetadata(MessageMetadata metadata)
+tracy_force_inline MessageSeverity MessageSeverityFromMetadata(uint8_t metadata)
 {
-    assert( ( ( metadata & 0xF0 ) >> 4 ) < (MessageMetadata)MessageSeverity::COUNT );
+    assert( ( ( metadata & 0xF0 ) >> 4 ) < (uint8_t)MessageSeverity::COUNT );
     return (MessageSeverity)( ( metadata & 0xF0 ) >> 4 );
 }
 
@@ -400,12 +398,12 @@ struct QueueMessageColor : public QueueMessage
 
 struct QueueMessageMetadata : public QueueMessage
 {
-    MessageMetadata metadata;
+    uint8_t metadata;
 };
 
 struct QueueMessageColorMetadata : public QueueMessageColor
 {
-    MessageMetadata metadata;
+    uint8_t metadata;
 };
 
 struct QueueMessageLiteral : public QueueMessage

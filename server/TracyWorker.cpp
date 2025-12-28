@@ -5655,7 +5655,7 @@ void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
     msg->thread = CompressThread( td->id );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
-    const MessageMetadata metadata = ev.textAndMetadata.GetTag();
+    const uint8_t metadata = ev.textAndMetadata.GetTag();
     msg->source = MessageSourceFromMetadata( metadata );
     msg->severity = MessageSeverityFromMetadata( metadata );
     if( m_data.lastTime < time ) m_data.lastTime = time;
@@ -5689,7 +5689,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
     msg->thread = CompressThread( td->id );
     msg->color = 0xFF000000 | ( ev.b << 16 ) | ( ev.g << 8 ) | ev.r;
     msg->callstack.SetVal( 0 );
-    const MessageMetadata metadata = ev.textAndMetadata.GetTag();
+    const uint8_t metadata = ev.textAndMetadata.GetTag();
     msg->source = MessageSourceFromMetadata( metadata );
     msg->severity = MessageSeverityFromMetadata( metadata );
     if( m_data.lastTime < time ) m_data.lastTime = time;

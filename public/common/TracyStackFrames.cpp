@@ -17,6 +17,7 @@ const char* s_tracyStackFrames_[] = {
     "tracy::ScopedZone::{ctor}",
     "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)",
     "tracy::Profiler::LogString",
+    "tracy::Profiler::Message",
     nullptr
 };
 

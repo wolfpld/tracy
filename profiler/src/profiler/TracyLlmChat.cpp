@@ -152,7 +152,21 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
     }
     else if( role != TurnRole::Assistant )
     {
-        m_markdown.Print( content.c_str(), content.size() );
+        auto pos = content.find( "<SYSTEM_PROMPT>" );
+        if( pos == std::string::npos )
+        {
+            m_markdown.Print( content.c_str(), content.size() );
+        }
+        else
+        {
+            auto str = content;
+            while( ( pos = str.find( "<SYSTEM_PROMPT>" ) ) != std::string::npos )
+            {
+                auto pos2 = str.find( "</SYSTEM_PROMPT>" );
+                str = str.substr( 0, pos ) + str.substr( pos2 + sizeof( "</SYSTEM_PROMPT>" ) - 1 );
+            }
+            m_markdown.Print( str.c_str(), str.size() );
+        }
     }
     else if( content.starts_with( "<tool_output>\n" ) )
     {

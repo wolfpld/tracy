@@ -717,6 +717,17 @@ void TracyLlm::AddMessageBlocking( std::string&& str, const char* role, std::uni
     if( lock ) lock.unlock();
 }
 
+void TracyLlm::AddMessageBlocking( nlohmann::json&& json, std::unique_lock<std::mutex>& lock )
+{
+    auto dump = json.dump();
+    const auto tokens = m_api ? m_api->Tokenize( dump, m_modelIdx ) : -1;
+    m_usedCtx += tokens >= 0 ? tokens : dump.size() / 4;
+
+    if( lock ) lock.lock();
+    m_chat.emplace_back( std::move( json ) );
+    if( lock ) lock.unlock();
+}
+
 void TracyLlm::AddAttachment( std::string&& str, const char* role )
 {
     AddMessage( "<attachment>\n" + std::move( str ), role );

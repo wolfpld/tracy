@@ -62,6 +62,7 @@ private:
     void QueueConnect();
 
     void AddMessageBlocking( std::string&& str, const char* role, std::unique_lock<std::mutex>& lock );
+    void AddMessageBlocking( nlohmann::json&& json, std::unique_lock<std::mutex>& lock );
 
     void ManageContext( std::unique_lock<std::mutex>& lock );
     void SendMessage( std::unique_lock<std::mutex>& lock );

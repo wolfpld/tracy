@@ -923,52 +923,40 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
             if( usage.contains( "total_tokens" ) ) m_usedCtx = usage["total_tokens"].get<int>();
         }
 
-        bool isTool = false;
-        auto& str = back["content"].get_ref<const std::string&>();
-        if( !str.starts_with( "<debug>" ) )
+        auto& back = m_chat.back();
+        if( back.contains( "tool_calls" ) )
         {
-            auto pos = str.find( "<tool>" );
-            if( pos != std::string::npos )
+            auto calls = back["tool_calls"];
+            lock.unlock();
+            for( auto& call : calls )
             {
-                pos += 6;
-                while( str[pos] == '\n' ) pos++;
-                auto end = str.find( "</tool>", pos );
-                if( end != std::string::npos )
+                auto& id = call["id"].get_ref<const std::string&>();
+                auto& function = call["function"];
+                auto& name = function["name"].get_ref<const std::string&>();
+                auto& arguments = function["arguments"].get_ref<const std::string&>();
+
+                std::string result;
+                try
                 {
-                    auto repeat = str.find( "<tool>", end );
-                    if( repeat != std::string::npos )
-                    {
-                        lock.unlock();
-                        AddMessageBlocking( "<tool_output>\nError: Only one tool call is allowed per turn.", "user", lock );
-                        lock.lock();
-                    }
-                    else
-                    {
-                        while( end > pos && str[end-1] == '\n' ) end--;
-                        const auto tool = str.substr( pos, end - pos );
-                        lock.unlock();
-
-                        TracyLlmTools::ToolReply reply;
-                        try
-                        {
-                            auto json = nlohmann::json::parse( tool );
-                            reply = m_tools->HandleToolCalls( json, *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
-                        }
-                        catch( const nlohmann::json::exception& e )
-                        {
-                            reply.reply = e.what();
-                        }
-
-                        isTool = true;
-                        auto output = "<tool_output>\n" + reply.reply;
-                        AddMessageBlocking( std::move( output ), "user", lock );
-                        lock.lock();
-                    }
-                    QueueSendMessage();
+                    result = m_tools->HandleToolCalls( name, nlohmann::json::parse( arguments ), *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 ).reply;
                 }
+                catch( const nlohmann::json::exception& e )
+                {
+                    result = nlohmann::json { "error", e.what() };
+                }
+
+                nlohmann::json reply = {
+                    { "role", "tool" },
+                    { "tool_call_id", id },
+                    { "name", name },
+                    { "content", result }
+                };
+                AddMessageBlocking( std::move( reply ), lock );
             }
+            lock.lock();
+            QueueSendMessage();
         }
-        if( !isTool )
+        else
         {
             m_focusInput = true;
         }

@@ -40,7 +40,7 @@ public:
     TracyLlmTools( Worker& worker, const TracyManualData& manual );
     ~TracyLlmTools();
 
-    ToolReply HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
+    ToolReply HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
     std::string GetCurrentTime() const;
 
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;

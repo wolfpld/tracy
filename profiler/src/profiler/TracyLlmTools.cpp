@@ -124,42 +124,41 @@ static uint32_t GetParamU32( const nlohmann::json& json, const char* name )
 #define Param(name) GetParam( json, name )
 #define ParamU32(name) GetParamU32( json, name )
 
-TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
+TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {
     m_ctxSize = contextSize;
 
     try
     {
-        auto name = json["tool"].get_ref<const std::string&>();
-        if( name == "search_wikipedia" )
+        if( tool == "search_wikipedia" )
         {
             return SearchWikipedia( Param( "query" ), Param( "language" ) );
         }
-        else if( name == "get_wikipedia" )
+        else if( tool == "get_wikipedia" )
         {
             return { .reply = GetWikipedia( Param( "page" ), Param( "language" ) ) };
         }
-        else if( name == "get_dictionary" )
+        else if( tool == "get_dictionary" )
         {
             return { .reply = GetDictionary( Param( "word" ), Param( "language" ) ) };
         }
-        else if( name == "search_web" )
+        else if( tool == "search_web" )
         {
             return { .reply = SearchWeb( Param( "query" ) ) };
         }
-        else if( name == "get_webpage" )
+        else if( tool == "get_webpage" )
         {
             return { .reply = GetWebpage( Param( "url" ) ) };
         }
-        else if( name == "user_manual" )
+        else if( tool == "user_manual" )
         {
             return { .reply = SearchManual( Param( "query" ), api, hasEmbeddingsModel ) };
         }
-        else if( name == "source_file" )
+        else if( tool == "source_file" )
         {
             return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ) ) };
         }
-        return { .reply = "Unknown tool call: " + name };
+        return { .reply = "Unknown tool call: " + tool };
     }
     catch( const std::exception& e )
     {

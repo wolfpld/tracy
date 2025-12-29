@@ -252,7 +252,7 @@ if(NOT EMSCRIPTEN)
     CPMAddPackage(
         NAME usearch
         GITHUB_REPOSITORY unum-cloud/usearch
-        GIT_TAG v2.21.3
+        GIT_TAG v2.22.0
         EXCLUDE_FROM_ALL TRUE
     )
 

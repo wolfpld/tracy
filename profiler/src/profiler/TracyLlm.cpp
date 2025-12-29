@@ -456,10 +456,14 @@ void TracyLlm::Draw()
                 }
                 else if( role == TracyLlmChat::TurnRole::User || role == TracyLlmChat::TurnRole::UserDebug )
                 {
-                    const auto sz = std::min( InputBufferSize - 1, content.size() );
-                    memcpy( m_input, content.data(), sz );
-                    m_input[sz] = 0;
-                    inputChanged = true;
+                    if( line.contains( "content" ) )
+                    {
+                        auto& content = line["content"].get_ref<const std::string&>();
+                        const auto sz = std::min( InputBufferSize - 1, content.size() );
+                        memcpy( m_input, content.data(), sz );
+                        m_input[sz] = 0;
+                        inputChanged = true;
+                    }
                 }
 
                 auto cit = it;

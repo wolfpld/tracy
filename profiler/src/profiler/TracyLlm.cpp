@@ -469,9 +469,22 @@ void TracyLlm::Draw()
                 auto cit = it;
                 while( cit != m_chat.end() )
                 {
-                    const auto& content = (*cit)["content"].get_ref<const std::string&>();
-                    const auto tokens = m_api->Tokenize( content, m_modelIdx );
-                    m_usedCtx -= tokens >= 0 ? tokens : content.size() / 4;
+                    auto& v = *cit;
+                    int tokens = 0;
+                    int length = 0;
+                    if( v.contains( "content" ) )
+                    {
+                        auto& str = v["content"].get_ref<std::string&>();
+                        tokens = m_api->Tokenize( str, m_modelIdx );
+                        length = str.size();
+                    }
+                    if( v.contains( "reasoning_content" ) )
+                    {
+                        auto& str = v["reasoning_content"].get_ref<std::string&>();
+                        tokens += m_api->Tokenize( str, m_modelIdx );
+                        length += str.size();
+                    }
+                    m_usedCtx -= tokens >= 0 ? tokens : length / 4;
                     ++cit;
                 }
 

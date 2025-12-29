@@ -126,29 +126,44 @@ bool TracyLlmChat::Turn( TurnRole role, const std::string& content )
     if( role == TurnRole::Error )
     {
         ImGui::PushFont( g_fonts.mono, FontNormal );
-        ImGui::TextWrapped( "%s", content.c_str() );
+        if( json.contains( "content" ) )
+        {
+            ImGui::TextWrapped( "%s", json["content"].get_ref<const std::string&>().c_str() );
+        }
+        else
+        {
+            ImGui::TextWrapped( "No content in error message. This shouldn't happen?" );
+        }
         ImGui::PopFont();
     }
     else if( role == TurnRole::Attachment )
     {
         constexpr auto tagSize = sizeof( "<attachment>\n" ) - 1;
 
-        auto j = nlohmann::json::parse( content.c_str() + tagSize, content.c_str() + content.size() );
-        const auto& type = j["type"].get_ref<const std::string&>();
-
-        NormalScope();
-        ImGui::PushID( m_thinkIdx++ );
-        const bool expand = ImGui::TreeNode( "Attachment" );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", type.c_str() );
-        if( expand )
+        if( json.contains( "content" ) )
         {
-            ImGui::PushFont( g_fonts.mono, FontNormal );
-            ImGui::TextWrapped( "%s", content.c_str() + tagSize );
-            ImGui::PopFont();
-            ImGui::TreePop();
+            auto& content = json["content"].get_ref<const std::string&>();
+            auto j = nlohmann::json::parse( content.c_str() + tagSize, content.c_str() + content.size() );
+            const auto& type = j["type"].get_ref<const std::string&>();
+
+            NormalScope();
+            ImGui::PushID( m_thinkIdx++ );
+            const bool expand = ImGui::TreeNode( "Attachment" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", type.c_str() );
+            if( expand )
+            {
+                ImGui::PushFont( g_fonts.mono, FontNormal );
+                ImGui::TextWrapped( "%s", content.c_str() + tagSize );
+                ImGui::PopFont();
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
         }
-        ImGui::PopID();
+        else
+        {
+            ImGui::TextWrapped( "No content in attachment. This shouldn't happen?" );
+        }
     }
     else if( role != TurnRole::Assistant )
     {

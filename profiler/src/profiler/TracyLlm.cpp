@@ -764,14 +764,10 @@ void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
     std::vector<std::pair<size_t, size_t>> toolOutputs;
     for( auto& msg : m_chat )
     {
-        if( msg["role"].get_ref<const std::string&>() == "user" )
+        if( msg["role"].get_ref<const std::string&>() == "tool" )
         {
-            auto& content = msg["content"];
-            const auto& str = content.get_ref<const std::string&>();
-            if( str.starts_with( "<tool_output>\n" ) )
-            {
-                toolOutputs.emplace_back( str.size(), idx );
-            }
+            auto& str = msg["content"].get_ref<const std::string&>();
+            toolOutputs.emplace_back( str.size(), idx );
         }
         idx++;
     }

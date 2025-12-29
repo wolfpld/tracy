@@ -1,7 +1,7 @@
 #ifndef __TRACYLLMCHAT_HPP__
 #define __TRACYLLMCHAT_HPP__
 
-#include <string>
+#include <nlohmann/json.hpp>
 
 #include "TracyMarkdown.hpp"
 
@@ -31,7 +31,7 @@ public:
     void Begin();
     void End();
 
-    bool Turn( TurnRole role, const std::string& content );
+    bool Turn( TurnRole role, const nlohmann::json& json );
 
 private:
     void NormalScope();

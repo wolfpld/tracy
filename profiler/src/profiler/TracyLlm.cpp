@@ -430,14 +430,11 @@ void TracyLlm::Draw()
             if( !line.contains( "role" ) ) break;
             const auto& roleStr = line["role"].get_ref<const std::string&>();
             if( roleStr == "system" ) continue;
-            const auto& contentNode = line["content"];
-            if( !contentNode.is_string() ) continue;
-            const auto& content = contentNode.get_ref<const std::string&>();
 
             TracyLlmChat::TurnRole role = TracyLlmChat::TurnRole::None;
             if( roleStr == "user" ) role = TracyLlmChat::TurnRole::User;
             else if( roleStr == "error" ) role = TracyLlmChat::TurnRole::Error;
-            else if( roleStr == "assistant" ) role = TracyLlmChat::TurnRole::Assistant;
+            else if( roleStr == "assistant" || roleStr == "tool" ) role = TracyLlmChat::TurnRole::Assistant;
             else assert( false );
 
             if( role == TracyLlmChat::TurnRole::User )
@@ -446,7 +443,7 @@ void TracyLlm::Draw()
             }
 
             ImGui::PushID( turnIdx++ );
-            if( !m_chatUi->Turn( role, content ) )
+            if( !m_chatUi->Turn( role, line ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

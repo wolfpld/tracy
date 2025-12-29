@@ -66,6 +66,8 @@ private:
 
     void ManageContext( std::unique_lock<std::mutex>& lock );
     void SendMessage( std::unique_lock<std::mutex>& lock );
+
+    void AppendResponse( const char* name, const nlohmann::json& delta );
     bool OnResponse( const nlohmann::json& json );
 
     std::unique_ptr<TracyLlmApi> m_api;

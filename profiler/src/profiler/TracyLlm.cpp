@@ -823,6 +823,51 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     }
 }
 
+void TracyLlm::AppendResponse( const char* name, const nlohmann::json& delta )
+{
+    if( delta.contains( name ) )
+    {
+        auto& json = delta[name];
+        if( json.is_string() )
+        {
+            std::string str = json.get_ref<const std::string&>();
+            std::erase( str, '\r' );
+
+            auto& back = m_chat.back();
+            if( back.contains( name ) )
+            {
+                assert( back[name].is_string() );
+                back[name].get_ref<std::string&>().append( str );
+            }
+            else
+            {
+                back[name] = std::move( str );
+            }
+
+            m_usedCtx++;
+        }
+        else if( json.is_array() )
+        {
+            assert( json.size() == 1 );
+            auto& val = json[0];
+            auto index = val["index"].get<size_t>();
+
+            auto& back = m_chat.back();
+            if( !back.contains( name ) ) back[name] = nlohmann::json::array();
+
+            auto& arr = back[name].get_ref<nlohmann::json::array_t&>();
+            if( index == arr.size() )
+            {
+                arr.push_back( val );
+            }
+            else
+            {
+                arr[index]["function"]["arguments"].get_ref<std::string&>().append( val["function"]["arguments"].get_ref<const std::string&>() );
+            }
+        }
+    }
+}
+
 bool TracyLlm::OnResponse( const nlohmann::json& json )
 {
     std::unique_lock lock( m_lock );
@@ -833,11 +878,8 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         return false;
     }
 
-    auto& back = m_chat.back();
-    auto& content = back["content"];
-    const auto& str = content.get_ref<const std::string&>();
+    assert( m_chat.back()["role"].get_ref<const std::string&>() == "assistant" );
 
-    std::string responseStr;
     bool done = false;
     try
     {
@@ -846,7 +888,11 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         {
             auto& node = choices[0];
             auto& delta = node["delta"];
-            if( delta.contains( "content" ) && delta["content"].is_string() ) responseStr = delta["content"].get_ref<const std::string&>();
+
+            AppendResponse( "content", delta );
+            AppendResponse( "reasoning_content", delta );
+            AppendResponse( "tool_calls", delta );
+
             done = !node["finish_reason"].empty();
         }
     }
@@ -854,13 +900,6 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     {
         m_focusInput = true;
         return false;
-    }
-
-    if( !responseStr.empty() )
-    {
-        std::erase( responseStr, '\r' );
-        content = str + responseStr;
-        m_usedCtx++;
     }
 
     if( done )

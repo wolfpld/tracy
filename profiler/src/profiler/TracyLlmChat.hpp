@@ -16,7 +16,6 @@ public:
     enum class TurnRole
     {
         User,
-        UserDebug,
         Attachment,
         Assistant,
         Error,

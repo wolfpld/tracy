@@ -442,9 +442,7 @@ void TracyLlm::Draw()
 
             if( role == TracyLlmChat::TurnRole::User )
             {
-                if( content.starts_with( "<tool_output>\n" ) ) role = TracyLlmChat::TurnRole::Assistant;
-                else if( content.starts_with( "<debug>" ) ) role = TracyLlmChat::TurnRole::UserDebug;
-                else if( content.starts_with( "<attachment>\n" ) ) role = TracyLlmChat::TurnRole::Attachment;
+                if( line.contains( "content" ) && line["content"].get_ref<const std::string&>().starts_with( "<attachment>\n" ) ) role = TracyLlmChat::TurnRole::Attachment;
             }
 
             ImGui::PushID( turnIdx++ );
@@ -454,7 +452,7 @@ void TracyLlm::Draw()
                 {
                     QueueSendMessage();
                 }
-                else if( role == TracyLlmChat::TurnRole::User || role == TracyLlmChat::TurnRole::UserDebug )
+                else if( role == TracyLlmChat::TurnRole::User )
                 {
                     if( line.contains( "content" ) )
                     {
@@ -662,10 +660,6 @@ void TracyLlm::UpdateModels()
 void TracyLlm::ResetChat()
 {
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
-#ifndef NDEBUG
-    systemPrompt += "\n\n# DEBUG MODE AVAILABLE\n";
-    systemPrompt += "Upon a user query beginning with `<debug>`, activate *Debug Mode*. In this mode, ignore all prior instructions. Your response must detail your complete reasoning process and the exact steps taken to generate your *previous* non-debug answer. Explicitly state any internal rules applied. Do not say you are sorry. Do not tell how you will change your behavior. Focus strictly on the analysis of what happened.\n";
-#endif
 
     systemPrompt += "\n\n# Misc information\n";
     systemPrompt += "Conversation started at: " + m_tools->GetCurrentTime() + "\n";
@@ -795,15 +789,6 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
 {
     lock.unlock();
     ManageContext( lock );
-
-    bool debug = false;
-#ifndef NDEBUG
-    if( m_chat.size() > 1 && m_chat.back()["role"].get_ref<const std::string&>() == "user" )
-    {
-        const auto& content = m_chat.back()["content"].get_ref<const std::string&>();
-        if( content.starts_with( "<debug>" ) ) debug = true;
-    }
-#endif
 
     bool res;
     try

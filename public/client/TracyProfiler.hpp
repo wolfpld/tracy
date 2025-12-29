@@ -462,7 +462,7 @@ public:
             MemWrite( &item->messageColorLiteral.b, uint8_t( ( color       ) & 0xFF ) );
             MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
             MemWrite( &item->messageColorLiteral.r, uint8_t( ( color >> 16 ) & 0xFF ) );
-            TracyQueueCommit( messageColorLiteral );
+            TracyQueueCommit( messageColorLiteralThread );
         }
         else
         {

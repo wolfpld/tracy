@@ -600,7 +600,11 @@ static const char* GetHostInfo()
     const char* user = GetUserName();
     char hostname[512] = {};
     gethostname( hostname, sizeof( hostname ) );
-    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+    ptr += sprintf( ptr, "User: %s@%s", user, hostname );
+
+    const char* fullName = GetUserFullName();
+    if( fullName ) ptr += sprintf( ptr, " (%s)", fullName );
+    ptr += sprintf( ptr, "\n" );
 
 #if defined __i386 || defined _M_IX86
     ptr += sprintf( ptr, "Arch: x86\n" );

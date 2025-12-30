@@ -342,7 +342,7 @@ TRACY_API const char* GetUserName()
 #if defined _WIN32
 #  if defined TRACY_WIN32_NO_DESKTOP
     return "(?)";
-#  elif
+#  else
     DWORD userSz = UNLEN+1;
     static char user[UNLEN+1];
     GetUserNameA( user, &userSz );

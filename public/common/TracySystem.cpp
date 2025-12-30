@@ -336,6 +336,28 @@ TRACY_API const char* GetEnvVar( const char* name )
 #endif
 }
 
+TRACY_API const char* GetUserName()
+{
+#if defined _WIN32
+#  if defined TRACY_WIN32_NO_DESKTOP
+    return "(?)";
+#  elif
+    DWORD userSz = UNLEN+1;
+    static char user[UNLEN+1];
+    GetUserNameA( user, &userSz );
+    return user;
+#  endif
+#elif defined __ANDROID__
+    const auto user = getlogin();
+    if( user ) return user;
+    return "(?)";
+#else
+    static char user[1024] = {};
+    getlogin_r( user, sizeof( user ) );
+    return user;
+#endif
+}
+
 }
 
 #ifdef __cplusplus

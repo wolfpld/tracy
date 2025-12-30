@@ -595,38 +595,12 @@ static const char* GetHostInfo()
 
 #if defined _WIN32
     InitWinSock();
-
-    char hostname[512];
-    gethostname( hostname, 512 );
-
-#  if defined TRACY_WIN32_NO_DESKTOP
-    const char* user = "";
-#  else
-    DWORD userSz = UNLEN+1;
-    char user[UNLEN+1];
-    GetUserNameA( user, &userSz );
-#  endif
-
-    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
-#else
-    char hostname[_POSIX_HOST_NAME_MAX]{};
-    gethostname( hostname, _POSIX_HOST_NAME_MAX );
-#  if defined __ANDROID__
-    const auto login = getlogin();
-    if( login )
-    {
-        ptr += sprintf( ptr, "User: %s@%s\n", login, hostname );
-    }
-    else
-    {
-        ptr += sprintf( ptr, "User: (?)@%s\n", hostname );
-    }
-#  else
-    char user[_POSIX_LOGIN_NAME_MAX]{};
-    getlogin_r( user, _POSIX_LOGIN_NAME_MAX );
-    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
-#  endif
 #endif
+
+    const char* user = GetUserName();
+    char hostname[512] = {};
+    gethostname( hostname, sizeof( hostname ) );
+    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 
 #if defined __i386 || defined _M_IX86
     ptr += sprintf( ptr, "Arch: x86\n" );

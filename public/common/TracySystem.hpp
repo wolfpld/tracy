@@ -38,6 +38,7 @@ TRACY_API const char* GetThreadName( uint32_t id );
 
 TRACY_API const char* GetEnvVar( const char* name );
 TRACY_API const char* GetUserName();
+TRACY_API const char* GetUserFullName();
 
 }
 

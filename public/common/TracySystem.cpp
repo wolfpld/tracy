@@ -13,6 +13,7 @@
 #  include "TracyWinFamily.hpp"
 #else
 #  include <pthread.h>
+#  include <pwd.h>
 #  include <string.h>
 #  include <unistd.h>
 #endif
@@ -355,6 +356,26 @@ TRACY_API const char* GetUserName()
     static char user[1024] = {};
     getlogin_r( user, sizeof( user ) );
     return user;
+#endif
+}
+
+TRACY_API const char* GetUserFullName()
+{
+#if defined _WIN32
+    return nullptr;
+#elif defined __ANDROID__
+    const auto passwd = getpwuid( getuid() );
+    if( passwd ) return passwd->pw_gecos;
+    return nullptr;
+#else
+    static char buf[4*1024];
+    struct passwd pwd;
+    struct passwd* ptr;
+    if( getpwuid_r( getuid(), &pwd, buf, sizeof( buf ), &ptr ) == 0 && ptr == &pwd )
+    {
+        return pwd.pw_gecos;
+    }
+    return nullptr;
 #endif
 }
 

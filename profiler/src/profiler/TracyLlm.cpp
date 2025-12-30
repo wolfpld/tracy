@@ -658,8 +658,8 @@ void TracyLlm::ResetChat()
 {
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
 
-    systemPrompt += "\n\n# Misc information\n";
-    systemPrompt += "Conversation started at: " + m_tools->GetCurrentTime() + "\n";
+    systemPrompt += "\n\n# Real time data\n\n";
+    systemPrompt += "Current date: " + m_tools->GetCurrentTime() + "\n";
 
     *m_input = 0;
     m_usedCtx = 0;

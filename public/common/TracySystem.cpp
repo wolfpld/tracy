@@ -10,6 +10,7 @@
 #  endif
 #  include <windows.h>
 #  include <malloc.h>
+#  include <lmcons.h>
 #  include "TracyWinFamily.hpp"
 #else
 #  include <pthread.h>

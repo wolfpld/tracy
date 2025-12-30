@@ -12,6 +12,7 @@
 #include "TracyPrint.hpp"
 #include "TracyWeb.hpp"
 #include "../Fonts.hpp"
+#include "../public/common/TracySystem.hpp"
 
 #include "data/SystemPrompt.hpp"
 #include "data/ToolsJson.hpp"
@@ -660,6 +661,7 @@ void TracyLlm::ResetChat()
 
     systemPrompt += "\n\n# Real time data\n\n";
     systemPrompt += "Current date: " + m_tools->GetCurrentTime() + "\n";
+    systemPrompt += "User name: " + std::string( GetUserName() ) + "\n";
 
     *m_input = 0;
     m_usedCtx = 0;

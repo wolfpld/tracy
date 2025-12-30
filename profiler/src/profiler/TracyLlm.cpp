@@ -657,11 +657,14 @@ void TracyLlm::UpdateModels()
 
 void TracyLlm::ResetChat()
 {
+    auto userName = GetUserFullName();
+    if( !userName ) userName = GetUserName();
+
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
 
     systemPrompt += "\n\n# Real time data\n\n";
     systemPrompt += "Current date: " + m_tools->GetCurrentTime() + "\n";
-    systemPrompt += "User name: " + std::string( GetUserName() ) + "\n";
+    systemPrompt += "User name: " + std::string( userName ) + "\n";
 
     *m_input = 0;
     m_usedCtx = 0;

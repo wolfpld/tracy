@@ -365,13 +365,13 @@ TRACY_API const char* GetUserFullName()
     return nullptr;
 #elif defined __ANDROID__
     const auto passwd = getpwuid( getuid() );
-    if( passwd ) return passwd->pw_gecos;
+    if( passwd && *passwd->pw_gecos ) return passwd->pw_gecos;
     return nullptr;
 #else
     static char buf[4*1024];
     struct passwd pwd;
     struct passwd* ptr;
-    if( getpwuid_r( getuid(), &pwd, buf, sizeof( buf ), &ptr ) == 0 && ptr == &pwd )
+    if( getpwuid_r( getuid(), &pwd, buf, sizeof( buf ), &ptr ) == 0 && ptr == &pwd && *pwd.pw_gecos )
     {
         return pwd.pw_gecos;
     }

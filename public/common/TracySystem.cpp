@@ -8,10 +8,15 @@
 #  ifndef NOMINMAX
 #    define NOMINMAX
 #  endif
+#  define SECURITY_WIN32
 #  include <windows.h>
 #  include <malloc.h>
 #  include <lmcons.h>
+#  include <security.h>
 #  include "TracyWinFamily.hpp"
+#  ifdef _MSC_VER
+#    pragma comment(lib, "secur32.lib")
+#  endif
 #else
 #  include <pthread.h>
 #  include <pwd.h>
@@ -363,6 +368,9 @@ TRACY_API const char* GetUserLogin()
 TRACY_API const char* GetUserFullName()
 {
 #if defined _WIN32
+    static char buf[1024];
+    ULONG size = sizeof( buf );
+    if( GetUserNameExA( NameDisplay, buf, &size ) ) return buf;
     return nullptr;
 #elif defined __ANDROID__
     const auto passwd = getpwuid( getuid() );

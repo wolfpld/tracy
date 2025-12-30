@@ -597,7 +597,7 @@ static const char* GetHostInfo()
     InitWinSock();
 #endif
 
-    const char* user = GetUserName();
+    const char* user = GetUserLogin();
     char hostname[512] = {};
     gethostname( hostname, sizeof( hostname ) );
     ptr += sprintf( ptr, "User: %s@%s", user, hostname );

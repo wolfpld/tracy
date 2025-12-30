@@ -338,7 +338,7 @@ TRACY_API const char* GetEnvVar( const char* name )
 #endif
 }
 
-TRACY_API const char* GetUserName()
+TRACY_API const char* GetUserLogin()
 {
 #if defined _WIN32
 #  if defined TRACY_WIN32_NO_DESKTOP

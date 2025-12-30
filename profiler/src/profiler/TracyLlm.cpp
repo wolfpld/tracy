@@ -658,7 +658,7 @@ void TracyLlm::UpdateModels()
 void TracyLlm::ResetChat()
 {
     auto userName = GetUserFullName();
-    if( !userName ) userName = GetUserName();
+    if( !userName ) userName = GetUserLogin();
 
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
 

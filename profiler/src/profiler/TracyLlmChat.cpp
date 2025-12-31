@@ -58,7 +58,6 @@ void TracyLlmChat::Begin()
     m_thinkActive = false;
     m_thinkOpen = false;
     m_thinkIdx = 0;
-    m_subIdx = 0;
     m_roleIdx = 0;
 }
 
@@ -210,13 +209,11 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think )
                         if( content == ForgetMsg )
                         {
                             ImGui::TextUnformatted( ICON_FA_RECYCLE " Tool response removed to save context space" );
-                            m_subIdx++;
                         }
                         else
                         {
                             auto& name = json["name"].get_ref<const std::string&>();
                             auto& id = json["tool_call_id"].get_ref<const std::string&>();
-                            ImGui::PushID( m_subIdx++ );
                             char buf[1024];
                             snprintf( buf, sizeof( buf ), ICON_FA_REPLY " Tool response (%s/%s)...", name.c_str(), id.substr( 0, 8 ).c_str() );
                             if( ImGui::TreeNode( buf ) )
@@ -235,13 +232,8 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think )
                                 ImGui::PopFont();
                                 ImGui::TreePop();
                             }
-                            ImGui::PopID();
                         }
                         ImGui::PopStyleColor();
-                    }
-                    else
-                    {
-                        m_subIdx++;
                     }
                 }
             }

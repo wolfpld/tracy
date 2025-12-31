@@ -262,7 +262,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think, 
                             auto& name = json["name"].get_ref<const std::string&>();
                             auto& id = json["tool_call_id"].get_ref<const std::string&>();
                             char buf[1024];
-                            snprintf( buf, sizeof( buf ), ICON_FA_REPLY " Tool response (%s/%s)...", name.c_str(), id.substr( 0, 8 ).c_str() );
+                            snprintf( buf, sizeof( buf ), ICON_FA_REPLY " Tool response (%s/%s)…", name.c_str(), id.substr( 0, 8 ).c_str() );
                             if( ImGui::TreeNode( buf ) )
                             {
                                 std::string parsed;
@@ -339,7 +339,7 @@ void TracyLlmChat::ThinkScope( bool spacing )
     if( spacing ) ImGui::Spacing();
     ImGui::PushID( m_thinkIdx++ );
     ImGui::PushStyleColor( ImGuiCol_Text, ThinkColor );
-    m_thinkOpen = ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." );
+    m_thinkOpen = ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts…" );
 }
 
 void TracyLlmChat::PrintThink( const char* str, size_t size )

@@ -51,7 +51,7 @@ void View::DrawStatistics()
         ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_HIPPO );
-        TextCentered( "Please wait, computing data..." );
+        TextCentered( "Please wait, computing data…" );
         ImGui::PopFont();
         DrawWaitingDots( s_time );
         ImGui::End();
@@ -104,7 +104,7 @@ void View::DrawStatistics()
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::PopStyleVar();
-            ImGui::TextWrapped( "Please wait, computing data..." );
+            ImGui::TextWrapped( "Please wait, computing data…" );
             DrawWaitingDots( s_time );
             ImGui::End();
             return;
@@ -327,7 +327,7 @@ void View::DrawStatistics()
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::PopStyleVar();
-            ImGui::TextWrapped( "Please wait, computing data..." );
+            ImGui::TextWrapped( "Please wait, computing data…" );
             DrawWaitingDots( s_time );
             ImGui::End();
             return;

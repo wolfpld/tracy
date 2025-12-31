@@ -245,7 +245,7 @@ void View::DrawNotificationArea()
     if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
     {
         ImGui::SameLine();
-        ImGui::TextUnformatted( ICON_FA_FLOPPY_DISK " Saving trace..." );
+        ImGui::TextUnformatted( ICON_FA_FLOPPY_DISK " Saving trace…" );
         m_notificationTime = 0;
     }
     else if( m_notificationTime > 0 )

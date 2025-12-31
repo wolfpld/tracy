@@ -1544,7 +1544,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             {
                 ImGui::PopStyleVar();
                 ImGui::PopItemFlag();
-                TooltipIfHovered( "Please wait, processing data..." );
+                TooltipIfHovered( "Please wait, processing data…" );
             }
             else
             {
@@ -1604,7 +1604,7 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             ImGui::Checkbox( "Limit range", &val );
             ImGui::PopItemFlag();
             ImGui::PopStyleVar();
-            TooltipIfHovered( "Please wait, processing data..." );
+            TooltipIfHovered( "Please wait, processing data…" );
         }
         else
         {
@@ -1868,7 +1868,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         {
             ImGui::PopStyleVar();
             ImGui::PopItemFlag();
-            TooltipIfHovered( "Please wait, processing data..." );
+            TooltipIfHovered( "Please wait, processing data…" );
         }
         else
         {
@@ -2706,7 +2706,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         }
                         if( ssz != v.second.source.size() )
                         {
-                            ImGui::TextUnformatted( "..." );
+                            ImGui::TextUnformatted( "…" );
                         }
                         ImGui::EndTooltip();
                         SetFont();

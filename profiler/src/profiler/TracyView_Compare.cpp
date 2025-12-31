@@ -265,7 +265,7 @@ void View::DrawCompare()
         ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
         TextCentered( ICON_FA_FROG );
-        TextCentered( "Please wait, computing data..." );
+        TextCentered( "Please wait, computing data…" );
         ImGui::PopFont();
         DrawWaitingDots( s_time );
         ImGui::End();

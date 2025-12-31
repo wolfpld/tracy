@@ -1169,7 +1169,7 @@ static void DrawContents()
             {
                 static float rnTime = 0;
                 rnTime += ImGui::GetIO().DeltaTime;
-                tracy::TextCentered( "Fetching release notes..." );
+                tracy::TextCentered( "Fetching release notes…" );
                 tracy::DrawWaitingDots( rnTime );
             }
             else
@@ -1211,9 +1211,9 @@ static void DrawContents()
     auto totalProgress = progress.total.load( std::memory_order_relaxed );
     if( totalProgress != 0 )
     {
-        ImGui::OpenPopup( "Loading trace..." );
+        ImGui::OpenPopup( "Loading trace…" );
     }
-    if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings) )
+    if( ImGui::BeginPopupModal( "Loading trace…", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings) )
     {
         ImGui::PushFont( g_fonts.normal, FontNormal * 2.f );
         ImGui::Spacing();
@@ -1233,37 +1233,37 @@ static void DrawContents()
         switch( currProgress )
         {
         case tracy::LoadProgress::Initialization:
-            ImGui::TextUnformatted( "Initialization..." );
+            ImGui::TextUnformatted( "Initialization…" );
             break;
         case tracy::LoadProgress::Locks:
-            ImGui::TextUnformatted( "Locks..." );
+            ImGui::TextUnformatted( "Locks…" );
             break;
         case tracy::LoadProgress::Messages:
-            ImGui::TextUnformatted( "Messages..." );
+            ImGui::TextUnformatted( "Messages…" );
             break;
         case tracy::LoadProgress::Zones:
-            ImGui::TextUnformatted( "CPU zones..." );
+            ImGui::TextUnformatted( "CPU zones…" );
             break;
         case tracy::LoadProgress::GpuZones:
-            ImGui::TextUnformatted( "GPU zones..." );
+            ImGui::TextUnformatted( "GPU zones…" );
             break;
         case tracy::LoadProgress::Plots:
-            ImGui::TextUnformatted( "Plots..." );
+            ImGui::TextUnformatted( "Plots…" );
             break;
         case tracy::LoadProgress::Memory:
-            ImGui::TextUnformatted( "Memory..." );
+            ImGui::TextUnformatted( "Memory…" );
             break;
         case tracy::LoadProgress::CallStacks:
-            ImGui::TextUnformatted( "Call stacks..." );
+            ImGui::TextUnformatted( "Call stacks…" );
             break;
         case tracy::LoadProgress::FrameImages:
-            ImGui::TextUnformatted( "Frame images..." );
+            ImGui::TextUnformatted( "Frame images…" );
             break;
         case tracy::LoadProgress::ContextSwitches:
-            ImGui::TextUnformatted( "Context switches..." );
+            ImGui::TextUnformatted( "Context switches…" );
             break;
         case tracy::LoadProgress::ContextSwitchesPerCpu:
-            ImGui::TextUnformatted( "CPU context switches..." );
+            ImGui::TextUnformatted( "CPU context switches…" );
             break;
         default:
             assert( false );
@@ -1271,7 +1271,7 @@ static void DrawContents()
         }
         ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
 
-        ImGui::TextUnformatted( "Progress..." );
+        ImGui::TextUnformatted( "Progress…" );
         auto subTotal = progress.subTotal.load( std::memory_order_relaxed );
         auto subProgress = progress.subProgress.load( std::memory_order_relaxed );
         if( subTotal == 0 )
@@ -1287,7 +1287,7 @@ static void DrawContents()
     switch( viewShutdown.load( std::memory_order_relaxed ) )
     {
     case ViewShutdown::True:
-        ImGui::OpenPopup( "Capture cleanup..." );
+        ImGui::OpenPopup( "Capture cleanup…" );
         break;
     case ViewShutdown::Join:
         loadThread.join();
@@ -1300,7 +1300,7 @@ static void DrawContents()
     default:
         break;
     }
-    if( ImGui::BeginPopupModal( "Capture cleanup...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    if( ImGui::BeginPopupModal( "Capture cleanup…", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         if( viewShutdown.load( std::memory_order_relaxed ) != ViewShutdown::True ) ImGui::CloseCurrentPopup();
         ImGui::PushFont( g_fonts.normal, FontNormal * 2.f );

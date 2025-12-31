@@ -701,7 +701,7 @@ bool View::DrawImpl()
         TextCentered( ICON_FA_WIFI );
         ImGui::Spacing();
         ImGui::PopFont();
-        ImGui::TextUnformatted( "Waiting for connection..." );
+        ImGui::TextUnformatted( "Waiting for connection…" );
         DrawWaitingDots( s_time );
         ImGui::End();
         return keepOpen;

@@ -84,7 +84,7 @@ void TracyLlm::Draw()
         ImGui::PushFont( g_fonts.normal, FontBig );
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_HOURGLASS );
-        TextCentered( "Please wait..." );
+        TextCentered( "Please wait…" );
         DrawWaitingDots( s_time );
         ImGui::PopFont();
         ImGui::End();
@@ -100,7 +100,7 @@ void TracyLlm::Draw()
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 7 ) * 0.5f ) );
         TextCentered( ICON_FA_BOOK_BOOKMARK );
         ImGui::Spacing();
-        TextCentered( "Building manual embeddings..." );
+        TextCentered( "Building manual embeddings…" );
         ImGui::Spacing();
         DrawWaitingDots( s_time );
         ImGui::TextUnformatted( "" );
@@ -543,11 +543,11 @@ void TracyLlm::Draw()
         ImGui::SameLine();
         if( disabled )
         {
-            ImGui::TextUnformatted( "Stopping..." );
+            ImGui::TextUnformatted( "Stopping…" );
         }
         else
         {
-            ImGui::TextUnformatted( "Generating..." );
+            ImGui::TextUnformatted( "Generating…" );
         }
         s_wasActive = true;
     }
@@ -563,7 +563,7 @@ void TracyLlm::Draw()
         buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
         if( inputChanged ) ImGui::GetInputTextState( ImGui::GetCurrentWindow()->GetID( "##chat_input" ) )->ReloadUserBufAndMoveToEnd();
-        bool send = ImGui::InputTextWithHint( "##chat_input", "Write your question here...", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        bool send = ImGui::InputTextWithHint( "##chat_input", "Write your question here…", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
         if( *m_input == 0 ) ImGui::BeginDisabled();
         send |= ImGui::Button( buttonText );

@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-11-29 <https://github.com/wolfpld/tracy>
+2025-12-31 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -516,7 +516,7 @@ Although the basic features will work without them, you'll have to grant elevate
 
 ### Troubleshooting
 
-Setting the `TRACY_VERBOSE` variable will make the client display advanced information about the detected features. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
+By default, Tracy's diagnostics will be sent as Message logs (section [3.7](#messagelog)) to the server. Setting the `TRACY_NO_INTERNAL_MESSAGE` define will disable this feature, but setting the `TRACY_VERBOSE` will make the client print advanced information about the detected features to the standard error output. By matching those debug prints to the source code, you might be able to uncover why some of the features are missing on your platform.
 
 ### Changing network port
 
@@ -1300,6 +1300,14 @@ It is beneficial but not required to use a unique pointer for name string litera
 Fast navigation in large data sets and correlating zones with what was happening in the application may be difficult. To ease these issues, Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the `TracyMessage(text, size)` macro. Alternatively, use `TracyMessageL(text)` for string literal messages.
 
 If you want to include color coding of the messages (for example to make critical messages easily visible), you can use `TracyMessageC(text, size, color)` or `TracyMessageLC(text, color)` macros.
+
+Messages can also have different severity levels: `Trace`, `Debug`, `Info`, `Warning`, `Error` or `Fatal`. The `TracyMessage` macros will log messages with the severity `Info`. To log a message with a different severity, you may use the `TracyLogString` macro that regroups all the functionalities from the previous macros. We recommend writing your own macros, wrapping the different severities for easier use. You may provide a color of 0 if you do not want to set a color for this message.
+
+Examples:
+
+    std::string dynStr = "Trace using a dynamic string, blue color, no callstack";
+    TracyLogString( tracy::MessageSeverity::Trace, 0xFF, 0, dynStr.size(), dynStr.c_str() );
+    TracyLogString( tracy::MessageSeverity::Warning, 0, TRACY_CALLSTACK, "Warning using a string litteral, no color, capturing the callstack to a depth of TRACY_CALLSTACK" );
 
 ### Application information {#appinfo}
 
@@ -3919,8 +3927,6 @@ There are no ideal LLM providers, but here are some options:
 
 - *llama-swap* (<https://github.com/mostlygeek/llama-swap>) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 
-- *Ollama* (<https://ollama.com/>) -- It lacks some features required by Tracy. Very limited configuration is only available via the system service's environment variables. Some practices are questionable. It will not use full capabilities of the available hardware. Not recommended.
-
 ::: bclogo
 Example llama-swap configuration file Here's an example configuration for llama-swap that will provide two swappable chat models, and an vector embeddings model that will not be unloaded:
 
@@ -4047,7 +4053,7 @@ Embedding models can be downloaded just like conversation models. The text-nomic
 
     3.  It is better to support one model that is known to work as intended than to support many models that work poorly.
 
-LM Studio and Ollama properly label the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word `embed`.
+LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word `embed`.
 
 ### Usage
 

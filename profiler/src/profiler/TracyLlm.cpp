@@ -451,7 +451,7 @@ void TracyLlm::Draw()
             }
 
             ImGui::PushID( turnIdx++ );
-            if( !m_chatUi->Turn( role, line ) )
+            if( !m_chatUi->Turn( role, line, true ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

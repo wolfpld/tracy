@@ -164,6 +164,7 @@ void TracyLlm::Draw()
         const auto sz = std::min( InputBufferSize-1, s_config.llmAddress.size() );
         memcpy( m_apiInput, s_config.llmAddress.c_str(), sz );
         m_apiInput[sz] = 0;
+        ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x );
         bool changed = ImGui::InputTextWithHint( "##api", "http://localhost:1234", m_apiInput, InputBufferSize );
         ImGui::SameLine();
         if( ImGui::BeginCombo( "##presets", nullptr, ImGuiComboFlags_NoPreview ) )
@@ -204,6 +205,7 @@ void TracyLlm::Draw()
         }
         else
         {
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
             if( ImGui::BeginCombo( "##model", models[m_modelIdx].name.c_str() ) )
             {
                 for( size_t i = 0; i < models.size(); ++i )
@@ -236,6 +238,7 @@ void TracyLlm::Draw()
         }
         else
         {
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
             if( ImGui::BeginCombo( "##embedmodel", models[m_embedIdx].name.c_str() ) )
             {
                 for( size_t i = 0; i < models.size(); ++i )
@@ -276,6 +279,7 @@ void TracyLlm::Draw()
             ImGui::TextUnformatted( "User agent:" );
             ImGui::SameLine();
             snprintf( buf, sizeof( buf ), "%s", s_config.llmUserAgent.c_str() );
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
             if( ImGui::InputTextWithHint( "##useragent", "Spoof user agent", buf, sizeof( buf ) ) )
             {
                 s_config.llmUserAgent = buf;
@@ -286,6 +290,7 @@ void TracyLlm::Draw()
             ImGui::TextUnformatted( "Google Search Engine:" );
             ImGui::SameLine();
             snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchIdentifier.c_str() );
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize( ICON_FA_HOUSE ).x - ImGui::GetStyle().FramePadding.x * 2 - ImGui::GetStyle().ItemSpacing.x );
             if( ImGui::InputTextWithHint( "##cse", "search identifier", buf, sizeof( buf ) ) )
             {
                 s_config.llmSearchIdentifier = buf;
@@ -298,6 +303,7 @@ void TracyLlm::Draw()
             ImGui::TextUnformatted( "Google Search API Key:" );
             ImGui::SameLine();
             snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchApiKey.c_str() );
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize( ICON_FA_HOUSE ).x - ImGui::GetStyle().FramePadding.x * 2 - ImGui::GetStyle().ItemSpacing.x );
             if( ImGui::InputTextWithHint( "##csekey", "search API key", buf, sizeof( buf ) ) )
             {
                 s_config.llmSearchApiKey = buf;

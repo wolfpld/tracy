@@ -176,7 +176,6 @@ void TracyLlm::Draw()
             constexpr static std::array presets = {
                 Preset { "Llama.cpp", "http://localhost:8080" },
                 Preset { "LM Studio", "http://localhost:1234" },
-                Preset { "Ollama", "http://localhost:11434" },
             };
             for( auto& preset : presets )
             {

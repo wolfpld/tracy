@@ -4667,7 +4667,6 @@ There are no ideal LLM providers, but here are some options:
 \item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag behind. Manual configuration of each model is required.
 \item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
 \item \emph{llama-swap} (\url{https://github.com/mostlygeek/llama-swap}) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
-\item \emph{Ollama} (\url{https://ollama.com/}) -- It lacks some features required by Tracy. Very limited configuration is only available via the system service's environment variables. Some practices are questionable. It will not use full capabilities of the available hardware. Not recommended.
 \end{itemize}
 
 \begin{bclogo}[
@@ -4799,7 +4798,7 @@ Embedding models can be downloaded just like conversation models. The text-nomic
 \end{enumerate}
 }
 
-LM Studio and Ollama properly label the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
+LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
 
 \subsubsection{Usage}
 

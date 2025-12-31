@@ -23,7 +23,6 @@ class TracyLlmApi
     enum class Type
     {
         Unknown,
-        Ollama,
         LmStudio,
         LlamaSwap,
         Other

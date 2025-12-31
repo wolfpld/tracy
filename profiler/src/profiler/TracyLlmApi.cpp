@@ -74,20 +74,6 @@ bool TracyLlmApi::Connect( const char* url )
                 m_models.back().quant = json2["quantization"].get_ref<const std::string&>();
                 if( json2.contains( "loaded_context_length" ) ) m_models.back().contextSize = json2["loaded_context_length"].get<int>();
             }
-            else if( ( m_type == Type::Unknown || m_type == Type::Ollama ) && PostRequest( m_url + "/api/show", "{\"name\":\"" + id + "\"}", buf2 ) == 200 )
-            {
-                m_type = Type::Ollama;
-                auto json2 = nlohmann::json::parse( buf2 );
-                m_models.back().quant = json2["details"]["quantization_level"].get_ref<const std::string&>();
-                for( auto& cap : json2["capabilities"] )
-                {
-                    if( cap.get_ref<const std::string&>() == "embedding" )
-                    {
-                        m_models.back().embeddings = true;
-                        break;
-                    }
-                }
-            }
             else if( m_type == Type::Unknown )
             {
                 m_type = Type::Other;

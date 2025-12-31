@@ -262,17 +262,19 @@ void TracyLlm::Draw()
                 ImGui::EndCombo();
             }
         }
-
-        ImGui::Checkbox( ICON_FA_TEMPERATURE_HALF " Temperature", &m_setTemperature );
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth( 40 * scale );
-        if( ImGui::InputFloat( "##temperature", &m_temperature, 0, 0, "%.2f" ) ) m_temperature = std::clamp( m_temperature, 0.f, 2.f );
         if( responding ) ImGui::EndDisabled();
 
         ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_tools->m_netAccess );
 
-        if( ImGui::TreeNode( "External services" ) )
+        if( ImGui::TreeNode( "Advanced" ) )
         {
+            if( responding ) ImGui::BeginDisabled();
+            ImGui::Checkbox( ICON_FA_TEMPERATURE_HALF " Temperature", &m_setTemperature );
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth( 40 * scale );
+            if( ImGui::InputFloat( "##temperature", &m_temperature, 0, 0, "%.2f" ) ) m_temperature = std::clamp( m_temperature, 0.f, 2.f );
+            if( responding ) ImGui::EndDisabled();
+
             char buf[1024];
 
             ImGui::AlignTextToFramePadding();

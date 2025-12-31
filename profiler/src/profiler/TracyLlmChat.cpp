@@ -76,7 +76,8 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json )
 {
     bool keep = true;
     const auto& roleData = roles[(int)role];
-    if( role != m_role || role == TurnRole::Attachment || role == TurnRole::Error )
+    const bool roleChange = role != m_role;
+    if( roleChange || role == TurnRole::Attachment || role == TurnRole::Error )
     {
         if( m_role != TurnRole::None )
         {
@@ -88,7 +89,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json )
         m_thinkOpen = false;
 
         bool hover = false;
-        if( m_role != role )
+        if( roleChange )
         {
             m_role = role;
             ImGui::Spacing();
@@ -176,7 +177,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json )
     {
         if( json.contains( "reasoning_content" ) )
         {
-            ThinkScope();
+            ThinkScope( !roleChange );
             if( m_thinkOpen )
             {
                 auto& reasoning = json["reasoning_content"].get_ref<const std::string&>();
@@ -185,7 +186,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json )
         }
         if( json.contains( "tool_calls" ) )
         {
-            ThinkScope();
+            ThinkScope( !roleChange );
             if( m_thinkOpen )
             {
                 auto calls = json["tool_calls"].dump( 2 );
@@ -197,7 +198,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json )
             auto& content = json["content"].get_ref<const std::string&>();
             if( json["role"].get_ref<const std::string&>() == "tool" )
             {
-                ThinkScope();
+                ThinkScope( !roleChange );
                 if( m_thinkOpen )
                 {
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
@@ -286,10 +287,11 @@ void TracyLlmChat::NormalScope()
     m_thinkActive = false;
 }
 
-void TracyLlmChat::ThinkScope()
+void TracyLlmChat::ThinkScope( bool spacing )
 {
     if( m_thinkActive ) return;
     m_thinkActive = true;
+    if( spacing ) ImGui::Spacing();
     ImGui::PushID( m_thinkIdx++ );
     ImGui::PushStyleColor( ImGuiCol_Text, ThinkColor );
     m_thinkOpen = ImGui::TreeNode( ICON_FA_LIGHTBULB " Internal thoughts..." );

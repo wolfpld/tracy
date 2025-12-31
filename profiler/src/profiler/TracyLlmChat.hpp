@@ -35,7 +35,7 @@ public:
 
 private:
     void NormalScope();
-    void ThinkScope();
+    void ThinkScope( bool spacing = false );
 
     void PrintThink( const char* str, size_t size );
     void PrintToolCall( const char* str, size_t size );

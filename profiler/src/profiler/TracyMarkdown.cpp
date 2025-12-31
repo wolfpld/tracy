@@ -83,7 +83,7 @@ public:
             sprintf( tmp, "##code%d", idx++ );
             Separate();
             ImGui::PushStyleColor( ImGuiCol_FrameBg, ImVec4( 0, 0, 0, 0.2f ) );
-            ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY );
+            ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_HorizontalScrollbar );
             codeBlock = true;
         }
         default:

@@ -655,16 +655,27 @@ void TracyLlm::UpdateModels()
     }
 }
 
+static void Replace( std::string& str, const std::string& from, const std::string& to )
+{
+    std::string::size_type pos;
+    while( ( pos = str.find( from ) ) != std::string::npos )
+    {
+        str.replace( pos, from.size(), to );
+    }
+}
+
 void TracyLlm::ResetChat()
 {
+    static constexpr std::string UserToken = "%USER%";
+    static constexpr std::string TimeToken = "%TIME%";
+
     auto userName = GetUserFullName();
     if( !userName ) userName = GetUserLogin();
 
     auto systemPrompt = std::string( m_systemPrompt->data(), m_systemPrompt->size() );
 
-    systemPrompt += "\n\n# Real time data\n\n";
-    systemPrompt += "Current date: " + m_tools->GetCurrentTime() + "\n";
-    systemPrompt += "User name: " + std::string( userName ) + "\n";
+    Replace( systemPrompt, UserToken, userName );
+    Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
 
     *m_input = 0;
     m_usedCtx = 0;

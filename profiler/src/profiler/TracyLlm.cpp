@@ -264,7 +264,7 @@ void TracyLlm::Draw()
         }
         if( responding ) ImGui::EndDisabled();
 
-        ImGui::Checkbox( ICON_FA_GLOBE " Internet access", &m_tools->m_netAccess );
+        ImGui::Checkbox( ICON_FA_EARTH_AMERICAS " Internet access", &m_tools->m_netAccess );
 
         if( ImGui::TreeNode( "Advanced" ) )
         {

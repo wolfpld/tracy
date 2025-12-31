@@ -91,6 +91,7 @@ private:
     int m_usedCtx = 0;
     float m_temperature = 1.0f;
     bool m_setTemperature = false;
+    bool m_allThinkingRegions = false;
 
     char* m_input;
     char* m_apiInput;

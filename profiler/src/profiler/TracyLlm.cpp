@@ -275,6 +275,8 @@ void TracyLlm::Draw()
             if( ImGui::InputFloat( "##temperature", &m_temperature, 0, 0, "%.2f" ) ) m_temperature = std::clamp( m_temperature, 0.f, 2.f );
             if( responding ) ImGui::EndDisabled();
 
+            ImGui::Checkbox( ICON_FA_LIGHTBULB " Show all thinking regions", &m_allThinkingRegions );
+
             char buf[1024];
 
             ImGui::AlignTextToFramePadding();
@@ -431,6 +433,20 @@ void TracyLlm::Draw()
         ImGui::PushID( m_chatId );
         m_chatUi->Begin();
 
+        int thinkIdx = 0;
+        if( !m_allThinkingRegions )
+        {
+            for( thinkIdx = m_chat.size(); thinkIdx > 0; thinkIdx-- )
+            {
+                const auto& line = m_chat[thinkIdx-1];
+                if( !line.contains( "role" ) ) break;
+                const auto& roleStr = line["role"].get_ref<const std::string&>();
+                if( roleStr == "tool" ) continue;
+                if( roleStr == "assistant" && !line.contains( "content" ) ) continue;
+                break;
+            }
+        }
+
         int turnIdx = 0;
         for( auto it = m_chat.begin(); it != m_chat.end(); ++it )
         {
@@ -451,7 +467,7 @@ void TracyLlm::Draw()
             }
 
             ImGui::PushID( turnIdx++ );
-            if( !m_chatUi->Turn( role, line, true ) )
+            if( !m_chatUi->Turn( role, line, thinkIdx <= turnIdx ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

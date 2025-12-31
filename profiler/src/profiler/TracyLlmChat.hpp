@@ -31,7 +31,7 @@ public:
     void Begin();
     void End();
 
-    bool Turn( TurnRole role, const nlohmann::json& json, bool think );
+    bool Turn( TurnRole role, const nlohmann::json& json, bool think, bool last );
 
 private:
     void NormalScope();

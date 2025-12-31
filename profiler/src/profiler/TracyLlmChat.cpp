@@ -8,6 +8,7 @@
 #include "TracyLlmChat.hpp"
 #include "TracyMouse.hpp"
 #include "../Fonts.hpp"
+#include "../../public/common/TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -32,6 +33,38 @@ constexpr std::array roles = {
 constexpr size_t NumRoles = roles.size();
 
 static_assert( NumRoles == (int)TracyLlmChat::TurnRole::None );
+
+
+static tracy_force_inline int codepointlen( char c )
+{
+    if( ( c & 0x80 ) == 0 ) return 1;
+    if( ( c & 0x20 ) == 0 ) return 2;
+    if( ( c & 0x10 ) == 0 ) return 3;
+    assert( ( c & 0x08 ) == 0 );
+    return 4;
+}
+
+static size_t utflen( const char* str )
+{
+    size_t ret = 0;
+    while( *str != '\0' )
+    {
+        str += codepointlen( *str );
+        ret++;
+    }
+    return ret;
+}
+
+static const char* utfendl( const char* str, int len )
+{
+    int l = 0;
+    while( l < len && *str != '\0' )
+    {
+        str += codepointlen( *str );
+        l++;
+    }
+    return str;
+}
 
 
 TracyLlmChat::TracyLlmChat()
@@ -71,7 +104,7 @@ void TracyLlmChat::End()
     }
 }
 
-bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think )
+bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think, bool last )
 {
     bool keep = true;
     const auto& roleData = roles[(int)role];
@@ -178,11 +211,25 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think )
         {
             if( json.contains( "reasoning_content" ) )
             {
+                auto& reasoning = json["reasoning_content"].get_ref<const std::string&>();
                 ThinkScope( !roleChange );
                 if( m_thinkOpen )
                 {
-                    auto& reasoning = json["reasoning_content"].get_ref<const std::string&>();
                     PrintThink( reasoning.c_str(), reasoning.size() );
+                }
+                else if( last && !json.contains( "content" ) )
+                {
+                    const auto cutlen = std::max( int( utflen( reasoning.c_str() ) ) - 40, 0 );
+                    const auto cut = utfendl( reasoning.c_str(), cutlen );
+                    std::string str = cut;
+                    for( auto& c : str )
+                    {
+                        if( c == '\n' ) c = ' ';
+                    }
+                    ImGui::SameLine();
+                    ImGui::PushStyleColor( ImGuiCol_Text, 0xFF555555 );
+                    ImGui::Text( "…%s", str.c_str() );
+                    ImGui::PopStyleColor();
                 }
             }
             if( json.contains( "tool_calls" ) )

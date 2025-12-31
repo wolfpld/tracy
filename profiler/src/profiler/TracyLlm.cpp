@@ -814,7 +814,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
     try
     {
         auto chat = m_chat;
-        AddMessageBlocking( "", "assistant", lock );
+        AddMessageBlocking( { { "role", "assistant" } }, lock );
 
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;

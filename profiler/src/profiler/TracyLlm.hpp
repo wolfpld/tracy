@@ -58,6 +58,7 @@ private:
 
     void UpdateModels();
     void ResetChat();
+    void UpdateSystemPrompt();
 
     void QueueConnect();
 

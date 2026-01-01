@@ -689,6 +689,19 @@ static void Replace( std::string& str, const std::string& from, const std::strin
 
 void TracyLlm::ResetChat()
 {
+    *m_input = 0;
+    m_usedCtx = 0;
+    m_chatId++;
+    m_chat.clear();
+
+    UpdateSystemPrompt();
+}
+
+void TracyLlm::UpdateSystemPrompt()
+{
+    assert( m_chat.size() <= 1 );
+    m_chat.clear();
+
     static constexpr std::string UserToken = "%USER%";
     static constexpr std::string TimeToken = "%TIME%";
 
@@ -699,11 +712,6 @@ void TracyLlm::ResetChat()
 
     Replace( systemPrompt, UserToken, userName );
     Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
-
-    *m_input = 0;
-    m_usedCtx = 0;
-    m_chatId++;
-    m_chat.clear();
 
     AddMessage( std::move( systemPrompt ), "system" );
 }

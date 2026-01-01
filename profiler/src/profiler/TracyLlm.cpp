@@ -570,6 +570,7 @@ void TracyLlm::Draw()
         if( *m_input == 0 ) ImGui::EndDisabled();
         if( send )
         {
+            if( m_chat.size() <= 1 ) UpdateSystemPrompt();
             auto ptr = m_input;
             while( *ptr )
             {

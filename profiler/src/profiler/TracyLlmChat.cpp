@@ -233,7 +233,8 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think,
         if( json.contains( "content" ) )
         {
             auto& content = json["content"].get_ref<const std::string&>();
-            if( json["role"].get_ref<const std::string&>() == "tool" )
+            auto& roleStr = json["role"].get_ref<const std::string&>();
+            if( roleStr == "tool" )
             {
                 if( think == Think::Show )
                 {
@@ -278,6 +279,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think,
                 {
                     NormalScope();
                     m_markdown.Print( content.c_str(), content.size() );
+                    if( !last && think == Think::Hide && roleStr == "assistant" ) ImGui::Spacing();
                 }
             }
         }

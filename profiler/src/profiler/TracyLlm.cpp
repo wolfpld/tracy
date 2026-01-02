@@ -467,7 +467,16 @@ void TracyLlm::Draw()
             }
 
             ImGui::PushID( turnIdx++ );
-            if( !m_chatUi->Turn( role, line, thinkIdx <= turnIdx, turnIdx == m_chat.size() - 1 ) )
+            TracyLlmChat::Think think = TracyLlmChat::Think::Hide;
+            if( thinkIdx <= turnIdx )
+            {
+                think = TracyLlmChat::Think::Show;
+            }
+            else if( thinkIdx == turnIdx + 1 && role == TracyLlmChat::TurnRole::Assistant && line.contains( "content" ) )
+            {
+                think = TracyLlmChat::Think::ToolCall;
+            }
+            if( !m_chatUi->Turn( role, line, think, turnIdx == m_chat.size() - 1 ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

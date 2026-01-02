@@ -25,13 +25,20 @@ public:
         None,
     };
 
+    enum class Think
+    {
+        Hide,
+        Show,
+        ToolCall
+    };
+
     TracyLlmChat();
     ~TracyLlmChat();
 
     void Begin();
     void End();
 
-    bool Turn( TurnRole role, const nlohmann::json& json, bool think, bool last );
+    bool Turn( TurnRole role, const nlohmann::json& json, Think think, bool last );
 
 private:
     void NormalScope();

@@ -104,7 +104,7 @@ void TracyLlmChat::End()
     }
 }
 
-bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think, bool last )
+bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think, bool last )
 {
     bool keep = true;
     const auto& roleData = roles[(int)role];
@@ -207,39 +207,27 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think, 
     }
     else
     {
-        if( think )
+        if( think == Think::Show && json.contains( "reasoning_content" ) )
         {
-            if( json.contains( "reasoning_content" ) )
+            auto& reasoning = json["reasoning_content"].get_ref<const std::string&>();
+            ThinkScope( !roleChange );
+            if( m_thinkOpen )
             {
-                auto& reasoning = json["reasoning_content"].get_ref<const std::string&>();
-                ThinkScope( !roleChange );
-                if( m_thinkOpen )
-                {
-                    PrintThink( reasoning.c_str(), reasoning.size() );
-                }
-                else if( last && !json.contains( "content" ) )
-                {
-                    const auto cutlen = std::max( int( utflen( reasoning.c_str() ) ) - 40, 0 );
-                    const auto cut = utfendl( reasoning.c_str(), cutlen );
-                    std::string str = cut;
-                    for( auto& c : str )
-                    {
-                        if( c == '\n' ) c = ' ';
-                    }
-                    ImGui::SameLine();
-                    ImGui::PushStyleColor( ImGuiCol_Text, 0xFF555555 );
-                    ImGui::Text( "…%s", str.c_str() );
-                    ImGui::PopStyleColor();
-                }
+                PrintThink( reasoning.c_str(), reasoning.size() );
             }
-            if( json.contains( "tool_calls" ) )
+            else if( last && !json.contains( "content" ) )
             {
-                ThinkScope( !roleChange );
-                if( m_thinkOpen )
+                const auto cutlen = std::max( int( utflen( reasoning.c_str() ) ) - 40, 0 );
+                const auto cut = utfendl( reasoning.c_str(), cutlen );
+                std::string str = cut;
+                for( auto& c : str )
                 {
-                    auto calls = json["tool_calls"].dump( 2 );
-                    PrintToolCall( calls.c_str(), calls.size() );
+                    if( c == '\n' ) c = ' ';
                 }
+                ImGui::SameLine();
+                ImGui::PushStyleColor( ImGuiCol_Text, 0xFF555555 );
+                ImGui::Text( "…%s", str.c_str() );
+                ImGui::PopStyleColor();
             }
         }
         if( json.contains( "content" ) )
@@ -247,7 +235,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think, 
             auto& content = json["content"].get_ref<const std::string&>();
             if( json["role"].get_ref<const std::string&>() == "tool" )
             {
-                if( think )
+                if( think == Think::Show )
                 {
                     ThinkScope( !roleChange );
                     if( m_thinkOpen )
@@ -291,6 +279,15 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, bool think, 
                     NormalScope();
                     m_markdown.Print( content.c_str(), content.size() );
                 }
+            }
+        }
+        if( think != Think::Hide && json.contains( "tool_calls" ) )
+        {
+            ThinkScope( !roleChange || json.contains( "content" ) );
+            if( m_thinkOpen )
+            {
+                auto calls = json["tool_calls"].dump( 2 );
+                PrintToolCall( calls.c_str(), calls.size() );
             }
         }
     }

@@ -24,7 +24,7 @@
   "type": "function",
   "function": {
     "name": "get_wikipedia",
-    "description": "Retrieve the Wikipedia article on given subject. The response may be trimmed. Uses network.",
+    "description": "Retrieve the Wikipedia article on given subject. Uses network.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -83,7 +83,7 @@
   "type": "function",
   "function": {
     "name": "get_webpage",
-    "description": "Download web page at given URL. Uses network.",
+    "description": "Fetch contents of a web page at given URL. Uses network.",
     "parameters": {
       "type": "object",
       "properties": {

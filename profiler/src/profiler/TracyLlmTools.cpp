@@ -423,7 +423,7 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
     output["key"] = key;
     output["title"] = summaryJson["title"];
     if( summaryJson.contains( "description" ) ) output["description"] = summaryJson["description"];
-    output["extract"] = summaryJson["extract"];
+    output["preview"] = summaryJson["extract"];
 
     std::string image;
     if( summaryJson.contains( "thumbnail" ) )
@@ -508,7 +508,7 @@ std::string TracyLlmTools::SearchWeb( std::string query )
                     auto& item = json["items"][i];
                     nlohmann::json result;
                     result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
-                    result["snippet"] = RemoveNewline( item["snippet"].get_ref<const std::string&>() );
+                    result["preview"] = RemoveNewline( item["snippet"].get_ref<const std::string&>() );
                     result["url"] = RemoveNewline( item["link"].get_ref<const std::string&>() );
                     results[i] = result;
                 }
@@ -543,7 +543,7 @@ std::string TracyLlmTools::SearchWeb( std::string query )
 
         nlohmann::json result;
         result["title"] = RemoveNewline( title.text().as_string() );
-        result["snippet"] = RemoveNewline( snippet.text().as_string() );
+        result["preview"] = RemoveNewline( snippet.text().as_string() );
         result["url"] = RemoveNewline( url.text().as_string() );
 
         json[i] = result;

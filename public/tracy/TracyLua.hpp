@@ -400,9 +400,11 @@ static inline int LuaMessage( lua_State* L )
     auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
 
+    TaggedUserlandAddress taggedPtr{ (uint64_t)ptr, MakeMessageMetadata( MessageSourceType::User, MessageSeverity::Info ) };
+
     TracyQueuePrepare( QueueType::Message );
     MemWrite( &item->messageFat.time, Profiler::GetTime() );
-    MemWrite( &item->messageFat.text, (uint64_t)ptr );
+    MemWrite( &item->messageFat.textAndMetadata, taggedPtr );
     MemWrite( &item->messageFat.size, (uint16_t)size );
     TracyQueueCommit( messageFatThread );
     return 0;

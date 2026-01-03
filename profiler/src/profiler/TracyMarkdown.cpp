@@ -85,7 +85,26 @@ public:
             ImGui::PushStyleColor( ImGuiCol_FrameBg, ImVec4( 0, 0, 0, 0.2f ) );
             ImGui::BeginChild( tmp, ImVec2( 0, 0 ), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_HorizontalScrollbar );
             codeBlock = true;
+            break;
         }
+        case MD_BLOCK_TABLE:
+        {
+            char tmp[64];
+            sprintf( tmp, "##table%d", idx++ );
+            Separate();
+            ImGui::BeginTable( tmp, ((MD_BLOCK_TABLE_DETAIL*)detail)->col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp );
+            break;
+        }
+        case MD_BLOCK_THEAD:
+            tableHeader = true;
+            break;
+        case MD_BLOCK_TR:
+            ImGui::TableNextRow( tableHeader ? ImGuiTableRowFlags_Headers : ImGuiTableRowFlags_None );
+            break;
+        case MD_BLOCK_TH:
+        case MD_BLOCK_TD:
+            ImGui::TableNextColumn();
+            break;
         default:
             break;
         }
@@ -128,6 +147,13 @@ public:
             ImGui::PopStyleColor();
             separate = true;
             codeBlock = false;
+            break;
+        case MD_BLOCK_TABLE:
+            ImGui::EndTable();
+            separate = true;
+            break;
+        case MD_BLOCK_THEAD:
+            tableHeader = false;
             break;
         default:
             break;
@@ -284,6 +310,7 @@ private:
     bool separate = false;
     bool first = true;
     bool codeBlock = false;
+    bool tableHeader = false;
 
     int idx = 0;
 
@@ -296,7 +323,7 @@ Markdown::Markdown()
     : m_parser( new MD_PARSER() )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML;
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES;
     m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterBlock( type, detail ); };
     m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->LeaveBlock( type, detail ); };
     m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterSpan( type, detail ); };

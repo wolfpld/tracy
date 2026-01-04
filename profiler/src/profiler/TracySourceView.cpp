@@ -2443,8 +2443,13 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
     const auto end = m_asm.size() < stop ? m_asm.size() : stop;
     for( size_t i=start; i<end; i++ )
     {
+        char buf[32];
+        snprintf( buf, sizeof( buf ), "+%" PRIu64, m_asm[i].addr - m_baseAddr );
+
         const auto& v = m_asm[i];
-        nlohmann::json line;
+        nlohmann::json line = {
+            { "offset", buf }
+        };
 
         auto it = m_locMap.find( v.addr );
         if( it != m_locMap.end() ) line["label"] = ".L" + std::to_string( it->second );

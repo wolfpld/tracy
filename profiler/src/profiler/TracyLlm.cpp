@@ -709,9 +709,6 @@ void TracyLlm::ResetChat()
 
 void TracyLlm::UpdateSystemPrompt()
 {
-    assert( m_chat.size() <= 1 );
-    m_chat.clear();
-
     static constexpr std::string UserToken = "%USER%";
     static constexpr std::string TimeToken = "%TIME%";
 
@@ -723,7 +720,14 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, UserToken, userName );
     Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
 
-    AddMessage( std::move( systemPrompt ), "system" );
+    if( m_chat.empty() )
+    {
+        AddMessage( std::move( systemPrompt ), "system" );
+    }
+    else
+    {
+        m_chat[0]["content"] = systemPrompt;
+    }
 }
 
 void TracyLlm::QueueConnect()

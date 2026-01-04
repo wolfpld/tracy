@@ -80,7 +80,8 @@ static nlohmann::json GetCallstackJson( Worker& worker, const VarArray<Callstack
                 }
                 else
                 {
-                    frameJson["inline"] = true;
+                    frameJson["frame"] = fidx;
+                    frameJson["inline"] = f;
                 }
                 if( frame.line != 0 )
                 {

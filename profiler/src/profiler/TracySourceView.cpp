@@ -2836,10 +2836,8 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
                         if( srcline != 0 )
                         {
-                            line["source"] = {
-                                { "file", worker.GetString( srcidx ) },
-                                { "line", srcline }
-                            };
+                            line["file"] = worker.GetString( srcidx );
+                            line["line"] = srcline;
                         }
 
                         code.emplace_back( std::move( line ) );

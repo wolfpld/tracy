@@ -579,7 +579,6 @@ void TracyLlm::Draw()
         if( *m_input == 0 ) ImGui::EndDisabled();
         if( send )
         {
-            if( m_chat.size() <= 1 ) UpdateSystemPrompt();
             auto ptr = m_input;
             while( *ptr )
             {
@@ -762,6 +761,7 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
         .task = Task::Tokenize,
         .callback2 = [this, str, role]( nlohmann::json json ) {
             m_usedCtx += json["tokens"].get<int>();
+            if( m_chat.size() == 1 ) UpdateSystemPrompt();
             nlohmann::json msg = {
                 { "role", role },
                 { "content", str }

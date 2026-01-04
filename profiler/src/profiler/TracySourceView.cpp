@@ -2839,6 +2839,20 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                             line["file"] = worker.GetString( srcidx );
                             line["line"] = srcline;
                         }
+                        if( as.ipTotalAsm.local + as.ipTotalAsm.ext != 0 )
+                        {
+                            char buf[32];
+                            auto it = as.ipCountAsm.find( v.addr );
+                            if( it != as.ipCountAsm.end() )
+                            {
+                                auto& stat = it->second;
+                                if( stat.local != 0 )
+                                {
+                                    snprintf( buf, sizeof(buf), "%.4f%%", 100.0f * stat.local / as.ipTotalAsm.local );
+                                    line["cost"] = buf;
+                                }
+                            }
+                        }
 
                         code.emplace_back( std::move( line ) );
                     }

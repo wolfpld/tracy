@@ -2605,6 +2605,17 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
     TextFocused( ICON_FA_WEIGHT_HANGING, MemSizeToString( m_codeLen ) );
     TooltipIfHovered( "Code size" );
 
+    if( s_config.llm )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( ImGui::SmallButton( ICON_FA_ROBOT ) )
+        {
+            AttachRangeToLlm( 0, m_asm.size(), worker, view, as );
+        }
+    }
+
 #ifndef TRACY_NO_FILESELECTOR
     ImGui::SameLine();
     ImGui::Spacing();

@@ -2409,6 +2409,95 @@ std::tuple<size_t, size_t> SourceView::GetJumpRange( const JumpData& jump )
     return std::make_tuple( minIdx, maxIdx );
 }
 
+void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, View& view, const AddrStatData& as )
+{
+    auto sym = worker.GetSymbolData( m_symAddr );
+    assert( sym );
+    const char* symName;
+    if( sym->isInline )
+    {
+        auto parent = worker.GetSymbolData( m_baseAddr );
+        if( parent )
+        {
+            symName = worker.GetString( parent->name );
+        }
+        else
+        {
+            char tmp[32];
+            sprintf( tmp, "0x%" PRIx64, m_baseAddr );
+            symName = tmp;
+        }
+    }
+    else
+    {
+        symName = worker.GetString( sym->name );
+    }
+
+    nlohmann::json json = {
+        { "type", "assembly" },
+        { "symbol", symName },
+        { "code", nlohmann::json::array() }
+    };
+    auto& code = json["code"];
+
+    const auto end = m_asm.size() < stop ? m_asm.size() : stop;
+    for( size_t i=start; i<end; i++ )
+    {
+        const auto& v = m_asm[i];
+        nlohmann::json line;
+
+        auto it = m_locMap.find( v.addr );
+        if( it != m_locMap.end() ) line["label"] = ".L" + std::to_string( it->second );
+
+        bool hasJump = false;
+        if( v.jumpAddr != 0 )
+        {
+            auto lit = m_locMap.find( v.jumpAddr );
+            if( lit != m_locMap.end() )
+            {
+                line["asm"] = v.mnemonic + " .L" + std::to_string( lit->second );
+                hasJump = true;
+            }
+        }
+        if( !hasJump )
+        {
+            if( v.operands.empty() )
+            {
+                line["asm"] = v.mnemonic;
+            }
+            else
+            {
+                line["asm"] = v.mnemonic + " " + v.operands;
+            }
+        }
+        uint32_t srcline;
+        const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
+        if( srcline != 0 )
+        {
+            line["file"] = worker.GetString( srcidx );
+            line["line"] = srcline;
+        }
+        if( as.ipTotalAsm.local + as.ipTotalAsm.ext != 0 )
+        {
+            char buf[32];
+            auto it = as.ipCountAsm.find( v.addr );
+            if( it != as.ipCountAsm.end() )
+            {
+                auto& stat = it->second;
+                if( stat.local != 0 )
+                {
+                    snprintf( buf, sizeof(buf), "%.4f%%", 100.0f * stat.local / as.ipTotalAsm.local );
+                    line["cost"] = buf;
+                }
+            }
+        }
+
+        code.emplace_back( std::move( line ) );
+    }
+
+    view.AddLlmAttachment( json );
+}
+
 uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker, View& view )
 {
     const auto scale = GetScale();
@@ -2772,92 +2861,8 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 needSeparator = true;
                 if( ImGui::MenuItem( ICON_FA_ROBOT " Attach jump range in chat" ) )
                 {
-                    auto sym = worker.GetSymbolData( m_symAddr );
-                    assert( sym );
-                    const char* symName;
-                    if( sym->isInline )
-                    {
-                        auto parent = worker.GetSymbolData( m_baseAddr );
-                        if( parent )
-                        {
-                            symName = worker.GetString( parent->name );
-                        }
-                        else
-                        {
-                            char tmp[32];
-                            sprintf( tmp, "0x%" PRIx64, m_baseAddr );
-                            symName = tmp;
-                        }
-                    }
-                    else
-                    {
-                        symName = worker.GetString( sym->name );
-                    }
-
-                    nlohmann::json json = {
-                        { "type", "assembly" },
-                        { "symbol", symName },
-                        { "code", nlohmann::json::array() }
-                    };
-                    auto& code = json["code"];
-
                     auto [start, stop] = GetJumpRange( it->second );
-                    const auto end = m_asm.size() < stop ? m_asm.size() : stop;
-                    for( size_t i=start; i<end; i++ )
-                    {
-                        const auto& v = m_asm[i];
-                        nlohmann::json line;
-
-                        auto it = m_locMap.find( v.addr );
-                        if( it != m_locMap.end() ) line["label"] = ".L" + std::to_string( it->second );
-
-                        bool hasJump = false;
-                        if( v.jumpAddr != 0 )
-                        {
-                            auto lit = m_locMap.find( v.jumpAddr );
-                            if( lit != m_locMap.end() )
-                            {
-                                line["asm"] = v.mnemonic + " .L" + std::to_string( lit->second );
-                                hasJump = true;
-                            }
-                        }
-                        if( !hasJump )
-                        {
-                            if( v.operands.empty() )
-                            {
-                                line["asm"] = v.mnemonic;
-                            }
-                            else
-                            {
-                                line["asm"] = v.mnemonic + " " + v.operands;
-                            }
-                        }
-                        uint32_t srcline;
-                        const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
-                        if( srcline != 0 )
-                        {
-                            line["file"] = worker.GetString( srcidx );
-                            line["line"] = srcline;
-                        }
-                        if( as.ipTotalAsm.local + as.ipTotalAsm.ext != 0 )
-                        {
-                            char buf[32];
-                            auto it = as.ipCountAsm.find( v.addr );
-                            if( it != as.ipCountAsm.end() )
-                            {
-                                auto& stat = it->second;
-                                if( stat.local != 0 )
-                                {
-                                    snprintf( buf, sizeof(buf), "%.4f%%", 100.0f * stat.local / as.ipTotalAsm.local );
-                                    line["cost"] = buf;
-                                }
-                            }
-                        }
-
-                        code.emplace_back( std::move( line ) );
-                    }
-
-                    view.AddLlmAttachment( json );
+                    AttachRangeToLlm( start, stop, worker, view, as );
                 }
             }
             if( needSeparator ) ImGui::Separator();

@@ -145,6 +145,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         else if( io.KeyShift ) mod = 0.5;
 
         mod *= m_verticalScrollMultiplier;
+        mod *= fabs( wheel );
 
         if( wheel > 0 )
         {

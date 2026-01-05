@@ -854,6 +854,24 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         auto chat = m_chat;
         AddMessageBlocking( { { "role", "assistant" } }, lock );
 
+        size_t i = 1;
+        while( i < chat.size() )
+        {
+            if( chat[i]["role"].get_ref<const std::string&>() == "user" &&
+                chat[i-1]["role"].get_ref<const std::string&>() == "user" )
+            {
+                auto& str = chat[i-1]["content"].get_ref<std::string&>();
+                assert( str.starts_with( "<attachment>\n" ) );
+                str.append( "</attachment>\n\n" );
+                str.append( chat[i]["content"].get_ref<const std::string&>() );
+                chat.erase( chat.begin() + i );
+            }
+            else
+            {
+                i++;
+            }
+        }
+
         nlohmann::json req;
         req["model"] = m_api->GetModels()[m_modelIdx].name;
         req["messages"] = std::move( chat );

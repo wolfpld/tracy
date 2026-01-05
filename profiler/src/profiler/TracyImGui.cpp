@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <algorithm>
+#include <string>
 
 #include "TracyPrint.hpp"
 #include "TracyImGui.hpp"
@@ -131,7 +132,18 @@ bool PrintTextWrapped( const char* text, const char* end )
 {
     bool hovered = false;
 
+    // Replace narrow no-break space with no-break space
     if( !end ) end = text + strlen( text );
+    std::string buf( text, end );
+    auto found = buf.find( "\xe2\x80\xaf" );
+    while( found != std::string::npos )
+    {
+        buf.replace( found, 3, "\xc2\xa0" );
+        found = buf.find( "\xe2\x80\xaf", found );
+    }
+    text = buf.c_str();
+    end = text + buf.size();
+
     auto firstWord = text;
     while( firstWord < end && *firstWord != ' ' && *firstWord != '\n' ) firstWord++;
 

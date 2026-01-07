@@ -288,8 +288,49 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think,
             ThinkScope( !roleChange || json.contains( "content" ) );
             if( m_thinkOpen )
             {
-                auto calls = json["tool_calls"].dump( 2 );
-                PrintToolCall( calls.c_str(), calls.size() );
+                ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
+                if( json.contains( "reasoning_content" ) ) ImGui::Spacing();
+                bool first = true;
+                for( auto& call : json["tool_calls"] )
+                {
+                    if( call.contains( "id" ) && call.contains( "function" ) )
+                    {
+                        auto& function = call["function"];
+                        if( function.contains( "name" ) )
+                        {
+                            if( first ) first = false;
+                            else ImGui::Spacing();
+
+                            auto& name = function["name"].get_ref<const std::string&>();
+                            auto& id = call["id"].get_ref<const std::string&>();
+
+                            ImGui::TextWrapped( ICON_FA_TOOLBOX " Tool call (%s/%s)…", name.c_str(), id.substr( 0, 8 ).c_str() );
+                            if( function.contains( "arguments" ) )
+                            {
+                                try
+                                {
+                                    auto args = nlohmann::json::parse( function["arguments"].get_ref<const std::string&>() );
+                                    if( !args.empty() )
+                                    {
+                                        ImGui::Indent();
+                                        for( auto& [key, value] : args.items() )
+                                        {
+                                            ImGui::Text( "%s: %s", key.c_str(), value.dump().c_str() );
+                                        }
+                                        ImGui::Unindent();
+                                    }
+                                }
+                                catch( nlohmann::json::exception& )
+                                {
+                                    ImGui::Indent();
+                                    ImGui::TextWrapped( "%s", function["arguments"].get_ref<const std::string&>().c_str() );
+                                    ImGui::Unindent();
+                                }
+                            }
+                        }
+                    }
+                }
+                ImGui::PopStyleColor();
             }
         }
     }
@@ -345,15 +386,6 @@ void TracyLlmChat::PrintThink( const char* str, size_t size )
 {
     ImGui::PushStyleColor( ImGuiCol_Text, ThinkColor );
     m_markdown.Print( str, size );
-    ImGui::PopStyleColor();
-}
-
-void TracyLlmChat::PrintToolCall( const char* str, size_t size )
-{
-    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
-    ImGui::PushFont( g_fonts.mono, FontNormal );
-    ImGui::TextWrapped( "%.*s", (int)size, str );
-    ImGui::PopFont();
     ImGui::PopStyleColor();
 }
 

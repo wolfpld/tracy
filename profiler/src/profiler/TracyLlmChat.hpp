@@ -45,7 +45,6 @@ private:
     void ThinkScope( bool spacing = false );
 
     void PrintThink( const char* str, size_t size );
-    void PrintToolCall( const char* str, size_t size );
 
     float* m_width;
     float m_maxWidth;

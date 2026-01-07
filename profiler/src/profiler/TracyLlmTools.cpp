@@ -163,7 +163,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         }
         else if( tool == "source_file" )
         {
-            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ) ) };
+            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 5 ) ) };
         }
         return { .reply = "Unknown tool call: " + tool };
     }
@@ -760,7 +760,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
-std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line ) const
+std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, uint32_t context ) const
 {
     if( line == 0 ) return "Error: Source file line number must be greater than 0.";
 
@@ -777,7 +777,7 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line ) 
     uint32_t minLine = line;
     uint32_t maxLine = line+1;
 
-    while( minLine > 0 || maxLine < lines.size() )
+    while( context > 0 && ( minLine > 0 || maxLine < lines.size() ) )
     {
         if( minLine > 0 )
         {
@@ -791,6 +791,7 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line ) 
             if( size >= maxSize ) break;
             maxLine++;
         }
+        context--;
     }
 
     nlohmann::json json = {

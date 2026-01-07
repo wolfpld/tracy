@@ -117,7 +117,7 @@
   "type": "function",
   "function": {
     "name": "source_file",
-    "description": "Retrieve the source file contents.",
+    "description": "Retrieve the source file contents around given line.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -127,7 +127,11 @@
         },
         "line": {
           "type": "integer",
-          "description": "Line number that should be retrieved."
+          "description": "Target line number."
+        },
+        "context": {
+          "type": "integer",
+          "description": "How many lines to display before and after the target line."
         }
       },
       "required": ["file", "line"]

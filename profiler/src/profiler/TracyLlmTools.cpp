@@ -121,8 +121,15 @@ static uint32_t GetParamU32( const nlohmann::json& json, const char* name )
     return json[name].get<uint32_t>();
 }
 
+static uint32_t GetParamOptU32( const nlohmann::json& json, const char* name, uint32_t def )
+{
+    if( !json.contains( name ) ) return def;
+    return json[name].get<uint32_t>();
+}
+
 #define Param(name) GetParam( json, name )
 #define ParamU32(name) GetParamU32( json, name )
+#define ParamOptU32(name, def) GetParamOptU32( json, name, def )
 
 TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {

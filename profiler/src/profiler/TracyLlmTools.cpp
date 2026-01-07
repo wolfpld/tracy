@@ -163,7 +163,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         }
         else if( tool == "source_file" )
         {
-            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 5 ) ) };
+            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 50 ) ) };
         }
         return { .reply = "Unknown tool call: " + tool };
     }

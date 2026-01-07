@@ -51,3 +51,9 @@ In certain situations you must use a specialized workflow.
 3. Figure out what algorithms are in use, how data is structured, reason about trade-offs taken.
 4. Analyze if the code can be made to perform better. Note that some code will already be optimal, despite having hot spots.
 5. Formulate the optimization strategies and present them to the user.
+
+## Inspecting callstacks
+
+1. Focus on user's code. Ignore standard library boilerplate.
+2. Retrieve source code to verify callstack validity. Source locations in callstacks are return locations, and the call site may actually be near the reported source line.
+3. Top of the callstack is the most interesting, as it shows what the program is doing *now*. The bottom of the callstack shows what the program did to do what it's doing.

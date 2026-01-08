@@ -171,7 +171,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         }
         else if( tool == "source_search" )
         {
-            return { .reply = SourceSearch( Param( "query" ) ) };
+            return { .reply = SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ) ) };
         }
         return { .reply = "Unknown tool call: " + tool };
     }
@@ -820,7 +820,7 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
-std::string TracyLlmTools::SourceSearch( const std::string& query ) const
+std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive ) const
 {
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {};
@@ -830,10 +830,25 @@ std::string TracyLlmTools::SourceSearch( const std::string& query ) const
     {
         if( IsFrameExternal( item.first, nullptr ) ) continue;
 
+        char* tmp = nullptr;
         auto& mem = item.second;
         auto start = mem.data;
         auto end = start + mem.len;
-        if( std::search( start, end, query.begin(), query.end() ) == end ) continue;
+
+        if( caseInsensitive )
+        {
+            tmp = new char[mem.len];
+            std::transform( start, end, tmp, []( char c ) { return std::tolower( c ); } );
+            start = tmp;
+            end = tmp + mem.len;
+            std::transform( query.begin(), query.end(), query.begin(), []( char c ) { return std::tolower( c ); } );
+        }
+
+        if( std::search( start, end, query.begin(), query.end() ) == end )
+        {
+            delete[] tmp;
+            continue;
+        }
 
         std::vector<size_t> res;
         auto lines = SplitLines( start, mem.len );
@@ -845,21 +860,37 @@ std::string TracyLlmTools::SourceSearch( const std::string& query ) const
                 total++;
             }
         }
-        if( res.empty() ) continue;
+        assert( !res.empty() );
 
         auto r = nlohmann::json::array();
-        for( auto& line : res )
+        if( caseInsensitive )
         {
-            r.push_back( {
-                { "line", line + 1 },
-                { "text", lines[line] }
-            } );
+            auto linesOrig = SplitLines( mem.data, mem.len );
+            for( auto& line : res )
+            {
+                r.push_back( {
+                    { "line", line + 1 },
+                    { "text", linesOrig[line] }
+                } );
+            }
+        }
+        else
+        {
+            for( auto& line : res )
+            {
+                r.push_back( {
+                    { "line", line + 1 },
+                    { "text", lines[line] }
+                } );
+            }
         }
 
         json.push_back( {
             { "file", item.first },
             { "matches", std::move( r ) }
         } );
+
+        delete[] tmp;
     }
 
     if( total == 0 ) return "No matches found.";

@@ -149,6 +149,10 @@
         "query": {
           "type": "string",
           "description": "Keyword to search for."
+        },
+        "case_insensitive": {
+          "type": "boolean",
+          "description": "Case insensitive search."
         }
       },
       "required": ["query"]

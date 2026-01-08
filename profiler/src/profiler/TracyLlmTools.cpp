@@ -133,6 +133,7 @@ static T GetParamOpt( const nlohmann::json& json, const char* name, T def )
 #define Param(name) GetParam<const std::string&>( json, name )
 #define ParamU32(name) GetParam<uint32_t>( json, name )
 #define ParamOptU32(name, def) GetParamOpt<uint32_t>( json, name, def )
+#define ParamOptBool(name, def) GetParamOpt<bool>( json, name, def )
 
 TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {

@@ -141,7 +141,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think,
         {
             const auto& trash = roles[trashIdx];
             ImGui::TextColored( trash.iconColor, "%s", trash.icon );
-            if( IsMouseClicked( ImGuiMouseButton_Left ) ) keep = false;
+            if( IsMouseClicked( ImGuiMouseButton_Left ) && ImGui::IsWindowHovered() ) keep = false;
         }
         else
         {

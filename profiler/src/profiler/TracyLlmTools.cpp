@@ -109,27 +109,30 @@ TracyLlmTools::~TracyLlmTools()
     CancelManualEmbeddings();
 }
 
-static const std::string& GetParam( const nlohmann::json& json, const char* name )
+template<typename T>
+static T GetParam( const nlohmann::json& json, const char* name )
 {
     if( !json.contains( name ) ) throw std::runtime_error( "Error: missing parameter: " + std::string( name ) );
-    return json[name].get_ref<const std::string&>();
+    if constexpr( std::is_reference_v<T> )
+    {
+        return json[name].get_ref<T>();
+    }
+    else
+    {
+        return json[name].get<T>();
+    }
 }
 
-static uint32_t GetParamU32( const nlohmann::json& json, const char* name )
-{
-    if( !json.contains( name ) ) throw std::runtime_error( "Error: missing parameter: " + std::string( name ) );
-    return json[name].get<uint32_t>();
-}
-
-static uint32_t GetParamOptU32( const nlohmann::json& json, const char* name, uint32_t def )
+template<typename T>
+static T GetParamOpt( const nlohmann::json& json, const char* name, T def )
 {
     if( !json.contains( name ) ) return def;
-    return json[name].get<uint32_t>();
+    return json[name].get<T>();
 }
 
-#define Param(name) GetParam( json, name )
-#define ParamU32(name) GetParamU32( json, name )
-#define ParamOptU32(name, def) GetParamOptU32( json, name, def )
+#define Param(name) GetParam<const std::string&>( json, name )
+#define ParamU32(name) GetParam<uint32_t>( json, name )
+#define ParamOptU32(name, def) GetParamOpt<uint32_t>( json, name, def )
 
 TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {

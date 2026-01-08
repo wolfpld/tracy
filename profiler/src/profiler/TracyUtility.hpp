@@ -33,6 +33,8 @@ const char* FormatPlotValue( double val, PlotValueFormatting format );
 
 std::vector<std::string> SplitLines( const char* data, size_t sz );
 
+bool IsFrameExternal( const char* filename, const char* image );
+
 }
 
 #endif

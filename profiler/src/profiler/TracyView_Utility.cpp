@@ -8,14 +8,6 @@
 namespace tracy
 {
 
-bool View::IsFrameExternal( const char* filename, const char* image ) const
-{
-    if( strncmp( filename, "/usr/", 5 ) == 0 || strncmp( filename, "/lib/", 5 ) == 0 || strcmp( filename, "[unknown]" ) == 0 || strcmp( filename, "<kernel>" ) == 0 ) return true;
-    if( strncmp( filename, "C:\\Program Files\\", 17 ) == 0 || strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0 ) return true;
-    if( !image ) return false;
-    return strncmp( image, "/usr/", 5 ) == 0 || strncmp( image, "/lib/", 5 ) == 0 || strncmp( image, "/lib64/", 7 ) == 0 || strcmp( image, "<kernel>" ) == 0;
-}
-
 uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
     return tracy::GetThreadColor( thread, depth, m_vd.dynamicColors != 0 );

@@ -131,10 +131,27 @@
         },
         "context": {
           "type": "integer",
-          "description": "How many lines to display before and after the target line."
+          "description": "How many lines to get before and after the target line."
         }
       },
       "required": ["file", "line"]
+    }
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "source_search",
+    "description": "Search source files for given keyword.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Keyword to search for."
+        }
+      },
+      "required": ["query"]
     }
   }
 }

@@ -62,6 +62,7 @@ private:
     std::string GetWebpage( const std::string& url );
     std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );
     std::string SourceFile( const std::string& file, uint32_t line, uint32_t context ) const;
+    std::string SourceSearch( const std::string& query ) const;
 
     void ManualEmbeddingsWorker( TracyLlmApi& api );
 

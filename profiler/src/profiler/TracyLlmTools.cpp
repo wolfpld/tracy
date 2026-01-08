@@ -165,6 +165,10 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         {
             return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 50 ) ) };
         }
+        else if( tool == "source_search" )
+        {
+            return { .reply = SourceSearch( Param( "query" ) ) };
+        }
         return { .reply = "Unknown tool call: " + tool };
     }
     catch( const std::exception& e )
@@ -810,6 +814,54 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
     }
 
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+}
+
+std::string TracyLlmTools::SourceSearch( const std::string& query ) const
+{
+    auto& cache = m_worker.GetSourceFileCache();
+    nlohmann::json json = {};
+
+    size_t total = 0;
+    for( auto& item : cache )
+    {
+        if( IsFrameExternal( item.first, nullptr ) ) continue;
+
+        auto& mem = item.second;
+        auto start = mem.data;
+        auto end = start + mem.len;
+        if( std::search( start, end, query.begin(), query.end() ) == end ) continue;
+
+        std::vector<size_t> res;
+        auto lines = SplitLines( start, mem.len );
+        for( size_t idx = 0; idx < lines.size(); idx++ )
+        {
+            if( lines[idx].find( query ) != std::string::npos )
+            {
+                res.emplace_back( idx );
+                total++;
+            }
+        }
+        if( res.empty() ) continue;
+
+        auto r = nlohmann::json::array();
+        for( auto& line : res )
+        {
+            r.push_back( {
+                { "line", line + 1 },
+                { "text", lines[line] }
+            } );
+        }
+
+        json.push_back( {
+            { "file", item.first },
+            { "matches", std::move( r ) }
+        } );
+    }
+
+    if( total == 0 ) return "No matches found.";
+    auto ret = json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+    if( ret.size() > CalcMaxSize() ) return "Too many matches found.";
+    return ret;
 }
 
 }

@@ -956,6 +956,17 @@ void View::DrawSampleParents()
             char buf[64];
             PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / excl );
             TextDisabledUnformatted( buf );
+            auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
+            if( s_config.llm )
+            {
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                if( ImGui::SmallButton( ICON_FA_ROBOT ) )
+                {
+                    AddLlmAttachment( GetCallstackJson( cs ) );
+                }
+            }
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
@@ -975,7 +986,6 @@ void View::DrawSampleParents()
             ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
             ImGui::PopStyleVar();
 
-            auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
             ImGui::Separator();
             if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
             {

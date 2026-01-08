@@ -4,6 +4,7 @@
 #include "TracyPrint.hpp"
 #include "TracyUtility.hpp"
 #include "TracyView.hpp"
+#include "../common/TracyStackFrames.hpp"
 
 namespace tracy
 {
@@ -923,6 +924,75 @@ void View::UpdateTitle()
     {
         m_stcb( captureName );
     }
+}
+
+nlohmann::json View::GetCallstackJson( const VarArray<CallstackFrameId>& cs )
+{
+    nlohmann::json json = {
+        { "type", "callstack" },
+        { "frames", nlohmann::json::array() }
+    };
+    auto& frames = json["frames"];
+
+    int fidx = 0;
+    for( auto& entry : cs )
+    {
+        auto frameData = m_worker.GetCallstackFrame( entry );
+        if( !frameData )
+        {
+            frames.push_back( { "pointer", m_worker.GetCanonicalPointer( entry ) } );
+        }
+        else
+        {
+            const auto fsz = frameData->size;
+            for( uint8_t f=0; f<fsz; f++ )
+            {
+                const auto& frame = frameData->data[f];
+                auto txt = m_worker.GetString( frame.name );
+
+                if( fidx == 0 && f != fsz-1 )
+                {
+                    auto test = tracy::s_tracyStackFrames;
+                    bool match = false;
+                    do
+                    {
+                        if( strcmp( txt, *test ) == 0 )
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+                    while( *++test );
+                    if( match ) continue;
+                }
+
+                frames.push_back( {
+                    { "function", txt },
+                    { "source", m_worker.GetString( frame.file ) },
+                } );
+                auto& frameJson = frames.back();
+
+                if( f == fsz-1 )
+                {
+                    frameJson["frame"] = fidx++;
+                }
+                else
+                {
+                    frameJson["frame"] = fidx;
+                    frameJson["inline"] = f;
+                }
+                if( frame.line != 0 )
+                {
+                    frameJson["line"] = frame.line;
+                }
+                if( frameData->imageName.Active() )
+                {
+                    frameJson["executable"] = m_worker.GetString( frameData->imageName );
+                }
+            }
+        }
+    }
+    return json;
 }
 
 }

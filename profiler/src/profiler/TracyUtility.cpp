@@ -217,6 +217,11 @@ bool IsFrameExternal( const char* filename, const char* image )
 {
     if( strncmp( filename, "/usr/", 5 ) == 0 || strncmp( filename, "/lib/", 5 ) == 0 || strcmp( filename, "[unknown]" ) == 0 || strcmp( filename, "<kernel>" ) == 0 ) return true;
     if( strncmp( filename, "C:\\Program Files", 16 ) == 0 || strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0 ) return true;
+    while( *filename )
+    {
+        if( filename[0] == '/' && filename[1] == '.' && filename[2] != '.' ) return true;
+        filename++;
+    }
     if( !image ) return false;
     return strncmp( image, "/usr/", 5 ) == 0 || strncmp( image, "/lib/", 5 ) == 0 || strncmp( image, "/lib64/", 7 ) == 0 || strcmp( image, "<kernel>" ) == 0;
 }

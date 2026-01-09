@@ -2463,6 +2463,30 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
                 line["asm"] = v.mnemonic + " .L" + std::to_string( lit->second );
                 hasJump = true;
             }
+            else
+            {
+                const char* jumpName = nullptr;
+                uint32_t jumpOffset;
+                uint64_t jumpBase = worker.GetSymbolForAddress( v.jumpAddr, jumpOffset );
+                if( jumpBase && jumpBase != m_baseAddr )
+                {
+                    auto jumpSym = worker.GetSymbolData( jumpBase );
+                    if( jumpSym )
+                    {
+                        if( worker.HasInlineSymbolAddresses() )
+                        {
+                            const auto symAddr = worker.GetInlineSymbolForAddress( v.jumpAddr );
+                            if( symAddr != 0 )
+                            {
+                                const auto symData = worker.GetSymbolData( symAddr );
+                                if( symData ) jumpName = worker.GetString( symData->name );
+                            }
+                        }
+                        if( !jumpName ) jumpName = worker.GetString( jumpSym->name );
+                    }
+                }
+                if( jumpName ) line["destination"] = jumpName;
+            }
         }
         if( !hasJump )
         {

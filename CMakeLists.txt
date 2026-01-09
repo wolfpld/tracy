@@ -16,6 +16,7 @@ endif()
 option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATIC})
 option(TRACY_Fortran "Build Fortran bindings" OFF)
 option(TRACY_LTO "Enable Link-Time optimization" OFF)
+option(TRACY_UI_PROFILER "Whether to build Tracy UI Profiler" OFF)
 
 if(TRACY_Fortran)
   enable_language(Fortran)
@@ -287,4 +288,8 @@ if(TRACY_CLIENT_PYTHON)
     endif()
 
     add_subdirectory(python)
+endif()
+
+if (TRACY_UI_PROFILER)
+    add_subdirectory(profiler)
 endif()

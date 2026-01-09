@@ -1997,7 +1997,7 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::Spacing();
                 ImGui::SameLine();
-                if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel ))
+                if( ImGui::Checkbox( ICON_FA_HAT_WIZARD " Kernel", &m_statShowKernel ))
                 {
                     m_findZone.samples.scheduleUpdate = true;
                 }

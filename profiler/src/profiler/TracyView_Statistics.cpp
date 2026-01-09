@@ -518,7 +518,11 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_HAT_WIZARD " Include kernel", &m_statShowKernel );
+        ImGui::Checkbox( ICON_FA_HAT_WIZARD " Kernel", &m_statShowKernel );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_SHIELD_HALVED " External", &m_statShowExternal );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -799,13 +803,17 @@ void View::DrawStatistics()
         if( m_showAllSymbols )
         {
             data.reserve( symMap.size() );
-            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel )
+            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel || !m_statShowExternal )
             {
                 for( auto& v : symMap )
                 {
                     const auto name = m_worker.GetString( v.second.name );
                     const auto image = m_worker.GetString( v.second.imageName );
-                    bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
+                    bool pass =
+                        ( m_statShowKernel || ( v.first >> 63 ) == 0 ) &&
+                        ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( v.second.file ), image ) ) &&
+                        m_statisticsFilter.PassFilter( name ) &&
+                        m_statisticsImageFilter.PassFilter( image );
                     if( !pass && v.second.size.Val() == 0 )
                     {
                         const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
@@ -815,7 +823,11 @@ void View::DrawStatistics()
                             if( pit != symMap.end() )
                             {
                                 const auto parentName = m_worker.GetString( pit->second.name );
-                                pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
+                                pass =
+                                    ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) &&
+                                    ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( pit->second.file ), image ) ) &&
+                                    m_statisticsFilter.PassFilter( parentName ) &&
+                                    m_statisticsImageFilter.PassFilter( image );
                             }
                         }
                     }
@@ -902,7 +914,7 @@ void View::DrawStatistics()
         else
         {
             data.reserve( symStat.size() );
-            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel )
+            if( m_statisticsFilter.IsActive() || m_statisticsImageFilter.IsActive() || !m_statShowKernel || !m_statShowExternal )
             {
                 for( auto& v : symStat )
                 {
@@ -911,7 +923,11 @@ void View::DrawStatistics()
                     {
                         const auto name = m_worker.GetString( sit->second.name );
                         const auto image = m_worker.GetString( sit->second.imageName );
-                        bool pass = ( m_statShowKernel || ( v.first >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( name ) && m_statisticsImageFilter.PassFilter( image );
+                        bool pass =
+                            ( m_statShowKernel || ( v.first >> 63 ) == 0 ) &&
+                            ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( sit->second.file ), image ) ) &&
+                            m_statisticsFilter.PassFilter( name ) &&
+                            m_statisticsImageFilter.PassFilter( image );
                         if( !pass && sit->second.size.Val() == 0 )
                         {
                             const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
@@ -921,7 +937,11 @@ void View::DrawStatistics()
                                 if( pit != symMap.end() )
                                 {
                                     const auto parentName = m_worker.GetString( pit->second.name );
-                                    pass = ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) && m_statisticsFilter.PassFilter( parentName ) && m_statisticsImageFilter.PassFilter( image );
+                                    pass =
+                                        ( m_statShowKernel || ( parentAddr >> 63 ) == 0 ) &&
+                                        ( m_statShowExternal || !IsFrameExternal( m_worker.GetString( pit->second.file ), image ) ) &&
+                                        m_statisticsFilter.PassFilter( parentName ) &&
+                                        m_statisticsImageFilter.PassFilter( image );
                                 }
                             }
                         }

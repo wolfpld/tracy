@@ -155,6 +155,10 @@ public:
         case MD_BLOCK_THEAD:
             tableHeader = false;
             break;
+        case MD_BLOCK_TH:
+        case MD_BLOCK_TD:
+            glue = false;
+            break;
         default:
             break;
         }

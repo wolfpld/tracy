@@ -152,8 +152,10 @@ bool PrintTextWrapped( const char* text, const char* end )
     auto fwLen = ImGui::CalcTextSize( text, firstWord ).x;
     if( fwLen > left )
     {
+        const auto prev = left;
         ImGui::NewLine();
         left = ImGui::GetContentRegionAvail().x;
+        if( left == prev ) ImGui::SameLine( 0, 0 );
     }
 
     auto endLine = ImGui::GetFont()->CalcWordWrapPosition( fontSize, text, end, left );

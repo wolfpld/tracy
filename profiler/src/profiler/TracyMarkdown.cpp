@@ -207,13 +207,13 @@ public:
     {
         constexpr std::array FontSizes = {
             1.f,
-            2.05f,
-            1.9f,
-            1.75f,
+            1.7f,
             1.6f,
-            1.45f,
+            1.5f,
+            1.4f,
             1.3f,
-            1.15f
+            1.2f,
+            1.1f
         };
 
         switch( type )

@@ -11,6 +11,22 @@
 #include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
+
+#ifdef _MSC_VER
+void* memmem( const void* haystack, size_t hsize, const char* needle, size_t nsize )
+{
+    auto left = ptrdiff_t( hsize ) - ptrdiff_t( nsize );
+    while( left >= 0 )
+    {
+        if( memcmp( haystack, needle, nsize ) == 0 ) return (char*)haystack;
+        haystack = (char*)haystack + 1;
+        left--;
+    }
+    return nullptr;
+}
+#endif
+
+
 namespace tracy
 {
 
@@ -310,9 +326,12 @@ private:
     {
         if( !end ) end = text + strlen( text );
 
+        auto pos = (const char*)memmem( text, end - text, "\xe2\x80\xaf", 3 );
+        if( !pos ) return PrintTextWrapped( text, end );
+
         // Replace narrow no-break space with no-break space
         std::string buf( text, end );
-        auto found = buf.find( "\xe2\x80\xaf" );
+        auto found = std::string::size_type( pos - text );
         while( found != std::string::npos )
         {
             buf.replace( found, 3, "\xc2\xa0" );

@@ -131,7 +131,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( ICON_FA_SHIELD_HALVED " External frames", &m_showExternalFrames );
+    SmallCheckbox( ICON_FA_SHIELD_HALVED " External", &m_showExternalFrames );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
@@ -139,16 +139,11 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
+    ImGui::TextUnformatted( " Frame at:" );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+    ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Symbol address xxx" ).x );
+    ImGui::Combo( "##frameat", &m_showCallstackFrameAddress, "Source code\0Return address\0Symbol address\0Entry point\0" );
 
     if( globalEntriesButton && m_worker.AreCallstackSamplesReady() )
     {
@@ -161,7 +156,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 ImGui::SameLine();
                 ImGui::Spacing();
                 ImGui::SameLine();
-                if( ImGui::Button( ICON_FA_DOOR_OPEN " Global entry statistics" ) )
+                if( ImGui::Button( ICON_FA_DOOR_OPEN " Entry stacks" ) )
                 {
                     ShowSampleParents( frame->data[0].symAddr, true );
                 }

@@ -197,7 +197,7 @@ void TracyLlm::Draw()
 
         const auto& models = m_api->GetModels();
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Model:" );
+        TextDisabledUnformatted( "Chat model:" );
         ImGui::SameLine();
         if( models.empty() || m_modelIdx < 0 )
         {
@@ -230,7 +230,40 @@ void TracyLlm::Draw()
         }
 
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Embeddings:" );
+        TextDisabledUnformatted( "Fast model:" );
+        ImGui::SameLine();
+        if( models.empty() || m_fastIdx < 0 )
+        {
+            ImGui::TextUnformatted( "No models available" );
+        }
+        else
+        {
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x );
+            if( ImGui::BeginCombo( "##fastmodel", models[m_fastIdx].name.c_str() ) )
+            {
+                for( size_t i = 0; i < models.size(); ++i )
+                {
+                    const auto& model = models[i];
+                    if( model.embeddings ) continue;
+                    if( ImGui::Selectable( model.name.c_str(), i == m_fastIdx ) )
+                    {
+                        m_fastIdx = i;
+                        s_config.llmFastModel = model.name;
+                        SaveConfig();
+                    }
+                    if( m_fastIdx == i ) ImGui::SetItemDefaultFocus();
+                    if( !model.quant.empty() )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", model.quant.c_str() );
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+
+        ImGui::AlignTextToFramePadding();
+        TextDisabledUnformatted( "Embeddings model:" );
         ImGui::SameLine();
         if( models.empty() || m_embedIdx < 0 )
         {
@@ -644,6 +677,7 @@ void TracyLlm::WorkerThread()
 void TracyLlm::UpdateModels()
 {
     m_modelIdx = -1;
+    m_fastIdx = -1;
     m_embedIdx = -1;
 
     auto& models = m_api->GetModels();
@@ -662,6 +696,23 @@ void TracyLlm::UpdateModels()
     else
     {
         m_modelIdx = std::distance( models.begin(), it );
+    }
+
+    it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmFastModel; } );
+    if( it == models.end() )
+    {
+        for( int i=0; i<models.size(); i++ )
+        {
+            if( !models[i].embeddings )
+            {
+                m_fastIdx = i;
+                break;
+            }
+        }
+    }
+    else
+    {
+        m_fastIdx = std::distance( models.begin(), it );
     }
 
     it = std::ranges::find_if( models, []( const auto& model ) { return model.name == s_config.llmEmbeddingsModel; } );

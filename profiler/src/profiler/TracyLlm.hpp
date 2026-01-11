@@ -76,6 +76,7 @@ private:
     std::unique_ptr<TracyLlmTools> m_tools;
 
     int m_modelIdx;
+    int m_fastIdx;
     int m_embedIdx;
 
     std::atomic<bool> m_exit;

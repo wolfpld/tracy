@@ -42,6 +42,7 @@ void LoadConfig()
     if( ini_sget( ini, "llm", "enabled", "%d", &v ) ) s_config.llm = v;
     if( v2 = ini_get( ini, "llm", "address" ); v2 ) s_config.llmAddress = v2;
     if( v2 = ini_get( ini, "llm", "model" ); v2 ) s_config.llmModel = v2;
+    if( v2 = ini_get( ini, "llm", "fastModel" ); v2 ) s_config.llmFastModel = v2;
     if( v2 = ini_get( ini, "llm", "embeddings" ); v2 ) s_config.llmEmbeddingsModel = v2;
     if( v2 = ini_get( ini, "llm", "useragent" ); v2 ) s_config.llmUserAgent = v2;
     if( v2 = ini_get( ini, "llm", "searchIdentifier" ); v2 ) s_config.llmSearchIdentifier = v2;
@@ -89,6 +90,7 @@ bool SaveConfig()
     fprintf( f, "enabled = %i\n", (int)s_config.llm );
     fprintf( f, "address = %s\n", s_config.llmAddress.c_str() );
     fprintf( f, "model = %s\n", s_config.llmModel.c_str() );
+    fprintf( f, "fastModel = %s\n", s_config.llmFastModel.c_str() );
     fprintf( f, "embeddings = %s\n", s_config.llmEmbeddingsModel.c_str() );
     fprintf( f, "useragent = %s\n", s_config.llmUserAgent.c_str() );
     fprintf( f, "searchIdentifier = %s\n", s_config.llmSearchIdentifier.c_str() );

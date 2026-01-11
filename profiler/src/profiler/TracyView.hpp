@@ -973,7 +973,7 @@ private:
     {
         uint64_t count = 0;
         uint64_t lastTime = 0;
-        RangeSlim range = {false, 0, 0};
+        RangeSlim range = {0, 0, false};
 
         void Reset()
         {

@@ -245,6 +245,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         {
             ImGui::SameLine();
             ImGui::TextUnformatted( it->second.c_str() );
+            if( strcmp( it->second.c_str(), "…" ) == 0 ) m_wasActive = true;
             if( clicked ) it->second = "…";
         }
         else if( clicked )

@@ -235,7 +235,7 @@ public:
 
             if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
             Glue();
-            const auto hovered = PrintTextWrapped( text, text + size );
+            const auto hovered = PrintText( text, text + size );
             ImGui::PopFont();
             if( !link.empty() )
             {
@@ -255,14 +255,14 @@ public:
         }
         case MD_TEXT_NULLCHAR:
             Glue();
-            PrintTextWrapped( "\xEF\xBF\xBD" );
+            PrintText( "\xEF\xBF\xBD" );
             break;
         case MD_TEXT_BR:
             glue = false;
             break;
         case MD_TEXT_SOFTBR:
             Glue();
-            PrintTextWrapped( " " );
+            PrintText( " " );
             break;
         case MD_TEXT_CODE:
         case MD_TEXT_LATEXMATH:
@@ -282,7 +282,7 @@ public:
                 }
                 else
                 {
-                    PrintTextWrapped( text, text + size );
+                    PrintText( text, text + size );
                 }
                 ImGui::PopFont();
             }
@@ -304,6 +304,24 @@ private:
         if( !separate ) return;
         ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.5f ) );
         separate = false;
+    }
+
+    static bool PrintText( const char* text, const char* end = nullptr )
+    {
+        if( !end ) end = text + strlen( text );
+
+        // Replace narrow no-break space with no-break space
+        std::string buf( text, end );
+        auto found = buf.find( "\xe2\x80\xaf" );
+        while( found != std::string::npos )
+        {
+            buf.replace( found, 3, "\xc2\xa0" );
+            found = buf.find( "\xe2\x80\xaf", found );
+        }
+        text = buf.c_str();
+        end = text + buf.size();
+
+        return PrintTextWrapped( text, end );
     }
 
     int bold = 0;

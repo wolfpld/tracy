@@ -171,8 +171,10 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         ImGui::SameLine();
         ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
         ImGui::SameLine();
+        bool clicked = false;
         if( ImGui::SmallButton( ICON_FA_TAG ) )
         {
+            clicked = true;
             nlohmann::json req = {
                 {
                     { "role", "system" },
@@ -236,6 +238,11 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         {
             ImGui::SameLine();
             ImGui::TextUnformatted( it->second.c_str() );
+            if( clicked ) it->second = "…";
+        }
+        else if( clicked )
+        {
+            m_callstackDesc.emplace( callstack, "…" );
         }
     }
 #endif

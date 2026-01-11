@@ -168,11 +168,18 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
 #ifndef __EMSCRIPTEN__
     if( s_config.llm )
     {
+        bool force = false;
+        if( s_config.llmAnnotateCallstacks )
+        {
+            std::lock_guard lock( m_callstackDescLock );
+            auto it = m_callstackDesc.find( callstack );
+            if( it == m_callstackDesc.end() ) force = true;
+        }
         ImGui::SameLine();
         ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
         ImGui::SameLine();
         bool clicked = false;
-        if( ImGui::SmallButton( ICON_FA_TAG ) )
+        if( ImGui::SmallButton( ICON_FA_TAG ) || force )
         {
             clicked = true;
             nlohmann::json req = {

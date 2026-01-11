@@ -910,7 +910,7 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_GEAR, m_showOptions );
     ImGui::SameLine();
-    ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
+    ToggleButton( ICON_FA_COMMENT " Messages", m_showMessages );
     ImGui::SameLine();
     ToggleButton( ICON_FA_MAGNIFYING_GLASS " Find", m_findZone.show );
     ImGui::SameLine();

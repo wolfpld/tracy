@@ -47,6 +47,7 @@ void LoadConfig()
     if( v2 = ini_get( ini, "llm", "useragent" ); v2 ) s_config.llmUserAgent = v2;
     if( v2 = ini_get( ini, "llm", "searchIdentifier" ); v2 ) s_config.llmSearchIdentifier = v2;
     if( v2 = ini_get( ini, "llm", "searchApiKey" ); v2 ) s_config.llmSearchApiKey = v2;
+    if( ini_sget( ini, "llm", "annotateCallstacks", "%d", &v ) ) s_config.llmAnnotateCallstacks = v;
 
     ini_free( ini );
 }
@@ -95,6 +96,7 @@ bool SaveConfig()
     fprintf( f, "useragent = %s\n", s_config.llmUserAgent.c_str() );
     fprintf( f, "searchIdentifier = %s\n", s_config.llmSearchIdentifier.c_str() );
     fprintf( f, "searchApiKey = %s\n", s_config.llmSearchApiKey.c_str() );
+    fprintf( f, "annotateCallstacks = %i\n", (int)s_config.llmAnnotateCallstacks );
 
     fclose( f );
     return true;

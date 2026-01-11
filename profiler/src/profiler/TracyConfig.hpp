@@ -43,6 +43,7 @@ struct Config
     std::string llmUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36";
     std::string llmSearchIdentifier;
     std::string llmSearchApiKey;
+    bool llmAnnotateCallstacks = false;
 };
 
 extern Config s_config;

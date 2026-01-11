@@ -298,6 +298,13 @@ void TracyLlm::Draw()
         if( responding ) ImGui::EndDisabled();
 
         ImGui::Checkbox( ICON_FA_EARTH_AMERICAS " Internet access", &m_tools->m_netAccess );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( ImGui::Checkbox( ICON_FA_TAG " Annotate call stacks", &s_config.llmAnnotateCallstacks ) )
+        {
+            SaveConfig();
+        }
 
         if( ImGui::TreeNode( "Advanced" ) )
         {

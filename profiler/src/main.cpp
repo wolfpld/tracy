@@ -863,7 +863,7 @@ static void DrawContents()
             ImGui::EndPopup();
         }
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_COMMENT " Chat" ) )
+        if( ImGui::Button( ICON_FA_COMMENTS " Chat" ) )
         {
             tracy::OpenWebpage( "https://discord.gg/pk78auc" );
         }

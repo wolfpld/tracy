@@ -248,6 +248,30 @@ int TracyLlmApi::Tokenize( const std::string& text, int modelIdx )
     return -1;
 }
 
+nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, int modelIdx )
+{
+    assert( m_curl );
+
+    nlohmann::json req = {
+        { "model", m_models[modelIdx].name },
+        { "messages", chat }
+    };
+
+    auto data = req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    std::string buf;
+    auto res = PostRequest( m_url + "/v1/chat/completions", data, buf, true );
+    if( res != 200 ) return {};
+
+    try
+    {
+        return nlohmann::json::parse( buf );
+    }
+    catch( const std::exception& )
+    {
+        return {};
+    }
+}
+
 int64_t TracyLlmApi::GetRequest( const std::string& url, std::string& response )
 {
     assert( m_curl );

@@ -984,6 +984,9 @@ private:
 
 #ifndef __EMSCRIPTEN__
     TracyLlm m_llm;
+
+    unordered_flat_map<uint32_t, std::string> m_callstackDesc;
+    std::mutex m_callstackDescLock;
 #endif
 };
 

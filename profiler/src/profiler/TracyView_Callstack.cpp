@@ -165,6 +165,81 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     }
     ImGui::PopStyleVar();
 
+#ifndef __EMSCRIPTEN__
+    if( s_config.llm )
+    {
+        ImGui::SameLine();
+        ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( ICON_FA_TAG ) )
+        {
+            nlohmann::json req = {
+                {
+                    { "role", "system" },
+                    { "content", "You are a helpful assistant. You analyze callstacks and provide a short description of what the program is doing at this moment. Your reply must be less than 100 characters." }
+                },
+                {
+                    { "role", "user" },
+                    { "content", GetCallstackJson( cs )["frames"].dump( -1 ) }
+                }
+            };
+
+            m_llm.QueueFastMessage( req, [this, callstack] (nlohmann::json res) {
+                if( res.contains( "choices" ) )
+                {
+                    auto& choices = res["choices"];
+                    if( choices.is_array() && !choices.empty() )
+                    {
+                        auto& c0 = choices[0];
+                        if( c0.contains( "message" ) )
+                        {
+                            auto& msg = c0["message"];
+                            if( msg.contains( "role" ) && msg.contains( "content" ) )
+                            {
+                                auto& role = msg["role"];
+                                auto& content = msg["content"];
+                                if( role.is_string() && content.is_string() && msg["role"].get_ref<const std::string&>() == "assistant" )
+                                {
+                                    auto& str = msg["content"].get_ref<const std::string&>();
+                                    if( str.size() <= 120 )
+                                    {
+                                        if( str.find( '\n' ) != std::string::npos || str.find( '\r' ) != std::string::npos )
+                                        {
+                                            auto tmp = str;
+                                            std::replace( tmp.begin(), tmp.end(), '\n', ' ' );
+                                            std::replace( tmp.begin(), tmp.end(), '\r', ' ' );
+
+                                            std::lock_guard lock( m_callstackDescLock );
+                                            m_callstackDesc[callstack] = tmp;
+                                        }
+                                        else
+                                        {
+                                            std::lock_guard lock( m_callstackDescLock );
+                                            m_callstackDesc[callstack] = str;
+                                        }
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                std::lock_guard lock( m_callstackDescLock );
+                m_callstackDesc[callstack] = "<error>";
+            } );
+        }
+
+        std::lock_guard lock( m_callstackDescLock );
+        auto it = m_callstackDesc.find( callstack );
+        if( it != m_callstackDesc.end() )
+        {
+            ImGui::SameLine();
+            ImGui::TextUnformatted( it->second.c_str() );
+        }
+    }
+#endif
+
     ImGui::Separator();
     if( ImGui::BeginTable( "##callstack", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY ) )
     {

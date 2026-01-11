@@ -28,6 +28,7 @@ class TracyLlm
     {
         Connect,
         SendMessage,
+        FastMessage,
         Tokenize
     };
 
@@ -37,6 +38,7 @@ class TracyLlm
         std::function<void()> callback;
         std::function<void(nlohmann::json)> callback2;
         std::string param;
+        nlohmann::json param2;
         bool stop;
     };
 
@@ -50,6 +52,7 @@ public:
     void AddAttachment( std::string&& str, const char* role );
     void AddMessage( std::string&& str, const char* role );
     bool QueueSendMessage();
+    bool QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback );
 
     bool m_show = false;
 

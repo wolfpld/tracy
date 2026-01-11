@@ -659,6 +659,14 @@ void TracyLlm::WorkerThread()
         case Task::SendMessage:
             SendMessage( lock );
             break;
+        case Task::FastMessage:
+        {
+            lock.unlock();
+            auto response = m_api->SendMessage( m_currentJob->param2, m_fastIdx );
+            m_currentJob->callback2( response );
+            lock.lock();
+            break;
+        }
         case Task::Tokenize:
         {
             lock.unlock();
@@ -794,6 +802,18 @@ bool TracyLlm::QueueSendMessage()
     if( !m_api->IsConnected() || m_modelIdx < 0 ) return false;
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::SendMessage
+    } ) );
+    m_cv.notify_all();
+    return true;
+}
+
+bool TracyLlm::QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback )
+{
+    if( !m_api->IsConnected() || m_fastIdx < 0 ) return false;
+    m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
+        .task = Task::FastMessage,
+        .callback2 = std::move( callback ),
+        .param2 = req
     } ) );
     m_cv.notify_all();
     return true;

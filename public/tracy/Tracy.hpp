@@ -275,6 +275,10 @@
 #  define TracyFiberLeave tracy::Profiler::LeaveFiber()
 #endif
 
+#ifdef TRACY_NAME_BUFFER
+#  include "../common/TracyNameBuffer.hpp"
+#endif
+
 #endif
 
 #endif

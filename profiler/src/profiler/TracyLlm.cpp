@@ -753,7 +753,7 @@ void TracyLlm::UpdateModels()
     }
 }
 
-static void Replace( std::string& str, const std::string& from, const std::string& to )
+static void Replace( std::string& str, std::string_view from, std::string_view to )
 {
     std::string::size_type pos;
     while( ( pos = str.find( from ) ) != std::string::npos )
@@ -774,8 +774,8 @@ void TracyLlm::ResetChat()
 
 void TracyLlm::UpdateSystemPrompt()
 {
-    static constexpr std::string UserToken = "%USER%";
-    static constexpr std::string TimeToken = "%TIME%";
+    static constexpr std::string_view UserToken = "%USER%";
+    static constexpr std::string_view TimeToken = "%TIME%";
 
     auto userName = GetUserFullName();
     if( !userName ) userName = GetUserLogin();

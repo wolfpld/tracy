@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2025-12-31 <https://github.com/wolfpld/tracy>
+2026-01-14 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -2544,7 +2544,7 @@ You can disconnect from the client and save the captured trace by pressing Ctrl 
 
 ## Interactive profiling {#interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility `tracy-profiler` contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ((Book icon) *User manual*, (GlobeAmericas icon) *Web*, (Comment icon) *Join chat* and (Heart icon) *Sponsor*). The (GlobeAmericas icon) *Web* button opens a drop-down list with links to the profiler's *(Home icon) Home page* and a bunch of *(Video icon) Feature videos*.
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility `tracy-profiler` contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ((Book icon) *User manual*, (GlobeAmericas icon) *Web*, (Comments icon) *Join chat* and (Heart icon) *Sponsor*). The (GlobeAmericas icon) *Web* button opens a drop-down list with links to the profiler's *(Home icon) Home page* and a bunch of *(Video icon) Feature videos*.
 
 The *(Wrench icon) Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow)).
 
@@ -2834,7 +2834,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 
 - *(Cog icon) Options* -- Toggles the settings menu (section [5.4](#options)).
 
-- *(Tags icon) Messages* -- Toggles the message log window (section [5.5](#messages)), which displays custom messages sent by the client, as described in section [3.7](#messagelog).
+- *(Comment icon) Messages* -- Toggles the message log window (section [5.5](#messages)), which displays custom messages sent by the client, as described in section [3.7](#messagelog).
 
 - *(Search icon) Find* -- This buttons toggles the find zone window, which allows inspection of zone behavior statistics (section [5.7](#findzone)).
 
@@ -2859,6 +2859,8 @@ The control menu (top row of buttons) provides access to various profiler featur
   - *(Ruler icon) Limits* -- Displays time range limits window (section [5.3](#timeranges)).
 
   - *(HourglassHalf icon) Wait stacks* -- If sampling was performed, an option to display wait stacks may be available. See chapter [3.16.5.1](#waitstacks) for more details.
+
+- *(Book icon) User manual* -- Opens the user manual for quick reference. Note that the version of the user manual available directly in the profiler is an inferior quality version compared to the proper PDF.
 
 - *(SearchPlus icon) Display scale* -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the *Save UI scale* option is selected in global settings.
 
@@ -3275,7 +3277,7 @@ If the *(Sitemap icon) Inlines* option is enabled, the list will show all func
 
 The *Location* column displays the corresponding source file name and line number. Depending on the *Location* option selection, it can either show the function entry address or the instruction at which the sampling was performed. The *Entry* mode points at the beginning of a non-inlined function or at the place where the compiler inserted an inlined function in its parent function. The *Sample* mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in the case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem lets you look at both the inlined function code and the place where it was inserted. If the *Smart* location is selected, the profiler will display the entry point position for non-inlined functions and sample location for inlined functions. Selecting the *(At icon) Address* option will instead print the symbol address.
 
-The location data is complemented by the originating executable image name, contained in the *Image* column. If the *Short image* (scissors icon) option is selected, the image path will be shortened to just the image file name, with the full path available in the tooltip.
+The location data is complemented by the originating executable image name, contained in the *Image* column. If the *Short images* (scissors icon) option is selected, the image path will be shortened to just the image file name, with the full path available in the tooltip.
 
 The profiler may not find some function locations due to insufficient debugging data available on the client-side. To filter out such entries, use the *(EyeSlash icon) Hide unknown* option.
 
@@ -3285,7 +3287,7 @@ The last column, *Code size*, displays the size of the symbol in the executable 
 
 [^79]: Symbols larger than 128 KB are not captured.
 
-Finally, the list can be filtered using the *(Filter icon) Filter symbols* entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the *(HatWizard icon) Include kernel* switch. The exclusive/inclusive time counting mode can be switched using the * Timing* menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the *(PuzzlePiece icon) Show all* option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
+Finally, the list can be filtered using the *(Filter icon) Filter symbols* entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the *(HatWizard icon) Kernel* switch. Symbols from external libraries can be hidden with the *(Shield icon)\* External* toggle. The exclusive/inclusive time counting mode can be switched using the * Timing* menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the *(PuzzlePiece icon) Show all* option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
 
 A simple CSV document containing the visible zones after filtering and limiting can be copied to the clipboard with the button adjacent to the visible zones count. The document contains the following columns:
 
@@ -3609,7 +3611,7 @@ A single stack frame may have multiple function call places associated with it. 
 
 [^93]: Or '(CaretRight icon)' icon in case of call stack tooltips.
 
-Stack frame location may be displayed in the following number of ways, depending on the *(At icon) Frame location* option selection:
+Stack frame location may be displayed in the following number of ways, depending on the *Frame at* option selection:
 
 - *Source code* -- displays source file and line number associated with the frame.
 
@@ -3621,11 +3623,17 @@ Stack frame location may be displayed in the following number of ways, depending
 
 In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed '`[ntdll.dll]`' name of the image containing the frame address, or simply '`[unknown]`' if the profiler cannot retrieve even this information. Additionally, '`[kernel]`' is used to indicate unknown stack frames within the operating system's internal routines.
 
-If the displayed call stack is a sampled call stack (chapter [3.16.5](#sampling)), an additional button will be available, *(DoorOpen icon) Global entry statistics*. Clicking it will open the sample entry stacks window (chapter [5.16](#sampleparents)) for the current call stack.
+Disabling the *(Shield icon)\* External* option will hide the external frames from the call stack, leaving only your code. This can greatly increase the call stack's legibility.
+
+The *Short images* (scissors icon) option shortens the displayed executable image name to only the file name. The full path is available in the tooltip.
+
+If the displayed call stack is a sampled call stack (chapter [3.16.5](#sampling)), an additional button will be available, *(DoorOpen icon) Entry stacks*. Clicking it will open the sample entry stacks window (chapter [5.16](#sampleparents)) for the current call stack.
 
 Clicking on the *(Clipboard icon) Copy to clipboard* button will copy call stack to the clipboard.
 
 Clicking on the *(Robot icon) Tracy Assist* button will attach the call stack to the automated assistant chat window (see section [5.25](#tracyassist)). The assistant will then be able to reference the call stack to answer your questions. Alternatively, you can click on the button with the right mouse button to display a list of predefined questions about the call stack for you to choose from.
+
+Clicking on the *(Tag icon) Summary* button will use Tracy Assist to generate a brief summary of the call stack. This summary can help you quickly understand what the code is doing. To have these descriptions automatically generated every time you view a new call stack, enable the *Annotate call stacks* option in the Tracy Assist settings, as described in section [5.25.3](#llmusage).
 
 ### Reading call stacks {#readingcallstacks}
 
@@ -3921,141 +3929,85 @@ The ideal LLM provider should be a system service that loads and unloads models 
 
 There are no ideal LLM providers, but here are some options:
 
-- *LM Studio* (<https://lmstudio.ai/>) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag behind. Manual configuration of each model is required.
+- *LM Studio* (<https://lmstudio.ai/>) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag a bit behind. Manual configuration of each model is required.
 
 - *llama.cpp* (<https://github.com/ggml-org/llama.cpp>) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
 
 - *llama-swap* (<https://github.com/mostlygeek/llama-swap>) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 
-::: bclogo
-Example llama-swap configuration file Here's an example configuration for llama-swap that will provide two swappable chat models, and an vector embeddings model that will not be unloaded:
-
-    macros:
-      "llama": >
-        /usr/bin/llama-server
-        --port ${PORT}
-        --flash-attn
-        -ngl 999
-    models:
-      "gemma3:12b":
-        cmd: |
-          ${llama}
-          --model /home/user/models/gemma-3-12B-it-QAT-Q4_0.gguf
-          --ctx-size 65536
-        ttl: 300
-      "qwen3:14b":
-        cmd: |
-          ${llama}
-          --model /home/user/models/Qwen3-14B-Q4_K_M.gguf
-          --ctx-size 32768
-          --cache-type-k q8_0
-          --cache-type-v q8_0
-        ttl: 300
-      "embed-nomic-text-v1.5":
-        cmd: |
-          ${llama}
-          --model /home/user/models/nomic-embed-text-v1.5.Q8_0.gguf
-          -c 8192
-          -b 8192
-          -ub 4096
-          -np 2
-          --embeddings
-        ttl: 300
-    groups:
-      embeddings:
-        swap: false
-        exclusive: false
-        members:
-          - embed-nomic-text-v1.5
-:::
+To get LM Studio working properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable \"When applicable, separate `reasoning_content` and `content` in API responses\".
 
 ### Model selection
 
-Once you have installed the service provider, you will need to download the model files for the chat functionality. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser.
+Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
 
-Tracy will not issue commands to download any model on its own.
+There are three different model types that Tracy expects to have available. Ideally all three models would be loaded and ready to go at the same time.
 
-#### Model family
+#### Chat model
 
-There are many factors to take into consideration when choosing a model to use. First, you should determine which model family you want to use:
+This is the model used for conversation purposes. You should strive to maximize its capabilities and context size. This model should support reasoning and tool usage.
 
-- *Gemma 3* (<https://blog.google/technology/developers/gemma-3/>) is a well rounded model that can converse in multiple languages.
+A good starting point that will work fairly well on almost any hardware is **Qwen3 4B Thinking 2507**.
 
-- *Qwen3* (<https://qwenlm.github.io/blog/qwen3/>) has a more technical feeling to it, it likes to write bullet point lists.
-
-- *Mistral Small* (<https://mistral.ai/news/mistral-small-3-1>) may also be considered. Despite the name, it is not small.
-
-This list is not exhaustive; it's only a starting point. These base models are often briefly fine-tuned to perform better at a specific task while retaining the model's general characteristics, hence the term *model family*. It is recommended that you start with a base model and only explore the fine-tuned models later, if at all.
-
-When looking for a model you may encounter models that are \"reasoning\". These are generally not worth the additional time and resources they need.
-
-#### Model size
-
-The next thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. A model's size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the \"smarter\" its responses will be.
-
-Models with 4B parameters are too \"dumb\" to operate in Tracy and will produce nonsense results. The 8B models are barely capable, so their use is not recommended. Models such as Gemma 3 12B and Qwen3 14B should work reasonably well. However, if your hardware can handle it, you should look for even larger models.
-
-Then there are models that are \"Mixture of Experts\". For instance, a model may have 30B total parameters, but only 3B are active when generating a response. While these models can generate responses faster, they still require the full set of parameters to be loaded into memory. Their results are also inferior to those of \"dense\" models of a similar size that use all their parameters.
-
-#### Model quantization
-
-Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more \"dumbed down\" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
+::: bclogo
+Model quantization Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more \"dumbed down\" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
 
 There are different ways of doing quantization that give the same bit size. It's best to follow the recommendations provided by LM Studio, for example.
+:::
 
-Some models consider quantization during training, resulting in a more effective model. Gemma 3 refers to this as QAT (Quantization-Aware Training).
+::: bclogo
+Model size Another thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. The model size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the \"smarter\" its responses will be.
+:::
 
-#### Multimodality
+::: bclogo
+Context size The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can \"remember\". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
 
-Some models can recognize vision or audio. This is achieved by loading an additional model alongside the language model, which increases memory requirements. Since Tracy does not require these capabilities, it's best to either avoid multimodal models or configure the LLM provider appropriately.
+Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
 
-#### Context size
+The bare minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. To get things working well you should not go less than 32K or 64K for the context size.
+:::
 
-The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can \"remember\". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
+#### Fast model
 
-Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. The KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
+Sometimes Tracy needs to do some language processing where speed is more important than the smarts. For this kind of model, choose a small amount of parameters (that still work well), and no reasoning (also referred to as \"thinking\").
 
-The minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. If you have the resources, it's recommended to use 32K or even 64K.
+A good starting point here is **Qwen3 4B Instruct 2507**. Using a 16K context should be enough for most applications.
+
+To save the precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set `-ngl 0` for llama.cpp, or set \"GPU offload\" to 0 in LM Studio) and disable the KV cache offload to GPU (set `-nkvo` for llama.cpp, or disable \"Offload KV Cache to GPU Memory\" in LM Studio). The slowdown is not significant.
+
+#### Embedding model
+
+This is a small model used for semantic search in the user manual. This should be **nomic-embed-text-1.5**, which is provided by default by LM Studio, or which you can download on your own for llama.cpp.
+
+LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word `embed`.
 
 #### Hardware resources
 
 Ideally, you want to keep both the model and the context cache in your GPU's VRAM. This will provide the fastest possible speed. However, this won't be possible in many configurations.
 
-LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more that can be run on the GPU, the faster it goes.
+LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more you can run on the GPU, the faster it goes.
 
 Determining how much of the model can be run on the GPU usually requires some experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
+
+Another option is to disable KV cache offload to GPU, as was already mentioned earlier. The KV cache is a configurable parameter that typically requires a lot of memory, and it may be better to keep in the system RAM than in limited VRAM.
+
+Yet another option is to use a \"Mixture of Experts\" model, where the active portion of the model is small compared to its overall size. For example, you may see notation such as 30B-A3B. This means that the model size is 30B, but only 3B are actively used in computations. You can use the `--cpu-moe` option in llama.cpp or the \"Force Model Expert Weights onto CPU\" option in LM Studio to keep the model in RAM, and the active portion in VRAM, which largely reduces the resource requirements of such models, while still being reasonably fast. Alternatively, there's llama.cpp `--n-cpu-moe` option, similar to the `-ngl` GPU offload option. You may experiment with it to see what works best for you.
 
 #### In practice
 
 So, which model should you run and what hardware you need to be able to do so? Let's take look at some example systems.
 
-- On a Dell XPS 13\" laptop with an i7-1185G7 CPU and integrated GPU, you will struggle to run even the most basic 4B model. Forget about it.
+- On a Dell XPS 13\" laptop with an i7-1185G7 CPU and integrated GPU, you will be able to run the Youtu-LLM 2B model and not much more.
 
-- With 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run Gemma 3 12B (8K context, 8/48 layers offloaded) or Qwen3 14B (16K context, 11/40 layers offloaded) on a Ryzen laptop. A moderate amount of patience will be necessary.
+- With a Ryzen laptop that has 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run:
 
-- An 8 GB Nvidia GPU can reach usable speeds when running Gemma 3 12B (16K context, 28/48 layers offloaded) or Qwen3 14B (16K context, 30/40 layers offloaded).
+  - Qwen3 4B Thinking 2507 Q4_K_M fully offloaded to GPU, with 64K of context in system RAM.
 
-- If you have a 4090 class GPU with 24 GB of VRAM, llama.cpp can run Gemma 3 27B with a 64K context.
+  - Qwen3 30B-A3B Thinking 2507 IQ3_XXS configured with the expert weights on CPU and 32K of context in VRAM.
 
-### Embeddings model
+- If you have a 4090 class GPU with 24 GB of VRAM, you will be able to run models such as the 106B-A12B GLM 4.5 Air, with 64K context.
 
-To access the full functionality of the automated assistant, you will also need a second language model. While the previous section focused on the model used for conversation, we also need a model that enables searching the user manual.
-
-This kind of model performs *vector embeddings*, which transform text content or a search query into a set of concepts that match the text's meaning. These semantic vectors can then be compared to each other without needing to precisely match keywords. For instance, if a user searches for efficient text search methods, the results will include text about vector embedding models.
-
-Embedding models can be downloaded just like conversation models. The text-nomic-embed v1.5 model is recommended, as it is known to work well. Using other models may result in catastrophic degradation of search results.[^102]
-
-[^102]: There are many reasons why:
-
-    1.  Some models just won't work as advertised. For example, the BGE-M3 model doesn't work at all with the Tracy user manual.
-
-    2.  Embedding models usually require a prefix that describes the task at hand.
-
-    3.  It is better to support one model that is known to work as intended than to support many models that work poorly.
-
-LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word `embed`.
-
-### Usage
+### Usage {#llmusage}
 
 The automated assistant can be accessed via the various *(Robot icon) Tracy Assist* buttons in the UI. The button in the control menu (section [5.2.1](#controlmenu)) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
 
@@ -4071,15 +4023,21 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 
 - *API* -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
 
-- *Model* -- Here you can select one of the models you have configured in the LLM provider for chat.
+- *Chat model* -- Here you can select one of the models you have configured in the LLM provider for chat.
 
-- *Embeddings* -- Select the vector embeddings model.
+- *Fast model* -- Select the fast model.
 
-- *Temperature* -- Allows changing default model temperature setting.
+- *Embeddings model* -- Select the vector embeddings model.
 
 - *Internet access* -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
 
-- *External services* -- Allows optional configuration of network access.
+- *Annotate call stacks* -- Enables automatic annotation of call stacks (see section [5.15](#callstackwindow)). Disabled by default, as it requires proper configuration of the fast model.
+
+- *Advanced* -- More advanced options are hidden here.
+
+  - *Temperature* -- Allows changing default model temperature setting.
+
+  - *Show all thinking regions* -- Always shows all reasoning sections and all tool calls made by model.
 
   - *User agent* -- Allows changing the user agent parameter in web queries.
 
@@ -4089,7 +4047,7 @@ The *(Book icon) Learn manual* button is used to build the search index for th
 
 The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
 
-The chat section contains the conversation with the automated assistant. Each assistant reply includes a hidden \"thinking\" section in which various tool calls are made and the response is prepared.
+The chat section contains the conversation with the automated assistant.
 
 Clicking on the *(User icon) User* role icon removes the chat content up to the selected question. Similarly, clicking on the *(Robot icon) Assistant* role icon removes the conversation content up to this point and generates another response from the assistant.
 
@@ -4142,7 +4100,7 @@ Tracy can import data generated by other profilers. This external data cannot be
       $ tracy-profiler mytracefile.tracy
   ```
 
-- Fuchsia's tracing format[^103] data through the `tracy-import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
+- Fuchsia's tracing format[^102] data through the `tracy-import-fuchsia` utility. This format has many commonalities with the chrome:tracing format, but it uses a compact and efficient binary encoding that can help lower tracing overhead. The file extension is `.fxt` or `.fxt.zst`.
 
   To this this tool, assuming it's compiled, run:
 
@@ -4151,7 +4109,7 @@ Tracy can import data generated by other profilers. This external data cannot be
       $ tracy-profiler mytracefile.tracy
   ```
 
-[^103]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
+[^102]: <https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format>
 
 ::: bclogo
 Compressed traces Tracy can import traces compressed with the Zstandard algorithm (for example, using the `zstd` command-line utility). Traces ending with `.zst` extension are assumed to be compressed. This applies for both chrome and fuchsia traces.

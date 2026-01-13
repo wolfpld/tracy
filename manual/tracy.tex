@@ -2915,7 +2915,7 @@ You can disconnect from the client and save the captured trace by pressing \keys
 \subsection{Interactive profiling}
 \label{interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility \texttt{tracy-profiler} contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Web}, \faComment~\emph{Join chat} and \faHeart{}~\emph{Sponsor}). The \faGlobeAmericas{}~\emph{Web} button opens a drop-down list with links to the profiler's \emph{\faHome{}~Home page} and a bunch of \emph{\faVideo{}~Feature videos}.
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility \texttt{tracy-profiler} contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Web}, \faComments~\emph{Join chat} and \faHeart{}~\emph{Sponsor}). The \faGlobeAmericas{}~\emph{Web} button opens a drop-down list with links to the profiler's \emph{\faHome{}~Home page} and a bunch of \emph{\faVideo{}~Feature videos}.
 
 The \emph{\faWrench{}~Wrench} button opens the about dialog, which also contains a number of global settings you may want to tweak (section~\ref{aboutwindow}).
 
@@ -2935,7 +2935,7 @@ The \emph{discovered clients} list is only displayed if clients are broadcasting
 
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.1, -0.5) node [midway] {\faBook};
 \draw[rounded corners=5pt] (1.3, -0.1) rectangle+(1.1, -0.5) node [midway] {\faGlobeAmericas};
-\draw[rounded corners=5pt] (2.5, -0.1) rectangle+(1.1, -0.5) node [midway] {\faComment};
+\draw[rounded corners=5pt] (2.5, -0.1) rectangle+(1.1, -0.5) node [midway] {\faComments};
 \draw[rounded corners=5pt] (3.7, -0.1) rectangle+(1.1, -0.5) node [midway] {\faHeart};
 
 \draw (0.1, -0.9) rectangle+(4.1, -0.5) node [midway] {Address entry};
@@ -3257,7 +3257,7 @@ The main profiler window is split into three sections, as seen in figure~\ref{ma
 \draw[pattern=crosshatch dots] (0, 0) rectangle+(16.2, 0.3);
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(0.5, -0.5) node [midway] {\faPowerOff};
 \draw[rounded corners=5pt] (0.7, -0.1) rectangle+(0.5, -0.5) node [midway] {\faCog{}};
-\draw[rounded corners=5pt] (1.3, -0.1) rectangle+(2.2, -0.5) node [midway] {\faTags{} Messages};
+\draw[rounded corners=5pt] (1.3, -0.1) rectangle+(2.2, -0.5) node [midway] {\faComment{} Messages};
 \draw[rounded corners=5pt] (3.6, -0.1) rectangle+(1.3, -0.5) node [midway] {\faSearch{} Find};
 \draw[rounded corners=5pt] (5.0, -0.1) rectangle+(2, -0.5) node [midway] {\faSortAmountUp{} Statistics};
 \draw[rounded corners=5pt] (7.1, -0.1) rectangle+(1.5, -0.5) node [midway] {\faFire{} Flame};
@@ -3265,8 +3265,8 @@ The main profiler window is split into three sections, as seen in figure~\ref{ma
 \draw[rounded corners=5pt] (10.9, -0.1) rectangle+(2.1, -0.5) node [midway] {\faBalanceScale{} Compare};
 \draw[rounded corners=5pt] (13.1, -0.1) rectangle+(1.2, -0.5) node [midway] {\faFingerprint{} Info};
 \draw[rounded corners=5pt] (14.4, -0.1) rectangle+(0.5, -0.5) node [midway] {\faTools{}};
-\draw[rounded corners=5pt] (15.0, -0.1) rectangle+(0.5, -0.5) node [midway] {\faSearchPlus{}};
-\draw[rounded corners=5pt] (15.6, -0.1) rectangle+(0.5, -0.5) node [midway] {\faRobot{}};
+\draw[rounded corners=5pt] (15.0, -0.1) rectangle+(0.5, -0.5) node [midway] {\faBook{}};
+\draw[rounded corners=5pt] (15.6, -0.1) rectangle+(0.5, -0.5) node [midway] {...};
 \draw[rounded corners=5pt] (0.1, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretLeft};
 \draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
@@ -3293,7 +3293,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 \item \emph{\faPlay{} Resume} -- This button allows to resume following the most recent events in a live capture. You will have selection of one of the following options: \emph{\faSearchPlus{}~Newest three frames}, or \emph{\faRulerHorizontal{}~Use current zoom level}.
 \item \emph{\faSquare{} Stopped} -- Inactive button used to indicate that the client application was terminated.
 \item \emph{\faCog{} Options} -- Toggles the settings menu (section~\ref{options}).
-\item \emph{\faTags{} Messages} -- Toggles the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
+\item \emph{\faComment{} Messages} -- Toggles the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
 \item \emph{\faSearch{} Find} -- This buttons toggles the find zone window, which allows inspection of zone behavior statistics (section~\ref{findzone}).
 \item \emph{\faSortAmountUp{} Statistics} -- Toggles the statistics window, which displays zones sorted by their total time cost (section~\ref{statistics}).
 \item \emph{\faFire{} Flame} -- Enables the flame graph window (section~\ref{flamegraph}).
@@ -3308,6 +3308,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 \item \emph{\faRuler{}~Limits} -- Displays time range limits window (section~\ref{timeranges}).
 \item \emph{\faHourglassHalf{}~Wait stacks} -- If sampling was performed, an option to display wait stacks may be available. See chapter~\ref{waitstacks} for more details.
 \end{itemize}
+\item \emph{ \faBook{}~User manual} -- Opens the user manual for quick reference. Note that the version of the user manual available directly in the profiler is an inferior quality version compared to the proper PDF.
 \item \emph{\faSearchPlus{}~Display scale} -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the \emph{Save UI scale} option is selected in global settings.
 \item \emph{\faRobot{}~Tracy Assist} -- Shows the automated assistant chat window (section~\ref{tracyassist}). Only available if enabled in global settings (section~\ref{aboutwindow}).
 \end{itemize}
@@ -3889,7 +3890,7 @@ If the \emph{\faSitemap{}~Inlines} option is enabled, the list will show all fun
 
 The \emph{Location} column displays the corresponding source file name and line number. Depending on the \emph{Location} option selection, it can either show the function entry address or the instruction at which the sampling was performed. The \emph{Entry} mode points at the beginning of a non-inlined function or at the place where the compiler inserted an inlined function in its parent function. The \emph{Sample} mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in the case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem lets you look at both the inlined function code and the place where it was inserted. If the \emph{Smart} location is selected, the profiler will display the entry point position for non-inlined functions and sample location for inlined functions. Selecting the \emph{\faAt{}~Address} option will instead print the symbol address.
 
-The location data is complemented by the originating executable image name, contained in the \emph{Image} column. If the \emph{Short image} (scissors icon) option is selected, the image path will be shortened to just the image file name, with the full path available in the tooltip.
+The location data is complemented by the originating executable image name, contained in the \emph{Image} column. If the \emph{Short images} (scissors icon) option is selected, the image path will be shortened to just the image file name, with the full path available in the tooltip.
 
 The profiler may not find some function locations due to insufficient debugging data available on the client-side. To filter out such entries, use the \emph{\faEyeSlash{}~Hide unknown} option.
 
@@ -3897,7 +3898,7 @@ The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Sh
 
 The last column, \emph{Code size}, displays the size of the symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol and displayed as 'less than'. In some cases, this data won't be available. If the symbol code has been retrieved\footnote{Symbols larger than 128~KB are not captured.} symbol size will be prepended with the \texttt{\faDatabase}~icon, and clicking the \RMB{}~right mouse button on the location column entry will open symbol view window (section~\ref{symbolview}).
 
-Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the \emph{\faHatWizard{}~Include kernel} switch. The exclusive/inclusive time counting mode can be switched using the \emph{~Timing} menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case. Additionally, you can also filter results by the originating image name of the symbol. You may disable the display of kernel symbols with the \emph{\faHatWizard{}~Kernel} switch. Symbols from external libraries can be hidden with the \emph{\faShield*{}~External} toggle. The exclusive/inclusive time counting mode can be switched using the \emph{~Timing} menu (non-reentrant timing is not available in the Sampling view). Limiting the time range is also available but is restricted to self-time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only the call stack samples but also all other symbols collected during the profiling process (this is enabled by default if no sampling was performed).
 
 A simple CSV document containing the visible zones after filtering and limiting can be copied to the clipboard with the button adjacent to the visible zones count. The document contains the following columns:
 
@@ -4331,7 +4332,7 @@ This window shows the frames contained in the selected call stack. Each frame is
 
 A single stack frame may have multiple function call places associated with it. This happens in the case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number\footnote{Or '\faCaretRight{}'~icon in case of call stack tooltips.}.
 
-Stack frame location may be displayed in the following number of ways, depending on the \emph{\faAt{}~Frame location} option selection:
+Stack frame location may be displayed in the following number of ways, depending on the \emph{Frame~at} option selection:
 
 \begin{itemize}
 \item \emph{Source code} -- displays source file and line number associated with the frame.
@@ -4342,11 +4343,17 @@ Stack frame location may be displayed in the following number of ways, depending
 
 In some cases, it may not be possible to decode stack frame addresses correctly. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if the profiler cannot retrieve even this information. Additionally, '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system's internal routines.
 
-If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Global entry statistics}. Clicking it will open the sample entry stacks window (chapter~\ref{sampleparents}) for the current call stack.
+Disabling the \emph{\faShield*{}~External} option will hide the external frames from the call stack, leaving only your code. This can greatly increase the call stack's legibility.
+
+The \emph{Short images} (scissors icon) option shortens the displayed executable image name to only the file name. The full path is available in the tooltip.
+
+If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Entry stacks}. Clicking it will open the sample entry stacks window (chapter~\ref{sampleparents}) for the current call stack.
 
 Clicking on the \emph{\faClipboard{}~Copy to clipboard} button will copy call stack to the clipboard.
 
 Clicking on the \emph{\faRobot{}~Tracy Assist} button will attach the call stack to the automated assistant chat window (see section~\ref{tracyassist}). The assistant will then be able to reference the call stack to answer your questions. Alternatively, you can click on the button with the \RMB{}~right mouse button to display a list of predefined questions about the call stack for you to choose from.
+
+Clicking on the \emph{\faTag{}~Summary} button will use Tracy Assist to generate a brief summary of the call stack. This summary can help you quickly understand what the code is doing. To have these descriptions automatically generated every time you view a new call stack, enable the \emph{Annotate call stacks} option in the Tracy Assist settings, as described in section~\ref{llmusage}.
 
 \subsubsection{Reading call stacks}
 \label{readingcallstacks}
@@ -4664,143 +4671,97 @@ The ideal LLM provider should be a system service that loads and unloads models 
 There are no ideal LLM providers, but here are some options:
 
 \begin{itemize}
-\item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag behind. Manual configuration of each model is required.
+\item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag a bit behind. Manual configuration of each model is required.
 \item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
 \item \emph{llama-swap} (\url{https://github.com/mostlygeek/llama-swap}) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 \end{itemize}
+
+To get LM Studio working properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable "When applicable, separate \texttt{reasoning\_content} and \texttt{content} in API responses".
+
+\subsubsection{Model selection}
+
+Once you have installed the service provider, you will need to download the model files. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser. Tracy will not issue commands to download any model on its own.
+
+There are three different model types that Tracy expects to have available. Ideally all three models would be loaded and ready to go at the same time.
+
+\paragraph{Chat model}
+
+This is the model used for conversation purposes. You should strive to maximize its capabilities and context size. This model should support reasoning and tool usage.
+
+A good starting point that will work fairly well on almost any hardware is \textbf{Qwen3 4B Thinking 2507}.
 
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
 logo=\bclampe
-]{Example llama-swap configuration file}
-Here's an example configuration for llama-swap that will provide two swappable chat models, and an vector embeddings model that will not be unloaded:
-
-\begin{lstlisting}
-macros:
-  "llama": >
-    /usr/bin/llama-server
-    --port ${PORT}
-    --flash-attn
-    -ngl 999
-models:
-  "gemma3:12b":
-    cmd: |
-      ${llama}
-      --model /home/user/models/gemma-3-12B-it-QAT-Q4_0.gguf
-      --ctx-size 65536
-    ttl: 300
-  "qwen3:14b":
-    cmd: |
-      ${llama}
-      --model /home/user/models/Qwen3-14B-Q4_K_M.gguf
-      --ctx-size 32768
-      --cache-type-k q8_0
-      --cache-type-v q8_0
-    ttl: 300
-  "embed-nomic-text-v1.5":
-    cmd: |
-      ${llama}
-      --model /home/user/models/nomic-embed-text-v1.5.Q8_0.gguf
-      -c 8192
-      -b 8192
-      -ub 4096
-      -np 2
-      --embeddings
-    ttl: 300
-groups:
-  embeddings:
-    swap: false
-    exclusive: false
-    members:
-      - embed-nomic-text-v1.5
-\end{lstlisting}
-\end{bclogo}
-
-\subsubsection{Model selection}
-
-Once you have installed the service provider, you will need to download the model files for the chat functionality. The exact process depends on the provider you chose. LM Studio, for example, has a built-in downloader with an easy-to-use UI. For llama.cpp, you can follow their documentation or download the model file via your web browser.
-
-Tracy will not issue commands to download any model on its own.
-
-\paragraph{Model family}
-
-There are many factors to take into consideration when choosing a model to use. First, you should determine which model family you want to use:
-
-\begin{itemize}
-\item \emph{Gemma 3} (\url{https://blog.google/technology/developers/gemma-3/}) is a well rounded model that can converse in multiple languages. 
-\item \emph{Qwen3} (\url{https://qwenlm.github.io/blog/qwen3/}) has a more technical feeling to it, it likes to write bullet point lists.
-\item \emph{Mistral Small} (\url{https://mistral.ai/news/mistral-small-3-1}) may also be considered. Despite the name, it is not small.
-\end{itemize}
-
-This list is not exhaustive; it's only a starting point. These base models are often briefly fine-tuned to perform better at a specific task while retaining the model's general characteristics, hence the term \emph{model family}. It is recommended that you start with a base model and only explore the fine-tuned models later, if at all.
-
-When looking for a model you may encounter models that are "reasoning". These are generally not worth the additional time and resources they need.
-
-\paragraph{Model size}
-
-The next thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. A model's size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the "smarter" its responses will be.
-
-Models with 4B parameters are too "dumb" to operate in Tracy and will produce nonsense results. The 8B models are barely capable, so their use is not recommended. Models such as Gemma 3 12B and Qwen3 14B should work reasonably well. However, if your hardware can handle it, you should look for even larger models.
-
-Then there are models that are "Mixture of Experts". For instance, a model may have 30B total parameters, but only 3B are active when generating a response. While these models can generate responses faster, they still require the full set of parameters to be loaded into memory. Their results are also inferior to those of "dense" models of a similar size that use all their parameters.
-
-\paragraph{Model quantization}
-
+]{Model quantization}
 Running a model with full 32-bit floating-point weights is not feasible due to memory requirements. Instead, the model parameters are quantized, for which 4 bits is typically the sweet spot. In general, the lower the parameter precision, the more "dumbed down" the model becomes. However, the loss of model coherence due to quantization is less than the benefit of being able to run a larger model.
 
 There are different ways of doing quantization that give the same bit size. It's best to follow the recommendations provided by LM Studio, for example.
+\end{bclogo}
 
-Some models consider quantization during training, resulting in a more effective model. Gemma 3 refers to this as QAT (Quantization-Aware Training).
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Model size}
+Another thing to consider when selecting a model is its size, which is typically measured in billions of parameters (weights) and written as 4B, for example. The model size determines how much memory, computation, and time are required to run it. Generally, the larger the model, the "smarter" its responses will be.
+\end{bclogo}
 
-\paragraph{Multimodality}
-
-Some models can recognize vision or audio. This is achieved by loading an additional model alongside the language model, which increases memory requirements. Since Tracy does not require these capabilities, it's best to either avoid multimodal models or configure the LLM provider appropriately.
-
-\paragraph{Context size}
-
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Context size}
 The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can "remember". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
 
-Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. The KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
+Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
 
-The minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. If you have the resources, it's recommended to use 32K or even 64K.
+The bare minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. To get things working well you should not go less than 32K or 64K for the context size.
+\end{bclogo}
+
+\paragraph{Fast model}
+
+Sometimes Tracy needs to do some language processing where speed is more important than the smarts. For this kind of model, choose a small amount of parameters (that still work well), and no reasoning (also referred to as "thinking").
+
+A good starting point here is \textbf{Qwen3 4B Instruct 2507}. Using a 16K context should be enough for most applications.
+
+To save the precious GPU resources for the chat model, you may want to keep this model entirely in system RAM (set \texttt{-ngl 0} for llama.cpp, or set "GPU offload" to 0 in LM Studio) and disable the KV cache offload to GPU (set \texttt{-nkvo} for llama.cpp, or disable "Offload KV Cache to GPU Memory" in LM Studio). The slowdown is not significant.
+
+\paragraph{Embedding model}
+
+This is a small model used for semantic search in the user manual. This should be \textbf{nomic-embed-text-1.5}, which is provided by default by LM Studio, or which you can download on your own for llama.cpp.
+
+LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
 
 \paragraph{Hardware resources}
 
 Ideally, you want to keep both the model and the context cache in your GPU's VRAM. This will provide the fastest possible speed. However, this won't be possible in many configurations.
 
-LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more that can be run on the GPU, the faster it goes.
+LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more you can run on the GPU, the faster it goes.
 
 Determining how much of the model can be run on the GPU usually requires some experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
+
+Another option is to disable KV cache offload to GPU, as was already mentioned earlier. The KV cache is a configurable parameter that typically requires a lot of memory, and it may be better to keep in the system RAM than in limited VRAM.
+
+Yet another option is to use a "Mixture of Experts" model, where the active portion of the model is small compared to its overall size. For example, you may see notation such as 30B-A3B. This means that the model size is 30B, but only 3B are actively used in computations. You can use the \texttt{-{}-cpu-moe} option in llama.cpp or the "Force Model Expert Weights onto CPU" option in LM Studio to keep the model in RAM, and the active portion in VRAM, which largely reduces the resource requirements of such models, while still being reasonably fast. Alternatively, there's llama.cpp \texttt{-{}-n-cpu-moe} option, similar to the \texttt{-ngl} GPU offload option. You may experiment with it to see what works best for you.
 
 \paragraph{In practice}
 
 So, which model should you run and what hardware you need to be able to do so? Let's take look at some example systems.
 
 \begin{itemize}
-\item On a Dell XPS 13" laptop with an i7-1185G7 CPU and integrated GPU, you will struggle to run even the most basic 4B model. Forget about it.
-\item With 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run Gemma 3 12B (8K context, 8/48 layers offloaded) or Qwen3 14B (16K context, 11/40 layers offloaded) on a Ryzen laptop. A moderate amount of patience will be necessary.
-\item An 8 GB Nvidia GPU can reach usable speeds when running Gemma 3 12B (16K context, 28/48 layers offloaded) or Qwen3 14B (16K context, 30/40 layers offloaded).
-\item If you have a 4090 class GPU with 24 GB of VRAM, llama.cpp can run Gemma 3 27B with a 64K context.
+\item On a Dell XPS 13" laptop with an i7-1185G7 CPU and integrated GPU, you will be able to run the Youtu-LLM 2B model and not much more.
+\item With a Ryzen laptop that has 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run:
+\begin{itemize}
+	\item Qwen3 4B Thinking 2507 Q4\_K\_M fully offloaded to GPU, with 64K of context in system RAM.
+	\item Qwen3 30B-A3B Thinking 2507 IQ3\_XXS configured with the expert weights on CPU and 32K of context in VRAM.
+\end{itemize}
+\item If you have a 4090 class GPU with 24 GB of VRAM, you will be able to run models such as the 106B-A12B GLM 4.5 Air, with 64K context.
 \end{itemize}
 
-\subsubsection{Embeddings model}
-
-To access the full functionality of the automated assistant, you will also need a second language model. While the previous section focused on the model used for conversation, we also need a model that enables searching the user manual.
-
-This kind of model performs \emph{vector embeddings}, which transform text content or a search query into a set of concepts that match the text's meaning. These semantic vectors can then be compared to each other without needing to precisely match keywords. For instance, if a user searches for efficient text search methods, the results will include text about vector embedding models.
-
-Embedding models can be downloaded just like conversation models. The text-nomic-embed v1.5 model is recommended, as it is known to work well. Using other models may result in catastrophic degradation of search results.\footnote{There are many reasons why:
-\begin{enumerate}
-\item Some models just won't work as advertised. For example, the BGE-M3 model doesn't work at all with the Tracy user manual.
-\item Embedding models usually require a prefix that describes the task at hand.
-\item It is better to support one model that is known to work as intended than to support many models that work poorly.
-\end{enumerate}
-}
-
-LM Studio properly labels the model's capabilities. This is not the case with the llama.cpp/llama-swap setup. To make it work, your embedding model's name must contain the word \texttt{embed}.
-
 \subsubsection{Usage}
+\label{llmusage}
 
 The automated assistant can be accessed via the various \emph{\faRobot{}~Tracy Assist} buttons in the UI. The button in the control menu (section~\ref{controlmenu}) gives quick access to the chat. Buttons in other profiler windows open the chat window and add context related to the program you are profiling.
 
@@ -4816,12 +4777,15 @@ The control section allows you to clear the chat contents, reconnect to the LLM 
 
 \begin{itemize}
 \item \emph{API} -- Enter the endpoint URL of the LLM provider here. A drop-down list is provided as a convenient way to select the default configuration of various providers. Note that the drop-down list is only used to fill in the endpoint URL. While Tracy does adapt to different ways each provider behaves, the feature detection is performed based on the endpoint conversation, not the drop-down selection.
-\item \emph{Model} -- Here you can select one of the models you have configured in the LLM provider for chat.
-\item \emph{Embeddings} -- Select the vector embeddings model.
-\item \emph{Temperature} -- Allows changing default model temperature setting.
+\item \emph{Chat model} -- Here you can select one of the models you have configured in the LLM provider for chat.
+\item \emph{Fast model} -- Select the fast model.
+\item \emph{Embeddings model} -- Select the vector embeddings model.
 \item \emph{Internet access} -- Determines whether the model can access network resources such as Wikipedia queries, web searches, and web page retrievals.
-\item \emph{External services} -- Allows optional configuration of network access.
+\item \emph{Annotate call stacks} -- Enables automatic annotation of call stacks (see section~\ref{callstackwindow}). Disabled by default, as it requires proper configuration of the fast model.
+\item \emph{Advanced} -- More advanced options are hidden here.
 \begin{itemize}
+\item \emph{Temperature} -- Allows changing default model temperature setting.
+\item \emph{Show all thinking regions} -- Always shows all reasoning sections and all tool calls made by model.
 \item \emph{User agent} -- Allows changing the user agent parameter in web queries.
 \item \emph{Google Search Engine} and \emph{API Key} -- Enables use of Google search. If this is not set, searches will fall back to DuckDuckGo, which is very rate limited.
 \end{itemize}
@@ -4831,7 +4795,7 @@ The \emph{\faBook{}~Learn manual} button is used to build the search index for t
 
 The horizontal meter directly below shows how much of the context size has been used. Tracy uses various techniques to manage context size, such as limiting the amount of data provided to the model or removing older data. However, the context will eventually be fully utilized during an extended conversation, resulting in a significant degradation of the quality of model responses.
 
-The chat section contains the conversation with the automated assistant. Each assistant reply includes a hidden "thinking" section in which various tool calls are made and the response is prepared.
+The chat section contains the conversation with the automated assistant.
 
 Clicking on the~\emph{\faUser{}~User} role icon removes the chat content up to the selected question. Similarly, clicking on the~\emph{\faRobot{}~Assistant} role icon removes the conversation content up to this point and generates another response from the assistant.
 

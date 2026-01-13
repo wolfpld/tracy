@@ -206,11 +206,12 @@ static inline int LuaZoneBeginS( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
-#ifdef TRACY_CALLSTACK
+#if defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
     const uint32_t depth = TRACY_CALLSTACK;
 #else
     const auto depth = uint32_t( lua_tointeger( L, 1 ) );
 #endif
+    assert( depth > 0 ); // Would crash later anyway, this is not allowed
     SendLuaCallstack( L, depth );
 
     lua_Debug dbg;
@@ -237,11 +238,12 @@ static inline int LuaZoneBeginNS( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
-#ifdef TRACY_CALLSTACK
+#if defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
     const uint32_t depth = TRACY_CALLSTACK;
 #else
     const auto depth = uint32_t( lua_tointeger( L, 2 ) );
 #endif
+    assert( depth > 0 ); // Would crash later anyway, this is not allowed
     SendLuaCallstack( L, depth );
 
     lua_Debug dbg;
@@ -264,7 +266,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
 
 static inline int LuaZoneBegin( lua_State* L )
 {
-#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
     return LuaZoneBeginS( L );
 #else
 #ifdef TRACY_ON_DEMAND
@@ -291,7 +293,7 @@ static inline int LuaZoneBegin( lua_State* L )
 
 static inline int LuaZoneBeginN( lua_State* L )
 {
-#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK && TRACY_CALLSTACK > 0
     return LuaZoneBeginNS( L );
 #else
 #ifdef TRACY_ON_DEMAND

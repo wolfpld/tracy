@@ -7,6 +7,13 @@
 #include <stdlib.h>
 #include "tracy/Tracy.hpp"
 
+#ifdef TRACY_HAS_LUA
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+#include "tracy/TracyLua.hpp"
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #include "stb_image.h"
@@ -344,6 +351,87 @@ void ArenaAllocatorTest()
     }
 }
 
+#ifdef TRACY_HAS_LUA
+
+void LuaTest()
+{
+    tracy::SetThreadName( "Lua test" );
+
+    lua_State* L = luaL_newstate();
+    luaL_openlibs( L );
+    tracy::LuaRegister( L );
+
+    const char* luaScript = R"(
+        for i = 1, 10 do
+            tracy.ZoneBeginN("Lua iteration")
+            tracy.ZoneText("Iteration: " .. i)
+            tracy.Message("Lua message: " .. i)
+            tracy.ZoneEnd()
+        end
+    )";
+
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        ZoneScopedN( "Lua script execution" );
+
+        if( luaL_dostring( L, luaScript ) != 0 )
+        {
+            const char* error = lua_tostring( L, -1 );
+            TracyLogString( tracy::MessageSeverity::Error, 0, TRACY_CALLSTACK, error );
+            lua_pop( L, 1 );
+        }
+
+        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+    }
+
+    lua_close( L );
+}
+
+void LuaHookTest()
+{
+    tracy::SetThreadName( "Lua hook test" );
+
+    lua_State* L = luaL_newstate();
+    luaL_openlibs( L );
+    tracy::LuaRegister( L );
+
+    // Enable Lua hook for automatic function profiling
+    lua_sethook( L, tracy::LuaHook, LUA_MASKCALL | LUA_MASKRET, 0 );
+
+    const char* luaScript = R"(
+        function fibonacci(n)
+            if n < 2 then
+                return n
+            end
+            return fibonacci(n-1) + fibonacci(n-2)
+        end
+
+        for i = 1, 5 do
+            local result = fibonacci(10)
+        end
+    )";
+
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        ZoneScopedN( "Lua hook script execution" );
+
+        if( luaL_dostring( L, luaScript ) != 0 )
+        {
+            const char* error = lua_tostring( L, -1 );
+            TracyLogString( tracy::MessageSeverity::Error, 0, TRACY_CALLSTACK, error );
+            lua_pop( L, 1 );
+        }
+
+        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+    }
+
+    lua_close( L );
+}
+
+#endif
+
 int main()
 {
 #ifndef _WIN32
@@ -382,6 +470,10 @@ int main()
     auto t21 = std::thread( DeadlockTest1 );
     auto t22 = std::thread( DeadlockTest2 );
     auto t23 = std::thread( ArenaAllocatorTest );
+#ifdef TRACY_HAS_LUA
+    auto t24 = std::thread( LuaTest );
+    auto t25 = std::thread( LuaHookTest );
+#endif
 
     int x, y;
     auto image = stbi_load( "image.jpg", &x, &y, nullptr, 4 );

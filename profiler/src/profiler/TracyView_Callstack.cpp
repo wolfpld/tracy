@@ -14,6 +14,8 @@
 namespace tracy
 {
 
+extern double s_time;
+
 void View::DrawCallstackWindow()
 {
     bool show = true;
@@ -244,8 +246,14 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         if( it != m_callstackDesc.end() )
         {
             ImGui::SameLine();
-            ImGui::TextUnformatted( it->second.c_str() );
-            if( strcmp( it->second.c_str(), "…" ) == 0 ) m_wasActive = true;
+            if( strcmp( it->second.c_str(), "…" ) == 0 )
+            {
+                DrawWaitingDots( s_time, true, true );
+            }
+            else
+            {
+                ImGui::TextUnformatted( it->second.c_str() );
+            }
             if( clicked ) it->second = "…";
         }
         else if( clicked )

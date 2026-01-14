@@ -12,7 +12,7 @@ namespace tracy
 void View::DrawManual()
 {
     const auto scale = GetScale();
-    ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 800 * scale ), ImGuiCond_Always );
+    ImGui::SetNextWindowSize( ImVec2( 1200 * scale, 800 * scale ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "User manual", &m_showManual );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 

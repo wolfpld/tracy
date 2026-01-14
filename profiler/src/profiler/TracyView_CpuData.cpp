@@ -518,7 +518,7 @@ void View::DrawThreadMigrations( const TimelineContext& ctx, const int origOffse
 
                     DrawLine( draw, pw, startPos, wakecolor, wakeupLineSize );
                     draw->AddCircleFilled( pw, bgSize, wakecolor );
-                        
+
                     // Vertical line at beginning of thread to emphasize wakeup
                     if( wakeupWidthPixels >= 3 )
                     {

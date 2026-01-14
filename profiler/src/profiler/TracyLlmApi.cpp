@@ -260,7 +260,6 @@ nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, int modelId
     auto data = req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     std::string buf;
     auto res = PostRequest( m_url + "/v1/chat/completions", data, buf, true );
-    if( res != 200 ) return {};
 
     try
     {
@@ -268,7 +267,7 @@ nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, int modelId
     }
     catch( const std::exception& )
     {
-        return {};
+        return { { "response", buf } };
     }
 }
 

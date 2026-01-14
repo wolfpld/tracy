@@ -133,6 +133,18 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     draw->AddCircleFilled( wpos + ImVec2( w * 0.5f + ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
 }
 
+[[maybe_unused]] static inline void DrawWaitingDots( double time, bool windowPos = true )
+{
+    s_wasActive = true;
+    const auto pos = ( windowPos ? ImGui::GetWindowPos() : ImVec2( 0, 0 ) ) + ImGui::GetCursorPos();
+    auto draw = ImGui::GetWindowDrawList();
+    const auto ty = ImGui::GetTextLineHeight();
+    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 0 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 1 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f        ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 2 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+    ImGui::Dummy( ImVec2( ty * 3, ty ) );
+}
+
 [[maybe_unused]] static inline bool SmallCheckbox( const char* label, bool* var )
 {
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );

@@ -4228,3 +4228,5 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
   - Fira Code -- <https://github.com/tonsky/FiraCode>
 
   - Font Awesome -- <https://fontawesome.com/>
+
+  - Noto Emoji -- <https://github.com/googlefonts/noto-emoji>

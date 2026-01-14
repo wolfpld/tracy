@@ -13,6 +13,7 @@
 #include "data/FontBold.hpp"
 #include "data/FontBoldItalic.hpp"
 #include "data/FontItalic.hpp"
+#include "data/FontEmoji.hpp"
 
 FontData g_fonts;
 
@@ -40,23 +41,29 @@ void LoadFonts( float scale )
     auto fontBold = Unembed( FontBold );
     auto fontBoldItalic = Unembed( FontBoldItalic );
     auto fontItalic = Unembed( FontItalic );
+    auto fontEmoji = Unembed( FontEmoji );
 
     io.Fonts->Clear();
 
     g_fonts.normal = io.Fonts->AddFontFromMemoryTTF( (void*)fontNormal->data(), fontNormal->size(), round( 15.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontEmoji->data(), fontEmoji->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.mono = io.Fonts->AddFontFromMemoryTTF( (void*)fontFixed->data(), fontFixed->size(), round( 15.0f * scale ), &configFixed );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontEmoji->data(), fontEmoji->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.bold = io.Fonts->AddFontFromMemoryTTF( (void*)fontBold->data(), fontBold->size(), round( 15.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontEmoji->data(), fontEmoji->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.boldItalic = io.Fonts->AddFontFromMemoryTTF( (void*)fontBoldItalic->data(), fontBoldItalic->size(), round( 15.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontEmoji->data(), fontEmoji->size(), round( 14.0f * scale ), &configMerge );
 
     g_fonts.italic = io.Fonts->AddFontFromMemoryTTF( (void*)fontItalic->data(), fontItalic->size(), round( 15.0f * scale ), &configBasic );
     io.Fonts->AddFontFromMemoryTTF( (void*)fontIcons->data(), fontIcons->size(), round( 14.0f * scale ), &configMerge );
+    io.Fonts->AddFontFromMemoryTTF( (void*)fontEmoji->data(), fontEmoji->size(), round( 14.0f * scale ), &configMerge );
 
     FontNormal = round( scale * 15.f );
     FontSmall = round( scale * 15 * 2.f / 3.f );

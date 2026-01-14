@@ -160,6 +160,7 @@ add_library(TracyImGui STATIC EXCLUDE_FROM_ALL ${IMGUI_SOURCES})
 target_include_directories(TracyImGui PUBLIC ${ImGui_SOURCE_DIR})
 target_link_libraries(TracyImGui PUBLIC TracyFreetype)
 target_compile_definitions(TracyImGui PRIVATE "IMGUI_ENABLE_FREETYPE")
+target_compile_definitions(TracyImGui PUBLIC "IMGUI_USE_WCHAR32")
 #target_compile_definitions(TracyImGui PUBLIC "IMGUI_DISABLE_OBSOLETE_FUNCTIONS")
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND LEGACY)

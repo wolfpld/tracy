@@ -948,6 +948,7 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         req["model"] = m_api->GetModels()[m_modelIdx].name;
         req["messages"] = std::move( chat );
         req["stream"] = true;
+        req["cache_prompt"] = true;
         req["tools"] = m_toolsJson;
         if( m_setTemperature ) req["temperature"] = m_temperature;
 

@@ -133,15 +133,16 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     draw->AddCircleFilled( wpos + ImVec2( w * 0.5f + ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
 }
 
-[[maybe_unused]] static inline void DrawWaitingDots( double time, bool windowPos = true )
+[[maybe_unused]] static inline void DrawWaitingDots( double time, bool windowPos = true, bool small = false )
 {
     s_wasActive = true;
     const auto pos = ( windowPos ? ImGui::GetWindowPos() : ImVec2( 0, 0 ) ) + ImGui::GetCursorPos();
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetTextLineHeight();
-    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 0 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
-    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 1 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f        ), 16.f ) ) ), 0xFFBBBBBB, 12 );
-    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 2 * ty, ty * 0.675f ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+    const auto yOffset = ty * ( small ? 0.5f : 0.675f );
+    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 0 * ty, yOffset ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 1 * ty, yOffset ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f        ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+    draw->AddCircleFilled( pos + ImVec2( ty * 0.5f + 2 * ty, yOffset ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
     ImGui::Dummy( ImVec2( ty * 3, ty ) );
 }
 

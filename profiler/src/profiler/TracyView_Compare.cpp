@@ -267,7 +267,7 @@ void View::DrawCompare()
         TextCentered( ICON_FA_FROG );
         TextCentered( "Please wait, computing data…" );
         ImGui::PopFont();
-        DrawWaitingDots( s_time );
+        DrawWaitingDotsCentered( s_time );
         ImGui::End();
         return;
     }

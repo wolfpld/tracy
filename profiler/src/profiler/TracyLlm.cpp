@@ -85,7 +85,7 @@ void TracyLlm::Draw()
         ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
         TextCentered( ICON_FA_HOURGLASS );
         TextCentered( "Please wait…" );
-        DrawWaitingDots( s_time );
+        DrawWaitingDotsCentered( s_time );
         ImGui::PopFont();
         ImGui::End();
         return;
@@ -102,7 +102,7 @@ void TracyLlm::Draw()
         ImGui::Spacing();
         TextCentered( "Building manual embeddings…" );
         ImGui::Spacing();
-        DrawWaitingDots( s_time );
+        DrawWaitingDotsCentered( s_time );
         ImGui::TextUnformatted( "" );
         ImGui::PopFont();
         const float w = 100 * scale;

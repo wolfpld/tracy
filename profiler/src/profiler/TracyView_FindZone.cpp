@@ -273,7 +273,7 @@ void View::DrawFindZone()
         TextCentered( ICON_FA_CROW );
         TextCentered( "Please wait, computing data…" );
         ImGui::PopFont();
-        DrawWaitingDots( s_time );
+        DrawWaitingDotsCentered( s_time );
         ImGui::End();
         return;
     }

@@ -702,7 +702,7 @@ bool View::DrawImpl()
         ImGui::Spacing();
         ImGui::PopFont();
         ImGui::TextUnformatted( "Waiting for connection…" );
-        DrawWaitingDots( s_time );
+        DrawWaitingDotsCentered( s_time );
         ImGui::End();
         return keepOpen;
     }

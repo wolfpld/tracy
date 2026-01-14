@@ -53,7 +53,7 @@ void View::DrawStatistics()
         TextCentered( ICON_FA_HIPPO );
         TextCentered( "Please wait, computing data…" );
         ImGui::PopFont();
-        DrawWaitingDots( s_time );
+        DrawWaitingDotsCentered( s_time );
         ImGui::End();
         return;
     }
@@ -105,7 +105,7 @@ void View::DrawStatistics()
             ImGui::Separator();
             ImGui::PopStyleVar();
             ImGui::TextWrapped( "Please wait, computing data…" );
-            DrawWaitingDots( s_time );
+            DrawWaitingDotsCentered( s_time );
             ImGui::End();
             return;
         }
@@ -328,7 +328,7 @@ void View::DrawStatistics()
             ImGui::Separator();
             ImGui::PopStyleVar();
             ImGui::TextWrapped( "Please wait, computing data…" );
-            DrawWaitingDots( s_time );
+            DrawWaitingDotsCentered( s_time );
             ImGui::End();
             return;
         }

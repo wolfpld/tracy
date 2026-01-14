@@ -1170,7 +1170,7 @@ static void DrawContents()
                 static float rnTime = 0;
                 rnTime += ImGui::GetIO().DeltaTime;
                 tracy::TextCentered( "Fetching release notes…" );
-                tracy::DrawWaitingDots( rnTime );
+                tracy::DrawWaitingDotsCentered( rnTime );
             }
             else
             {
@@ -1222,7 +1222,7 @@ static void DrawContents()
         ImGui::PopFont();
 
         animTime += ImGui::GetIO().DeltaTime;
-        tracy::DrawWaitingDots( animTime );
+        tracy::DrawWaitingDotsCentered( animTime );
 
         auto currProgress = progress.progress.load( std::memory_order_relaxed );
         if( totalProgress == 0 )
@@ -1309,7 +1309,7 @@ static void DrawContents()
         ImGui::Spacing();
         ImGui::PopFont();
         animTime += ImGui::GetIO().DeltaTime;
-        tracy::DrawWaitingDots( animTime );
+        tracy::DrawWaitingDotsCentered( animTime );
         ImGui::TextUnformatted( "Please wait, cleanup is in progress" );
         ImGui::EndPopup();
     }

@@ -119,7 +119,7 @@ static constexpr const uint32_t AsmSyntaxColors[] = {
     ImGui::TextUnformatted( value );
 }
 
-[[maybe_unused]] static inline void DrawWaitingDots( double time )
+[[maybe_unused]] static inline void DrawWaitingDotsCentered( double time )
 {
     s_wasActive = true;
     ImGui::TextUnformatted( "" );

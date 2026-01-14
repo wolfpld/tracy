@@ -236,6 +236,21 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                     }
                 }
 
+                if( res.contains( "error" ) )
+                {
+                    auto& err = res["error"];
+                    if( err.contains( "message" ) )
+                    {
+                        auto& msg = err["message"];
+                        if( msg.is_string() )
+                        {
+                            std::lock_guard lock( m_callstackDescLock );
+                            m_callstackDesc[callstack] = "<error> " + msg.get_ref<const std::string&>();
+                            return;
+                        }
+                    }
+                }
+
                 std::lock_guard lock( m_callstackDescLock );
                 m_callstackDesc[callstack] = "<error>";
             } );
@@ -249,6 +264,10 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
             if( strcmp( it->second.c_str(), "…" ) == 0 )
             {
                 DrawWaitingDots( s_time, true, true );
+            }
+            else if( strncmp( it->second.c_str(), "<error>", 7 ) == 0 )
+            {
+                TextColoredUnformatted( ImVec4( 1.0f, 0.3f, 0.3f, 1.0f ), it->second.c_str() );
             }
             else
             {

@@ -197,7 +197,7 @@ void TracyLlm::Draw()
 
         const auto& models = m_api->GetModels();
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Chat model:" );
+        TextDisabledUnformatted( ICON_FA_COMMENTS " Chat model:" );
         ImGui::SameLine();
         if( models.empty() || m_modelIdx < 0 )
         {
@@ -230,7 +230,7 @@ void TracyLlm::Draw()
         }
 
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Fast model:" );
+        TextDisabledUnformatted( ICON_FA_BOLT_LIGHTNING " Fast model:" );
         ImGui::SameLine();
         if( models.empty() || m_fastIdx < 0 )
         {
@@ -263,7 +263,7 @@ void TracyLlm::Draw()
         }
 
         ImGui::AlignTextToFramePadding();
-        TextDisabledUnformatted( "Embeddings model:" );
+        TextDisabledUnformatted( ICON_FA_BOOK_BOOKMARK " Embeddings model:" );
         ImGui::SameLine();
         if( models.empty() || m_embedIdx < 0 )
         {

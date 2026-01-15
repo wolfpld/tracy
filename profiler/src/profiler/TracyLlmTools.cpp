@@ -480,7 +480,7 @@ std::string TracyLlmTools::GetDictionary( std::string word, const std::string& l
     return TrimString( std::move( res ) );
 }
 
-static std::string RemoveNewline( std::string str )
+[[nodiscard]] static std::string RemoveNewline( std::string str )
 {
     std::erase( str, '\r' );
     std::ranges::replace( str, '\n', ' ' );
@@ -681,7 +681,7 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
     xml_writer writer( response );
     body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );
 
-    RemoveNewline( response );
+    response = RemoveNewline( response );
     auto it = std::ranges::unique( response, []( char a, char b ) { return ( a == ' ' || a == '\t' ) && ( b == ' ' || b == '\t' ); } );
     response.erase( it.begin(), it.end() );
 

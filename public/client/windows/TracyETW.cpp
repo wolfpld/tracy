@@ -134,12 +134,12 @@ constexpr uint32_t Color_Red4 = 0x8b0000;   // TracyColor.hpp
 static void ETWErrorAction( ULONG error_code, const char* message, int length )
 {
 #ifndef TRACY_NO_INTERNAL_MESSAGE
-#ifdef TRACY_HAS_CALLSTACK
+#  ifdef TRACY_HAS_CALLSTACK
     tracy::InitCallstackCritical();
     tracy::Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, Color_Red4, 60, length, message );
-#else
+#  else
     tracy::Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, Color_Red4, 0, length, message );
-#endif
+#  endif
 #endif
 #ifdef __cpp_exceptions
     // TODO: should we throw an exception?
@@ -216,7 +216,7 @@ static ULONG StopSession( Session& session )
         return ETWError( status );
     // once stopped, the session handle becomes invalid
     session.handle = 0;
-    for ( auto&& sw : session.stackwalk )
+    for( auto&& sw : session.stackwalk )
         sw = {};
     return ERROR_SUCCESS;
 }
@@ -303,7 +303,7 @@ static ULONG EnableStackWalk( Session& session, GUID EventGuid, UCHAR Opcode )
     // Instead, we keep our own array of active stack trace event ids in the session object.
     for( auto&& sw : session.stackwalk )
     {
-        if ( !IsEqualGUID( sw.EventGuid, {} ) )
+        if( !IsEqualGUID( sw.EventGuid, {} ) )
             continue;
         sw.EventGuid = EventGuid;
         sw.Type = Opcode;
@@ -314,10 +314,10 @@ static ULONG EnableStackWalk( Session& session, GUID EventGuid, UCHAR Opcode )
     return 0 /* ERROR_SUCCESS */;   // TODO: return error instead?
 }
 
-static ULONG SetCPUProfilingInterval(int microseconds)
+static ULONG SetCPUProfilingInterval( int microseconds )
 {
     if( !IsOS64Bit() )
-        return 0 /* ERROR_SUCCESS */;   // TODO: return error instead?
+        return 0 /* ERROR_SUCCESS */;   // TODO: fabricate SetLastError(ERROR_NOT_SUPPORTED) instead?
     TRACE_PROFILE_INTERVAL interval = {};
     interval.Source = 0; // 0: ProfileTime (from enum KPROFILE_SOURCE in wdm.h)
     interval.Interval = ( microseconds * 1000 ) / 100; // in 100's of nanoseconds
@@ -421,29 +421,70 @@ static Session StartUserSession( const CHAR* name )
     return session;
 }
 
+bool IsSingletonKernelLoggerSession( Session& session )
+{
+    bool check = true;
+    check &= ( session.handle == 0xFFFF );
+    check &= ( strncmp( session.name, KERNEL_LOGGER_NAMEA, sizeof( session.name ) ) == 0 );
+    return check;
+}
+
+static ULONG UpdateSessionEnableFlags( Session& session, ULONGLONG EnableFlags )
+{
+    // Use a copy of the session properties, because ControlTrace(UPDATE) will modify
+    // LogFileNameOffset and "pad" the rest with zeros, overwriting the session.handle!
+    Session temp = session;
+    temp.properties.EnableFlags = EnableFlags;
+    ULONG status = ControlTraceA( temp.handle, temp.name, &temp.properties, EVENT_TRACE_CONTROL_UPDATE );
+    if( status != ERROR_SUCCESS )
+        return ETWError( status );
+    session.properties.EnableFlags = EnableFlags;
+    return status;
+}
+
 static ULONG EnableProcessAndThreadMonitoring( Session& session )
 {
+    if( IsSingletonKernelLoggerSession( session ) )
+    {
+        ULONGLONG EnableFlags = session.properties.EnableFlags;
+        EnableFlags |= EVENT_TRACE_FLAG_THREAD;
+        ULONG status = UpdateSessionEnableFlags( session, EnableFlags );
+        return status;
+    }
+
     ULONGLONG MatchAnyKeyword = SYSTEM_PROCESS_KW_THREAD;   // ThreadStart and ThreadDCStart events
     ULONG status = EnableProvider( session, SystemProcessProviderGuid,
                                    EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
-    if( status != ERROR_SUCCESS )
-        return status;
     return status;
 }
 
 static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KHz = 125us */ )
 {
+    if( !IsOS64Bit() )
+        return 0 /* ERROR_SUCCESS */;   // TODO: fabricate SetLastError(ERROR_NOT_SUPPORTED) instead?
+
     // CPU Profiling requires special privileges on top of admin privileges
     DWORD access = ElevatePrivilege( SE_SYSTEM_PROFILE_NAME );
     if( access != ERROR_SUCCESS )
         return access;
 
-    CheckProviderSessions( SystemProfileProviderGuid, 0 );
-    ULONG status = EnableProvider( session, SystemProfileProviderGuid );
-    if( status != ERROR_SUCCESS )
-        return status;
+    if( IsSingletonKernelLoggerSession( session ) )
+    {
+        ULONGLONG EnableFlags = session.properties.EnableFlags;
+        EnableFlags |= EVENT_TRACE_FLAG_PROFILE;
+        ULONG status = UpdateSessionEnableFlags( session, EnableFlags );
+        if( status != ERROR_SUCCESS )
+            return status;
+    }
+    else
+    {
+        CheckProviderSessions( SystemProfileProviderGuid, 0 );
+        ULONG status = EnableProvider( session, SystemProfileProviderGuid );
+        if( status != ERROR_SUCCESS )
+            return status;
+    }
 
-    status = SetCPUProfilingInterval(microseconds);
+    ULONG status = SetCPUProfilingInterval( microseconds );
     if( status != ERROR_SUCCESS )
         return status;
 
@@ -453,15 +494,28 @@ static ULONG EnableCPUProfiling( Session& session, int microseconds = 125 /* 8KH
 
 static ULONG EnableContextSwitchMonitoring( Session& session )
 {
-    ULONGLONG MatchAnyKeyword = 0;
-    MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_CONTEXT_SWITCH;  // CSwitch events
-    MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_DISPATCHER;      // ReadyThread events
-    CheckProviderSessions( SystemSchedulerProviderGuid, MatchAnyKeyword );
-    ULONG status = EnableProvider( session, SystemSchedulerProviderGuid,
-                                   EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
-    if( status != ERROR_SUCCESS )
-        return status;
-    status = EnableStackWalk( session, ThreadGuid, CSwitch::Opcode );
+    if( IsSingletonKernelLoggerSession( session ) )
+    {
+        ULONGLONG EnableFlags = session.properties.EnableFlags;
+        EnableFlags |= EVENT_TRACE_FLAG_CSWITCH;
+        EnableFlags |= EVENT_TRACE_FLAG_DISPATCHER;
+        ULONG status = UpdateSessionEnableFlags( session, EnableFlags );
+        if( status != ERROR_SUCCESS )
+            return status;
+    }
+    else
+    {
+        ULONGLONG MatchAnyKeyword = 0;
+        MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_CONTEXT_SWITCH;  // CSwitch events
+        MatchAnyKeyword |= SYSTEM_SCHEDULER_KW_DISPATCHER;      // ReadyThread events
+        CheckProviderSessions( SystemSchedulerProviderGuid, MatchAnyKeyword );
+        ULONG status = EnableProvider( session, SystemSchedulerProviderGuid,
+                                       EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, MatchAnyKeyword );
+        if( status != ERROR_SUCCESS )
+            return status;
+    }
+
+    ULONG status = EnableStackWalk( session, ThreadGuid, CSwitch::Opcode );
     return status;
 }
 

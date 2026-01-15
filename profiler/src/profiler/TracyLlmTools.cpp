@@ -439,7 +439,8 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
             { "key", key },
             { "title", page["title"] },
             { "description", page["description"] },
-            { "preview", summaryJson["extract"] }
+            { "preview", summaryJson["extract"] },
+            { "excerpt", page["excerpt"] }
         } );
     }
 

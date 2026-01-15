@@ -1067,6 +1067,19 @@ void SourceView::Render( Worker& worker, View& view )
             stream.write( m_source.data(), m_source.data_size() );
             ImGui::SetClipboardText( stream.str().c_str() );
         }
+        if( s_config.llm )
+        {
+            ImGui::SameLine();
+            if( ImGui::SmallButton( ICON_FA_ROBOT ) )
+            {
+                nlohmann::json json = {
+                    { "type", "source", },
+                    { "file", m_source.filename(), },
+                    { "code", std::string( m_source.data(), m_source.data_size() ) }
+                };
+                view.AddLlmAttachment( json );
+            }
+        }
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::Spacing();

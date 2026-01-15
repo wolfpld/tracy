@@ -191,7 +191,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     if( !etw::CheckAdminPrivilege() )
         return false;
 
-    session_kernel = etw::StartSingletonKernelLoggerSession();
+    session_kernel = etw::StartSingletonKernelLoggerSession( 0 );
     if( session_kernel.handle == 0 )
         return false;
 

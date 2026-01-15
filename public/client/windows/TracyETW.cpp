@@ -326,7 +326,7 @@ static ULONG SetCPUProfilingInterval( int microseconds )
     return ETWError( status );
 }
 
-static Session StartSingletonKernelLoggerSession( ULONGLONG EnableFlags = 0 )
+static Session StartSingletonKernelLoggerSession( ULONGLONG EnableFlags )
 {
     Session session = {};
 

@@ -487,6 +487,15 @@ std::string TracyLlmTools::GetDictionary( std::string word, const std::string& l
     return str;
 }
 
+static void ReplaceAll( std::string& str, std::string_view from, std::string_view to )
+{
+    std::string::size_type pos = 0;
+    while( ( pos = str.find( from, pos ) ) != std::string::npos )
+    {
+        str.replace( pos, from.size(), to );
+    }
+}
+
 std::string TracyLlmTools::SearchWeb( std::string query )
 {
     NetworkCheckString;
@@ -682,6 +691,8 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
     body.node().print( writer, nullptr, pugi::format_raw | pugi::format_no_declaration | pugi::format_no_escapes );
 
     response = RemoveNewline( response );
+    ReplaceAll( response, "<div><div>", "<div>" );
+    ReplaceAll( response, "</div></div>", "</div>" );
     auto it = std::ranges::unique( response, []( char a, char b ) { return ( a == ' ' || a == '\t' ) && ( b == ' ' || b == '\t' ); } );
     response.erase( it.begin(), it.end() );
 

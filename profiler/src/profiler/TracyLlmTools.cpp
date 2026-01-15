@@ -417,52 +417,34 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
     NetworkCheckReply;
 
     std::ranges::replace( query, ' ', '+' );
-    const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=1" );
+    const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=10" );
 
     auto json = nlohmann::json::parse( response );
     if( !json.contains( "pages" ) ) return { .reply = "No results found" };
 
-    auto& page = json["pages"];
-    if( page.size() == 0 ) return { .reply = "No results found" };
+    auto& pages = json["pages"];
+    if( pages.size() == 0 ) return { .reply = "No results found" };
 
-    auto& page0 = page[0];
-    if( !page0.contains( "key" ) ) return { .reply = "No results found" };
-
-    const auto key = page0["key"].get_ref<const std::string&>();
-
-    auto summary = FetchWebPage( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
-    auto summaryJson = nlohmann::json::parse( summary );
-
-    if( !summaryJson.contains( "title" ) ) return { .reply = "No results found" };
-
-    nlohmann::json output;
-    output["key"] = key;
-    output["title"] = summaryJson["title"];
-    if( summaryJson.contains( "description" ) ) output["description"] = summaryJson["description"];
-    output["preview"] = summaryJson["extract"];
-
-    std::string image;
-    if( summaryJson.contains( "thumbnail" ) )
+    auto output = nlohmann::json::array();
+    for( auto& page : pages )
     {
-        auto& thumb = summaryJson["thumbnail"];
-        if( thumb.contains( "source" ) )
-        {
-            auto imgData = FetchWebPage( thumb["source"].get_ref<const std::string&>() );
-            if( !imgData.empty() && imgData[0] != '<' && strncmp( imgData.c_str(), "Error:", 6 ) != 0 )
-            {
-                size_t b64sz = ( ( 4 * imgData.size() / 3 ) + 3 ) & ~3;
-                char* b64 = new char[b64sz+1];
-                b64[b64sz] = 0;
-                size_t outSz;
-                base64_encode( (const char*)imgData.data(), imgData.size(), b64, &outSz, 0 );
-                image = std::string( b64, outSz );
-                delete[] b64;
-            }
-        }
+        if( !page.contains( "key" ) ) continue;
+
+        const auto key = page["key"].get_ref<const std::string&>();
+
+        auto summary = FetchWebPage( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
+        auto summaryJson = nlohmann::json::parse( summary );
+
+        output.push_back( {
+            { "key", key },
+            { "title", page["title"] },
+            { "description", page["description"] },
+            { "preview", summaryJson["extract"] }
+        } );
     }
 
     const auto reply = output.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
-    return { .reply = reply, .image = image };
+    return { .reply = reply };
 }
 
 std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& lang )

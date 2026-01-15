@@ -435,13 +435,14 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
         auto summary = FetchWebPage( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
         auto summaryJson = nlohmann::json::parse( summary );
 
-        output.push_back( {
+        nlohmann::json j = {
             { "key", key },
             { "title", page["title"] },
-            { "description", page["description"] },
             { "preview", summaryJson["extract"] },
             { "excerpt", page["excerpt"] }
-        } );
+        };
+        if( page.contains( "description" ) && !page["description"].is_null() ) j["description"] = page["description"];
+        output.push_back( j );
     }
 
     const auto reply = output.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );

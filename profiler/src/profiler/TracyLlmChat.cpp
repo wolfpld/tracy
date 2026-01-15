@@ -277,9 +277,15 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think,
             {
                 if( !content.empty() )
                 {
-                    NormalScope();
-                    m_markdown.Print( content.c_str(), content.size() );
-                    if( !last && think == Think::Hide && roleStr == "assistant" ) ImGui::Spacing();
+                    auto ptr = content.c_str();
+                    auto end = ptr + content.size();
+                    while( *ptr == '\n' ) ptr++;
+                    if( ptr != end )
+                    {
+                        NormalScope();
+                        m_markdown.Print( content.c_str(), content.size() );
+                        if( !last && think == Think::Hide && roleStr == "assistant" ) ImGui::Spacing();
+                    }
                 }
             }
         }

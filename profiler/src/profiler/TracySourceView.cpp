@@ -1865,7 +1865,7 @@ static uint32_t GetGoodnessColor( float inRatio )
     return GoodnessColor[ratio];
 }
 
-void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, const View& view, bool hasInlines )
+void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker, View& view, bool hasInlines )
 {
     const auto scale = GetScale();
     if( hasInlines && !m_calcInlineStats && ( ( as.ipTotalAsm.local + as.ipTotalAsm.ext ) > 0 || ( view.m_statRange.active && worker.GetSamplesForSymbol( m_baseAddr ) ) ) )
@@ -1927,6 +1927,43 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
                 ImGui::SameLine();
                 TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_TRIANGLE_EXCLAMATION );
                 ImGui::EndTooltip();
+            }
+        }
+        if( s_config.llm )
+        {
+            ImGui::SameLine();
+            if( ImGui::SmallButton( ICON_FA_ROBOT "##src" ) )
+            {
+                nlohmann::json json = {
+                    { "type", "source", },
+                    { "file", m_source.filename() },
+                    { "code", nlohmann::json::array() }
+                };
+
+                auto& code = json["code"];
+                auto& lines = m_source.get();
+
+                int idx = 1;
+                for( auto& line : lines )
+                {
+                    nlohmann::json l = {
+                        { "line", idx },
+                        { "text", std::string( line.begin, line.end ) }
+                    };
+
+                    auto it = as.ipCountSrc.find( idx );
+                    if( it != as.ipCountSrc.end() )
+                    {
+                        char buf[32];
+                        snprintf( buf, sizeof(buf), "%.4f%%", 100.f * it->second.local / as.ipTotalSrc.local );
+                        l["cost"] = buf;
+                    }
+
+                    code.push_back( l );
+                    idx++;
+                }
+
+                view.AddLlmAttachment( json );
             }
         }
         ImGui::SameLine();

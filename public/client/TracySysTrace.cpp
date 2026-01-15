@@ -188,42 +188,42 @@ bool SysTraceStart( int64_t& samplingPeriod )
 
     s_pid = GetCurrentProcessId();
 
-    if ( !etw::CheckAdminPrivilege() )
+    if( !etw::CheckAdminPrivilege() )
         return false;
 
     session_kernel = etw::StartSingletonKernelLoggerSession();
-    if ( session_kernel.handle == 0 )
+    if( session_kernel.handle == 0 )
         return false;
 
 #ifndef TRACY_NO_CONTEXT_SWITCH
-    if ( etw::EnableProcessAndThreadMonitoring( session_kernel ) != ERROR_SUCCESS )
+    if( etw::EnableProcessAndThreadMonitoring( session_kernel ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
-    if ( etw::EnableContextSwitchMonitoring( session_kernel ) != ERROR_SUCCESS )
+    if( etw::EnableContextSwitchMonitoring( session_kernel ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
 #endif
 
 
 #ifndef TRACY_NO_SAMPLING
     int microseconds = GetSamplingInterval() / 10;
-    if ( etw::EnableCPUProfiling( session_kernel, microseconds ) != ERROR_SUCCESS )
+    if( etw::EnableCPUProfiling( session_kernel, microseconds ) != ERROR_SUCCESS )
         return etw::StopSession( session_kernel ), false;
     samplingPeriod = GetSamplingPeriod();
 #endif
 
     consumer_kernel = etw::SetupEventConsumer( session_kernel, EventRecordCallback );
-    if ( consumer_kernel == INVALID_PROCESSTRACE_HANDLE )
+    if( consumer_kernel == INVALID_PROCESSTRACE_HANDLE )
         return etw::StopSession( session_kernel ), false;
 
 #ifndef TRACY_NO_VSYNC_CAPTURE
     session_vsync = etw::StartUserSession( "TracyVsync" );
-    if ( session_vsync.handle != 0 )
+    if( session_vsync.handle != 0 )
     {
-        if ( etw::EnableVSyncMonitoring( session_vsync ) != ERROR_SUCCESS )
+        if( etw::EnableVSyncMonitoring( session_vsync ) != ERROR_SUCCESS )
             etw::StopSession( session_vsync );
         else
         {
             consumer_vsync = etw::SetupEventConsumer( session_vsync, EventRecordCallback );
-            if ( consumer_vsync != INVALID_PROCESSTRACE_HANDLE )
+            if( consumer_vsync != INVALID_PROCESSTRACE_HANDLE )
             {
                 s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
                 new(s_threadVsync) Thread( [] (void*) {

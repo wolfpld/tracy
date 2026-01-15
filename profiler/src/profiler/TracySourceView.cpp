@@ -2199,7 +2199,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
         for( auto& v : as.ipCountSrc ) ipData.emplace_back( v.first, v.second );
         for( uint32_t lineNum = 1; lineNum <= lines.size(); lineNum++ )
         {
-            if( as.ipCountSrc.find( lineNum ) == as.ipCountSrc.end() )
+            if( !as.ipCountSrc.contains( lineNum ) )
             {
                 auto addresses = GetAddressesForLocation( m_source.idx(), lineNum, worker );
                 if( addresses )

@@ -164,11 +164,11 @@ static void SetupDPIScale()
     dpiFirstSetup = false;
     dpiChanged = 2;
 
-    LoadFonts( scale );
-
 #ifdef __APPLE__
-    scale = 1.0f;
+    scale = tracy::s_config.userScale;
 #endif
+
+    LoadFonts( scale );
 
     auto& style = ImGui::GetStyle();
     style = ImGuiStyle();

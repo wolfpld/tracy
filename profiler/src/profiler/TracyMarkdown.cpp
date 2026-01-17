@@ -108,7 +108,7 @@ public:
             char tmp[64];
             sprintf( tmp, "##table%d", idx++ );
             Separate();
-            ImGui::BeginTable( tmp, ((MD_BLOCK_TABLE_DETAIL*)detail)->col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp );
+            ImGui::BeginTable( tmp, ((MD_BLOCK_TABLE_DETAIL*)detail)->col_count, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Resizable );
             break;
         }
         case MD_BLOCK_THEAD:

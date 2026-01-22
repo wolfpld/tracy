@@ -117,7 +117,7 @@
   "type": "function",
   "function": {
     "name": "source_file",
-    "description": "Retrieve the source file contents around given line.",
+    "description": "Retrieve the user program source file contents around given line.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -142,7 +142,7 @@
   "type": "function",
   "function": {
     "name": "source_search",
-    "description": "Search source files for given keyword.",
+    "description": "Search user program source files for given keyword.",
     "parameters": {
       "type": "object",
       "properties": {

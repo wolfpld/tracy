@@ -218,6 +218,7 @@ int main( int argc, char** argv )
         const auto mbps = worker.GetMbpsData().back();
         const auto compRatio = worker.GetCompRatio();
         const auto netTotal = worker.GetDataTransferred();
+        const auto queueSize = worker.GetSendQueueSize();
         lock.unlock();
 
         // Output progress info only if destination is a TTY to avoid bloating
@@ -248,6 +249,8 @@ int main( int argc, char** argv )
             }
             printf( " | ");
             AnsiPrintf( ANSI_RED, "%s", tracy::TimeToString( worker.GetLastTime() - firstTime ) );
+            printf( " | ");
+            AnsiPrintf( ANSI_RED ANSI_BOLD, "%s query backlog", tracy::RealToString( queueSize ) );
             fflush( stdout );
         }
 

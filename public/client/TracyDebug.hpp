@@ -18,8 +18,6 @@
 #ifdef TRACY_VERBOSE
 #  include <stdio.h>
 #  define TracyDebug(...) do { fprintf( stderr, __VA_ARGS__ ); fputc( '\n', stderr ); } while( 0 )
-#elif !defined(TRACY_NO_INTERNAL_MESSAGE)
-#  define TracyDebug(...) TracyInternalMessage( tracy::MessageSeverity::Debug, __VA_ARGS__ )
 #else
 #  define TracyDebug(...)
 #endif

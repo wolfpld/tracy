@@ -1026,17 +1026,26 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     bool done = false;
     try
     {
-        auto& choices = json["choices"];
-        if( !choices.empty() )
+        if( json.contains( "choices" ) )
         {
-            auto& node = choices[0];
-            auto& delta = node["delta"];
+            auto& choices = json["choices"];
+            if( !choices.empty() )
+            {
+                auto& node = choices[0];
+                auto& delta = node["delta"];
 
-            AppendResponse( "content", delta );
-            AppendResponse( "reasoning_content", delta );
-            AppendResponse( "tool_calls", delta );
+                AppendResponse( "content", delta );
+                AppendResponse( "reasoning_content", delta );
+                AppendResponse( "tool_calls", delta );
 
-            done = !node["finish_reason"].empty();
+                done = !node["finish_reason"].empty();
+            }
+        }
+        else if( json.contains( "error" ) )
+        {
+            AddMessage( json["error"].dump( 2 ), "error" );
+            m_focusInput = true;
+            return false;
         }
     }
     catch( const nlohmann::json::exception& e )

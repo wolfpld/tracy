@@ -8,9 +8,12 @@
 #include "tracy/Tracy.hpp"
 
 #ifdef TRACY_HAS_LUA
+extern "C"
+{
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+}
 #include "tracy/TracyLua.hpp"
 #endif
 

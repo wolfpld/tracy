@@ -148,7 +148,11 @@ namespace detail
 static inline void LuaShortenSrc( char* dst, const char* src )
 {
     size_t l = std::min( (size_t)255, strlen( src ) );
-    memcpy( dst, src, l );
+    for( size_t i=0; i<l; i++ )
+    {
+        if( src[i] == '\n' ) dst[i] = ' ';
+        else dst[i] = src[i];
+    }
     dst[l] = 0;
 }
 

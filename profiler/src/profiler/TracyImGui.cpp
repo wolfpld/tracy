@@ -128,7 +128,7 @@ void PrintSource( const std::vector<Tokenizer::Line>& lines )
     }
 }
 
-bool PrintTextWrapped( const char* text, const char* end, bool strikethrough )
+bool PrintTextWrapped( const char* text, const char* end, bool strikethrough, bool underline )
 {
     bool hovered = false;
     if( !end ) end = text + strlen( text );
@@ -152,15 +152,17 @@ bool PrintTextWrapped( const char* text, const char* end, bool strikethrough )
     }
 
     auto endLine = ImGui::GetFont()->CalcWordWrapPosition( fontSize, text, end, left );
-    if( strikethrough )
+    if( strikethrough || underline )
     {
-        auto y = ImGui::GetCursorScreenPos().y + fontSize05;
+        auto y1 = ImGui::GetCursorScreenPos().y + fontSize05;
+        auto y2 = ImGui::GetCursorScreenPos().y + fontSize;
         auto x0 = ImGui::GetCursorScreenPos().x - scale;
         ImGui::TextUnformatted( text, endLine );
         ImGui::SameLine( 0, 0 );
         auto x1 = ImGui::GetCursorScreenPos().x + scale;
         ImGui::NewLine();
-        ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y ), ImVec2( x1, y ), color, scale );
+        if( strikethrough ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y1 ), ImVec2( x1, y1 ), color, scale );
+        if( underline ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y2 ), ImVec2( x1, y2 ), color, scale );
     }
     else
     {
@@ -175,15 +177,17 @@ bool PrintTextWrapped( const char* text, const char* end, bool strikethrough )
         if( *text == ' ' ) text++;
         endLine = ImGui::GetFont()->CalcWordWrapPosition( fontSize, text, end, left );
         if( text == endLine ) endLine++;
-        if( strikethrough )
+        if( strikethrough || underline )
         {
-            auto y = ImGui::GetCursorScreenPos().y + fontSize05;
+            auto y1 = ImGui::GetCursorScreenPos().y + fontSize05;
+            auto y2 = ImGui::GetCursorScreenPos().y + fontSize;
             auto x0 = ImGui::GetCursorScreenPos().x - scale;
             ImGui::TextUnformatted( text, endLine );
             ImGui::SameLine( 0, 0 );
             auto x1 = ImGui::GetCursorScreenPos().x + scale;
             ImGui::NewLine();
-            ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y ), ImVec2( x1, y ), color, scale );
+            if( strikethrough ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y1 ), ImVec2( x1, y1 ), color, scale );
+            if( underline ) ImGui::GetWindowDrawList()->AddLine( ImVec2( x0, y2 ), ImVec2( x1, y2 ), color, scale );
         }
         else
         {

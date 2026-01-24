@@ -348,7 +348,7 @@ private:
         if( !end ) end = text + strlen( text );
 
         auto pos = (const char*)memmem( text, end - text, "\xe2\x80\xaf", 3 );
-        if( !pos ) return PrintTextWrapped( text, end, strikethrough );
+        if( !pos ) return PrintTextWrapped( text, end, strikethrough, !link.empty() );
 
         // Replace narrow no-break space with no-break space
         std::string buf( text, end );
@@ -361,7 +361,7 @@ private:
         text = buf.c_str();
         end = text + buf.size();
 
-        return PrintTextWrapped( text, end, strikethrough );
+        return PrintTextWrapped( text, end, strikethrough, !link.empty() );
     }
 
     int bold = 0;

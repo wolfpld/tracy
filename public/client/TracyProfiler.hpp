@@ -479,7 +479,7 @@ public:
         assert( size < (std::numeric_limits<uint16_t>::max)() );
         auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        TaggedUserlandAddress taggedPtr{ (uint64_t)txt, MakeMessageMetadata( MessageSourceType::User, MessageSeverity::Info ) };
+        TaggedUserlandAddress taggedPtr{ (uint64_t)ptr, MakeMessageMetadata( MessageSourceType::User, MessageSeverity::Info ) };
 
         TracyLfqPrepare( QueueType::MessageAppInfo );
         MemWrite( &item->messageFat.time, GetTime() );

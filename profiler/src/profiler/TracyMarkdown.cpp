@@ -70,14 +70,29 @@ public:
         case MD_BLOCK_LI:
         {
             Separate();
-            auto& l = lists.back();
-            if( l.num < 0 )
+            auto li = ((MD_BLOCK_LI_DETAIL*)detail);
+            if( li->is_task )
             {
-                ImGui::Bullet();
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( -2, -2 ) );
+                char tmp[64];
+                sprintf( tmp, "##task%d", idx++ );
+                bool checked = li->task_mark != ' ';
+                ImGui::BeginDisabled();
+                ImGui::Checkbox( tmp, &checked );
+                ImGui::EndDisabled();
+                ImGui::PopStyleVar();
             }
             else
             {
-                ImGui::Text( "%d.", l.num++ );
+                auto& l = lists.back();
+                if( l.num < 0 )
+                {
+                    ImGui::Bullet();
+                }
+                else
+                {
+                    ImGui::Text( "%d.", l.num++ );
+                }
             }
             glue = false;
             ImGui::SameLine();
@@ -364,7 +379,7 @@ Markdown::Markdown()
     : m_parser( new MD_PARSER() )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES;
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS;
     m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterBlock( type, detail ); };
     m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->LeaveBlock( type, detail ); };
     m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterSpan( type, detail ); };

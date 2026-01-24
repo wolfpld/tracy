@@ -209,6 +209,9 @@ public:
         case MD_SPAN_A:
             link = std::string( ((MD_SPAN_A_DETAIL*)detail)->href.text, ((MD_SPAN_A_DETAIL*)detail)->href.size );
             break;
+        case MD_SPAN_DEL:
+            strikethrough = true;
+            break;
         default:
             break;
         }
@@ -227,6 +230,9 @@ public:
             break;
         case MD_SPAN_A:
             link.clear();
+            break;
+        case MD_SPAN_DEL:
+            strikethrough = false;
             break;
         default:
             break;
@@ -337,12 +343,12 @@ private:
         separate = false;
     }
 
-    static bool PrintText( const char* text, const char* end = nullptr )
+    bool PrintText( const char* text, const char* end = nullptr )
     {
         if( !end ) end = text + strlen( text );
 
         auto pos = (const char*)memmem( text, end - text, "\xe2\x80\xaf", 3 );
-        if( !pos ) return PrintTextWrapped( text, end );
+        if( !pos ) return PrintTextWrapped( text, end, strikethrough );
 
         // Replace narrow no-break space with no-break space
         std::string buf( text, end );
@@ -355,7 +361,7 @@ private:
         text = buf.c_str();
         end = text + buf.size();
 
-        return PrintTextWrapped( text, end );
+        return PrintTextWrapped( text, end, strikethrough );
     }
 
     int bold = 0;
@@ -367,6 +373,7 @@ private:
     bool first = true;
     bool codeBlock = false;
     bool tableHeader = false;
+    bool strikethrough = false;
 
     int idx = 0;
 
@@ -379,7 +386,7 @@ Markdown::Markdown()
     : m_parser( new MD_PARSER() )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
-    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS;
+    m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH;
     m_parser->enter_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterBlock( type, detail ); };
     m_parser->leave_block = []( MD_BLOCKTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->LeaveBlock( type, detail ); };
     m_parser->enter_span = []( MD_SPANTYPE type, void* detail, void* ud ) -> int { return ((MarkdownContext*)ud)->EnterSpan( type, detail ); };

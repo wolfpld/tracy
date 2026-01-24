@@ -120,7 +120,7 @@ private:
 
 #pragma pack( pop )
 
-enum { SortedVectorSize = sizeof( SortedVector<int> ) };
+constexpr size_t SortedVectorSize = sizeof( SortedVector<int> );
 
 }
 

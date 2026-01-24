@@ -76,7 +76,7 @@ namespace tracy {
     class OpenCLCtx
     {
     public:
-        enum { QueryCount = 64 * 1024 };
+        static constexpr size_t QueryCount = 64 * 1024;
 
         OpenCLCtx(cl_context context, cl_device_id device)
             : m_contextId(GetGpuCtxCounter().fetch_add(1, std::memory_order_relaxed))

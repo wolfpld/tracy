@@ -874,7 +874,7 @@ struct QueueItem
 #pragma pack( pop )
 
 
-enum { QueueItemSize = sizeof( QueueItem ) };
+constexpr size_t QueueItemSize = sizeof( QueueItem );
 
 static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // zone text

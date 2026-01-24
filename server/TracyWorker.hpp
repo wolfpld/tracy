@@ -132,7 +132,6 @@ public:
 
         uint64_t _zone_thread;
     };
-    enum { ZoneThreadDataSize = sizeof( ZoneThreadData ) };
 
     struct GpuZoneThreadData
     {
@@ -143,7 +142,6 @@ public:
 
         uint64_t _zone_thread;
     };
-    enum { GpuZoneThreadDataSize = sizeof( GpuZoneThreadData ) };
 
     struct CpuThreadTopology
     {

@@ -112,8 +112,6 @@ private:
         uint16_t regData[20];
     };
 
-    enum { AsmLineSize = sizeof( AsmLine ) };
-
     struct JumpData
     {
         uint64_t min;

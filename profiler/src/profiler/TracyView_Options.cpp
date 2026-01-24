@@ -183,7 +183,7 @@ void View::DrawOptions()
                                 }
                             }
 
-                            enum { NumSlopes = 10000 };
+                            constexpr size_t NumSlopes = 10000;
                             std::random_device rd;
                             std::default_random_engine gen( rd() );
                             std::uniform_int_distribution<size_t> dist( 0, lastidx - 1 );

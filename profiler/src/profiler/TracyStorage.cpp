@@ -126,8 +126,8 @@ const char* GetSavePath( const char* file )
 {
     assert( file && *file );
 
-    enum { Pool = 8 };
-    enum { MaxPath = 512 };
+    constexpr size_t Pool = 8;
+    constexpr size_t MaxPath = 512;
     static char bufpool[Pool][MaxPath];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
@@ -153,8 +153,8 @@ const char* GetSavePath( const char* program, uint64_t time, const char* file, b
 {
     assert( program && *program );
 
-    enum { Pool = 8 };
-    enum { MaxPath = 512 };
+    constexpr size_t Pool = 8;
+    constexpr size_t MaxPath = 512;
     static char bufpool[Pool][MaxPath];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
@@ -246,8 +246,8 @@ const char* GetCachePath( const char* file )
 {
     assert( file && *file );
 
-    enum { Pool = 8 };
-    enum { MaxPath = 512 };
+    constexpr size_t Pool = 8;
+    constexpr size_t MaxPath = 512;
     static char bufpool[Pool][MaxPath];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];

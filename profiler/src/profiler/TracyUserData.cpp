@@ -22,10 +22,10 @@ constexpr auto FileOptions = "options";
 constexpr auto FileAnnotations = "annotations";
 constexpr auto FileSourceSubstitutions = "srcsub";
 
-enum : uint32_t { VersionTimeline = 0 };
-enum : uint32_t { VersionOptions = 7 };
-enum : uint32_t { VersionAnnotations = 0 };
-enum : uint32_t { VersionSourceSubstitutions = 0 };
+constexpr uint32_t VersionTimeline = 0;
+constexpr uint32_t VersionOptions = 7;
+constexpr uint32_t VersionAnnotations = 0;
+constexpr uint32_t VersionSourceSubstitutions = 0;
 
 UserData::UserData()
     : m_preserveState( false )

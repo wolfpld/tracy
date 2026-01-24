@@ -87,7 +87,7 @@ class GpuCtx
 {
     friend class GpuCtxScope;
 
-    enum { QueryCount = 64 * 1024 };
+    static constexpr size_t QueryCount = 64 * 1024;
 
 public:
     GpuCtx()

@@ -31,7 +31,7 @@ static const char* PlaybackWindowButtons[] = {
     ICON_FA_PAUSE " Pause",
 };
 
-enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *PlaybackWindowButtons ) };
+constexpr size_t PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *PlaybackWindowButtons );
 
 void View::DrawPlayback()
 {

@@ -686,7 +686,7 @@ static const char* MainWindowButtons[] = {
     ICON_FA_SQUARE " Stopped"
 };
 
-enum { MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindowButtons ) };
+constexpr size_t MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindowButtons );
 
 bool View::DrawImpl()
 {

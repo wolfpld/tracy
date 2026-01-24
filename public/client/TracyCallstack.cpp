@@ -347,8 +347,8 @@ bool ShouldResolveSymbolsOffline()
 
 #if TRACY_HAS_CALLSTACK == 1
 
-enum { MaxCbTrace = 64 };
-enum { MaxNameSize = 8*1024 };
+constexpr size_t MaxCbTrace = 64;
+constexpr size_t MaxNameSize = 8*1024;
 
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
@@ -829,7 +829,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
 #elif defined(TRACY_USE_LIBBACKTRACE)
 
-enum { MaxCbTrace = 64 };
+constexpr size_t MaxCbTrace = 64;
 
 struct backtrace_state* cb_bts = nullptr;
 

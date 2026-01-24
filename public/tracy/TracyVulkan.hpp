@@ -91,7 +91,7 @@ class VkCtx
 {
     friend class VkCtxScope;
 
-    enum { QueryCount = 64 * 1024 };
+    static constexpr size_t QueryCount = 64 * 1024;
 
 public:
 #if defined TRACY_VK_USE_SYMBOL_TABLE

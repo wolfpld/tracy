@@ -173,7 +173,7 @@ uint64_t _int64_abs( int64_t x )
 
 const char* TimeToString( int64_t _ns )
 {
-    enum { Pool = 8 };
+    constexpr size_t Pool = 8;
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
@@ -249,7 +249,7 @@ const char* TimeToString( int64_t _ns )
 
 const char* TimeToStringExact( int64_t _ns )
 {
-    enum { Pool = 8 };
+    constexpr size_t Pool = 8;
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
@@ -358,7 +358,7 @@ const char* TimeToStringExact( int64_t _ns )
 
 const char* MemSizeToString( int64_t val )
 {
-    enum { Pool = 8 };
+    constexpr size_t Pool = 8;
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
@@ -436,7 +436,7 @@ const char* LocationToString( const char* fn, uint32_t line )
 {
     if( line == 0 ) return fn;
 
-    enum { Pool = 8 };
+    constexpr size_t Pool = 8;
     static char bufpool[Pool][4096];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
@@ -451,7 +451,7 @@ namespace detail
 
 char* RealToStringGetBuffer()
 {
-    enum { Pool = 8 };
+    constexpr size_t Pool = 8;
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];

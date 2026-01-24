@@ -350,7 +350,7 @@ template<typename T> struct VectorAdapterPointer { const T& operator()( const sh
 
 #pragma pack( pop )
 
-enum { VectorSize = sizeof( Vector<int> ) };
+constexpr size_t VectorSize = sizeof( Vector<int> );
 
 }
 

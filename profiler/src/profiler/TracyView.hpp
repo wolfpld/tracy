@@ -192,7 +192,7 @@ private:
         OpenFind
     };
 
-    enum { InvalidId = 0xFFFFFFFF };
+    static constexpr uint32_t InvalidId = 0xFFFFFFFF;
 
     struct MemPathData
     {
@@ -681,7 +681,7 @@ private:
     int m_gpuIdx = 0;
 
     struct FindZone {
-        enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
+        static constexpr uint64_t Unselected = std::numeric_limits<uint64_t>::max() - 1;
         enum class GroupBy : int { Thread, UserText, ZoneName, Callstack, Parent, NoGrouping };
         enum class SortBy : int { Order, Count, Time, Mtpc };
 

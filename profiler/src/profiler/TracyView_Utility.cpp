@@ -832,7 +832,7 @@ const char* View::GetFrameSetName( const FrameData& fd ) const
 
 const char* View::GetFrameSetName( const FrameData& fd, const Worker& worker )
 {
-    enum { Pool = 4 };
+    constexpr size_t Pool = 4;
     static char bufpool[Pool][64];
     static int bufsel = 0;
 

@@ -54,7 +54,7 @@ static bool SourceFileValid( const char* fn, uint64_t olderThan )
 
 
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
-enum { FileHeaderMagic = 5 };
+constexpr size_t FileHeaderMagic = 5;
 static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );
 static const int MinSupportedVersion = FileVersion( 0, 9, 0 );
 
@@ -2840,7 +2840,7 @@ void Worker::Exec()
         }
     }
 
-    m_serverQuerySpaceBase = m_serverQuerySpaceLeft = std::min( ( m_sock.GetSendBufSize() / ServerQueryPacketSize ), 8*1024 ) - 4;   // leave space for terminate request
+    m_serverQuerySpaceBase = m_serverQuerySpaceLeft = std::min( ( m_sock.GetSendBufSize() / ServerQueryPacketSize ), size_t( 8*1024 ) ) - 4;   // leave space for terminate request
     m_hasData.store( true, std::memory_order_release );
 
     LZ4_setStreamDecode( (LZ4_streamDecode_t*)m_stream, nullptr, 0 );
@@ -2932,7 +2932,7 @@ void Worker::Exec()
 
         auto t1 = std::chrono::high_resolution_clock::now();
         auto td = std::chrono::duration_cast<std::chrono::milliseconds>( t1 - t0 ).count();
-        enum { MbpsUpdateTime = 200 };
+        constexpr int MbpsUpdateTime = 200;
         if( td > MbpsUpdateTime )
         {
             UpdateMbps( td );
@@ -8346,8 +8346,8 @@ void Worker::Write( FileWrite& f, bool fiDict )
         sz = m_data.frameImage.size();
         if( fiDict )
         {
-            enum : uint32_t { DictSize = 4*1024*1024 };
-            enum : uint32_t { SamplesLimit = 1U << 31 };
+            constexpr uint32_t DictSize = 4*1024*1024;
+            constexpr uint32_t SamplesLimit = 1U << 31;
             uint32_t sNum = 0;
             uint32_t sSize = 0;
             for( auto& fi : m_data.frameImage )

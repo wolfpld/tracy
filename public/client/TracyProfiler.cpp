@@ -634,7 +634,7 @@ static const char* GetHostInfo()
     FILE* fcpuinfo = fopen( "/proc/cpuinfo", "rb" );
     if( fcpuinfo )
     {
-        enum { BufSize = 4*1024 };
+        constexpr size_t BufSize = 4*1024;
         char buf[BufSize];
         const auto sz = fread( buf, 1, BufSize, fcpuinfo );
         fclose( fcpuinfo );
@@ -1198,7 +1198,7 @@ void Profiler::EndSamplingProfiling()
 #endif
 }
 
-enum { QueuePrealloc = 256 * 1024 };
+constexpr size_t QueuePrealloc = 256 * 1024;
 
 TRACY_API int64_t GetFrequencyQpc()
 {

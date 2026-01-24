@@ -703,7 +703,7 @@ public:
 
     void CacheSourceFiles();
 
-    StringLocation StoreString(const char* str, size_t sz);
+    StringLocation StoreString( const char* str, size_t sz );
 
     std::vector<uint32_t>& GetPendingThreadHints() { return m_pendingThreadHints; }
     void ClearPendingThreadHints() { m_pendingThreadHints.clear(); }

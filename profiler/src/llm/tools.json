@@ -148,7 +148,7 @@
       "properties": {
         "query": {
           "type": "string",
-          "description": "Keyword to search for."
+          "description": "ECMAScript regex to search for."
         },
         "case_insensitive": {
           "type": "boolean",

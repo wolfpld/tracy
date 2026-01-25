@@ -857,6 +857,15 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     nlohmann::json json = {};
 
     if( caseInsensitive ) std::ranges::transform( query, query.begin(), []( char c ) { return std::tolower( c ); } );
+    std::regex rx;
+    try
+    {
+        rx = std::regex( query );
+    }
+    catch( const std::regex_error& e )
+    {
+        return "Error: Invalid regex: " + std::string( e.what() );
+    }
 
     size_t total = 0;
     for( auto& item : cache )
@@ -877,23 +886,17 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
             end = tmp + mem.len;
         }
 
-        if( std::search( start, end, query.begin(), query.end() ) == end )
-        {
-            delete[] tmp;
-            continue;
-        }
-
         std::vector<size_t> res;
         auto lines = SplitLines( start, mem.len );
         for( size_t idx = 0; idx < lines.size(); idx++ )
         {
-            if( lines[idx].find( query ) != std::string::npos )
+            if( std::regex_search( lines[idx], rx ) )
             {
                 res.emplace_back( idx );
                 total++;
             }
         }
-        assert( !res.empty() );
+        if( res.empty() ) continue;
 
         auto r = nlohmann::json::array();
         if( caseInsensitive )

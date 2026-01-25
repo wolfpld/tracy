@@ -7,6 +7,7 @@
 #include <tidy.h>
 #include <tidybuffio.h>
 #include <time.h>
+#include <regex>
 
 #include "TracyConfig.hpp"
 #include "TracyLlmApi.hpp"
@@ -179,7 +180,8 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         }
         else if( tool == "source_search" )
         {
-            return { .reply = SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ) ) };
+            std::string empty;
+            return { .reply = SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ), ParamOptString( "glob", empty ) ) };
         }
         return { .reply = "Unknown tool call: " + tool };
     }
@@ -823,7 +825,33 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
-std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive ) const
+static bool GlobMatch( const std::string& pattern, const std::string& text )
+{
+    std::string rx;
+    for( char c : pattern )
+    {
+        if( c == '*' )
+        {
+            rx += ".*";
+        }
+        else if( c == '?' )
+        {
+            rx += ".";
+        }
+        else if( c == '.' || c == '+' || c == '^' || c == '$' || c == '|' || c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' )
+        {
+            rx += '\\';
+            rx += c;
+        }
+        else
+        {
+            rx += c;
+        }
+    }
+    return std::regex_search( text, std::regex( rx ) );
+}
+
+std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive, const std::string& glob ) const
 {
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {};
@@ -832,6 +860,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     for( auto& item : cache )
     {
         if( IsFrameExternal( item.first, nullptr ) ) continue;
+        if( !glob.empty() && !GlobMatch( glob, item.first ) ) continue;
 
         char* tmp = nullptr;
         auto& mem = item.second;

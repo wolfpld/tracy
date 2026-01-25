@@ -153,6 +153,10 @@
         "case_insensitive": {
           "type": "boolean",
           "description": "Case insensitive search."
+        },
+        "glob": {
+          "type": "string",
+          "description": "File path match."
         }
       },
       "required": ["query"]

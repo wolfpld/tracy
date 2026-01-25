@@ -342,12 +342,12 @@ void TracyLlmTools::CancelManualEmbeddings()
 
 int TracyLlmTools::CalcMaxSize() const
 {
-    constexpr int limit = 32*1024;
+    constexpr int limit = 48*1024;
     if( m_ctxSize <= 0 ) return limit;
 
     // Limit the size of the response to avoid exceeding the context size
-    // Assume average token size is 4 bytes. Make space for 3 articles to be retrieved.
-    const int maxSize = ( m_ctxSize * 4 ) / 3;
+    // Assume average token size is 4 bytes. Make space for 8 articles to be retrieved.
+    const int maxSize = ( m_ctxSize * 4 ) / 8;
     return std::min( maxSize, limit );
 }
 

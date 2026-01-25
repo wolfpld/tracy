@@ -181,7 +181,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         else if( tool == "source_search" )
         {
             std::string empty;
-            return { .reply = SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ), ParamOptString( "glob", empty ) ) };
+            return { .reply = SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ), ParamOptString( "path", empty ) ) };
         }
         return { .reply = "Unknown tool call: " + tool };
     }
@@ -825,53 +825,38 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
-static bool GlobMatch( const std::string& pattern, const std::string& text )
-{
-    std::string rx;
-    for( char c : pattern )
-    {
-        if( c == '*' )
-        {
-            rx += ".*";
-        }
-        else if( c == '?' )
-        {
-            rx += ".";
-        }
-        else if( c == '.' || c == '+' || c == '^' || c == '$' || c == '|' || c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' )
-        {
-            rx += '\\';
-            rx += c;
-        }
-        else
-        {
-            rx += c;
-        }
-    }
-    return std::regex_search( text, std::regex( rx ) );
-}
-
-std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive, const std::string& glob ) const
+std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const
 {
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {};
 
     if( caseInsensitive ) std::ranges::transform( query, query.begin(), []( char c ) { return std::tolower( c ); } );
-    std::regex rx;
+    std::regex rx, rxPath;
     try
     {
         rx = std::regex( query );
     }
     catch( const std::regex_error& e )
     {
-        return "Error: Invalid regex: " + std::string( e.what() );
+        return "Error: Invalid query regex: " + std::string( e.what() );
+    }
+    if( !path.empty() )
+    {
+        try
+        {
+            rxPath = std::regex( path );
+        }
+        catch( const std::regex_error& e )
+        {
+            return "Error: Invalid path regex: " + std::string( e.what() );
+        }
     }
 
     size_t total = 0;
     for( auto& item : cache )
     {
         if( IsFrameExternal( item.first, nullptr ) ) continue;
-        if( !glob.empty() && !GlobMatch( glob, item.first ) ) continue;
+        if( !path.empty() && !std::regex_search( item.first, rxPath ) ) continue;
 
         char* tmp = nullptr;
         auto& mem = item.second;

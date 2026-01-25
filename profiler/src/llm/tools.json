@@ -154,9 +154,9 @@
           "type": "boolean",
           "description": "Case insensitive search."
         },
-        "glob": {
+        "path": {
           "type": "string",
-          "description": "File path match."
+          "description": "File path ECMAScript regex."
         }
       },
       "required": ["query"]

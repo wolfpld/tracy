@@ -704,6 +704,8 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
     response = RemoveNewline( response );
     ReplaceAll( response, "<div><div>", "<div>" );
     ReplaceAll( response, "</div></div>", "</div>" );
+    ReplaceAll( response, "<span><span>", "<span>" );
+    ReplaceAll( response, "</span></span>", "</span>" );
     auto it = std::ranges::unique( response, []( char a, char b ) { return ( a == ' ' || a == '\t' ) && ( b == ' ' || b == '\t' ); } );
     response.erase( it.begin(), it.end() );
 

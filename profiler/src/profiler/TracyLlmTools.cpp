@@ -856,6 +856,8 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {};
 
+    if( caseInsensitive ) std::ranges::transform( query, query.begin(), []( char c ) { return std::tolower( c ); } );
+
     size_t total = 0;
     for( auto& item : cache )
     {
@@ -873,7 +875,6 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
             std::transform( start, end, tmp, []( char c ) { return std::tolower( c ); } );
             start = tmp;
             end = tmp + mem.len;
-            std::transform( query.begin(), query.end(), query.begin(), []( char c ) { return std::tolower( c ); } );
         }
 
         if( std::search( start, end, query.begin(), query.end() ) == end )

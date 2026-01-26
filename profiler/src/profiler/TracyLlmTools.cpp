@@ -921,7 +921,9 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     if( json.size() > 1 && ret.size() > CalcMaxSize() )
     {
         for( auto& item : json ) item.erase( "matches" );
-        json["hint"] = "Too many matches found to show all data. Narrow down the search to get line numbers.";
+        json.push_back( {
+            { "hint", "Too many matches found to show all data. Narrow down the search to get line numbers." }
+        } );
 
         ret = json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
         if( ret.size() > CalcMaxSize() ) return "Too many matches found.";

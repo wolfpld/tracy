@@ -172,7 +172,7 @@ if(USE_WAYLAND)
     CPMAddPackage(
         NAME wayland-protocols
         GIT_REPOSITORY https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-        GIT_TAG 1.37
+        GIT_TAG 1.47
         DOWNLOAD_ONLY YES
     )
 

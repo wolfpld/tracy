@@ -17,7 +17,7 @@
 #include "TracyUtility.hpp"
 #include "TracyWorker.hpp"
 
-constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. You may inform the user that he can enable it in the settings, so that you can use the tools to gather information.";
+constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. Inform the user that they may enable it in the settings, so that you can use the tools to gather information.";
 
 #define NetworkCheckString if( !m_netAccess ) return NoNetworkAccess
 #define NetworkCheckReply if( !m_netAccess ) return { .reply = NoNetworkAccess }

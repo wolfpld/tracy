@@ -812,17 +812,16 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 
     nlohmann::json json = {
         { "file", file },
-        { "contents", nlohmann::json::array() }
+        { "hint", "Each line starts with a line number, then a <|> symbol, then the actual line content." },
     };
 
+    std::string contents;
     for( uint32_t i = minLine; i < maxLine; i++ )
     {
-        nlohmann::json lineJson = {
-            { "line", i + 1 },
-            { "text", lines[i] }
-        };
-        json["contents"].emplace_back( std::move( lineJson ) );
+        contents += std::to_string( i+1 ) + "<|>" + lines[i] + "\n";
     }
+
+    json.push_back( { "contents", std::move( contents ) } );
 
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }

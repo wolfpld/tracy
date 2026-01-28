@@ -11,7 +11,7 @@ namespace tracy
 class TracyLlmChat
 {
 public:
-    static constexpr const char* ForgetMsg = "…";
+    static constexpr const char* ForgetMsg = "<removed to save context>";
 
     enum class TurnRole
     {

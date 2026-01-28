@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <curl/curl.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -897,7 +898,14 @@ void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
     }
     if( toolOutputs.size() > 1 )
     {
-        toolOutputs.pop_back();     // keep the last tool output
+        // keep the last tool output
+        toolOutputs.pop_back();
+
+        // exponentially increase sizes of old tool outputs to prefer the most recent
+        constexpr float K = 1.1f;
+        for( size_t i=0; i<toolOutputs.size(); i++ ) toolOutputs[i].first *= std::pow( K, i+1 );
+
+        // remove the largest tool output
         std::ranges::stable_sort( toolOutputs, []( const auto& a, const auto& b ) { return a.first > b.first; } );
         for( auto& v : toolOutputs )
         {

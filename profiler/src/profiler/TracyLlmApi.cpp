@@ -28,7 +28,7 @@ void TracyLlmApi::SetupCurl( void* curl )
     curl_easy_setopt( curl, CURLOPT_NOSIGNAL, 1L );
     curl_easy_setopt( curl, CURLOPT_CA_CACHE_TIMEOUT, 604800L );
     curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
-    curl_easy_setopt( curl, CURLOPT_TIMEOUT, 300 );
+    curl_easy_setopt( curl, CURLOPT_TIMEOUT, 1200 );
     curl_easy_setopt( curl, CURLOPT_USERAGENT, "Tracy Profiler" );
 }
 

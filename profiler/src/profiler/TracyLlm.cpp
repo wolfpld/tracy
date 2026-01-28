@@ -881,7 +881,7 @@ void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
     const auto ctxSize = models[m_modelIdx].contextSize;
     if( ctxSize <= 0 ) return;
 
-    const auto quota = int( ctxSize * 0.7f );
+    const auto quota = std::max( 4096, int( ctxSize * 0.8f ) );
     if( m_usedCtx < quota ) return;
 
     size_t idx = 0;

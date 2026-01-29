@@ -1108,7 +1108,11 @@ TRACY_API void TracyCrashHandler( int signal, siginfo_t* info, void* /*ucontext*
     }
 
     {
-        const char* remove[] = { "__kernel_rt_sigreturn", nullptr };
+        const char* remove[] = {
+            "__kernel_rt_sigreturn",
+            "TracyCrashHandler",
+            nullptr
+        };
         GetProfiler().SendCallstack( 60, remove );
 
         TracyQueuePrepare( QueueType::CrashReport );

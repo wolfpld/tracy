@@ -750,8 +750,8 @@ public:
     }
 #endif
 
-    void SendCallstack( int32_t depth, const char* skipBefore );
-    static void CutCallstack( void* callstack, const char* skipBefore );
+    void SendCallstack( int32_t depth, const char** skipBefore );
+    static void CutCallstack( void* callstack, const char** skipBefore );
 
     static bool ShouldExit();
 

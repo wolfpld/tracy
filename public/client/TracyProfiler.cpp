@@ -845,7 +845,8 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     }
 
     {
-        GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
+        const char* remove[] = { "KiUserExceptionDispatcher", nullptr };
+        GetProfiler().SendCallstack( 60, remove );
 
         TracyQueuePrepare( QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
@@ -1107,7 +1108,8 @@ TRACY_API void TracyCrashHandler( int signal, siginfo_t* info, void* /*ucontext*
     }
 
     {
-        GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
+        const char* remove[] = { "__kernel_rt_sigreturn", nullptr };
+        GetProfiler().SendCallstack( 60, remove );
 
         TracyQueuePrepare( QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
@@ -2546,7 +2548,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ptr = MemRead<uint64_t>( &item->callstackAllocFat.nativePtr );
                         if( ptr != 0 )
                         {
-                            CutCallstack( (void*)ptr, "lua_pcall" );
+                            const char* remove[] = { "lua_pcall", nullptr };
+                            CutCallstack( (void*)ptr, remove );
                             SendCallstackPayload( ptr );
                             tracy_free_fast( (void*)ptr );
                         }
@@ -3083,7 +3086,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     ptr = MemRead<uint64_t>( &item->callstackAllocFat.nativePtr );
                     if( ptr != 0 )
                     {
-                        CutCallstack( (void*)ptr, "lua_pcall" );
+                        const char* remove[] = { "lua_pcall", nullptr };
+                        CutCallstack( (void*)ptr, remove );
                         SendCallstackPayload( ptr );
                         tracy_free_fast( (void*)ptr );
                     }
@@ -4097,7 +4101,7 @@ void Profiler::ReportTopology()
 #endif
 }
 
-void Profiler::SendCallstack( int32_t depth, const char* skipBefore )
+void Profiler::SendCallstack( int32_t depth, const char** skipBefore )
 {
 #ifdef TRACY_HAS_CALLSTACK
     auto ptr = Callstack( depth );
@@ -4109,23 +4113,29 @@ void Profiler::SendCallstack( int32_t depth, const char* skipBefore )
 #endif
 }
 
-void Profiler::CutCallstack( void* callstack, const char* skipBefore )
+void Profiler::CutCallstack( void* callstack, const char** skipBefore )
 {
 #ifdef TRACY_HAS_CALLSTACK
     auto data = (uintptr_t*)callstack;
     const auto sz = *data++;
     uintptr_t i;
-    for( i=0; i<sz; i++ )
+    while( *skipBefore )
     {
-        auto name = DecodeCallstackPtrFast( uint64_t( data[i] ) );
-        const bool found = strcmp( name, skipBefore ) == 0;
-        if( found )
+        for( i=0; i<sz; i++ )
         {
-            i++;
-            break;
+            auto name = DecodeCallstackPtrFast( uint64_t( data[i] ) );
+            const bool found = strcmp( name, *skipBefore ) == 0;
+            if( found )
+            {
+                i++;
+                goto found;
+            }
         }
+        skipBefore++;
     }
+    return;
 
+found:
     if( i != sz )
     {
         memmove( data, data + i, ( sz - i ) * sizeof( uintptr_t* ) );

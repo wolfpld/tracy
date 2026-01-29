@@ -955,7 +955,7 @@ static inline void HexPrint( char*& ptr, uint64_t val )
     while( bptr != buf );
 }
 
-static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
+static void TracyCrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 {
     bool expected = false;
     if( !s_alreadyCrashed.compare_exchange_strong( expected, true ) ) ThreadFreezer( signal );
@@ -1544,7 +1544,7 @@ void Profiler::InstallCrashHandler()
     sigaction( TRACY_CRASH_SIGNAL, &threadFreezer, &m_prevSignal.pwr );
 
     struct sigaction crashHandler = {};
-    crashHandler.sa_sigaction = CrashHandler;
+    crashHandler.sa_sigaction = TracyCrashHandler;
     crashHandler.sa_flags = SA_SIGINFO;
     sigaction( SIGILL, &crashHandler, &m_prevSignal.ill );
     sigaction( SIGFPE, &crashHandler, &m_prevSignal.fpe );
@@ -1582,7 +1582,7 @@ void Profiler::RemoveCrashHandler()
         auto restore = []( int signum, struct sigaction* prev ) {
             struct sigaction old;
             sigaction( signum, prev, &old );
-            if( old.sa_sigaction != CrashHandler ) sigaction( signum, &old, nullptr ); // A different signal handler was installed over ours => put it back
+            if( old.sa_sigaction != TracyCrashHandler ) sigaction( signum, &old, nullptr ); // A different signal handler was installed over ours => put it back
         };
         restore( TRACY_CRASH_SIGNAL, &m_prevSignal.pwr );
         restore( SIGILL, &m_prevSignal.ill );

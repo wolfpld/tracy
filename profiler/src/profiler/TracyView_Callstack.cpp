@@ -147,6 +147,15 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Symbol address xxx" ).x );
     ImGui::Combo( "##frameat", &m_showCallstackFrameAddress, "Source code\0Return address\0Symbol address\0Entry point\0" );
 
+    auto& crash = m_worker.GetCrashEvent();
+    if( crash.thread != 0 && crash.callstack == callstack )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crash" );
+    }
+
     if( globalEntriesButton && m_worker.AreCallstackSamplesReady() )
     {
         auto frame = m_worker.GetCallstackFrame( *cs.begin() );

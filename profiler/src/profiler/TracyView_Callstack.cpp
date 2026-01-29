@@ -32,6 +32,9 @@ void View::DrawCallstackWindow()
 
 void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
 {
+    auto& crash = m_worker.GetCrashEvent();
+    const bool hasCrashed = crash.thread != 0 && crash.callstack == callstack;
+
     auto& cs = m_worker.GetCallstack( callstack );
     if( ClipboardButton() )
     {
@@ -104,10 +107,22 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     }
     if( s_config.llm )
     {
+        auto Attach = [&]() {
+            auto json = GetCallstackJson( cs );
+            if( hasCrashed )
+            {
+                json["crashed"] = true;
+                if( crash.message ) json["crash_reason"] = m_worker.GetString( crash.message );
+                auto threadName = m_worker.GetThreadName( crash.thread );
+                if( strcmp( threadName, "???" ) != 0 ) json["crash_thread"] = threadName;
+            }
+            AddLlmAttachment( json );
+        };
+
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_ROBOT ) )
         {
-            AddLlmAttachment( GetCallstackJson( cs ) );
+            Attach();
         }
         if( ImGui::IsItemHovered() && IsMouseClicked( ImGuiMouseButton_Right ) )
         {
@@ -117,13 +132,13 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         {
             if( ImGui::Selectable( "What is program doing at this moment?" ) )
             {
-                AddLlmAttachment( GetCallstackJson( cs ) );
+                Attach();
                 AddLlmQuery( "What is program doing at this moment?" );
                 ImGui::CloseCurrentPopup();
             }
             if( ImGui::Selectable( "Walk me through the details of this callstack, step by step, explaining the code." ) )
             {
-                AddLlmAttachment( GetCallstackJson( cs ) );
+                Attach();
                 AddLlmQuery( "Walk me through the details of this callstack, step by step, explaining the code." );
                 ImGui::CloseCurrentPopup();
             }
@@ -147,8 +162,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Symbol address xxx" ).x );
     ImGui::Combo( "##frameat", &m_showCallstackFrameAddress, "Source code\0Return address\0Symbol address\0Entry point\0" );
 
-    auto& crash = m_worker.GetCrashEvent();
-    if( crash.thread != 0 && crash.callstack == callstack )
+    if( hasCrashed )
     {
         ImGui::SameLine();
         ImGui::Spacing();

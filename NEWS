@@ -20,16 +20,30 @@ vx.xx.x (2026-xx-xx)
     now work really well. You can run such models on virtually all hardware.
   - Added horizontal scroll bars to code segments.
   - LLM thinking regions are now hidden by default.
-  - Markdown tables are now properly rendered.
   - Sampled execution costs are now included in assembly attachments.
   - Source code retrieval now has an optional line context parameter.
   - Added ability to search the code for keywords.
   - Calls in assembly attachments are now annotated with function names.
-- Full user name is now stored in trace info.
-- You can now attach complete symbol assembly to LLM.
+  - Wikipedia search will now return 10 results, not only the top one.
+  - Added emoji font.
+  - Maximum tool reply size has been tweaked to better work with larger
+    contexts.
+  - Tool reply eviction logic for context management has been adjusted to
+    better work with larger contexts. Additional logic was added to prefer
+    eviction of old responses.
+- Expanded LLM attachments.
+  - You can now attach complete symbol assembly.
+  - Entry call stacks can be now attached (previously it was only regular
+    call stacks).
+  - Crash call stack attachments are now annotated with crash info.
+  - Source code can be attached (also with execution costs in symbol view).
+- Markdown renderer improvements.
+  - Tables are now properly rendered.
+  - Tasklist rendering has been implemented.
+  - Strikethrough is now supported.
+  - Clickable links are now underlined.
 - Tweaked high-resolution scroll handling on Wayland.
-- Entry call stacks can be now attached to LLM (previously it was only
-  regular call stacks).
+- Full user name is now stored in trace info.
 - External functions can be filtered out in the sampling statistics view.
 - Tweaked external paths heuristics.
   - Check for both 64-bit and 32-bit versions of Program Files directory.
@@ -39,6 +53,15 @@ vx.xx.x (2026-xx-xx)
   for quick queries that do not require tool use or reasoning.
 - Call stack window can now provide LLM summaries. It uses the fast model.
   - These summaries can be performed automatically. Enable in LLM settings.
+- The capture utility is now displaying query backlog, just like the profiler
+  GUI.
+- Lua source locations that are script code will now have newlines removed.
+  This is a capture-time change, so previously captured broken Lua source
+  locations won't be fixed.
+- Call stack window will now display notification if viewing a crash call
+  stack.
+- Removal of Tracy crash handler stack from the reported crash call stack
+  should now work again on Linux.
 
 
 v0.13.1 (2025-12-11)

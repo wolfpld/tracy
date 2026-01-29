@@ -4124,7 +4124,7 @@ void Profiler::CutCallstack( void* callstack, const char** skipBefore )
         for( i=0; i<sz; i++ )
         {
             auto name = DecodeCallstackPtrFast( uint64_t( data[i] ) );
-            const bool found = strcmp( name, *skipBefore ) == 0;
+            const bool found = strstr( name, *skipBefore ) != nullptr;
             if( found )
             {
                 i++;

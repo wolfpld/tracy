@@ -217,8 +217,8 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                                         if( str.find( '\n' ) != std::string::npos || str.find( '\r' ) != std::string::npos )
                                         {
                                             auto tmp = str;
-                                            std::replace( tmp.begin(), tmp.end(), '\n', ' ' );
-                                            std::replace( tmp.begin(), tmp.end(), '\r', ' ' );
+                                            std::ranges::replace( tmp, '\n', ' ' );
+                                            std::ranges::replace( tmp, '\r', ' ' );
 
                                             std::lock_guard lock( m_callstackDescLock );
                                             m_callstackDesc[callstack] = tmp;

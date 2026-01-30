@@ -131,7 +131,11 @@
         },
         "context": {
           "type": "integer",
-          "description": "How many lines to get before and after the target line."
+          "description": "How many lines to get after the target line. Default: 2."
+        },
+        "context_back": {
+          "type": "integer",
+          "description": "How many lines to get before the target line. Default: 2."
         }
       },
       "required": ["file", "line"]

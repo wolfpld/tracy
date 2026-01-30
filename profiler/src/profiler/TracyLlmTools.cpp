@@ -176,7 +176,7 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         }
         else if( tool == "source_file" )
         {
-            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 50 ) ) };
+            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 2 ), ParamOptU32( "context_back", 2 ) ) };
         }
         else if( tool == "source_search" )
         {
@@ -776,7 +776,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
     return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
-std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, uint32_t context ) const
+std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, uint32_t context, uint32_t contextBack ) const
 {
     if( line == 0 ) return "Error: Source file line number must be greater than 0.";
 
@@ -793,21 +793,22 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
     uint32_t minLine = line;
     uint32_t maxLine = line+1;
 
-    while( context > 0 && ( minLine > 0 || maxLine < lines.size() ) )
+    while( ( context > 0 && maxLine < lines.size() ) || ( contextBack > 0 && minLine > 0 ) )
     {
-        if( minLine > 0 )
+        if( context > 0 && maxLine < lines.size() )
         {
-            size += lines[minLine].size() * 3 + 30;
-            if( size >= maxSize ) break;
-            minLine--;
-        }
-        if( maxLine < lines.size() )
-        {
-            size += lines[maxLine].size() * 3 + 30;
+            size += lines[maxLine].size() + 7;
             if( size >= maxSize ) break;
             maxLine++;
+            context--;
         }
-        context--;
+        if( contextBack > 0 && minLine > 0 )
+        {
+            size += lines[minLine].size() + 7;
+            if( size >= maxSize ) break;
+            minLine--;
+            contextBack--;
+        }
     }
 
     nlohmann::json json = {

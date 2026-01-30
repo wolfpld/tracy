@@ -214,7 +214,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 },
                 {
                     { "role", "user" },
-                    { "content", GetCallstackJson( cs )["frames"].dump( -1 ) }
+                    { "content", GetCallstackJson( cs )["frames"].dump() }
                 }
             };
 

@@ -2486,9 +2486,13 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
     nlohmann::json json = {
         { "type", "assembly" },
         { "symbol", symName },
-        { "code", nlohmann::json::array() }
+        { "code", nlohmann::json::array() },
+        { "files", nlohmann::json::object() },
+        { "hint", "code.source format is 'idx:line'. file is decoded with files[idx]." }
     };
     auto& code = json["code"];
+
+    std::vector<std::string> sources;
 
     const auto end = m_asm.size() < stop ? m_asm.size() : stop;
     for( size_t i=start; i<end; i++ )
@@ -2553,8 +2557,22 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
         if( srcline != 0 )
         {
-            line["file"] = worker.GetString( srcidx );
-            line["line"] = srcline;
+            size_t idx;
+            const auto file = worker.GetString( srcidx );
+            auto it = std::ranges::find( sources, file );
+            if( it == sources.end() )
+            {
+                idx = sources.size();
+                sources.emplace_back( file );
+            }
+            else
+            {
+                idx = std::distance( sources.begin(), it );
+            }
+
+            char tmp[64];
+            snprintf( tmp, sizeof( tmp ), "%zu:%i", idx, srcline );
+            line["source"] = tmp;
         }
         if( as.ipTotalAsm.local + as.ipTotalAsm.ext != 0 )
         {
@@ -2572,6 +2590,11 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         }
 
         code.emplace_back( std::move( line ) );
+    }
+
+    for( size_t i=0; i<sources.size(); i++ )
+    {
+        json["files"][std::to_string( i )] = sources[i];
     }
 
     view.AddLlmAttachment( json );

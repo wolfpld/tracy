@@ -186,7 +186,7 @@ bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think,
             if( expand )
             {
                 ImGui::PushFont( g_fonts.mono, FontNormal );
-                ImGui::TextWrapped( "%s", content.c_str() + tagSize );
+                ImGui::TextWrapped( "%s", j.dump( 2 ).c_str() );
                 ImGui::PopFont();
                 ImGui::TreePop();
             }

@@ -455,7 +455,7 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
         output.push_back( j );
     }
 
-    const auto reply = output.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+    const auto reply = output.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     return { .reply = reply };
 }
 
@@ -531,7 +531,7 @@ std::string TracyLlmTools::SearchWeb( std::string query )
                     result["url"] = RemoveNewline( item["link"].get_ref<const std::string&>() );
                     results[i] = result;
                 }
-                return results.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+                return results.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
             }
         }
         catch( const nlohmann::json::exception& e ) {}
@@ -568,7 +568,7 @@ std::string TracyLlmTools::SearchWeb( std::string query )
         json[i] = result;
     }
 
-    return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+    return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 static void RemoveTag( pugi::xml_node node, const char* tag )
@@ -773,7 +773,7 @@ std::string TracyLlmTools::SearchManual( const std::string& query, TracyLlmApi& 
         json.emplace_back( std::move( r ) );
     }
 
-    return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+    return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, uint32_t context, uint32_t contextBack ) const
@@ -824,7 +824,7 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 
     json.push_back( { "contents", std::move( contents ) } );
 
-    return json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+    return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const
@@ -917,7 +917,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     }
 
     if( total == 0 ) return "No matches found.";
-    auto ret = json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+    auto ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     if( json.size() > 1 && ret.size() > CalcMaxSize() )
     {
         for( auto& item : json ) item.erase( "matches" );
@@ -925,7 +925,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
             { "hint", "Too many matches found to show all data. Narrow down the search to get line numbers." }
         } );
 
-        ret = json.dump( 2, ' ', false, nlohmann::json::error_handler_t::replace );
+        ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
         if( ret.size() > CalcMaxSize() ) return "Too many matches found.";
     }
     return ret;

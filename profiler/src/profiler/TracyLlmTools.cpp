@@ -830,7 +830,9 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive, const std::string& path ) const
 {
     auto& cache = m_worker.GetSourceFileCache();
-    nlohmann::json json = {};
+    nlohmann::json json = {
+        { "hint", "Each line starts with a line number, then a <|> symbol, then the actual line content." }
+    };
 
     if( caseInsensitive ) std::ranges::transform( query, query.begin(), []( char c ) { return std::tolower( c ); } );
     std::regex rx, rxPath;
@@ -854,6 +856,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
         }
     }
 
+    std::vector<std::string> matches;
     size_t total = 0;
     for( auto& item : cache )
     {
@@ -885,33 +888,25 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
         }
         if( res.empty() ) continue;
 
-        auto r = nlohmann::json::array();
+        std::string r;
         if( caseInsensitive )
         {
             auto linesOrig = SplitLines( mem.data, mem.len );
             for( auto& line : res )
             {
-                r.push_back( {
-                    { "line", line + 1 },
-                    { "text", linesOrig[line] }
-                } );
+                r += std::to_string( line + 1 ) + "<|>" + linesOrig[line] + "\n";
             }
         }
         else
         {
             for( auto& line : res )
             {
-                r.push_back( {
-                    { "line", line + 1 },
-                    { "text", lines[line] }
-                } );
+                r += std::to_string( line + 1 ) + "<|>" + lines[line] + "\n";
             }
         }
 
-        json.push_back( {
-            { "file", item.first },
-            { "matches", std::move( r ) }
-        } );
+        matches.emplace_back( item.first );
+        json.push_back( { item.first, std::move( r ) } );
 
         delete[] tmp;
     }
@@ -920,10 +915,16 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
     auto ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     if( json.size() > 1 && ret.size() > CalcMaxSize() )
     {
-        for( auto& item : json ) item.erase( "matches" );
-        json.push_back( {
-            { "hint", "Too many matches found to show all data. Narrow down the search to get line numbers." }
-        } );
+        std::string r;
+        for( auto& v : matches )
+        {
+            r += v + "\n";
+        }
+
+        json = {
+            { "hint", "Too many matches found to show all data. Narrow down the search to get line numbers." },
+            { "matches", std::move( r ) },
+        };
 
         ret = json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
         if( ret.size() > CalcMaxSize() ) return "Too many matches found.";

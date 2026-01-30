@@ -966,7 +966,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             uint32_t mLineMax = 0;
             uint32_t srcline;
             const auto srcidx = worker.GetLocationForAddress( op.address, srcline );
-            if( srcline != 0 )
+            if( srcidx.Active() )
             {
                 if( srcline > mLineMax ) mLineMax = srcline;
                 const auto idx = srcidx.Idx();
@@ -2009,7 +2009,7 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
                 {
                     uint32_t srcline;
                     const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
-                    if( srcline != 0 )
+                    if( srcidx.Active() )
                     {
                         AddrStat cnt = {};
                         auto ait = as.ipCountAsm.find( v.addr );
@@ -2555,7 +2555,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         }
         uint32_t srcline;
         const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
-        if( srcline != 0 )
+        if( srcidx.Active() )
         {
             size_t idx;
             const auto file = worker.GetString( srcidx );
@@ -2844,14 +2844,21 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                         TextFocused( "Jump label:", tmp );
                         uint32_t srcline;
                         const auto srcidx = worker.GetLocationForAddress( v.first, srcline );
-                        if( srcline != 0 )
+                        if( srcidx.Active() )
                         {
                             const auto fileName = worker.GetString( srcidx );
                             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
                             TextDisabledUnformatted( "Target location:" );
                             SmallColorBox( fileColor );
                             ImGui::SameLine();
-                            ImGui::Text( "%s:%i", fileName, srcline );
+                            if( srcline != 0 )
+                            {
+                                ImGui::Text( "%s:%i", fileName, srcline );
+                            }
+                            else
+                            {
+                                ImGui::Text( "%s", fileName );
+                            }
                             const auto symAddr = worker.GetInlineSymbolForAddress( v.first );
                             if( symAddr != 0 )
                             {
@@ -3040,14 +3047,22 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
             {
                 uint32_t srcline;
                 const auto srcidx = worker.GetLocationForAddress( m_jumpPopupAddr, srcline );
-                const auto fileName = srcline != 0 ? worker.GetString( srcidx ) : nullptr;
-                const auto fileColor = srcline != 0 ? GetHsvColor( srcidx.Idx(), 0 ) : 0;
+                const auto active = srcidx.Active();
+                const auto fileName = active ? worker.GetString( srcidx ) : nullptr;
+                const auto fileColor = active ? GetHsvColor( srcidx.Idx(), 0 ) : 0;
                 SmallColorBox( fileColor );
                 ImGui::SameLine();
                 char buf[1024];
                 if( fileName )
                 {
-                    snprintf( buf, 1024, "%s:%i", fileName, srcline );
+                    if( srcline != 0 )
+                    {
+                        snprintf( buf, sizeof( buf ), "%s:%i", fileName, srcline );
+                    }
+                    else
+                    {
+                        snprintf( buf, sizeof( buf ), "%s", fileName );
+                    }
                 }
                 else
                 {
@@ -3058,7 +3073,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                     {
                         const auto jumpName = worker.GetString( jumpSym->name );
                         const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, jumpName ) : jumpName;
-                        snprintf( buf, 1024, "%s+%" PRIu32, normalized, jumpOffset );
+                        snprintf( buf, sizeof( buf ), "%s+%" PRIu32, normalized, jumpOffset );
                     }
                     else
                     {
@@ -3108,42 +3123,49 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 const auto normalized = view.GetShortenName() != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, symName ) : symName;
                 const auto fn = worker.GetString( lcs->data[i].file );
                 const auto srcline = lcs->data[i].line;
-                if( ImGui::BeginMenu( normalized ) )
+                if( srcline != 0 )
                 {
-                    if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
+                    if( ImGui::BeginMenu( normalized ) )
                     {
-                        m_sourceTooltip.Parse( fn, worker, view );
-                        if( !m_sourceTooltip.empty() )
+                        if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
                         {
-                            ImGui::PushFont( g_fonts.normal, FontSmall );
-                            ImGui::TextDisabled( "%s:%i", fn, srcline );
-                            ImGui::PopFont();
-                            ImGui::Separator();
-                            SetFont();
-                            PrintSourceFragment( m_sourceTooltip, srcline );
-                            UnsetFont();
+                            m_sourceTooltip.Parse( fn, worker, view );
+                            if( !m_sourceTooltip.empty() )
+                            {
+                                ImGui::PushFont( g_fonts.normal, FontSmall );
+                                ImGui::TextDisabled( "%s:%i", fn, srcline );
+                                ImGui::PopFont();
+                                ImGui::Separator();
+                                SetFont();
+                                PrintSourceFragment( m_sourceTooltip, srcline );
+                                UnsetFont();
+                            }
+                        }
+                        else
+                        {
+                            TextDisabledUnformatted( "Source not available" );
+                        }
+                        ImGui::EndMenu();
+                        if( ImGui::IsItemClicked() )
+                        {
+                            m_targetLine = srcline;
+                            if( m_source.filename() == fn )
+                            {
+                                SelectLine( srcline, &worker, false );
+                                m_displayMode = DisplayMixed;
+                            }
+                            else if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
+                            {
+                                ParseSource( fn, worker, view );
+                                SelectLine( srcline, &worker, false );
+                                SelectViewMode();
+                            }
                         }
                     }
-                    else
-                    {
-                        TextDisabledUnformatted( "Source not available" );
-                    }
-                    ImGui::EndMenu();
-                    if( ImGui::IsItemClicked() )
-                    {
-                        m_targetLine = srcline;
-                        if( m_source.filename() == fn )
-                        {
-                            SelectLine( srcline, &worker, false );
-                            m_displayMode = DisplayMixed;
-                        }
-                        else if( SourceFileValid( fn, worker.GetCaptureTime(), view, worker ) )
-                        {
-                            ParseSource( fn, worker, view );
-                            SelectLine( srcline, &worker, false );
-                            SelectViewMode();
-                        }
-                    }
+                }
+                else
+                {
+                    ImGui::TextDisabled( "%s", normalized );
                 }
                 ImGui::PopID();
             }
@@ -4095,7 +4117,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
         ImVec2 startPos;
         uint32_t srcline;
         const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
-        if( srcline != 0 )
+        if( srcidx.Active() )
         {
             const auto fileName = worker.GetString( srcidx );
             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
@@ -4108,11 +4130,25 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             const auto fnsz = strlen( fileName );
             if( fnsz < MaxSourceLength - m_maxLine )
             {
-                sprintf( buf, "%s:%i", fileName, srcline );
+                if( srcline != 0 )
+                {
+                    snprintf( buf, sizeof( buf ), "%s:%i", fileName, srcline );
+                }
+                else
+                {
+                    snprintf( buf, sizeof( buf ), "%s", fileName );
+                }
             }
             else
             {
-                sprintf( buf, "\xe2\x80\xa6%s:%i", fileName+fnsz-(MaxSourceLength-1-1-m_maxLine), srcline );
+                if( srcline != 0 )
+                {
+                    snprintf( buf, sizeof( buf ), "\xe2\x80\xa6%s:%i", fileName+fnsz-(MaxSourceLength-1-1-m_maxLine), srcline );
+                }
+                else
+                {
+                    snprintf( buf, sizeof( buf ), "\xe2\x80\xa6%s", fileName+fnsz-(MaxSourceLength-1-1-m_maxLine) );
+                }
             }
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemHovered() )
@@ -4143,16 +4179,19 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     }
                 }
                 TextFocused( "File:", fileName );
-                TextFocused( "Line:", RealToString( srcline ) );
-                if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                if( srcline != 0 )
                 {
-                    m_sourceTooltip.Parse( fileName, worker, view );
-                    if( !m_sourceTooltip.empty() )
+                    TextFocused( "Line:", RealToString( srcline ) );
+                    if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
                     {
-                        ImGui::Separator();
-                        SetFont();
-                        PrintSourceFragment( m_sourceTooltip, srcline );
-                        UnsetFont();
+                        m_sourceTooltip.Parse( fileName, worker, view );
+                        if( !m_sourceTooltip.empty() )
+                        {
+                            ImGui::Separator();
+                            SetFont();
+                            PrintSourceFragment( m_sourceTooltip, srcline );
+                            UnsetFont();
+                        }
                     }
                 }
                 const auto frame = worker.GetCallstackFrame( worker.PackPointer( line.addr ) );
@@ -4170,7 +4209,15 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                         ImGui::SameLine();
                         ImGui::PushFont( g_fonts.normal, FontSmall );
                         ImGui::AlignTextToFramePadding();
-                        ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), frame->data[i].line );
+                        const auto srcline = frame->data[i].line;
+                        if( srcline != 0 )
+                        {
+                            ImGui::TextDisabled( "%s:%i", worker.GetString( frame->data[i].file ), srcline );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "%s", worker.GetString( frame->data[i].file ) );
+                        }
                         ImGui::PopFont();
                     }
                 }
@@ -4472,7 +4519,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     {
                         uint32_t srcline;
                         const auto srcidx = worker.GetLocationForAddress( line.jumpAddr, srcline );
-                        if( srcline != 0 )
+                        if( srcidx.Active() )
                         {
                             const auto fileName = worker.GetString( srcidx );
                             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
@@ -4480,7 +4527,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                             ImGui::SameLine();
                             SmallColorBox( fileColor );
                             ImGui::SameLine();
-                            ImGui::Text( "%s:%i", fileName, srcline );
+                            if( srcline != 0 )
+                            {
+                                ImGui::Text( "%s:%i", fileName, srcline );
+                            }
+                            else
+                            {
+                                ImGui::Text( "%s", fileName );
+                            }
                         }
                     }
                 }
@@ -4624,7 +4678,7 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
             {
                 uint32_t srcline;
                 const auto srcidx = worker.GetLocationForAddress( line.jumpAddr, srcline );
-                if( srcline != 0 )
+                if( srcidx.Active() )
                 {
                     const auto fileName = worker.GetString( srcidx );
                     const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
@@ -4632,7 +4686,14 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                     ImGui::SameLine();
                     SmallColorBox( fileColor );
                     ImGui::SameLine();
-                    ImGui::Text( "%s:%i", fileName, srcline );
+                    if( srcline != 0 )
+                    {
+                        ImGui::Text( "%s:%i", fileName, srcline );
+                    }
+                    else
+                    {
+                        ImGui::Text( "%s", fileName );
+                    }
                 }
             }
             ImGui::EndTooltip();
@@ -4803,18 +4864,15 @@ void SourceView::RenderAsmLine( AsmLine& line, const AddrStat& ipcnt, const Addr
                 if( srcline != 0 )
                 {
                     const auto fileName = worker.GetString( srcidx );
-                    if( fileName )
+                    if( fileName && SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
                     {
-                        if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                        m_sourceTooltip.Parse( fileName, worker, view );
+                        if( !m_sourceTooltip.empty() )
                         {
-                            m_sourceTooltip.Parse( fileName, worker, view );
-                            if( !m_sourceTooltip.empty() )
-                            {
-                                ImGui::Separator();
-                                SetFont();
-                                PrintSourceFragment( m_sourceTooltip, srcline );
-                                UnsetFont();
-                            }
+                            ImGui::Separator();
+                            SetFont();
+                            PrintSourceFragment( m_sourceTooltip, srcline );
+                            UnsetFont();
                         }
                     }
                 }
@@ -5941,11 +5999,18 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
             }
             uint32_t srcline;
             const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
-            if( srcline != 0 && psz > 0 )
+            if( srcidx.Active() && psz > 0 )
             {
                 int spaces = std::max( m_maxMnemonicLen + m_maxOperandLen - psz, 0 ) + 1;
                 while( spaces-- ) fputc( ' ', f );
-                fprintf( f, "# %s:%i\n", worker.GetString( srcidx ), srcline );
+                if( srcline != 0 )
+                {
+                    fprintf( f, "# %s:%i\n", worker.GetString( srcidx ), srcline );
+                }
+                else
+                {
+                    fprintf( f, "# %s\n", worker.GetString( srcidx ) );
+                }
             }
             else
             {

@@ -309,7 +309,14 @@ public:
                             ImGui::Text( ":%i", line );
                         }
 
-                        if( !idx.Active() )
+                        if( idx.Active() )
+                        {
+                            ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
+                            ImGui::Separator();
+                            ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
+                            m_view->DrawSourceTooltip( fn.c_str(), line, 3, 3, false );
+                        }
+                        else
                         {
                             TextColoredUnformatted( ImVec4( 1.f, 0.f, 0.f, 1.f ), "Invalid source file reference" );
                         }

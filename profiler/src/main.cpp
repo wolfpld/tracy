@@ -1345,7 +1345,7 @@ The *Achievements* system will guide you through the main features and teach you
 Would you like to enable achievements?
 )";
 
-        tracy::Markdown md;
+        tracy::Markdown md( nullptr, nullptr );
         md.Print( text, strlen( text ) );
         ImGui::Spacing();
         ImGui::PushFont( g_fonts.normal, FontSmall );

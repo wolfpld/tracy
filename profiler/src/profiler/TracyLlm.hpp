@@ -20,6 +20,7 @@ class TracyLlmApi;
 class TracyLlmChat;
 class TracyLlmTools;
 class TracyManualData;
+class View;
 class Worker;
 
 class TracyLlm
@@ -43,7 +44,7 @@ class TracyLlm
     };
 
 public:
-    TracyLlm( Worker& worker, const TracyManualData& manual );
+    TracyLlm( Worker& worker, View& view, const TracyManualData& manual );
     ~TracyLlm();
 
     [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock ); return m_busy; }

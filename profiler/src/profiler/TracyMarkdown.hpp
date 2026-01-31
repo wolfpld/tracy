@@ -8,16 +8,21 @@ struct MD_PARSER;
 namespace tracy
 {
 
+class View;
+class Worker;
+
 class Markdown
 {
 public:
-    Markdown();
+    Markdown( View* view, Worker* worker );
     ~Markdown();
 
     void Print( const char* str, size_t size );
 
 private:
     MD_PARSER* m_parser;
+    View* m_view;
+    Worker* m_worker;
 };
 
 }

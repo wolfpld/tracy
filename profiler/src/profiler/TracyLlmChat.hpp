@@ -8,6 +8,9 @@
 namespace tracy
 {
 
+class View;
+class Worker;
+
 class TracyLlmChat
 {
 public:
@@ -32,7 +35,7 @@ public:
         ToolCall
     };
 
-    TracyLlmChat();
+    TracyLlmChat( View& view, Worker& worker );
     ~TracyLlmChat();
 
     void Begin();

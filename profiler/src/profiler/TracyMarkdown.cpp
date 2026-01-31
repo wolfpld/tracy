@@ -8,6 +8,7 @@
 #include "TracyMouse.hpp"
 #include "TracyImGui.hpp"
 #include "TracySourceContents.hpp"
+#include "TracyView.hpp"
 #include "TracyWeb.hpp"
 #include "../Fonts.hpp"
 
@@ -39,6 +40,8 @@ class MarkdownContext
     };
 
 public:
+    MarkdownContext( View* view, Worker* worker ) : m_view( view ), m_worker( worker ) {}
+
     int EnterBlock( MD_BLOCKTYPE type, void* detail )
     {
         switch( type )
@@ -285,7 +288,40 @@ public:
                     ImGui::TextUnformatted( link.c_str() );
                     ImGui::PopStyleColor();
                     ImGui::EndTooltip();
-                    if( IsMouseClicked( ImGuiMouseButton_Left ) ) OpenWebpage( link.c_str() );
+                    if( IsMouseClicked( ImGuiMouseButton_Left ) )
+                    {
+                        if( link.starts_with( "source:" ) )
+                        {
+                            if( m_view && m_worker )
+                            {
+                                std::string source = link.substr( 7 );
+                                auto separator = source.find_last_of( ':' );
+                                int line;
+                                std::string fn;
+                                if( separator != std::string::npos )
+                                {
+                                    fn = source.substr( 0, separator );
+                                    line = atoi( source.substr( separator + 1 ).c_str() );
+                                }
+                                else
+                                {
+                                    fn = source;
+                                    line = 0;
+                                }
+
+                                const auto idx = m_worker->FindStringIdx( fn.c_str() );
+                                if( idx != 0 )
+                                {
+                                    auto str = m_worker->GetString( StringIdx( idx ) );
+                                    m_view->ViewSource( str, line );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            OpenWebpage( link.c_str() );
+                        }
+                    }
                 }
             }
             break;
@@ -379,11 +415,16 @@ private:
 
     std::vector<List> lists;
     std::string link;
+
+    View* m_view;
+    Worker* m_worker;
 };
 
 
-Markdown::Markdown()
+Markdown::Markdown( View* view, Worker* worker )
     : m_parser( new MD_PARSER() )
+    , m_view( view )
+    , m_worker( worker )
 {
     memset( m_parser, 0, sizeof( MD_PARSER ) );
     m_parser->flags = MD_FLAG_COLLAPSEWHITESPACE | MD_FLAG_PERMISSIVEAUTOLINKS | MD_FLAG_NOHTML | MD_FLAG_TABLES | MD_FLAG_TASKLISTS | MD_FLAG_STRIKETHROUGH;
@@ -403,7 +444,7 @@ void Markdown::Print( const char* str, size_t size )
 {
     ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( ImGui::GetStyle().ItemSpacing.x, 0.0f ) );
 
-    MarkdownContext md;
+    MarkdownContext md( m_view, m_worker );
     md_parse( str, size, m_parser, &md );
 
     ImGui::PopStyleVar();

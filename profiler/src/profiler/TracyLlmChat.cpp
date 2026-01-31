@@ -67,8 +67,9 @@ static const char* utfendl( const char* str, int len )
 }
 
 
-TracyLlmChat::TracyLlmChat()
+TracyLlmChat::TracyLlmChat( View& view, Worker& worker )
     : m_width( new float[NumRoles] )
+    , m_markdown( &view, &worker )
 {
 }
 

@@ -19,8 +19,7 @@
 
 constexpr const char* NoNetworkAccess = "Internet access is disabled by the user. Inform the user that they may enable it in the settings, so that you can use the tools to gather information.";
 
-#define NetworkCheckString if( !m_netAccess ) return NoNetworkAccess
-#define NetworkCheckReply if( !m_netAccess ) return { .reply = NoNetworkAccess }
+#define NetworkCheck if( !m_netAccess ) return NoNetworkAccess
 
 namespace tracy
 {
@@ -144,7 +143,7 @@ static T GetParamOpt( const nlohmann::json& json, const char* name, T def )
 #define ParamOptBool(name, def) GetParamOpt<bool>( json, name, def )
 #define ParamOptString(name, def) GetParamOpt<const std::string&>( json, name, def )
 
-TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
+std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel )
 {
     m_ctxSize = contextSize;
 
@@ -156,38 +155,38 @@ TracyLlmTools::ToolReply TracyLlmTools::HandleToolCalls( const std::string& tool
         }
         else if( tool == "get_wikipedia" )
         {
-            return { .reply = GetWikipedia( Param( "page" ), Param( "language" ) ) };
+            return GetWikipedia( Param( "page" ), Param( "language" ) );
         }
         else if( tool == "get_dictionary" )
         {
-            return { .reply = GetDictionary( Param( "word" ), Param( "language" ) ) };
+            return GetDictionary( Param( "word" ), Param( "language" ) );
         }
         else if( tool == "search_web" )
         {
-            return { .reply = SearchWeb( Param( "query" ) ) };
+            return SearchWeb( Param( "query" ) );
         }
         else if( tool == "get_webpage" )
         {
-            return { .reply = GetWebpage( Param( "url" ) ) };
+            return GetWebpage( Param( "url" ) );
         }
         else if( tool == "user_manual" )
         {
-            return { .reply = SearchManual( Param( "query" ), api, hasEmbeddingsModel ) };
+            return SearchManual( Param( "query" ), api, hasEmbeddingsModel );
         }
         else if( tool == "source_file" )
         {
-            return { .reply = SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 2 ), ParamOptU32( "context_back", 2 ) ) };
+            return SourceFile( Param( "file" ), ParamU32( "line" ), ParamOptU32( "context", 2 ), ParamOptU32( "context_back", 2 ) );
         }
         else if( tool == "source_search" )
         {
             std::string empty;
-            return { .reply = SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ), ParamOptString( "path", empty ) ) };
+            return SourceSearch( Param( "query" ), ParamOptBool( "case_insensitive", false ), ParamOptString( "path", empty ) );
         }
-        return { .reply = "Unknown tool call: " + tool };
+        return "Unknown tool call: " + tool;
     }
     catch( const std::exception& e )
     {
-        return { .reply = e.what() };
+        return e.what();
     }
 }
 
@@ -422,18 +421,18 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url, bool cache )
     return response;
 }
 
-TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, const std::string& lang )
+std::string TracyLlmTools::SearchWikipedia( std::string query, const std::string& lang )
 {
-    NetworkCheckReply;
+    NetworkCheck;
 
     std::ranges::replace( query, ' ', '+' );
     const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=10" );
 
     auto json = nlohmann::json::parse( response );
-    if( !json.contains( "pages" ) ) return { .reply = "No results found" };
+    if( !json.contains( "pages" ) ) return "No results found";
 
     auto& pages = json["pages"];
-    if( pages.size() == 0 ) return { .reply = "No results found" };
+    if( pages.size() == 0 ) return "No results found";
 
     auto output = nlohmann::json::array();
     for( auto& page : pages )
@@ -455,13 +454,12 @@ TracyLlmTools::ToolReply TracyLlmTools::SearchWikipedia( std::string query, cons
         output.push_back( j );
     }
 
-    const auto reply = output.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
-    return { .reply = reply };
+    return output.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
 }
 
 std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& lang )
 {
-    NetworkCheckString;
+    NetworkCheck;
 
     std::ranges::replace( page, ' ', '_' );
     auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
@@ -471,7 +469,7 @@ std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& la
 
 std::string TracyLlmTools::GetDictionary( std::string word, const std::string& lang )
 {
-    NetworkCheckString;
+    NetworkCheck;
 
     std::ranges::replace( word, ' ', '+' );
     const auto response = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/search/page?q=" + UrlEncode( word ) + "&limit=1" );
@@ -509,7 +507,7 @@ static void ReplaceAll( std::string& str, std::string_view from, std::string_vie
 
 std::string TracyLlmTools::SearchWeb( std::string query )
 {
-    NetworkCheckString;
+    NetworkCheck;
 
     query = UrlEncode( query );
 
@@ -634,7 +632,7 @@ struct xml_writer : public pugi::xml_writer
 
 std::string TracyLlmTools::GetWebpage( const std::string& url )
 {
-    NetworkCheckString;
+    NetworkCheck;
 
     auto data = FetchWebPage( url, false );
     auto doc = ParseHtml( data );

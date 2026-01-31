@@ -23,12 +23,6 @@ class Worker;
 class TracyLlmTools
 {
 public:
-    struct ToolReply
-    {
-        std::string reply;
-        std::string image;
-    };
-
     struct EmbeddingState
     {
         std::string model;
@@ -40,7 +34,7 @@ public:
     TracyLlmTools( Worker& worker, const TracyManualData& manual );
     ~TracyLlmTools();
 
-    ToolReply HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
+    std::string HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
     std::string GetCurrentTime() const;
 
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
@@ -55,7 +49,7 @@ private:
     [[nodiscard]] std::string TrimString( std::string&& str ) const;
 
     std::string FetchWebPage( const std::string& url, bool cache = true );
-    ToolReply SearchWikipedia( std::string query, const std::string& lang );
+    std::string SearchWikipedia( std::string query, const std::string& lang );
     std::string GetWikipedia( std::string page, const std::string& lang );
     std::string GetDictionary( std::string word, const std::string& lang );
     std::string SearchWeb( std::string query );

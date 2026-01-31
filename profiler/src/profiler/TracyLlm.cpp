@@ -1085,7 +1085,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 std::string result;
                 try
                 {
-                    result = m_tools->HandleToolCalls( name, nlohmann::json::parse( arguments ), *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 ).reply;
+                    result = m_tools->HandleToolCalls( name, nlohmann::json::parse( arguments ), *m_api, m_api->GetModels()[m_modelIdx].contextSize, m_embedIdx >= 0 );
                 }
                 catch( const nlohmann::json::exception& e )
                 {

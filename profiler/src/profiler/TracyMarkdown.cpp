@@ -282,15 +282,31 @@ public:
                 ImGui::PopStyleColor();
                 if( hovered )
                 {
+                    const auto isSource = link.starts_with( "source:" );
+
                     ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
                     ImGui::BeginTooltip();
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, 1.f ) );
-                    ImGui::TextUnformatted( link.c_str() );
+                    if( isSource && m_view && m_worker )
+                    {
+                        std::string source = link.substr( 7 );
+                        auto separator = source.find_last_of( ':' );
+                        TextFocused( "Source:", source.substr( 0, separator ).c_str() );
+                        if( separator != std::string::npos )
+                        {
+                            ImGui::SameLine( 0, 0 );
+                            ImGui::Text( ":%i", atoi( source.substr( separator + 1 ).c_str() ) );
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( link.c_str() );
+                    }
                     ImGui::PopStyleColor();
                     ImGui::EndTooltip();
                     if( IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
-                        if( link.starts_with( "source:" ) )
+                        if( isSource )
                         {
                             if( m_view && m_worker )
                             {

@@ -283,6 +283,8 @@ public:
                 if( hovered )
                 {
                     const auto isSource = link.starts_with( "source:" );
+                    StringIdx idx;
+                    uint32_t line = 0;
 
                     ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
                     ImGui::BeginTooltip();
@@ -291,11 +293,21 @@ public:
                     {
                         std::string source = link.substr( 7 );
                         auto separator = source.find_last_of( ':' );
-                        TextFocused( "Source:", source.substr( 0, separator ).c_str() );
+                        auto fn = source.substr( 0, separator );
+                        auto fnidx = m_worker->FindStringIdx( fn.c_str() );
+                        if( fnidx != 0 ) idx.SetIdx( fnidx );
+
+                        TextFocused( "Source:", fn.c_str() );
                         if( separator != std::string::npos )
                         {
+                            line = atoi( source.substr( separator + 1 ).c_str() );
                             ImGui::SameLine( 0, 0 );
-                            ImGui::Text( ":%i", atoi( source.substr( separator + 1 ).c_str() ) );
+                            ImGui::Text( ":%i", line );
+                        }
+
+                        if( !idx.Active() )
+                        {
+                            TextColoredUnformatted( ImVec4( 1.f, 0.f, 0.f, 1.f ), "Invalid source file reference" );
                         }
                     }
                     else
@@ -306,31 +318,12 @@ public:
                     ImGui::EndTooltip();
                     if( IsMouseClicked( ImGuiMouseButton_Left ) )
                     {
-                        if( isSource )
+                        if( isSource && m_view && m_worker )
                         {
-                            if( m_view && m_worker )
+                            if( idx.Active() )
                             {
-                                std::string source = link.substr( 7 );
-                                auto separator = source.find_last_of( ':' );
-                                int line;
-                                std::string fn;
-                                if( separator != std::string::npos )
-                                {
-                                    fn = source.substr( 0, separator );
-                                    line = atoi( source.substr( separator + 1 ).c_str() );
-                                }
-                                else
-                                {
-                                    fn = source;
-                                    line = 0;
-                                }
-
-                                const auto idx = m_worker->FindStringIdx( fn.c_str() );
-                                if( idx != 0 )
-                                {
-                                    auto str = m_worker->GetString( StringIdx( idx ) );
-                                    m_view->ViewSource( str, line );
-                                }
+                                auto str = m_worker->GetString( idx );
+                                m_view->ViewSource( str, line );
                             }
                         }
                         else

@@ -4,6 +4,7 @@
 #include <string.h>
 #include <vector>
 
+#include "TracyFilesystem.hpp"
 #include "TracyMarkdown.hpp"
 #include "TracyMouse.hpp"
 #include "TracyImGui.hpp"
@@ -295,7 +296,10 @@ public:
                         auto separator = source.find_last_of( ':' );
                         auto fn = source.substr( 0, separator );
                         auto fnidx = m_worker->FindStringIdx( fn.c_str() );
-                        if( fnidx != 0 ) idx.SetIdx( fnidx );
+                        if( fnidx != 0 && SourceFileValid( fn.c_str(), m_worker->GetCaptureTime(), *m_view, *m_worker ) )
+                        {
+                            idx.SetIdx( fnidx );
+                        }
 
                         TextFocused( "Source:", fn.c_str() );
                         if( separator != std::string::npos )

@@ -68,6 +68,7 @@ void SysPower::Tick()
 
 void SysPower::ScanDirectory( const char* path, int parent )
 {
+    tracy::DirectAlloc lock;
     DIR* dir = opendir( path );
     if( !dir ) return;
     struct dirent* ent;

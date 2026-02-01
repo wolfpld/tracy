@@ -83,7 +83,7 @@ struct ClientData
 enum class ViewShutdown { False, True, Join };
 
 static tracy::unordered_flat_map<uint64_t, ClientData> clients;
-static std::unique_ptr<tracy::View> view;
+static std::atomic<std::shared_ptr<tracy::View>> view;
 static tracy::BadVersionState badVer;
 static uint16_t port = 8086;
 static const char* connectTo = nullptr;
@@ -199,7 +199,8 @@ static void SetupDPIScale()
 static int IsBusy()
 {
     if( loadThread.joinable() ) return 2;
-    if( view && !view->IsBackgroundDone() ) return 1;
+    auto ptr = view.load( std::memory_order_acquire );
+    if( ptr && !ptr->IsBackgroundDone() ) return 1;
     return 0;
 }
 
@@ -348,12 +349,12 @@ int main( int argc, char** argv )
 
     if( initFileOpen )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
+        view.store( std::make_shared<tracy::View>( RunOnMainThread, *initFileOpen, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
         initFileOpen.reset();
     }
     else if( connectTo )
     {
-        view = std::make_unique<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
+        view.store( std::make_shared<tracy::View>( RunOnMainThread, connectTo, port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
     }
 
     tracy::Fileselector::Init();
@@ -365,7 +366,7 @@ int main( int argc, char** argv )
     if( loadThread.joinable() ) loadThread.join();
     if( updateThread.joinable() ) updateThread.join();
     if( updateNotesThread.joinable() ) updateNotesThread.join();
-    view.reset();
+    view.store( nullptr, std::memory_order_release );
 
     tracy::FreeTexture( zigzagTex, RunOnMainThread );
     tracy::FreeTexture( iconTex, RunOnMainThread );
@@ -378,7 +379,8 @@ int main( int argc, char** argv )
 
 static void UpdateBroadcastClients()
 {
-    if( !view )
+    auto ptr = view.load( std::memory_order_acquire );
+    if( !ptr )
     {
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
         if( !broadcastListen )
@@ -587,7 +589,8 @@ static void DrawContents()
     const bool achievementsAttention = tracy::s_config.achievements ? s_achievements->NeedsAttention() : false;
 
     static int activeFrames = 3;
-    if( tracy::WasActive() || !clients.empty() || ( view && view->WasActive() ) || achievementsAttention )
+    auto viewPtr = view.load( std::memory_order_acquire );
+    if( tracy::WasActive() || !clients.empty() || ( viewPtr && viewPtr->WasActive() ) || achievementsAttention )
     {
         activeFrames = 3;
     }
@@ -626,7 +629,7 @@ static void DrawContents()
 
     setlocale( LC_NUMERIC, "C" );
 
-    if( !view )
+    if( !viewPtr )
     {
         if( s_customTitle )
         {
@@ -962,11 +965,11 @@ static void DrawContents()
                 {
                     std::string addrPart = std::string( adata, ptr );
                     uint16_t portPart = (uint16_t)atoi( ptr+1 );
-                    view = std::make_unique<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, addrPart.c_str(), portPart, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
                 }
                 else
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, address.c_str(), port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
                 }
             }
         }
@@ -990,7 +993,7 @@ static void DrawContents()
                         loadThread = std::thread( [f] {
                             try
                             {
-                                view = std::make_unique<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
+                                view.store( std::make_shared<tracy::View>( RunOnMainThread, *f, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
@@ -1123,7 +1126,7 @@ static void DrawContents()
                 }
                 if( selected && !loadThread.joinable() )
                 {
-                    view = std::make_unique<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements );
+                    view.store( std::make_shared<tracy::View>( RunOnMainThread, v.second.address.c_str(), v.second.port, SetWindowTitleCallback, SetupScaleCallback, AttentionCallback, s_achievements ), std::memory_order_release );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
@@ -1191,17 +1194,19 @@ static void DrawContents()
             clients.clear();
         }
         if( loadThread.joinable() ) loadThread.join();
-        view->NotifyRootWindowSize( display_w, display_h );
-        if( !view->Draw() )
+        viewPtr->NotifyRootWindowSize( display_w, display_h );
+        if( !viewPtr->Draw() )
         {
             viewShutdown.store( ViewShutdown::True, std::memory_order_relaxed );
-            reconnect = view->ReconnectRequested();
+            reconnect = viewPtr->ReconnectRequested();
             if( reconnect )
             {
-                reconnectAddr = view->GetAddress();
-                reconnectPort = view->GetPort();
+                reconnectAddr = viewPtr->GetAddress();
+                reconnectPort = viewPtr->GetPort();
             }
-            loadThread = std::thread( [view = std::move( view )] () mutable {
+
+            view.store( nullptr, std::memory_order_release );
+            loadThread = std::thread( [view = std::move( viewPtr )] () mutable {
                 view.reset();
                 viewShutdown.store( ViewShutdown::Join, std::memory_order_relaxed );
             } );

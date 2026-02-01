@@ -130,7 +130,7 @@ void View::DrawThreadMessagesList( const TimelineContext& ctx, const std::vector
             if( !isMsgHovered )
             {
                 animOff = -fabs( sin( s_time * 8 ) ) * th;
-                m_wasActive = true;
+                m_wasActive.store( true, std::memory_order_release );
             }
         }
 

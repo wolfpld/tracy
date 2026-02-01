@@ -758,7 +758,7 @@ bool View::DrawImpl()
     }
 
     const auto& io = ImGui::GetIO();
-    m_wasActive = false;
+    m_wasActive.store( false, std::memory_order_release );
 
     assert( m_shortcut == ShortcutAction::None );
     if( io.KeyCtrl )
@@ -1254,14 +1254,18 @@ bool View::DrawImpl()
         }
     }
 
-    m_wasActive |= m_callstackBuzzAnim.Update( io.DeltaTime );
-    m_wasActive |= m_sampleParentBuzzAnim.Update( io.DeltaTime );
-    m_wasActive |= m_callstackTreeBuzzAnim.Update( io.DeltaTime );
-    m_wasActive |= m_zoneinfoBuzzAnim.Update( io.DeltaTime );
-    m_wasActive |= m_findZoneBuzzAnim.Update( io.DeltaTime );
-    m_wasActive |= m_optionsLockBuzzAnim.Update( io.DeltaTime );
-    m_wasActive |= m_lockInfoAnim.Update( io.DeltaTime );
-    m_wasActive |= m_statBuzzAnim.Update( io.DeltaTime );
+    bool active = m_wasActive.load( std::memory_order_acquire );
+
+    active |= m_callstackBuzzAnim.Update( io.DeltaTime );
+    active |= m_sampleParentBuzzAnim.Update( io.DeltaTime );
+    active |= m_callstackTreeBuzzAnim.Update( io.DeltaTime );
+    active |= m_zoneinfoBuzzAnim.Update( io.DeltaTime );
+    active |= m_findZoneBuzzAnim.Update( io.DeltaTime );
+    active |= m_optionsLockBuzzAnim.Update( io.DeltaTime );
+    active |= m_lockInfoAnim.Update( io.DeltaTime );
+    active |= m_statBuzzAnim.Update( io.DeltaTime );
+
+    m_wasActive.store( active, std::memory_order_release );
 
     if( m_firstFrame )
     {
@@ -1494,7 +1498,7 @@ void View::SelectThread( uint64_t thread )
 
 bool View::WasActive() const
 {
-    return m_wasActive ||
+    return m_wasActive.load( std::memory_order_acquire ) ||
         m_zoomAnim.active ||
         m_notificationTime > 0 ||
         !m_playback.pause ||

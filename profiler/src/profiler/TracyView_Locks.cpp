@@ -454,7 +454,7 @@ int View::DrawLocks( const TimelineContext& ctx, const std::vector<std::unique_p
             {
                 const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 0.f, -1, 2.f );
-                m_wasActive = true;
+                m_wasActive.store( true, std::memory_order_release );
             }
             else if( v.condensed == 0 )
             {

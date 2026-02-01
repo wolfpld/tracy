@@ -2503,15 +2503,15 @@ const char* Worker::GetThreadName( uint64_t id ) const
     }
 }
 
-bool Worker::IsThreadLocal( uint64_t id )
+bool Worker::IsThreadLocal( uint64_t id, ThreadCache& cache )
 {
-    auto td = RetrieveThread( id );
+    auto td = RetrieveThread( id, cache );
     return td && ( td->count > 0 || !td->samples.empty() );
 }
 
 bool Worker::IsThreadFiber( uint64_t id )
 {
-    auto td = RetrieveThread( id );
+    auto td = RetrieveThread( id, m_data.threadDataLast );
     return td && ( td->isFiber );
 }
 
@@ -3481,13 +3481,13 @@ ThreadData* Worker::NoticeThreadReal( uint64_t thread )
     }
 }
 
-ThreadData* Worker::RetrieveThreadReal( uint64_t thread )
+ThreadData* Worker::RetrieveThreadReal( uint64_t thread, ThreadCache& cache )
 {
     auto it = m_threadMap.find( thread );
     if( it != m_threadMap.end() )
     {
-        m_data.threadDataLast.first = thread;
-        m_data.threadDataLast.second = it->second;
+        cache.first = thread;
+        cache.second = it->second;
         return it->second;
     }
     else
@@ -4811,7 +4811,7 @@ void Worker::ProcessThreadContext( const QueueThreadContext& ev )
     if( m_threadCtx != ev.thread )
     {
         m_threadCtx = ev.thread;
-        m_threadCtxData = RetrieveThread( ev.thread );
+        m_threadCtxData = RetrieveThread( ev.thread, m_data.threadDataLast );
     }
 }
 
@@ -5285,7 +5285,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
 void Worker::ProcessZoneText()
 {
-    auto td = RetrieveThread( m_threadCtx );
+    auto td = RetrieveThread( m_threadCtx, m_data.threadDataLast );
     if( !td )
     {
         ZoneTextFailure( m_threadCtx, m_pendingSingleString.ptr );
@@ -5332,7 +5332,7 @@ void Worker::ProcessZoneText()
 
 void Worker::ProcessZoneName()
 {
-    auto td = RetrieveThread( m_threadCtx );
+    auto td = RetrieveThread( m_threadCtx, m_data.threadDataLast );
     if( !td )
     {
         ZoneNameFailure( m_threadCtx );
@@ -5354,7 +5354,7 @@ void Worker::ProcessZoneName()
 
 void Worker::ProcessZoneColor( const QueueZoneColor& ev )
 {
-    auto td = RetrieveThread( m_threadCtx );
+    auto td = RetrieveThread( m_threadCtx, m_data.threadDataLast );
     if( !td )
     {
         ZoneColorFailure( m_threadCtx );
@@ -5380,7 +5380,7 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
     char tmp[64];
     const auto tsz = sprintf( tmp, "%" PRIu64 " [0x%" PRIx64 "]", ev.value, ev.value );
 
-    auto td = RetrieveThread( m_threadCtx );
+    auto td = RetrieveThread( m_threadCtx, m_data.threadDataLast );
     if( !td )
     {
         ZoneValueFailure( m_threadCtx, ev.value );
@@ -7110,7 +7110,7 @@ void Worker::ProcessMemNamePayload( const QueueMemNamePayload& ev )
 
 void Worker::ProcessThreadGroupHint( const QueueThreadGroupHint& ev )
 {
-    auto td = RetrieveThread( ev.thread );
+    auto td = RetrieveThread( ev.thread, m_data.threadDataLast );
     assert( td );
     td->groupHint = ev.groupHint;
     m_pendingThreadHints.emplace_back( ev.thread );
@@ -7145,7 +7145,7 @@ void Worker::ProcessFiberEnter( const QueueFiberEnter& ev )
         auto& item = data.back();
         item.SetEnd( t );
     }
-    td->fiber = RetrieveThread( tid );
+    td->fiber = RetrieveThread( tid, m_data.threadDataLast );
     assert( td->fiber );
 
     auto cit = m_data.ctxSwitch.find( tid );
@@ -7171,7 +7171,7 @@ void Worker::ProcessFiberLeave( const QueueFiberLeave& ev )
     const auto t = TscTime( RefTime( m_refTimeThread, ev.time ) );
     if( m_data.lastTime < t ) m_data.lastTime = t;
 
-    auto td = RetrieveThread( ev.thread );
+    auto td = RetrieveThread( ev.thread, m_data.threadDataLast );
     if( !td->fiber )
     {
         FiberLeaveFailure();
@@ -7359,6 +7359,8 @@ void Worker::ReconstructContextSwitchUsage()
         cpus.emplace_back( Cpu { false, m_data.cpuData[i].cs.begin(), m_data.cpuData[i].cs.end() } );
     }
 
+    ThreadCache cache;
+
     uint8_t other = 0;
     uint8_t own = 0;
     for(;;)
@@ -7382,7 +7384,7 @@ void Worker::ReconstructContextSwitchUsage()
                 const auto ct = !cpus[i].startDone ? cpus[i].it->Start() : cpus[i].it->End();
                 if( nextTime != ct ) break;
                 const auto tid = DecompressThreadExternal( cpus[i].it->Thread() );
-                const auto isOwn = IsThreadLocal( tid ) || GetPidFromTid( tid ) == m_pid;
+                const auto isOwn = IsThreadLocal( tid, cache ) || GetPidFromTid( tid ) == m_pid;
                 if( !cpus[i].startDone )
                 {
                     if( isOwn )
@@ -8422,7 +8424,7 @@ void Worker::Write( FileWrite& f, bool fiDict )
     ctxValid.reserve( m_data.ctxSwitch.size() );
     for( auto it = m_data.ctxSwitch.begin(); it != m_data.ctxSwitch.end(); ++it )
     {
-        auto td = RetrieveThread( it->first );
+        auto td = RetrieveThread( it->first, m_data.threadDataLast );
         if( td && ( td->count > 0 || !td->samples.empty() ) )
         {
             ctxValid.emplace_back( it );

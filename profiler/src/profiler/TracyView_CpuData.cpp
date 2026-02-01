@@ -575,6 +575,8 @@ void View::DrawCpuDataWindow()
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     if( ImGui::GetCurrentWindowRead()->SkipItems ) { ImGui::End(); return; }
 
+    Worker::ThreadCache cache;
+
     struct PidData
     {
         std::vector<uint64_t> tids;
@@ -808,7 +810,7 @@ void View::DrawCpuDataWindow()
                     ImGui::TableNextColumn();
                     if( drawSeparator ) ImGui::Separator();
 
-                    const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );
+                    const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid, cache );
                     const char* tname;
                     if( tidMatch )
                     {

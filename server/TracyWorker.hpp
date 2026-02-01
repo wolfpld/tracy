@@ -98,6 +98,8 @@ struct LoadProgress
 class Worker
 {
 public:
+    using ThreadCache = std::pair<uint64_t, ThreadData*>;
+
     struct ImportEventTimeline
     {
         uint64_t tid;
@@ -376,7 +378,7 @@ private:
         unordered_flat_map<uint64_t, uint64_t> tidToPid;
         unordered_flat_map<uint64_t, CpuThreadData> cpuThreadData;
 
-        std::pair<uint64_t, ThreadData*> threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
+        ThreadCache threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         uint64_t checkSrclocLast = 0;
         std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
@@ -607,7 +609,8 @@ public:
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadName( uint64_t id ) const;
-    bool IsThreadLocal( uint64_t id );
+    bool IsThreadLocal( uint64_t id ) { return IsThreadLocal( id, m_data.threadDataLast ); }
+    bool IsThreadLocal( uint64_t id, ThreadCache& cache );
     bool IsThreadFiber( uint64_t id );
     const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
     std::pair<const char*, const char*> GetExternalName( uint64_t id ) const;
@@ -857,11 +860,11 @@ private:
         if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
         return NoticeThreadReal( thread );
     }
-    ThreadData* RetrieveThreadReal( uint64_t thread );
-    tracy_force_inline ThreadData* RetrieveThread( uint64_t thread )
+    ThreadData* RetrieveThreadReal( uint64_t thread, ThreadCache& cache );
+    tracy_force_inline ThreadData* RetrieveThread( uint64_t thread, ThreadCache& cache )
     {
-        if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
-        return RetrieveThreadReal( thread );
+        if( cache.first == thread ) return cache.second;
+        return RetrieveThreadReal( thread, cache );
     }
 
     tracy_force_inline ThreadData* GetCurrentThreadData();

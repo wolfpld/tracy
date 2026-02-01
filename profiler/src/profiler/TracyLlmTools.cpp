@@ -811,13 +811,13 @@ std::string TracyLlmTools::SourceFile( const std::string& file, uint32_t line, u
 
     nlohmann::json json = {
         { "file", file },
-        { "hint", "Each line starts with a line number, then a <|> symbol, then the actual line content." },
+        { "hint", "Each line starts with a line number, then: space, pipe, space, then the actual line content." },
     };
 
     std::string contents;
     for( uint32_t i = minLine; i < maxLine; i++ )
     {
-        contents += std::to_string( i+1 ) + "<|>" + lines[i] + "\n";
+        contents += std::to_string( i+1 ) + " | " + lines[i] + "\n";
     }
 
     json.push_back( { "contents", std::move( contents ) } );
@@ -829,7 +829,7 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
 {
     auto& cache = m_worker.GetSourceFileCache();
     nlohmann::json json = {
-        { "hint", "Each line starts with a line number, then a <|> symbol, then the actual line content." }
+        { "hint", "Each line starts with a line number, then: space, pipe, space, then the actual line content." }
     };
 
     if( caseInsensitive ) std::ranges::transform( query, query.begin(), []( char c ) { return std::tolower( c ); } );
@@ -892,14 +892,14 @@ std::string TracyLlmTools::SourceSearch( std::string query, bool caseInsensitive
             auto linesOrig = SplitLines( mem.data, mem.len );
             for( auto& line : res )
             {
-                r += std::to_string( line + 1 ) + "<|>" + linesOrig[line] + "\n";
+                r += std::to_string( line + 1 ) + " | " + linesOrig[line] + "\n";
             }
         }
         else
         {
             for( auto& line : res )
             {
-                r += std::to_string( line + 1 ) + "<|>" + lines[line] + "\n";
+                r += std::to_string( line + 1 ) + " | " + lines[line] + "\n";
             }
         }
 

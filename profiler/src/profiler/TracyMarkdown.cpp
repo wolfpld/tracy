@@ -281,68 +281,7 @@ public:
             if( !link.empty() )
             {
                 ImGui::PopStyleColor();
-                if( hovered )
-                {
-                    const auto isSource = link.starts_with( "source:" );
-                    StringIdx idx;
-                    uint32_t line = 0;
-
-                    ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
-                    ImGui::BeginTooltip();
-                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, 1.f ) );
-                    if( isSource && m_view && m_worker )
-                    {
-                        std::string source = link.substr( 7 );
-                        auto separator = source.find_last_of( ':' );
-                        auto fn = source.substr( 0, separator );
-                        auto fnidx = m_worker->FindStringIdx( fn.c_str() );
-                        if( fnidx != 0 && SourceFileValid( fn.c_str(), m_worker->GetCaptureTime(), *m_view, *m_worker ) )
-                        {
-                            idx.SetIdx( fnidx );
-                        }
-
-                        TextFocused( "Source:", fn.c_str() );
-                        if( separator != std::string::npos )
-                        {
-                            line = atoi( source.substr( separator + 1 ).c_str() );
-                            ImGui::SameLine( 0, 0 );
-                            ImGui::Text( ":%i", line );
-                        }
-
-                        if( idx.Active() )
-                        {
-                            ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
-                            ImGui::Separator();
-                            ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
-                            m_view->DrawSourceTooltip( fn.c_str(), line, 3, 3, false );
-                        }
-                        else
-                        {
-                            TextColoredUnformatted( ImVec4( 1.f, 0.f, 0.f, 1.f ), "Invalid source file reference" );
-                        }
-                    }
-                    else
-                    {
-                        ImGui::TextUnformatted( link.c_str() );
-                    }
-                    ImGui::PopStyleColor();
-                    ImGui::EndTooltip();
-                    if( IsMouseClicked( ImGuiMouseButton_Left ) )
-                    {
-                        if( isSource && m_view && m_worker )
-                        {
-                            if( idx.Active() )
-                            {
-                                auto str = m_worker->GetString( idx );
-                                m_view->ViewSource( str, line );
-                            }
-                        }
-                        else
-                        {
-                            OpenWebpage( link.c_str() );
-                        }
-                    }
-                }
+                if( hovered ) LinkHover();
             }
             break;
         }
@@ -418,6 +357,69 @@ private:
         end = text + buf.size();
 
         return PrintTextWrapped( text, end, strikethrough, !link.empty() );
+    }
+
+    void LinkHover()
+    {
+        const auto isSource = link.starts_with( "source:" );
+        StringIdx idx;
+        uint32_t line = 0;
+
+        ImGui::SetMouseCursor( ImGuiMouseCursor_Hand );
+        ImGui::BeginTooltip();
+        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 1.f, 1.f ) );
+        if( isSource && m_view && m_worker )
+        {
+            std::string source = link.substr( 7 );
+            auto separator = source.find_last_of( ':' );
+            auto fn = source.substr( 0, separator );
+            auto fnidx = m_worker->FindStringIdx( fn.c_str() );
+            if( fnidx != 0 && SourceFileValid( fn.c_str(), m_worker->GetCaptureTime(), *m_view, *m_worker ) )
+            {
+                idx.SetIdx( fnidx );
+            }
+
+            TextFocused( "Source:", fn.c_str() );
+            if( separator != std::string::npos )
+            {
+                line = atoi( source.substr( separator + 1 ).c_str() );
+                ImGui::SameLine( 0, 0 );
+                ImGui::Text( ":%i", line );
+            }
+
+            if( idx.Active() )
+            {
+                ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
+                ImGui::Separator();
+                ImGui::Dummy( ImVec2( 0, ImGui::GetTextLineHeight() * 0.25f ) );
+                m_view->DrawSourceTooltip( fn.c_str(), line, 3, 3, false );
+            }
+            else
+            {
+                TextColoredUnformatted( ImVec4( 1.f, 0.f, 0.f, 1.f ), "Invalid source file reference" );
+            }
+        }
+        else
+        {
+            ImGui::TextUnformatted( link.c_str() );
+        }
+        ImGui::PopStyleColor();
+        ImGui::EndTooltip();
+        if( IsMouseClicked( ImGuiMouseButton_Left ) )
+        {
+            if( isSource && m_view && m_worker )
+            {
+                if( idx.Active() )
+                {
+                    auto str = m_worker->GetString( idx );
+                    m_view->ViewSource( str, line );
+                }
+            }
+            else
+            {
+                OpenWebpage( link.c_str() );
+            }
+        }
     }
 
     int bold = 0;

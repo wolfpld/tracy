@@ -1,7 +1,7 @@
 #ifndef __EMSCRIPTENSHIM_HPP__
 #define __EMSCRIPTENSHIM_HPP__
 
-#ifdef __EMSCRIPTEN__
+#if defined __EMSCRIPTEN__ || defined __APPLE__
 
 namespace std {
 

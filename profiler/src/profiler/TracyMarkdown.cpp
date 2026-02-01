@@ -273,28 +273,19 @@ public:
                 font = g_fonts.italic;
             }
             ImGui::PushFont( font, FontNormal * FontSizes[header] );
-
-            if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
-            Glue();
-            const auto hovered = PrintText( text, text + size );
-            ImGui::PopFont();
-            if( !link.empty() )
-            {
-                ImGui::PopStyleColor();
-                if( hovered ) LinkHover();
-            }
+            PrintTextExt( text, text + size );
             break;
         }
         case MD_TEXT_NULLCHAR:
             Glue();
-            PrintText( "\xEF\xBF\xBD" );
+            PrintTextExt( "\xEF\xBF\xBD", nullptr, false );
             break;
         case MD_TEXT_BR:
             glue = false;
             break;
         case MD_TEXT_SOFTBR:
             Glue();
-            PrintText( " " );
+            PrintTextExt( " ", nullptr, false );
             break;
         case MD_TEXT_CODE:
         case MD_TEXT_LATEXMATH:
@@ -305,18 +296,19 @@ public:
             else
             {
                 Glue();
-                ImGui::PushFont( g_fonts.mono, FontNormal * FontSizes[header] );
                 if( codeBlock )
                 {
                     SourceContents sc;
                     sc.Parse( text, size );
+                    ImGui::PushFont( g_fonts.mono, FontNormal * FontSizes[header] );
                     PrintSource( sc.get() );
+                    ImGui::PopFont();
                 }
                 else
                 {
-                    PrintText( text, text + size );
+                    ImGui::PushFont( g_fonts.mono, FontNormal * FontSizes[header] );
+                    PrintTextExt( text, text + size );
                 }
-                ImGui::PopFont();
             }
             break;
         }
@@ -357,6 +349,19 @@ private:
         end = text + buf.size();
 
         return PrintTextWrapped( text, end, strikethrough, !link.empty() );
+    }
+
+    void PrintTextExt( const char* text, const char* end = nullptr, bool popFont = true )
+    {
+        if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
+        Glue();
+        const auto hovered = PrintText( text, end );
+        if( popFont ) ImGui::PopFont();
+        if( !link.empty() )
+        {
+            ImGui::PopStyleColor();
+            if( hovered ) LinkHover();
+        }
     }
 
     void LinkHover()

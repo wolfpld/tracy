@@ -58,6 +58,7 @@
 
 #include "Backend.hpp"
 #include "ConnectionHistory.hpp"
+#include "EmscriptenShim.hpp"
 #include "Filters.hpp"
 #include "Fonts.hpp"
 #include "HttpRequest.hpp"

@@ -18,6 +18,12 @@
 #ifdef TRACY_VERBOSE
 #  include <stdio.h>
 #  define TracyDebug(...) do { fprintf( stderr, __VA_ARGS__ ); fputc( '\n', stderr ); } while( 0 )
+// Note: We can't use LogString when using TRACY_DELAYED_INIT due to a deadlock in the init code. 
+// This is caused by `GetProfilerData` triggerting ProfileData ctor, which itself will call `GetProfilerData` and deadlock.
+// TRACY_MANUAL_LIFETIME does not have this issue since StartupProfiler sets s_profilerData before calling the constructor.
+// In general, this also means we can only call TracyDebug after and the first logging is after queue initialization and critical init (such as InitCallstackCritical).
+#elif !defined(TRACY_NO_INTERNAL_MESSAGE) && (!defined(TRACY_DELAYED_INIT) || defined(TRACY_MANUAL_LIFETIME))
+#  define TracyDebug(...) TracyInternalMessage( tracy::MessageSeverity::Debug, __VA_ARGS__ )
 #else
 #  define TracyDebug(...)
 #endif

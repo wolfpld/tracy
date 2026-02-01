@@ -273,6 +273,7 @@ public:
                 font = g_fonts.italic;
             }
             ImGui::PushFont( font, FontNormal * FontSizes[header] );
+            Glue();
             PrintTextExt( text, text + size );
             break;
         }
@@ -354,7 +355,6 @@ private:
     void PrintTextExt( const char* text, const char* end = nullptr, bool popFont = true )
     {
         if( !link.empty() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.55f, 0.55f, 1.f, 1.f ) );
-        Glue();
         const auto hovered = PrintText( text, end );
         if( popFont ) ImGui::PopFont();
         if( !link.empty() )

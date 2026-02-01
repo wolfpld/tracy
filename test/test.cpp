@@ -25,6 +25,9 @@ struct static_init_test_t
 {
     static_init_test_t()
     {
+#ifdef TRACY_MANUAL_LIFETIME
+        tracy::StartupProfiler();
+#endif
         ZoneScoped;
         ZoneTextF( "Static %s", "init test" );
         TracyLogString( tracy::MessageSeverity::Info, 0, TRACY_CALLSTACK, "Static init" );

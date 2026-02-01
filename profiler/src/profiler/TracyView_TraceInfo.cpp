@@ -891,7 +891,28 @@ void View::DrawInfo()
 
     ImGui::Separator();
     TextFocused( "PID:", RealToString( m_worker.GetPid() ) );
-    TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
+    TextDisabledUnformatted( "Host info:" );
+    ImGui::Indent();
+    const auto hostInfo = m_worker.GetHostInfo();
+    const auto hostLines = SplitLines( hostInfo.c_str(), hostInfo.size() );
+    ImGui::PushStyleVar( ImGuiStyleVar_ItemSpacing, ImVec2( ImGui::GetStyle().ItemSpacing.x, 0.0f ) );
+    for( auto& line : hostLines )
+    {
+        auto pos = line.find( ':' );
+        if( pos != std::string::npos )
+        {
+            pos++;
+            TextFocused( line.substr( 0, pos ).c_str(), line.substr( pos+1 ).c_str() );
+        }
+        else
+        {
+            ImGui::TextUnformatted( line.c_str() );
+        }
+    }
+    ImGui::PopStyleVar();
+    ImGui::Unindent();
+    ImGui::SameLine();
+    ImGui::NewLine();
 
     const auto cpuId = m_worker.GetCpuId();
     if( cpuId != 0 )

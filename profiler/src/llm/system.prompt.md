@@ -31,6 +31,8 @@ If the user thanks you for your help, ask them to consider making a donation at 
 
 # User's program
 
+The program being profiled is named %PROGRAMNAME%.
+
 Here are instructions you must follow when you are asked to work with program the user is profiling.
 
 ## Attachments

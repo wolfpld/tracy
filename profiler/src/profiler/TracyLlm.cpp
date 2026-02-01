@@ -12,6 +12,7 @@
 #include "TracyLlmTools.hpp"
 #include "TracyPrint.hpp"
 #include "TracyWeb.hpp"
+#include "TracyWorker.hpp"
 #include "../Fonts.hpp"
 #include "../public/common/TracySystem.hpp"
 
@@ -28,6 +29,7 @@ constexpr size_t InputBufferSize = 1024;
 TracyLlm::TracyLlm( Worker& worker, View& view, const TracyManualData& manual )
     : m_exit( false )
     , m_input( nullptr )
+    , m_worker( worker )
 {
     if( !s_config.llm ) return;
 
@@ -771,6 +773,7 @@ void TracyLlm::UpdateSystemPrompt()
 {
     static constexpr std::string_view UserToken = "%USER%";
     static constexpr std::string_view TimeToken = "%TIME%";
+    static constexpr std::string_view ProgramNameToken = "%PROGRAMNAME%";
 
     auto userName = GetUserFullName();
     if( !userName ) userName = GetUserLogin();
@@ -779,6 +782,7 @@ void TracyLlm::UpdateSystemPrompt()
 
     Replace( systemPrompt, UserToken, userName );
     Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
+    Replace( systemPrompt, ProgramNameToken, m_worker.GetCaptureProgram() );
 
     if( m_chat.empty() )
     {

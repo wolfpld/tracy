@@ -105,6 +105,8 @@ private:
 
     std::shared_ptr<EmbedData> m_systemPrompt;
     nlohmann::json m_toolsJson;
+
+    Worker& m_worker;
 };
 
 }

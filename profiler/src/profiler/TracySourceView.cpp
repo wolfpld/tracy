@@ -1937,32 +1937,30 @@ void SourceView::RenderSymbolSourceView( const AddrStatData& as, Worker& worker,
                 nlohmann::json json = {
                     { "type", "source", },
                     { "file", m_source.filename() },
-                    { "code", nlohmann::json::array() }
+                    { "hint", "Each line starts with a line number, optional: [then: space, pipe, space, then execution cost], then space, pipe, space, then the actual line content." }
                 };
 
-                auto& code = json["code"];
+                std::string code;
                 auto& lines = m_source.get();
 
                 int idx = 1;
                 for( auto& line : lines )
                 {
-                    nlohmann::json l = {
-                        { "line", idx },
-                        { "text", std::string( line.begin, line.end ) }
-                    };
+                    code += std::to_string( idx ) + " | ";
 
                     auto it = as.ipCountSrc.find( idx );
                     if( it != as.ipCountSrc.end() )
                     {
                         char buf[32];
                         snprintf( buf, sizeof(buf), "%.4f%%", 100.f * it->second.local / as.ipTotalSrc.local );
-                        l["cost"] = buf;
+                        code += std::string( buf ) + " | ";
                     }
 
-                    code.push_back( l );
+                    code += std::string( line.begin, line.end ) + "\n";
                     idx++;
                 }
 
+                json["code"] = std::move( code );
                 view.AddLlmAttachment( json );
             }
         }

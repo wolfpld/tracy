@@ -975,6 +975,7 @@ nlohmann::json View::GetCallstackJson( const VarArray<CallstackFrameId>& cs )
                 if( f == fsz-1 )
                 {
                     frameJson["frame"] = fidx++;
+                    frameJson["inline"] = false;
                 }
                 else
                 {

@@ -600,6 +600,10 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     useMonotonicClockRaw = true;
 #endif
+    if( useMonotonicClockRaw )
+    {
+        TracyDebug( "Using CLOCK_MONOTONIC_RAW for Linux perf events." );
+    }
 
 #ifdef TRACY_NO_SAMPLING
     const bool noSoftwareSampling = true;

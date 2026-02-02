@@ -28,7 +28,7 @@
 #  include <mach/mach_time.h>
 #endif
 
-#if ( (defined _WIN32 && !(defined _M_ARM64 || defined _M_ARM)) || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) || ( defined __APPLE__  && defined __MACH__ && TARGET_CPU_ARM64 ) )
+#if !defined TRACY_DISALLOW_HW_TIMER && ( (defined _WIN32 && !(defined _M_ARM64 || defined _M_ARM)) || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) || ( defined __APPLE__  && defined __MACH__ && TARGET_CPU_ARM64 ) )
 #  define TRACY_HW_TIMER
 #endif
 

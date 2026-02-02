@@ -596,6 +596,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "sched_waking id: %i", wakingId );
     TracyDebug( "drm_vblank_event id: %i", vsyncId );
 
+    bool useMonotonicClockRaw = !HardwareSupportsInvariantTSC();
+#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+    useMonotonicClockRaw = true;
+#endif
+
 #ifdef TRACY_NO_SAMPLING
     const bool noSoftwareSampling = true;
 #else
@@ -666,11 +671,12 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
     pe.disabled = 1;
     pe.freq = 1;
-    pe.inherit = 1;
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    pe.use_clockid = 1;
-    pe.clockid = CLOCK_MONOTONIC_RAW;
-#endif
+    pe.inherit = 1;    
+    if( useMonotonicClockRaw )
+    {
+        pe.use_clockid = 1;
+        pe.clockid = CLOCK_MONOTONIC_RAW;
+    }
 
     if( !noSoftwareSampling )
     {
@@ -711,11 +717,12 @@ bool SysTraceStart( int64_t& samplingPeriod )
     pe.exclude_guest = 1;
     pe.exclude_hv = 1;
     pe.freq = 1;
-    pe.inherit = 1;
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    pe.use_clockid = 1;
-    pe.clockid = CLOCK_MONOTONIC_RAW;
-#endif
+    pe.inherit = 1;    
+    if( useMonotonicClockRaw )
+    {
+        pe.use_clockid = 1;
+        pe.clockid = CLOCK_MONOTONIC_RAW;
+    }
 
     if( !noRetirement )
     {
@@ -838,10 +845,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
         pe.sample_type = PERF_SAMPLE_TIME | PERF_SAMPLE_RAW;
         pe.disabled = 1;
         pe.config = vsyncId;
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-        pe.use_clockid = 1;
-        pe.clockid = CLOCK_MONOTONIC_RAW;
-#endif
+        if( useMonotonicClockRaw )
+        {
+            pe.use_clockid = 1;
+            pe.clockid = CLOCK_MONOTONIC_RAW;
+        }
 
         TracyDebug( "Setup vsync capture" );
         for( int i=0; i<s_numCpus; i++ )
@@ -873,10 +881,12 @@ bool SysTraceStart( int64_t& samplingPeriod )
         pe.disabled = 1;
         pe.inherit = 1;
         pe.config = switchId;
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-        pe.use_clockid = 1;
-        pe.clockid = CLOCK_MONOTONIC_RAW;
-#endif
+        
+        if( useMonotonicClockRaw )
+        {
+            pe.use_clockid = 1;
+            pe.clockid = CLOCK_MONOTONIC_RAW;
+        }
 
         TracyDebug( "Setup context switch capture" );
         for( int i=0; i<s_numCpus; i++ )
@@ -906,10 +916,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
             pe.inherit = 1;
             pe.config = wakingId;
             pe.read_format = 0;
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-            pe.use_clockid = 1;
-            pe.clockid = CLOCK_MONOTONIC_RAW;
-#endif
+            if( useMonotonicClockRaw )
+            {
+                pe.use_clockid = 1;
+                pe.clockid = CLOCK_MONOTONIC_RAW;
+            }
 
             TracyDebug( "Setup waking up capture" );
             for( int i=0; i<s_numCpus; i++ )

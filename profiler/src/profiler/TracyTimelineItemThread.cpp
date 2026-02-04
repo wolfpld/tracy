@@ -36,7 +36,7 @@ bool TimelineItemThread::IsEmpty() const
     return crash.thread != m_thread->id &&
         m_thread->timeline.empty() &&
         m_thread->messages.empty() &&
-        m_thread->ghostZones.empty();
+        ( !m_worker.AreGhostZonesReady() || m_thread->ghostZones.empty() );
 }
 
 uint32_t TimelineItemThread::HeaderColor() const

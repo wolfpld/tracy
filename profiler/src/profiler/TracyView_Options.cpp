@@ -702,7 +702,9 @@ void View::DrawOptions()
         {
             pdqsort_branchless( m_threadOrder.begin(), m_threadOrder.end(), [this] ( const auto& lhs, const auto& rhs ) {
                 if( lhs->groupHint != rhs->groupHint ) return lhs->groupHint < rhs->groupHint;
-                return strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) ) < 0;
+                const auto cmp = strcmp( m_worker.GetThreadName( lhs->id ), m_worker.GetThreadName( rhs->id ) );
+                if( cmp != 0 ) return cmp < 0;
+                return lhs->id < rhs->id;
             } );
         }
 

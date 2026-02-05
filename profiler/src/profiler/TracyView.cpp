@@ -39,7 +39,7 @@ namespace tracy
 double s_time = 0;
 
 View::View( void(*cbMainThread)(const std::function<void()>&, bool), const char* addr, uint16_t port, SetTitleCallback stcb, SetScaleCallback sscb, AttentionCallback acb, AchievementsMgr* amgr )
-    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ) )
+    : m_worker( addr, port, s_config.memoryLimit == 0 ? -1 : ( s_config.memoryLimitPercent * tracy::GetPhysicalMemorySize() / 100 ), s_config.timeLimit == 0 ? -1 : s_config.connectionTimeLimitSeconds )
     , m_staticView( false )
     , m_viewMode( ViewMode::LastFrames )
     , m_viewModeHeuristicTry( true )
@@ -838,9 +838,9 @@ bool View::DrawImpl()
         ImGui::SameLine();
         if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
         {
-            const bool wasDisconnectIssued = m_disconnectIssued;
+            const bool wasDisconnectIssued = m_worker.WasDisconnectIssued();
             const bool discardData = !DrawConnection();
-            const bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
+            const bool disconnectIssuedJustNow = m_worker.WasDisconnectIssued() != wasDisconnectIssued;
             if( discardData ) keepOpen = false;
             if( disconnectIssuedJustNow || discardData ) ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
@@ -1094,11 +1094,16 @@ bool View::DrawImpl()
         if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
         ImGui::Spacing();
 
+        const auto timeLimit = m_worker.GetTimeLimit();
+        const auto timeRemaining = timeLimit - ( std::chrono::steady_clock::now() - m_worker.GetStartTime() );
+        const bool timeLimitReached = timeLimit.count() > 0 && timeRemaining.count() < 0;
         const auto memoryLimit = m_worker.GetMemoryLimit();
-        if( memoryLimit > 0 )
+        const auto memoryRemainingBeforeLimit = memoryLimit - memUsage.load( std::memory_order_relaxed );
+        const bool memoryLimitReached = memoryLimit > 0 && memoryRemainingBeforeLimit < 0;
+        if( memoryLimit > 0 || timeLimit.count() > 0.f )
         {
             ImGui::SameLine();
-            if( memUsage.load( std::memory_order_relaxed ) > memoryLimit )
+            if( memoryLimitReached || timeLimitReached )
             {
                 TextColoredUnformatted( 0xFF2222FF, ICON_FA_TRIANGLE_EXCLAMATION );
             }
@@ -1109,7 +1114,24 @@ bool View::DrawImpl()
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "Memory limit: %s", MemSizeToString( memoryLimit ) );
+                if( memoryLimit > 0 ) 
+                {
+                    ImGui::Text( "Memory limit: %s", MemSizeToString( memoryLimit ) );
+                    if( !memoryLimitReached )
+                    {
+                        ImGui::SameLine();
+                        ImGui::Text( " (%s remaining)", MemSizeToString( memoryRemainingBeforeLimit ) );
+                    }
+                }
+                if( timeLimit.count() > 0.f )
+                {
+                    ImGui::Text( "Capture time limit: %.2f s", timeLimit.count() );
+                    if( !timeLimitReached ) 
+                    {
+                        ImGui::SameLine();
+                        ImGui::Text( " (%.2f s remaining)", std::chrono::duration<double>( timeRemaining ).count() );
+                    }
+                }
                 ImGui::EndTooltip();
             }
         }

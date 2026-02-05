@@ -255,7 +255,7 @@ static bool IsQueryPrio( ServerQuery type )
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
+Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit, float timeLimit )
     : m_addr( addr )
     , m_port( port )
     , m_hasData( false )
@@ -264,6 +264,7 @@ Worker::Worker( const char* addr, uint16_t port, int64_t memoryLimit )
     , m_bufferOffset( 0 )
     , m_inconsistentSamples( false )
     , m_memoryLimit( memoryLimit )
+    , m_timeLimit( timeLimit )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
@@ -305,6 +306,7 @@ Worker::Worker( const char* name, const char* program, const std::vector<ImportE
     , m_onDemand( false )
     , m_inconsistentSamples( false )
     , m_memoryLimit( -1 )
+    , m_timeLimit( -1 )
     , m_traceVersion( CurrentVersion )
 {
     m_data.sourceLocationExpand.push_back( 0 );
@@ -2769,6 +2771,7 @@ void Worker::Exec()
     switch( handshake )
     {
     case HandshakeWelcome:
+        m_data.startTime = std::chrono::steady_clock::now();
         break;
     case HandshakeProtocolMismatch:
     case HandshakeNotAvailable:
@@ -2855,7 +2858,9 @@ void Worker::Exec()
 
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) || ( m_memoryLimit > 0 && memUsage.load( std::memory_order_relaxed ) > m_memoryLimit ) )
+        if( m_shutdown.load( std::memory_order_relaxed ) 
+            || ( m_memoryLimit > 0 && memUsage.load( std::memory_order_relaxed ) > m_memoryLimit ) 
+            || ( m_timeLimit.count() > 0.f && std::chrono::steady_clock::now() > m_data.startTime + m_timeLimit ) )
         {
             QueryTerminate();
             goto close;

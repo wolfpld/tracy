@@ -1050,7 +1050,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 AppendResponse( "reasoning_content", delta );
                 AppendResponse( "tool_calls", delta );
 
-                done = !node["finish_reason"].empty();
+                done = node.contains( "finish_reason" ) && !node["finish_reason"].empty();
             }
         }
         else if( json.contains( "error" ) )

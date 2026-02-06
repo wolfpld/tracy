@@ -218,7 +218,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 }
             };
 
-            m_llm.QueueFastMessage( req, [this, callstack] (nlohmann::json res) {
+            m_llm.QueueFastMessageLocking( req, [this, callstack] (nlohmann::json res) {
                 if( res.contains( "choices" ) )
                 {
                     auto& choices = res["choices"];

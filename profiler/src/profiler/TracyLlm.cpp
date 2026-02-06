@@ -66,7 +66,7 @@ TracyLlm::~TracyLlm()
     if( m_thread.joinable() )
     {
         {
-            std::lock_guard lock( m_lock );
+            std::lock_guard lock( m_jobsLock );
             if( m_currentJob ) m_currentJob->stop = true;
             m_exit.store( true, std::memory_order_release );
             m_cv.notify_all();
@@ -138,19 +138,22 @@ void TracyLlm::Draw()
     }
     ImGui::SameLine();
 
-    std::lock_guard lock( m_lock );
+    std::lock_guard lock( m_chatLock );
 
     const auto hasChat = m_chat.size() <= 1 && *m_input == 0;
     if( hasChat ) ImGui::BeginDisabled();
     if( ImGui::Button( ICON_FA_BROOM " Clear chat" ) )
     {
+        m_jobsLock.lock();
         if( m_currentJob ) m_currentJob->stop = true;
+        m_jobsLock.unlock();
         ResetChat();
     }
     if( hasChat ) ImGui::EndDisabled();
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_ARROWS_ROTATE " Reconnect" ) )
     {
+        std::lock_guard lock( m_jobsLock );
         if( m_currentJob ) m_currentJob->stop = true;
         QueueConnect();
     }
@@ -158,7 +161,9 @@ void TracyLlm::Draw()
     ImGui::SameLine();
     if( ImGui::TreeNode( "Settings" ) )
     {
+        m_jobsLock.lock();
         const auto responding = m_currentJob != nullptr;
+        m_jobsLock.unlock();
         if( responding ) ImGui::BeginDisabled();
         ImGui::Spacing();
         ImGui::AlignTextToFramePadding();
@@ -195,6 +200,7 @@ void TracyLlm::Draw()
         {
             s_config.llmAddress = m_apiInput;
             SaveConfig();
+            std::lock_guard lock( m_jobsLock );
             QueueConnect();
         }
 
@@ -397,7 +403,9 @@ void TracyLlm::Draw()
         if( m_embedIdx < 0 ) ImGui::BeginDisabled();
         if( ImGui::SmallButton( ICON_FA_BOOK_BOOKMARK " Learn manual" ) )
         {
+            m_jobsLock.lock();
             if( m_currentJob ) m_currentJob->stop = true;
+            m_jobsLock.unlock();
             m_tools->BuildManualEmbeddings( models[m_embedIdx].name, *m_api );
         }
         if( m_embedIdx < 0 ) ImGui::EndDisabled();
@@ -523,6 +531,8 @@ void TracyLlm::Draw()
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {
+                    std::lock_guard lock( m_jobsLock );
+                    if( m_currentJob ) m_currentJob->stop = true;
                     QueueSendMessage();
                 }
                 else if( role == TracyLlmChat::TurnRole::User )
@@ -560,7 +570,9 @@ void TracyLlm::Draw()
                 }
 
                 m_chat.erase( it, m_chat.end() );
+                m_jobsLock.lock();
                 if( m_currentJob ) m_currentJob->stop = true;
+                m_jobsLock.unlock();
                 ImGui::PopID();
                 break;
             }
@@ -578,11 +590,13 @@ void TracyLlm::Draw()
     ImGui::EndChild();
     ImGui::Spacing();
 
+    m_jobsLock.lock();
     if( m_currentJob )
     {
         const bool disabled = m_currentJob->stop;
         if( disabled ) ImGui::BeginDisabled();
         if( ImGui::Button( ICON_FA_STOP " Stop" ) ) m_currentJob->stop = true;
+        m_jobsLock.unlock();
         if( disabled ) ImGui::EndDisabled();
         ImGui::SameLine();
         DrawWaitingDots( s_time );
@@ -604,6 +618,7 @@ void TracyLlm::Draw()
             ImGui::SetKeyboardFocusHere( 0 );
             m_focusInput = false;
         }
+        m_jobsLock.unlock();
         const char* buttonText = ICON_FA_PAPER_PLANE;
         auto buttonSize = ImGui::CalcTextSize( buttonText );
         buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
@@ -624,6 +639,7 @@ void TracyLlm::Draw()
             }
             if( *ptr )
             {
+                std::lock_guard lock( m_jobsLock );
                 AddMessage( ptr, "user" );
                 *m_input = 0;
                 QueueSendMessage();
@@ -641,7 +657,7 @@ void TracyLlm::Draw()
 
 void TracyLlm::WorkerThread()
 {
-    std::unique_lock lock( m_lock );
+    std::unique_lock lock( m_jobsLock );
     while( !m_exit.load( std::memory_order_acquire ) )
     {
         m_cv.wait( lock, [this] { return !m_jobs.empty() || m_exit.load( std::memory_order_acquire ); } );
@@ -653,30 +669,39 @@ void TracyLlm::WorkerThread()
         switch( m_currentJob->task )
         {
         case Task::Connect:
+        {
+            auto callback = m_currentJob->callback;
             m_busy = true;
             lock.unlock();
             m_api->Connect( s_config.llmAddress.c_str() );
-            m_currentJob->callback();
+            callback();
             lock.lock();
             m_busy = false;
             break;
+        }
         case Task::SendMessage:
-            SendMessage( lock );
+            lock.unlock();
+            SendMessage();
+            lock.lock();
             break;
         case Task::FastMessage:
         {
+            auto param = m_currentJob->param2;
+            auto callback = m_currentJob->callback2;
             lock.unlock();
-            auto response = m_api->SendMessage( m_currentJob->param2, m_fastIdx );
-            m_currentJob->callback2( response );
+            auto response = m_api->SendMessage( param, m_fastIdx );
+            callback( response );
             lock.lock();
             break;
         }
         case Task::Tokenize:
         {
+            auto param = m_currentJob->param;
+            auto callback = m_currentJob->callback2;
             lock.unlock();
-            auto tokens = m_api->Tokenize( m_currentJob->param, m_modelIdx );
-            if( tokens < 0 ) tokens = m_currentJob->param.size() / 4;
-            m_currentJob->callback2( { { "tokens", tokens } } );
+            auto tokens = m_api->Tokenize( param, m_modelIdx );
+            if( tokens < 0 ) tokens = param.size() / 4;
+            callback( { { "tokens", tokens } } );
             lock.lock();
             break;
         }
@@ -784,8 +809,16 @@ void TracyLlm::UpdateSystemPrompt()
     Replace( systemPrompt, TimeToken, m_tools->GetCurrentTime() );
     Replace( systemPrompt, ProgramNameToken, m_worker.GetCaptureProgram() );
 
-    if( m_chat.empty() )
+    if( !m_api )
     {
+        m_chat.push_back( {
+            { "role", "system" },
+            { "content", systemPrompt }
+        } );
+    }
+    else if( m_chat.empty() )
+    {
+        std::lock_guard lock( m_jobsLock );
         AddMessage( std::move( systemPrompt ), "system" );
     }
     else
@@ -794,6 +827,7 @@ void TracyLlm::UpdateSystemPrompt()
     }
 }
 
+// requires m_jobsLock
 void TracyLlm::QueueConnect()
 {
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
@@ -803,6 +837,13 @@ void TracyLlm::QueueConnect()
     m_cv.notify_all();
 }
 
+bool TracyLlm::QueueSendMessageLocking()
+{
+    std::unique_lock<std::mutex> lock( m_jobsLock );
+    return QueueSendMessage();
+}
+
+// requires m_jobsLock
 bool TracyLlm::QueueSendMessage()
 {
     if( !m_api->IsConnected() || m_modelIdx < 0 ) return false;
@@ -813,6 +854,13 @@ bool TracyLlm::QueueSendMessage()
     return true;
 }
 
+bool TracyLlm::QueueFastMessageLocking( const nlohmann::json& req, std::function<void(nlohmann::json)> callback )
+{
+    std::unique_lock<std::mutex> lock( m_jobsLock );
+    return QueueFastMessage( req, std::move( callback ) );
+}
+
+// requires m_jobsLock
 bool TracyLlm::QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback )
 {
     if( !m_api->IsConnected() || m_fastIdx < 0 ) return false;
@@ -825,18 +873,20 @@ bool TracyLlm::QueueFastMessage( const nlohmann::json& req, std::function<void(n
     return true;
 }
 
+void TracyLlm::AddMessageLocking( std::string&& str, const char* role )
+{
+    std::unique_lock<std::mutex> lock( m_jobsLock );
+    AddMessage( std::move( str ), role );
+}
+
+// requires m_jobsLock
 void TracyLlm::AddMessage( std::string&& str, const char* role )
 {
-    if( !m_api )
-    {
-        std::unique_lock<std::mutex> null;
-        AddMessageBlocking( std::move( str ), role, null );
-        return;
-    }
-
+    assert( m_api );
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::Tokenize,
         .callback2 = [this, str, role]( nlohmann::json json ) {
+            std::lock_guard lock( m_chatLock );
             m_usedCtx += json["tokens"].get<int>();
             if( m_chat.size() == 1 ) UpdateSystemPrompt();
             nlohmann::json msg = {
@@ -850,37 +900,38 @@ void TracyLlm::AddMessage( std::string&& str, const char* role )
     m_cv.notify_all();
 }
 
-void TracyLlm::AddMessageBlocking( std::string&& str, const char* role, std::unique_lock<std::mutex>& lock )
+void TracyLlm::AddMessageBlocking( std::string&& str, const char* role )
 {
-    const auto tokens = m_api ? m_api->Tokenize( str, m_modelIdx ) : -1;
+    assert( m_api );
+    const auto tokens = m_api->Tokenize( str, m_modelIdx );
     m_usedCtx += tokens >= 0 ? tokens : str.size() / 4;
 
     nlohmann::json msg;
     msg["role"] = role;
     msg["content"] = std::move( str );
 
-    if( lock ) lock.lock();
+    std::lock_guard lock( m_chatLock );
     m_chat.emplace_back( std::move( msg ) );
-    if( lock ) lock.unlock();
 }
 
-void TracyLlm::AddMessageBlocking( nlohmann::json&& json, std::unique_lock<std::mutex>& lock )
+void TracyLlm::AddMessageBlocking( nlohmann::json&& json )
 {
     auto dump = json.dump();
-    const auto tokens = m_api ? m_api->Tokenize( dump, m_modelIdx ) : -1;
+    assert( m_api );
+    const auto tokens = m_api->Tokenize( dump, m_modelIdx );
     m_usedCtx += tokens >= 0 ? tokens : dump.size() / 4;
 
-    if( lock ) lock.lock();
+    std::lock_guard lock( m_chatLock );
     m_chat.emplace_back( std::move( json ) );
-    if( lock ) lock.unlock();
 }
 
-void TracyLlm::AddAttachment( std::string&& str, const char* role )
+void TracyLlm::AddAttachmentLocking( std::string&& str, const char* role )
 {
+    std::unique_lock<std::mutex> lock( m_jobsLock );
     AddMessage( "<attachment>\n" + std::move( str ), role );
 }
 
-void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
+void TracyLlm::ManageContext()
 {
     const auto& models = m_api->GetModels();
     const auto ctxSize = models[m_modelIdx].contextSize;
@@ -916,9 +967,7 @@ void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
             auto tokens = m_api->Tokenize( m_chat[v.second]["content"].get_ref<const std::string&>(), m_modelIdx );
             m_usedCtx -= tokens >= 0 ? tokens : v.first / 4;
 
-            lock.lock();
             m_chat[v.second]["content"] = TracyLlmChat::ForgetMsg;
-            lock.unlock();
             tokens = m_api->Tokenize( TracyLlmChat::ForgetMsg, m_modelIdx );
             m_usedCtx += tokens >= 0 ? tokens : strlen( TracyLlmChat::ForgetMsg ) / 4;
 
@@ -927,16 +976,16 @@ void TracyLlm::ManageContext( std::unique_lock<std::mutex>& lock )
     }
 }
 
-void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
+void TracyLlm::SendMessage()
 {
+    std::unique_lock lock( m_chatLock );
+    ManageContext();
+    auto chat = m_chat;
     lock.unlock();
-    ManageContext( lock );
 
-    bool res;
     try
     {
-        auto chat = m_chat;
-        AddMessageBlocking( { { "role", "assistant" } }, lock );
+        AddMessageBlocking( { { "role", "assistant" } } );
 
         size_t i = 1;
         while( i < chat.size() )
@@ -964,17 +1013,14 @@ void TracyLlm::SendMessage( std::unique_lock<std::mutex>& lock )
         req["tools"] = m_toolsJson;
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
-        res = m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );
-
-        lock.lock();
+        m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );
     }
     catch( std::exception& e )
     {
         lock.lock();
         if( !m_chat.empty() && m_chat.back()["role"].get_ref<const std::string&>() == "assistant" ) m_chat.pop_back();
         lock.unlock();
-        AddMessageBlocking( e.what(), "error", lock );
-        lock.lock();
+        AddMessageBlocking( e.what(), "error" );
     }
 }
 
@@ -1025,13 +1071,14 @@ void TracyLlm::AppendResponse( const char* name, const nlohmann::json& delta )
 
 bool TracyLlm::OnResponse( const nlohmann::json& json )
 {
-    std::unique_lock lock( m_lock );
-
+    std::unique_lock chatLock( m_chatLock );
+    std::unique_lock jobsLock( m_jobsLock );
     if( m_currentJob->stop )
     {
         m_focusInput = true;
         return false;
     }
+    jobsLock.unlock();
 
     assert( m_chat.back()["role"].get_ref<const std::string&>() == "assistant" );
 
@@ -1055,6 +1102,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         }
         else if( json.contains( "error" ) )
         {
+            jobsLock.lock();
             AddMessage( json["error"].dump( 2 ), "error" );
             m_focusInput = true;
             return false;
@@ -1062,6 +1110,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
     }
     catch( const nlohmann::json::exception& e )
     {
+        m_jobsLock.lock();
         m_focusInput = true;
         return false;
     }
@@ -1078,7 +1127,7 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         if( back.contains( "tool_calls" ) )
         {
             auto calls = back["tool_calls"];
-            lock.unlock();
+            chatLock.unlock();
             for( auto& call : calls )
             {
                 auto& id = call["id"].get_ref<const std::string&>();
@@ -1102,13 +1151,14 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                     { "name", name },
                     { "content", result }
                 };
-                AddMessageBlocking( std::move( reply ), lock );
+                AddMessageBlocking( std::move( reply ) );
             }
-            lock.lock();
+            jobsLock.lock();
             QueueSendMessage();
         }
         else
         {
+            jobsLock.lock();
             m_focusInput = true;
         }
     }

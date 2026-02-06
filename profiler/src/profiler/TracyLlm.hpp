@@ -47,17 +47,22 @@ public:
     TracyLlm( Worker& worker, View& view, const TracyManualData& manual );
     ~TracyLlm();
 
-    [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_lock ); return m_busy; }
+    [[nodiscard]] bool IsBusy() const { std::lock_guard lock( m_jobsLock ); return m_busy; }
 
     void Draw();
-    void AddAttachment( std::string&& str, const char* role );
+
+    bool m_show = false;
+
+    void AddAttachmentLocking( std::string&& str, const char* role );
+    void AddMessageLocking( std::string&& str, const char* role );
+    bool QueueSendMessageLocking();
+    bool QueueFastMessageLocking( const nlohmann::json& req, std::function<void(nlohmann::json)> callback );
+
+private:
     void AddMessage( std::string&& str, const char* role );
     bool QueueSendMessage();
     bool QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback );
 
-    bool m_show = false;
-
-private:
     void WorkerThread();
 
     void UpdateModels();
@@ -66,11 +71,12 @@ private:
 
     void QueueConnect();
 
-    void AddMessageBlocking( std::string&& str, const char* role, std::unique_lock<std::mutex>& lock );
-    void AddMessageBlocking( nlohmann::json&& json, std::unique_lock<std::mutex>& lock );
+    // Will block, cannot enter with a taken lock
+    void AddMessageBlocking( std::string&& str, const char* role );
+    void AddMessageBlocking( nlohmann::json&& json );
 
-    void ManageContext( std::unique_lock<std::mutex>& lock );
-    void SendMessage( std::unique_lock<std::mutex>& lock );
+    void ManageContext();
+    void SendMessage();
 
     void AppendResponse( const char* name, const nlohmann::json& delta );
     bool OnResponse( const nlohmann::json& json );
@@ -87,7 +93,7 @@ private:
     std::condition_variable m_cv;
     std::thread m_thread;
 
-    mutable std::mutex m_lock;
+    mutable std::mutex m_jobsLock;
     std::vector<std::shared_ptr<WorkItem>> m_jobs;
     std::shared_ptr<WorkItem> m_currentJob;
 
@@ -101,6 +107,7 @@ private:
 
     char* m_input;
     char* m_apiInput;
+    std::mutex m_chatLock;
     std::vector<nlohmann::json> m_chat;
 
     std::shared_ptr<EmbedData> m_systemPrompt;

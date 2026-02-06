@@ -1509,7 +1509,7 @@ bool View::WasActive() const
 void View::AddLlmAttachment( const nlohmann::json& json )
 {
 #ifndef __EMSCRIPTEN__
-    m_llm.AddAttachment( json.dump(), "user" );
+    m_llm.AddAttachmentLocking( json.dump(), "user" );
     m_llm.m_show = true;
 #endif
 }
@@ -1518,9 +1518,9 @@ void View::AddLlmQuery( const char* query )
 {
 #ifndef __EMSCRIPTEN__
     std::string str( query );
-    m_llm.AddMessage( std::move( str ), "user" );
+    m_llm.AddMessageLocking( std::move( str ), "user" );
     m_llm.m_show = true;
-    m_llm.QueueSendMessage();
+    m_llm.QueueSendMessageLocking();
 #endif
 }
 

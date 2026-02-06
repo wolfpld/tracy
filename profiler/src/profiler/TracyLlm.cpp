@@ -527,7 +527,7 @@ void TracyLlm::Draw()
             {
                 think = TracyLlmChat::Think::ToolCall;
             }
-            if( !m_chatUi->Turn( role, line, think, turnIdx == m_chat.size() - 1 ) )
+            if( !m_chatUi->Turn( role, it, m_chat.end(), think, turnIdx == m_chat.size() - 1 ) )
             {
                 if( role == TracyLlmChat::TurnRole::Assistant )
                 {

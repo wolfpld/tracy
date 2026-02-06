@@ -41,7 +41,7 @@ public:
     void Begin();
     void End();
 
-    bool Turn( TurnRole role, const nlohmann::json& json, Think think, bool last );
+    bool Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last );
 
 private:
     void NormalScope();

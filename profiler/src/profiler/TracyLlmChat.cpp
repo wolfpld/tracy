@@ -105,8 +105,10 @@ void TracyLlmChat::End()
     }
 }
 
-bool TracyLlmChat::Turn( TurnRole role, const nlohmann::json& json, Think think, bool last )
+bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last )
 {
+    auto& json = *it;
+
     bool keep = true;
     const auto& roleData = roles[(int)role];
     const bool roleChange = role != m_role;

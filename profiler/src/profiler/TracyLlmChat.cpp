@@ -67,6 +67,69 @@ static const char* utfendl( const char* str, int len )
 }
 
 
+static std::string ToolCallDescription( const nlohmann::json& json )
+{
+    if( !json.contains( "arguments" ) ) return "";
+    nlohmann::json args;
+    try
+    {
+        args = nlohmann::json::parse( json["arguments"].get_ref<const std::string&>() );
+    }
+    catch( nlohmann::json::exception& )
+    {
+        return "";
+    }
+
+    auto& name = json["name"].get_ref<const std::string&>();
+    if( name == "search_wikipedia" )
+    {
+        if( !args.contains( "query" ) || !args.contains( "language" ) ) return "";
+        return "Search Wikipedia (" + args["language"].get_ref<const std::string&>() + "): " + args["query"].get_ref<const std::string&>();
+    }
+    else if( name == "get_wikipedia" )
+    {
+        if( !args.contains( "page" ) || !args.contains( "language" ) ) return "";
+        return "Wikipedia (" + args["language"].get_ref<const std::string&>() + "): " + args["page"].get_ref<const std::string&>();
+    }
+    else if( name == "get_dictionary" )
+    {
+        if( !args.contains( "word" ) || !args.contains( "language" ) ) return "";
+        return "Dictionary (" + args["language"].get_ref<const std::string&>() + "): " + args["word"].get_ref<const std::string&>();
+    }
+    else if( name == "search_web" )
+    {
+        if( !args.contains( "query" ) ) return "";
+        return "Search web: " + args["query"].get_ref<const std::string&>();
+    }
+    else if( name == "get_webpage" )
+    {
+        if( !args.contains( "url" ) ) return "";
+        return "Get webpage: " + args["url"].get_ref<const std::string&>();
+    }
+    else if( name == "user_manual" )
+    {
+        if( !args.contains( "query" ) ) return "";
+        return "User manual: " + args["query"].get_ref<const std::string&>();
+    }
+    else if( name == "source_file" )
+    {
+        if( !args.contains( "file" ) || !args.contains( "line" ) ) return "";
+        uint32_t ctx = args.contains( "context" ) ? args["context"].get<uint32_t>() : 2;
+        uint32_t ctxBack = args.contains( "context_back" ) ? args["context_back"].get<uint32_t>() : 2;
+        return "Source file: " + args["file"].get_ref<const std::string&>() + ":" + std::to_string( args["line"].get<uint32_t>() ) + " (+" + std::to_string( ctx ) + ", -" + std::to_string( ctxBack ) + ")";
+    }
+    else if( name == "source_search" )
+    {
+        if( !args.contains( "query" ) ) return "";
+        std::string caseInsensitive, path;
+        if( args.contains( "case_insensitive" ) && args["case_insensitive"].get<bool>() ) caseInsensitive = " (case insensitive)";
+        if( args.contains( "path" ) ) path = ", path: " + args["path"].get_ref<const std::string&>();
+        return "Source search: " + args["query"].get_ref<const std::string&>() + caseInsensitive + path;
+    }
+    return "";
+}
+
+
 TracyLlmChat::TracyLlmChat( View& view, Worker& worker )
     : m_width( new float[NumRoles] )
     , m_markdown( &view, &worker )
@@ -108,6 +171,7 @@ void TracyLlmChat::End()
 bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it, const std::vector<nlohmann::json>::iterator& end, Think think, bool last )
 {
     auto& json = *it;
+    if( json.contains( "role" ) && json["role"].get_ref<const std::string&>() == "tool" ) return true;
 
     bool keep = true;
     const auto& roleData = roles[(int)role];
@@ -235,60 +299,19 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
         }
         if( json.contains( "content" ) )
         {
-            auto& content = json["content"].get_ref<const std::string&>();
             auto& roleStr = json["role"].get_ref<const std::string&>();
-            if( roleStr == "tool" )
+            assert( roleStr != "tool" );
+            auto& content = json["content"].get_ref<const std::string&>();
+            if( !content.empty() )
             {
-                if( think == Think::Show )
+                auto ptr = content.c_str();
+                auto end = ptr + content.size();
+                while( *ptr == '\n' ) ptr++;
+                if( ptr != end )
                 {
-                    ThinkScope( !roleChange );
-                    if( m_thinkOpen )
-                    {
-                        ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.5f, 0.5f, 0.5f, 1.f ) );
-                        if( content == ForgetMsg )
-                        {
-                            ImGui::TextUnformatted( ICON_FA_RECYCLE " Tool response removed to save context space" );
-                        }
-                        else
-                        {
-                            auto& name = json["name"].get_ref<const std::string&>();
-                            auto& id = json["tool_call_id"].get_ref<const std::string&>();
-                            char buf[1024];
-                            snprintf( buf, sizeof( buf ), ICON_FA_REPLY " Tool response (%s/%s)…", name.c_str(), id.substr( 0, 8 ).c_str() );
-                            if( ImGui::TreeNode( buf ) )
-                            {
-                                std::string parsed;
-                                try
-                                {
-                                    parsed = nlohmann::json::parse( content.c_str() ).dump( 2 );
-                                }
-                                catch( nlohmann::json::exception& )
-                                {
-                                    parsed = content;
-                                }
-                                ImGui::PushFont( g_fonts.mono, FontNormal );
-                                ImGui::TextWrapped( "%s", parsed.c_str() );
-                                ImGui::PopFont();
-                                ImGui::TreePop();
-                            }
-                        }
-                        ImGui::PopStyleColor();
-                    }
-                }
-            }
-            else
-            {
-                if( !content.empty() )
-                {
-                    auto ptr = content.c_str();
-                    auto end = ptr + content.size();
-                    while( *ptr == '\n' ) ptr++;
-                    if( ptr != end )
-                    {
-                        NormalScope();
-                        m_markdown.Print( content.c_str(), content.size() );
-                        if( !last && think == Think::Hide && roleStr == "assistant" ) ImGui::Spacing();
-                    }
+                    NormalScope();
+                    m_markdown.Print( content.c_str(), content.size() );
+                    if( !last && think == Think::Hide && roleStr == "assistant" ) ImGui::Spacing();
                 }
             }
         }
@@ -304,37 +327,83 @@ bool TracyLlmChat::Turn( TurnRole role, std::vector<nlohmann::json>::iterator it
                 {
                     if( call.contains( "id" ) && call.contains( "function" ) )
                     {
+                        auto& id = call["id"].get_ref<const std::string&>();
                         auto& function = call["function"];
                         if( function.contains( "name" ) )
                         {
                             if( first ) first = false;
                             else ImGui::Spacing();
 
-                            auto& name = function["name"].get_ref<const std::string&>();
-                            auto& id = call["id"].get_ref<const std::string&>();
-
-                            ImGui::TextWrapped( ICON_FA_TOOLBOX " Tool call (%s/%s)…", name.c_str(), id.substr( 0, 8 ).c_str() );
-                            if( function.contains( "arguments" ) )
+                            std::string tmp = "##" + id;
+                            auto open = ImGui::TreeNodeEx( tmp.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth );
+                            ImGui::SameLine();
+                            const auto desc = ToolCallDescription( function );
+                            if( desc.empty() )
                             {
-                                try
+                                auto& name = function["name"].get_ref<const std::string&>();
+                                ImGui::Text( "Tool call (%s/%s)…", name.c_str(), id.substr( 0, 8 ).c_str() );
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( desc.c_str() );
+                            }
+                            if( open )
+                            {
+                                if( desc.empty() && function.contains( "arguments" ) )
                                 {
-                                    auto args = nlohmann::json::parse( function["arguments"].get_ref<const std::string&>() );
-                                    if( !args.empty() )
+                                    try
+                                    {
+                                        auto args = nlohmann::json::parse( function["arguments"].get_ref<const std::string&>() );
+                                        if( !args.empty() )
+                                        {
+                                            ImGui::Indent();
+                                            for( auto& [key, value] : args.items() )
+                                            {
+                                                ImGui::Text( "%s: %s", key.c_str(), value.dump().c_str() );
+                                            }
+                                            ImGui::Unindent();
+                                        }
+                                    }
+                                    catch( nlohmann::json::exception& )
                                     {
                                         ImGui::Indent();
-                                        for( auto& [key, value] : args.items() )
-                                        {
-                                            ImGui::Text( "%s: %s", key.c_str(), value.dump().c_str() );
-                                        }
+                                        ImGui::TextWrapped( "%s", function["arguments"].get_ref<const std::string&>().c_str() );
                                         ImGui::Unindent();
                                     }
                                 }
-                                catch( nlohmann::json::exception& )
+
+                                for( auto result = it+1; result != end; result++ )
                                 {
-                                    ImGui::Indent();
-                                    ImGui::TextWrapped( "%s", function["arguments"].get_ref<const std::string&>().c_str() );
-                                    ImGui::Unindent();
+                                    auto& rjson = *result;
+                                    if( !rjson.contains( "role" ) || rjson["role"].get_ref<const std::string&>() != "tool" ) continue;
+                                    if( id != rjson["tool_call_id"].get_ref<const std::string&>() ) continue;
+                                    if( !rjson.contains( "content" ) ) continue;
+                                    auto& content = rjson["content"].get_ref<const std::string&>();
+                                    if( content.empty() ) continue;
+
+                                    if( content == ForgetMsg )
+                                    {
+                                        ImGui::TextUnformatted( ICON_FA_RECYCLE " Tool response removed to save context space" );
+                                    }
+                                    else
+                                    {
+                                        std::string parsed;
+                                        try
+                                        {
+                                            parsed = nlohmann::json::parse( content.c_str() ).dump( 2 );
+                                        }
+                                        catch( nlohmann::json::exception& )
+                                        {
+                                            parsed = content;
+                                        }
+                                        ImGui::PushFont( g_fonts.mono, FontNormal );
+                                        ImGui::TextWrapped( "%s", parsed.c_str() );
+                                        ImGui::PopFont();
+                                    }
+                                    break;
                                 }
+
+                                ImGui::TreePop();
                             }
                         }
                     }

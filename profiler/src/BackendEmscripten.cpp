@@ -24,6 +24,24 @@ static float s_prevScale = -1;
 static int s_width, s_height;
 static uint64_t s_time;
 static const char* s_prevCursor = nullptr;
+static std::string s_clipboard;
+
+static void SetClipboard( ImGuiContext*, const char* text )
+{
+    s_clipboard = text;
+    EM_ASM( {
+        var text = UTF8ToString($0);
+        if( navigator.clipboard && navigator.clipboard.writeText )
+        {
+            navigator.clipboard.writeText( text );
+        }
+    }, text );
+}
+
+static const char* GetClipboard( ImGuiContext* )
+{
+    return s_clipboard.c_str();
+}
 
 static ImGuiKey TranslateKeyCode( const char* code )
 {
@@ -182,6 +200,10 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 
     ImGuiIO& io = ImGui::GetIO();
     io.BackendPlatformName = "wasm (tracy profiler)";
+
+    auto& platform = ImGui::GetPlatformIO();
+    platform.Platform_SetClipboardTextFn = SetClipboard;
+    platform.Platform_GetClipboardTextFn = GetClipboard;
 
     emscripten_set_mousedown_callback( "#canvas", nullptr, EM_TRUE, []( int, const EmscriptenMouseEvent* e, void* ) -> EM_BOOL {
         ImGui::GetIO().AddMouseButtonEvent( e->button == 0 ? 0 : 3 - e->button, true );

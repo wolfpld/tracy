@@ -305,9 +305,9 @@ TRACY_API void ___tracy_emit_logStringL( int8_t severity, int32_t color, int32_t
 #define TracyCSecureFreeN( ptr, name ) ___tracy_emit_memory_free_callstack_named( ptr, TRACY_CALLSTACK, 1, name )
 
 #define TracyCMessage( txt, size ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, size, txt )
-#define TracyCMessageL( txt ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, txt )
+#define TracyCMessageL( txt ) ___tracy_emit_logStringL( TracyMessageSeverityInfo, 0, TRACY_CALLSTACK, txt )
 #define TracyCMessageC( txt, size, color ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, TRACY_CALLSTACK, size, txt )
-#define TracyCMessageLC( txt, color ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, TRACY_CALLSTACK, txt )
+#define TracyCMessageLC( txt, color ) ___tracy_emit_logStringL( TracyMessageSeverityInfo, color, TRACY_CALLSTACK, txt )
 
 
 TRACY_API void ___tracy_emit_frame_mark( const char* name );
@@ -353,9 +353,9 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #define TracyCSecureFreeNS( ptr, depth, name ) ___tracy_emit_memory_free_callstack_named( ptr, depth, 1, name )
 
 #define TracyCMessageS( txt, size, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, depth, size, txt )
-#define TracyCMessageLS( txt, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, 0, depth, txt )
+#define TracyCMessageLS( txt, depth ) ___tracy_emit_logStringL( TracyMessageSeverityInfo, 0, depth, txt )
 #define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, depth, size, txt )
-#define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_logString( TracyMessageSeverityInfo, color, depth, txt )
+#define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_logStringL( TracyMessageSeverityInfo, color, depth, txt )
 
 
 TRACY_API struct __tracy_lockable_context_data* ___tracy_announce_lockable_ctx( const struct ___tracy_source_location_data* srcloc );

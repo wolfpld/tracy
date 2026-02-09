@@ -675,7 +675,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
     pe.disabled = 1;
     pe.freq = 1;
-    pe.inherit = 1;    
+    pe.inherit = 1;
     if( useMonotonicClockRaw )
     {
         pe.use_clockid = 1;
@@ -721,7 +721,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     pe.exclude_guest = 1;
     pe.exclude_hv = 1;
     pe.freq = 1;
-    pe.inherit = 1;    
+    pe.inherit = 1;
     if( useMonotonicClockRaw )
     {
         pe.use_clockid = 1;

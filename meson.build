@@ -93,7 +93,6 @@ if get_option('timer_fallback')
   tracy_common_args += ['-DTRACY_TIMER_FALLBACK']
 endif
 
-
 if get_option('disallow_hw_timer')
   tracy_common_args += ['-DTRACY_DISALLOW_HW_TIMER']
 endif

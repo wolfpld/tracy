@@ -597,7 +597,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TracyDebug( "drm_vblank_event id: %i", vsyncId );
 
     bool useMonotonicClockRaw = !HardwareSupportsInvariantTSC();
-#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if !defined TRACY_HW_TIMER || !defined TRACY_HAS_RDTSC
     useMonotonicClockRaw = true;
 #endif
     if( useMonotonicClockRaw )
@@ -1070,7 +1070,7 @@ void SysTraceWorker( void* ptr )
 
                         if( cnt > 0 )
                         {
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if defined TRACY_HW_TIMER && defined TRACY_HAS_RDTSC
                             t0 = ring.ConvertTimeToTsc( t0 );
 #endif
                             auto trace = GetCallstackBlock( cnt, ring, offset );
@@ -1104,7 +1104,7 @@ void SysTraceWorker( void* ptr )
                         offset += sizeof( uint64_t );
                         ring.Read( &t0, offset, sizeof( uint64_t ) );
 
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if defined TRACY_HW_TIMER && defined TRACY_HAS_RDTSC
                         t0 = ring.ConvertTimeToTsc( t0 );
 #endif
                         QueueType type;
@@ -1224,7 +1224,7 @@ void SysTraceWorker( void* ptr )
                         perf_event_header hdr;
                         ring.Read( &hdr, offset, sizeof( perf_event_header ) );
 
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if defined TRACY_HW_TIMER && defined TRACY_HAS_RDTSC
                         t0 = ring.ConvertTimeToTsc( t0 );
 #endif
 

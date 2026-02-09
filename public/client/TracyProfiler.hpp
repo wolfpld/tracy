@@ -28,8 +28,18 @@
 #  include <mach/mach_time.h>
 #endif
 
-#if !defined TRACY_DISALLOW_HW_TIMER && ( (defined _WIN32 && !(defined _M_ARM64 || defined _M_ARM)) || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 ) || ( defined __APPLE__  && defined __MACH__ && TARGET_CPU_ARM64 ) )
-#  define TRACY_HW_TIMER
+#if ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#  define TRACY_HAS_RDTSC
+#elif defined __APPLE__ && defined __MACH__ && TARGET_CPU_ARM64 // For now only supported on Apple devices
+#  define TRACY_HAS_CNTVCT
+#endif
+
+#if !defined TRACY_DISALLOW_HW_TIMER 
+#  if ( defined TRACY_HAS_RDTSC || defined TRACY_HAS_CNTVCT )
+#    define TRACY_HW_TIMER
+#  elif defined TARGET_OS_IOS && TARGET_OS_IOS == 1 // For now, !defined(TRACY_HW_TIMER) implies TRACY_TIMER_FALLBACK, so define TRACY_HW_TIMER to use mach_absolute_time() on iOS
+#    define TRACY_HW_TIMER
+#  endif
 #endif
 
 #ifdef __linux__
@@ -81,7 +91,7 @@ TRACY_API bool ProfilerAvailable();
 TRACY_API bool ProfilerAllocatorAvailable();
 TRACY_API int64_t GetFrequencyQpc();
 
-#if defined TRACY_TIMER_FALLBACK && defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if defined TRACY_TIMER_FALLBACK && defined TRACY_HW_TIMER && defined TRACY_HAS_RDTSC
 TRACY_API bool HardwareSupportsInvariantTSC();  // check, if we need fallback scenario
 #else
 #  if defined TRACY_HW_TIMER

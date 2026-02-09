@@ -885,7 +885,6 @@ bool SysTraceStart( int64_t& samplingPeriod )
         pe.disabled = 1;
         pe.inherit = 1;
         pe.config = switchId;
-        
         if( useMonotonicClockRaw )
         {
             pe.use_clockid = 1;

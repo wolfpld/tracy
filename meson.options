@@ -16,6 +16,7 @@ option('no_frame_image', type : 'boolean', value : false, description : 'Disable
 option('no_system_tracing', type : 'boolean', value : false, description : 'Disable systrace sampling')
 option('patchable_nopsleds', type : 'boolean', value : false, description : 'Enable nopsleds for efficient patching by system-level tools (e.g. rr)')
 option('timer_fallback', type : 'boolean', value : false, description : 'Use lower resolution timers')
+option('disallow_hw_timer', type : 'boolean', value : false, description : 'Disallow hardware timer (may be useful on VMs). Requires timer_fallback.')
 option('libunwind_backtrace', type : 'boolean', value : false, description : 'Use libunwind backtracing where supported')
 option('symbol_offline_resolve', type : 'boolean', value : false, description : 'Instead of full runtime symbol resolution, only resolve the image path and offset to enable offline symbol resolution')
 option('libbacktrace_elf_dynload_support', type : 'boolean', value : false, description : 'Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation')

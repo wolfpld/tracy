@@ -161,13 +161,13 @@ static void SetupDPIScale()
 {
     auto scale = dpiScale * tracy::s_config.userScale;
 
-    if( !dpiFirstSetup && prevScale == scale ) return;
-    dpiFirstSetup = false;
-    dpiChanged = 2;
-
 #ifdef __APPLE__
     scale = tracy::s_config.userScale;
 #endif
+
+    if( !dpiFirstSetup && prevScale == scale ) return;
+    dpiFirstSetup = false;
+    dpiChanged = 2;
 
     LoadFonts( scale );
 

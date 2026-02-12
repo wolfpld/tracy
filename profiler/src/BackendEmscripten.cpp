@@ -26,6 +26,12 @@ static uint64_t s_time;
 static const char* s_prevCursor = nullptr;
 static std::string s_clipboard;
 
+extern "C" void tracy_paste_clipboard( const char* text )
+{
+    s_clipboard = text;
+    ImGui::GetIO().AddInputCharactersUTF8( text );
+}
+
 static void SetClipboard( ImGuiContext*, const char* text )
 {
     s_clipboard = text;
@@ -240,7 +246,7 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         const auto code = TranslateKeyCode( e->code );
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, true );
-        if( e->key[0] && !e->key[1] ) ImGui::GetIO().AddInputCharacter( *e->key );
+        if( e->key[0] && !e->key[1] && !e->ctrlKey && !e->metaKey ) ImGui::GetIO().AddInputCharacter( *e->key );
         return EM_TRUE;
     } );
     emscripten_set_keyup_callback( EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, EM_TRUE, [] ( int, const EmscriptenKeyboardEvent* e, void* ) -> EM_BOOL {
@@ -248,6 +254,12 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         if( code == ImGuiKey_None ) return EM_FALSE;
         ImGui::GetIO().AddKeyEvent( code, false );
         return EM_TRUE;
+    } );
+    EM_ASM( {
+        document.addEventListener( 'paste', function( e ) {
+            var text = ( e.clipboardData || window.clipboardData ).getData( 'text' );
+            if( text ) ccall( 'tracy_paste_clipboard', 'void', ['string'], [text] );
+        } );
     } );
 
     s_time = std::chrono::duration_cast<std::chrono::microseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();

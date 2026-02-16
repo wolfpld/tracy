@@ -570,9 +570,12 @@ void TracyLlm::Draw()
                 }
 
                 m_chat.erase( it, m_chat.end() );
-                m_jobsLock.lock();
-                if( m_currentJob ) m_currentJob->stop = true;
-                m_jobsLock.unlock();
+                if( role == TracyLlmChat::TurnRole::User )
+                {
+                    m_jobsLock.lock();
+                    if( m_currentJob ) m_currentJob->stop = true;
+                    m_jobsLock.unlock();
+                }
                 ImGui::PopID();
                 break;
             }

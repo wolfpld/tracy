@@ -72,7 +72,11 @@ namespace
 		#if defined _M_IX86  || defined _M_X64
 			#pragma intrinsic(_mm_pause)
 			inline void Pause() { _mm_pause(); }
-		#endif
+        #elif defined(_M_ARM64)
+			inline void Pause() { __yield(); }
+        #else
+            inline void Pause() { /* No ops*/ }
+        #endif
 	#elif defined __i386__ || defined __x86_64__
 		inline void Pause() { __asm__ __volatile__("pause;"); }
 	#else

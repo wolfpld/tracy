@@ -14,6 +14,7 @@ int main( int argc, char** argv );
 
 int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd, int nCmd )
 {
+#if defined(_M_IX86) || defined(_M_X64)
     {
         uint32_t regs[4];
         __cpuidex( (int*)regs, 0, 0 );
@@ -42,7 +43,7 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmd,
             return 0;
         }
     }
-
+#endif // x86/x64: AVX feature checks
     return main( __argc, __argv );
 }
 #endif

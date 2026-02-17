@@ -8,7 +8,7 @@
 
 #define kSimdWidth 4
 
-#if !defined(__arm__) && !defined(__arm64__) && !defined(__EMSCRIPTEN__)
+#if !defined(__arm__) && !defined(__arm64__) && !defined(__EMSCRIPTEN__) && !defined(_M_ARM64)
 
 // ---- SSE implementation
 
@@ -141,8 +141,14 @@ VM_INLINE float hmin(float4 v)
 // Returns a 4-bit code where bit0..bit3 is X..W
 VM_INLINE unsigned mask(float4 v)
 {
+#if defined(_M_ARM64)
+    static const uint32_t values[4] = { 1u, 2u, 4u, 8u };
+    const uint32x4_t movemask = vld1q_u32( values );
+    const uint32x4_t highbit = vdupq_n_u32( 0x80000000u );
+#else
     static const uint32x4_t movemask = { 1, 2, 4, 8 };
     static const uint32x4_t highbit = { 0x80000000, 0x80000000, 0x80000000, 0x80000000 };
+#endif
     uint32x4_t t0 = vreinterpretq_u32_f32(v.m);
     uint32x4_t t1 = vtstq_u32(t0, highbit);
     uint32x4_t t2 = vandq_u32(t1, movemask);

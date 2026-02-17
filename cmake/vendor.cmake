@@ -26,7 +26,7 @@ else()
     CPMAddPackage(
         NAME capstone
         GITHUB_REPOSITORY capstone-engine/capstone
-        GIT_TAG 6.0.0-Alpha6
+        GIT_TAG 6.0.0-Alpha7
         OPTIONS
             "CAPSTONE_X86_ATT_DISABLE ON"
             "CAPSTONE_ALPHA_SUPPORT OFF"

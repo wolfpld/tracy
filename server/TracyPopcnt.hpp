@@ -27,7 +27,7 @@ static inline uint64_t TracyLzcnt( uint64_t i )
     uint64_t leadingZeros = 64;
     if( _BitScanReverse64( &index, i ) )
     {
-        leadingZeros = leadingZeros - 1 - index;
+        leadingZeros = 63 - index;
     }
     return leadingZeros;
 }

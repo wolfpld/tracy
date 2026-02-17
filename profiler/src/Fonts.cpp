@@ -35,13 +35,13 @@ void LoadFonts( float scale )
     configFixed.GlyphExtraAdvanceX = -1;
     configFixed.FontDataOwnedByAtlas = false;
 
-    auto fontFixed = Unembed( FontFixed );
-    auto fontIcons = Unembed( FontIcons );
-    auto fontNormal = Unembed( FontNormal );
-    auto fontBold = Unembed( FontBold );
-    auto fontBoldItalic = Unembed( FontBoldItalic );
-    auto fontItalic = Unembed( FontItalic );
-    auto fontEmoji = Unembed( FontEmoji );
+    static auto fontFixed = Unembed( FontFixed );
+    static auto fontIcons = Unembed( FontIcons );
+    static auto fontNormal = Unembed( FontNormal );
+    static auto fontBold = Unembed( FontBold );
+    static auto fontBoldItalic = Unembed( FontBoldItalic );
+    static auto fontItalic = Unembed( FontItalic );
+    static auto fontEmoji = Unembed( FontEmoji );
 
     io.Fonts->Clear();
 

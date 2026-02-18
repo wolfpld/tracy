@@ -87,7 +87,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         }
     }
 
-    const bool wheel_scroll = abs(io.MouseWheelH) > abs(io.MouseWheel);
+    const bool wheel_scroll = abs( io.MouseWheelH ) > abs( io.MouseWheel );
     if( IsMouseDragging( 1 ) || wheel_scroll )
     {
         m_viewMode = ViewMode::Paused;
@@ -119,7 +119,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         }
     }
 
-    const bool wheel_zoom = abs(io.MouseWheel) > abs(io.MouseWheelH);
+    const bool wheel_zoom = abs( io.MouseWheel ) > abs( io.MouseWheelH );
     if( wheel_zoom )
     {
         const auto wheel = io.MouseWheel;

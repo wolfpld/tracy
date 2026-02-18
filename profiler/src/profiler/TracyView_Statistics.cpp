@@ -518,11 +518,13 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_HAT_WIZARD " Kernel", &m_statShowKernel );
+        ImGui::Checkbox( ICON_FA_SHIELD_HALVED " External", &m_statShowExternal );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_SHIELD_HALVED " External", &m_statShowExternal );
+        if( !m_statShowExternal ) ImGui::BeginDisabled();
+        ImGui::Checkbox( ICON_FA_HAT_WIZARD " Kernel", &m_statShowKernel );
+        if( !m_statShowExternal ) ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();

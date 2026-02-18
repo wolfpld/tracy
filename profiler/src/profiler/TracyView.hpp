@@ -574,13 +574,13 @@ private:
     int m_flameMode = 0;
     bool m_flameSort = false;
     bool m_flameRunningTime = false;
-    bool m_flameExternal = true;
+    bool m_flameExternal = false;
     bool m_flameExternalTail = true;
     int m_statSampleLocation = 2;
     bool m_statHideUnknown = true;
     bool m_showAllSymbols = false;
     int m_showCallstackFrameAddress = 0;
-    bool m_showExternalFrames = true;
+    bool m_showExternalFrames = false;
     bool m_showUnknownFrames = true;
     bool m_statSeparateInlines = false;
     bool m_mergeInlines = false;
@@ -588,7 +588,7 @@ private:
     bool m_topInline = false;
     bool m_statShowAddress = false;
     bool m_statShowKernel = true;
-    bool m_statShowExternal = true;
+    bool m_statShowExternal = false;
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;
     bool m_ctxSwitchTimeRelativeToZone = true;

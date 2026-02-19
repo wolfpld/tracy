@@ -1,0 +1,29 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-windows:
+    uses: ./.github/workflows/windows.yml
+
+  build-manual:
+    uses: ./.github/workflows/latex.yml
+
+  attach-to-release:
+    needs: [build-windows, build-manual]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+    - name: Create versioned zip
+      run: |
+        VERSION="${{ github.event.release.tag_name }}"
+        VERSION_NO_V="${VERSION#v}"
+        cd windows
+        zip -r ../windows-$VERSION_NO_V.zip .
+    - uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          windows-*.zip
+          manual/tracy.pdf

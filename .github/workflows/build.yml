@@ -20,6 +20,12 @@ jobs:
     continue-on-error: true
     steps:
     - uses: actions/checkout@v4
+    - name: Cache CPM packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CPM_SOURCE_CACHE }}
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+        restore-keys: ${{ runner.os }}-cpm-
     - if: startsWith(matrix.os, 'windows')
       uses: microsoft/setup-msbuild@v2
     - if: startsWith(matrix.os, 'windows')

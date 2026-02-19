@@ -29,6 +29,7 @@ constexpr size_t InputBufferSize = 1024;
 TracyLlm::TracyLlm( Worker& worker, View& view, const TracyManualData& manual )
     : m_exit( false )
     , m_input( nullptr )
+    , m_apiInput( nullptr )
     , m_worker( worker )
 {
     if( !s_config.llm ) return;

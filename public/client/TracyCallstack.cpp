@@ -411,11 +411,21 @@ void DbgHelpInit()
     // append executable path to the _NT_SYMBOL_PATH environment variable
     char buffer [32767];  // max env var length on Windows (including null-terminator)
     DWORD length = GetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer, sizeof( buffer ) );
-    buffer[length] = ';';
-    buffer[++length] = '\0';
-    length += GetModuleFileNameA( NULL, &buffer[length], sizeof( buffer ) - length );
-    while( length > 0 && buffer[--length] != '\\ ')
-        buffer[length] = '\0';
+    if( length > sizeof( buffer ) ) {
+        SymError( "GetEnvironmentVariableA", GetLastError() );
+    } else if( length + 1 >= sizeof( buffer ) ) {
+        SymError( "_TracyAppendEnvironmentVariable", ERROR_INSUFFICIENT_BUFFER );
+    } else {
+        buffer[length] = ';';
+        buffer[++length] = '\0';
+        length += GetModuleFileNameA( NULL, &buffer[length], sizeof( buffer ) - length );
+        if( length >= sizeof( buffer ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
+            SymError( "GetModuleFileNameA", GetLastError() );
+        } else {
+            while( length > 0 && buffer[--length] != '\\' )
+                buffer[length] = '\0';
+        }
+    }
     assert( length < sizeof( buffer ) );
     if( SetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer ) == FALSE ) {
         SymError( "SetEnvironmentVariableA", GetLastError() );

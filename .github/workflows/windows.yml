@@ -1,0 +1,63 @@
+name: windows
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Cache CPM packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CPM_SOURCE_CACHE }}
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
+        restore-keys: ${{ runner.os }}-cpm-
+    - uses: microsoft/setup-msbuild@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - run: pip install meson ninja
+    - name: Trust git repo
+      run: git config --global --add safe.directory '*'
+    - name: Build profiler
+      run: |
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake --build profiler/build --parallel --config Release
+    - name: Build update
+      run: |
+        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release
+        cmake --build update/build --parallel --config Release
+    - name: Build capture
+      run: |
+        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release
+        cmake --build capture/build --parallel --config Release
+    - name: Build csvexport
+      run: |
+        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
+        cmake --build csvexport/build --parallel --config Release
+    - name: Build import
+      run: |
+        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release
+        cmake --build import/build --parallel --config Release
+    - name: Package artifacts
+      run: |
+        mkdir bin
+        copy profiler\build\Release\tracy-profiler.exe bin
+        copy update\build\Release\tracy-update.exe bin
+        copy capture\build\Release\tracy-capture.exe bin
+        copy csvexport\build\Release\tracy-csvexport.exe bin
+        copy import\build\Release\tracy-import-chrome.exe bin
+        copy import\build\Release\tracy-import-fuchsia.exe bin
+    - uses: actions/upload-artifact@v4
+      with:
+        name: windows
+        path: bin

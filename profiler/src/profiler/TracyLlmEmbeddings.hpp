@@ -1,6 +1,10 @@
 #ifndef __TRACYLLMEMBEDDINGS_HPP__
 #define __TRACYLLMEMBEDDINGS_HPP__
 
+#ifdef _WIN32
+#  define MAP_FAILED ((void *) -1)
+#endif
+
 #include <stddef.h>
 #include <usearch/index_dense.hpp>
 #include <vector>

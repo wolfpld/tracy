@@ -105,8 +105,8 @@ private:
     bool m_setTemperature = false;
     bool m_allThinkingRegions = false;
 
-    char* m_input;
-    char* m_apiInput;
+    char* m_input = { nullptr };
+    char* m_apiInput = { nullptr };
     std::mutex m_chatLock;
     std::vector<nlohmann::json> m_chat;
 

@@ -378,6 +378,22 @@ void InitCallstackCritical()
     ___tracy_RtlWalkFrameChainPtr = (___tracy_t_RtlWalkFrameChain)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlWalkFrameChain" );
 }
 
+static void SymError( const char* function, DWORD code ) {
+    char message[1024] = {};
+    int written = snprintf( message, sizeof( message ), "ERROR: %s FAILED with code %u (0x%x) | ", function, code, code );
+    written += FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        code,
+        MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
+        (LPSTR)&message[written],
+        sizeof(message) - written,
+        NULL
+    );
+    fprintf( stderr, "%s\n", message );
+    OutputDebugStringA( message );
+}
+
 void DbgHelpInit()
 {
     if( s_shouldResolveSymbolsOffline ) return;
@@ -392,8 +408,33 @@ void DbgHelpInit()
     DBGHELP_LOCK;
 #endif
 
-    SymInitialize( GetCurrentProcess(), nullptr, true );
-    SymSetOptions( SYMOPT_LOAD_LINES );
+    // append executable path to the _NT_SYMBOL_PATH environment variable
+    char buffer [32767];  // max env var length on Windows (including null-terminator)
+    DWORD length = GetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer, sizeof( buffer ) );
+    if( length > sizeof( buffer ) ) {
+        SymError( "GetEnvironmentVariableA", GetLastError() );
+    } else if( length + 1 >= sizeof( buffer ) ) {
+        SymError( "_TracyAppendEnvironmentVariable", ERROR_INSUFFICIENT_BUFFER );
+    } else {
+        buffer[length] = ';';
+        buffer[++length] = '\0';
+        length += GetModuleFileNameA( NULL, &buffer[length], sizeof( buffer ) - length );
+        if( length >= sizeof( buffer ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
+            SymError( "GetModuleFileNameA", GetLastError() );
+        } else {
+            while( length > 0 && buffer[--length] != '\\' )
+                buffer[length] = '\0';
+        }
+    }
+    assert( length < sizeof( buffer ) );
+    if( SetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer ) == FALSE ) {
+        SymError( "SetEnvironmentVariableA", GetLastError() );
+    }
+
+    SymSetOptions( SymGetOptions() | SYMOPT_LOAD_LINES );
+    if( SymInitialize( GetCurrentProcess(), NULL, TRUE ) == FALSE ) {
+        SymError( "SymInitialize", GetLastError() );
+    }
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;

@@ -134,7 +134,18 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
 #  endif
 #endif
     s_window = glfwCreateWindow( m_winPos.w, m_winPos.h, title, NULL, NULL );
-    if( !s_window ) exit( 1 );
+    if( !s_window ) {
+        const char* description;
+        int code = glfwGetError( &description );
+        if( description ) {
+            fprintf( stderr, "ERROR: Tracy (GLFW): %s\n", description );
+#           ifdef _WIN32
+            MessageBoxA( NULL, description, "ERROR: Tracy (GLFW)", MB_OK );
+            OutputDebugStringA( description );
+#           endif
+        }
+        exit( 1 );
+    }
 
     glfwSetWindowPos( s_window, m_winPos.x, m_winPos.y );
 #if GLFW_VERSION_MAJOR > 3 || ( GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 2 )

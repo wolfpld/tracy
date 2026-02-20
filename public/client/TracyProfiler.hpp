@@ -852,16 +852,28 @@ private:
     enum class DequeueStatus { DataDequeued, ConnectionLost, QueueEmpty };
     enum class ThreadCtxStatus { Same, Changed, ConnectionLost };
 
-    static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
+    static void LaunchWorker( void* ptr )
+    {
+        tracy::DirectAlloc lock;
+        ( (Profiler*)ptr )->Worker();
+    }
     void Worker();
 
 #ifndef TRACY_NO_FRAME_IMAGE
-    static void LaunchCompressWorker( void* ptr ) { ((Profiler*)ptr)->CompressWorker(); }
+    static void LaunchCompressWorker( void* ptr )
+    {
+        tracy::DirectAlloc lock;
+        ( (Profiler*)ptr )->CompressWorker();
+    }
     void CompressWorker();
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
-    static void LaunchSymbolWorker( void* ptr ) { ((Profiler*)ptr)->SymbolWorker(); }
+    static void LaunchSymbolWorker( void* ptr )
+    {
+        tracy::DirectAlloc lock;
+        ( (Profiler*)ptr )->SymbolWorker();
+    }
     void SymbolWorker();
     void HandleSymbolQueueItem( const SymbolQueueItem& si );
 #endif

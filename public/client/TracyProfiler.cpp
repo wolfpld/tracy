@@ -282,6 +282,13 @@ static bool EnsureReadable( uintptr_t address )
     return mapping && EnsureReadable( *mapping );
 }
 #elif defined WIN32
+#if defined TRACY_HAS_CNTVCT
+tracy_force_inline int64_t timestamp_win_arm64_cntvct_el0()
+{
+    return _ReadStatusReg( ARM64_CNTVCT_EL0 );
+}
+#endif
+
 static bool EnsureReadable( uintptr_t address )
 {
     MEMORY_BASIC_INFORMATION memInfo;

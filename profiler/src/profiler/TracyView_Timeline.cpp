@@ -87,8 +87,8 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         }
     }
 
-    const auto hwheel_delta = io.MouseWheelH * 100.f * m_horizontalScrollMultiplier;
-    if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
+    const bool wheel_scroll = abs( io.MouseWheelH ) > abs( io.MouseWheel );
+    if( IsMouseDragging( 1 ) || wheel_scroll )
     {
         m_viewMode = ViewMode::Paused;
         m_viewModeHeuristicTry = false;
@@ -96,6 +96,7 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
         const auto delta = GetMouseDragDelta( 1 );
         m_yDelta = delta.y;
+        const auto hwheel_delta = io.MouseWheelH * 50.f * m_horizontalScrollMultiplier;
         const auto dpx = int64_t( (delta.x * nspx) + (hwheel_delta * nspx));
         if( dpx != 0 )
         {
@@ -118,9 +119,10 @@ void View::HandleTimelineMouse( int64_t timespan, const ImVec2& wpos, float w )
         }
     }
 
-    const auto wheel = io.MouseWheel;
-    if( wheel != 0 )
+    const bool wheel_zoom = abs( io.MouseWheel ) > abs( io.MouseWheelH );
+    if( wheel_zoom )
     {
+        const auto wheel = io.MouseWheel;
         if( m_viewMode == ViewMode::LastFrames ) m_viewMode = ViewMode::LastRange;
         const double mouse = io.MousePos.x - wpos.x;
         const auto p = mouse / w;

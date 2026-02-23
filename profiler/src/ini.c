@@ -193,7 +193,8 @@ ini_t* ini_load(const char *filename) {
 
   /* Get file size */
   fseek(fp, 0, SEEK_END);
-  sz = ftell(fp);
+  const long file_size = ftell(fp);
+  sz = file_size > 0 ? file_size : 0;
   rewind(fp);
 
   /* Load file content into memory, null terminate, init end var */

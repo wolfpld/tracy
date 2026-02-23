@@ -1347,12 +1347,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 alignas(64) std::atomic<State> state = Available;
             };
 
+            const int hc = (int)std::thread::hardware_concurrency();
 #ifdef __EMSCRIPTEN__
-            const int jobs = 1;
+            const int jobs = std::min( std::max( hc - 2, 2 ), 4 );
 #else
-            // Leave one thread for file reader, second thread for dispatch (this thread)
-            // Minimum 2 threads to have at least two buffers (one in use, second one filling up)
-            const auto jobs = std::max<int>( std::thread::hardware_concurrency() - 2, 2 );
+            const int jobs = std::max( hc - 2, 2 );
 #endif
             auto td = std::make_unique<TaskDispatch>( jobs, "FrImg Zstd" );
             auto data = std::make_unique<JobData[]>( jobs );

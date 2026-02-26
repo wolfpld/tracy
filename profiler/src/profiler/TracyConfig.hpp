@@ -44,6 +44,8 @@ struct Config
     std::string llmSearchIdentifier;
     std::string llmSearchApiKey;
     bool llmAnnotateCallstacks = false;
+    bool llmLimitToolReplySize = false;
+    int llmMaxToolReplySizeValue = 48*1024;
 };
 
 extern Config s_config;

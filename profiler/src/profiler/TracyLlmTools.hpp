@@ -37,6 +37,8 @@ public:
     std::string HandleToolCalls( const std::string& tool, const nlohmann::json& json, TracyLlmApi& api, int contextSize, bool hasEmbeddingsModel );
     std::string GetCurrentTime() const;
 
+    static int CalcCtxBasedLimit( int ctxSize );
+
     [[nodiscard]] EmbeddingState GetManualEmbeddingsState() const;
     void SelectManualEmbeddings( const std::string& model );
     void BuildManualEmbeddings( const std::string& model, TracyLlmApi& api );

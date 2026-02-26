@@ -339,15 +339,22 @@ void TracyLlmTools::CancelManualEmbeddings()
     }
 }
 
-int TracyLlmTools::CalcMaxSize() const
+int TracyLlmTools::CalcCtxBasedLimit( int ctxSize )
 {
-    constexpr int limit = 48*1024;
-    if( m_ctxSize <= 0 ) return limit;
+    if( ctxSize <= 0 ) return 0;
 
     // Limit the size of the response to avoid exceeding the context size
     // Assume average token size is 4 bytes. Make space for 8 articles to be retrieved.
-    const int maxSize = ( m_ctxSize * 4 ) / 8;
-    return std::min( maxSize, limit );
+    return ( ctxSize * 4 ) / 8;
+}
+
+int TracyLlmTools::CalcMaxSize() const
+{
+    constexpr int defaultLimit = 48*1024;
+    const int limit = s_config.llmLimitToolReplySize ? s_config.llmMaxToolReplySizeValue : defaultLimit;
+    const int ctxLimit = CalcCtxBasedLimit( m_ctxSize );
+    if( ctxLimit <= 0 ) return limit;
+    return std::min( ctxLimit, limit );
 }
 
 std::string TracyLlmTools::TrimString( std::string&& str ) const

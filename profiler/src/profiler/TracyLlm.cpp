@@ -327,6 +327,32 @@ void TracyLlm::Draw()
 
             ImGui::Checkbox( ICON_FA_LIGHTBULB " Show all thinking regions", &m_allThinkingRegions );
 
+            if( ImGui::Checkbox( "Limit tool reply size", &s_config.llmLimitToolReplySize ) )
+            {
+                SaveConfig();
+            }
+            ImGui::SameLine();
+            if( !s_config.llmLimitToolReplySize ) ImGui::BeginDisabled();
+            ImGui::SetNextItemWidth( 100 * scale );
+            if( ImGui::InputInt( "##maxtoolsizectrl", &s_config.llmMaxToolReplySizeValue ) )
+            {
+                s_config.llmMaxToolReplySizeValue = std::max( s_config.llmMaxToolReplySizeValue, 1024 );
+                SaveConfig();
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(bytes)" );
+            if( !s_config.llmLimitToolReplySize ) ImGui::EndDisabled();
+            if( !models.empty() )
+            {
+                const auto ctxSize = models[m_modelIdx].contextSize;
+                const int ctxBasedLimit = TracyLlmTools::CalcCtxBasedLimit( ctxSize );
+                if( ctxBasedLimit > 0 )
+                {
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(ctx: %d bytes)", ctxBasedLimit);
+                }
+            }
+
             char buf[1024];
 
             ImGui::AlignTextToFramePadding();

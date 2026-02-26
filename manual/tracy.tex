@@ -368,7 +368,7 @@ Note that these binary releases require AVX2 instruction set support on the proc
 Tracy Profiler supports  MSVC, GCC, and clang. You will need to use a reasonably recent version of the compiler due to the C++11 requirement. The following platforms are confirmed to be working (this is not a complete list):
 
 \begin{itemize}
-\item Windows (x86, x64)
+\item Windows (x86, x64, ARM64)
 \item Linux (x86, x64, ARM, ARM64)
 \item Android (ARM, ARM64, x86)
 \item FreeBSD (x64)
@@ -629,7 +629,7 @@ The best way to run Tracy is on bare metal. Avoid profiling applications in virt
 
 \begin{itemize}
 \item Reduced precision of time stamps.
-\item Inability to obtain precise timestamps, resulting in error messages such as \emph{CPU doesn't support RDTSC instruction}, or \emph{CPU doesn't support invariant TSC}. On Windows, you can work this around by rebuilding the profiled application with the \texttt{TRACY\_TIMER\_QPC} define, which severely lowers the resolution of time readings.
+\item Inability to obtain precise timestamps, resulting in error messages such as \emph{CPU doesn't support RDTSC instruction}, or \emph{CPU doesn't support invariant TSC}. You can work around this by rebuilding the application with the \texttt{TRACY\_TIMER\_FALLBACK} define, which will use a lower resolution timer. On Windows, the \texttt{TRACY\_TIMER\_QPC} define is also available, but it provides even lower resolution.
 \item Frequency of call stack sampling may be reduced.
 \item Call stack sampling might lack time stamps. While you can use such a reduced data set to perform statistical analysis, you won't be able to limit the time range or see the sampling zones on the timeline.
 \end{itemize}
@@ -3676,7 +3676,7 @@ It will also add lines starting with a filed circle to denote wake up events. Th
 \draw (12,12) -- (14,13.5);
 	\end{tikzpicture}
 	\caption{Thread migration and wake up.}
-	\label{plot}
+	\label{threadmigration}
 \end{figure}
 
 In the above picture, \emph{Thread B} migrates from \emph{Core 3} to \emph{Core 4} due to a wake up from \emph{Thread A}. Then it migrates from \emph{Core 4} to \emph{Core 1}.
@@ -3701,7 +3701,7 @@ Hovering the \faMousePointer{}~mouse pointer over a lock timeline will highlight
 \subparagraph{Plots}
 \label{plots}
 
-The numerical data values (figure~\ref{plot}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot and the number of drawn data points. The discrete data points are indicated with little rectangles. A filled rectangle indicates multiple data points.
+The numerical data values (figure~\ref{plotdisplay}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot and the number of drawn data points. The discrete data points are indicated with little rectangles. A filled rectangle indicates multiple data points.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -3716,7 +3716,7 @@ The numerical data values (figure~\ref{plot}) are plotted right below the zones 
 \draw(0, -2) -- (1, -2.3) node[dot]{} -- (1.2, -3) node[dot]{} -- (6, -1.2) node[dot]{} -- (7, -0.5) node[dot]{} -- (9, -2) node[dot]{} -- (15, -2.5);
 \end{tikzpicture}
 \caption{Plot display.}
-\label{plot}
+\label{plotdisplay}
 \end{figure}
 
 When memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{}~Memory usage} plot, which has extended capabilities. For example, hovering over a data point (memory allocation event) will visually display the allocation duration. Clicking the \LMB{}~left mouse button on the data point will open the memory allocation information window, which will show the duration of the allocation as long as the window is open.
@@ -4671,12 +4671,10 @@ The ideal LLM provider should be a system service that loads and unloads models 
 There are no ideal LLM providers, but here are some options:
 
 \begin{itemize}
-\item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag a bit behind. Manual configuration of each model is required.
-\item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
+\item \emph{llama.cpp} (\url{https://github.com/ggml-org/llama.cpp}) -- Recommended as the easiest to use. Clone from git and build it yourself. By default it fits the model automatically to available memory. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release.
 \item \emph{llama-swap} (\url{https://github.com/mostlygeek/llama-swap}) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
+\item \emph{LM Studio} (\url{https://lmstudio.ai/}) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable "When applicable, separate \texttt{reasoning\_content} and \texttt{content} in API responses".
 \end{itemize}
-
-To get LM Studio working properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable "When applicable, separate \texttt{reasoning\_content} and \texttt{content} in API responses".
 
 \subsubsection{Model selection}
 
@@ -4715,7 +4713,7 @@ logo=\bclampe
 ]{Context size}
 The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can "remember". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
 
-Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
+Each token present in the context window may require a fairly large amount of memory, and that can quickly add up to gigabytes. Some modern models use solutions that greatly reduce context memory requirements, but that varies from model to model. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
 
 The bare minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. To get things working well you should not go less than 32K or 64K for the context size.
 \end{bclogo}
@@ -4740,7 +4738,9 @@ Ideally, you want to keep both the model and the context cache in your GPU's VRA
 
 LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more you can run on the GPU, the faster it goes.
 
-Determining how much of the model can be run on the GPU usually requires some experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
+If you use llama.cpp, it will automatically fit the model into the available memory. A short report will be displayed when the program is started, with information about memory use. If there's a deficit, the model will still run, but at a severely reduced speed. Use a smaller context or quantization in that case. If there's a memory surplus, it will be used to make the model run faster.
+
+Older versions of llama.cpp, typically still provided by the GUI wrappers, require determining how much of the model can be run on the GPU by experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
 
 Another option is to disable KV cache offload to GPU, as was already mentioned earlier. The KV cache is a configurable parameter that typically requires a lot of memory, and it may be better to keep in the system RAM than in limited VRAM.
 
@@ -4751,14 +4751,13 @@ Yet another option is to use a "Mixture of Experts" model, where the active port
 So, which model should you run and what hardware you need to be able to do so? Let's take look at some example systems.
 
 \begin{itemize}
-\item On a Dell XPS 13" laptop with an i7-1185G7 CPU and integrated GPU, you will be able to run the Youtu-LLM 2B model and not much more.
-\item With a Ryzen laptop that has 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run:
-\begin{itemize}
-	\item Qwen3 4B Thinking 2507 Q4\_K\_M fully offloaded to GPU, with 64K of context in system RAM.
-	\item Qwen3 30B-A3B Thinking 2507 IQ3\_XXS configured with the expert weights on CPU and 32K of context in VRAM.
+\item On a Dell XPS 13" laptop with an i7-1185G7 CPU and integrated GPU, you will be able to run the Nanbeige4.1 3B model and not much more.
+\item With a Ryzen laptop that has 16~GB of RAM and a weak 4~GB Nvidia GPU, you can run Qwen3.5~35B-A3B with a UD-Q2\_K\_XL quantization and 50K context, with a very reasonable speed.
 \end{itemize}
-\item If you have a 4090 class GPU with 24 GB of VRAM, you will be able to run models such as the 106B-A12B GLM 4.5 Air, with 64K context.
-\end{itemize}
+
+As a rule of thumb, the specified number of parameters is how much total memory is needed to run the model with 8-bit quantization. Another way to get a rough estimate is to look at the model file size. Strive to fit the active parameters completely into VRAM, leaving space for computation scratch space and the context.
+
+To make this practical, the 35B-A3B model at 2 bit quantization requires $35 * 2 / 8 = 8.75$~GB, which fits into the 4 + 16 GB budget in the example above. The 3B active parameters similarly calculate to 0.75~GB, with additional 1~GB or so needed for computation buffer and another 1~GB for the 50K context, which is less than the 4~GB of VRAM available, making everything fit.
 
 \subsubsection{Usage}
 \label{llmusage}
@@ -4799,6 +4798,36 @@ The chat section contains the conversation with the automated assistant.
 
 Clicking on the~\emph{\faUser{}~User} role icon removes the chat content up to the selected question. Similarly, clicking on the~\emph{\faRobot{}~Assistant} role icon removes the conversation content up to this point and generates another response from the assistant.
 
+\subsubsection{Tools}
+
+The automated assistant has access to a set of tools that allow it to gather information. These tools are used automatically when needed to answer your questions. The following tools are available:
+
+\begin{itemize}
+\item \emph{Wikipedia search} -- Search Wikipedia for articles and retrieve page contents.
+\item \emph{Dictionary} -- Look up word definitions in Wiktionary.
+\item \emph{Web search} -- Search the web for information. Uses Google Search API if configured, otherwise falls back to DuckDuckGo.
+\item \emph{Webpage retrieval} -- Fetch and parse webpage content for analysis.
+\item \emph{Manual search} -- Perform semantic search in this user manual. Requires an embeddings model to be selected and the \emph{Learn manual} button to be clicked.
+\item \emph{Source file} -- Retrieve source file contents from the captured trace.
+\item \emph{Source search} -- Search within the captured source files using regular expressions.
+\end{itemize}
+
+Note that Wikipedia, dictionary, web search, and webpage retrieval tools require the \emph{Internet access} option to be enabled.
+
+\subsubsection{Attachments}
+
+You can provide context to the assistant by attaching relevant data from the profiler. The following types of attachments are available:
+
+\begin{itemize}
+\item \emph{Call stacks} -- Regular call stacks from zones, samples, or memory allocations can be attached for analysis.
+\item \emph{Entry call stacks} -- Show how the execution reached a sampled location, providing context on the code path taken.
+\item \emph{Crash call stacks} -- When attaching a crash call stack, it is automatically annotated with the crash reason and thread information.
+\item \emph{Source code} -- Source files can be attached with optional execution cost percentages from sampling data.
+\item \emph{Symbol assembly} -- Disassembly of a symbol can be attached, including instruction-level sampling costs to highlight hot paths.
+\end{itemize}
+
+Attachments can be added through the \emph{\faRobot{}~Tracy Assist} buttons available in various profiler windows, such as the call stack window or the symbol view.
+
 \section{Exporting zone statistics to CSV}
 \label{csvexport}
 
@@ -4828,6 +4857,10 @@ You can customize the output with the following command line options:
   \item \texttt{-s, -\hspace{-1.25ex} -sep <separator>} -- Customize the CSV separator (default is ``\texttt{,}'')
   \item \texttt{-e, -\hspace{-1.25ex} -self} -- Use self time (equivalent to the ``Self time'' toggle in the profiler GUI)
   \item \texttt{-u, -\hspace{-1.25ex} -unwrap} -- Report each zone individually; this will discard the statistics columns and instead report the timestamp and duration for each zone entry
+  \item \texttt{-g, -\hspace{-1.25ex} -gpu} -- Report each GPU zone event
+  \item \texttt{-m, -\hspace{-1.25ex} -messages} -- Report only messages
+  \item \texttt{-p, -\hspace{-1.25ex} -plot} -- Report plot data (only available with \texttt{-u})
+  \item \texttt{-t, -\hspace{-1.25ex} -truncated\_mean [percentile]} -- Report truncated mean; the percentile argument is optional and defaults to 90 (valid range: 1--99)
 \end{itemize}
 
 \section{Importing external profiling data}

@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-01-14 <https://github.com/wolfpld/tracy>
+2026-02-26 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -260,7 +260,7 @@ Note that these binary releases require AVX2 instruction set support on the proc
 
 Tracy Profiler supports MSVC, GCC, and clang. You will need to use a reasonably recent version of the compiler due to the C++11 requirement. The following platforms are confirmed to be working (this is not a complete list):
 
-- Windows (x86, x64)
+- Windows (x86, x64, ARM64)
 
 - Linux (x86, x64, ARM, ARM64)
 
@@ -494,7 +494,7 @@ The best way to run Tracy is on bare metal. Avoid profiling applications in virt
 
 - Reduced precision of time stamps.
 
-- Inability to obtain precise timestamps, resulting in error messages such as *CPU doesn't support RDTSC instruction*, or *CPU doesn't support invariant TSC*. On Windows, you can work this around by rebuilding the profiled application with the `TRACY_TIMER_QPC` define, which severely lowers the resolution of time readings.
+- Inability to obtain precise timestamps, resulting in error messages such as *CPU doesn't support RDTSC instruction*, or *CPU doesn't support invariant TSC*. You can work around this by rebuilding the application with the `TRACY_TIMER_FALLBACK` define, which will use a lower resolution timer. On Windows, the `TRACY_TIMER_QPC` define is also available, but it provides even lower resolution.
 
 - Frequency of call stack sampling may be reduced.
 
@@ -3070,7 +3070,7 @@ When the (MousePointer icon) mouse pointer is hovered over either the CPU data
 
 It will also add lines starting with a filed circle to denote wake up events. Those are useful to pinpoint the origin of a thread waking up, especially when holding locks. It may also start from an empty region, denoting the time at which the kernel chose to schedule or boost the priority of your thread. Wake ups will have a different color based on the reason for which the thread was waiting to be scheduled.
 
-<figure id="plot">
+<figure id="threadmigration">
 
 <figcaption>Thread migration and wake up.</figcaption>
 </figure>
@@ -3097,9 +3097,9 @@ Hovering the (MousePointer icon) mouse pointer over a lock timeline will highl
 
 ##### Plots
 
-The numerical data values (figure [20](#plot)) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot and the number of drawn data points. The discrete data points are indicated with little rectangles. A filled rectangle indicates multiple data points.
+The numerical data values (figure [20](#plotdisplay)) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot and the number of drawn data points. The discrete data points are indicated with little rectangles. A filled rectangle indicates multiple data points.
 
-<figure id="plot">
+<figure id="plotdisplay">
 
 <figcaption>Plot display.</figcaption>
 </figure>
@@ -3929,13 +3929,11 @@ The ideal LLM provider should be a system service that loads and unloads models 
 
 There are no ideal LLM providers, but here are some options:
 
-- *LM Studio* (<https://lmstudio.ai/>) -- It is the easiest to use and install on all platforms. It may be a bit overwhelming at first due to the number of options it offers. Some people may question the licensing. Its features lag a bit behind. Manual configuration of each model is required.
-
-- *llama.cpp* (<https://github.com/ggml-org/llama.cpp>) -- Recommended for advanced users. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release. It requires a lot of manual setup and command line usage. It does not hold your hand.
+- *llama.cpp* (<https://github.com/ggml-org/llama.cpp>) -- Recommended as the easiest to use. Clone from git and build it yourself. By default it fits the model automatically to available memory. It is rapidly advancing with new features and model support. Most other providers use it to do the actual work, and they typically use an outdated release.
 
 - *llama-swap* (<https://github.com/mostlygeek/llama-swap>) -- Wrapper for llama.cpp that allows model selection. Recommended to augment the above.
 
-To get LM Studio working properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable \"When applicable, separate `reasoning_content` and `content` in API responses\".
+- *LM Studio* (<https://lmstudio.ai/>) -- It is easy to install on all platforms and has a GUI. But it is overwhelming when it comes to the number of options it offers. Some people may question the licensing. Its features lag a behind llama.cpp. Manual configuration of each model is required. To get it to work properly, go to it settings (using the gear icon in the bottom right corner of the program window), then select the Developer tab and enable \"When applicable, separate `reasoning_content` and `content` in API responses\".
 
 ### Model selection
 
@@ -3962,7 +3960,7 @@ Model size Another thing to consider when selecting a model is its size, which i
 ::: bclogo
 Context size The model size only indicates the minimum memory requirement. For the model to operate properly, you also need to set the context size, which determines how much information from the conversation the model can \"remember\". This size is measured in tokens, and a very rough approximation is that each token is a combination of three or four letters.
 
-Each token present in the context window requires a fairly large amount of memory, and that quickly adds up to gigabytes. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
+Each token present in the context window may require a fairly large amount of memory, and that can quickly add up to gigabytes. Some modern models use solutions that greatly reduce context memory requirements, but that varies from model to model. If needed, the KV cache used for context can be quantized, just like model parameters. In this case, the recommended size per weight is 8 bits.
 
 The bare minimum required context size for Tracy to run the assistant is 8K, but don't expect things to run smoothly. Using 16K provides more room to operate, but it's still tight. To get things working well you should not go less than 32K or 64K for the context size.
 :::
@@ -3987,7 +3985,9 @@ Ideally, you want to keep both the model and the context cache in your GPU's VRA
 
 LLM providers solve this problem by storing part of the model on the GPU and running the rest on the CPU. The more you can run on the GPU, the faster it goes.
 
-Determining how much of the model can be run on the GPU usually requires some experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
+If you use llama.cpp, it will automatically fit the model into the available memory. A short report will be displayed when the program is started, with information about memory use. If there's a deficit, the model will still run, but at a severely reduced speed. Use a smaller context or quantization in that case. If there's a memory surplus, it will be used to make the model run faster.
+
+Older versions of llama.cpp, typically still provided by the GUI wrappers, require determining how much of the model can be run on the GPU by experimentation. Other programs running on the system may affect or be affected by this setting. Generally, GPU offload capability is measured by the number of neural network layers.
 
 Another option is to disable KV cache offload to GPU, as was already mentioned earlier. The KV cache is a configurable parameter that typically requires a lot of memory, and it may be better to keep in the system RAM than in limited VRAM.
 
@@ -3997,15 +3997,13 @@ Yet another option is to use a \"Mixture of Experts\" model, where the active po
 
 So, which model should you run and what hardware you need to be able to do so? Let's take look at some example systems.
 
-- On a Dell XPS 13\" laptop with an i7-1185G7 CPU and integrated GPU, you will be able to run the Youtu-LLM 2B model and not much more.
+- On a Dell XPS 13\" laptop with an i7-1185G7 CPU and integrated GPU, you will be able to run the Nanbeige4.1 3B model and not much more.
 
-- With a Ryzen laptop that has 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run:
+- With a Ryzen laptop that has 16 GB of RAM and a weak 4 GB Nvidia GPU, you can run Qwen3.5 35B-A3B with a UD-Q2_K_XL quantization and 50K context, with a very reasonable speed.
 
-  - Qwen3 4B Thinking 2507 Q4_K_M fully offloaded to GPU, with 64K of context in system RAM.
+As a rule of thumb, the specified number of parameters is how much total memory is needed to run the model with 8-bit quantization. Another way to get a rough estimate is to look at the model file size. Strive to fit the active parameters completely into VRAM, leaving space for computation scratch space and the context.
 
-  - Qwen3 30B-A3B Thinking 2507 IQ3_XXS configured with the expert weights on CPU and 32K of context in VRAM.
-
-- If you have a 4090 class GPU with 24 GB of VRAM, you will be able to run models such as the 106B-A12B GLM 4.5 Air, with 64K context.
+To make this practical, the 35B-A3B model at 2 bit quantization requires $35 * 2 / 8 = 8.75$ GB, which fits into the 4 + 16 GB budget in the example above. The 3B active parameters similarly calculate to 0.75 GB, with additional 1 GB or so needed for computation buffer and another 1 GB for the 50K context, which is less than the 4 GB of VRAM available, making everything fit.
 
 ### Usage {#llmusage}
 
@@ -4051,6 +4049,42 @@ The chat section contains the conversation with the automated assistant.
 
 Clicking on the *(User icon) User* role icon removes the chat content up to the selected question. Similarly, clicking on the *(Robot icon) Assistant* role icon removes the conversation content up to this point and generates another response from the assistant.
 
+### Tools
+
+The automated assistant has access to a set of tools that allow it to gather information. These tools are used automatically when needed to answer your questions. The following tools are available:
+
+- *Wikipedia search* -- Search Wikipedia for articles and retrieve page contents.
+
+- *Dictionary* -- Look up word definitions in Wiktionary.
+
+- *Web search* -- Search the web for information. Uses Google Search API if configured, otherwise falls back to DuckDuckGo.
+
+- *Webpage retrieval* -- Fetch and parse webpage content for analysis.
+
+- *Manual search* -- Perform semantic search in this user manual. Requires an embeddings model to be selected and the *Learn manual* button to be clicked.
+
+- *Source file* -- Retrieve source file contents from the captured trace.
+
+- *Source search* -- Search within the captured source files using regular expressions.
+
+Note that Wikipedia, dictionary, web search, and webpage retrieval tools require the *Internet access* option to be enabled.
+
+### Attachments
+
+You can provide context to the assistant by attaching relevant data from the profiler. The following types of attachments are available:
+
+- *Call stacks* -- Regular call stacks from zones, samples, or memory allocations can be attached for analysis.
+
+- *Entry call stacks* -- Show how the execution reached a sampled location, providing context on the code path taken.
+
+- *Crash call stacks* -- When attaching a crash call stack, it is automatically annotated with the crash reason and thread information.
+
+- *Source code* -- Source files can be attached with optional execution cost percentages from sampling data.
+
+- *Symbol assembly* -- Disassembly of a symbol can be attached, including instruction-level sampling costs to highlight hot paths.
+
+Attachments can be added through the *(Robot icon) Tracy Assist* buttons available in various profiler windows, such as the call stack window or the symbol view.
+
 # Exporting zone statistics to CSV {#csvexport}
 
 You can use the command-line utility `tracy-csvexport` from the `csvexport` directory to export primary zone statistics from a saved trace into a CSV format. The tool requires a single .tracy file as an argument and prints the result into the standard output (stdout), from where you can redirect it into a file or use it as an input into another tool. By default, the utility will list all zones with the following columns:
@@ -4088,6 +4122,14 @@ You can customize the output with the following command line options:
 - `-e, - -self` -- Use self time (equivalent to the "Self time" toggle in the profiler GUI)
 
 - `-u, - -unwrap` -- Report each zone individually; this will discard the statistics columns and instead report the timestamp and duration for each zone entry
+
+- `-g, - -gpu` -- Report each GPU zone event
+
+- `-m, - -messages` -- Report only messages
+
+- `-p, - -plot` -- Report plot data (only available with `-u`)
+
+- `-t, - -truncated_mean [percentile]` -- Report truncated mean; the percentile argument is optional and defaults to 90 (valid range: 1--99)
 
 # Importing external profiling data {#importingdata}
 

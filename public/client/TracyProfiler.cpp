@@ -4694,7 +4694,7 @@ TRACY_API void ___tracy_emit_gpu_new_context( ___tracy_gpu_new_context_data data
 {
     TracyLfqPrepareC( tracy::QueueType::GpuNewContext );
     tracy::MemWrite( &item->gpuNewContext.cpuTime, tracy::Profiler::GetTime() );
-    tracy::MemWrite( &item->gpuNewContext.thread, tracy::GetThreadHandle() );
+    tracy::MemWrite( &item->gpuNewContext.thread, 0 );
     tracy::MemWrite( &item->gpuNewContext.gpuTime, data.gpuTime );
     tracy::MemWrite( &item->gpuNewContext.period, data.period );
     tracy::MemWrite( &item->gpuNewContext.context, data.context );

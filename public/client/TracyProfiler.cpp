@@ -5075,6 +5075,11 @@ TRACY_API void ___tracy_end_sampling_profiling( void ) {
     tracy::EndSamplingProfiling();
 }
 
+TRACY_API int64_t ___tracy_get_time( void )
+{
+    return tracy::Profiler::GetTime();
+}
+
 #ifdef __cplusplus
 }
 #endif

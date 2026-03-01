@@ -174,8 +174,24 @@ typedef void(*ParameterCallback)( void* data, uint32_t idx, int32_t val );
 typedef char*(*SourceContentsCallback)( void* data, const char* filename, size_t& size );
 
 #if defined _WIN32 && defined TRACY_HAS_CNTVCT
-// NOTE: implementation requires including windows.h
-tracy_force_inline int64_t timestamp_win_arm64_cntvct_el0();
+// NOTE: implementing timestamp_win_arm64_cntvct_el0() requires ARM64_CNTVCT_EL0,
+// which in turn would require including "Windows.h" here... instead, just bring
+// what's needed from "winnt.h"
+#  ifdef ARM64_CNTVCT_EL0
+#    define TRACY_WINARM64_CNTVCT_EL0 ARM64_CNTVCT_EL0
+#  else
+#    define TRACY_WINARM64_SYSREG( op0, op1, crn, crm, op2 ) \
+        ( ( ( op0 & 1 ) << 14 ) |                            \
+          ( ( op1 & 7 ) << 11 ) |                            \
+          ( ( crn & 15 ) << 7 ) |                            \
+          ( ( crm & 15 ) << 3 ) |                            \
+          ( ( op2 & 7 ) << 0 ) )
+#    define TRACY_WINARM64_CNTVCT_EL0 TRACY_WINARM64_SYSREG( 3, 3, 14, 0, 2 )
+#  endif
+tracy_force_inline int64_t timestamp_win_arm64_cntvct_el0()
+{
+    return _ReadStatusReg( TRACY_WINARM64_CNTVCT_EL0 );
+}
 #endif
 
 class Profiler

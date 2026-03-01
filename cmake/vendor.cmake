@@ -202,15 +202,6 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL TRUE
 )
 
-# json
-
-CPMAddPackage(
-    NAME json
-    GITHUB_REPOSITORY nlohmann/json
-    GIT_TAG v3.12.0
-    EXCLUDE_FROM_ALL TRUE
-)
-
 # md4c
 
 CPMAddPackage(

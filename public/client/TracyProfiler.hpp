@@ -30,6 +30,8 @@
 
 #if ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
 #  define TRACY_HAS_RDTSC
+#elif defined _WIN32 && defined _M_ARM64
+#  define TRACY_HAS_CNTVCT
 #elif defined __APPLE__ && defined __MACH__ && TARGET_CPU_ARM64 // For now only supported on Apple devices
 #  define TRACY_HAS_CNTVCT
 #endif
@@ -171,6 +173,27 @@ struct LuaZoneState
 typedef void(*ParameterCallback)( void* data, uint32_t idx, int32_t val );
 typedef char*(*SourceContentsCallback)( void* data, const char* filename, size_t& size );
 
+#if defined _WIN32 && defined TRACY_HAS_CNTVCT
+// NOTE: implementing timestamp_win_arm64_cntvct_el0() requires ARM64_CNTVCT_EL0,
+// which in turn would require including "Windows.h" here... instead, just bring
+// what's needed from "winnt.h"
+#  ifdef ARM64_CNTVCT_EL0
+#    define TRACY_WINARM64_CNTVCT_EL0 ARM64_CNTVCT_EL0
+#  else
+#    define TRACY_WINARM64_SYSREG( op0, op1, crn, crm, op2 ) \
+        ( ( ( op0 & 1 ) << 14 ) |                            \
+          ( ( op1 & 7 ) << 11 ) |                            \
+          ( ( crn & 15 ) << 7 ) |                            \
+          ( ( crm & 15 ) << 3 ) |                            \
+          ( ( op2 & 7 ) << 0 ) )
+#    define TRACY_WINARM64_CNTVCT_EL0 TRACY_WINARM64_SYSREG( 3, 3, 14, 0, 2 )
+#  endif
+tracy_force_inline int64_t timestamp_win_arm64_cntvct_el0()
+{
+    return _ReadStatusReg( TRACY_WINARM64_CNTVCT_EL0 );
+}
+#endif
+
 class Profiler
 {
     struct FrameImageQueueItem
@@ -226,7 +249,9 @@ public:
 #  elif defined _WIN32
 #    ifdef TRACY_TIMER_QPC
         return GetTimeQpc();
-#    else
+#    elif defined TRACY_HAS_CNTVCT
+        return timestamp_win_arm64_cntvct_el0();
+#    elif defined TRACY_HAS_RDTSC
         if( HardwareSupportsInvariantTSC() ) return int64_t( __rdtsc() );
 #    endif
 #  elif defined __i386 || defined _M_IX86

@@ -12,7 +12,7 @@ The user manual
 
 **Bartosz Taudul** [\<wolf@nereid.pl\>](mailto:wolf@nereid.pl)
 
-2026-02-26 <https://github.com/wolfpld/tracy>
+2026-03-02 <https://github.com/wolfpld/tracy>
 :::
 
 # Quick overview {#quick-overview .unnumbered}
@@ -33,7 +33,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 
 - Chapter [7](#importingdata), *Importing external profiling data*, documents how to import data from other profilers.
 
-- Chapter [8](#configurationfiles), *Configuration files*, gives information on the profiler settings.
+- Chapter [9](#configurationfiles), *Configuration files*, gives information on the profiler settings.
 
 # Quick-start guide {#quick-start-guide .unnumbered}
 
@@ -3155,7 +3155,7 @@ Annotations are displayed on the timeline, as presented in figure [21](#annotat
 <figcaption>Annotation region.</figcaption>
 </figure>
 
-Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the user data files, as described in section [8.2](#tracespecific).
+Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the user data files, as described in section [9.2](#tracespecific).
 
 ## Options menu {#options}
 
@@ -4167,6 +4167,48 @@ Limitations
 - Tracy is a single-process profiler. Should the imported trace contain PID entries, each PID+TID pair will create a new *pseudo-TID* number, which the profiler will then decode into a PID+TID pair in thread labels. If you want to preserve the original TID numbers, your traces should omit PID entries.
 
 - The imported data may be severely limited, either by not mapping directly to the data structures used by Tracy or by following undocumented practices.
+:::
+
+# Merging trace files {#mergingtraces}
+
+You can combine multiple .tracy files into a single trace using the `tracy-merge` command-line utility in the `merge` directory. This is useful when you have captured profiling data from multiple processes and want to analyze them together.
+
+The tool accepts the following parameters:
+
+- `-o, --output <file>` -- Output file path (required)
+
+- `-f, --force` -- Overwrite output file if it exists
+
+- `-h, --help` -- Display a help message
+
+Usage example:
+
+``` {.sh language="sh"}
+$ tracy-merge -o merged.tracy trace1.tracy trace2.tracy trace3.tracy
+```
+
+To prevent thread ID collisions between traces from different processes, thread names are prefixed with the process name. If the same process and thread name appear in multiple traces, the PID is included for disambiguation (e.g., `myapp[12345]/MainThread`). See section [7](#importingdata) for details on how PID+TID pairs are handled.
+
+::: bclogo
+Limitations
+
+- Time is **not synchronized** between input traces. The tool is designed for merging traces captured simultaneously (e.g., from a multi-process application). Merging traces from different capture sessions or different machines will result in misaligned timestamps.
+
+- The tool uses the Import API, which only preserves zones, messages, and plots. The following data is **lost** during merge:
+
+  - GPU zones
+
+  - Memory allocation events
+
+  - Callstacks
+
+  - Lock events
+
+  - Context switches
+
+  - Frame images
+
+- Plots always use the `Number` format, regardless of the original format specification.
 :::
 
 # Configuration files {#configurationfiles}

@@ -4918,6 +4918,47 @@ logo=\bcattention
 \end{itemize}
 \end{bclogo}
 
+\section{Merging trace files}
+\label{mergingtraces}
+
+You can combine multiple .tracy files into a single trace using the \texttt{tracy-merge} command-line utility in the \texttt{merge} directory. This is useful when you have captured profiling data from multiple processes and want to analyze them together.
+
+The tool accepts the following parameters:
+
+\begin{itemize}
+  \item \texttt{-o, -{}-output <file>} -- Output file path (required)
+  \item \texttt{-f, -{}-force} -- Overwrite output file if it exists
+  \item \texttt{-h, -{}-help} -- Display a help message
+\end{itemize}
+
+Usage example:
+
+\begin{lstlisting}[language=sh]
+$ tracy-merge -o merged.tracy trace1.tracy trace2.tracy trace3.tracy
+\end{lstlisting}
+
+To prevent thread ID collisions between traces from different processes, thread names are prefixed with the process name. If the same process and thread name appear in multiple traces, the PID is included for disambiguation (e.g., \texttt{myapp[12345]/MainThread}). See section~\ref{importingdata} for details on how PID+TID pairs are handled.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Limitations}
+\begin{itemize}
+\item Time is \textbf{not synchronized} between input traces. The tool is designed for merging traces captured simultaneously (e.g., from a multi-process application). Merging traces from different capture sessions or different machines will result in misaligned timestamps.
+\item The tool uses the Import API, which only preserves zones, messages, and plots. The following data is \textbf{lost} during merge:
+  \begin{itemize}
+    \item GPU zones
+    \item Memory allocation events
+    \item Callstacks
+    \item Lock events
+    \item Context switches
+    \item Frame images
+  \end{itemize}
+\item Plots always use the \texttt{Number} format, regardless of the original format specification.
+\end{itemize}
+\end{bclogo}
+
 \section{Configuration files}
 \label{configurationfiles}
 

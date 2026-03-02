@@ -167,6 +167,7 @@ struct ___tracy_gpu_zone_begin_data {
     uint64_t srcloc;
     uint16_t queryId;
     uint8_t context;
+    uint32_t threadId;
 };
 
 struct ___tracy_gpu_zone_begin_callstack_data {
@@ -179,6 +180,7 @@ struct ___tracy_gpu_zone_begin_callstack_data {
 struct ___tracy_gpu_zone_end_data {
     uint16_t queryId;
     uint8_t context;
+    uint32_t threadId;
 };
 
 struct ___tracy_gpu_new_context_data {
@@ -391,6 +393,8 @@ TRACY_API void ___tracy_fiber_leave( void );
 #  define TracyCFiberEnter( fiber ) ___tracy_fiber_enter( fiber );
 #  define TracyCFiberLeave ___tracy_fiber_leave();
 #endif
+
+TRACY_API int64_t ___tracy_get_time();
 
 #endif
 

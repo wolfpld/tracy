@@ -19,6 +19,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
 set(PROGRAM_FILES
     src/capture.cpp
+    src/CaptureOutput.cpp
 )
 
 add_executable(${PROJECT_NAME} ${PROGRAM_FILES} ${COMMON_FILES} ${SERVER_FILES})

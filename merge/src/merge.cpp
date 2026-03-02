@@ -50,7 +50,7 @@ struct ExportedTrace
         return a.timestamp < b.timestamp;
     }
 
-    static std::optional<ExportedTrace> fromFile( std::string const& filepath, size_t fileIndex, bool exportPlots )
+    static std::optional<ExportedTrace> fromFile( std::string const& filepath, size_t fileIndex )
     {
         auto sourceFile = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( filepath.c_str() ) );
         if( !sourceFile )
@@ -130,20 +130,17 @@ struct ExportedTrace
         }
         std::sort( trace.messages.begin(), trace.messages.end(), orderMessages );
 
-        if( exportPlots )
+        auto& plots = worker.GetPlots();
+        std::cout << "  Plots: " << plots.size() << std::endl;
+        for( auto& plot : plots )
         {
-            auto& plots = worker.GetPlots();
-            std::cout << "  Plots: " << plots.size() << std::endl;
-            for( auto& plot : plots )
+            auto& importPlot = trace.plots.emplace_back();
+            importPlot.name = worker.GetString( plot->name );
+            importPlot.format = plot->format;
+            importPlot.data.reserve( plot->data.size() );
+            for( auto& pt : plot->data )
             {
-                auto& importPlot = trace.plots.emplace_back();
-                importPlot.name = worker.GetString( plot->name );
-                importPlot.format = plot->format;
-                importPlot.data.reserve( plot->data.size() );
-                for( auto& pt : plot->data )
-                {
-                    importPlot.data.emplace_back( pt.time.Val(), pt.val );
-                }
+                importPlot.data.emplace_back( pt.time.Val(), pt.val );
             }
         }
 
@@ -182,6 +179,16 @@ struct MergedTrace
             {
                 auto key = std::make_pair( trace.process, threadName );
                 nameCounts[key]++;
+            }
+        }
+
+        std::unordered_map<std::pair<std::string, std::string>, size_t, PairHash<std::string, std::string>> plotNameCounts;
+        for( auto const& trace : traces )
+        {
+            for( auto const& plot : trace.plots )
+            {
+                auto key = std::make_pair( trace.process, plot.name );
+                plotNameCounts[key]++;
             }
         }
 
@@ -244,7 +251,17 @@ struct MergedTrace
 
             for( auto const& plot : trace.plots )
             {
-                out.plots.push_back( plot );
+                auto renamedPlot = plot;
+                auto key = std::make_pair( trace.process, plot.name );
+                if( plotNameCounts[key] > 1 )
+                {
+                    renamedPlot.name = trace.process + "[" + std::to_string( trace.pid ) + "]/" + plot.name;
+                }
+                else
+                {
+                    renamedPlot.name = trace.process + "/" + plot.name;
+                }
+                out.plots.push_back( renamedPlot );
             }
         }
 
@@ -261,7 +278,6 @@ struct MergedTrace
     printf( "Options:\n" );
     printf( "  -o, --output <file>    Output file path (required)\n" );
     printf( "  -f, --force            Overwrite output file if it exists\n" );
-    printf( "  -p, --export-plots     Include plots in merged output\n" );
     printf( "  -h, --help             Show this help message\n" );
     exit( 1 );
 }
@@ -271,18 +287,16 @@ int main( int argc, char** argv )
     std::string outputFile;
     std::vector<std::string> inputFiles;
     bool overwrite = false;
-    bool exportPlots = false;
 
     static struct option longOptions[] = {
         { "output", required_argument, nullptr, 'o' },
         { "force", no_argument, nullptr, 'f' },
-        { "export-plots", no_argument, nullptr, 'p' },
         { "help", no_argument, nullptr, 'h' },
         { nullptr, 0, nullptr, 0 }
     };
 
     int c;
-    while( ( c = getopt_long( argc, argv, "o:fph", longOptions, nullptr ) ) != -1 )
+    while( ( c = getopt_long( argc, argv, "o:fh", longOptions, nullptr ) ) != -1 )
     {
         switch( c )
         {
@@ -291,9 +305,6 @@ int main( int argc, char** argv )
             break;
         case 'f':
             overwrite = true;
-            break;
-        case 'p':
-            exportPlots = true;
             break;
         case 'h':
         default:
@@ -338,7 +349,7 @@ int main( int argc, char** argv )
 
     for( size_t i = 0; i < inputFiles.size(); i++ )
     {
-        auto trace = ExportedTrace::fromFile( inputFiles[i], i, exportPlots );
+        auto trace = ExportedTrace::fromFile( inputFiles[i], i );
         if( !trace )
         {
             std::cerr << "Failed to read: " << inputFiles[i] << std::endl;

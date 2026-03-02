@@ -2912,6 +2912,78 @@ The \emph{timer resolution} parameter shows the calibration results of timers us
 
 You can disconnect from the client and save the captured trace by pressing \keys{\ctrl + C}. If you prefer to disconnect after a fixed time, use the \texttt{-s seconds} parameter.
 
+\subsection{Multi-client capture daemon}
+
+If you want to capture profiling data from multiple clients simultaneously, you can use the \texttt{tracy-capture-daemon} utility. This tool listens for UDP broadcast messages from Tracy clients on the network, automatically discovers available clients, and captures each one to a separate file.
+
+The daemon accepts the following parameters:
+
+\begin{itemize}
+\item \texttt{-o, -{}-output <dir>} -- output directory for captured traces (required, created if it doesn't exist).
+\item \texttt{-p, -{}-port <port>} -- UDP listen port (default: 8086).
+\item \texttt{-m, -{}-memory <limit>} -- sets memory limit per client. Specified as a percentage of total system memory.
+\item \texttt{-{}-filter-name <pattern>} -- only capture clients whose program name matches the pattern.
+\item \texttt{-{}-filter-port <port>} -- only capture clients with the specified data port.
+\end{itemize}
+
+Usage example:
+
+\begin{lstlisting}[language=sh]
+$ tracy-capture-daemon -o ./traces
+[3 clients] Listening on 0.0.0.0:8086... Press Ctrl+C to stop
+
+  [1] myapp @ 192.168.1.10:9086    45.2 Mbps | 234 MB | 12.3 s
+  [2] server @ 192.168.1.11:9086   38.7 Mbps | 189 MB | 11.8 s
+  [3] worker @ 192.168.1.12:9086   22.1 Mbps | 145 MB | 10.2 s
+
+Total: 106.0 Mbps | 568 MB | Mem: 321 MB
+\end{lstlisting}
+
+Each client is captured to a separate file in the output directory, named according to the pattern \texttt{<program>\_<ip>\_<port>.tracy}. If a client reconnects, a sequence number is appended (e.g., \texttt{myapp\_192.168.1.10\_9086\_1.tracy}).
+
+Press \keys{\ctrl + C} to stop discovery and gracefully shut down all active captures. Each capture thread will finish writing its trace file before the daemon exits.
+
+\subsection{Merging trace files}
+\label{mergingtraces}
+
+When you have captured multiple traces using the capture daemon, you can combine them into a single trace file using the \texttt{tracy-merge} utility in the \texttt{merge} directory. This is useful for analyzing a multi-process application in a single view.
+
+The tool accepts the following parameters:
+
+\begin{itemize}
+  \item \texttt{-o, -{}-output <file>} -- Output file path (required)
+  \item \texttt{-f, -{}-force} -- Overwrite output file if it exists
+  \item \texttt{-h, -{}-help} -- Display a help message
+\end{itemize}
+
+Usage example:
+
+\begin{lstlisting}[language=sh]
+$ tracy-merge -o merged.tracy trace1.tracy trace2.tracy trace3.tracy
+\end{lstlisting}
+
+To prevent thread ID collisions between traces from different processes, thread names are prefixed with the process name. If the same process and thread name appear in multiple traces, the PID is included for disambiguation (e.g., \texttt{myapp[12345]/MainThread}). See section~\ref{importingdata} for details on how PID+TID pairs are handled.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Limitations}
+\begin{itemize}
+\item Time is \textbf{not synchronized} between input traces. The tool is designed for merging traces captured simultaneously (e.g., from a multi-process application). Merging traces from different capture sessions or different machines will result in misaligned timestamps.
+\item The tool uses the Import API, which only preserves zones, messages, and plots. The following data is \textbf{lost} during merge:
+  \begin{itemize}
+    \item GPU zones
+    \item Memory allocation events
+    \item Callstacks
+    \item Lock events
+    \item Context switches
+    \item Frame images
+  \end{itemize}
+\item Plots always use the \texttt{Number} format, regardless of the original format specification.
+\end{itemize}
+\end{bclogo}
+
 \subsection{Interactive profiling}
 \label{interactiveprofiling}
 
@@ -4915,47 +4987,6 @@ logo=\bcattention
 \begin{itemize}
 \item Tracy is a single-process profiler. Should the imported trace contain PID entries, each PID+TID pair will create a new \emph{pseudo-TID} number, which the profiler will then decode into a PID+TID pair in thread labels. If you want to preserve the original TID numbers, your traces should omit PID entries.
 \item The imported data may be severely limited, either by not mapping directly to the data structures used by Tracy or by following undocumented practices.
-\end{itemize}
-\end{bclogo}
-
-\section{Merging trace files}
-\label{mergingtraces}
-
-You can combine multiple .tracy files into a single trace using the \texttt{tracy-merge} command-line utility in the \texttt{merge} directory. This is useful when you have captured profiling data from multiple processes and want to analyze them together.
-
-The tool accepts the following parameters:
-
-\begin{itemize}
-  \item \texttt{-o, -{}-output <file>} -- Output file path (required)
-  \item \texttt{-f, -{}-force} -- Overwrite output file if it exists
-  \item \texttt{-h, -{}-help} -- Display a help message
-\end{itemize}
-
-Usage example:
-
-\begin{lstlisting}[language=sh]
-$ tracy-merge -o merged.tracy trace1.tracy trace2.tracy trace3.tracy
-\end{lstlisting}
-
-To prevent thread ID collisions between traces from different processes, thread names are prefixed with the process name. If the same process and thread name appear in multiple traces, the PID is included for disambiguation (e.g., \texttt{myapp[12345]/MainThread}). See section~\ref{importingdata} for details on how PID+TID pairs are handled.
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcattention
-]{Limitations}
-\begin{itemize}
-\item Time is \textbf{not synchronized} between input traces. The tool is designed for merging traces captured simultaneously (e.g., from a multi-process application). Merging traces from different capture sessions or different machines will result in misaligned timestamps.
-\item The tool uses the Import API, which only preserves zones, messages, and plots. The following data is \textbf{lost} during merge:
-  \begin{itemize}
-    \item GPU zones
-    \item Memory allocation events
-    \item Callstacks
-    \item Lock events
-    \item Context switches
-    \item Frame images
-  \end{itemize}
-\item Plots always use the \texttt{Number} format, regardless of the original format specification.
 \end{itemize}
 \end{bclogo}
 

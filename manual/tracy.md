@@ -33,7 +33,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 
 - Chapter [7](#importingdata), *Importing external profiling data*, documents how to import data from other profilers.
 
-- Chapter [9](#configurationfiles), *Configuration files*, gives information on the profiler settings.
+- Chapter [8](#configurationfiles), *Configuration files*, gives information on the profiler settings.
 
 # Quick-start guide {#quick-start-guide .unnumbered}
 
@@ -1349,7 +1349,7 @@ To mark memory events, use the `TracyAlloc(ptr, size)` and `TracyFree(ptr)` macr
 In some rare cases (e.g., destruction of TLS block), events may be reported after the profiler is no longer available, which would lead to a crash. To work around this issue, you may use `TracySecureAlloc` and `TracySecureFree` variants of the macros.
 
 ::: bclogo
-Important Each tracked memory-free event must also have a corresponding memory allocation event. Tracy will terminate the profiling session if this assumption is broken (see section [4.7](#instrumentationfailures)). If you encounter this issue, you may want to check for:
+Important Each tracked memory-free event must also have a corresponding memory allocation event. Tracy will terminate the profiling session if this assumption is broken (see section [4.9](#instrumentationfailures)). If you encounter this issue, you may want to check for:
 
 - Mismatched `malloc`/`new` or `free`/`delete`.
 
@@ -1862,7 +1862,7 @@ In typical use cases the zone context data structure is hidden from your view, r
 
 #### Zone validation
 
-Since all C API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.7](#instrumentationfailures) for more information.
+Since all C API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.9](#instrumentationfailures) for more information.
 
 However, the validation comes with a performance cost, which you may not want to pay. Therefore, if you are *entirely sure* that the instrumentation is not broken in any way, you may use the `TRACY_NO_VERIFY` macro, which will disable the validation code.
 
@@ -2265,7 +2265,7 @@ Zone text and name, as well as color and value, may be set by using the `tracy_z
 
 #### Zone validation
 
-Since all Fortran API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.7](#instrumentationfailures) for more information.
+Since all Fortran API instrumentation has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section [4.9](#instrumentationfailures) for more information.
 
 However, the validation comes with a performance cost, which you may not want to pay. Therefore, if you are *entirely sure* that the instrumentation is not broken in any way, you may use the `TRACY_NO_VERIFY` macro, which will disable the validation code.
 
@@ -2465,7 +2465,7 @@ Tracy will capture small chunks of the executable image during profiling to enab
 
 The discovery of previously unseen executable code may result in reduced performance of real-time capture. This is especially true when the profiling session had just started. However, such behavior is expected and will go back to normal after several moments.
 
-It would be best to be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. You can disable the collection of program code by compiling the profiled application with the `TRACY_NO_CODE_TRANSFER` define. You can also strip the code from a saved trace using the `update` utility (section [4.5.4](#dataremoval)).
+It would be best to be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. You can disable the collection of program code by compiling the profiled application with the `TRACY_NO_CODE_TRANSFER` define. You can also strip the code from a saved trace using the `update` utility (section [4.7.4](#dataremoval)).
 
 ::: bclogo
 Important For proper program code retrieval, you can unload no module used by the application during the runtime. See section [3.1.1](#datalifetime) for an explanation.
@@ -2542,11 +2542,86 @@ The *timer resolution* parameter shows the calibration results of timers used by
 
 You can disconnect from the client and save the captured trace by pressing Ctrl + C. If you prefer to disconnect after a fixed time, use the `-s seconds` parameter.
 
+## Multi-client capture daemon
+
+If you want to capture profiling data from multiple clients simultaneously, you can use the `tracy-capture-daemon` utility. This tool listens for UDP broadcast messages from Tracy clients on the network, automatically discovers available clients, and captures each one to a separate file.
+
+The daemon accepts the following parameters:
+
+- `-o, --output <dir>` -- output directory for captured traces (required, created if it doesn't exist).
+
+- `-p, --port <port>` -- UDP listen port (default: 8086).
+
+- `-m, --memory <limit>` -- sets memory limit per client. Specified as a percentage of total system memory.
+
+- `--filter-name <pattern>` -- only capture clients whose program name matches the pattern.
+
+- `--filter-port <port>` -- only capture clients with the specified data port.
+
+Usage example:
+
+``` {.sh language="sh"}
+$ tracy-capture-daemon -o ./traces
+[3 clients] Listening on 0.0.0.0:8086... Press Ctrl+C to stop
+
+  [1] myapp @ 192.168.1.10:9086    45.2 Mbps | 234 MB | 12.3 s
+  [2] server @ 192.168.1.11:9086   38.7 Mbps | 189 MB | 11.8 s
+  [3] worker @ 192.168.1.12:9086   22.1 Mbps | 145 MB | 10.2 s
+
+Total: 106.0 Mbps | 568 MB | Mem: 321 MB
+```
+
+Each client is captured to a separate file in the output directory, named according to the pattern `<program>_<ip>_<port>.tracy`. If a client reconnects, a sequence number is appended (e.g., `myapp_192.168.1.10_9086_1.tracy`).
+
+Press Ctrl + C to stop discovery and gracefully shut down all active captures. Each capture thread will finish writing its trace file before the daemon exits.
+
+## Merging trace files {#mergingtraces}
+
+When you have captured multiple traces using the capture daemon, you can combine them into a single trace file using the `tracy-merge` utility in the `merge` directory. This is useful for analyzing a multi-process application in a single view.
+
+The tool accepts the following parameters:
+
+- `-o, --output <file>` -- Output file path (required)
+
+- `-f, --force` -- Overwrite output file if it exists
+
+- `-h, --help` -- Display a help message
+
+Usage example:
+
+``` {.sh language="sh"}
+$ tracy-merge -o merged.tracy trace1.tracy trace2.tracy trace3.tracy
+```
+
+To prevent thread ID collisions between traces from different processes, thread names are prefixed with the process name. If the same process and thread name appear in multiple traces, the PID is included for disambiguation (e.g., `myapp[12345]/MainThread`). See section [7](#importingdata) for details on how PID+TID pairs are handled.
+
+::: bclogo
+Limitations
+
+- Time is **not synchronized** between input traces. The tool is designed for merging traces captured simultaneously (e.g., from a multi-process application). Merging traces from different capture sessions or different machines will result in misaligned timestamps.
+
+- The tool uses the Import API, which only preserves zones, messages, and plots. The following data is **lost** during merge:
+
+  - GPU zones
+
+  - Memory allocation events
+
+  - Callstacks
+
+  - Lock events
+
+  - Context switches
+
+  - Frame images
+
+- Plots always use the `Number` format, regardless of the original format specification.
+:::
+
 ## Interactive profiling {#interactiveprofiling}
 
 If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility `tracy-profiler` contained in the `profiler` directory. After starting the application, you will be greeted with a welcome dialog (figure [8](#welcomedialog)), presenting a bunch of useful links ((Book icon) *User manual*, (GlobeAmericas icon) *Web*, (Comments icon) *Join chat* and (Heart icon) *Sponsor*). The (GlobeAmericas icon) *Web* button opens a drop-down list with links to the profiler's *(Home icon) Home page* and a bunch of *(Video icon) Feature videos*.
 
-The *(Wrench icon) Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.2.1](#aboutwindow)).
+The *(Wrench icon) Wrench* button opens the about dialog, which also contains a number of global settings you may want to tweak (section [4.4.1](#aboutwindow)).
 
 The client *address entry* field and the (Wifi icon) *Connect* button are used to connect to a running client[^64]. You can use the connection history button (CaretDown icon) to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the (MousePointer icon) mouse cursor over an entry and pressing the Delete button on the keyboard.
 
@@ -2587,7 +2662,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 - *Scroll multipliers* -- Allows you to fine-tune the sensitivity of the horizontal and vertical scroll in the timeline. The default values ($1.0$) are an attempt at the best possible settings, but differences in hardware manufacturers, platform implementations, and user expectations may require adjustments.
 
-- *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.4](#memoryusage) for more information.
+- *Memory limit* -- When enabled, profiler will stop recording data when memory usage exceeds the specified percentage of the total system memory. This mechanism does not measure the current system memory usage or limits. The upper value is not capped, as you may use swap. See section [4.6](#memoryusage) for more information.
 
 - *Enable achievements* -- Enables achievements system, accessed through the (Star icon) icon in the bottom right corner of the profiler window. It is essentially a gamified tutorial system designed to teach new users how to use the profiler.
 
@@ -2599,7 +2674,7 @@ You can also adjust some settings that affect global profiler behavior in this w
 
 If this is a real-time capture, you will also have access to the connection information pop-up (figure [9](#connectioninfo)) through the *(Wifi icon) Connection* button, with the capture status similar to the one displayed by the command-line utility. This dialog also shows the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The *Query backlog* consists of two numbers. The first represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. The second one shows how many queries are in-flight, meaning requests sent to the client but not yet answered. While these numbers drain down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the (Save icon) *Save trace* button to save the current profile data to a file[^67]. The available compression modes are discussed in sections [4.5.1](#archival) and [4.5.3](#fidict). Use the (Plug icon) *Stop* button to disconnect from the client[^68]. The (ExclamationTriangle icon) *Discard* button is used to discard current trace.
+You can use the (Save icon) *Save trace* button to save the current profile data to a file[^67]. The available compression modes are discussed in sections [4.7.1](#archival) and [4.7.3](#fidict). Use the (Plug icon) *Stop* button to disconnect from the client[^68]. The (ExclamationTriangle icon) *Discard* button is used to discard current trace.
 
 [^67]: You should take this literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.
 
@@ -2799,7 +2874,7 @@ In some cases, your program may be incorrectly instrumented. For example, you co
 
 You have instrumented your application, and you have captured a profiling trace. Now you want to look at the collected data. You can do this in the application contained in the `profiler` directory.
 
-The workflow is identical, whether you are viewing a previously saved trace or if you're performing a live capture, as described in section [4.2](#interactiveprofiling).
+The workflow is identical, whether you are viewing a previously saved trace or if you're performing a live capture, as described in section [4.4](#interactiveprofiling).
 
 ## Time display
 
@@ -2822,7 +2897,7 @@ The main profiler window is split into three sections, as seen in figure [14](#
 
 The control menu (top row of buttons) provides access to various profiler features. The buttons perform the following actions:
 
-- *(Wifi icon) Connection* -- Opens the connection information popup (see section [4.2.2](#connectionpopup)). Only available when live capture is in progress.
+- *(Wifi icon) Connection* -- Opens the connection information popup (see section [4.4.2](#connectionpopup)). Only available when live capture is in progress.
 
 - *(PowerOff icon) Close* -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by *(Pause icon) Pause*, *(Play icon) Resume* and *(Square icon) Stopped* buttons.
 
@@ -2864,7 +2939,7 @@ The control menu (top row of buttons) provides access to various profiler featur
 
 - *(SearchPlus icon) Display scale* -- Enables run-time resizing of the displayed content. This may be useful in environments with potentially reduced visibility, e.g. during a presentation. Note that this setting is independent to the UI scaling coming from the system DPI settings. The scale will be preserved across multiple profiler sessions if the *Save UI scale* option is selected in global settings.
 
-- *(Robot icon) Tracy Assist* -- Shows the automated assistant chat window (section [5.25](#tracyassist)). Only available if enabled in global settings (section [4.2.1](#aboutwindow)).
+- *(Robot icon) Tracy Assist* -- Shows the automated assistant chat window (section [5.25](#tracyassist)). Only available if enabled in global settings (section [4.4.1](#aboutwindow)).
 
 [^70]: Or perform any action on the timeline view, apart from changing the zoom level.
 
@@ -2878,7 +2953,7 @@ The following three items show the *(Eye icon) view time range*, the *(Databas
 
 #### Notification area
 
-The notification area displays informational notices, for example, how long it took to load a trace from the disk. A pulsating dot next to the (Tasks icon) icon indicates that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling)), a *(Skull icon) crash* icon will be displayed. The red (SatelliteDish icon) icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.2.2](#connectionpopup) for more information).
+The notification area displays informational notices, for example, how long it took to load a trace from the disk. A pulsating dot next to the (Tasks icon) icon indicates that some background tasks are being performed that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section [2.5](#crashhandling)), a *(Skull icon) crash* icon will be displayed. The red (SatelliteDish icon) icon indicates that queries are currently being backlogged, while the same yellow icon indicates that some queries are currently in-flight (see chapter [4.4.2](#connectionpopup) for more information).
 
 If the drawing of timeline elements was disabled in the options menu (section [5.4](#options)), the profiler will use the following orange icons to remind you about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section [5.2.3.3](#zoneslocksplots)) are not taken into account here.
 
@@ -3155,7 +3230,7 @@ Annotations are displayed on the timeline, as presented in figure [21](#annotat
 <figcaption>Annotation region.</figcaption>
 </figure>
 
-Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the user data files, as described in section [9.2](#tracespecific).
+Please note that while the annotations persist between profiling sessions, they are not saved in the trace but in the user data files, as described in section [8.2](#tracespecific).
 
 ## Options menu {#options}
 
@@ -3907,7 +3982,7 @@ With Tracy Profiler, you can use GenAI features to get help using the profiler o
 
 The automated assistant can search the user manual to answer your questions about the profiler. It can also read the source code when you ask about program performance or algorithms. It has the capacity for access to Wikipedia, the ability to search the web, and the capability to access web pages in response to general questions.
 
-This feature can be completely disabled in the *Global settings*, as described in section [4.2.1](#aboutwindow).
+This feature can be completely disabled in the *Global settings*, as described in section [4.4.1](#aboutwindow).
 
 ::: bclogo
 Caution Remember that the responses you receive from the automated assistant are the result of complex yet limited algorithms. While the answers may be convincing and in most cases reliable, you should always verify their accuracy.
@@ -4167,48 +4242,6 @@ Limitations
 - Tracy is a single-process profiler. Should the imported trace contain PID entries, each PID+TID pair will create a new *pseudo-TID* number, which the profiler will then decode into a PID+TID pair in thread labels. If you want to preserve the original TID numbers, your traces should omit PID entries.
 
 - The imported data may be severely limited, either by not mapping directly to the data structures used by Tracy or by following undocumented practices.
-:::
-
-# Merging trace files {#mergingtraces}
-
-You can combine multiple .tracy files into a single trace using the `tracy-merge` command-line utility in the `merge` directory. This is useful when you have captured profiling data from multiple processes and want to analyze them together.
-
-The tool accepts the following parameters:
-
-- `-o, --output <file>` -- Output file path (required)
-
-- `-f, --force` -- Overwrite output file if it exists
-
-- `-h, --help` -- Display a help message
-
-Usage example:
-
-``` {.sh language="sh"}
-$ tracy-merge -o merged.tracy trace1.tracy trace2.tracy trace3.tracy
-```
-
-To prevent thread ID collisions between traces from different processes, thread names are prefixed with the process name. If the same process and thread name appear in multiple traces, the PID is included for disambiguation (e.g., `myapp[12345]/MainThread`). See section [7](#importingdata) for details on how PID+TID pairs are handled.
-
-::: bclogo
-Limitations
-
-- Time is **not synchronized** between input traces. The tool is designed for merging traces captured simultaneously (e.g., from a multi-process application). Merging traces from different capture sessions or different machines will result in misaligned timestamps.
-
-- The tool uses the Import API, which only preserves zones, messages, and plots. The following data is **lost** during merge:
-
-  - GPU zones
-
-  - Memory allocation events
-
-  - Callstacks
-
-  - Lock events
-
-  - Context switches
-
-  - Frame images
-
-- Plots always use the `Number` format, regardless of the original format specification.
 :::
 
 # Configuration files {#configurationfiles}

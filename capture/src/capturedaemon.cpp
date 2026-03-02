@@ -1,7 +1,6 @@
 #ifdef _WIN32
 #  include <windows.h>
 #else
-#  include <signal.h>
 #  include <unistd.h>
 #endif
 
@@ -12,6 +11,7 @@
 #include <filesystem>
 #include <map>
 #include <mutex>
+#include <signal.h>
 #include <string>
 #include <thread>
 #include <unordered_set>

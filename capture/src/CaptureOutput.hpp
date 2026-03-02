@@ -1,7 +1,7 @@
 #ifndef __CAPTUREOUTPUT_HPP__
 #define __CAPTUREOUTPUT_HPP__
 
-#include "../../server/TracyWorker.hpp"
+#include <stdint.h>
 
 #define ANSI_RESET "\033[0m"
 #define ANSI_BOLD "\033[1m"
@@ -13,6 +13,8 @@
 #define ANSI_MAGENTA "\033[35m"
 #define ANSI_CYAN "\033[36m"
 #define ANSI_ERASE_LINE "\033[2K"
+
+namespace tracy { class Worker; }
 
 void InitTerminalDetection();
 bool IsTerminal();

@@ -11,12 +11,14 @@
 #include <cstdio>
 #include <cstring>
 #include <inttypes.h>
+#include <thread>
 
 #include "CaptureOutput.hpp"
 #include "../../public/common/TracyProtocol.hpp"
 #include "../../public/common/TracyStackFrames.hpp"
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyPrint.hpp"
+#include "../../server/TracyWorker.hpp"
 
 static bool s_isTerminal = false;
 

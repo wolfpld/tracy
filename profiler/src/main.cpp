@@ -44,6 +44,7 @@
 #include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyFileHeader.hpp"
 #include "../../server/TracyFileRead.hpp"
+#include "../../server/TracyBroadcast.hpp"
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracySysUtil.hpp"
 #include "../../server/TracyWorker.hpp"
@@ -400,76 +401,15 @@ static void UpdateBroadcastClients()
             {
                 auto msg = broadcastListen->Read( len, addr, 0 );
                 if( !msg ) break;
-                if( len > sizeof( tracy::BroadcastMessage ) ) continue;
-                uint16_t broadcastVersion;
-                memcpy( &broadcastVersion, msg, sizeof( uint16_t ) );
-                if( broadcastVersion <= tracy::BroadcastVersion )
+                auto parsed = tracy::ParseBroadcastMessage( msg, len );
+                if( parsed.has_value() )
                 {
-                    uint32_t protoVer;
-                    char procname[tracy::WelcomeMessageProgramNameSize];
-                    int32_t activeTime;
-                    uint16_t listenPort;
-                    uint64_t pid;
-
-                    switch( broadcastVersion )
-                    {
-                    case 3:
-                    {
-                        tracy::BroadcastMessage bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = bm.listenPort;
-                        pid = bm.pid;
-                        break;
-                    }
-                    case 2:
-                    {
-                        if( len > sizeof( tracy::BroadcastMessage_v2 ) ) continue;
-                        tracy::BroadcastMessage_v2 bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = bm.listenPort;
-                        pid = 0;
-                        break;
-                    }
-                    case 1:
-                    {
-                        if( len > sizeof( tracy::BroadcastMessage_v1 ) ) continue;
-                        tracy::BroadcastMessage_v1 bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = bm.listenPort;
-                        pid = 0;
-                        break;
-                    }
-                    case 0:
-                    {
-                        if( len > sizeof( tracy::BroadcastMessage_v0 ) ) continue;
-                        tracy::BroadcastMessage_v0 bm;
-                        memcpy( &bm, msg, len );
-                        protoVer = bm.protocolVersion;
-                        strcpy( procname, bm.programName );
-                        activeTime = bm.activeTime;
-                        listenPort = 8086;
-                        pid = 0;
-                        break;
-                    }
-                    default:
-                        assert( false );
-                        break;
-                    }
-
+                    auto& pm = parsed.value();
                     auto address = addr.GetText();
                     const auto ipNumerical = addr.GetNumber();
-                    const auto clientId = uint64_t( ipNumerical ) | ( uint64_t( listenPort ) << 32 );
+                    const auto clientId = tracy::ClientUniqueID( addr, pm.listenPort );
                     auto it = clients.find( clientId );
-                    if( activeTime >= 0 )
+                    if( pm.activeTime >= 0 )
                     {
                         if( it == clients.end() )
                         {
@@ -483,19 +423,19 @@ static void UpdateBroadcastClients()
                                     auto it = resolvMap.find( ip );
                                     assert( it != resolvMap.end() );
                                     std::swap( it->second, name );
-                                    } );
+                                } );
                             }
                             resolvLock.unlock();
-                            clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, pid, procname, std::move( ip ) } );
+                            clients.emplace( clientId, ClientData { time, pm.protocolVersion, pm.activeTime, pm.listenPort, pm.pid, pm.programName, std::move( ip ) } );
                         }
                         else
                         {
                             it->second.time = time;
-                            it->second.activeTime = activeTime;
-                            it->second.port = listenPort;
-                            it->second.pid = pid;
-                            it->second.protocolVersion = protoVer;
-                            if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                            it->second.activeTime = pm.activeTime;
+                            it->second.port = pm.listenPort;
+                            it->second.pid = pm.pid;
+                            it->second.protocolVersion = pm.protocolVersion;
+                            if( strcmp( it->second.procName.c_str(), pm.programName ) != 0 ) it->second.procName = pm.programName;
                         }
                     }
                     else if( it != clients.end() )

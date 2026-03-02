@@ -50,7 +50,7 @@ struct ClientStats
 
 struct ClientSession
 {
-    uint64_t id;
+    std::string id;
     std::string programName;
     std::string address;
     uint16_t port;
@@ -62,7 +62,7 @@ struct ClientSession
     std::atomic<uint64_t> fileSize{0};
 };
 
-static std::map<uint64_t, ClientSession*> g_clients;
+static std::map<std::string, ClientSession*> g_clients;
 static std::unordered_set<std::string> g_outputFiles;
 
 [[noreturn]] void Usage()
@@ -353,7 +353,7 @@ int main( int argc, char** argv )
             auto parsed = tracy::ParseBroadcastMessage( msg, len );
             if( parsed )
             {
-                uint64_t clientId = tracy::ClientUniqueID( clientAddr, parsed->listenPort );
+                std::string clientId = std::to_string( parsed->pid ) + "_" + clientAddr.GetText() + "_" + std::to_string( parsed->listenPort );
                 
                 bool isNew = false;
                 {

@@ -2878,7 +2878,7 @@ void Worker::Exec()
             if( m_data.mainThreadWantsLock )
             {
                 // Hand over the lock to the main thread to avoid starving it.
-                // Wait for a millisecond maximum to avoid the opposite 
+                // Wait for a millisecond maximum to avoid the opposite
                 // problem where main thread would never let us execute
                 m_data.lockCv.wait_for( lk, std::chrono::milliseconds( 1 ) );
             }
@@ -6935,7 +6935,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
                 if ( data.size() > 1 )
                 {
                     // Sometimes the OS tell us it scheduled a thread that was still alive but on the
-                    // verge of being switched out. We thus end up with `wakeup < switchout`. 
+                    // verge of being switched out. We thus end up with `wakeup < switchout`.
                     // So instead, compare with the previous wakeup.
                     const auto previousWakeup = data[data.size() - 2].WakeupVal();
                     if ( previousWakeup <= wakeupTime && wakeupTime <= time )

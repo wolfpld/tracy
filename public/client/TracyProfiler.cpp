@@ -2066,6 +2066,8 @@ void Profiler::Worker()
                 connActive = HandleServerQuery();
                 if( !connActive ) break;
             }
+            if ( !m_symbolQueue.empty() )
+                m_symbolQueue.notify();
             if( !connActive || ShouldExit() ) break;
         }
         if( ShouldExit() ) break;
@@ -3657,7 +3659,7 @@ void Profiler::SymbolWorker()
                 s_symbolThreadGone.store( true, std::memory_order_release );
                 return;
             }
-            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+            m_symbolQueue.wait( 20 );
         }
     }
 }

@@ -542,7 +542,8 @@ std::string TracyLlmTools::SearchWeb( std::string query )
         catch( const nlohmann::json::exception& e ) {}
     }
 
-    const auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + query );
+    auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + query );
+    if( response.starts_with( "Error:" ) ) return response;
 
     auto doc = ParseHtml( response );
     if( !doc ) return "Error: Failed to parse HTML";

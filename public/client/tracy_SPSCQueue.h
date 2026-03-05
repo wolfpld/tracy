@@ -128,8 +128,6 @@ private:
 private:
   size_t capacity_;
   T *slots_;
-  std::mutex mtx_;
-  std::condition_variable pending_;
 
   // Align to cache line size in order to avoid false sharing
   // readIdxCache_ and writeIdxCache_ is used to reduce the amount of cache

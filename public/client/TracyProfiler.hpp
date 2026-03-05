@@ -1051,6 +1051,8 @@ private:
 #endif
 
     SPSCQueue<SymbolQueueItem> m_symbolQueue;
+    std::condition_variable m_symbolQueueSignal;
+    std::mutex m_symbolQueueMutex;
 
     std::atomic<uint64_t> m_frameCount;
     std::atomic<bool> m_isConnected;

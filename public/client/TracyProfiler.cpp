@@ -2066,6 +2066,7 @@ void Profiler::Worker()
                 connActive = HandleServerQuery();
                 if( !connActive ) break;
             }
+            if ( !m_symbolQueue.empty() ) m_symbolQueueSignal.notify_one();
             if( !connActive || ShouldExit() ) break;
         }
         if( ShouldExit() ) break;
@@ -3657,7 +3658,10 @@ void Profiler::SymbolWorker()
                 s_symbolThreadGone.store( true, std::memory_order_release );
                 return;
             }
-            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+            // Symbol Worker is idle: wait for Profiler Worker to enqueue more symbol queries
+            // (having a timeout ensures progress even if notifications are missed)
+            std::unique_lock<std::mutex> lock( m_symbolQueueMutex );
+            m_symbolQueueSignal.wait_for( lock, std::chrono::milliseconds( 20 ), [this]() { return !m_symbolQueue.empty(); } );
         }
     }
 }

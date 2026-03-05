@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <atomic>
+#include <condition_variable>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>

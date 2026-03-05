@@ -2066,8 +2066,7 @@ void Profiler::Worker()
                 connActive = HandleServerQuery();
                 if( !connActive ) break;
             }
-            if ( !m_symbolQueue.empty() )
-                m_symbolQueueSignal.notify_one();
+            if ( !m_symbolQueue.empty() ) m_symbolQueueSignal.notify_one();
             if( !connActive || ShouldExit() ) break;
         }
         if( ShouldExit() ) break;

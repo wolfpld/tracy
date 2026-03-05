@@ -383,7 +383,7 @@ static size_t WriteFn( void* _data, size_t size, size_t num, void* ptr )
     return sz;
 }
 
-std::string TracyLlmTools::FetchWebPage( const std::string& url, bool cache )
+std::string TracyLlmTools::FetchHttp( const std::string& url, const std::vector<const char*>& headers, bool cache )
 {
     auto it = m_webCache.find( url );
     if( it != m_webCache.end() ) return it->second;
@@ -402,7 +402,12 @@ std::string TracyLlmTools::FetchWebPage( const std::string& url, bool cache )
     curl_easy_setopt( curl, CURLOPT_WRITEDATA, &buf );
     curl_easy_setopt( curl, CURLOPT_USERAGENT, s_config.llmUserAgent.c_str() );
 
+    struct curl_slist* headerList = nullptr;
+    for( auto& hdr : headers ) headerList = curl_slist_append( headerList, hdr );
+    if( headerList ) curl_easy_setopt( curl, CURLOPT_HTTPHEADER, headerList );
+
     auto res = curl_easy_perform( curl );
+    if( headerList ) curl_slist_free_all( headerList );
 
     std::string response;
     if( res != CURLE_OK )
@@ -433,7 +438,7 @@ std::string TracyLlmTools::SearchWikipedia( std::string query, const std::string
     NetworkCheck;
 
     std::ranges::replace( query, ' ', '+' );
-    const auto response = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=10" );
+    const auto response = FetchHttp( "https://" + lang + ".wikipedia.org/w/rest.php/v1/search/page?q=" + UrlEncode( query ) + "&limit=10" );
 
     auto json = nlohmann::json::parse( response );
     if( !json.contains( "pages" ) ) return "No results found";
@@ -448,7 +453,7 @@ std::string TracyLlmTools::SearchWikipedia( std::string query, const std::string
 
         const auto key = page["key"].get_ref<const std::string&>();
 
-        auto summary = FetchWebPage( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
+        auto summary = FetchHttp( "https://" + lang + ".wikipedia.org/api/rest_v1/page/summary/" + key );
         auto summaryJson = nlohmann::json::parse( summary );
 
         nlohmann::json j = {
@@ -469,7 +474,7 @@ std::string TracyLlmTools::GetWikipedia( std::string page, const std::string& la
     NetworkCheck;
 
     std::ranges::replace( page, ' ', '_' );
-    auto res = FetchWebPage( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
+    auto res = FetchHttp( "https://" + lang + ".wikipedia.org/w/rest.php/v1/page/" + page );
 
     return TrimString( std::move( res ) );
 }
@@ -479,7 +484,7 @@ std::string TracyLlmTools::GetDictionary( std::string word, const std::string& l
     NetworkCheck;
 
     std::ranges::replace( word, ' ', '+' );
-    const auto response = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/search/page?q=" + UrlEncode( word ) + "&limit=1" );
+    const auto response = FetchHttp( "https://" + lang + ".wiktionary.org/w/rest.php/v1/search/page?q=" + UrlEncode( word ) + "&limit=1" );
 
     auto json = nlohmann::json::parse( response );
     if( !json.contains( "pages" ) ) return "No results found";
@@ -491,7 +496,7 @@ std::string TracyLlmTools::GetDictionary( std::string word, const std::string& l
     if( !page0.contains( "key" ) ) return "No results found";
 
     const auto key = page0["key"].get_ref<const std::string&>();
-    auto res = FetchWebPage( "https://" + lang + ".wiktionary.org/w/rest.php/v1/page/" + key );
+    auto res = FetchHttp( "https://" + lang + ".wiktionary.org/w/rest.php/v1/page/" + key );
 
     return TrimString( std::move( res ) );
 }
@@ -528,7 +533,7 @@ std::string TracyLlmTools::SearchWeb( std::string query )
 
 std::string TracyLlmTools::SearchWebGoogle( std::string query )
 {
-    const auto response = FetchWebPage( "https://customsearch.googleapis.com/customsearch/v1?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
+    const auto response = FetchHttp( "https://customsearch.googleapis.com/customsearch/v1?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
     try
     {
         auto json = nlohmann::json::parse( response );
@@ -554,7 +559,7 @@ std::string TracyLlmTools::SearchWebGoogle( std::string query )
 
 std::string TracyLlmTools::SearchWebDuckDuckGo( std::string query )
 {
-    auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + query );
+    auto response = FetchHttp( "https://lite.duckduckgo.com/lite?q=" + query );
     if( response.starts_with( "Error:" ) ) return response;
 
     auto doc = ParseHtml( response );
@@ -654,7 +659,8 @@ std::string TracyLlmTools::GetWebpage( const std::string& url )
 {
     NetworkCheck;
 
-    auto data = FetchWebPage( url, false );
+    // Disable caching of raw HTML, we will cache the cleaned up version down below
+    auto data = FetchHttp( url, {}, false );
     auto doc = ParseHtml( data );
     if( !doc ) return "Error: Failed to parse HTML";
 

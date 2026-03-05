@@ -24,9 +24,7 @@ SOFTWARE.
 
 #include <atomic>
 #include <cassert>
-#include <condition_variable>
 #include <cstddef>
-#include <mutex>
 #include <stdexcept>
 #include <type_traits> // std::enable_if, std::is_*_constructible
 
@@ -120,21 +118,6 @@ public:
   }
 
   size_t capacity() const noexcept { return capacity_ - 1; }
-
-  void notify()
-  {
-      pending_.notify_one();
-  }
-
-  void wait( int timeout_ms )
-  {
-      // enforce a minimum timeout, this way there's no need to be overzealous
-      // about missing notifications
-      timeout_ms = ( timeout_ms > 0 ) ? timeout_ms : 1;
-      std::chrono::milliseconds timeout{ timeout_ms };
-      std::unique_lock<std::mutex> lock( mtx_ );
-      pending_.wait_for( lock, timeout, [this]() { return !empty(); } );
-  }
 
 private:
   static constexpr size_t kCacheLineSize = 64;

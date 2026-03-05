@@ -515,33 +515,45 @@ static void ReplaceAll( std::string& str, std::string_view from, std::string_vie
 std::string TracyLlmTools::SearchWeb( std::string query )
 {
     NetworkCheck;
-
     query = UrlEncode( query );
 
     if( !s_config.llmSearchApiKey.empty() && !s_config.llmSearchIdentifier.empty() )
     {
-        const auto response = FetchWebPage( "https://customsearch.googleapis.com/customsearch/v1?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
-        try
-        {
-            auto json = nlohmann::json::parse( response );
-            if( json.contains( "items" ) && json["items"].size() != 0 )
-            {
-                nlohmann::json results;
-                for( size_t i = 0; i < json["items"].size(); i++ )
-                {
-                    auto& item = json["items"][i];
-                    nlohmann::json result;
-                    result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
-                    result["preview"] = RemoveNewline( item["snippet"].get_ref<const std::string&>() );
-                    result["url"] = RemoveNewline( item["link"].get_ref<const std::string&>() );
-                    results[i] = result;
-                }
-                return results.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
-            }
-        }
-        catch( const nlohmann::json::exception& e ) {}
+        const auto result = SearchWebGoogle( query );
+        if( !result.starts_with( "Error:" ) && !result.starts_with( "No results" ) ) return result;
     }
 
+    return SearchWebDuckDuckGo( query );
+}
+
+std::string TracyLlmTools::SearchWebGoogle( std::string query )
+{
+    const auto response = FetchWebPage( "https://customsearch.googleapis.com/customsearch/v1?key=" + s_config.llmSearchApiKey + "&cx=" + s_config.llmSearchIdentifier + "&q=" + query );
+    try
+    {
+        auto json = nlohmann::json::parse( response );
+        if( json.contains( "items" ) && json["items"].size() != 0 )
+        {
+            nlohmann::json results;
+            for( size_t i = 0; i < json["items"].size(); i++ )
+            {
+                auto& item = json["items"][i];
+                nlohmann::json result;
+                result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
+                result["preview"] = RemoveNewline( item["snippet"].get_ref<const std::string&>() );
+                result["url"] = RemoveNewline( item["link"].get_ref<const std::string&>() );
+                results[i] = result;
+            }
+            return results.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+        }
+    }
+    catch( const nlohmann::json::exception& e ) {}
+
+    return "Error: Google search failed";
+}
+
+std::string TracyLlmTools::SearchWebDuckDuckGo( std::string query )
+{
     auto response = FetchWebPage( "https://lite.duckduckgo.com/lite?q=" + query );
     if( response.starts_with( "Error:" ) ) return response;
 

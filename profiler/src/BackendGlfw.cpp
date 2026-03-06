@@ -139,10 +139,10 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
         int code = glfwGetError( &description );
         if( description ) {
             fprintf( stderr, "ERROR: Tracy (GLFW): %s\n", description );
-#           ifdef _WIN32
+#ifdef _WIN32
             MessageBoxA( NULL, description, "ERROR: Tracy (GLFW)", MB_OK );
             OutputDebugStringA( description );
-#           endif
+#endif
         }
         exit( 1 );
     }

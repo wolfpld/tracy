@@ -392,6 +392,19 @@ void TracyLlm::Draw()
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_HOUSE "##csekey" ) ) OpenWebpage( "https://developers.google.com/custom-search/v1/overview" );
 
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted( "Brave Search API Key:" );
+            ImGui::SameLine();
+            snprintf( buf, sizeof( buf ), "%s", s_config.llmSearchBraveApiKey.c_str() );
+            ImGui::SetNextItemWidth( ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize( ICON_FA_HOUSE ).x - ImGui::GetStyle().FramePadding.x * 2 - ImGui::GetStyle().ItemSpacing.x );
+            if( ImGui::InputTextWithHint( "##bravekey", "Brave API key", buf, sizeof( buf ) ) )
+            {
+                s_config.llmSearchBraveApiKey = buf;
+                SaveConfig();
+            }
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_HOUSE "##bravekey" ) ) OpenWebpage( "https://brave.com/search/api/" );
+
             ImGui::TreePop();
         }
 

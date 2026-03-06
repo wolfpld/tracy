@@ -522,6 +522,12 @@ std::string TracyLlmTools::SearchWeb( std::string query )
     NetworkCheck;
     query = UrlEncode( query );
 
+    if( !s_config.llmSearchBraveApiKey.empty() )
+    {
+        const auto result = SearchWebBrave( query );
+        if( !result.starts_with( "Error:" ) && !result.starts_with( "No results" ) ) return result;
+    }
+
     if( !s_config.llmSearchApiKey.empty() && !s_config.llmSearchIdentifier.empty() )
     {
         const auto result = SearchWebGoogle( query );
@@ -555,6 +561,50 @@ std::string TracyLlmTools::SearchWebGoogle( std::string query )
     catch( const nlohmann::json::exception& e ) {}
 
     return "Error: Google search failed";
+}
+
+std::string TracyLlmTools::SearchWebBrave( std::string query )
+{
+    const std::string header = "X-Subscription-Token: " + s_config.llmSearchBraveApiKey;
+    const std::vector<const char*> headers = { header.c_str() };
+    const auto response = FetchHttp( "https://api.search.brave.com/res/v1/web/search?q=" + query, headers );
+    try
+    {
+        auto json = nlohmann::json::parse( response );
+        nlohmann::json results;
+
+        if( json.contains( "web" ) && json["web"].contains( "results" ) && json["web"]["results"].size() != 0 )
+        {
+            auto& webResults = json["web"]["results"];
+            for( auto& item : webResults )
+            {
+                nlohmann::json result;
+                if( item.contains( "age" ) ) result["age"] = RemoveNewline( item["age"].get_ref<const std::string&>() );
+                result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
+                result["preview"] = RemoveNewline( item["description"].get_ref<const std::string&>() );
+                result["url"] = RemoveNewline( item["url"].get_ref<const std::string&>() );
+                results.emplace_back( result );
+            }
+        }
+        if( json.contains( "discussions" ) && json["discussions"].contains( "results" ) && json["discussions"]["results"].size() != 0 )
+        {
+            auto& webResults = json["discussions"]["results"];
+            for( auto& item : webResults )
+            {
+                nlohmann::json result;
+                if( item.contains( "age" ) ) result["age"] = RemoveNewline( item["age"].get_ref<const std::string&>() );
+                result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
+                result["preview"] = RemoveNewline( item["description"].get_ref<const std::string&>() );
+                result["url"] = RemoveNewline( item["url"].get_ref<const std::string&>() );
+                results.emplace_back( result );
+            }
+        }
+
+        if( !results.empty() ) return results.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+    }
+    catch( const nlohmann::json::exception& e ) {}
+
+    return "Error: Brave search failed";
 }
 
 std::string TracyLlmTools::SearchWebDuckDuckGo( std::string query )

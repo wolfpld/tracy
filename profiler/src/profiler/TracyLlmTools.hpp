@@ -56,6 +56,7 @@ private:
     std::string GetDictionary( std::string word, const std::string& lang );
     std::string SearchWeb( std::string query );
     std::string SearchWebGoogle( std::string query );
+    std::string SearchWebBrave( std::string query );
     std::string SearchWebDuckDuckGo( std::string query );
     std::string GetWebpage( const std::string& url );
     std::string SearchManual( const std::string& query, TracyLlmApi& api, bool hasEmbeddingsModel );

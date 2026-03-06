@@ -47,6 +47,7 @@ void LoadConfig()
     if( v2 = ini_get( ini, "llm", "useragent" ); v2 ) s_config.llmUserAgent = v2;
     if( v2 = ini_get( ini, "llm", "searchIdentifier" ); v2 ) s_config.llmSearchIdentifier = v2;
     if( v2 = ini_get( ini, "llm", "searchApiKey" ); v2 ) s_config.llmSearchApiKey = v2;
+    if( v2 = ini_get( ini, "llm", "searchBraveApiKey" ); v2 ) s_config.llmSearchBraveApiKey = v2;
     if( ini_sget( ini, "llm", "annotateCallstacks", "%d", &v ) ) s_config.llmAnnotateCallstacks = v;
     if( ini_sget( ini, "llm", "limitToolReplySize", "%d", &v ) ) s_config.llmLimitToolReplySize = v;
     if( ini_sget( ini, "llm", "maxToolReplySizeValue", "%d", &v ) ) s_config.llmMaxToolReplySizeValue = v;
@@ -98,6 +99,7 @@ bool SaveConfig()
     fprintf( f, "useragent = %s\n", s_config.llmUserAgent.c_str() );
     fprintf( f, "searchIdentifier = %s\n", s_config.llmSearchIdentifier.c_str() );
     fprintf( f, "searchApiKey = %s\n", s_config.llmSearchApiKey.c_str() );
+    fprintf( f, "searchBraveApiKey = %s\n", s_config.llmSearchBraveApiKey.c_str() );
     fprintf( f, "annotateCallstacks = %i\n", (int)s_config.llmAnnotateCallstacks );
     fprintf( f, "limitToolReplySize = %i\n", (int)s_config.llmLimitToolReplySize );
     fprintf( f, "maxToolReplySizeValue = %i\n", s_config.llmMaxToolReplySizeValue );

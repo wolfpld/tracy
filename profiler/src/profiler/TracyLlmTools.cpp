@@ -573,10 +573,14 @@ std::string TracyLlmTools::SearchWebBrave( std::string query )
         auto json = nlohmann::json::parse( response );
         nlohmann::json results;
 
-        if( json.contains( "web" ) && json["web"].contains( "results" ) && json["web"]["results"].size() != 0 )
-        {
-            auto& webResults = json["web"]["results"];
-            for( auto& item : webResults )
+        auto gatherResults = [&results, &json]( const char* key ) {
+            if( !json.contains( key ) ) return;
+            auto& keyItem = json[key];
+            if( !keyItem.contains( "results" ) ) return;
+            auto& resultsItem = keyItem["results"];
+            if( resultsItem.size() == 0 ) return;
+
+            for( auto& item : resultsItem )
             {
                 nlohmann::json result;
                 if( item.contains( "age" ) ) result["age"] = RemoveNewline( item["age"].get_ref<const std::string&>() );
@@ -585,20 +589,10 @@ std::string TracyLlmTools::SearchWebBrave( std::string query )
                 result["url"] = RemoveNewline( item["url"].get_ref<const std::string&>() );
                 results.emplace_back( result );
             }
-        }
-        if( json.contains( "discussions" ) && json["discussions"].contains( "results" ) && json["discussions"]["results"].size() != 0 )
-        {
-            auto& webResults = json["discussions"]["results"];
-            for( auto& item : webResults )
-            {
-                nlohmann::json result;
-                if( item.contains( "age" ) ) result["age"] = RemoveNewline( item["age"].get_ref<const std::string&>() );
-                result["title"] = RemoveNewline( item["title"].get_ref<const std::string&>() );
-                result["preview"] = RemoveNewline( item["description"].get_ref<const std::string&>() );
-                result["url"] = RemoveNewline( item["url"].get_ref<const std::string&>() );
-                results.emplace_back( result );
-            }
-        }
+        };
+
+        gatherResults( "web" );
+        gatherResults( "discussions" );
 
         if( !results.empty() ) return results.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     }

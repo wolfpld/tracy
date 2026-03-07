@@ -529,6 +529,12 @@ Socket* ListenSocket::Accept()
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
 
+        // The default send buffer size is way too small to accommodate for the amount of
+        // data that Tracy is capable of producing, causing the Profiler Worker to "block"
+        // frequently during send().
+        int buffer_size = 32 * 1024 * 1024;
+        setsockopt( sock, SOL_SOCKET, SO_SNDBUF, (char*)&buffer_size, sizeof( buffer_size ) );
+
         auto ptr = (Socket*)tracy_malloc( sizeof( Socket ) );
         new(ptr) Socket( sock );
         return ptr;

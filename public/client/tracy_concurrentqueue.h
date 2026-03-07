@@ -975,7 +975,7 @@ private:
 				auto block = this->tailBlock;
 				do {
 					block = block->next;
-					if (block->ConcurrentQueue::Block::is_empty()) {
+					if (block->is_empty()) {
 						continue;
 					}
 
@@ -1020,10 +1020,10 @@ private:
         inline void enqueue_begin_alloc(index_t currentTailIndex)
         {
             // We reached the end of a block, start a new one
-            if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::is_empty()) {
+            if (this->tailBlock != nullptr && this->tailBlock->next->is_empty()) {
                 // We can re-use the block ahead of us, it's empty!
                 this->tailBlock = this->tailBlock->next;
-                this->tailBlock->ConcurrentQueue::Block::reset_empty();
+                this->tailBlock->reset_empty();
 
                 // We'll put the block on the block index (guaranteed to be room since we're conceptually removing the
                 // last block from it first -- except instead of removing then adding, we can just overwrite).
@@ -1042,7 +1042,7 @@ private:
 
                 // Insert a new block in the circular linked list
                 auto newBlock = this->parent->ConcurrentQueue::requisition_block();
-                newBlock->ConcurrentQueue::Block::reset_empty();
+                newBlock->reset_empty();
                 if (this->tailBlock == nullptr) {
                     newBlock->next = newBlock;
                 }
@@ -1124,7 +1124,7 @@ private:
 						processData( (*block)[index], sz );
 						index += sz;
 
-						block->ConcurrentQueue::Block::set_many_empty(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
+						block->set_many_empty(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 						indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);
 					} while (index != firstIndex + actualCount);
 

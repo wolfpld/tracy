@@ -55,6 +55,7 @@ void SysTime::ReadTimes()
 
 void SysTime::ReadTimes()
 {
+    tracy::DirectAlloc lock;
     uint64_t user, nice, system;
     FILE* f = fopen( "/proc/stat", "r" );
     if( f )

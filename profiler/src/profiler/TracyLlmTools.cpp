@@ -593,6 +593,9 @@ std::string TracyLlmTools::SearchWebBrave( std::string query )
 
         gatherResults( "web" );
         gatherResults( "discussions" );
+        gatherResults( "news" );
+        gatherResults( "locations" );
+        gatherResults( "videos" );
 
         if( !results.empty() ) return results.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
     }

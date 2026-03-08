@@ -240,8 +240,11 @@ void TracyLlm::Draw()
         }
 
         ImGui::AlignTextToFramePadding();
+        if( ImGui::Checkbox( "##useFastModel", &s_config.llmSeparateFastModel ) ) SaveConfig();
+        ImGui::SameLine();
         TextDisabledUnformatted( ICON_FA_BOLT_LIGHTNING " Fast model:" );
         ImGui::SameLine();
+        if( !s_config.llmSeparateFastModel ) ImGui::BeginDisabled();
         if( models.empty() || m_fastIdx < 0 )
         {
             ImGui::TextUnformatted( "No models available" );
@@ -271,6 +274,7 @@ void TracyLlm::Draw()
                 ImGui::EndCombo();
             }
         }
+        if( !s_config.llmSeparateFastModel ) ImGui::EndDisabled();
 
         ImGui::AlignTextToFramePadding();
         TextDisabledUnformatted( ICON_FA_BOOK_BOOKMARK " Embeddings model:" );
@@ -732,7 +736,8 @@ void TracyLlm::WorkerThread()
             auto param = m_currentJob->param2;
             auto callback = m_currentJob->callback2;
             lock.unlock();
-            auto response = m_api->SendMessage( param, m_fastIdx );
+            const int modelIdx = s_config.llmSeparateFastModel ? m_fastIdx : m_modelIdx;
+            auto response = m_api->SendMessage( param, modelIdx );
             callback( response );
             lock.lock();
             break;
@@ -906,7 +911,8 @@ bool TracyLlm::QueueFastMessageLocking( const nlohmann::json& req, std::function
 // requires m_jobsLock
 bool TracyLlm::QueueFastMessage( const nlohmann::json& req, std::function<void(nlohmann::json)> callback )
 {
-    if( !m_api->IsConnected() || m_fastIdx < 0 ) return false;
+    const int modelIdx = s_config.llmSeparateFastModel ? m_fastIdx : m_modelIdx;
+    if( !m_api->IsConnected() || modelIdx < 0 ) return false;
     m_jobs.emplace_back( std::make_shared<WorkItem>( WorkItem {
         .task = Task::FastMessage,
         .callback2 = std::move( callback ),

@@ -1048,13 +1048,16 @@ void TracyLlm::SendMessage()
             }
         }
 
-        nlohmann::json req;
-        req["model"] = m_api->GetModels()[m_modelIdx].name;
-        req["messages"] = std::move( chat );
-        req["stream"] = true;
-        req["cache_prompt"] = true;
-        req["tools"] = m_toolsJson;
-        req["chat_template_kwargs"] = { { "enable_thinking", true } };
+        nlohmann::json req = {
+            { "model", m_api->GetModels()[m_modelIdx].name },
+            { "messages", std::move( chat ) },
+            { "stream", true },
+            { "cache_prompt", true },
+            { "tools", m_toolsJson },
+            { "chat_template_kwargs", {
+                { "enable_thinking", true }
+            } }
+        };
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
         m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );

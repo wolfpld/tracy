@@ -254,7 +254,10 @@ nlohmann::json TracyLlmApi::SendMessage( const nlohmann::json& chat, int modelId
 
     nlohmann::json req = {
         { "model", m_models[modelIdx].name },
-        { "messages", chat }
+        { "messages", chat },
+        { "chat_template_kwargs", {
+            { "enable_thinking", false }
+        } }
     };
 
     auto data = req.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );

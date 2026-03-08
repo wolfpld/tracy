@@ -1054,6 +1054,7 @@ void TracyLlm::SendMessage()
         req["stream"] = true;
         req["cache_prompt"] = true;
         req["tools"] = m_toolsJson;
+        req["chat_template_kwargs"] = { { "enable_thinking", true } };
         if( m_setTemperature ) req["temperature"] = m_temperature;
 
         m_api->ChatCompletion( req, [this]( const nlohmann::json& response ) -> bool { return OnResponse( response ); }, m_modelIdx );

@@ -282,7 +282,9 @@ static bool EnsureReadable( uintptr_t address )
     return mapping && EnsureReadable( *mapping );
 }
 #elif defined WIN32
+#ifdef TRACY_HAS_CNTVCT
 static_assert( TRACY_WINARM64_CNTVCT_EL0 == ARM64_CNTVCT_EL0, "ARM64_CNTVCT_EL0 mismatch" );
+#endif
 static bool EnsureReadable( uintptr_t address )
 {
     MEMORY_BASIC_INFORMATION memInfo;

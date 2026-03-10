@@ -712,6 +712,134 @@ void View::DrawFindZone()
                 if( ImGui::Button( "Reset" ) ) m_findZone.minBinVal = 1;
                 ImGui::PopStyleVar();
 
+                if( s_config.llm )
+                {
+                    constexpr int LlmBins = 32;
+
+                    auto Attach = [&]() {
+                        auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                        nlohmann::json json = {
+                            { "type", "zone_histogram" },
+                            { "count", zones.size() },
+                            { "source_location", {
+                                { "file", m_worker.GetString( srcloc.file ) },
+                                { "line", srcloc.line },
+                                { "function", m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) }
+                            } },
+                            { "statistics", {
+                                { "total", TimeToString( m_findZone.total ) },
+                                { "mean", TimeToString( m_findZone.average ) },
+                                { "median", TimeToString( m_findZone.median ) },
+                                { "p75", TimeToString( m_findZone.p75 ) },
+                                { "p90", TimeToString( m_findZone.p90 ) },
+                                { "p99", TimeToString( m_findZone.p99 ) },
+                                { "p99_9", TimeToString( m_findZone.p99_9 ) },
+                                { "min", TimeToString( m_findZone.tmin ) },
+                                { "max", TimeToString( m_findZone.tmax ) },
+                                { "hint", "These metrics are already known to the user. Do not show them." }
+                            } }
+                        };
+
+                        if( !m_findZone.range.active && m_findZone.sorted.size() > 1 )
+                        {
+                            const auto sz = m_findZone.sorted.size();
+                            const auto avg = m_findZone.average;
+                            const auto ss = zoneData.sumSq - 2. * zoneData.total * avg + avg * avg * sz;
+                            const auto sd = sqrt( ss / ( sz - 1 ) );
+                            json["statistics"]["std_dev"] = TimeToString( sd );
+                        }
+
+                        if( m_findZone.numBins > 0 && m_findZone.bins )
+                        {
+                            auto histogram = nlohmann::json::array();
+                            const auto& bins = m_findZone.bins;
+                            const auto& binTime = m_findZone.binTime;
+                            const auto numBins = m_findZone.numBins;
+
+                            int64_t aggBins[LlmBins] = {};
+                            int64_t aggTime[LlmBins] = {};
+
+                            for( int64_t i = 0; i < numBins; i++ )
+                            {
+                                const auto binIdx = ( i * LlmBins ) / numBins;
+                                aggBins[binIdx] += bins[i];
+                                aggTime[binIdx] += binTime[i];
+                            }
+
+                            if( m_findZone.logTime )
+                            {
+                                const auto ltmin = log10( (double)m_findZone.tmin );
+                                const auto ltmax = log10( (double)m_findZone.tmax );
+                                for( int i = 0; i < LlmBins; i++ )
+                                {
+                                    nlohmann::json binEntry = nlohmann::json::object();
+                                    binEntry["start"] = TimeToString( (int64_t)( pow( 10.0, ltmin + (double)i / LlmBins * ( ltmax - ltmin ) ) ) );
+                                    binEntry["end"] = TimeToString( (int64_t)( pow( 10.0, ltmin + (double)(i+1) / LlmBins * ( ltmax - ltmin ) ) ) );
+                                    binEntry["count"] = aggBins[i];
+                                    binEntry["time"] = TimeToString( aggTime[i] );
+                                    histogram.push_back( std::move( binEntry ) );
+                                }
+                            }
+                            else
+                            {
+                                const auto zmax = m_findZone.tmax - m_findZone.tmin;
+                                for( int i = 0; i < LlmBins; i++ )
+                                {
+                                    nlohmann::json binEntry = nlohmann::json::object();
+                                    binEntry["start"] = TimeToString( m_findZone.tmin + (double)i / LlmBins * zmax );
+                                    binEntry["end"] = TimeToString( m_findZone.tmin + (double)(i+1) / LlmBins * zmax );
+                                    binEntry["count"] = aggBins[i];
+                                    binEntry["time"] = TimeToString( aggTime[i] );
+                                    histogram.push_back( std::move( binEntry ) );
+                                }
+                            }
+
+                            json["histogram"] = std::move( histogram );
+                        }
+
+                        if( m_findZone.highlight.active )
+                        {
+                            const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                            const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                            json["selection"] = {
+                                { "start", TimeToString( s ) },
+                                { "end", TimeToString( e ) },
+                                { "duration", TimeToString( e - s ) }
+                            };
+                        }
+
+                        AddLlmAttachment( json );
+                    };
+
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    if( ImGui::SmallButton( ICON_FA_ROBOT "##findzonellmbtn" ) )
+                    {
+                        Attach();
+                    }
+                    else if( ImGui::IsItemHovered() && IsMouseClicked( ImGuiMouseButton_Right ) )
+                    {
+                        ImGui::OpenPopup( "##findzonellm" );
+                    }
+                    if( ImGui::BeginPopup( "##findzonellm" ) )
+                    {
+                        if( ImGui::Selectable( "Analyze the performance characteristics of this zone" ) )
+                        {
+                            Attach();
+                            AddLlmQuery( "Analyze the performance characteristics of this zone" );
+                            ImGui::CloseCurrentPopup();
+                        }
+                        if( ImGui::Selectable( "What might be causing the outliers in this zone's timing distribution?" ) )
+                        {
+                            Attach();
+                            AddLlmQuery( "What might be causing the outliers in this Zone's timing distribution?" );
+                            ImGui::CloseCurrentPopup();
+                        }
+                        ImGui::EndPopup();
+                    }
+                }
+
                 SmallCheckbox( "Log values", &m_findZone.logVal );
                 ImGui::SameLine();
                 if( SmallCheckbox( "Log time", &m_findZone.logTime ) )

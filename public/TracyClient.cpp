@@ -19,6 +19,7 @@
 #  pragma warning(push, 0)
 #endif
 
+#include "client/TracyAlloc.cpp"
 #include "common/tracy_lz4.cpp"
 #include "client/TracyProfiler.cpp"
 #include "client/TracyCallstack.cpp"
@@ -28,7 +29,6 @@
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
 #include "client/TracyDxt1.cpp"
-#include "client/TracyAlloc.cpp"
 #include "client/TracyOverride.cpp"
 #include "client/TracyKCore.cpp"
 
@@ -42,4 +42,16 @@
 #  pragma warning(pop)
 #endif
 
+#  ifdef TRACY_ENABLE_DEFAULT_MEMORY_PROFLER
+class BlockMemoryProfileHooks
+{
+public:
+    ~BlockMemoryProfileHooks()
+    {
+        ++tracy::DirectAlloc::s_direct; // at exit the application will try to free the static objects memory
+                                        // which will be traced by tracy::Profiler::MemFreeCallstack which needs those static objects
+    }
+};
+static BlockMemoryProfileHooks __blockMemoryProfileHooks;
+#  endif
 #endif

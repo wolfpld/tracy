@@ -55,6 +55,14 @@ public:
     {
         if( m_capacity != MaxCapacity() && m_ptr )
         {
+            // Smart destruction - call destructors for non-trivial types
+            // For trivial types, if constexpr is optimized away by compiler, zero overhead
+            if constexpr( !std::is_trivially_destructible_v<T> ) {
+                for( uint32_t i = 0; i < m_size; i++ ) {
+                    m_ptr[i].~T();
+                }
+            }
+            
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
             free( m_ptr );
         }
@@ -65,6 +73,13 @@ public:
     {
         if( m_capacity != MaxCapacity() && m_ptr )
         {
+            // Destruct old elements
+            if constexpr( !std::is_trivially_destructible_v<T> ) {
+                for( uint32_t i = 0; i < m_size; i++ ) {
+                    m_ptr[i].~T();
+                }
+            }
+            
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
             free( m_ptr );
         }
@@ -278,6 +293,14 @@ public:
     tracy_force_inline void clear()
     {
         assert( m_capacity != MaxCapacity() );
+        
+        // Destruct all elements
+        if constexpr( !std::is_trivially_destructible_v<T> ) {
+            for( uint32_t i = 0; i < m_size; i++ ) {
+                m_ptr[i].~T();
+            }
+        }
+        
         m_size = 0;
     }
 
@@ -317,6 +340,11 @@ private:
                 for( uint32_t i=0; i<m_size; i++ )
                 {
                     new(ptr+i) T( std::move( m_ptr[i] ) );
+                    
+                    // Destruct old object after move
+                    if constexpr( !std::is_trivially_destructible_v<T> ) {
+                        m_ptr[i].~T();
+                    }
                 }
             }
             free( m_ptr );

@@ -117,7 +117,7 @@ endmacro()
 
 set_option(TRACY_ENABLE "Enable profiling" ON)
 set_option(TRACY_ON_DEMAND "On-demand profiling" OFF)
-set_option(TRACY_CALLSTACK "Enforce callstack collection for tracy regions" OFF)
+set(TRACY_CALLSTACK "" CACHE STRING "Override the callstack collection depth for tracy zones")
 set_option(TRACY_NO_CALLSTACK "Disable all callstack related functionality" OFF)
 set_option(TRACY_NO_CALLSTACK_INLINES "Disables the inline functions in callstacks" OFF)
 set_option(TRACY_ONLY_LOCALHOST "Only listen on the localhost interface" OFF)
@@ -143,6 +143,11 @@ set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resoluti
 set_option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation" OFF)
 set_option(TRACY_DEBUGINFOD "Enable debuginfod support" OFF)
 set_option(TRACY_IGNORE_MEMORY_FAULTS "Ignore instrumentation errors from memory free events that do not have a matching allocation" OFF)
+
+if(TRACY_CALLSTACK)
+    message(STATUS "TRACY_CALLSTACK: ${TRACY_CALLSTACK}")
+    target_compile_definitions(TracyClient PUBLIC TRACY_CALLSTACK=${TRACY_CALLSTACK})
+endif()
 
 # advanced
 set_option(TRACY_VERBOSE "[advanced] Verbose output from the profiler" OFF)

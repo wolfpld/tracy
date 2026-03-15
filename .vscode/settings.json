@@ -1,5 +1,4 @@
 {
-    "cmake.configureOnOpen": true,
     "cmake.sourceDirectory": [
         "${workspaceFolder}/profiler",
         "${workspaceFolder}/capture",

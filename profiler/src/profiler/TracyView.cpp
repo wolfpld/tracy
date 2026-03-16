@@ -111,7 +111,6 @@ View::View( void(*cbMainThread)(const std::function<void()>&, bool), FileRead& f
     m_userData.LoadAnnotations( m_annotations );
     m_sourceRegexValid = m_userData.LoadSourceSubstitutions( m_sourceSubstitutions );
 
-    if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
 
     Achieve( "loadTrace" );

@@ -127,152 +127,19 @@ void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, un
 }
 
 template<typename T>
-void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, bool& showUnknownFrames, std::function<void(T, int&)> showZone )
+void DrawZoneTrace( const std::vector<T>& trace, const std::function<void(T, int&)>& showZone )
 {
-    bool expand = ImGui::TreeNode( "Zone trace" );
+    bool expand = ImGui::TreeNode( "Parent zones" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( trace.size() ) );
     if( !expand ) return;
-
-    const auto shortenName = view.GetShortenName();
-
-    ImGui::SameLine();
-    SmallCheckbox( "Show unknown frames", &showUnknownFrames );
 
     int fidx = 1;
     TextDisabledUnformatted( "0." );
     ImGui::SameLine();
     TextDisabledUnformatted( "[this zone]" );
 
-    if( !trace.empty() )
-    {
-        T prev = zone;
-        const auto sz = trace.size();
-        for( size_t i=0; i<sz; i++ )
-        {
-            auto curr = trace[i];
-            const auto pcv = GetZoneCallstack( *prev, worker );
-            const auto ccv = GetZoneCallstack( *curr, worker );
-            if( pcv == 0 || ccv == 0 )
-            {
-                if( showUnknownFrames )
-                {
-                    ImGui::TextDisabled( "%i.", fidx++ );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( "[unknown frames]" );
-                }
-            }
-            else if( pcv != ccv )
-            {
-                auto& prevCs = worker.GetCallstack( pcv );
-                auto& currCs = worker.GetCallstack( ccv );
-
-                const auto psz = int( prevCs.size() );
-                int idx;
-                for( idx=0; idx<psz; idx++ )
-                {
-                    auto pf = prevCs[idx];
-                    bool found = false;
-                    for( auto& cf : currCs )
-                    {
-                        if( cf.data == pf.data )
-                        {
-                            idx--;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if( found ) break;
-                }
-                for( int j=1; j<idx; j++ )
-                {
-                    auto frameData = worker.GetCallstackFrame( prevCs[j] );
-                    auto frame = frameData->data + frameData->size - 1;
-                    ImGui::TextDisabled( "%i.", fidx++ );
-                    ImGui::SameLine();
-                    const auto frameName = worker.GetString( frame->name );
-                    const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, frameName ) : frameName;
-                    TextDisabledUnformatted( normalized );
-                    TooltipNormalizedName( frameName, normalized );
-                    ImGui::SameLine();
-                    ImGui::Spacing();
-                    if( anim.Match( frame ) )
-                    {
-                        const auto time = anim.Time();
-                        const auto indentVal = sin( time * 60.f ) * 10.f * time;
-                        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-                        s_wasActive = true;
-                    }
-                    else
-                    {
-                        ImGui::SameLine();
-                    }
-                    const auto fileName = worker.GetString( frame->file );
-                    TextDisabledUnformatted( LocationToString( fileName, frame->line ) );
-                    if( ImGui::IsItemClicked( 1 ) )
-                    {
-                        if( !view.ViewDispatch( fileName, frame->line, frame->symAddr ) )
-                        {
-                            anim.Enable( frame, 0.5f );
-                        }
-                    }
-                }
-            }
-
-            showZone( curr, fidx );
-            prev = curr;
-        }
-    }
-
-    auto last = trace.empty() ? zone : trace.back();
-    const auto lcv = GetZoneCallstack( *last, worker );
-    if( lcv == 0 )
-    {
-        if( showUnknownFrames )
-        {
-            ImGui::TextDisabled( "%i.", fidx++ );
-            ImGui::SameLine();
-            TextDisabledUnformatted( "[unknown frames]" );
-        }
-    }
-    else
-    {
-        auto& cs = worker.GetCallstack( lcv );
-        const auto csz = cs.size();
-        for( uint16_t i=1; i<csz; i++ )
-        {
-            auto frameData = worker.GetCallstackFrame( cs[i] );
-            auto frame = frameData->data + frameData->size - 1;
-            ImGui::TextDisabled( "%i.", fidx++ );
-            ImGui::SameLine();
-            const auto frameName = worker.GetString( frame->name );
-            const auto normalized = shortenName != ShortenName::Never ? ShortenZoneName( ShortenName::OnlyNormalize, frameName ) : frameName;
-            TextDisabledUnformatted( normalized );
-            TooltipNormalizedName( frameName, normalized );
-            ImGui::SameLine();
-            ImGui::Spacing();
-            if( anim.Match( frame ) )
-            {
-                const auto time = anim.Time();
-                const auto indentVal = sin( time * 60.f ) * 10.f * time;
-                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-                s_wasActive = true;
-            }
-            else
-            {
-                ImGui::SameLine();
-            }
-            const auto fileName = worker.GetString( frame->file );
-            TextDisabledUnformatted( LocationToString( fileName, frame->line ) );
-            if( ImGui::IsItemClicked( 1 ) )
-            {
-                if( !view.ViewDispatch( fileName, frame->line, frame->symAddr ) )
-                {
-                    anim.Enable( frame, 0.5f );
-                }
-            }
-        }
-    }
+    for( auto& v : trace ) showZone( v, fidx );
 
     ImGui::TreePop();
 }
@@ -1010,7 +877,7 @@ void View::DrawZoneInfoWindow()
             parent = GetZoneParent( *parent );
         }
         int idx = 0;
-        DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
+        DrawZoneTrace<const ZoneEvent*>( zoneTrace, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
@@ -1587,7 +1454,7 @@ void View::DrawGpuInfoWindow()
             parent = GetZoneParent( *parent );
         }
         int idx = 0;
-        DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v, int& fidx ) {
+        DrawZoneTrace<const GpuEvent*>( zoneTrace, [&idx, this] ( const GpuEvent* v, int& fidx ) {
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );

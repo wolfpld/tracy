@@ -134,12 +134,26 @@ void DrawZoneTrace( const std::vector<T>& trace, const std::function<void(T, int
     ImGui::TextDisabled( "(%s)", RealToString( trace.size() ) );
     if( !expand ) return;
 
-    int fidx = 1;
-    TextDisabledUnformatted( "0." );
-    ImGui::SameLine();
-    TextDisabledUnformatted( "[this zone]" );
+    if( ImGui::BeginTable( "##zonetrace", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable ) )
+    {
+        ImGui::TableSetupScrollFreeze( 0, 1 );
+        ImGui::TableSetupColumn( "#", ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+        ImGui::TableSetupColumn( "Zone", ImGuiTableColumnFlags_NoHide );
+        ImGui::TableSetupColumn( "Location" );
+        ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+        ImGui::TableHeadersRow();
 
-    for( auto& v : trace ) showZone( v, fidx );
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        TextDisabledUnformatted( "0." );
+        ImGui::TableNextColumn();
+        TextDisabledUnformatted( "[this zone]" );
+
+        int fidx = 1;
+        for( auto& v : trace ) showZone( v, fidx );
+
+        ImGui::EndTable();
+    }
 
     ImGui::TreePop();
 }
@@ -878,8 +892,10 @@ void View::DrawZoneInfoWindow()
         }
         int idx = 0;
         DrawZoneTrace<const ZoneEvent*>( zoneTrace, [&idx, this] ( const ZoneEvent* v, int& fidx ) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
             ImGui::TextDisabled( "%i.", fidx++ );
-            ImGui::SameLine();
+            ImGui::TableNextColumn();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
             SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
             ImGui::SameLine();
@@ -888,27 +904,27 @@ void View::DrawZoneInfoWindow()
             auto sel = ImGui::Selectable( txt, false );
             auto hover = ImGui::IsItemHovered();
             const auto fileName = m_worker.GetString( srcloc.file );
+            ImGui::TableNextColumn();
             if( m_zoneinfoBuzzAnim.Match( v ) )
             {
                 const auto time = m_zoneinfoBuzzAnim.Time();
                 const auto indentVal = sin( time * 60.f ) * 10.f * time;
                 ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
             }
-            else
+            TextDisabledUnformatted( LocationToString( fileName, srcloc.line ) );
+            if( ImGui::IsItemHovered() )
             {
-                ImGui::SameLine();
-            }
-            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->Start() ), LocationToString( fileName, srcloc.line ) );
-            ImGui::PopID();
-            if( ImGui::IsItemClicked( 1 ) )
-            {
-                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                DrawSourceTooltip( fileName, srcloc.line );
+                if( ImGui::IsItemClicked( 1 ) )
                 {
-                    ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
-                }
-                else
-                {
-                    m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                    {
+                        ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
+                    }
+                    else
+                    {
+                        m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                    }
                 }
             }
             if( sel )
@@ -924,7 +940,10 @@ void View::DrawZoneInfoWindow()
                 }
                 ZoneTooltip( *v );
             }
-            } );
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted( TimeToString( m_worker.GetZoneEnd( *v ) - v->Start() ) );
+            ImGui::PopID();
+        } );
 
         if( ev.HasChildren() )
         {
@@ -1455,35 +1474,37 @@ void View::DrawGpuInfoWindow()
         }
         int idx = 0;
         DrawZoneTrace<const GpuEvent*>( zoneTrace, [&idx, this] ( const GpuEvent* v, int& fidx ) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
             ImGui::TextDisabled( "%i.", fidx++ );
-            ImGui::SameLine();
+            ImGui::TableNextColumn();
             const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
             const auto txt = m_worker.GetZoneName( srcloc );
             ImGui::PushID( idx++ );
             auto sel = ImGui::Selectable( txt, false );
             auto hover = ImGui::IsItemHovered();
             const auto fileName = m_worker.GetString( srcloc.file );
+            ImGui::TableNextColumn();
             if( m_zoneinfoBuzzAnim.Match( v ) )
             {
                 const auto time = m_zoneinfoBuzzAnim.Time();
                 const auto indentVal = sin( time * 60.f ) * 10.f * time;
                 ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
             }
-            else
+            TextDisabledUnformatted( LocationToString( fileName, srcloc.line ) );
+            if( ImGui::IsItemHovered() )
             {
-                ImGui::SameLine();
-            }
-            ImGui::TextDisabled( "(%s) %s", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), LocationToString( fileName, srcloc.line ) );
-            ImGui::PopID();
-            if( ImGui::IsItemClicked( 1 ) )
-            {
-                if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                DrawSourceTooltip( fileName, srcloc.line );
+                if( ImGui::IsItemClicked( 1 ) )
                 {
-                    ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
-                }
-                else
-                {
-                    m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this, m_worker ) )
+                    {
+                        ViewSourceCheckKeyMod( fileName, srcloc.line, m_worker.GetString( srcloc.function ) );
+                    }
+                    else
+                    {
+                        m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+                    }
                 }
             }
             if( sel )
@@ -1499,7 +1520,10 @@ void View::DrawGpuInfoWindow()
                 }
                 ZoneTooltip( *v );
             }
-            } );
+            ImGui::TableNextColumn();
+            ImGui::TextUnformatted( TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ) );
+            ImGui::PopID();
+        } );
 
         if( ev.Child() >= 0 )
         {

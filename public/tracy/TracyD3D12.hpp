@@ -42,7 +42,7 @@ using TracyD3D12Ctx = void*;
 #include <dxgi.h>
 #include <queue>
 
-#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); TracyMessageLC("TracyD3D12: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
+#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::Error, tracy::Color::Red4, 0, msg ); __VA_ARGS__; } while(false);
 
 namespace tracy
 {
@@ -117,6 +117,8 @@ namespace tracy
             : m_device(device)
             , m_queue(queue)
         {
+            ZoneScopedC(Color::Red4);
+
             // Verify we support timestamp queries on this queue.
 
             if (queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY)
@@ -205,6 +207,7 @@ namespace tracy
 
             // all checked: ready to roll
             m_contextId = GetGpuCtxCounter().fetch_add(1);
+            ZoneValue(int64_t(m_contextId));
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
@@ -221,6 +224,7 @@ namespace tracy
         ~D3D12QueueCtx()
         {
             ZoneScopedC(Color::Red4);
+            ZoneValue(int64_t(m_contextId));
             // collect all pending timestamps
             while (m_payloadFence->GetCompletedValue() != m_activePayload)
                 /* busy-wait ... */;
@@ -260,8 +264,6 @@ namespace tracy
 
         void Collect()
         {
-            ZoneScopedC(Color::Red4);
-
 #ifdef TRACY_ON_DEMAND
             if (!GetProfiler().IsConnected())
             {
@@ -270,6 +272,8 @@ namespace tracy
                 return;
             }
 #endif
+            ZoneScopedC(Color::Red4);
+            ZoneValue(uint64_t(m_contextId));
 
             // Find out what payloads are available.
             const auto newestReadyPayload = m_payloadFence->GetCompletedValue();
@@ -326,8 +330,11 @@ namespace tracy
             uint32_t queryCounter = m_queryCounter.fetch_add(2);
             if (queryCounter >= m_queryLimit)
             {
-                TracyD3D12Panic("Submitted too many GPU queries! Consider increasing MaxQueries.");
-                // #TODO: consider returning an invalid id or sentinel value here
+                ZoneScopedC(Color::Red4);
+                ZoneValue(int64_t(m_contextId));
+                TracyD3D12Panic("Submitted too many GPU queries!");
+                // TODO: get rid of NewFrame() and make collection "circular"
+                // TODO: decide what to do when "full" (collect, or return an error-id?)
             }
 
             const uint32_t id = (m_previousQueryCounter + queryCounter) % m_queryLimit;
@@ -348,14 +355,50 @@ namespace tracy
         ID3D12GraphicsCommandList* m_cmdList = nullptr;
         uint32_t m_queryId = 0;  // Used for tracking in nested zones.
 
-        tracy_force_inline void WriteQueueItem(QueueItem* item, QueueType type, uint64_t srcLocation)
+        tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
         {
-            MemWrite(&item->hdr.type, type);
-            MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
-            MemWrite(&item->gpuZoneBegin.srcloc, srcLocation);
-            MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-            MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
-            MemWrite(&item->gpuZoneBegin.context, m_ctx->GetId());
+            if (!m_active) return;
+
+            const bool captureCallstack = callstackDepth > 0 && has_callstack();
+            const bool transientZone = srcLocation == nullptr;
+            uint64_t srcLocationAddr = reinterpret_cast<uint64_t>( srcLocation );
+
+            QueueItem* item;
+            QueueType itemType;
+            if( transientZone )
+            {
+                srcLocationAddr = Profiler::AllocSourceLocation( sourceLine, sourceFile, sourceFileLen, functionName, functionNameLen, zoneName, zoneNameLen);
+                if( captureCallstack )
+                {
+                    auto* item = Profiler::QueueSerialCallstack( Callstack( callstackDepth ) );
+                    itemType = QueueType::GpuZoneBeginAllocSrcLocCallstackSerial;
+                }
+                else
+                {
+                    auto* item = Profiler::QueueSerial();
+                    itemType = QueueType::GpuZoneBeginAllocSrcLocSerial;
+                }
+            }
+            else
+            {
+                if( captureCallstack )
+                {
+                    item = Profiler::QueueSerialCallstack( Callstack( callstackDepth ) );
+                    itemType = QueueType::GpuZoneBeginCallstackSerial;
+                }
+                else
+                {
+                    item = Profiler::QueueSerial();
+                    itemType = QueueType::GpuZoneBeginSerial;
+                }
+            }
+
+            MemWrite( &item->hdr.type, itemType );
+            MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+            MemWrite( &item->gpuZoneBegin.srcloc, srcLocationAddr );
+            MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+            MemWrite( &item->gpuZoneBegin.queryId, static_cast<uint16_t>( m_queryId ) );
+            MemWrite( &item->gpuZoneBegin.context, m_ctx->GetId() );
             Profiler::QueueSerialFinish();
         }
 
@@ -379,41 +422,25 @@ namespace tracy
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, bool active)
             : D3D12ZoneScope(ctx, cmdList, active)
         {
-            if (!m_active) return;
-
-            auto* item = Profiler::QueueSerial();
-            WriteQueueItem(item, QueueType::GpuZoneBeginSerial, reinterpret_cast<uint64_t>(srcLocation));
+            WriteQueueItem(srcLocation, 0, 0, nullptr, 0, nullptr, 0, nullptr, 0 );
         }
 
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, int32_t depth, bool active)
             : D3D12ZoneScope(ctx, cmdList, active)
         {
-            if (!m_active) return;
-
-            auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-            WriteQueueItem(item, QueueType::GpuZoneBeginCallstackSerial, reinterpret_cast<uint64_t>(srcLocation));
+            WriteQueueItem(srcLocation, depth, 0, nullptr, 0, nullptr, 0, nullptr, 0 );
         }
 
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, ID3D12GraphicsCommandList* cmdList, bool active)
             : D3D12ZoneScope(ctx, cmdList, active)
         {
-            if (!m_active) return;
-
-            const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
-
-            auto* item = Profiler::QueueSerial();
-            WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocSerial, sourceLocation);
+            WriteQueueItem(nullptr, 0, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, ID3D12GraphicsCommandList* cmdList, int32_t depth, bool active)
             : D3D12ZoneScope(ctx, cmdList, active)
         {
-            if (!m_active) return;
-
-            const auto sourceLocation = Profiler::AllocSourceLocation(line, source, sourceSz, function, functionSz, name, nameSz);
-
-            auto* item = Profiler::QueueSerialCallstack(Callstack(depth));
-            WriteQueueItem(item, QueueType::GpuZoneBeginAllocSrcLocCallstackSerial, sourceLocation);
+            WriteQueueItem(nullptr, depth, line, source, sourceSz, function, functionSz, name, nameSz);
         }
 
         tracy_force_inline ~D3D12ZoneScope()

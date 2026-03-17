@@ -1888,10 +1888,19 @@ void View::ZoneTooltip( const ZoneEvent& ev )
             TextFocused( "Running state regions:", RealToString( cnt ) );
         }
     }
-    if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
+    if( m_worker.HasZoneExtra( ev ) )
     {
-        ImGui::NewLine();
-        TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+        auto& extra = m_worker.GetZoneExtra( ev );
+        if( extra.callstack.Val() != 0 )
+        {
+            ImGui::Separator();
+            DrawCallstackCalls( extra.callstack.Val(), 6 );
+        }
+        if( extra.text.Active() )
+        {
+            ImGui::Separator();
+            TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( extra.text ) );
+        }
     }
     ImGui::EndTooltip();
 }
@@ -1952,19 +1961,26 @@ void View::ZoneTooltip( const GpuEvent& ev )
         }
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
+    }
 
-        if( ctx->notes.contains( ev.query_id ) )
+    if( ev.callstack.Val() != 0 )
+    {
+        ImGui::Separator();
+        DrawCallstackCalls( ev.callstack.Val(), 6 );
+    }
+
+    if( ctx && ctx->notes.contains( ev.query_id ) )
+    {
+        ImGui::Separator();
+        for( auto& p : ctx->notes.at( ev.query_id ) )
         {
-            for( auto& p : ctx->notes.at( ev.query_id ) )
+            if( ctx->noteNames.contains( p.first ) )
             {
-                if( ctx->noteNames.count( p.first ) )
-                {
-                    TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
-                }
-                else
-                {
-                    TextFocused( RealToString( p.first ), RealToString( p.second ) );
-                }
+                TextFocused( m_worker.GetString( ctx->noteNames.at( p.first ) ), RealToString( p.second ) );
+            }
+            else
+            {
+                TextFocused( RealToString( p.first ), RealToString( p.second ) );
             }
         }
     }

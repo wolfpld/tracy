@@ -42,7 +42,7 @@ using TracyD3D12Ctx = void*;
 #include <dxgi.h>
 #include <queue>
 
-#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); TracyMessageLC("TracyD3D12: " msg, tracy::Color::Red4); __VA_ARGS__; } while(false);
+#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::Error, tracy::Color::Red4, 0, msg ); __VA_ARGS__; } while(false);
 
 namespace tracy
 {
@@ -117,6 +117,8 @@ namespace tracy
             : m_device(device)
             , m_queue(queue)
         {
+            ZoneScopedC(Color::Red4);
+
             // Verify we support timestamp queries on this queue.
 
             if (queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY)
@@ -205,6 +207,7 @@ namespace tracy
 
             // all checked: ready to roll
             m_contextId = GetGpuCtxCounter().fetch_add(1);
+            ZoneValue(int64_t(m_contextId));
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
@@ -221,6 +224,7 @@ namespace tracy
         ~D3D12QueueCtx()
         {
             ZoneScopedC(Color::Red4);
+            ZoneValue(int64_t(m_contextId));
             // collect all pending timestamps
             while (m_payloadFence->GetCompletedValue() != m_activePayload)
                 /* busy-wait ... */;
@@ -260,8 +264,6 @@ namespace tracy
 
         void Collect()
         {
-            ZoneScopedC(Color::Red4);
-
 #ifdef TRACY_ON_DEMAND
             if (!GetProfiler().IsConnected())
             {
@@ -270,6 +272,8 @@ namespace tracy
                 return;
             }
 #endif
+            ZoneScopedC(Color::Red4);
+            ZoneValue(uint64_t(m_contextId));
 
             // Find out what payloads are available.
             const auto newestReadyPayload = m_payloadFence->GetCompletedValue();
@@ -326,8 +330,11 @@ namespace tracy
             uint32_t queryCounter = m_queryCounter.fetch_add(2);
             if (queryCounter >= m_queryLimit)
             {
-                TracyD3D12Panic("Submitted too many GPU queries! Consider increasing MaxQueries.");
-                // #TODO: consider returning an invalid id or sentinel value here
+                ZoneScopedC(Color::Red4);
+                ZoneValue(int64_t(m_contextId));
+                TracyD3D12Panic("Submitted too many GPU queries!");
+                // TODO: get rid of NewFrame() and make collection "circular"
+                // TODO: decide what to do when "full" (collect, or return an error-id?)
             }
 
             const uint32_t id = (m_previousQueryCounter + queryCounter) % m_queryLimit;

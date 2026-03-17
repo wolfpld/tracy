@@ -1081,6 +1081,15 @@ void View::DrawZoneInfoWindow()
             }
         }
 
+        if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).callstack.Val() != 0 )
+        {
+            if( ImGui::TreeNode( "Call stack" ) )
+            {
+                DrawCallstackTable( m_worker.GetZoneExtra( ev ).callstack.Val(), false );
+                ImGui::TreePop();
+            }
+        }
+
         ImGui::EndChild();
     }
     ImGui::End();
@@ -1541,6 +1550,15 @@ void View::DrawGpuInfoWindow()
                 {
                     DrawGpuInfoChildren<VectorAdapterPointer<GpuEvent>>( children, ztime );
                 }
+                ImGui::TreePop();
+            }
+        }
+
+        if( ev.callstack.Val() != 0 )
+        {
+            if( ImGui::TreeNode( "Call stack" ) )
+            {
+                DrawCallstackTable( ev.callstack.Val(), false );
                 ImGui::TreePop();
             }
         }

@@ -629,8 +629,11 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
 {
     const auto& csdata = m_worker.GetCallstack( callstack );
     bool first = true;
-    for( auto& v : csdata )
+
+    int i;
+    for( i = 0; i < csdata.size(); i++ )
     {
+        const auto& v = csdata[i];
         const auto frameData = m_worker.GetCallstackFrame( v );
         if( !frameData ) break;
         const auto& frame = frameData->data[frameData->size - 1];
@@ -661,6 +664,29 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
             ImGui::TextUnformatted( ShortenZoneName( ShortenName::Always, txt ) );
         }
         if( --limit == 0 ) break;
+    }
+    if( limit == 0 )
+    {
+        bool framesLeft = false;
+        while( ++i < csdata.size() )
+        {
+            const auto& v = csdata[i];
+            const auto frameData = m_worker.GetCallstackFrame( v );
+            if( !frameData ) break;
+            const auto& frame = frameData->data[frameData->size - 1];
+            auto filename = m_worker.GetString( frame.file );
+            auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+            if( IsFrameExternal( filename, image ) ) continue;
+            framesLeft = true;
+            break;
+        }
+        if( framesLeft )
+        {
+            ImGui::SameLine();
+            TextDisabledUnformatted( ICON_FA_LEFT_LONG );
+            ImGui::SameLine();
+            TextDisabledUnformatted( ICON_FA_ELLIPSIS );
+        }
     }
 }
 

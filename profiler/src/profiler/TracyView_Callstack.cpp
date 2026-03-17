@@ -108,7 +108,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     if( s_config.llm )
     {
         auto Attach = [&]() {
-            auto json = GetCallstackJson( cs );
+            auto json = GetCallstackJson( cs.data(), cs.size() );
             if( hasCrashed )
             {
                 json["crashed"] = true;
@@ -214,7 +214,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 },
                 {
                     { "role", "user" },
-                    { "content", GetCallstackJson( cs )["frames"].dump() }
+                    { "content", GetCallstackJson( cs.data(), cs.size() )["frames"].dump() }
                 }
             };
 

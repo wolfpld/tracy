@@ -926,7 +926,7 @@ void View::UpdateTitle()
     }
 }
 
-nlohmann::json View::GetCallstackJson( const VarArray<CallstackFrameId>& cs )
+nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size ) const
 {
     nlohmann::json json = {
         { "type", "callstack" },
@@ -934,9 +934,11 @@ nlohmann::json View::GetCallstackJson( const VarArray<CallstackFrameId>& cs )
     };
     auto& frames = json["frames"];
 
+    auto end = data + size;
     int fidx = 0;
-    for( auto& entry : cs )
+    while( data < end )
     {
+        auto& entry = *data++;
         auto frameData = m_worker.GetCallstackFrame( entry );
         if( !frameData )
         {

@@ -964,7 +964,7 @@ void View::DrawSampleParents()
                 ImGui::SameLine();
                 if( ImGui::SmallButton( ICON_FA_ROBOT ) )
                 {
-                    AddLlmAttachment( GetCallstackJson( cs ) );
+                    AddLlmAttachment( GetCallstackJson( cs.data(), cs.size() ) );
                 }
             }
             ImGui::SameLine();

@@ -628,12 +628,16 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx,
 void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
 {
     const auto& csdata = m_worker.GetCallstack( callstack );
-    bool first = true;
+    DrawCallstackCalls( csdata.data(), csdata.size(), limit );
+}
 
+void View::DrawCallstackCalls( const CallstackFrameId* data, size_t size, uint16_t limit ) const
+{
+    bool first = true;
     int i;
-    for( i = 0; i < csdata.size(); i++ )
+    for( i = 0; i < size; i++ )
     {
-        const auto& v = csdata[i];
+        const auto& v = data[i];
         const auto frameData = m_worker.GetCallstackFrame( v );
         if( !frameData ) break;
         const auto& frame = frameData->data[frameData->size - 1];
@@ -668,9 +672,9 @@ void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
     if( limit == 0 )
     {
         bool framesLeft = false;
-        while( ++i < csdata.size() )
+        while( ++i < size )
         {
-            const auto& v = csdata[i];
+            const auto& v = data[i];
             const auto frameData = m_worker.GetCallstackFrame( v );
             if( !frameData ) break;
             const auto& frame = frameData->data[frameData->size - 1];

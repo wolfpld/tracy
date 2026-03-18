@@ -3,6 +3,8 @@
 
 #if defined _WIN32
 #  include <windows.h>
+#  include <thread>
+#  include <chrono>
 #else
 #  include <pthread.h>
 #endif
@@ -43,7 +45,10 @@ public:
 
     ~Thread()
     {
-        WaitForSingleObject( m_hnd, INFINITE );
+        // Here we can't use WaitForSingleObject( m_hnd, INFINITE ); because during DLL unload
+        // this destructor may run inside DllMain. Waiting on a thread in DllMain is forbidden
+        // and can lead to a "loader lock" deadlock.
+        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
         CloseHandle( m_hnd );
     }
 

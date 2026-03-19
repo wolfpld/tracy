@@ -2363,7 +2363,7 @@ const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len )
     return it;
 }
 
-int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev )
+int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev ) const
 {
     assert( !ev.IsEndValid() );
     auto ptr = &ev;
@@ -2384,7 +2384,7 @@ int64_t Worker::GetZoneEndImpl( const ZoneEvent& ev )
     }
 }
 
-int64_t Worker::GetZoneEndImpl( const GpuEvent& ev )
+int64_t Worker::GetZoneEndImpl( const GpuEvent& ev ) const
 {
     assert( ev.GpuEnd() < 0 );
     auto ptr = &ev;

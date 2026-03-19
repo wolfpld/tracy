@@ -599,8 +599,8 @@ public:
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
     //     before its children have ended).
     // GetZoneEndDirect() will only return zone's direct timing data, without looking at children.
-    tracy_force_inline int64_t GetZoneEnd( const ZoneEvent& ev ) { return ev.IsEndValid() ? ev.End() : GetZoneEndImpl( ev ); }
-    tracy_force_inline int64_t GetZoneEnd( const GpuEvent& ev ) { return ev.GpuEnd() >= 0 ? ev.GpuEnd() : GetZoneEndImpl( ev ); }
+    [[nodiscard]] tracy_force_inline int64_t GetZoneEnd( const ZoneEvent& ev ) const { return ev.IsEndValid() ? ev.End() : GetZoneEndImpl( ev ); }
+    [[nodiscard]] tracy_force_inline int64_t GetZoneEnd( const GpuEvent& ev ) const { return ev.GpuEnd() >= 0 ? ev.GpuEnd() : GetZoneEndImpl( ev ); }
     static tracy_force_inline int64_t GetZoneEndDirect( const ZoneEvent& ev ) { return ev.IsEndValid() ? ev.End() : ev.Start(); }
     static tracy_force_inline int64_t GetZoneEndDirect( const GpuEvent& ev ) { return ev.GpuEnd() >= 0 ? ev.GpuEnd() : ev.GpuStart(); }
 
@@ -980,8 +980,8 @@ private:
     tracy_force_inline ZoneExtra& AllocZoneExtra( ZoneEvent& ev );
     tracy_force_inline ZoneExtra& RequestZoneExtra( ZoneEvent& ev );
 
-    int64_t GetZoneEndImpl( const ZoneEvent& ev );
-    int64_t GetZoneEndImpl( const GpuEvent& ev );
+    int64_t GetZoneEndImpl( const ZoneEvent& ev ) const;
+    int64_t GetZoneEndImpl( const GpuEvent& ev ) const;
 
     void UpdateMbps( int64_t td );
 

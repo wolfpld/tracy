@@ -1035,11 +1035,12 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
         ++it;
     }
 
-    auto rit = roots.begin();
-    while( rit != roots.end() )
+    unordered_flat_set<uint32_t> stacks;
+    size_t globalMax = 0;
+    for( auto& root : roots )
     {
         size_t max = 0;
-        for( auto& stack : rit->second.stacks )
+        for( auto& stack : root.second.stacks )
         {
             size_t local = 0;
             auto& cs = m_worker.GetCallstack( stack );
@@ -1057,20 +1058,13 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
             max = std::max( max, local );
         }
 
-        if( max > 0 )
+        if( max > globalMax ) 
         {
-            rit->second.maxLocalFrames = max;
-            ++rit;
-        }
-        else
-        {
-            rit = roots.erase( rit );
+            globalMax = max;
+            stacks = std::move( root.second.stacks );
         }
     }
-    if( roots.empty() ) return ret;
-
-    auto maxElement = std::ranges::max_element( roots, [] ( const auto& l, const auto& r ) { return l.second.maxLocalFrames > r.second.maxLocalFrames; } );
-    auto stacks = std::move( maxElement->second.stacks );
+    if( stacks.empty() ) return ret;
     roots.clear();
 
     auto sit = stacks.begin();

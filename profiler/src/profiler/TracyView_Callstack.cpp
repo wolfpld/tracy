@@ -36,12 +36,18 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     const bool hasCrashed = crash.thread != 0 && crash.callstack == callstack;
 
     auto& cs = m_worker.GetCallstack( callstack );
+    DrawCallstackTable( cs.data(), cs.size(), globalEntriesButton, hasCrashed, callstack );
+}
+
+void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, bool globalEntriesButton, bool hasCrashed, int64_t callstack )
+{
     if( ClipboardButton() )
     {
         std::ostringstream s;
         int fidx = 0;
-        for( auto& entry : cs )
+        for( size_t i = 0; i < size; i++ )
         {
+            auto& entry = data[i];
             char buf[64*1024];
             auto frameData = m_worker.GetCallstackFrame( entry );
             if( !frameData )
@@ -107,10 +113,11 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     }
     if( s_config.llm )
     {
-        auto Attach = [&]() {
-            auto json = GetCallstackJson( cs.data(), cs.size() );
+        auto Attach = [this, data, size, hasCrashed]() {
+            auto json = GetCallstackJson( data, size );
             if( hasCrashed )
             {
+                auto& crash = m_worker.GetCrashEvent();
                 json["crashed"] = true;
                 if( crash.message ) json["crash_reason"] = m_worker.GetString( crash.message );
                 auto threadName = m_worker.GetThreadName( crash.thread );
@@ -172,7 +179,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
 
     if( globalEntriesButton && m_worker.AreCallstackSamplesReady() )
     {
-        auto frame = m_worker.GetCallstackFrame( *cs.begin() );
+        auto frame = m_worker.GetCallstackFrame( *data );
         if( frame && frame->data[0].symAddr != 0 )
         {
             auto sym = m_worker.GetSymbolStats( frame->data[0].symAddr );
@@ -191,7 +198,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
     ImGui::PopStyleVar();
 
 #ifndef __EMSCRIPTEN__
-    if( s_config.llm )
+    if( s_config.llm && callstack >= 0 )
     {
         bool force = false;
         if( s_config.llmAnnotateCallstacks )
@@ -214,7 +221,7 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
                 },
                 {
                     { "role", "user" },
-                    { "content", GetCallstackJson( cs.data(), cs.size() )["frames"].dump() }
+                    { "content", GetCallstackJson( data, size )["frames"].dump() }
                 }
             };
 
@@ -318,8 +325,9 @@ void View::DrawCallstackTable( uint32_t callstack, bool globalEntriesButton )
         int external = 0;
         int fidx = 0;
         int bidx = 0;
-        for( auto& entry : cs )
+        for( size_t i = 0; i < size; i++ )
         {
+            auto& entry = data[i];
             auto frameData = m_worker.GetCallstackFrame( entry );
             if( !frameData )
             {

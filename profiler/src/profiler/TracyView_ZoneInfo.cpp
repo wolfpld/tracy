@@ -1089,6 +1089,21 @@ void View::DrawZoneInfoWindow()
                 ImGui::TreePop();
             }
         }
+        else
+        {
+            auto cs = ReconstructZoneCallstack( ev );
+            if( !cs.empty() )
+            {
+                auto expand = ImGui::TreeNode( "Call stack" );
+                ImGui::SameLine();
+                TextDisabledUnformatted( ICON_FA_WAND_SPARKLES );
+                if( expand )
+                {
+                    DrawCallstackTable( cs.data(), cs.size(), false );
+                    ImGui::TreePop();
+                }
+            }
+        }
 
         ImGui::EndChild();
     }

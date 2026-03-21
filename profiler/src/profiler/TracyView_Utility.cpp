@@ -998,12 +998,6 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
     return json;
 }
 
-struct CallstackRoot
-{
-    unordered_flat_set<uint32_t> stacks;
-    size_t maxLocalFrames;
-};
-
 std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& ev ) const
 {
     constexpr int SampleLimit = 10000;
@@ -1016,7 +1010,7 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
     auto end = std::lower_bound( it, td->samples.end(), m_worker.GetZoneEnd( ev ), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
     if( std::distance( it, end ) > SampleLimit ) end = it + SampleLimit;
 
-    unordered_flat_map<uint64_t, CallstackRoot> roots;
+    unordered_flat_map<uint64_t, unordered_flat_set<uint32_t>> roots;
     while( it != end )
     {
         auto stack = it->callstack.Val();
@@ -1025,12 +1019,12 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
         auto rit = roots.find( root );
         if( rit == roots.end() )
         {
-            roots.emplace( root, CallstackRoot { { stack } } );
+            roots.emplace( root, unordered_flat_set<uint32_t> { stack } );
         }
         else
         {
-            auto sit = rit->second.stacks.find( stack );
-            if( sit == rit->second.stacks.end() ) rit->second.stacks.emplace( stack );
+            auto sit = rit->second.find( stack );
+            if( sit == rit->second.end() ) rit->second.emplace( stack );
         }
         ++it;
     }
@@ -1040,7 +1034,7 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
     for( auto& root : roots )
     {
         size_t max = 0;
-        for( auto& stack : root.second.stacks )
+        for( auto& stack : root.second )
         {
             size_t local = 0;
             auto& cs = m_worker.GetCallstack( stack );
@@ -1061,7 +1055,7 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
         if( max > globalMax ) 
         {
             globalMax = max;
-            stacks = std::move( root.second.stacks );
+            stacks = std::move( root.second );
         }
     }
     if( stacks.empty() ) return ret;

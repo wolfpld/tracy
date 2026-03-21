@@ -998,4 +998,92 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
     return json;
 }
 
+struct CallstackRoot
+{
+    unordered_flat_set<uint32_t> stacks;
+    size_t maxLocalFrames;
+};
+
+std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& ev ) const
+{
+    constexpr int SampleLimit = 10000;
+    std::vector<CallstackFrameId> ret;
+
+    auto td = GetZoneThreadData( ev );
+    if( !td ) return ret;
+
+    auto it = std::lower_bound( td->samples.begin(), td->samples.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    auto end = std::lower_bound( it, td->samples.end(), m_worker.GetZoneEnd( ev ), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    if( std::distance( it, end ) > SampleLimit ) end = it + SampleLimit;
+
+    unordered_flat_map<uint64_t, CallstackRoot> roots;
+    while( it != end )
+    {
+        auto stack = it->callstack.Val();
+        auto& cs = m_worker.GetCallstack( stack );
+        auto root = cs.back().data;
+        auto rit = roots.find( root );
+        if( rit == roots.end() )
+        {
+            roots.emplace( root, CallstackRoot { { stack } } );
+        }
+        else
+        {
+            auto sit = rit->second.stacks.find( stack );
+            if( sit == rit->second.stacks.end() ) rit->second.stacks.emplace( stack );
+        }
+        ++it;
+    }
+
+    auto rit = roots.begin();
+    while( rit != roots.end() )
+    {
+        size_t max = 0;
+        for( auto& stack : rit->second.stacks )
+        {
+            size_t local = 0;
+            auto& cs = m_worker.GetCallstack( stack );
+            auto sz = cs.size();
+            for( int i = 0; i < sz; i++ )
+            {
+                const auto& v = cs[i];
+                const auto frameData = m_worker.GetCallstackFrame( v );
+                if( !frameData ) break;
+                const auto& frame = frameData->data[frameData->size - 1];
+                auto filename = m_worker.GetString( frame.file );
+                auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+                if( !IsFrameExternal( filename, image ) ) local++;
+            }
+            max = std::max( max, local );
+        }
+
+        if( max > 0 )
+        {
+            rit->second.maxLocalFrames = max;
+            ++rit;
+        }
+        else
+        {
+            rit = roots.erase( rit );
+        }
+    }
+    if( roots.empty() ) return ret;
+
+    auto maxElement = std::ranges::max_element( roots, [] ( const auto& l, const auto& r ) { return l.second.maxLocalFrames > r.second.maxLocalFrames; } );
+    auto stacks = std::move( maxElement->second.stacks );
+    roots.clear();
+
+    auto sit = stacks.begin();
+    auto& scs = m_worker.GetCallstack( *sit );
+    for( auto& v : scs ) ret.emplace_back( v );
+    while( ++sit != stacks.end() )
+    {
+        auto& cs = m_worker.GetCallstack( *sit );
+        auto sz = cs.size();
+        if( ret.size() > sz ) ret.erase( ret.begin(), ret.end() - sz );
+    }
+
+    return ret;
+}
+
 }

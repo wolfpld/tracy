@@ -1069,6 +1069,41 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
         auto& cs = m_worker.GetCallstack( *sit );
         auto sz = cs.size();
         if( ret.size() > sz ) ret.erase( ret.begin(), ret.end() - sz );
+        if( ret.size() == 0 ) return ret;
+
+        auto offset = std::max( size_t( 0 ), sz - ret.size() );
+        size_t match = 0;
+        for( int i = ret.size() - 1; i >= 0; i-- )
+        {
+            if( ret[i] == cs[i + offset] )
+            {
+                match++;
+            }
+            else
+            {
+                auto fd1 = m_worker.GetCallstackFrame( ret[i] );
+                auto fd2 = m_worker.GetCallstackFrame( cs[i + offset] );
+                if( fd1 && fd2 )
+                {
+                    auto& f1 = fd1->data[fd1->size - 1];
+                    auto& f2 = fd2->data[fd2->size - 1];
+                    auto name1 = m_worker.GetString( f1.name );
+                    auto name2 = m_worker.GetString( f2.name );
+                    if( name1 == name2 || strcmp( name1, name2 ) == 0 )
+                    {
+                        auto file1 = m_worker.GetString( f1.file );
+                        auto file2 = m_worker.GetString( f2.file );
+                        if( file1 == file2 || strcmp( file1, file2 ) == 0 )
+                        {
+                            match++;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
+        if( match != ret.size() ) ret.erase( ret.begin(), ret.end() - match );
     }
 
     return ret;

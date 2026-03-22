@@ -998,6 +998,22 @@ nlohmann::json View::GetCallstackJson( const CallstackFrameId* data, size_t size
     return json;
 }
 
+static size_t GetNumLocalFrames( const Worker& m_worker, const CallstackFrameId* data, size_t size )
+{
+    size_t local = 0;
+    auto end = data + size;
+    while( data < end )
+    {
+        const auto frameData = m_worker.GetCallstackFrame( *data++ );
+        if( !frameData ) continue;
+        const auto& frame = frameData->data[frameData->size - 1];
+        auto filename = m_worker.GetString( frame.file );
+        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+        if( !IsFrameExternal( filename, image ) ) local++;
+    }
+    return local;
+}
+
 std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& ev ) const
 {
     constexpr int SampleLimit = 10000;
@@ -1036,19 +1052,8 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
         size_t max = 0;
         for( auto& stack : root.second )
         {
-            size_t local = 0;
             auto& cs = m_worker.GetCallstack( stack );
-            auto sz = cs.size();
-            for( int i = 0; i < sz; i++ )
-            {
-                const auto& v = cs[i];
-                const auto frameData = m_worker.GetCallstackFrame( v );
-                if( !frameData ) break;
-                const auto& frame = frameData->data[frameData->size - 1];
-                auto filename = m_worker.GetString( frame.file );
-                auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
-                if( !IsFrameExternal( filename, image ) ) local++;
-            }
+            const auto local = GetNumLocalFrames( m_worker, cs.data(), cs.size() );
             max = std::max( max, local );
         }
 

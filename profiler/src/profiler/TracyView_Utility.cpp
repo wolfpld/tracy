@@ -1067,11 +1067,21 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
     roots.clear();
 
     auto sit = stacks.begin();
+    while( sit != stacks.end() )
+    {
+        auto& scs = m_worker.GetCallstack( *sit );
+        if( GetNumLocalFrames( m_worker, scs.data(), scs.size() ) > 0 ) break;
+        ++sit;
+    }
+    if( sit == stacks.end() ) return ret;
+
     auto& scs = m_worker.GetCallstack( *sit );
     for( auto& v : scs ) ret.emplace_back( v );
     while( ++sit != stacks.end() )
     {
         auto& cs = m_worker.GetCallstack( *sit );
+        if( GetNumLocalFrames( m_worker, cs.data(), cs.size() ) == 0 ) continue;
+
         auto sz = cs.size();
         if( ret.size() > sz ) ret.erase( ret.begin(), ret.end() - sz );
         if( ret.size() == 0 ) return ret;

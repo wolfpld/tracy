@@ -370,12 +370,12 @@ namespace tracy
                 srcLocationAddr = Profiler::AllocSourceLocation( sourceLine, sourceFile, sourceFileLen, functionName, functionNameLen, zoneName, zoneNameLen);
                 if( captureCallstack )
                 {
-                    auto* item = Profiler::QueueSerialCallstack( Callstack( callstackDepth ) );
+                    item = Profiler::QueueSerialCallstack( Callstack( callstackDepth ) );
                     itemType = QueueType::GpuZoneBeginAllocSrcLocCallstackSerial;
                 }
                 else
                 {
-                    auto* item = Profiler::QueueSerial();
+                    item = Profiler::QueueSerial();
                     itemType = QueueType::GpuZoneBeginAllocSrcLocSerial;
                 }
             }

@@ -191,6 +191,7 @@ namespace tracy
                 {
                     timestampBuffer[i] = InvalidTimestamp;
                 }
+                // TODO: any advantages to making this Map() persist?
                 m_readbackBuffer->Unmap(0, &zeroRange);
             }
 
@@ -244,6 +245,7 @@ namespace tracy
             ZoneScopedC(Color::Red4);
             ZoneValue(int64_t(m_contextId));
 
+            // wait for all pending queries to be collected (busy-wait...)
             while (m_previousCheckpoint.load() != m_queryCounter.load())
             {
                 Collect();
@@ -345,7 +347,7 @@ namespace tracy
                 MemWrite(&item->gpuTime.context, GetId());
                 Profiler::QueueSerialFinish();
 
-                gpuTimestamp = InvalidTimestamp;
+                gpuTimestamp = InvalidTimestamp;    // "slow" write (to a readback heap memory)
                 m_previousCheckpoint.store(i+1, std::memory_order_relaxed);
             }
 
@@ -506,6 +508,7 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
+            // TODO: maybe move this to Collect()?
             m_cmdList->ResolveQueryData(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId, 2, m_ctx->m_readbackBuffer, m_queryId * sizeof(uint64_t));
         }
     };

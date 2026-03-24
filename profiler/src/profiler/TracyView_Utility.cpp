@@ -1139,7 +1139,7 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
             if( ffile == file && strstr( fname, function ) != nullptr )
             {
                 ret.erase( ret.begin(), ret.begin() + i );
-                break;
+                return ret;
             }
         }
     }

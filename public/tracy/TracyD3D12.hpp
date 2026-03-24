@@ -96,6 +96,10 @@ namespace tracy
             int64_t cpuDeltaTicks = cpuTimestamp - m_prevCalibrationTicksCPU;
             if (cpuDeltaTicks > 0)
             {
+                // WARNING: technically, we should not emit a GpuCalibration event if the GPU counter
+                // did not move, to prevent division by a gpuDelta of zero in later on (in the server).
+                // In practice, GetClockCalibration() should be advancing CPU and GPU together.
+
                 static const int64_t nanosecodsPerTick = int64_t(1000000000) / GetFrequencyQpc();
                 int64_t cpuDeltaNS = cpuDeltaTicks * nanosecodsPerTick;
                 // Save the device cpu timestamp, not the Tracy profiler timestamp:
@@ -332,6 +336,12 @@ namespace tracy
                     auto timeout = std::chrono::duration<float>{TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT};
                     if (elapsed >= timeout)
                     {
+                        ZoneScopedNC("[drop]", Color::Red4);
+                        ZoneValue(int64_t(queryId));
+                        ZoneValue(int64_t(m_lastEmittedGpuTimestamp));
+                        TracyPlot("TracyD3D12 timeout", 0.0);
+                        TracyPlot("TracyD3D12 timeout", std::chrono::duration<double>{elapsed}.count());
+                        TracyPlot("TracyD3D12 timeout", 0.0);
                         // emit a "bogus" GpuTime just to provide a "match" for the query ids
                         // that have been instrumented (this way, the UI does not freak out)
                         EmitGpuTime(m_lastEmittedGpuTimestamp, queryId);

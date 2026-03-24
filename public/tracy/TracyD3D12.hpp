@@ -314,19 +314,20 @@ namespace tracy
             }
             UINT64* timestampBuffer = static_cast<UINT64*>(readbackBufferMapping);
 
-            for (uint64_t i = begin; i != latestCheckpoint; ++i)
+            // Process timestamp queries two at a time, as (start, end) pairs
+            for (uint64_t i = begin; i != latestCheckpoint; i += 2)
             {
                 const uint32_t queryId = RingIndex(i);
-                UINT64& gpuTimestamp = timestampBuffer[queryId];
 
-                if (gpuTimestamp == InvalidTimestamp)
+                if (timestampBuffer[queryId+1] == InvalidTimestamp)
                 {
                     // drop the timestamp query if it's been in flight for too long
                     using Clock = std::chrono::high_resolution_clock;
                     auto now = Clock::now();
-                    auto start = m_queryRequestTime[queryId];
+                    auto start = m_queryRequestTime[queryId+1];
+                    auto elapsed = now - start;
                     auto timeout = std::chrono::duration<float>{TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT};
-                    if (now - start >= timeout)
+                    if (elapsed >= timeout)
                     {
                         TracyPlot("TracyD3D12 timeout", int64_t(0));
                         TracyPlot("TracyD3D12 timeout", int64_t(1));
@@ -340,15 +341,12 @@ namespace tracy
                     break;
                 }
 
-                auto* item = Profiler::QueueSerial();
-                MemWrite(&item->hdr.type, QueueType::GpuTime);
-                MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
-                MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
-                MemWrite(&item->gpuTime.context, GetId());
-                Profiler::QueueSerialFinish();
+                EmitGpuTime(timestampBuffer[queryId], queryId);
+                EmitGpuTime(timestampBuffer[queryId+1], queryId+1);
+                // "slow" write (to a readback heap memory)
+                timestampBuffer[queryId] = timestampBuffer[queryId+1] = InvalidTimestamp;
 
-                gpuTimestamp = InvalidTimestamp;    // "slow" write (to a readback heap memory)
-                m_previousCheckpoint.store(i+1, std::memory_order_relaxed);
+                m_previousCheckpoint.store(i+2, std::memory_order_relaxed);
             }
 
             m_readbackBuffer->Unmap(0, &mapRange);
@@ -357,6 +355,16 @@ namespace tracy
         }
 
     private:
+        tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
+        {
+            auto* item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuTime);
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
+            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
+            MemWrite(&item->gpuTime.context, GetId());
+            Profiler::QueueSerialFinish();
+        }
+
         tracy_force_inline uint32_t RingSize() const
         {
             return m_queryLimit;

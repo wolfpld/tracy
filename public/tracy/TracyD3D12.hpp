@@ -81,6 +81,9 @@ namespace tracy
 
         UINT64 m_prevCalibrationTicksCPU = 0;
 
+        // Last absolute GPU counter passed to EmitGpuTime (authoritative for delta stream vs Tracy's refGpu).
+        UINT64 m_lastEmittedGpuTimestamp = 0;
+
         void RecalibrateClocks()
         {
             UINT64 cpuTimestamp;
@@ -329,12 +332,11 @@ namespace tracy
                     auto timeout = std::chrono::duration<float>{TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT};
                     if (elapsed >= timeout)
                     {
-                        TracyPlot("TracyD3D12 timeout", int64_t(0));
-                        TracyPlot("TracyD3D12 timeout", int64_t(1));
-                        TracyPlot("TracyD3D12 timeout", int64_t(0));
-                        m_previousCheckpoint.store(i+1, std::memory_order_relaxed);
-                        // TODO: may need to emit a "bogus" GpuTime just to provide
-                        // a "match" for the query ids that have been instrumented
+                        // emit a "bogus" GpuTime just to provide a "match" for the query ids
+                        // that have been instrumented (this way, the UI does not freak out)
+                        EmitGpuTime(m_lastEmittedGpuTimestamp, queryId);
+                        EmitGpuTime(m_lastEmittedGpuTimestamp, queryId+1);
+                        m_previousCheckpoint.store(i+2, std::memory_order_relaxed);
                         continue;
                     }
                     // otherwise, let subsequent Collect() calls handle it
@@ -363,6 +365,9 @@ namespace tracy
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
+            // Tracy converts gpuTime to deltas by updating refGpu on each GpuTime event,
+            // so we must consistently track the same value here.
+            m_lastEmittedGpuTimestamp = gpuTimestamp;
         }
 
         tracy_force_inline uint32_t RingSize() const

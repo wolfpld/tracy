@@ -1102,16 +1102,10 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
                 {
                     auto& f1 = fd1->data[fd1->size - 1];
                     auto& f2 = fd2->data[fd2->size - 1];
-                    auto name1 = m_worker.GetString( f1.name );
-                    auto name2 = m_worker.GetString( f2.name );
-                    if( name1 == name2 || strcmp( name1, name2 ) == 0 )
+                    if( m_worker.GetString( f1.name ) == m_worker.GetString( f2.name ) &&
+                        m_worker.GetString( f1.file ) == m_worker.GetString( f2.file ) )
                     {
-                        auto file1 = m_worker.GetString( f1.file );
-                        auto file2 = m_worker.GetString( f2.file );
-                        if( file1 == file2 || strcmp( file1, file2 ) == 0 )
-                        {
-                            match++;
-                        }
+                        match++;
                     }
                 }
                 break;

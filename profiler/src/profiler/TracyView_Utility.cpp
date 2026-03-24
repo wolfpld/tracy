@@ -1121,6 +1121,29 @@ std::vector<CallstackFrameId> View::ReconstructZoneCallstack( const ZoneEvent& e
         if( match != ret.size() ) ret.erase( ret.begin(), ret.end() - match );
     }
 
+    auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
+    auto function = m_worker.GetString( srcloc.function );
+    auto file = m_worker.GetString( srcloc.file );
+
+    for( size_t i = 0; i < ret.size(); i++ )
+    {
+        auto frameData = m_worker.GetCallstackFrame( ret[i] );
+        if( !frameData ) continue;
+
+        const auto fsz = frameData->size;
+        for( uint8_t f = 0; f < fsz; f++ )
+        {
+            const auto& frame = frameData->data[f];
+            auto fname = m_worker.GetString( frame.name );
+            auto ffile = m_worker.GetString( frame.file );
+            if( ffile == file && strstr( fname, function ) != nullptr )
+            {
+                ret.erase( ret.begin(), ret.begin() + i );
+                break;
+            }
+        }
+    }
+
     return ret;
 }
 

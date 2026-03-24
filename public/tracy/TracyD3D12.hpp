@@ -47,7 +47,7 @@ using TracyD3D12Ctx = void*;
 #include <dxgi.h>
 
 #ifndef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
-#define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.200f
+#define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.050f
 #endif
 
 #define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::Error, tracy::Color::Red4, 0, msg ); __VA_ARGS__; } while(false);

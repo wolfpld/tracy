@@ -998,7 +998,12 @@ namespace tracy
                 CUpti_ActivityKernel9* kernel9 = (CUpti_ActivityKernel9*) record;
                 APICallInfo apiCall;
                 if (!matchActivityToAPICall(kernel9->correlationId, apiCall)) {
-                    return matchError(kernel9->correlationId, "KERNEL");
+                    // Fallback for CUDA Graph-launched kernels: create GPU zone
+                    // using kernel timestamps when no API callback correlation exists.
+                    auto* host = PersistentState::Get().profilerHost;
+                    if (!host) return;
+                    TracyTimestamp cpuTime = tracyFromCUpti(kernel9->start);
+                    apiCall = APICallInfo{ cpuTime, cpuTime, kernel9->start, host };
                 }
                 apiCall.host->EmitGpuZone(apiCall.start, apiCall.end, kernel9->start, kernel9->end, getKernelSourceLocation(kernel9->name), kernel9->contextId, kernel9->streamId);
                 auto latency_ms = (kernel9->start - apiCall.cupti) / 1'000'000.0;
@@ -1012,7 +1017,12 @@ namespace tracy
                 CUpti_ActivityMemcpy5* memcpy5 = (CUpti_ActivityMemcpy5*) record;
                 APICallInfo apiCall;
                 if (!matchActivityToAPICall(memcpy5->correlationId, apiCall)) {
-                    return matchError(memcpy5->correlationId, "MEMCPY");
+                    // Fallback for CUDA Graph memcpy: create GPU zone using
+                    // activity timestamps when no API callback correlation exists.
+                    auto* host = PersistentState::Get().profilerHost;
+                    if (!host) return;
+                    TracyTimestamp cpuTime = tracyFromCUpti(memcpy5->start);
+                    apiCall = APICallInfo{ cpuTime, cpuTime, memcpy5->start, host };
                 }
                 static constexpr tracy::SourceLocationData TracyCUPTISrcLocDeviceMemcpy { "CUDA::memcpy", TracyFunction, TracyFile, (uint32_t)TracyLine, tracy::Color::Blue };
                 apiCall.host->EmitGpuZone(apiCall.start, apiCall.end, memcpy5->start, memcpy5->end, &TracyCUPTISrcLocDeviceMemcpy, memcpy5->contextId, memcpy5->streamId);
@@ -1028,7 +1038,12 @@ namespace tracy
                 CUpti_ActivityMemset4* memset4 = (CUpti_ActivityMemset4*) record;
                 APICallInfo apiCall;
                 if (!matchActivityToAPICall(memset4->correlationId, apiCall)) {
-                    return matchError(memset4->correlationId, "MEMSET");
+                    // Fallback for CUDA Graph memset: create GPU zone using
+                    // activity timestamps when no API callback correlation exists.
+                    auto* host = PersistentState::Get().profilerHost;
+                    if (!host) return;
+                    TracyTimestamp cpuTime = tracyFromCUpti(memset4->start);
+                    apiCall = APICallInfo{ cpuTime, cpuTime, memset4->start, host };
                 }
                 static constexpr tracy::SourceLocationData TracyCUPTISrcLocDeviceMemset { "CUDA::memset", TracyFunction, TracyFile, (uint32_t)TracyLine, tracy::Color::Blue };
                 apiCall.host->EmitGpuZone(apiCall.start, apiCall.end, memset4->start, memset4->end, &TracyCUPTISrcLocDeviceMemset, memset4->contextId, memset4->streamId);

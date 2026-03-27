@@ -5941,12 +5941,23 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
     if( m_data.lastTime < time ) m_data.lastTime = time;
 }
 
+static void DebugDump(const QueueGpuTime& item, const int64_t refGpu)
+{
+    static FILE* hFileDump = fopen("gpu-time-server.dump", "wb");
+    fwrite(&item, sizeof(item), 1, hFileDump);
+    fwrite(&refGpu, sizeof(refGpu), 1, hFileDump);
+    fflush(hFileDump);
+}
+
 void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 {
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
+    DebugDump(ev, m_refTimeGpu);
+
     int64_t tgpu = RefTime( m_refTimeGpu, ev.gpuTime );
+    /*
     if( tgpu < ctx->lastGpuTime - ( 1u << 31 ) )
     {
         if( ctx->overflow == 0 )
@@ -5960,6 +5971,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     {
         tgpu += ctx->overflow * ctx->overflowMul;
     }
+    */
 
     int64_t gpuTime;
     if( !ctx->hasPeriod )

@@ -47,7 +47,7 @@ using TracyD3D12Ctx = void*;
 #include <dxgi.h>
 
 #ifndef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
-#define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.050f
+#define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.020f
 #endif
 
 #define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::Error, tracy::Color::Red4, 0, msg ); __VA_ARGS__; } while(false);
@@ -77,7 +77,8 @@ namespace tracy
 
         uint32_t m_queryLimit = 0;
 
-        std::vector<std::chrono::high_resolution_clock::time_point> m_queryRequestTime;
+        using AgeClock = std::chrono::high_resolution_clock;
+        std::vector<AgeClock::time_point> m_queryRequestTime;
 
         UINT64 m_prevCalibrationTicksCPU = 0;
 
@@ -186,6 +187,8 @@ namespace tracy
                 TracyD3D12Panic("Failed to create query readback buffer.", return);
             }
 
+            m_queryRequestTime.resize(m_queryLimit);
+
             {
                 D3D12_RANGE zeroRange{ 0, m_queryLimit * sizeof(UINT64) };
                 void* buffer = nullptr;
@@ -197,12 +200,11 @@ namespace tracy
                 for (uint64_t i = 0; i < m_queryLimit; ++i)
                 {
                     timestampBuffer[i] = InvalidTimestamp;
+                    m_queryRequestTime[i] = AgeClock::time_point::max();
                 }
                 // TODO: any advantages to making this Map() persist?
                 m_readbackBuffer->Unmap(0, &zeroRange);
             }
-
-            m_queryRequestTime.resize(m_queryLimit);
 
             float period = [queue]()
             {
@@ -225,6 +227,7 @@ namespace tracy
             {
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
+            m_lastEmittedGpuTimestamp = gpuTimestamp;
 
             // Save the device cpu timestamp, not the profiler's timestamp.
             m_prevCalibrationTicksCPU = cpuTimestamp;
@@ -251,6 +254,9 @@ namespace tracy
         {
             ZoneScopedC(Color::Red4);
             ZoneValue(int64_t(m_contextId));
+
+            // TODO: could use queue->Signal() to inject a progress point in the queue
+            // and the immediately wait for the signal, in order to avoid busy-waiting
 
             // wait for all pending queries to be collected (busy-wait...)
             while (m_previousCheckpoint.load() != m_queryCounter.load())
@@ -329,11 +335,14 @@ namespace tracy
                 if (timestampBuffer[queryId+1] == InvalidTimestamp)
                 {
                     // drop the timestamp query if it's been in flight for too long
-                    using Clock = std::chrono::high_resolution_clock;
-                    auto now = Clock::now();
+                    auto now = AgeClock::now();
                     auto start = m_queryRequestTime[queryId+1];
                     auto elapsed = now - start;
-                    auto timeout = std::chrono::duration<float>{TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT};
+                    // "elastic" timeout, based on how "empty" the ring buffer is
+                    // (the "emptier" it is, the more "relaxed" the timeout can be)
+                    double fudge = RingSize() / double(count);
+                    auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
+                    //timeout *= fudge;
                     if (elapsed >= timeout)
                     {
                         ZoneScopedNC("[drop]", Color::Red4);
@@ -342,28 +351,35 @@ namespace tracy
                         TracyPlot("TracyD3D12 timeout", 0.0);
                         TracyPlot("TracyD3D12 timeout", std::chrono::duration<double>{elapsed}.count());
                         TracyPlot("TracyD3D12 timeout", 0.0);
+                        m_queryRequestTime[queryId+0] = AgeClock::time_point::max();
+                        m_queryRequestTime[queryId+1] = AgeClock::time_point::max();
                         // emit a "bogus" GpuTime just to provide a "match" for the query ids
                         // that have been instrumented (this way, the UI does not freak out)
-                        EmitGpuTime(m_lastEmittedGpuTimestamp, queryId);
-                        EmitGpuTime(m_lastEmittedGpuTimestamp, queryId+1);
-                        m_previousCheckpoint.store(i+2, std::memory_order_relaxed);
+                        EmitGpuTime(m_lastEmittedGpuTimestamp+1000, queryId+0);
+                        EmitGpuTime(m_lastEmittedGpuTimestamp+1000, queryId+1);
+                        m_previousCheckpoint.store(i+2);
                         continue;
                     }
                     // otherwise, let subsequent Collect() calls handle it
                     break;
                 }
 
-                EmitGpuTime(timestampBuffer[queryId], queryId);
+                EmitGpuTime(timestampBuffer[queryId+0], queryId+0);
                 EmitGpuTime(timestampBuffer[queryId+1], queryId+1);
-                // "slow" write (to a readback heap memory)
-                timestampBuffer[queryId] = timestampBuffer[queryId+1] = InvalidTimestamp;
 
-                m_previousCheckpoint.store(i+2, std::memory_order_relaxed);
+                // "slow" write (to a readback heap memory)
+                timestampBuffer[queryId+0] = InvalidTimestamp;
+                timestampBuffer[queryId+1] = InvalidTimestamp;
+
+                m_queryRequestTime[queryId+0] = AgeClock::time_point::max();
+                m_queryRequestTime[queryId+1] = AgeClock::time_point::max();
+
+                m_previousCheckpoint.store(i+2);
             }
 
             m_readbackBuffer->Unmap(0, &mapRange);
 
-            RecalibrateClocks();
+            //RecalibrateClocks();
         }
 
     private:
@@ -397,8 +413,8 @@ namespace tracy
 
         tracy_force_inline uint32_t NextQueryId()
         {
-            const uint64_t beginSlot = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            if (RingCount(m_previousCheckpoint.load(), beginSlot) >= RingSize())
+            const uint64_t seqIdx = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
+            if (RingCount(m_previousCheckpoint.load(), seqIdx) >= RingSize())
             {
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));
@@ -406,13 +422,22 @@ namespace tracy
                 // TODO: decide what to do when "full" (Collect(), or return an arbitrary error-id?)
             }
 
-            const uint32_t r0 = RingIndex(beginSlot);
-            const uint32_t r1 = RingIndex(beginSlot + 1);
-            const auto t = std::chrono::high_resolution_clock::now();
-            m_queryRequestTime[r0] = t;
-            m_queryRequestTime[r1] = t;
+            const uint32_t queryId = RingIndex(seqIdx);
 
-            return r0;
+            if (m_queryRequestTime[queryId+0] != AgeClock::time_point::max()) {
+                TracyD3D12Panic("Unexpected Request Time! (+0)");
+            }
+            if (m_queryRequestTime[queryId+1] != AgeClock::time_point::max()) {
+                TracyD3D12Panic("Unexpected Request Time! (+1)");
+            }
+
+            const auto t = AgeClock::now();
+            m_queryRequestTime[queryId+0] = t;
+            m_queryRequestTime[queryId+1] = t;
+
+            TracyPlot("TracyD3D12 QueryID", int64_t(queryId));
+
+            return queryId;
         }
 
         tracy_force_inline uint8_t GetId() const

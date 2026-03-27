@@ -2863,6 +2863,9 @@ static void DebugDump(QueueGpuTime& item, int64_t dt, int64_t refGpu)
     fwrite(&dt, sizeof(dt), 1, hFileDump);
     fwrite(&refGpu, sizeof(refGpu), 1, hFileDump);
     fflush(hFileDump);
+    TracyPlot("Tracy refGpu", int64_t(0));
+    TracyPlot("Tracy refGpu", dt);
+    TracyPlot("Tracy refGpu", int64_t(0));
 }
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
@@ -3013,12 +3016,9 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
                     int64_t dt = t - refGpu;
-                    DebugDump(item->gpuTime, dt, refGpu),
+                    //DebugDump(item->gpuTime, dt, refGpu),
                     refGpu = t;
                     MemWrite( &item->gpuTime.gpuTime, dt );
-                    TracyPlot("Tracy refGpu", int64_t(0));
-                    TracyPlot("Tracy refGpu", dt);
-                    TracyPlot("Tracy refGpu", int64_t(0));
                     break;
                 }
                 case QueueType::GpuContextName:

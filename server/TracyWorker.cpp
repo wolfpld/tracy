@@ -5954,7 +5954,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
-    DebugDump(ev, m_refTimeGpu);
+    //DebugDump(ev, m_refTimeGpu);
 
     int64_t tgpu = RefTime( m_refTimeGpu, ev.gpuTime );
     /*

@@ -5957,7 +5957,6 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     //DebugDump(ev, m_refTimeGpu);
 
     int64_t tgpu = RefTime( m_refTimeGpu, ev.gpuTime );
-    /*
     if( tgpu < ctx->lastGpuTime - ( 1u << 31 ) )
     {
         if( ctx->overflow == 0 )
@@ -5971,7 +5970,6 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     {
         tgpu += ctx->overflow * ctx->overflowMul;
     }
-    */
 
     int64_t gpuTime;
     if( !ctx->hasPeriod )

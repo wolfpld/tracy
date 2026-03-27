@@ -388,10 +388,10 @@ struct GpuEvent
     }
     tracy_force_inline int64_t GpuEnd() const { return int64_t( _gpuEnd_child2 ) >> 16; }
     tracy_force_inline void SetGpuEnd( int64_t gpuEnd ) {
-        //assert( gpuEnd < (int64_t)( 1ull << 47 ) );
         if (gpuEnd >= (int64_t)(1ull << 47)) {
             fprintf(stderr, "ERROR: unexpected GpuEnd timestamp: %llu\n", gpuEnd);
         }
+        assert( gpuEnd < (int64_t)( 1ull << 47 ) );
         memcpy( ((char*)&_gpuEnd_child2)+2, &gpuEnd, 4 );
         memcpy( ((char*)&_gpuEnd_child2)+6, ((char*)&gpuEnd)+4, 2 );
     }

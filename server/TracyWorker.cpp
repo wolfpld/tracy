@@ -1190,6 +1190,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks, bool allow
                 ptr->time = refTime;
                 ptr++;
             }
+            if( fileVer < FileVersion( 0, 13, 3 ) ) pd->data.mark_unsorted();
             m_data.plots.Data().push_back_no_space_check( pd );
         }
     }

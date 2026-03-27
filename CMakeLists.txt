@@ -16,6 +16,7 @@ endif()
 option(TRACY_STATIC "Whether to build Tracy as a static library" ${DEFAULT_STATIC})
 option(TRACY_Fortran "Build Fortran bindings" OFF)
 option(TRACY_LTO "Enable Link-Time optimization" OFF)
+option(TRACY_UI_PROFILER "Whether to build Tracy UI Profiler" OFF)
 
 if(TRACY_Fortran)
   enable_language(Fortran)
@@ -143,6 +144,7 @@ set_option(TRACY_SYMBOL_OFFLINE_RESOLVE "Instead of full runtime symbol resoluti
 set_option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "Enable libbacktrace to support dynamically loaded elfs in symbol resolution resolution after the first symbol resolve operation" OFF)
 set_option(TRACY_DEBUGINFOD "Enable debuginfod support" OFF)
 set_option(TRACY_IGNORE_MEMORY_FAULTS "Ignore instrumentation errors from memory free events that do not have a matching allocation" OFF)
+set_option(TRACY_DEFAULT_MEMORY_PROFLER "Enable default memory profiler on supported platforms" OFF)
 
 if(TRACY_CALLSTACK)
     message(STATUS "TRACY_CALLSTACK: ${TRACY_CALLSTACK}")
@@ -291,4 +293,8 @@ if(TRACY_CLIENT_PYTHON)
     endif()
 
     add_subdirectory(python)
+endif()
+
+if (TRACY_UI_PROFILER)
+    add_subdirectory(profiler)
 endif()

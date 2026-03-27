@@ -1,6 +1,7 @@
 set(TRACY_COMMON_DIR ${CMAKE_CURRENT_LIST_DIR}/../public/common)
 
 set(TRACY_COMMON_SOURCES
+    ../client/TracyAlloc.cpp
     tracy_lz4.cpp
     tracy_lz4hc.cpp
     TracySocket.cpp

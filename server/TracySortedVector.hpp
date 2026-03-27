@@ -93,6 +93,7 @@ public:
 
     tracy_force_inline void sort() { sort( CompareDefault() ); }
     tracy_force_inline void ensure_sorted() { if( !is_sorted() ) sort(); }
+    tracy_force_inline void mark_unsorted() { if( v.size() > 1 ) sortedEnd = 1; }
 
     template<class Compare>
     void sort( Compare comp )

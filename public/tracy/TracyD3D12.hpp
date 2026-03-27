@@ -274,6 +274,7 @@ namespace tracy
 
             // TODO: could use queue->Signal() to inject a progress point in the queue
             // and the immediately wait for the signal, in order to avoid busy-waiting
+            // (need to create an ID3D12Fence and associate an Event object to it)
 
             // wait for all pending queries to be collected (busy-wait...)
             while (m_previousCheckpoint.load() != m_queryCounter.load())
@@ -375,7 +376,7 @@ namespace tracy
                         break;
                     // otherwise, give up on waiting and drop it
                     TracyD3D12Debug(
-                        ZoneScopedNC("[drop]", Color::Red4);
+                        ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
                         ZoneValue(int64_t(queryId));
                         ZoneValue(int64_t(m_lastEmittedGpuTimestamp));
                         TracyPlot("TracyD3D12 timeout", 0.0);
@@ -391,7 +392,13 @@ namespace tracy
                 EmitGpuTime(gpuZoneBeginTimestamp, queryId);
                 EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
 
-                // "slow" write (to timestampBuffer, backed by "readback" heap memory)
+                // Reset timestamps to the InvalidTimestamp sentinel value to establish
+                // a pre-condition for reusing the slots.
+                // ("slow" write since the timestamp buffer is in "readback" heap memory)
+                // WARN: this does not eliminate the potential race with the GPU!
+                // If the query is legit (i.e., it has been submitted to the GPU queue
+                // for execution), it will resolve eventually, overwriting the sentinel
+                // value written below in the slot.
                 timestampBuffer[queryId+0] = InvalidTimestamp;
                 timestampBuffer[queryId+1] = InvalidTimestamp;
                 m_queryRequestTime[queryId+0] = AgeClock::time_point::max();
@@ -402,6 +409,8 @@ namespace tracy
                     TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId+1)), "TracyD3D12 Query");
                 );
 
+                // as soon as the checkpoint is incremented,
+                // NextQueryId() is free to reuse the query ids
                 m_previousCheckpoint.store(i+2);
             }
 
@@ -443,6 +452,19 @@ namespace tracy
 
         tracy_force_inline uint32_t NextQueryId()
         {
+            // WARN: the moment m_queryCounter is incremented, Collect() will have
+            // instant visibility of the query pair and will attempt to collect it!
+            // Under normal circumstances, this is fine: the corresponding id slots
+            // would have been rset to the InvalidTimestamp sentinel value already,
+            // right after the timestamp slots being collected.
+            // However, if Collect() decides to timeout-drop a timestamp query that
+            // was indeed submitted to the GPU queue for execution, the dropped query
+            // will eventually be resolved by the GPU and will arrive "late" at its
+            // corrsponding query slot (the GPU will write asynchronously to it).
+            // The "new" query pair here will have matching slots with the late query
+            // pair of "before". Given that Collect() will "sense" the new query pair
+            // immediately upon m_queryCounter being incremented, the late timestamp
+            // query may be collected as if it was the timestamp of the new query...
             const uint64_t seqIdx = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
             if (RingCount(m_previousCheckpoint.load(), seqIdx) >= RingSize())
             {
@@ -458,6 +480,11 @@ namespace tracy
             m_queryRequestTime[queryId+0] = t;
             m_queryRequestTime[queryId+1] = t;
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            // WARN: resetting the timestamps here helps with the timestamp "race",
+            // but it's palliative... The GPU may finish the "late" query after the
+            // sentinel assignment below, and Collect() will not know whether the
+            // next valid timestamp it sees in the slot belongs to the late query
+            // or to this new query...
             m_timestampBuffer[queryId+0] = InvalidTimestamp;
             m_timestampBuffer[queryId+1] = InvalidTimestamp;
 #endif

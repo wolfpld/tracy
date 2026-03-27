@@ -103,9 +103,9 @@ public:
         const auto sl = se - 1;
         const auto ue = v.end();
 #ifdef __EMSCRIPTEN__
-        pdqsort_branchless( sb, se, comp );
+        pdqsort_branchless( se, ue, comp );
 #else
-        ppqsort::sort( ppqsort::execution::par, sb, se, comp );
+        ppqsort::sort( ppqsort::execution::par, se, ue, comp );
 #endif
         const auto ss = std::lower_bound( sb, se, *se, comp );
         const auto uu = std::lower_bound( se, ue, *sl, comp );

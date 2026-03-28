@@ -22,11 +22,14 @@
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMmap.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../public/common/TracyVersion.hpp"
+#include "GitRef.hpp"
 
 using json = nlohmann::json;
 
 void Usage()
 {
+    printf( "tracy-import-chrome %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
     printf( "Usage: import-chrome input.json output.tracy\n\n" );
     printf( "The following chrome-tracing phases are supported:\n\n" );
     printf( "  b/B/e/E - Timeline events such as ZoneNamed\n" );

@@ -3,6 +3,8 @@
 #include "TracyPrint.hpp"
 #include "TracyWorker.hpp"
 #include "../../getopt/getopt.h"
+#include "../../public/common/TracyVersion.hpp"
+#include "GitRef.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -274,11 +276,13 @@ struct MergedTrace
 
 [[noreturn]] void Usage()
 {
+    printf( "tracy-merge %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
     printf( "Usage: tracy-merge -o output.tracy input1.tracy [input2.tracy ...]\n\n" );
     printf( "Options:\n" );
     printf( "  -o, --output <file>    Output file path (required)\n" );
     printf( "  -f, --force            Overwrite output file if it exists\n" );
     printf( "  -h, --help             Show this help message\n" );
+    printf( "  -V, --version          Show version information\n" );
     exit( 1 );
 }
 
@@ -292,11 +296,12 @@ int main( int argc, char** argv )
         { "output", required_argument, nullptr, 'o' },
         { "force", no_argument, nullptr, 'f' },
         { "help", no_argument, nullptr, 'h' },
+        { "version", no_argument, nullptr, 'V' },
         { nullptr, 0, nullptr, 0 }
     };
 
     int c;
-    while( ( c = getopt_long( argc, argv, "o:fh", longOptions, nullptr ) ) != -1 )
+    while( ( c = getopt_long( argc, argv, "o:fhV", longOptions, nullptr ) ) != -1 )
     {
         switch( c )
         {
@@ -307,6 +312,11 @@ int main( int argc, char** argv )
             overwrite = true;
             break;
         case 'h':
+            Usage();
+            break;
+        case 'V':
+            printf( "tracy-merge %i.%i.%i / %s\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
+            exit( 0 );
         default:
             Usage();
             break;
@@ -315,7 +325,7 @@ int main( int argc, char** argv )
 
     if( outputFile.empty() )
     {
-        std::cerr << "Error: Output file is required (-o)" << std::endl;
+        std::cerr << "Error: Output file is required (-o)" << std::endl << std::endl;
         Usage();
     }
 
@@ -326,7 +336,7 @@ int main( int argc, char** argv )
 
     if( inputFiles.empty() )
     {
-        std::cerr << "Error: At least one input file is required" << std::endl;
+        std::cerr << "Error: At least one input file is required" << std::endl << std::endl;
         Usage();
     }
 

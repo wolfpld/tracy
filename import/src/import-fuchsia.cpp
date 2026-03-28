@@ -30,8 +30,11 @@
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMmap.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../public/common/TracyVersion.hpp"
+#include "GitRef.hpp"
 
 void Usage() {
+  printf("tracy-import-fuchsia %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef);
   printf("Usage: import-fuchsia input.json output.tracy\n\n");
   printf("See: "
          "https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format\n\n");

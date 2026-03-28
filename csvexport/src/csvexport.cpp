@@ -16,14 +16,18 @@
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../getopt/getopt.h"
+#include "../../public/common/TracyVersion.hpp"
+#include "GitRef.hpp"
 
 void print_usage_exit(int e)
 {
+    fprintf(stderr, "tracy-csvexport %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef);
     fprintf(stderr, "Extract statistics from a trace to a CSV format\n");
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  extract [OPTION...] <trace file>\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  -h, --help               Print usage\n");
+    fprintf(stderr, "  -V, --version            Show version information\n");
     fprintf(stderr, "  -f, --filter arg         Filter zone names (default: "")\n");
     fprintf(stderr, "  -s, --sep arg            CSV separator (default: ,)\n");
     fprintf(stderr, "  -c, --case               Case sensitive filtering\n");
@@ -61,6 +65,7 @@ Args parse_args(int argc, char** argv)
 
     struct option long_opts[] = {
         { "help", no_argument, NULL, 'h' },
+        { "version", no_argument, NULL, 'V' },
         { "filter", optional_argument, NULL, 'f' },
         { "sep", optional_argument, NULL, 's' },
         { "case", no_argument, NULL, 'c' },
@@ -74,13 +79,16 @@ Args parse_args(int argc, char** argv)
     };
 
     int c;
-    while ((c = getopt_long(argc, argv, "hf:s:ceugmp", long_opts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "hf:s:ceugmpV", long_opts, NULL)) != -1)
     {
         switch (c)
         {
         case 'h':
             print_usage_exit(0);
             break;
+        case 'V':
+            printf( "tracy-csvexport %i.%i.%i / %s\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
+            exit( 0 );
         case 'f':
             args.filter = optarg;
             break;

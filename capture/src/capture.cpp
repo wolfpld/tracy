@@ -17,6 +17,8 @@
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracySysUtil.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../public/common/TracyVersion.hpp"
+#include "GitRef.hpp"
 
 #include "CaptureOutput.hpp"
 
@@ -39,6 +41,7 @@ void SigInt( int )
 
 [[noreturn]] void Usage()
 {
+    printf( "tracy-capture %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
     printf( "Usage: capture -o output.tracy [-a address] [-p port] [-f] [-s seconds] [-m memlimit]\n" );
     exit( 1 );
 }

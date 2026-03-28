@@ -14,6 +14,7 @@
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../getopt/getopt.h"
+#include "GitRef.hpp"
 
 #include "OfflineSymbolResolver.h"
 
@@ -25,6 +26,7 @@
 
 void Usage()
 {
+    printf( "tracy-update %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
     printf( "Usage: update [options] input.tracy output.tracy\n\n" );
     printf( "  -4: enable LZ4 compression\n" );
     printf( "  -h: enable LZ4HC compression\n" );

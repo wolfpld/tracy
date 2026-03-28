@@ -19,12 +19,14 @@
 
 #include "../../getopt/getopt.h"
 #include "../../public/common/TracySocket.hpp"
+#include "../../public/common/TracyVersion.hpp"
 #include "../../server/TracyBroadcast.hpp"
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracySysUtil.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "GitRef.hpp"
 
 #include "CaptureOutput.hpp"
 
@@ -67,6 +69,7 @@ static std::unordered_set<std::string> g_outputFiles;
 
 [[noreturn]] void Usage()
 {
+    printf( "tracy-capture-daemon %i.%i.%i / %s\n\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
     printf( "Usage: tracy-capture-daemon -o <output_dir> [options]\n\n" );
     printf( "Options:\n" );
     printf( "  -o, --output <dir>       Output directory (required)\n" );
@@ -75,6 +78,7 @@ static std::unordered_set<std::string> g_outputFiles;
     printf( "  --filter-name <pattern>  Only capture clients matching program name\n" );
     printf( "  --filter-port <port>     Only capture clients with specific data port\n" );
     printf( "  -h, --help               Show this help\n" );
+    printf( "  -V, --version            Show version information\n" );
     exit( 1 );
 }
 
@@ -280,11 +284,12 @@ int main( int argc, char** argv )
         { "filter-name", required_argument, nullptr, 1 },
         { "filter-port", required_argument, nullptr, 2 },
         { "help", no_argument, nullptr, 'h' },
+        { "version", no_argument, nullptr, 'V' },
         { nullptr, 0, nullptr, 0 }
     };
     
     int c;
-    while( ( c = getopt_long( argc, argv, "o:p:m:h", longOptions, nullptr ) ) != -1 )
+    while( ( c = getopt_long( argc, argv, "o:p:m:hV", longOptions, nullptr ) ) != -1 )
     {
         switch( c )
         {
@@ -304,6 +309,11 @@ int main( int argc, char** argv )
             g_filterPort = atoi( optarg );
             break;
         case 'h':
+            Usage();
+            break;
+        case 'V':
+            printf( "tracy-capture-daemon %i.%i.%i / %s\n", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::GitRef );
+            exit( 0 );
         default:
             Usage();
             break;
@@ -312,7 +322,7 @@ int main( int argc, char** argv )
     
     if( outputDir.empty() )
     {
-        fprintf( stderr, "Error: Output directory is required (-o)\n" );
+        fprintf( stderr, "Error: Output directory is required (-o)\n\n" );
         Usage();
     }
     

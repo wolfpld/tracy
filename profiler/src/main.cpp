@@ -234,7 +234,7 @@ int main( int argc, char** argv )
     {
         if( strcmp( argv[1], "--help" ) == 0 )
         {
-            printf( "%s\n\n", title );
+            printf( "%s / %s\n\n", title, tracy::GitRef );
             printf( "Usage:\n\n" );
             printf( "    Open trace file stored on disk:\n" );
             printf( "      %s file.tracy\n\n", argv[0] );

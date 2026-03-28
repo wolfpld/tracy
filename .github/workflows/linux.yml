@@ -32,19 +32,19 @@ jobs:
         cmake --build profiler/build --parallel
     - name: Update utility
       run: |
-        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release
+        cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build update/build --parallel
     - name: Capture utility
       run: |
-        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release
+        cmake -B capture/build -S capture -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build capture/build --parallel
     - name: Csvexport utility
       run: |
-        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release
+        cmake -B csvexport/build -S csvexport -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build csvexport/build --parallel
     - name: Import utilities
       run: |
-        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release
+        cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build import/build --parallel
     - name: Library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build

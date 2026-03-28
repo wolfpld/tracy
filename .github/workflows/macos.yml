@@ -11,7 +11,7 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
 
 jobs:
-  build:
+  build-macos:
     runs-on: macos-15
     steps:
     - uses: actions/checkout@v4

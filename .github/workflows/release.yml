@@ -5,14 +5,14 @@ on:
     types: [published]
 
 jobs:
-  build-windows:
+  release-build-windows:
     uses: ./.github/workflows/windows.yml
 
-  build-manual:
+  release-build-manual:
     uses: ./.github/workflows/latex.yml
 
   attach-to-release:
-    needs: [build-windows, build-manual]
+    needs: [release-build-windows, release-build-manual]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/download-artifact@v4

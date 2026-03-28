@@ -9,7 +9,7 @@ on:
   workflow_call:
 
 jobs:
-  build:
+  build-manual:
 
     runs-on: ubuntu-latest
 

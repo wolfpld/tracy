@@ -12,7 +12,7 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4

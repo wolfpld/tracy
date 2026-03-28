@@ -11,7 +11,7 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
 
 jobs:
-  build:
+  build-emscripten:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     steps:
@@ -55,7 +55,7 @@ jobs:
         path: bin
   deploy:
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-emscripten
     if: github.ref == 'refs/heads/master'
     steps:
     - uses: actions/download-artifact@v4

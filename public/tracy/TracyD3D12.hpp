@@ -418,7 +418,7 @@ namespace tracy
             m_readbackBuffer->Unmap(0, &mapRange);
 #endif
 
-            //RecalibrateClocks();
+            RecalibrateClocks();
         }
 
     private:
@@ -471,7 +471,9 @@ namespace tracy
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));
                 TracyD3D12Panic("Submitted too many GPU queries!");
-                // TODO: decide what to do when "full" (Collect(), or return an arbitrary error-id?)
+                // TODO: decide what to do when "full"
+                // (maybe a loop with a few iterations attempting to Collect() queries
+                // and if it fails, return some "invalid query" id)
             }
 
             const uint32_t queryId = RingIndex(seqIdx);
@@ -480,11 +482,11 @@ namespace tracy
             m_queryRequestTime[queryId+0] = t;
             m_queryRequestTime[queryId+1] = t;
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-            // WARN: resetting the timestamps here helps with the timestamp "race",
-            // but it's palliative... The GPU may finish the "late" query after the
-            // sentinel assignment below, and Collect() will not know whether the
-            // next valid timestamp it sees in the slot belongs to the late query
-            // or to this new query...
+            // WARN: resetting the timestamps here reduces the window of the race
+            // condition, but does not eliminate it. The GPU may still finish the
+            // "late" query after assigning the sentinel value below... Collect()
+            // will not know whether the next valid timestamp it sees in the slot
+            // belongs to the late query or to this new query...
             m_timestampBuffer[queryId+0] = InvalidTimestamp;
             m_timestampBuffer[queryId+1] = InvalidTimestamp;
 #endif

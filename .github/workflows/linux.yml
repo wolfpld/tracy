@@ -46,6 +46,10 @@ jobs:
       run: |
         cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build import/build --parallel
+    - name: Merge utility
+      run: |
+        cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake --build merge/build --parallel
     - name: Library
       run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
     - name: Test application
@@ -80,6 +84,7 @@ jobs:
         cp csvexport/build/tracy-csvexport bin
         cp import/build/tracy-import-chrome bin
         cp import/build/tracy-import-fuchsia bin
+        cp merge/build/tracy-merge bin
         strip bin/tracy-*
     - uses: actions/upload-artifact@v4
       with:

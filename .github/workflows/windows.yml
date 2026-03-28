@@ -49,6 +49,10 @@ jobs:
       run: |
         cmake -B import/build -S import -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build import/build --parallel --config Release
+    - name: Build merge
+      run: |
+        cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake --build merge/build --parallel --config Release
     - name: Package artifacts
       run: |
         mkdir bin
@@ -58,6 +62,7 @@ jobs:
         copy csvexport\build\Release\tracy-csvexport.exe bin
         copy import\build\Release\tracy-import-chrome.exe bin
         copy import\build\Release\tracy-import-fuchsia.exe bin
+        copy merge\build\Release\tracy-merge.exe bin
     - uses: actions/upload-artifact@v4
       with:
         name: windows

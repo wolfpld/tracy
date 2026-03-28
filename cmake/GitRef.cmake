@@ -27,6 +27,7 @@ function(add_git_ref target)
         endif()
     endif()
 
+    target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     get_property(_git_found GLOBAL PROPERTY _GIT_FOUND)
     if(_git_found)
         add_dependencies(${target} git-ref)

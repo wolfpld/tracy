@@ -283,13 +283,16 @@ namespace tracy
             // and the immediately wait for the signal, in order to avoid busy-waiting
             // (need to create an ID3D12Fence and associate an Event object to it)
 
-            // wait for all pending queries to be collected (busy-wait...)
-            // TODO: need to relax the while condition, since now m_previousCheckpoint
-            // advances in batches of the window size, but not the query counter...
-            while (m_previousCheckpoint.load() != m_queryCounter.load())
-            {
+            // collect all pending queries up to this point
+            uint64_t latestQuery = m_queryCounter.load();
+            while (m_window.rangeEnd != latestQuery)
                 Collect();
-            }
+            // TODO: ensure we collect a "partial" window (Signal/Wait should do it)
+
+            // if the client is still pushing queries past the latest checkpoint above,
+            // assume there's a bug in the client, and ignore them (don't collect)
+            if (latestQuery != m_queryCounter.load())
+                TracyD3D12Panic("client is still pushing queries.");
 
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
             D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };

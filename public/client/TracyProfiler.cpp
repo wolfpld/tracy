@@ -84,6 +84,8 @@
 #include "TracySysTrace.hpp"
 #include "../tracy/TracyC.h"
 
+#include "../tracy/Tracy.hpp"
+
 #if defined TRACY_MANUAL_LIFETIME && !defined(TRACY_DELAYED_INIT)
 #  error "TRACY_MANUAL_LIFETIME requires enabled TRACY_DELAYED_INIT"
 #endif
@@ -2847,6 +2849,18 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     default: assert( false ); break; \
     }
 
+static void DebugDump(QueueGpuTime& item, int64_t dt, int64_t refGpu)
+{
+    static FILE* hFileDump = fopen("gpu-time-client.dump", "wb");
+    fwrite(&item, sizeof(item), 1, hFileDump);
+    fwrite(&dt, sizeof(dt), 1, hFileDump);
+    fwrite(&refGpu, sizeof(refGpu), 1, hFileDump);
+    fflush(hFileDump);
+    TracyPlot("Tracy refGpu", int64_t(0));
+    TracyPlot("Tracy refGpu", dt);
+    TracyPlot("Tracy refGpu", int64_t(0));
+}
+
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
@@ -2995,6 +3009,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
                     int64_t dt = t - refGpu;
+                    //DebugDump(item->gpuTime, dt, refGpu),
                     refGpu = t;
                     MemWrite( &item->gpuTime.gpuTime, dt );
                     break;

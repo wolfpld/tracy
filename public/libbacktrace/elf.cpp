@@ -170,10 +170,10 @@ dl_iterate_phdr (int (*callback) (struct dl_phdr_info *,
 #undef EI_CLASS
 #undef EI_DATA
 #undef EI_VERSION
-#undef ELF_MAG0
-#undef ELF_MAG1
-#undef ELF_MAG2
-#undef ELF_MAG3
+#undef ELFMAG0
+#undef ELFMAG1
+#undef ELFMAG2
+#undef ELFMAG3
 #undef ELFCLASS32
 #undef ELFCLASS64
 #undef ELFDATA2LSB

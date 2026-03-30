@@ -279,9 +279,7 @@ private:
                 {
                     if( dlInfo.dli_fname )
                     {
-                        size_t sz = strlen( dlInfo.dli_fname ) + 1;
-                        entry.m_name = (char*)tracy_malloc( sz );
-                        memcpy( entry.m_name, dlInfo.dli_fname, sz );
+                        entry.name = CopyString( dlInfo.dli_fname );
                     }
                 }
 
@@ -978,15 +976,11 @@ static void InitKernelSymbols()
         {
             validCnt++;
 
-            strname = (char*)tracy_malloc_fast( nameend - namestart + 1 );
-            memcpy( strname, namestart, nameend - namestart );
-            strname[nameend-namestart] = '\0';
+            strname = CopyStringFast( namestart, nameend - namestart );
 
             if( modstart )
             {
-                strmod = (char*)tracy_malloc_fast( modend - modstart + 1 );
-                memcpy( strmod, modstart, modend - modstart );
-                strmod[modend-modstart] = '\0';
+                strmod = CopyStringFast( modstart, modend - modstart );
             }
         }
 

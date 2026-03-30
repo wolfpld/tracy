@@ -412,6 +412,8 @@ static int s_ctxBufferIdx = 0;
 
 static RingBuffer* s_ring = nullptr;
 
+extern uint32_t ___tracy_magic_pid_override;
+
 static const int ThreadHashSize = 4 * 1024;
 static uint32_t s_threadHash[ThreadHashSize] = {};
 
@@ -423,7 +425,14 @@ static bool CurrentProcOwnsThread( uint32_t tid )
     if( hv == -tid ) return false;
 
     char path[256];
-    sprintf( path, "/proc/self/task/%d", tid );
+    if( ___tracy_magic_pid_override != 0 )
+    {
+        sprintf( path, "/proc/%d/task/%d", (int)___tracy_magic_pid_override, tid );
+    }
+    else
+    {
+        sprintf( path, "/proc/self/task/%d", tid );
+    }
     struct stat st;
     if( stat( path, &st ) == 0 )
     {
@@ -648,7 +657,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
 
     samplingPeriod = GetSamplingPeriod();
-    uint32_t currentPid = (uint32_t)getpid();
+    uint32_t currentPid = ___tracy_magic_pid_override != 0 ? ___tracy_magic_pid_override : (uint32_t)getpid();
 
     s_numCpus = (int)std::thread::hardware_concurrency();
 

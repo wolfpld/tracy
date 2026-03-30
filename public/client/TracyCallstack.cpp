@@ -1589,7 +1589,7 @@ void GetSymbolForOfflineResolve(void* address, uint64_t imageBaseAddress, Callst
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     InitRpmalloc();
-    if ( !IsKernelAddress( ptr ) )
+    if( !IsKernelAddress( ptr ) )
     {
         const char* imageName = nullptr;
         uint64_t imageBaseAddress = 0x0;

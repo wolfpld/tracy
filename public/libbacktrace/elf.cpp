@@ -7556,23 +7556,38 @@ backtrace_initialize (struct backtrace_state *state, const char *filename,
       struct libbacktrace_base_address zero_base_address;
 
       memset (&zero_base_address, 0, sizeof zero_base_address);
+
+      /* For external files (not loaded in the current process), pass
+	 exe=0 so that elf_add does not bail out for ET_DYN files.
+	 This allows DWARF data and symbol tables to be loaded directly
+	 from PIE executables and shared libraries with base_address=0,
+	 letting the caller convert runtime addresses to ELF virtual
+	 addresses before lookup.  */
+      int exe = state->external_file ? 0 : 1;
+
       ret = elf_add (state, filename, descriptor, NULL, 0, zero_base_address,
 		     NULL, error_callback, data, &elf_fileline_fn, &found_sym,
-		     &found_dwarf, NULL, 1, 0, NULL, 0);
+		     &found_dwarf, NULL, exe, 0, NULL, 0);
       if (!ret)
 	return 0;
     }
 
-  pd.state = state;
-  pd.error_callback = error_callback;
-  pd.data = data;
-  pd.fileline_fn = &elf_fileline_fn;
-  pd.found_sym = &found_sym;
-  pd.found_dwarf = &found_dwarf;
-  pd.exe_filename = filename;
-  pd.exe_descriptor = ret < 0 ? descriptor : -1;
+  /* For external files, skip dl_iterate_phdr -- the file is not loaded
+     in the current process, so enumerating the current process's shared
+     libraries would only add noise.  */
+  if (!state->external_file)
+    {
+      pd.state = state;
+      pd.error_callback = error_callback;
+      pd.data = data;
+      pd.fileline_fn = &elf_fileline_fn;
+      pd.found_sym = &found_sym;
+      pd.found_dwarf = &found_dwarf;
+      pd.exe_filename = filename;
+      pd.exe_descriptor = ret < 0 ? descriptor : -1;
 
-  elf_iterate_phdr_and_add_new_files(&pd);
+      elf_iterate_phdr_and_add_new_files(&pd);
+    }
 
   if (!state->threaded)
     {

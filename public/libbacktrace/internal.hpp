@@ -166,6 +166,12 @@ struct backtrace_state
   struct backtrace_freelist_struct *freelist;
   /* Trigger an known address range refresh */
   request_known_address_ranges_refresh request_known_address_ranges_refresh_fn;
+  /* Non-zero if this state is for an external file, not the current
+     process.  When set, backtrace_initialize will not treat the file
+     as the main executable (bypassing the ET_DYN deferral to
+     dl_iterate_phdr) and will not enumerate the current process's
+     shared libraries.  */
+  int external_file;
 };
 
 /* Open a file for reading.  Returns -1 on error.  If DOES_NOT_EXIST

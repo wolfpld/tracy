@@ -87,6 +87,19 @@ extern struct backtrace_state *backtrace_create_state (
     const char *filename, int threaded,
     backtrace_error_callback error_callback, void *data);
 
+/* Like backtrace_create_state, but marks the state as being for an
+   external file that is not loaded in the current process.  This
+   bypasses the ET_DYN deferral to dl_iterate_phdr that normally
+   happens for PIE executables and shared libraries, allowing DWARF
+   data to be loaded directly from the file with base_address=0.
+   The caller is responsible for converting runtime virtual addresses
+   to ELF virtual addresses before passing them to backtrace_pcinfo
+   or backtrace_syminfo.  */
+
+extern struct backtrace_state *backtrace_create_state_for_file (
+    const char *filename, int threaded,
+    backtrace_error_callback error_callback, void *data);
+
 /* The type of the callback argument to the backtrace_full function.
    DATA is the argument passed to backtrace_full.  PC is the program
    counter.  FILENAME is the name of the file containing PC, or NULL

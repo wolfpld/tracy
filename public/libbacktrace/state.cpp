@@ -73,4 +73,21 @@ backtrace_create_state (const char *filename, int threaded,
   return state;
 }
 
+/* Like backtrace_create_state, but marks the state as being for an
+   external file.  See backtrace.hpp for details.  */
+
+struct backtrace_state *
+backtrace_create_state_for_file (const char *filename, int threaded,
+				 backtrace_error_callback error_callback,
+				 void *data)
+{
+  struct backtrace_state *state;
+
+  state = backtrace_create_state (filename, threaded, error_callback, data);
+  if (state != NULL)
+    state->external_file = 1;
+
+  return state;
+}
+
 }

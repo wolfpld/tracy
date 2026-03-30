@@ -35,10 +35,16 @@ struct MicroArchUx
 };
 
 static constexpr MicroArchUx s_uArchUx[] = {
+    { "AMD Zen 5", "Ryzen 7 9700X", "ZEN5" },
     { "AMD Zen 4", "Ryzen 5 7600X", "ZEN4" },
     { "AMD Zen 3", "Ryzen 5 5600X", "ZEN3" },
     { "AMD Zen 2", "Ryzen 7 3700X", "ZEN2" },
     { "AMD Zen+", "Ryzen 5 2600", "ZEN+" },
+    { "Arrow Lake", "Core Ultra 7 265K", "ARL-P" },
+    { "Arrow Lake", "Core Ultra 7 265K", "ARL-E" },
+    { "Meteor Lake P", "Core Ultra 7 155H", "MTL-P" },
+    { "Meteor Lake E", "Core Ultra 7 155H", "MTL-E" },
+    { "Emerald Rapids", "Xeon Silver 4514Y", "EMR" },
     { "Alder Lake P", "Core i5-12600K", "ADL-P" },
     { "Alder Lake E", "Core i5-12600K", "ADL-E" },
     { "Rocket Lake", "Core i9-11900", "RKL" },
@@ -490,6 +496,7 @@ struct CpuIdMap
 static constexpr CpuIdMap s_cpuIdMap[] = {
     { PackCpuInfo( 0x810F81 ), "ZEN+" },
     { PackCpuInfo( 0x800F82 ), "ZEN+" },
+    // Zen2
     { PackCpuInfo( 0x830F10 ), "ZEN2" },
     { PackCpuInfo( 0x840F70 ), "ZEN2" },
     { PackCpuInfo( 0x860F01 ), "ZEN2" },
@@ -497,60 +504,109 @@ static constexpr CpuIdMap s_cpuIdMap[] = {
     { PackCpuInfo( 0x870F10 ), "ZEN2" },
     { PackCpuInfo( 0x890F00 ), "ZEN2" },
     { PackCpuInfo( 0x890F80 ), "ZEN2" },
+    // Zen3
     { PackCpuInfo( 0xA00F11 ), "ZEN3" },
     { PackCpuInfo( 0xA00F80 ), "ZEN3" },
+    { PackCpuInfo( 0xA00F82 ), "ZEN3" },
     { PackCpuInfo( 0xA20F10 ), "ZEN3" },
     { PackCpuInfo( 0xA20F12 ), "ZEN3" },
     { PackCpuInfo( 0xA30F00 ), "ZEN3" },
+    { PackCpuInfo( 0xA30F01 ), "ZEN3" },
     { PackCpuInfo( 0xA40F00 ), "ZEN3" },
     { PackCpuInfo( 0xA40F41 ), "ZEN3" },
     { PackCpuInfo( 0xA50F00 ), "ZEN3" },
+    // Zen4
     { PackCpuInfo( 0xA60F12 ), "ZEN4" },
+    { PackCpuInfo( 0xA60F13 ), "ZEN4" },
+    { PackCpuInfo( 0xA70F41 ), "ZEN4" },
+    { PackCpuInfo( 0xA70F52 ), "ZEN4" },
+    { PackCpuInfo( 0xA70F80 ), "ZEN4" },
+    { PackCpuInfo( 0xA70FC0 ), "ZEN4" },
+    { PackCpuInfo( 0xA80F01 ), "ZEN4" },
+    { PackCpuInfo( 0xA90F01 ), "ZEN4" },
     { PackCpuInfo( 0xA10F11 ), "ZEN4" },
+    { PackCpuInfo( 0xA10F12 ), "ZEN4" },
+    { PackCpuInfo( 0xA10F81 ), "ZEN4" },
+    // Zen5
+    { PackCpuInfo( 0xB00F20 ), "ZEN5" },
+    { PackCpuInfo( 0xB20F40 ), "ZEN5" },
+    { PackCpuInfo( 0xB30F00 ), "ZEN5" },
+    { PackCpuInfo( 0xB30F80 ), "ZEN5" },
+    { PackCpuInfo( 0xB40F40 ), "ZEN5" },
+    { PackCpuInfo( 0xB40F41 ), "ZEN5" },
+    { PackCpuInfo( 0xB60F00 ), "ZEN5" },
+    { PackCpuInfo( 0xB60F80 ), "ZEN5" },
+    { PackCpuInfo( 0xB70F00 ), "ZEN5" },
+    { PackCpuInfo( 0xBD0F00 ), "ZEN5" },
+    // Arrow Lake
+    { PackCpuInfo( 0x0B0650 ), "ARL-P" },
+    { PackCpuInfo( 0x0C0652 ), "ARL-P" },
+    { PackCpuInfo( 0x0C0662 ), "ARL-P" },
+    // Meteor Lake
+    { PackCpuInfo( 0x0A06A4 ), "MTL-P" },
+    { PackCpuInfo( 0x0A06C1 ), "MTL-P" },
+    // Emerald Rapids
+    { PackCpuInfo( 0x0C06F2 ), "EMR" },
+    // Alder Lake
     { PackCpuInfo( 0x090672 ), "ADL-P" },
     { PackCpuInfo( 0x090675 ), "ADL-P" },
     { PackCpuInfo( 0x0906A2 ), "ADL-P" },
     { PackCpuInfo( 0x0906A3 ), "ADL-P" },
     { PackCpuInfo( 0x0906A4 ), "ADL-P" },
+    // Rocket Lake
     { PackCpuInfo( 0x0A0671 ), "RKL" },
+    // Tiger Lake
     { PackCpuInfo( 0x0806C1 ), "TGL" },
     { PackCpuInfo( 0x0806D1 ), "TGL" },
+    // Ice Lake
     { PackCpuInfo( 0x0706E5 ), "ICL" },
     { PackCpuInfo( 0x0606A6 ), "ICL" },
+    // Cascade Lake
     { PackCpuInfo( 0x050656 ), "CLX" },
     { PackCpuInfo( 0x050657 ), "CLX" },
+    // Cannon Lake
     { PackCpuInfo( 0x060663 ), "CNL" },
+    // Coffee Lake
     { PackCpuInfo( 0x0906EA ), "CFL" },
     { PackCpuInfo( 0x0906EB ), "CFL" },
     { PackCpuInfo( 0x0906EC ), "CFL" },
     { PackCpuInfo( 0x0906ED ), "CFL" },
+    // Kaby Lake
     { PackCpuInfo( 0x0806E9 ), "KBL" },
     { PackCpuInfo( 0x0806EA ), "KBL" },
     { PackCpuInfo( 0x0906E9 ), "KBL" },
+    // Skylake-X
     { PackCpuInfo( 0x050654 ), "SKX" },
+    // Skylake
     { PackCpuInfo( 0x0406E3 ), "SKL" },
     { PackCpuInfo( 0x0506E0 ), "SKL" },
     { PackCpuInfo( 0x0506E3 ), "SKL" },
+    // Broadwell
     { PackCpuInfo( 0x0306D4 ), "BDW" },
     { PackCpuInfo( 0x040671 ), "BDW" },
     { PackCpuInfo( 0x0406F1 ), "BDW" },
+    // Haswell
     { PackCpuInfo( 0x0306C3 ), "HSW" },
     { PackCpuInfo( 0x0306F2 ), "HSW" },
     { PackCpuInfo( 0x040651 ), "HSW" },
+    // Ivy Bridge
     { PackCpuInfo( 0x0306A9 ), "IVB" },
     { PackCpuInfo( 0x0306E3 ), "IVB" },
     { PackCpuInfo( 0x0306E4 ), "IVB" },
+    // Sandy Bridge
     { PackCpuInfo( 0x0206A2 ), "SNB" },
     { PackCpuInfo( 0x0206A7 ), "SNB" },
     { PackCpuInfo( 0x0206D5 ), "SNB" },
     { PackCpuInfo( 0x0206D6 ), "SNB" },
     { PackCpuInfo( 0x0206D7 ), "SNB" },
+    // Westmere
     { PackCpuInfo( 0x0206F2 ), "WSM" },
     { PackCpuInfo( 0x0206C0 ), "WSM" },
     { PackCpuInfo( 0x0206C1 ), "WSM" },
     { PackCpuInfo( 0x0206C2 ), "WSM" },
     { PackCpuInfo( 0x020652 ), "WSM" },
     { PackCpuInfo( 0x020655 ), "WSM" },
+    // Nehalem
     { PackCpuInfo( 0x0206E6 ), "NHM" },
     { PackCpuInfo( 0x0106A1 ), "NHM" },
     { PackCpuInfo( 0x0106A2 ), "NHM" },
@@ -558,20 +614,27 @@ static constexpr CpuIdMap s_cpuIdMap[] = {
     { PackCpuInfo( 0x0106A5 ), "NHM" },
     { PackCpuInfo( 0x0106E4 ), "NHM" },
     { PackCpuInfo( 0x0106E5 ), "NHM" },
+    // Wolfdale
     { PackCpuInfo( 0x010676 ), "WOL" },
     { PackCpuInfo( 0x01067A ), "WOL" },
+    // Conroe
     { PackCpuInfo( 0x0006F2 ), "CON" },
     { PackCpuInfo( 0x0006F4 ), "CON" },
     { PackCpuInfo( 0x0006F6 ), "CON" },
     { PackCpuInfo( 0x0006FB ), "CON" },
     { PackCpuInfo( 0x0006FD ), "CON" },
+    // Bonnell
     { PackCpuInfo( 0x0106C2 ), "BNL" },
     { PackCpuInfo( 0x0106CA ), "BNL" },
+    // Airmont
     { PackCpuInfo( 0x07065A ), "AMT" },
+    // Goldmont
     { PackCpuInfo( 0x0506C9 ), "GLM" },
     { PackCpuInfo( 0x0506F1 ), "GLM" },
+    // Goldmont Plus
     { PackCpuInfo( 0x0706A1 ), "GLP" },
     { PackCpuInfo( 0x0706A8 ), "GLP" },
+    // Tremont
     { PackCpuInfo( 0x0806A1 ), "TRM" },
     { PackCpuInfo( 0x090661 ), "TRM" },
     { PackCpuInfo( 0x0906C0 ), "TRM" },

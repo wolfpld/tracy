@@ -734,6 +734,18 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
+static CallstackEntryData MakeUnresolvedCallstackEntryData( uint64_t ptr, ModuleNameAndBaseAddress moduleNameAndBaseAddress )
+{
+    cb_data[0].symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
+    cb_data[0].symLen = 0;
+
+    cb_data[0].name = CopyStringFast( "[unresolved]" );
+    cb_data[0].file = CopyStringFast( "[unknown]" );
+    cb_data[0].line = 0;
+
+    return { cb_data, 1, moduleNameAndBaseAddress.name };
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
 #ifdef TRACY_DBGHELP_LOCK
@@ -749,15 +761,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
         DBGHELP_UNLOCK;
 #endif
-
-        cb_data[0].symAddr = ptr - moduleNameAndAddress.baseAddr;
-        cb_data[0].symLen = 0;
-
-        cb_data[0].name = CopyStringFast("[unresolved]");
-        cb_data[0].file = CopyStringFast("[unknown]");
-        cb_data[0].line = 0;
-
-        return { cb_data, 1, moduleNameAndAddress.name };
+        return MakeUnresolvedCallstackEntryData( ptr, moduleNameAndAddress );
     }
 
     int write;

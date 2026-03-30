@@ -36,6 +36,10 @@
 #  include <cxxabi.h>
 #  include <stdlib.h>
 
+#  ifdef __linux__
+#    include "TracyElf.hpp"
+#  endif
+
 // Implementation files
 #  include "../libbacktrace/alloc.cpp"
 #  include "../libbacktrace/dwarf.cpp"
@@ -330,6 +334,232 @@ void DestroyImageCaches()
     }
 
 }
+
+
+#ifdef __linux__
+
+static constexpr uint32_t ExtPT_LOAD = 1;
+
+struct ExternalImageEntry
+{
+    uint64_t startAddress;
+    uint64_t endAddress;
+    uint64_t loadBias;
+    char* path;
+    backtrace_state* btState;
+    bool btAttempted;
+};
+
+static FastVector<ExternalImageEntry>* s_extImages = nullptr;
+static pid_t s_externalPid = 0;
+static bool s_extImagesSorted = true;
+
+static uint64_t ReadElfMinLoadVaddr( const char* path )
+{
+    int fd = open( path, O_RDONLY );
+    if( fd < 0 ) return UINT64_MAX;
+
+    elf_ehdr ehdr;
+    if( read( fd, &ehdr, sizeof( ehdr ) ) != sizeof( ehdr ) )
+    {
+        close( fd );
+        return UINT64_MAX;
+    }
+
+    if( ehdr.e_ident[0] != 0x7f || ehdr.e_ident[1] != 'E' ||
+        ehdr.e_ident[2] != 'L'  || ehdr.e_ident[3] != 'F' )
+    {
+        close( fd );
+        return UINT64_MAX;
+    }
+
+    if( ehdr.e_phoff == 0 || ehdr.e_phnum == 0 )
+    {
+        close( fd );
+        return UINT64_MAX;
+    }
+
+    if( lseek( fd, ehdr.e_phoff, SEEK_SET ) == (off_t)-1 )
+    {
+        close( fd );
+        return UINT64_MAX;
+    }
+
+    uint64_t minVaddr = UINT64_MAX;
+    for( uint16_t i = 0; i < ehdr.e_phnum; i++ )
+    {
+        elf_phdr phdr;
+        if( read( fd, &phdr, sizeof( phdr ) ) != sizeof( phdr ) ) break;
+        if( phdr.p_type == ExtPT_LOAD ) minVaddr = std::min( minVaddr, phdr.p_vaddr );
+    }
+
+    close( fd );
+    return minVaddr;
+}
+
+static void ParseExternalProcMaps( pid_t pid )
+{
+    char mapPath[64];
+    snprintf( mapPath, sizeof( mapPath ), "/proc/%d/maps", (int)pid );
+    FILE* f = fopen( mapPath, "r" );
+    if( !f ) return;
+
+    char line[1024];
+    while( fgets( line, sizeof( line ), f ) )
+    {
+        uint64_t start, end, offset;
+        uint32_t devMaj, devMin;
+        uint64_t inode;
+        char perms[8];
+        int consumed = 0;
+
+        if( sscanf( line, "%lx-%lx %7s %lx %x:%x %lu %n", &start, &end, perms, &offset, &devMaj, &devMin, &inode, &consumed ) < 7 ) continue;
+        if( !strchr( perms, 'x' ) ) continue;
+
+        char* pathname = line + consumed;
+        while( *pathname == ' ' || *pathname == '\t' ) pathname++;
+        size_t plen = strlen( pathname );
+        while( plen > 0 && ( pathname[plen-1] == '\n' || pathname[plen-1] == '\r' ) ) plen--;
+        pathname[plen] = '\0';
+
+        if( plen == 0 || pathname[0] != '/' ) continue;
+        if( std::find_if( s_extImages->begin(), s_extImages->end(), [start]( const ExternalImageEntry& e ) { return e.startAddress == start; } ) != s_extImages->end() ) continue;
+
+        uint64_t minVaddr = ReadElfMinLoadVaddr( pathname );
+        uint64_t loadBias;
+        if( minVaddr == UINT64_MAX )
+        {
+            loadBias = start;
+        }
+        else
+        {
+            uint64_t pageSize = sysconf( _SC_PAGESIZE );
+            uint64_t alignedVaddr = minVaddr & ~(pageSize - 1);
+            loadBias = start - alignedVaddr - offset;
+        }
+
+        ExternalImageEntry entry = {
+            .startAddress = start,
+            .endAddress = end,
+            .loadBias = loadBias,
+            .path = (char*)tracy_malloc( plen + 1 ),
+            .btState = nullptr,
+            .btAttempted = false
+        };
+        memcpy( entry.path, pathname, plen + 1 );
+
+        s_extImagesSorted = false;
+        s_extImages->push_next()[0] = entry;
+    }
+
+    fclose( f );
+
+    if( !s_extImagesSorted )
+    {
+        std::sort( s_extImages->begin(), s_extImages->end(),
+            []( const ExternalImageEntry& a, const ExternalImageEntry& b ) { return a.startAddress > b.startAddress; } );
+        s_extImagesSorted = true;
+    }
+}
+
+static const ExternalImageEntry* FindExternalImage( uint64_t address )
+{
+    if( !s_extImages || s_extImages->empty() ) return nullptr;
+
+    auto it = std::lower_bound( s_extImages->begin(), s_extImages->end(), address,
+        []( const ExternalImageEntry& e, uint64_t a ) { return e.startAddress > a; } );
+
+    if( it != s_extImages->end() && address >= it->startAddress && address < it->endAddress )
+    {
+        return &*it;
+    }
+    return nullptr;
+}
+
+static const ExternalImageEntry* FindExternalImageRefresh( uint64_t address )
+{
+    auto entry = FindExternalImage( address );
+    if( entry ) return entry;
+
+    if( s_externalPid != 0 )
+    {
+        ParseExternalProcMaps( s_externalPid );
+        return FindExternalImage( address );
+    }
+    return nullptr;
+}
+
+static void ExternalBacktraceErrorCb( void* data, const char* msg, int errnum )
+{
+}
+
+static backtrace_state* GetExternalBtState( const ExternalImageEntry* entry )
+{
+    auto* e = const_cast<ExternalImageEntry*>( entry );
+    if( e->btAttempted ) return e->btState;
+    e->btAttempted = true;
+    e->btState = backtrace_create_state_for_file( e->path, 0, ExternalBacktraceErrorCb, nullptr );
+    return e->btState;
+}
+
+struct ExternalResolveData
+{
+    const char* name;
+    const char* file;
+    uint32_t line;
+    int count;
+};
+
+static int ExternalPcInfoCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* filename, int lineno, const char* function )
+{
+    auto& rd = *(ExternalResolveData*)data;
+
+    if( rd.count > 0 ) return 1;
+    rd.count++;
+
+    if( function )
+    {
+        const char* demangled = ___tracy_demangle( function );
+        rd.name = demangled ? demangled : function;
+    }
+    else
+    {
+        rd.name = nullptr;
+    }
+
+    rd.file = filename;
+    rd.line = lineno;
+
+    return 0;
+}
+
+struct ExternalSymInfoData
+{
+    const char* symname;
+    uintptr_t symval;
+    uintptr_t symsize;
+};
+
+static void ExternalSymInfoCb( void* data, uintptr_t pc, const char* symname, uintptr_t symval, uintptr_t symsize )
+{
+    auto& sd = *(ExternalSymInfoData*)data;
+    sd.symname = symname;
+    sd.symval = symval;
+    sd.symsize = symsize;
+}
+
+void InitExternalImageCache( pid_t pid )
+{
+    s_externalPid = pid;
+    if( !s_extImages )
+    {
+        s_extImages = (FastVector<ExternalImageEntry>*)tracy_malloc( sizeof( FastVector<ExternalImageEntry> ) );
+        new (s_extImages) FastVector<ExternalImageEntry>( 64 );
+    }
+    ParseExternalProcMaps( pid );
+}
+
+#endif // __linux__
 
 
 // when "TRACY_SYMBOL_OFFLINE_RESOLVE" is set, instead of fully resolving symbols at runtime,

@@ -437,6 +437,11 @@ void DbgHelpInit()
     {
         SymError( "SymInitialize", GetLastError() );
     }
+    else if( GetModuleHandleA( "SymSrv.dll" ) == NULL )
+    {
+        TracyDebug( "SymSrv.dll was not loaded, it needs to be near a matching version of DbgHelp.dll. Symbol resolution may fail as symbol servers will not be used. See https://learn.microsoft.com/en-us/windows/win32/debug/calling-the-dbghelp-library" );
+    }
+
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;

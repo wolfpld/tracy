@@ -1395,6 +1395,7 @@ void SysTraceWorker( void* ptr )
 
     for( int i=0; i<numBuffers; i++ ) ringArray[i].~RingBuffer();
     tracy_free_fast( ringArray );
+    s_sysTraceThreadGone.store( true, std::memory_order_release );
 }
 
 void SysTraceGetExternalName( uint64_t thread, const char*& threadName, const char*& name )

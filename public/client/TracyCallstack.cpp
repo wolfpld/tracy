@@ -1412,11 +1412,53 @@ void EndCallstack()
 #endif
 }
 
-const char* DecodeCallstackPtrFast( uint64_t ptr )
+#ifdef __linux__
+static const char* DecodeCallstackPtrFastExternal( uint64_t ptr )
 {
     static char ret[1024];
     auto vptr = (void*)ptr;
     const char* symname = nullptr;
+
+    const auto* extImg = FindExternalImage( ptr );
+    if( extImg )
+    {
+        auto* bts = GetExternalBtState( extImg );
+        if( bts )
+        {
+            auto elfVaddr = (uintptr_t)( ptr - extImg->loadBias );
+            ExternalSymInfoData sid = {};
+            backtrace_syminfo( bts, elfVaddr, ExternalSymInfoCb, ExternalBacktraceErrorCb, &sid );
+            if( sid.symname )
+            {
+                const char* demangled = ___tracy_demangle( sid.symname );
+                symname = demangled ? demangled : sid.symname;
+            }
+        }
+    }
+    if( symname )
+    {
+        strncpy( ret, symname, sizeof( ret ) - 1 );
+        ret[sizeof( ret ) - 1] = '\0';
+    }
+    else
+    {
+        *ret = '\0';
+    }
+    return ret;
+}
+#endif
+
+const char* DecodeCallstackPtrFast( uint64_t ptr )
+{
+    static char ret[1024];
+
+#ifdef __linux__
+    if( s_externalPid != 0 && s_extImages ) return DecodeCallstackPtrFastExternal( ptr );
+#endif
+
+    auto vptr = (void*)ptr;
+    const char* symname = nullptr;
+
     Dl_info dlinfo;
     if( dladdr( vptr, &dlinfo ) && dlinfo.dli_sname )
     {
@@ -1461,9 +1503,34 @@ static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*
     sym.needFree = false;
 }
 
+#ifdef __linux__
+static CallstackSymbolData DecodeSymbolAddressExternal( uint64_t ptr )
+{
+    CallstackSymbolData sym;
+    const auto* extImg = FindExternalImage( ptr );
+    if( extImg )
+    {
+        auto* bts = GetExternalBtState( extImg );
+        if( bts )
+        {
+            auto elfVaddr = (uintptr_t)( ptr - extImg->loadBias );
+            backtrace_pcinfo( bts, elfVaddr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
+            return sym;
+        }
+    }
+    SymbolAddressErrorCb( &sym, nullptr, 0 );
+    return sym;
+}
+#endif
+
 CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     CallstackSymbolData sym;
+
+#ifdef __linux__
+    if( s_externalPid != 0 && s_extImages ) return DecodeSymbolAddressExternal( ptr );
+#endif
+
     if( cb_bts )
     {
         backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
@@ -1586,11 +1653,125 @@ void GetSymbolForOfflineResolve(void* address, uint64_t imageBaseAddress, Callst
     cbEntry.line = 0;
 }
 
+#ifdef __linux__
+CallstackEntryData DecodeCallstackPtrExternal( uint64_t ptr )
+{
+    const auto* extImg = FindExternalImageRefresh( ptr );
+    if( extImg )
+    {
+        const char* imageName = extImg->path;
+
+        // Convert VMA (target process virtual address) to ELF virtual address.
+        // elf_vaddr = vma - load_bias
+        // libbacktrace indexes DWARF data by ELF virtual address when
+        // the backtrace_state is created from a file (base_address=0).
+        const auto elfVaddr = (uintptr_t)( ptr - extImg->loadBias );
+
+        auto* bts = GetExternalBtState( extImg );
+        if( bts )
+        {
+            // Try DWARF-based resolution
+            ExternalResolveData rd = {};
+            backtrace_pcinfo( bts, elfVaddr, ExternalPcInfoCb, ExternalBacktraceErrorCb, &rd );
+
+            if( rd.name || rd.file )
+            {
+                cb_num = 1;
+                if( rd.name )
+                {
+                    const auto len = std::min<size_t>( strlen( rd.name ), std::numeric_limits<uint16_t>::max() );
+                    cb_data[0].name = CopyStringFast( rd.name, len );
+                }
+                else
+                {
+                    cb_data[0].name = CopyStringFast( "[unknown]" );
+                }
+                if( rd.file )
+                {
+                    cb_data[0].file = NormalizePath( rd.file );
+                    if( !cb_data[0].file ) cb_data[0].file = CopyStringFast( rd.file );
+                }
+                else
+                {
+                    cb_data[0].file = CopyStringFast( "[unknown]" );
+                }
+                cb_data[0].line = rd.line;
+                cb_data[0].symLen = 0;
+                cb_data[0].symAddr = elfVaddr;
+
+                // Try to get symbol size info
+                ExternalSymInfoData sid = {};
+                backtrace_syminfo( bts, elfVaddr, ExternalSymInfoCb, ExternalBacktraceErrorCb, &sid );
+                if( sid.symsize > 0 )
+                {
+                    cb_data[0].symLen = (uint32_t)sid.symsize;
+                    cb_data[0].symAddr = (uint64_t)sid.symval;
+                }
+
+                // If DWARF gave us no function name, try the symbol table
+                if( !rd.name && sid.symname )
+                {
+                    tracy_free_fast( (void*)cb_data[0].name );
+                    const char* demangled = ___tracy_demangle( sid.symname );
+                    if( demangled )
+                    {
+                        cb_data[0].name = CopyStringFast( demangled );
+                    }
+                    else
+                    {
+                        cb_data[0].name = CopyStringFast( sid.symname );
+                    }
+                }
+
+                return { cb_data, 1, imageName ? imageName : "[unknown]" };
+            }
+
+            // DWARF resolution failed; try symtab-only fallback
+            ExternalSymInfoData sid = {};
+            backtrace_syminfo( bts, elfVaddr, ExternalSymInfoCb, ExternalBacktraceErrorCb, &sid );
+            if( sid.symname )
+            {
+                cb_num = 1;
+                const char* demangled = ___tracy_demangle( sid.symname );
+                cb_data[0].name = CopyStringFast( demangled ? demangled : sid.symname );
+                cb_data[0].file = CopyStringFast( imageName ? imageName : "[unknown]" );
+                cb_data[0].line = 0;
+                cb_data[0].symLen = (uint32_t)sid.symsize;
+                cb_data[0].symAddr = (uint64_t)sid.symval;
+                return { cb_data, 1, imageName ? imageName : "[unknown]" };
+            }
+        }
+
+        // Fallback: return unresolved with offset
+        cb_num = 1;
+        cb_data[0].name = CopyStringFast( "[unresolved]" );
+        cb_data[0].file = CopyStringFast( imageName ? imageName : "[unknown]" );
+        cb_data[0].line = 0;
+        cb_data[0].symLen = 0;
+        cb_data[0].symAddr = elfVaddr;
+        return { cb_data, 1, imageName ? imageName : "[unknown]" };
+    }
+
+    // Address doesn't belong to any known mapping
+    cb_num = 1;
+    cb_data[0].name = CopyStringFast( "[unknown]" );
+    cb_data[0].file = CopyStringFast( "[unknown]" );
+    cb_data[0].line = 0;
+    cb_data[0].symLen = 0;
+    cb_data[0].symAddr = ptr;
+    return { cb_data, 1, "[unknown]" };
+}
+#endif
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     InitRpmalloc();
     if( !IsKernelAddress( ptr ) )
     {
+#ifdef __linux__
+        if( s_externalPid != 0 && s_extImages ) return DecodeCallstackPtrExternal( ptr );
+#endif
+
         const char* imageName = nullptr;
         uint64_t imageBaseAddress = 0x0;
 

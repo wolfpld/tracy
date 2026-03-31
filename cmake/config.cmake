@@ -1,6 +1,9 @@
 include(${CMAKE_CURRENT_LIST_DIR}/options.cmake)
 
 set_option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
+set_option(NO_LTO "Disable interprocedural optimization (LTO)" OFF)
+set_option(NO_MOLD_LINKER "Disable mold linker (use default linker)" OFF)
+set_option(NO_CCACHE "Disable ccache acceleration" OFF)
 
 if (NOT NO_ISA_EXTENSIONS)
     include(CheckCXXCompilerFlag)
@@ -50,11 +53,11 @@ if(EMSCRIPTEN)
     add_compile_options(-pthread -DIMGUI_IMPL_OPENGL_ES2)
 endif()
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN AND NOT NO_LTO)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT NO_MOLD_LINKER)
     find_program(MOLD_LINKER mold)
     if(MOLD_LINKER)
         set(CMAKE_LINKER_TYPE "MOLD")
@@ -64,10 +67,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
     endif()
 endif()
 
-find_program(CCACHE ccache)
-if(CCACHE)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache) 
+if(NOT NO_CCACHE)
+    find_program(CCACHE ccache)
+    if(CCACHE)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+    endif()
 endif()
 
 file(GENERATE OUTPUT .gitignore CONTENT "*")

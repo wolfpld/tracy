@@ -28,7 +28,7 @@ jobs:
         restore-keys: ${{ runner.os }}-cpm-
     - name: Profiler GUI
       run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DNO_LTO=ON -DGIT_REV=${{ github.sha }}
         cmake --build profiler/build --parallel
     - name: Update utility
       run: |

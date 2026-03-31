@@ -1,3 +1,7 @@
+include(${CMAKE_CURRENT_LIST_DIR}/options.cmake)
+
+set_option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
+
 if (NOT NO_ISA_EXTENSIONS)
     include(CheckCXXCompilerFlag)
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")

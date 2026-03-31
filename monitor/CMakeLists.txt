@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 set(TRACY_PUBLIC_DIR ${CMAKE_CURRENT_LIST_DIR}/../public)
 
-option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
-
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
 set(CMAKE_CXX_STANDARD 17)

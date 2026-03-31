@@ -1,4 +1,22 @@
-if (NOT NO_ISA_EXTENSIONS)
+# --------------------------------------------------
+# Detect if Tracy is top-level
+# --------------------------------------------------
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+    set(TRACY_IS_TOP_LEVEL ON)
+else()
+    set(TRACY_IS_TOP_LEVEL OFF)
+endif()
+
+# --------------------------------------------------
+# Options (safe defaults for subprojects)
+# --------------------------------------------------
+option(TRACY_AUTO_ENABLE_NATIVE "Enable native ISA extensions (-march/-mcpu=native)" ${TRACY_IS_TOP_LEVEL})
+option(TRACY_AUTO_LTO "Enable interprocedural optimization (LTO)" ${TRACY_IS_TOP_LEVEL})
+option(TRACY_AUTO_USE_MOLD "Use mold linker if available" ${TRACY_IS_TOP_LEVEL})
+option(TRACY_AUTO_USE_CCACHE "Enable ccache" ${TRACY_IS_TOP_LEVEL})
+
+
+if (TRACY_AUTO_ENABLE_NATIVE AND NOT NO_ISA_EXTENSIONS)
     include(CheckCXXCompilerFlag)
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
         CHECK_CXX_COMPILER_FLAG("-mcpu=native" COMPILER_SUPPORTS_MCPU_NATIVE)
@@ -46,11 +64,11 @@ if(EMSCRIPTEN)
     add_compile_options(-pthread -DIMGUI_IMPL_OPENGL_ES2)
 endif()
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
+if(TRACY_AUTO_USE_LTO AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT EMSCRIPTEN)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(TRACY_AUTO_USE_MOLD AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_program(MOLD_LINKER mold)
     if(MOLD_LINKER)
         set(CMAKE_LINKER_TYPE "MOLD")
@@ -60,10 +78,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
     endif()
 endif()
 
-find_program(CCACHE ccache)
-if(CCACHE)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache) 
+if(TRACY_AUTO_USE_CCACHE AND NOT CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAUNCHER)
+    find_program(CCACHE ccache)
+    if(CCACHE)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache) 
+    endif()
 endif()
 
 file(GENERATE OUTPUT .gitignore CONTENT "*")

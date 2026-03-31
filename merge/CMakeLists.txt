@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
-option(NO_STATISTICS "Disable calculation of statistics" OFF) # we need those to get processed source zone locations
+set(NO_STATISTICS OFF) # we need those to get processed source zone locations
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 

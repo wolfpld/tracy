@@ -9,6 +9,8 @@ on:
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+  CMAKE_C_COMPILER_LAUNCHER: ccache
+  CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   build-linux:
@@ -16,7 +18,7 @@ jobs:
     container: archlinux:base-devel
     steps:
     - name: Install dependencies
-      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols nodejs lua
+      run: pacman -Syu --noconfirm && pacman -S --noconfirm --needed freetype2 debuginfod wayland dbus libxkbcommon libglvnd meson cmake git wayland-protocols nodejs lua ccache
     - name: Trust git repo
       run: git config --global --add safe.directory '*'
     - uses: actions/checkout@v4
@@ -26,6 +28,19 @@ jobs:
         path: ${{ env.CPM_SOURCE_CACHE }}
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/vendor.cmake', '**/CMakeLists.txt') }}
         restore-keys: ${{ runner.os }}-cpm-
+
+    - name: Restore ccache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          ccache-${{ runner.os }}-
+    - name: Configure ccache
+      run: |
+        ccache --max-size=200M
+        ccache --zero-stats
+
     - name: Profiler GUI
       run: |
         cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
@@ -74,6 +89,18 @@ jobs:
         cmake -B test/build -S test -DCMAKE_BUILD_TYPE=Release -DTRACY_DEMANGLE=ON .
         cmake --build test/build --parallel
         rm -rf test/build
+  
+    - name: Cleanup ccache
+      if: always()
+      run: ccache --evict-older-than=7d
+
+    - name: Save ccache
+      if: success()
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ runner.os }}-${{ github.sha }}
+
     - name: Find Artifacts
       id: find_artifacts
       run: |

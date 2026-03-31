@@ -42,9 +42,10 @@ jobs:
         ccache --zero-stats
 
     - name: Profiler GUI
+      # Disabled LTO and parallel to avoid OOM issues on CI
       run: |
-        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
-        cmake --build profiler/build --parallel
+        cmake -B profiler/build -S profiler -DCMAKE_BUILD_TYPE=Release -DTRACY_AUTO_LTO=OFF -DGIT_REV=${{ github.sha }}
+        cmake --build profiler/build
     - name: Update utility
       run: |
         cmake -B update/build -S update -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}

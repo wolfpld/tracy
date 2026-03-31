@@ -283,7 +283,7 @@ private:
                 {
                     if( dlInfo.dli_fname )
                     {
-                        entry.name = CopyString( dlInfo.dli_fname );
+                        entry.m_name = CopyString( dlInfo.dli_fname );
                     }
                 }
 

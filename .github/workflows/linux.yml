@@ -90,6 +90,9 @@ jobs:
         cmake -B test/build -S test -DCMAKE_BUILD_TYPE=Release -DTRACY_DEMANGLE=ON .
         cmake --build test/build --parallel
         rm -rf test/build
+
+    - name: Show ccache stats
+      run: ccache --show-stats
   
     - name: Cleanup ccache
       if: always()

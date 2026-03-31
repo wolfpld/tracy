@@ -283,9 +283,7 @@ private:
                 {
                     if( dlInfo.dli_fname )
                     {
-                        size_t sz = strlen( dlInfo.dli_fname ) + 1;
-                        entry.m_name = (char*)tracy_malloc( sz );
-                        memcpy( entry.m_name, dlInfo.dli_fname, sz );
+                        entry.name = CopyString( dlInfo.dli_fname );
                     }
                 }
 
@@ -641,30 +639,37 @@ void DbgHelpInit()
     // append executable path to the _NT_SYMBOL_PATH environment variable
     char buffer [32767];  // max env var length on Windows (including null-terminator)
     DWORD length = GetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer, sizeof( buffer ) );
-    if( length > sizeof( buffer ) ) {
-        SymError( "GetEnvironmentVariableA", GetLastError() );
-    } else if( length + 1 >= sizeof( buffer ) ) {
-        SymError( "_TracyAppendEnvironmentVariable", ERROR_INSUFFICIENT_BUFFER );
-    } else {
+    if( length > sizeof( buffer ) ) SymError( "GetEnvironmentVariableA", GetLastError() );
+    else if( length + 1 >= sizeof( buffer ) ) SymError( "_TracyAppendEnvironmentVariable", ERROR_INSUFFICIENT_BUFFER );
+    else
+    {
         buffer[length] = ';';
         buffer[++length] = '\0';
         length += GetModuleFileNameA( NULL, &buffer[length], sizeof( buffer ) - length );
-        if( length >= sizeof( buffer ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
+        if( length >= sizeof( buffer ) && GetLastError() == ERROR_INSUFFICIENT_BUFFER )
+        {
             SymError( "GetModuleFileNameA", GetLastError() );
-        } else {
+        }
+        else
+        {
             while( length > 0 && buffer[--length] != '\\' )
                 buffer[length] = '\0';
         }
     }
-    assert( length < sizeof( buffer ) );
-    if( SetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer ) == FALSE ) {
-        SymError( "SetEnvironmentVariableA", GetLastError() );
-    }
 
+    assert( length < sizeof( buffer ) );
+    if( SetEnvironmentVariableA( "_NT_SYMBOL_PATH", buffer ) == FALSE ) SymError( "SetEnvironmentVariableA", GetLastError() );
+ 
     SymSetOptions( SymGetOptions() | SYMOPT_LOAD_LINES );
-    if( SymInitialize( GetCurrentProcess(), NULL, TRUE ) == FALSE ) {
+    if( SymInitialize( GetCurrentProcess(), NULL, TRUE ) == FALSE )
+    {
         SymError( "SymInitialize", GetLastError() );
     }
+    else if( GetModuleHandleA( "SymSrv.dll" ) == NULL )
+    {
+        TracyDebug( "SymSrv.dll was not loaded, it needs to be near a matching version of DbgHelp.dll. Symbol resolution may fail as symbol servers will not be used. See https://learn.microsoft.com/en-us/windows/win32/debug/calling-the-dbghelp-library" );
+    }
+
 
 #ifdef TRACY_DBGHELP_LOCK
     DBGHELP_UNLOCK;
@@ -964,6 +969,18 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
+static CallstackEntryData MakeUnresolvedCallstackEntryData( uint64_t ptr, ModuleNameAndBaseAddress moduleNameAndBaseAddress )
+{
+    cb_data[0].symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
+    cb_data[0].symLen = 0;
+
+    cb_data[0].name = CopyStringFast( "[unresolved]" );
+    cb_data[0].file = CopyStringFast( "[unknown]" );
+    cb_data[0].line = 0;
+
+    return { cb_data, 1, moduleNameAndBaseAddress.name };
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
 #ifdef TRACY_DBGHELP_LOCK
@@ -979,15 +996,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef TRACY_DBGHELP_LOCK
         DBGHELP_UNLOCK;
 #endif
-
-        cb_data[0].symAddr = ptr - moduleNameAndAddress.baseAddr;
-        cb_data[0].symLen = 0;
-
-        cb_data[0].name = CopyStringFast("[unresolved]");
-        cb_data[0].file = CopyStringFast("[unknown]");
-        cb_data[0].line = 0;
-
-        return { cb_data, 1, moduleNameAndAddress.name };
+        return MakeUnresolvedCallstackEntryData( ptr, moduleNameAndAddress );
     }
 
     int write;
@@ -1197,15 +1206,11 @@ static void InitKernelSymbols()
         {
             validCnt++;
 
-            strname = (char*)tracy_malloc_fast( nameend - namestart + 1 );
-            memcpy( strname, namestart, nameend - namestart );
-            strname[nameend-namestart] = '\0';
+            strname = CopyStringFast( namestart, nameend - namestart );
 
             if( modstart )
             {
-                strmod = (char*)tracy_malloc_fast( modend - modstart + 1 );
-                memcpy( strmod, modstart, modend - modstart );
-                strmod[modend-modstart] = '\0';
+                strmod = CopyStringFast( modstart, modend - modstart );
             }
         }
 

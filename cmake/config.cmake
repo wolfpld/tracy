@@ -11,7 +11,7 @@ endif()
 # Options (safe defaults for subprojects)
 # --------------------------------------------------
 option(TRACY_AUTO_ENABLE_NATIVE "Enable native ISA extensions (-march/-mcpu=native)" ${TRACY_IS_TOP_LEVEL})
-option(TRACY_AUTO_LTO "Enable interprocedural optimization (LTO)" ${TRACY_IS_TOP_LEVEL})
+option(TRACY_AUTO_USE_LTO "Enable interprocedural optimization (LTO)" ${TRACY_IS_TOP_LEVEL})
 option(TRACY_AUTO_USE_MOLD "Use mold linker if available" ${TRACY_IS_TOP_LEVEL})
 option(TRACY_AUTO_USE_CCACHE "Enable ccache" ${TRACY_IS_TOP_LEVEL})
 

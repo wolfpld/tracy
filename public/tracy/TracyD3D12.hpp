@@ -263,12 +263,16 @@ namespace tracy
             // TODO: could use queue->Signal() to inject a progress point in the queue
             // and the immediately wait for the signal, in order to avoid busy-waiting
             // (need to create an ID3D12Fence and associate an Event object to it)
-
-            // collect all pending queries up to this point
+            // NOTE: even with Signal(), there are no guarantees the queries were sent
+            // to the GPU for execution, so the Signal() does not give us much "signal"
+ 
+            // attempt to collect all pending queries up to the latest known query
             uint64_t latestQuery = m_queryCounter.load();
-            while (m_window.rangeEnd != latestQuery)
+            while (Distance(m_window.rangeEnd, latestQuery) > 0)
                 Collect();
-            // TODO: ensure we collect a "partial" window (Signal/Wait should do it)
+            // TODO: even though the collect window caugt up to the latestQuery,
+            // the window could still be "partial", and the timeout policy does
+            // not apply for a partial window... How to ensure collection?
 
             // if the client is still pushing queries past the latest checkpoint above,
             // assume there's a bug in the client, and ignore them (don't collect)
@@ -318,6 +322,9 @@ namespace tracy
 
             auto now = CollectWindow::AgeClock::now();
 
+            // update the window range and age
+            // (the timeout policy only starts kicking when the window is full)
+            // (until then, there's no rush, just keep refreshing the window age)
             uint64_t windowSize = m_window.rangeEnd - m_window.rangeBegin;
             if (windowSize < m_window.capacity)
             {
@@ -358,6 +365,9 @@ namespace tracy
                     TracyD3D12Debug(
                         ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
                         ZoneValue(int64_t(queryId));
+                        TracyPlot("TracyD3D12|timeout", float(0));
+                        TracyPlot("TracyD3D12|timeout", float(timeout.count()));
+                        TracyPlot("TracyD3D12|timeout", float(0));
                     );
                     // emit a "bogus" GpuTime to avoid problems with the internal
                     // zone tracking and matching logic in the server/profiler
@@ -379,7 +389,8 @@ namespace tracy
             if (allDone)
             {
                 AdvanceCollectWindow();
-                // Publish new checkpoint — NextQueryId can now reuse these slots.
+                // publish the new checkpoint:
+                // NextQueryId() is now free to immediately start reusing these slots
                 m_previousCheckpoint.store(m_window.rangeBegin);
                 // TODO: start collecting the next window immediately...
             }
@@ -414,7 +425,7 @@ namespace tracy
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
             TracyD3D12Debug(
-                TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12 Query");
+                TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12|Query");
             );
         }
 
@@ -436,19 +447,16 @@ namespace tracy
 
         tracy_force_inline uint32_t NextQueryId()
         {
-            // WARN: the moment m_queryCounter is incremented, Collect() will have
-            // instant visibility of the query pair and will attempt to collect it!
-            // Under normal circumstances, this is fine: the corresponding id slots
-            // would have been rset to the InvalidTimestamp sentinel value already,
-            // right after the timestamp slots being collected.
-            // However, if Collect() decides to timeout-drop a timestamp query that
-            // was indeed submitted to the GPU queue for execution, the dropped query
-            // will eventually be resolved by the GPU and will arrive "late" at its
-            // corrsponding query slot (the GPU will write asynchronously to it).
-            // The "new" query pair here will have matching slots with the late query
-            // pair of "before". Given that Collect() will "sense" the new query pair
-            // immediately upon m_queryCounter being incremented, the late timestamp
-            // query may be collected as if it was the timestamp of the new query...
+            // WARN: the moment m_queryCounter is incremented, Collect() will have instant
+            // visibility of the query id pair and may start attempting to collect it!
+            // Under most circumstances, this is fine. However, if Collect() decided to
+            // drop a timestamp query due to timeout, but the query was indeed submitted
+            // to the GPU queue for execution later on, the "late" query will eventually
+            // be resolved by the GPU (asynchronously writting to the corrsponding query
+            // "slot"). The newly produced query pair below could have matching ids/slots
+            // with the late query. Given that Collect() may attempt to inspect the new
+            // query pair immediately upon m_queryCounter being incremented, the "late"
+            // timestamp value may be collected as if it belonged to the the new query.
             const uint64_t seqIdx = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
             if (Distance(m_previousCheckpoint, seqIdx) >= RingSize())
             {
@@ -461,12 +469,10 @@ namespace tracy
             }
 
             const uint32_t queryId = RingIndex(seqIdx);
-
             TracyD3D12Debug(
-                TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+0)), 1, "TracyD3D12 Query");
-                TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+1)), 1, "TracyD3D12 Query");
+                TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+0)), 1, "TracyD3D12|Query");
+                TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+1)), 1, "TracyD3D12|Query");
             );
-
             return queryId;
         }
 

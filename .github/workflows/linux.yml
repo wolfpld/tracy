@@ -54,8 +54,17 @@ jobs:
       run: |
         cmake -B merge/build -S merge -DCMAKE_BUILD_TYPE=Release -DGIT_REV=${{ github.sha }}
         cmake --build merge/build --parallel
-    - name: Library
-      run: meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build && meson compile -C build && meson install -C build
+    - name: Library (cmake)
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release
+        cmake --build build
+        cmake --install build
+      env:
+        CMAKE_INSTALL_PREFIX: ${{ github.workspace }}/bin
+    - name: Library (meson)
+      run: |
+        meson setup -Dprefix=$GITHUB_WORKSPACE/bin/lib build-meson
+        meson compile -C build-meson
     - name: Test application
       run: |
         # test compilation with different flags

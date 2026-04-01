@@ -359,6 +359,7 @@ namespace tracy
 
             auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
             auto windowAge = now - m_window.ageStart;
+            bool dropUnresolved = (windowAge >= timeout);
 
             // iterate over every slot (pair) in the window
             int unresolved = 0;
@@ -376,15 +377,14 @@ namespace tracy
                 if (diff < 0)
                 {
                     ++unresolved;
-                    if (windowAge < timeout)
+                    if (!dropUnresolved)
                         continue;
-                    // timed-out: drop it
                     TracyD3D12Debug(
                         ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
                         ZoneValue(int64_t(queryId));
                     );
-                    // must still emit a bogus GpuTime to avoid problems with
-                    // the server/profiler internal tracking/matching logic
+                    // emit a "bogus" GpuTime to avoid problems with the internal
+                    // zone tracking and matching logic in the server/profiler
                     gpuZoneBeginTimestamp = m_window.latestKnownGpuTimestamp;
                     gpuZoneEndTimestamp = gpuZoneBeginTimestamp + 1;
                 }
@@ -397,15 +397,15 @@ namespace tracy
                 UpdateLatestKnownGpuTimestamp(gpuZoneEndTimestamp);
             }
 
-            if (windowSize == m_window.capacity)
+            bool windowFull = (windowSize == m_window.capacity);
+            bool allResolved = (unresolved == 0);
+            bool allDone = windowFull && (allResolved || dropUnresolved);
+            if (allDone)
             {
-                if ((unresolved == 0) || (windowAge >= timeout))
-                {
-                    AdvanceCollectWindow();
-                    // Publish new checkpoint — NextQueryId can now reuse these slots.
-                    m_previousCheckpoint.store(m_window.rangeBegin);
-                    // TODO: start collecting the next window immediately...
-                }
+                AdvanceCollectWindow();
+                // Publish new checkpoint — NextQueryId can now reuse these slots.
+                m_previousCheckpoint.store(m_window.rangeBegin);
+                // TODO: start collecting the next window immediately...
             }
 
 #if !TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER

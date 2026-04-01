@@ -369,7 +369,8 @@ namespace tracy
 
                 UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
                 UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
-                int64_t diff = static_cast<int64_t>(gpuZoneEndTimestamp - m_window.shadowBuffer[shadowIdx+1]);
+                UINT64 baselineTimestamp = m_window.shadowBuffer[shadowIdx+1];
+                int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
                 if (diff == 0)
                     continue;
                 if (diff < 0)
@@ -415,13 +416,9 @@ namespace tracy
         }
 
     private:
-        // Update the window's latest known GPU timestamp only if ts is strictly "ahead"
-        // of the current value. Uses a signed-difference comparison to be robust against
-        // counter wrap-around (though UINT64 at any conceivable clock rate won't wrap
-        // within the lifetime of the process).
         tracy_force_inline void UpdateLatestKnownGpuTimestamp(UINT64 timestamp)
         {
-            int64_t diff = static_cast<int64_t>(timestamp - m_window.latestKnownGpuTimestamp);
+            int64_t diff = Distance(m_window.latestKnownGpuTimestamp, timestamp);
             if (diff > 0)
                 m_window.latestKnownGpuTimestamp = timestamp;
         }
@@ -457,9 +454,10 @@ namespace tracy
             return static_cast<uint32_t>(logicalSlot % RingSize());
         }
 
-        tracy_force_inline uint32_t RingCount(uint64_t begin, uint64_t end) const
+        tracy_force_inline static int64_t Distance(uint64_t begin, uint64_t end)
         {
-            return static_cast<uint32_t>(end - begin);
+            // difference accounting for unsigned wrap-around
+            return static_cast<int64_t>(end - begin);
         }
 
         tracy_force_inline uint32_t NextQueryId()
@@ -478,7 +476,7 @@ namespace tracy
             // immediately upon m_queryCounter being incremented, the late timestamp
             // query may be collected as if it was the timestamp of the new query...
             const uint64_t seqIdx = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            if (RingCount(m_previousCheckpoint.load(), seqIdx) >= RingSize())
+            if (Distance(m_previousCheckpoint, seqIdx) >= RingSize())
             {
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));

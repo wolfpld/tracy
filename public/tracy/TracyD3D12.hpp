@@ -101,9 +101,6 @@ namespace tracy
 
         UINT64 m_prevCalibrationTicksCPU = 0;
 
-        // Last absolute GPU counter passed to EmitGpuTime (authoritative for delta stream vs Tracy's refGpu).
-        UINT64 m_lastEmittedGpuTimestamp = 0;
-
         void RecalibrateClocks()
         {
             UINT64 cpuTimestamp;
@@ -247,7 +244,6 @@ namespace tracy
             {
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
-            m_lastEmittedGpuTimestamp = gpuTimestamp;
 
             // initialize CollectWindow
             UpdateLatestKnownGpuTimestamp(gpuTimestamp);
@@ -446,9 +442,6 @@ namespace tracy
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
-            // Tracy converts gpuTime to deltas by updating refGpu on each GpuTime event,
-            // so we must consistently track the same value here.
-            m_lastEmittedGpuTimestamp = gpuTimestamp;
             TracyD3D12Debug(
                 TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12 Query");
             );
@@ -516,7 +509,7 @@ namespace tracy
         const bool m_active;
         D3D12QueueCtx* m_ctx = nullptr;
         ID3D12GraphicsCommandList* m_cmdList = nullptr;
-        uint32_t m_queryId = 0;  // Used for tracking in nested zones.
+        uint32_t m_queryId = 0;
 
         tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
         {

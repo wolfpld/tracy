@@ -372,14 +372,13 @@ namespace tracy
                     // emit a "bogus" GpuTime to avoid problems with the internal
                     // zone tracking and matching logic in the server/profiler
                     gpuZoneBeginTimestamp = m_window.latestKnownGpuTimestamp;
-                    gpuZoneEndTimestamp = gpuZoneBeginTimestamp + 1;
+                    gpuZoneEndTimestamp = gpuZoneBeginTimestamp;    // 0ns
                 }
 
                 EmitGpuTime(gpuZoneBeginTimestamp, queryId);
                 EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
                 m_window.shadowBuffer[shadowIdx] = gpuZoneBeginTimestamp;
                 m_window.shadowBuffer[shadowIdx+1] = gpuZoneEndTimestamp;
-                // TODO: maybe only update timestamp for "resolved" queries
                 UpdateLatestKnownGpuTimestamp(gpuZoneEndTimestamp);
             }
 
@@ -411,9 +410,12 @@ namespace tracy
         void AdvanceCollectWindow()
         {
             m_window.rangeBegin = m_window.rangeEnd;
-            m_window.ageStart = CollectWindow::AgeClock::time_point::max();
+            m_window.ageStart = CollectWindow::AgeClock::now();
+            // establish a new baseline to detect timestamp changes
+            // (subtract one to allow for "slow" GPU ticking)
+            UINT64 baselineTimestamp = m_window.latestKnownGpuTimestamp - 1;
             for (auto& shadow : m_window.shadowBuffer)
-                shadow = m_window.latestKnownGpuTimestamp;
+                shadow = baselineTimestamp;
         }
 
         tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)

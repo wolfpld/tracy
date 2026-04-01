@@ -430,6 +430,9 @@ namespace tracy
                 return false;
 
             auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
+            //double relax = double(RingCapacity()) / (1 + Distance(m_previousCheckpoint, m_queryCounter));
+            //relax = std::min(relax, 50.0);
+            //timeout *= relax;
             auto windowAge = now - m_window.ageStart;
             bool dropUnresolved = (windowAge >= timeout);
 

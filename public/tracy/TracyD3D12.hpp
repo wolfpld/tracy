@@ -320,81 +320,10 @@ namespace tracy
                 return;
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
 
-            auto now = CollectWindow::AgeClock::now();
-
-            // update the window range and age
-            // (the timeout policy only starts kicking when the window is full)
-            // (until then, there's no rush, just keep refreshing the window age)
-            uint64_t windowSize = m_window.rangeEnd - m_window.rangeBegin;
-            if (windowSize < m_window.capacity)
-            {
-                uint64_t latestIssued = m_queryCounter.load();
-                uint64_t trail = latestIssued - m_window.rangeBegin;
-                windowSize = std::min(trail, m_window.capacity);
-                m_window.rangeEnd = m_window.rangeBegin + windowSize;
-                m_window.ageStart = now;
-            }
-
-            if (windowSize == 0)
-                return;
-
-            UINT64* timestampBuffer = MapTimestampBuffer();
-
-            auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
-            auto windowAge = now - m_window.ageStart;
-            bool dropUnresolved = (windowAge >= timeout);
-
-            // iterate over every slot (pair) in the window
-            int unresolved = 0;
-            for (uint64_t i = m_window.rangeBegin; i != m_window.rangeEnd; i += 2)
-            {
-                uint32_t queryId = RingIndex(i);
-                uint32_t shadowIdx = static_cast<uint32_t>(i - m_window.rangeBegin);
-
-                UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
-                UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
-                UINT64 baselineTimestamp = m_window.shadowBuffer[shadowIdx+1];
-                int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
-                if (diff == 0)
-                    continue;
-                if (diff < 0)
-                {
-                    ++unresolved;
-                    if (!dropUnresolved)
-                        continue;
-                    TracyD3D12Debug(
-                        ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
-                        ZoneValue(int64_t(queryId));
-                        TracyPlot("TracyD3D12|timeout", float(0));
-                        TracyPlot("TracyD3D12|timeout", float(timeout.count()));
-                        TracyPlot("TracyD3D12|timeout", float(0));
-                    );
-                    // emit a "bogus" GpuTime to avoid problems with the internal
-                    // zone tracking and matching logic in the server/profiler
-                    gpuZoneBeginTimestamp = m_window.latestKnownGpuTimestamp;
-                    gpuZoneEndTimestamp = gpuZoneBeginTimestamp;    // 0ns
-                }
-
-                EmitGpuTime(gpuZoneBeginTimestamp, queryId);
-                EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
-                m_window.shadowBuffer[shadowIdx] = gpuZoneBeginTimestamp;
-                m_window.shadowBuffer[shadowIdx+1] = gpuZoneEndTimestamp;
-                UpdateLatestKnownGpuTimestamp(gpuZoneEndTimestamp);
-            }
-
-            bool windowFull = (windowSize == m_window.capacity);
-            bool allResolved = (unresolved == 0);
-            bool allDone = windowFull && (allResolved || dropUnresolved);
-            if (allDone)
-            {
+            uint64_t latestQueryIssued = m_queryCounter;
+            if (ProcessCollectWindow(latestQueryIssued))
                 AdvanceCollectWindow();
-                // publish the new checkpoint:
-                // NextQueryId() is now free to immediately start reusing these slots
-                m_previousCheckpoint.store(m_window.rangeBegin);
-                // TODO: start collecting the next window immediately...
-            }
-
-            UnmapTimestampBuffer(timestampBuffer);
+            // TODO: start collecting the next window immediately...
 
             RecalibrateClocks();
         }
@@ -416,6 +345,9 @@ namespace tracy
             UINT64 baselineTimestamp = m_window.latestKnownGpuTimestamp - 1;
             for (auto& shadow : m_window.shadowBuffer)
                 shadow = baselineTimestamp;
+            // publish the new checkpoint:
+            // NextQueryId() is now free to immediately start reusing these slots
+            m_previousCheckpoint.store(m_window.rangeBegin);
         }
 
         tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
@@ -476,6 +408,75 @@ namespace tracy
                 TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+1)), 1, "TracyD3D12|Query");
             );
             return queryId;
+        }
+
+        bool ProcessCollectWindow(uint64_t limit)
+        {
+            auto now = CollectWindow::AgeClock::now();
+
+            // update the window range and age
+            // (the timeout policy only starts kicking when the window is full)
+            // (until then, there's no rush, just keep refreshing the window age)
+            uint64_t windowSize = m_window.rangeEnd - m_window.rangeBegin;
+            if (windowSize < m_window.capacity)
+            {
+                uint64_t trail = limit - m_window.rangeBegin;
+                windowSize = std::min(trail, m_window.capacity);
+                m_window.rangeEnd = m_window.rangeBegin + windowSize;
+                m_window.ageStart = now;
+            }
+
+            if (windowSize == 0)
+                return false;
+
+            auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
+            auto windowAge = now - m_window.ageStart;
+            bool dropUnresolved = (windowAge >= timeout);
+
+            int unresolved = 0;
+            UINT64* timestampBuffer = MapTimestampBuffer();
+            // iterate over every slot (pair) in the window
+            for (uint64_t i = m_window.rangeBegin; i != m_window.rangeEnd; i += 2)
+            {
+                uint32_t queryId = RingIndex(i);
+                uint32_t shadowIdx = static_cast<uint32_t>(i - m_window.rangeBegin);
+
+                UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
+                UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
+                UINT64 baselineTimestamp = m_window.shadowBuffer[shadowIdx+1];
+                int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
+                if (diff == 0)
+                    continue;
+                if (diff < 0)
+                {
+                    ++unresolved;
+                    if (!dropUnresolved)
+                        continue;
+                    TracyD3D12Debug(
+                        ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
+                        ZoneValue(int64_t(queryId));
+                        TracyPlot("TracyD3D12|timeout", float(0));
+                        TracyPlot("TracyD3D12|timeout", float(timeout.count()));
+                        TracyPlot("TracyD3D12|timeout", float(0));
+                    );
+                    // emit a "bogus" GpuTime to avoid problems with the internal
+                    // zone tracking and matching logic in the server/profiler
+                    gpuZoneBeginTimestamp = m_window.latestKnownGpuTimestamp;
+                    gpuZoneEndTimestamp = gpuZoneBeginTimestamp;    // 0ns
+                }
+
+                EmitGpuTime(gpuZoneBeginTimestamp, queryId);
+                EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
+                m_window.shadowBuffer[shadowIdx] = gpuZoneBeginTimestamp;
+                m_window.shadowBuffer[shadowIdx+1] = gpuZoneEndTimestamp;
+                UpdateLatestKnownGpuTimestamp(gpuZoneEndTimestamp);
+            }
+            UnmapTimestampBuffer(timestampBuffer);
+
+            bool windowFull = (windowSize == m_window.capacity);
+            bool allResolved = (unresolved == 0);
+            bool allDone = windowFull && (allResolved || dropUnresolved);
+            return allDone;
         }
 
         UINT64* MapTimestampBuffer()

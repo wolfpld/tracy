@@ -79,7 +79,7 @@ namespace tracy
         ID3D12Resource* m_readbackBuffer = nullptr;
 
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-        UINT64* m_timestampBuffer = nullptr;
+        UINT64* m_persistentTimestampBuffer = nullptr;
 #endif
 
         using atomic_counter = std::atomic<uint64_t>;
@@ -203,25 +203,10 @@ namespace tracy
                 TracyD3D12Panic("Failed to create query readback buffer.", return);
             }
 
-            {
-                D3D12_RANGE zeroRange{ 0, m_queryLimit * sizeof(UINT64) };
-                void* buffer = nullptr;
-                if (FAILED(m_readbackBuffer->Map(0, &zeroRange, &buffer)))
-                {
-                    TracyD3D12Panic("Failed to map readback buffer for initialization.", return);
-                }
-                UINT64* timestampBuffer = static_cast<UINT64*>(buffer);
-                for (uint64_t i = 0; i < m_queryLimit; ++i)
-                {
-                    timestampBuffer[i] = 0;
-                }
-                // TODO: any advantages to making this Map() persist?
-#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-                m_timestampBuffer = timestampBuffer;
-#else
-                m_readbackBuffer->Unmap(0, &zeroRange);
-#endif
-            }
+            UINT64* timestampBuffer = MapTimestampBuffer();
+            for (uint64_t i = 0; i < m_queryLimit; ++i)
+                timestampBuffer[i] = 0;
+            UnmapTimestampBuffer(timestampBuffer);
 
             float period = [queue]()
             {
@@ -293,6 +278,7 @@ namespace tracy
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
             D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
             m_readbackBuffer->Unmap(0, &fullRange);
+            m_persistentTimestampBuffer = nullptr;
 #endif
             m_readbackBuffer->Release();
             m_queryHeap->Release();
@@ -345,17 +331,7 @@ namespace tracy
             if (windowSize == 0)
                 return;
 
-#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-            UINT64* timestampBuffer = m_timestampBuffer;
-#else
-            D3D12_RANGE mapRange{ 0, m_queryLimit * sizeof(UINT64) };
-            void* readbackBufferMapping = nullptr;
-            if (FAILED(m_readbackBuffer->Map(0, &mapRange, &readbackBufferMapping)))
-            {
-                TracyD3D12Panic("Collect: failed to map timestamp buffer.", return);
-            }
-            UINT64* timestampBuffer = static_cast<UINT64*>(readbackBufferMapping);
-#endif
+            UINT64* timestampBuffer = MapTimestampBuffer();
 
             auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
             auto windowAge = now - m_window.ageStart;
@@ -408,9 +384,7 @@ namespace tracy
                 // TODO: start collecting the next window immediately...
             }
 
-#if !TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-            m_readbackBuffer->Unmap(0, &mapRange);
-#endif
+            UnmapTimestampBuffer(timestampBuffer);
 
             RecalibrateClocks();
         }
@@ -494,6 +468,34 @@ namespace tracy
             );
 
             return queryId;
+        }
+
+        UINT64* MapTimestampBuffer()
+        {
+#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            if (m_persistentTimestampBuffer != nullptr)
+                return m_persistentTimestampBuffer;
+#endif
+            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
+            void* readbackBufferMapping = nullptr;
+            if (FAILED(m_readbackBuffer->Map(0, &fullRange, &readbackBufferMapping)))
+            {
+                TracyD3D12Panic("failed to map timestamp buffer.", return nullptr);
+            }
+            UINT64* timestampBuffer = static_cast<UINT64*>(readbackBufferMapping);
+#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            assert(m_persistentTimestampBuffer == nullptr);
+            m_persistentTimestampBuffer = timestampBuffer;
+#endif
+            return timestampBuffer;
+        }
+
+        void UnmapTimestampBuffer(UINT64*)
+        {
+#if !TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
+            m_readbackBuffer->Unmap(0, &fullRange);
+#endif
         }
 
         tracy_force_inline uint8_t GetId() const

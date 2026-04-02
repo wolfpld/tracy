@@ -94,7 +94,7 @@ else()
     CPMAddPackage(
         NAME freetype
         GITHUB_REPOSITORY freetype/freetype
-        GIT_TAG VER-2-14-1
+        GIT_TAG VER-2-14-3
         OPTIONS
             "FT_DISABLE_HARFBUZZ ON"
             "FT_WITH_HARFBUZZ OFF"
@@ -137,7 +137,7 @@ target_include_directories(TracyGetOpt PUBLIC ${GETOPT_DIR})
 CPMAddPackage(
     NAME ImGui
     GITHUB_REPOSITORY ocornut/imgui
-    GIT_TAG v1.92.6-docking
+    GIT_TAG v1.92.7-docking
     DOWNLOAD_ONLY TRUE
     PATCHES
         "${CMAKE_CURRENT_LIST_DIR}/imgui-emscripten.patch"
@@ -253,7 +253,7 @@ if(NOT EMSCRIPTEN)
     CPMAddPackage(
         NAME usearch
         GITHUB_REPOSITORY unum-cloud/usearch
-        GIT_TAG v2.23.0
+        GIT_TAG v2.24.0
         EXCLUDE_FROM_ALL TRUE
     )
 
@@ -286,7 +286,7 @@ if(NOT EMSCRIPTEN)
         CPMAddPackage(
             NAME libcurl
             GITHUB_REPOSITORY curl/curl
-            GIT_TAG curl-8_18_0
+            GIT_TAG curl-8_19_0
             OPTIONS
                 "BUILD_STATIC_LIBS ON"
                 "BUILD_SHARED_LIBS OFF"

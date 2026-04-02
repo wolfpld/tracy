@@ -319,9 +319,8 @@ namespace tracy
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
 
             uint64_t latestQueryIssued = m_queryCounter;
-            if (ProcessCollectWindow(latestQueryIssued))
+            while (ProcessCollectWindow(latestQueryIssued))
                 AdvanceCollectWindow();
-            // TODO: start collecting the next window immediately...
 
             RecalibrateClocks();
         }

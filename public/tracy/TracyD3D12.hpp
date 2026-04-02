@@ -293,8 +293,7 @@ namespace tracy
         void Collect()
         {
 #ifdef TRACY_ON_DEMAND
-            if (!GetProfiler().IsConnected())
-                return;
+            if (!GetProfiler().IsConnected()) return;
 #endif
             ZoneScopedC(Color::Red4);
             ZoneValue(uint64_t(m_contextId));
@@ -323,13 +322,14 @@ namespace tracy
                 UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
                 UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
                 UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
+                AgeTime ini = m_queryRequestTime[queryId+1];
                 int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
-                //if (diff == 0)
-                //    DebugBreak();
+                if (diff == 0)
+                    DebugBreak();
                 if (diff <= 0)
                 {
                     // WARN: reads from m_queryRequestTime[] here may race with writes in NextQueryID()
-                    AgeTime ini = m_queryRequestTime[queryId+1];
+                    //AgeTime ini = m_queryRequestTime[queryId+1];
                     if (ini == AgeTime::max())
                         DebugBreak();
                     auto age = now - ini;
@@ -351,7 +351,6 @@ namespace tracy
 
                 EmitGpuTime(gpuZoneBeginTimestamp, queryId);
                 EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
-                UpdateLatestKnownGpuTimestamp(gpuZoneEndTimestamp);
 
                 m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
                 m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
@@ -382,6 +381,7 @@ namespace tracy
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
+            UpdateLatestKnownGpuTimestamp(gpuTimestamp);
             TracyD3D12Debug(
                 TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12|Query");
             );

@@ -3071,8 +3071,6 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
 
                     const uint8_t metadata = taggedPtr.GetTag();
-                    MessageSourceFromMetadata(metadata);
-                    MessageSeverityFromMetadata(metadata);
                     QueueItem itemWithMetadata;
                     MemWrite( &itemWithMetadata.hdr, item->hdr );
                     MemWrite( &itemWithMetadata.messageMetadata, item->message );
@@ -3092,8 +3090,6 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     tracy_free_fast( (void*)ptr );
 
                     const uint8_t metadata = taggedPtr.GetTag();
-                    MessageSourceFromMetadata(metadata);
-                    MessageSeverityFromMetadata(metadata);
                     QueueItem itemWithMetadata;
                     MemWrite( &itemWithMetadata.hdr, item->hdr );
                     MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );

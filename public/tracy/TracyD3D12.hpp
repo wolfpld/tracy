@@ -222,7 +222,7 @@ namespace tracy
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
 
-            UpdateLatestKnownGpuTimestamp(gpuTimestamp);
+            m_latestKnownGpuTimestamp = gpuTimestamp;
             m_queryRequestTime.resize(m_queryLimit, AgeTime::clock::now());
             m_shadowBuffer.resize(m_queryLimit, m_latestKnownGpuTimestamp);
 
@@ -319,19 +319,19 @@ namespace tracy
             {
                 uint32_t queryId = RingIndex(i);
 
+                // WARN: reads from m_queryRequestTime[] here may race with writes in NextQueryID()
+                std::atomic_thread_fence(std::memory_order_acquire);
+                AgeTime ini = m_queryRequestTime[queryId+1];
+                if (ini == AgeTime::max())
+                    DebugBreak();
                 UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
                 UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
                 UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
-                AgeTime ini = m_queryRequestTime[queryId+1];
                 int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
                 if (diff == 0)
                     DebugBreak();
                 if (diff <= 0)
                 {
-                    // WARN: reads from m_queryRequestTime[] here may race with writes in NextQueryID()
-                    //AgeTime ini = m_queryRequestTime[queryId+1];
-                    if (ini == AgeTime::max())
-                        DebugBreak();
                     auto age = now - ini;
                     if (age < timeout)
                         break;
@@ -345,6 +345,7 @@ namespace tracy
                     );
                     // emit a "bogus" GpuTime to avoid problems with the internal
                     // zone tracking and matching logic in the server/profiler
+                    //gpuZoneBeginTimestamp = baselineTimestamp;
                     gpuZoneBeginTimestamp = m_latestKnownGpuTimestamp;
                     gpuZoneEndTimestamp = gpuZoneBeginTimestamp; // 0ns
                 }
@@ -356,6 +357,8 @@ namespace tracy
                 m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
                 m_queryRequestTime[queryId+0] = AgeTime::max();
                 m_queryRequestTime[queryId+1] = AgeTime::max();
+                if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
+                    m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
 
                 // move the goalpost: NextQueryId() can now reuse the query pair
                 m_previousCheckpoint.store(i+2);
@@ -366,13 +369,6 @@ namespace tracy
         }
 
     private:
-        tracy_force_inline void UpdateLatestKnownGpuTimestamp(UINT64 timestamp)
-        {
-            int64_t diff = Distance(m_latestKnownGpuTimestamp, timestamp);
-            if (diff > 0)
-                m_latestKnownGpuTimestamp = timestamp;
-        }
-
         tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
         {
             auto* item = Profiler::QueueSerial();
@@ -381,7 +377,6 @@ namespace tracy
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
-            UpdateLatestKnownGpuTimestamp(gpuTimestamp);
             TracyD3D12Debug(
                 TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12|Query");
             );
@@ -431,7 +426,7 @@ namespace tracy
             AgeTime now = AgeTime::clock::now();
             m_queryRequestTime[queryId+0] = now;
             m_queryRequestTime[queryId+1] = now;
-            // TODO: memory release fence here
+            std::atomic_thread_fence(std::memory_order_release);
             TracyD3D12Debug(
                 TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+0)), 1, "TracyD3D12|Query");
                 TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+1)), 1, "TracyD3D12|Query");

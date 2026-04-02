@@ -33,25 +33,19 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/server.cmake)
 
 include(ExternalProject)
-if(CMAKE_HOST_WIN32)
-    set(EMBED_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/embed.exe)
-else()
-    set(EMBED_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/embed)
-endif()
-ExternalProject_Add(embed-build
+ExternalProject_Add(embed
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/helpers
     CMAKE_ARGS
         -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
-    BUILD_BYPRODUCTS ${EMBED_EXECUTABLE}
 )
 
 function(Embed LIST NAME FILE)
     add_custom_command(
         OUTPUT data/${NAME}.cpp data/${NAME}.hpp
         COMMAND ${CMAKE_COMMAND} -E make_directory data
-        COMMAND ${EMBED_EXECUTABLE} ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
-        DEPENDS ${EMBED_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/${FILE}
+        COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
+        DEPENDS embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
     )
     list(APPEND ${LIST} data/${NAME}.cpp)
     return(PROPAGATE ${LIST})

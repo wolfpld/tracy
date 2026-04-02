@@ -69,7 +69,7 @@ namespace tracy
     {
         friend class D3D12ZoneScope;
 
-        uint8_t m_contextId = 255;  // TODO: apparently, 255 means "invalid id"; is this documented somewhere?
+        uint8_t m_contextId = 255;  // 255 represents "invalid id"
 
         std::mutex m_collectionMutex;
 
@@ -93,8 +93,8 @@ namespace tracy
             using AgeClock = std::chrono::high_resolution_clock;
             static constexpr uint64_t capacity = 4 * 1024;
             uint64_t rangeBegin = 0;
-            uint64_t rangeEnd   = 0;
-            AgeClock::time_point ageStart   = AgeClock::time_point::max();
+            uint64_t rangeEnd = 0;
+            AgeClock::time_point ageStart = AgeClock::time_point::max();
             UINT64 latestKnownGpuTimestamp = 0;
             UINT64 shadowBuffer[capacity] = {};
         } m_window;
@@ -150,11 +150,9 @@ namespace tracy
             ZoneScopedC(Color::Red4);
 
             // Verify we support timestamp queries on this queue.
-
             if (queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY)
             {
                 D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureData{};
-
                 HRESULT hr = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData));
                 if (FAILED(hr) || (featureData.CopyQueueTimestampQueriesSupported == FALSE))
                 {
@@ -267,7 +265,7 @@ namespace tracy
             // to the GPU for execution, so the Signal() does not give us much "signal"
  
             // attempt to collect all pending queries up to the latest known query
-            uint64_t latestQuery = m_queryCounter.load();
+            uint64_t latestQuery = m_queryCounter;
             while (Distance(m_window.rangeEnd, latestQuery) > 0)
                 Collect();
             // TODO: even though the collect window caugt up to the latestQuery,
@@ -276,7 +274,7 @@ namespace tracy
 
             // if the client is still pushing queries past the latest checkpoint above,
             // assume there's a bug in the client, and ignore them (don't collect)
-            if (latestQuery != m_queryCounter.load())
+            if (latestQuery != m_queryCounter)
                 TracyD3D12Panic("client is still pushing queries.");
 
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER

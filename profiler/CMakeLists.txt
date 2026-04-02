@@ -42,16 +42,12 @@ ExternalProject_Add(embed
         -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_custom_command(
-    OUTPUT data
-    COMMAND ${CMAKE_COMMAND} -E make_directory data
-)
-
 function(Embed LIST NAME FILE)
     add_custom_command(
         OUTPUT data/${NAME}.cpp data/${NAME}.hpp
+        COMMAND ${CMAKE_COMMAND} -E make_directory data
         COMMAND ${CMAKE_CURRENT_BINARY_DIR}/embed ${NAME} ${CMAKE_CURRENT_LIST_DIR}/${FILE} data/${NAME}
-        DEPENDS data embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
+        DEPENDS embed ${CMAKE_CURRENT_LIST_DIR}/${FILE}
     )
     list(APPEND ${LIST} data/${NAME}.cpp)
     return(PROPAGATE ${LIST})

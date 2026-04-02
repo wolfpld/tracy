@@ -59,6 +59,9 @@ static int GetSamplingPeriod()
 #    include "../common/TracySystem.hpp"
 #    include "TracyProfiler.hpp"
 #    include "TracyThread.hpp"
+#    ifdef __MINGW32__
+#      include "windows/TracyETW_compat.h"
+#    endif
 #    include "windows/TracyETW.cpp"
 
 namespace tracy

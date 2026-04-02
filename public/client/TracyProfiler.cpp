@@ -3071,21 +3071,39 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::MessageCallstack:
                 {
                     ThreadCtxCheckSerial( messageFatThread );
-                    ptr = MemRead<TaggedUserlandAddress>( &item->messageFat.textAndMetadata ).GetAddress();
+                    TaggedUserlandAddress taggedPtr = MemRead<TaggedUserlandAddress>( &item->messageFat.textAndMetadata );
+                    ptr = taggedPtr.GetAddress();
                     uint16_t size = MemRead<uint16_t>( &item->messageFat.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
-                    break;
+
+                    const uint8_t metadata = taggedPtr.GetTag();
+                    QueueItem itemWithMetadata;
+                    MemWrite( &itemWithMetadata.hdr, item->hdr );
+                    MemWrite( &itemWithMetadata.messageMetadata, item->message );
+                    MemWrite( &itemWithMetadata.messageMetadata.metadata, metadata );
+                    AppendData( &itemWithMetadata, QueueDataSize[idx] );
+                    item++;
+                    continue; // Next item since we sent it manually
                 }
                 case QueueType::MessageColor:
                 case QueueType::MessageColorCallstack:
                 {
                     ThreadCtxCheckSerial( messageColorFatThread );
-                    ptr = MemRead<TaggedUserlandAddress>( &item->messageColorFat.textAndMetadata ).GetAddress();
+                    TaggedUserlandAddress taggedPtr = MemRead<TaggedUserlandAddress>( &item->messageColorFat.textAndMetadata );
+                    ptr = taggedPtr.GetAddress();
                     uint16_t size = MemRead<uint16_t>( &item->messageColorFat.size );
                     SendSingleString( (const char*)ptr, size );
                     tracy_free_fast( (void*)ptr );
-                    break;
+
+                    const uint8_t metadata = taggedPtr.GetTag();
+                    QueueItem itemWithMetadata;
+                    MemWrite( &itemWithMetadata.hdr, item->hdr );
+                    MemWrite( &itemWithMetadata.messageColorMetadata, item->messageColor );
+                    MemWrite( &itemWithMetadata.messageColorMetadata.metadata, metadata );
+                    AppendData( &itemWithMetadata, QueueDataSize[idx] );
+                    item++;
+                    continue; // Next item since we sent it manually
                 }
                 case QueueType::Callstack:
                 {

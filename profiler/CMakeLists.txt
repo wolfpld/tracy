@@ -38,7 +38,7 @@ if(CMAKE_HOST_WIN32)
 else()
     set(EMBED_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/embed)
 endif()
-ExternalProject_Add(embed
+ExternalProject_Add(embed-build
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/helpers
     CMAKE_ARGS
         -DCMAKE_BUILD_TYPE=Release

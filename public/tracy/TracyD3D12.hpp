@@ -315,6 +315,7 @@ namespace tracy
             UINT64* timestampBuffer = MapTimestampBuffer();
             uint64_t rangeBegin = m_previousCheckpoint;
             uint64_t rangeEnd = m_queryCounter;
+            // iterate queries in pairs
             for (uint64_t i = rangeBegin; i != rangeEnd; i += 2)
             {
                 uint32_t queryId = RingIndex(i);
@@ -323,14 +324,18 @@ namespace tracy
                 UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
                 UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
                 int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
-                if (diff == 0)
-                    DebugBreak();
+                //if (diff == 0)
+                //    DebugBreak();
                 if (diff <= 0)
                 {
                     // WARN: reads from m_queryRequestTime[] here may race with writes in NextQueryID()
                     AgeTime ini = m_queryRequestTime[queryId+1];
-                    if (now - ini < timeout)
+                    if (ini == AgeTime::max())
+                        DebugBreak();
+                    auto age = now - ini;
+                    if (age < timeout)
                         break;
+                    // timeout reached: give up and drop it
                     TracyD3D12Debug(
                         ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
                         ZoneValue(int64_t(queryId));
@@ -350,8 +355,8 @@ namespace tracy
 
                 m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
                 m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
-                m_queryRequestTime[queryId+0] = now;
-                m_queryRequestTime[queryId+1] = now;
+                m_queryRequestTime[queryId+0] = AgeTime::max();
+                m_queryRequestTime[queryId+1] = AgeTime::max();
 
                 // move the goalpost: NextQueryId() can now reuse the query pair
                 m_previousCheckpoint.store(i+2);

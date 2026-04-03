@@ -19,7 +19,9 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/.. client/)
 
 add_executable(tracy-test test.cpp)
-target_link_options(tracy-test PRIVATE -rdynamic)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_link_options(tracy-test PRIVATE -rdynamic)
+endif()
 target_link_libraries(tracy-test TracyClient)
 
 # Lua support (optional)

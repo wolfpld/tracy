@@ -522,7 +522,7 @@ static ULONG EnableContextSwitchMonitoring( Session& session )
 static ULONG EnableVSyncMonitoring( Session& session )
 {
 // TODO: is this correct?
-#if ( _WIN32_WINNT < _WIN32_WINNT_WINBLUE ) || defined( __MINGW32__ )
+#if ( _WIN32_WINNT < _WIN32_WINNT_WINBLUE )
     return ETWError( ERROR_NOT_SUPPORTED );
 #endif
 

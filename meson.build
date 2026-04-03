@@ -138,7 +138,7 @@ if tracy_shared_libs
 endif
 
 if host_machine.system() == 'windows'
-  tracy_compile_args += ['-DWINVER=0x0601', '-D_WIN32_WINNT=0x0601']
+  tracy_compile_args += ['-DWINVER=0x0A00', '-D_WIN32_WINNT=0x0A00']
 endif
 
 includes = [

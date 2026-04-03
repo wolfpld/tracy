@@ -79,6 +79,7 @@ endif()
 # Public dependency on some libraries required when using Mingw
 if(WIN32 AND ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU|Clang")
     target_link_libraries(TracyClient PUBLIC ws2_32 dbghelp secur32)
+    target_compile_definitions(TracyClient PUBLIC WINVER=0x0A00 _WIN32_WINNT=0x0A00)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")

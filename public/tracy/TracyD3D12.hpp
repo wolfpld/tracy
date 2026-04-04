@@ -36,42 +36,60 @@ using TracyD3D12Ctx = void*;
 #include "../client/TracyProfiler.hpp"
 #include "../client/TracyCallstack.hpp"
 
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <vector>
 #include <cstdlib>
+#include <cstring>
 #include <cassert>
 #include <d3d12.h>
 #include <dxgi.h>
-#include <queue>
+
+#ifndef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
+#define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.005f
+#endif
+
+#define TRACY_D3D12_DEBUG (1)
+#define TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER (1)
 
 #define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::Error, tracy::Color::Red4, 0, msg ); __VA_ARGS__; } while(false);
+
+#if TRACY_D3D12_DEBUG
+#define TracyD3D12Debug(...) __VA_ARGS__
+#else
+#define TracyD3D12Debug(...)
+#endif
 
 namespace tracy
 {
 
-    struct D3D12QueryPayload
-    {
-        uint32_t m_queryIdStart = 0;
-        uint32_t m_queryCount = 0;
-    };
-
     // Command queue context.
+#pragma optimize ( "", off )
     class D3D12QueueCtx
     {
         friend class D3D12ZoneScope;
 
+        uint8_t m_contextId = 255;  // 255 represents "invalid id"
+
+        std::mutex m_collectionMutex;
+
         ID3D12Device* m_device = nullptr;
         ID3D12CommandQueue* m_queue = nullptr;
-        uint8_t m_contextId = 255;  // TODO: apparently, 255 means "invalid id"; is this documented somewhere?
         ID3D12QueryHeap* m_queryHeap = nullptr;
         ID3D12Resource* m_readbackBuffer = nullptr;
 
-        // In-progress payload.
-        uint32_t m_queryLimit = 0;
-        std::atomic<uint32_t> m_queryCounter = 0;
-        uint32_t m_previousQueryCounter = 0;
+#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+        UINT64* m_persistentTimestampBuffer = nullptr;
+#endif
 
-        uint32_t m_activePayload = 0;
-        ID3D12Fence* m_payloadFence = nullptr;
-        std::queue<D3D12QueryPayload> m_payloadQueue;
+        using atomic_counter = std::atomic<uint64_t>;
+        atomic_counter m_queryCounter = 0;
+        atomic_counter m_previousCheckpoint = 0;
+
+        uint32_t m_queryLimit = 0;
+
+        std::vector<UINT64> m_shadowBuffer;
 
         UINT64 m_prevCalibrationTicksCPU = 0;
 
@@ -87,6 +105,10 @@ namespace tracy
             int64_t cpuDeltaTicks = cpuTimestamp - m_prevCalibrationTicksCPU;
             if (cpuDeltaTicks > 0)
             {
+                // WARNING: technically, we should not emit a GpuCalibration event if the GPU counter
+                // did not move, to prevent division by a gpuDelta of zero in later on (in the server).
+                // In practice, GetClockCalibration() should be advancing CPU and GPU together.
+
                 static const int64_t nanosecodsPerTick = int64_t(1000000000) / GetFrequencyQpc();
                 int64_t cpuDeltaNS = cpuDeltaTicks * nanosecodsPerTick;
                 // Save the device cpu timestamp, not the Tracy profiler timestamp:
@@ -120,11 +142,9 @@ namespace tracy
             ZoneScopedC(Color::Red4);
 
             // Verify we support timestamp queries on this queue.
-
             if (queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY)
             {
                 D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureData{};
-
                 HRESULT hr = device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureData, sizeof(featureData));
                 if (FAILED(hr) || (featureData.CopyQueueTimestampQueriesSupported == FALSE))
                 {
@@ -173,10 +193,10 @@ namespace tracy
                 TracyD3D12Panic("Failed to create query readback buffer.", return);
             }
 
-            if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_payloadFence))))
-            {
-                TracyD3D12Panic("Failed to create payload fence.", return);
-            }
+            UINT64* timestampBuffer = MapTimestampBuffer();
+            for (uint64_t i = 0; i < m_queryLimit; ++i)
+                timestampBuffer[i] = 0;
+            UnmapTimestampBuffer(timestampBuffer);
 
             float period = [queue]()
             {
@@ -200,24 +220,26 @@ namespace tracy
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
 
+            m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
+
             // Save the device cpu timestamp, not the profiler's timestamp.
             m_prevCalibrationTicksCPU = cpuTimestamp;
 
             cpuTimestamp = Profiler::GetTime();
 
-            // all checked: ready to roll
+            // All setup/init checks completed: ready to create the context.
             m_contextId = GetGpuCtxCounter().fetch_add(1);
             ZoneValue(int64_t(m_contextId));
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
-            MemWrite(&item->gpuNewContext.cpuTime, cpuTimestamp);
-            MemWrite(&item->gpuNewContext.gpuTime, gpuTimestamp);
-            MemWrite(&item->gpuNewContext.thread, decltype(item->gpuNewContext.thread)(0)); // #TODO: why 0 instead of GetThreadHandle()?
-            MemWrite(&item->gpuNewContext.period, period);
-            MemWrite(&item->gpuNewContext.context, GetId());
-            MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
-            MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
+            MemWrite(&item->gpuNewContext.cpuTime, static_cast<int64_t>(cpuTimestamp));
+            MemWrite(&item->gpuNewContext.gpuTime, static_cast<int64_t>(gpuTimestamp));
+            MemWrite(&item->gpuNewContext.thread, static_cast<uint32_t>(0)); // zero means the context is not associated with a specific thread
+            MemWrite(&item->gpuNewContext.period, static_cast<float>(period));
+            MemWrite(&item->gpuNewContext.context, static_cast<uint8_t>(GetId()));
+            MemWrite(&item->gpuNewContext.flags, static_cast<uint8_t>(GpuContextCalibration));
+            MemWrite(&item->gpuNewContext.type, static_cast<uint8_t>(GpuContextType::Direct3D12));
             SubmitQueueItem(item);
         }
 
@@ -225,28 +247,30 @@ namespace tracy
         {
             ZoneScopedC(Color::Red4);
             ZoneValue(int64_t(m_contextId));
-            // collect all pending timestamps
-            while (m_payloadFence->GetCompletedValue() != m_activePayload)
-                /* busy-wait ... */;
-            Collect();
-            m_payloadFence->Release();
+
+            // TODO: could use queue->Signal() to inject a progress point in the queue
+            // and the immediately wait for the signal, in order to avoid busy-waiting
+            // (need to create an ID3D12Fence and associate an Event object to it)
+            // NOTE: even with Signal(), there are no guarantees the queries were sent
+            // to the GPU for execution, so the Signal() does not give us much "signal"
+ 
+            // attempt to collect all pending queries up to the latest known query
+            uint64_t latestQuery = m_queryCounter;
+            while (Distance(m_previousCheckpoint, latestQuery) > 0)
+                Collect();
+
+            // if the client is still pushing queries past the latest checkpoint above,
+            // assume there's a bug in the client, and ignore them (don't collect)
+            if (latestQuery != m_queryCounter)
+                TracyD3D12Panic("client is still pushing queries.");
+
+#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
+            m_readbackBuffer->Unmap(0, &fullRange);
+            m_persistentTimestampBuffer = nullptr;
+#endif
             m_readbackBuffer->Release();
             m_queryHeap->Release();
-        }
-
-
-        void NewFrame()
-        {
-            uint32_t queryCounter = m_queryCounter.exchange(0);
-            m_payloadQueue.emplace(D3D12QueryPayload{ m_previousQueryCounter, queryCounter });
-            m_previousQueryCounter += queryCounter;
-
-            if (m_previousQueryCounter >= m_queryLimit)
-            {
-                m_previousQueryCounter -= m_queryLimit;
-            }
-
-            m_queue->Signal(m_payloadFence, ++m_activePayload);
         }
 
         void Name( const char* name, uint16_t len )
@@ -262,84 +286,200 @@ namespace tracy
             SubmitQueueItem(item);
         }
 
+        #define TracyD3D12Assert(expr) if (!(expr)) __debugbreak();
+
+        bool DebugGetTimeoutBit(UINT64 timestamp) {
+            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
+            bool bit = (timestamp & mask) != 0llu;
+            return bit;
+        }
+
+        UINT64 DebugSetTimeoutBit(UINT64 timestamp) {
+            TracyD3D12Assert(!DebugGetTimeoutBit(timestamp));
+            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
+            timestamp = timestamp | mask;
+            return timestamp;
+        }
+
+        UINT64 DebugClearTimeoutBit(UINT64 timestamp) {
+            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
+            timestamp = timestamp & ~mask;
+            return timestamp;
+        }
+
         void Collect()
         {
 #ifdef TRACY_ON_DEMAND
-            if (!GetProfiler().IsConnected())
-            {
-                m_queryCounter = 0;
-
-                return;
-            }
+            if (!GetProfiler().IsConnected()) return;
 #endif
             ZoneScopedC(Color::Red4);
             ZoneValue(uint64_t(m_contextId));
 
-            // Find out what payloads are available.
-            const auto newestReadyPayload = m_payloadFence->GetCompletedValue();
-            const auto payloadCount = m_payloadQueue.size() - (m_activePayload - newestReadyPayload);
+            // Only one thread is allowed to collect timestamps at any given time
+            // but there's no need to block contending threads
+            if (!m_collectionMutex.try_lock())
+                return;
+            std::unique_lock lock (m_collectionMutex, std::adopt_lock);
 
-            if (!payloadCount)
+            uint64_t earliestTicket = m_previousCheckpoint;
+            uint64_t latestTicket = m_queryCounter;
+            if (Distance(earliestTicket, latestTicket) < 0)
+                return;
+
+            UINT64* timestampBuffer = MapTimestampBuffer();
+            
+            while (Distance(earliestTicket, latestTicket) > RingCapacity())
             {
-                return;  // No payloads are available yet, exit out.
+                uint64_t ticket = earliestTicket;
+                DropTimestamp(earliestTicket, timestampBuffer);
+                earliestTicket = RetireTicket(earliestTicket);
             }
 
-            D3D12_RANGE mapRange{ 0, m_queryLimit * sizeof(uint64_t) };
-
-            // Map the readback buffer so we can fetch the query data from the GPU.
-            void* readbackBufferMapping = nullptr;
-
-            if (FAILED(m_readbackBuffer->Map(0, &mapRange, &readbackBufferMapping)))
+            for (uint64_t ticket = earliestTicket; ticket != latestTicket; ticket += 2)
             {
-                TracyD3D12Panic("Failed to map readback buffer.", return);
+                if (!ResolveTimestamp(ticket, timestampBuffer))
+                    // TODO: preemptive timeout policy
+                    break;
+                RetireTicket(ticket);
             }
 
-            auto* timestampData = static_cast<uint64_t*>(readbackBufferMapping);
+            UnmapTimestampBuffer(timestampBuffer);
 
-            for (uint32_t i = 0; i < payloadCount; ++i)
-            {
-                const auto& payload = m_payloadQueue.front();
-
-                for (uint32_t j = 0; j < payload.m_queryCount; ++j)
-                {
-                    const auto counter = (payload.m_queryIdStart + j) % m_queryLimit;
-                    const auto timestamp = timestampData[counter];
-                    const auto queryId = counter;
-
-                    auto* item = Profiler::QueueSerial();
-                    MemWrite(&item->hdr.type, QueueType::GpuTime);
-                    MemWrite(&item->gpuTime.gpuTime, timestamp);
-                    MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
-                    MemWrite(&item->gpuTime.context, GetId());
-
-                    Profiler::QueueSerialFinish();
-                }
-
-                m_payloadQueue.pop();
-            }
-
-            m_readbackBuffer->Unmap(0, nullptr);
-
-            // Recalibrate to account for drift.
             RecalibrateClocks();
         }
 
     private:
+        bool ResolveTimestamp(uint64_t ticket, UINT64* timestampBuffer)
+        {
+            uint32_t queryId = RingIndex(ticket);
+            UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
+            UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
+            UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
+            int64_t baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
+            if (baseline_diff <= 0)
+                return false;
+            EmitGpuTime(gpuZoneBeginTimestamp, queryId);
+            EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
+            m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
+            m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
+            return true;
+        }
+        void DropTimestamp(uint64_t ticket, UINT64* timestampBuffer)
+        {
+            if (ResolveTimestamp(ticket, timestampBuffer))
+                return;
+            // emit a "bogus" GpuTime to avoid problems with the internal
+            // zone tracking and matching logic in the server/profiler
+            uint32_t queryId = RingIndex(ticket);
+            uint64_t latestCpuTimestamp;
+            uint64_t latestGpuTimestamp;
+            if (FAILED(m_queue->GetClockCalibration(&latestGpuTimestamp, &latestCpuTimestamp)))
+                TracyD3D12Panic("Failed to get queue clock calibration.", return);
+            EmitGpuTime(latestGpuTimestamp, queryId);
+            EmitGpuTime(latestGpuTimestamp, queryId+1);
+            m_shadowBuffer[queryId+0] = latestGpuTimestamp;
+            m_shadowBuffer[queryId+1] = latestGpuTimestamp;
+            TracyD3D12Debug(
+                ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
+                ZoneValue(int64_t(queryId));
+                //TracyPlot("TracyD3D12|timeout", float(0));
+                //TracyPlot("TracyD3D12|timeout", float(timeout.count()));
+                //TracyPlot("TracyD3D12|timeout", float(0));
+            );
+        }
+
+        tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
+        {
+            auto* item = Profiler::QueueSerial();
+            MemWrite(&item->hdr.type, QueueType::GpuTime);
+            MemWrite(&item->gpuTime.gpuTime, static_cast<int64_t>(gpuTimestamp));
+            MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
+            MemWrite(&item->gpuTime.context, GetId());
+            Profiler::QueueSerialFinish();
+            TracyD3D12Debug(
+                TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12|Query");
+            );
+        }
+
+        tracy_force_inline uint32_t RingCapacity() const
+        {
+            return m_queryLimit;
+        }
+
+        tracy_force_inline uint32_t RingIndex(uint64_t logicalSlot) const
+        {
+            return static_cast<uint32_t>(logicalSlot % RingCapacity());
+        }
+
+        tracy_force_inline static int64_t Distance(uint64_t begin, uint64_t end)
+        {
+            // difference accounting for unsigned wrap-around
+            return static_cast<int64_t>(end - begin);
+        }
+
+        uint64_t RetireTicket(uint64_t ticket)
+        {
+            assert(m_previousCheckpoint == ticket);
+            ticket += 2;
+            m_previousCheckpoint.store(ticket);
+            return ticket;
+        }
+
         tracy_force_inline uint32_t NextQueryId()
         {
-            uint32_t queryCounter = m_queryCounter.fetch_add(2);
-            if (queryCounter >= m_queryLimit)
+            // WARN: the moment m_queryCounter is incremented, Collect() will have instant
+            // visibility of the query id pair and may start attempting to collect it!
+            // Under most circumstances, this is fine. However, if Collect() decided to
+            // drop a timestamp query due to timeout, but the query was indeed submitted
+            // to the GPU queue for execution later on, the "late" query will eventually
+            // be resolved by the GPU (asynchronously writting to the corresponding query
+            // "slot"). The newly produced query pair below could have matching ids/slots
+            // with the late query. Given that Collect() may attempt to inspect the new
+            // query pair immediately upon m_queryCounter being incremented, the "late"
+            // timestamp value may be collected as if it belonged to the the new query.
+            const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
+            while (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
             {
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));
                 TracyD3D12Panic("Submitted too many GPU queries!");
-                // TODO: get rid of NewFrame() and make collection "circular"
-                // TODO: decide what to do when "full" (collect, or return an error-id?)
+                Collect();
             }
 
-            const uint32_t id = (m_previousQueryCounter + queryCounter) % m_queryLimit;
+            const uint32_t queryId = RingIndex(ticket);
+            TracyD3D12Debug(
+                TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+0)), 1, "TracyD3D12|Query");
+                TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+1)), 1, "TracyD3D12|Query");
+            );
+            return queryId;
+        }
 
-            return id;
+        UINT64* MapTimestampBuffer()
+        {
+#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            if (m_persistentTimestampBuffer != nullptr)
+                return m_persistentTimestampBuffer;
+#endif
+            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
+            void* readbackBufferMapping = nullptr;
+            if (FAILED(m_readbackBuffer->Map(0, &fullRange, &readbackBufferMapping)))
+            {
+                TracyD3D12Panic("failed to map timestamp buffer.", return nullptr);
+            }
+            UINT64* timestampBuffer = static_cast<UINT64*>(readbackBufferMapping);
+#if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            assert(m_persistentTimestampBuffer == nullptr);
+            m_persistentTimestampBuffer = timestampBuffer;
+#endif
+            return timestampBuffer;
+        }
+
+        void UnmapTimestampBuffer(UINT64*)
+        {
+#if !TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
+            m_readbackBuffer->Unmap(0, &fullRange);
+#endif
         }
 
         tracy_force_inline uint8_t GetId() const
@@ -347,13 +487,14 @@ namespace tracy
             return m_contextId;
         }
     };
+#pragma optimize ( "", on )
 
     class D3D12ZoneScope
     {
         const bool m_active;
         D3D12QueueCtx* m_ctx = nullptr;
         ID3D12GraphicsCommandList* m_cmdList = nullptr;
-        uint32_t m_queryId = 0;  // Used for tracking in nested zones.
+        uint32_t m_queryId = 0;
 
         tracy_force_inline void WriteQueueItem(const SourceLocationData* srcLocation, int32_t callstackDepth, uint32_t sourceLine, const char* sourceFile, size_t sourceFileLen, const char* functionName, size_t functionNameLen, const char* zoneName, size_t zoneNameLen)
         {
@@ -363,7 +504,7 @@ namespace tracy
             const bool transientZone = srcLocation == nullptr;
             uint64_t srcLocationAddr = reinterpret_cast<uint64_t>( srcLocation );
 
-            QueueItem* item;
+            QueueItem* item = nullptr;
             QueueType itemType;
             if( transientZone )
             {
@@ -458,6 +599,7 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
+            // TODO: maybe move this to Collect()?
             m_cmdList->ResolveQueryData(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId, 2, m_ctx->m_readbackBuffer, m_queryId * sizeof(uint64_t));
         }
     };
@@ -478,6 +620,9 @@ namespace tracy
 
 }
 
+#undef TRACY_D3D12_DEBUG
+#undef TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+#undef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
 #undef TracyD3D12Panic
 
 using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
@@ -486,7 +631,7 @@ using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 #define TracyD3D12Destroy(ctx) tracy::DestroyD3D12Context(ctx);
 #define TracyD3D12ContextName(ctx, name, size) ctx->Name(name, size);
 
-#define TracyD3D12NewFrame(ctx) ctx->NewFrame();
+#define TracyD3D12NewFrame(ctx) ((void)(ctx))
 
 #define TracyD3D12UnnamedZone ___tracy_gpu_d3d12_zone
 #define TracyD3D12SrcLocSymbol TracyConcat(__tracy_d3d12_source_location,TracyLine)

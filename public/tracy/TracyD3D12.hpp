@@ -326,85 +326,75 @@ namespace tracy
                 return;
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
 
-            AgeTime now = AgeTime::clock::now();
-
-            auto timeout = std::chrono::duration<double>(TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT);
-            //double relax = double(RingCapacity()) / (1 + Distance(m_previousCheckpoint, m_queryCounter));
-            //relax = std::min(relax, 50.0);
-            //timeout *= relax;
+            uint64_t earliestTicket = m_previousCheckpoint;
+            uint64_t latestTicket = m_queryCounter;
+            if (Distance(earliestTicket, latestTicket) < 0)
+                return;
 
             UINT64* timestampBuffer = MapTimestampBuffer();
-            uint64_t rangeBegin = m_previousCheckpoint;
-            uint64_t rangeEnd = m_queryCounter;
-            // iterate queries in pairs
-            for (uint64_t i = rangeBegin; i != rangeEnd; i += 2)
+            
+            while (Distance(earliestTicket, latestTicket) > RingSize())
             {
-                uint32_t queryId = RingIndex(i);
-
-                // WARN: reads from m_queryRequestTime[] here may race with writes in NextQueryID()
-                std::atomic_thread_fence(std::memory_order_acquire);
-                AgeTime ini = m_queryRequestTime[queryId+1];
-                TracyD3D12Assert(ini != AgeTime::max());
-                UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
-                UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
-                TracyD3D12Assert(!DebugGetTimeoutBit(gpuZoneBeginTimestamp));
-                TracyD3D12Assert(!DebugGetTimeoutBit(gpuZoneEndTimestamp));
-                UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
-                bool sbtb = DebugGetTimeoutBit(baselineTimestamp);
-                baselineTimestamp = DebugClearTimeoutBit(baselineTimestamp);
-                int64_t baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
-                int64_t timeline_diff = Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp);
-                // attempt to detect "late" timestamps that got resolved after being dropped
-                // they should have a negative timeline_diff with absolute magnitude similar to the baseline difference
-                double drift_ratio = double(timeline_diff) / double(baseline_diff);
-                if (sbtb && (baseline_diff > 0) && (timeline_diff < 0)) {
-                    TracyD3D12Assert(drift_ratio < -10.0);
-                }
-                bool anomaly = drift_ratio < -10.0;
-                bool dropped = false;
-                if ((baseline_diff <= 0) || anomaly /* || (timeline_diff < -1'000'000'000)*/)
-                {
-                    auto age = now - ini;
-                    if (age < timeout)
-                        break;
-                    // timeout reached: give up and drop it
-                    TracyD3D12Debug(
-                        ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
-                        ZoneValue(int64_t(queryId));
-                        TracyPlot("TracyD3D12|timeout", float(0));
-                        TracyPlot("TracyD3D12|timeout", float(timeout.count()));
-                        TracyPlot("TracyD3D12|timeout", float(0));
-                    );
-                    // emit a "bogus" GpuTime to avoid problems with the internal
-                    // zone tracking and matching logic in the server/profiler
-                    //gpuZoneBeginTimestamp = baselineTimestamp;
-                    gpuZoneBeginTimestamp = m_latestKnownGpuTimestamp;
-                    gpuZoneEndTimestamp = gpuZoneBeginTimestamp; // 0ns
-                    dropped = true;
-                }
-
-                EmitGpuTime(gpuZoneBeginTimestamp, queryId);
-                EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
-
-                if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
-                    m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
-
-                if (dropped)
-                    gpuZoneEndTimestamp = DebugSetTimeoutBit(gpuZoneEndTimestamp);
-                m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
-                m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
-                m_queryRequestTime[queryId+0] = AgeTime::max();
-                m_queryRequestTime[queryId+1] = AgeTime::max();
-
-                // move the goalpost: NextQueryId() can now reuse the query pair
-                m_previousCheckpoint.store(i+2);    // (implicit memory release)
+                uint64_t ticket = earliestTicket;
+                DropTimestamp(earliestTicket, timestampBuffer);
+                earliestTicket += 2;
+                m_previousCheckpoint.store(earliestTicket);
             }
+
+            for (uint64_t ticket = earliestTicket; ticket != latestTicket; ticket += 2)
+            {
+                if (!ResolveTimestamp(ticket, timestampBuffer))
+                    break;
+                m_previousCheckpoint.store(ticket + 2);
+            }
+
             UnmapTimestampBuffer(timestampBuffer);
 
             RecalibrateClocks();
         }
 
     private:
+        bool ResolveTimestamp(uint64_t ticket, UINT64* timestampBuffer)
+        {
+            uint32_t queryId = RingIndex(ticket);
+            UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
+            UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
+            UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
+            int64_t baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
+            if (baseline_diff <= 0)
+                return false;
+            EmitGpuTime(gpuZoneBeginTimestamp, queryId);
+            EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
+            m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
+            m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
+            if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
+                m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
+            return true;
+        }
+        void DropTimestamp(uint64_t ticket, UINT64* timestampBuffer)
+        {
+            if (ResolveTimestamp(ticket, timestampBuffer))
+                return;
+            // emit a "bogus" GpuTime to avoid problems with the internal
+            // zone tracking and matching logic in the server/profiler
+            uint32_t queryId = RingIndex(ticket);
+            uint64_t latestCpuTimestamp;
+            uint64_t latestGpuTimestamp;
+            if (FAILED(m_queue->GetClockCalibration(&latestGpuTimestamp, &latestCpuTimestamp)))
+                TracyD3D12Panic("Failed to get queue clock calibration.", return);
+            EmitGpuTime(latestGpuTimestamp, queryId);
+            EmitGpuTime(latestGpuTimestamp, queryId+1);
+            m_shadowBuffer[queryId+0] = latestGpuTimestamp;
+            m_shadowBuffer[queryId+1] = latestGpuTimestamp;
+            TracyD3D12Debug(
+                ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
+                ZoneValue(int64_t(queryId));
+                //TracyPlot("TracyD3D12|timeout", float(0));
+                //TracyPlot("TracyD3D12|timeout", float(timeout.count()));
+                //TracyPlot("TracyD3D12|timeout", float(0));
+            );
+        }
+
         tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
         {
             auto* item = Profiler::QueueSerial();
@@ -446,24 +436,16 @@ namespace tracy
             // with the late query. Given that Collect() may attempt to inspect the new
             // query pair immediately upon m_queryCounter being incremented, the "late"
             // timestamp value may be collected as if it belonged to the the new query.
-            const uint64_t seqIdx = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            if (Distance(m_previousCheckpoint, seqIdx) >= RingSize())
+            const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
+            while (Distance(m_previousCheckpoint, ticket) >= RingSize())
             {
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));
                 TracyD3D12Panic("Submitted too many GPU queries!");
-                // TODO: decide what to do when "full"
-                // (maybe a loop with a few iterations attempting to Collect() queries
-                // and if it fails, return some "invalid query" id)
-                DebugBreak();
+                Collect();
             }
 
-            const uint32_t queryId = RingIndex(seqIdx);
-            // WARN: writes to m_queryRequestTime[] here race with reads in Collect()
-            AgeTime now = AgeTime::clock::now();
-            m_queryRequestTime[queryId+0] = now;
-            m_queryRequestTime[queryId+1] = now;
-            std::atomic_thread_fence(std::memory_order_release);
+            const uint32_t queryId = RingIndex(ticket);
             TracyD3D12Debug(
                 TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+0)), 1, "TracyD3D12|Query");
                 TracyAllocN(reinterpret_cast<void*>(uintptr_t(queryId+1)), 1, "TracyD3D12|Query");

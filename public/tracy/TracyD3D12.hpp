@@ -332,8 +332,7 @@ namespace tracy
             {
                 uint64_t ticket = earliestTicket;
                 DropTimestamp(earliestTicket, timestampBuffer);
-                earliestTicket += 2;
-                m_previousCheckpoint.store(earliestTicket);
+                earliestTicket = RetireTicket(earliestTicket);
             }
 
             for (uint64_t ticket = earliestTicket; ticket != latestTicket; ticket += 2)
@@ -341,7 +340,7 @@ namespace tracy
                 if (!ResolveTimestamp(ticket, timestampBuffer))
                     // TODO: preemptive timeout policy
                     break;
-                m_previousCheckpoint.store(ticket + 2);
+                RetireTicket(ticket);
             }
 
             UnmapTimestampBuffer(timestampBuffer);
@@ -416,6 +415,14 @@ namespace tracy
         {
             // difference accounting for unsigned wrap-around
             return static_cast<int64_t>(end - begin);
+        }
+
+        uint64_t RetireTicket(uint64_t ticket)
+        {
+            assert(m_previousCheckpoint == ticket);
+            ticket += 2;
+            m_previousCheckpoint.store(ticket);
+            return ticket;
         }
 
         tracy_force_inline uint32_t NextQueryId()

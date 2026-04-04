@@ -89,10 +89,7 @@ namespace tracy
 
         uint32_t m_queryLimit = 0;
 
-        using AgeTime = std::chrono::high_resolution_clock::time_point;
-        std::vector<AgeTime> m_queryRequestTime;
         std::vector<UINT64> m_shadowBuffer;
-        UINT64 m_latestKnownGpuTimestamp = 0;
 
         UINT64 m_prevCalibrationTicksCPU = 0;
 
@@ -223,9 +220,7 @@ namespace tracy
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
             }
 
-            m_latestKnownGpuTimestamp = gpuTimestamp;
-            m_queryRequestTime.resize(m_queryLimit, AgeTime::clock::now());
-            m_shadowBuffer.resize(m_queryLimit, m_latestKnownGpuTimestamp);
+            m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
 
             // Save the device cpu timestamp, not the profiler's timestamp.
             m_prevCalibrationTicksCPU = cpuTimestamp;
@@ -333,7 +328,7 @@ namespace tracy
 
             UINT64* timestampBuffer = MapTimestampBuffer();
             
-            while (Distance(earliestTicket, latestTicket) > RingSize())
+            while (Distance(earliestTicket, latestTicket) > RingCapacity())
             {
                 uint64_t ticket = earliestTicket;
                 DropTimestamp(earliestTicket, timestampBuffer);
@@ -344,6 +339,7 @@ namespace tracy
             for (uint64_t ticket = earliestTicket; ticket != latestTicket; ticket += 2)
             {
                 if (!ResolveTimestamp(ticket, timestampBuffer))
+                    // TODO: preemptive timeout policy
                     break;
                 m_previousCheckpoint.store(ticket + 2);
             }
@@ -367,8 +363,6 @@ namespace tracy
             EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
             m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
             m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
-            if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
-                m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
             return true;
         }
         void DropTimestamp(uint64_t ticket, UINT64* timestampBuffer)
@@ -408,14 +402,14 @@ namespace tracy
             );
         }
 
-        tracy_force_inline uint32_t RingSize() const
+        tracy_force_inline uint32_t RingCapacity() const
         {
             return m_queryLimit;
         }
 
         tracy_force_inline uint32_t RingIndex(uint64_t logicalSlot) const
         {
-            return static_cast<uint32_t>(logicalSlot % RingSize());
+            return static_cast<uint32_t>(logicalSlot % RingCapacity());
         }
 
         tracy_force_inline static int64_t Distance(uint64_t begin, uint64_t end)
@@ -437,7 +431,7 @@ namespace tracy
             // query pair immediately upon m_queryCounter being incremented, the "late"
             // timestamp value may be collected as if it belonged to the the new query.
             const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            while (Distance(m_previousCheckpoint, ticket) >= RingSize())
+            while (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
             {
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));

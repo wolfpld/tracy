@@ -916,6 +916,7 @@ static Profiler* s_instance = nullptr;
 static Thread* s_thread;
 #ifndef TRACY_NO_FRAME_IMAGE
 static Thread* s_compressThread;
+std::atomic<bool> s_compressThreadGone { false };
 #endif
 #ifdef TRACY_HAS_CALLSTACK
 static Thread* s_symbolThread;
@@ -923,6 +924,7 @@ std::atomic<bool> s_symbolThreadGone { false };
 #endif
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static std::atomic<Thread*> s_sysTraceThread(nullptr);
+std::atomic<bool> s_sysTraceThreadGone { false };
 #endif
 
 #if defined __linux__ && !defined TRACY_NO_CRASH_HANDLER
@@ -1182,6 +1184,7 @@ static void StartSystemTracing( int64_t& samplingPeriod )
         new( sysTraceThread ) Thread( SysTraceWorker, nullptr );
         Thread* prev = s_sysTraceThread.exchange( sysTraceThread );
         assert( prev == nullptr );
+        s_sysTraceThreadGone.store( false );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }
@@ -1192,6 +1195,7 @@ static void StopSystemTracing()
     if( sysTraceThread )
     {
         SysTraceStop();
+        while( s_sysTraceThreadGone.load() == false ) { YieldThread(); }
         sysTraceThread->~Thread();
         tracy_free( sysTraceThread );
     }
@@ -1624,11 +1628,13 @@ void Profiler::SpawnWorkerThreads()
 #ifndef TRACY_NO_FRAME_IMAGE
     s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_compressThread) Thread( LaunchCompressWorker, this );
+    s_compressThreadGone.store( false );
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
     s_symbolThread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_symbolThread) Thread( LaunchSymbolWorker, this );
+    s_symbolThreadGone.store( false );
 #endif
 
 #if defined _WIN32 && !defined TRACY_WIN32_NO_DESKTOP && !defined TRACY_NO_CRASH_HANDLER
@@ -1656,15 +1662,18 @@ Profiler::~Profiler()
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK
+    while( s_symbolThreadGone.load() == false ) { YieldThread(); }
     s_symbolThread->~Thread();
     tracy_free( s_symbolThread );
 #endif
 
 #ifndef TRACY_NO_FRAME_IMAGE
+    while( s_compressThreadGone.load() == false ) { YieldThread(); }
     s_compressThread->~Thread();
     tracy_free( s_compressThread );
 #endif
 
+    while( m_shutdownFinished.load() == false ) { YieldThread(); }
     s_thread->~Thread();
     tracy_free( s_thread );
 
@@ -2303,6 +2312,7 @@ void Profiler::CompressWorker()
 
         if( shouldExit )
         {
+            s_compressThreadGone.store( true, std::memory_order_release );
             return;
         }
     }

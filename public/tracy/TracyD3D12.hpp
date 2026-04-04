@@ -65,6 +65,7 @@ namespace tracy
 {
 
     // Command queue context.
+#pragma optimize ( "", off )
     class D3D12QueueCtx
     {
         friend class D3D12ZoneScope;
@@ -290,6 +291,27 @@ namespace tracy
             SubmitQueueItem(item);
         }
 
+        #define TracyD3D12Assert(expr) if (!(expr)) __debugbreak();
+
+        bool DebugGetTimeoutBit(UINT64 timestamp) {
+            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
+            bool bit = (timestamp & mask) != 0llu;
+            return bit;
+        }
+
+        UINT64 DebugSetTimeoutBit(UINT64 timestamp) {
+            TracyD3D12Assert(!DebugGetTimeoutBit(timestamp));
+            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
+            timestamp = timestamp | mask;
+            return timestamp;
+        }
+
+        UINT64 DebugClearTimeoutBit(UINT64 timestamp) {
+            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
+            timestamp = timestamp & ~mask;
+            return timestamp;
+        }
+
         void Collect()
         {
 #ifdef TRACY_ON_DEMAND
@@ -322,15 +344,25 @@ namespace tracy
                 // WARN: reads from m_queryRequestTime[] here may race with writes in NextQueryID()
                 std::atomic_thread_fence(std::memory_order_acquire);
                 AgeTime ini = m_queryRequestTime[queryId+1];
-                if (ini == AgeTime::max())
-                    DebugBreak();
+                TracyD3D12Assert(ini != AgeTime::max());
                 UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
                 UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
+                TracyD3D12Assert(!DebugGetTimeoutBit(gpuZoneBeginTimestamp));
+                TracyD3D12Assert(!DebugGetTimeoutBit(gpuZoneEndTimestamp));
                 UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
-                int64_t diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
-                if (diff == 0)
-                    DebugBreak();
-                if (diff <= 0)
+                bool sbtb = DebugGetTimeoutBit(baselineTimestamp);
+                baselineTimestamp = DebugClearTimeoutBit(baselineTimestamp);
+                int64_t baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
+                int64_t timeline_diff = Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp);
+                // attempt to detect "late" timestamps that got resolved after being dropped
+                // they should have a negative timeline_diff with absolute magnitude similar to the baseline difference
+                double drift_ratio = double(timeline_diff) / double(baseline_diff);
+                if (sbtb && (baseline_diff > 0) && (timeline_diff < 0)) {
+                    TracyD3D12Assert(drift_ratio < -10.0);
+                }
+                bool anomaly = drift_ratio < -10.0;
+                bool dropped = false;
+                if ((baseline_diff <= 0) || anomaly /* || (timeline_diff < -1'000'000'000)*/)
                 {
                     auto age = now - ini;
                     if (age < timeout)
@@ -348,20 +380,24 @@ namespace tracy
                     //gpuZoneBeginTimestamp = baselineTimestamp;
                     gpuZoneBeginTimestamp = m_latestKnownGpuTimestamp;
                     gpuZoneEndTimestamp = gpuZoneBeginTimestamp; // 0ns
+                    dropped = true;
                 }
 
                 EmitGpuTime(gpuZoneBeginTimestamp, queryId);
                 EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
 
+                if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
+                    m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
+
+                if (dropped)
+                    gpuZoneEndTimestamp = DebugSetTimeoutBit(gpuZoneEndTimestamp);
                 m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
                 m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
                 m_queryRequestTime[queryId+0] = AgeTime::max();
                 m_queryRequestTime[queryId+1] = AgeTime::max();
-                if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
-                    m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
 
                 // move the goalpost: NextQueryId() can now reuse the query pair
-                m_previousCheckpoint.store(i+2);
+                m_previousCheckpoint.store(i+2);    // (implicit memory release)
             }
             UnmapTimestampBuffer(timestampBuffer);
 
@@ -419,6 +455,7 @@ namespace tracy
                 // TODO: decide what to do when "full"
                 // (maybe a loop with a few iterations attempting to Collect() queries
                 // and if it fails, return some "invalid query" id)
+                DebugBreak();
             }
 
             const uint32_t queryId = RingIndex(seqIdx);
@@ -467,6 +504,7 @@ namespace tracy
             return m_contextId;
         }
     };
+#pragma optimize ( "", on )
 
     class D3D12ZoneScope
     {
@@ -483,7 +521,7 @@ namespace tracy
             const bool transientZone = srcLocation == nullptr;
             uint64_t srcLocationAddr = reinterpret_cast<uint64_t>( srcLocation );
 
-            QueueItem* item;
+            QueueItem* item = nullptr;
             QueueType itemType;
             if( transientZone )
             {

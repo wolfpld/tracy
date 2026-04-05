@@ -286,27 +286,6 @@ namespace tracy
             SubmitQueueItem(item);
         }
 
-        #define TracyD3D12Assert(expr) if (!(expr)) __debugbreak();
-
-        bool DebugGetTimeoutBit(UINT64 timestamp) {
-            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
-            bool bit = (timestamp & mask) != 0llu;
-            return bit;
-        }
-
-        UINT64 DebugSetTimeoutBit(UINT64 timestamp) {
-            TracyD3D12Assert(!DebugGetTimeoutBit(timestamp));
-            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
-            timestamp = timestamp | mask;
-            return timestamp;
-        }
-
-        UINT64 DebugClearTimeoutBit(UINT64 timestamp) {
-            constexpr UINT64 mask = 0x8000'0000'0000'0000llu;
-            timestamp = timestamp & ~mask;
-            return timestamp;
-        }
-
         void Collect()
         {
 #ifdef TRACY_ON_DEMAND

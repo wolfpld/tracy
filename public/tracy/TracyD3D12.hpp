@@ -578,7 +578,6 @@ namespace tracy
             if (!m_active) return;
 
             const auto queryId = m_queryId + 1;  // Our end query slot is immediately after the begin slot.
-            m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuZoneEndSerial);
@@ -588,7 +587,11 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
-            // TODO: maybe move this to Collect()?
+            m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
+            // NOTE: can't quite move this ResolveQueryData() call to Collect()...
+            // If a command is instrumented, but the command list is never submitted
+            // for execution, we should not ask the GPU to resolve the corresponding
+            // queries (we'll get stale/garbage data if we do so)
             m_cmdList->ResolveQueryData(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId, 2, m_ctx->m_readbackBuffer, m_queryId * sizeof(uint64_t));
         }
     };

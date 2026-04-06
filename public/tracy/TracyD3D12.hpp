@@ -291,18 +291,24 @@ namespace tracy
 #ifdef TRACY_ON_DEMAND
             if (!GetProfiler().IsConnected()) return;
 #endif
+            // Only one thread is allowed to collect timestamps at any given time
+            // but there's no need to block contending threads
+            if (!m_collectionMutex.try_lock()) return;
+            std::unique_lock lock (m_collectionMutex, std::adopt_lock);
+            Collect(lock);
+        }
+
+    private:
+        void Collect(std::unique_lock<std::mutex>& lock)
+        {
             ZoneScopedC(Color::Red4);
             ZoneValue(uint64_t(m_contextId));
 
-            // Only one thread is allowed to collect timestamps at any given time
-            // but there's no need to block contending threads
-            if (!m_collectionMutex.try_lock())
-                return;
-            std::unique_lock lock (m_collectionMutex, std::adopt_lock);
-
             uint64_t earliestTicket = m_previousCheckpoint;
             uint64_t latestTicket = m_queryCounter;
-            if (Distance(earliestTicket, latestTicket) < 0)
+            ZoneValue(uint64_t(earliestTicket));
+            ZoneValue(uint64_t(latestTicket));
+            if (Distance(earliestTicket, latestTicket) <= 0)
                 return;
 
             UINT64* timestampBuffer = MapTimestampBuffer();
@@ -314,20 +320,22 @@ namespace tracy
                 earliestTicket = RetireTicket(earliestTicket);
             }
 
-            for (uint64_t ticket = earliestTicket; ticket != latestTicket; ticket += 2)
+            for (earliestTicket; earliestTicket != latestTicket; earliestTicket += 2)
             {
-                if (!ResolveTimestamp(ticket, timestampBuffer))
+                if (!ResolveTimestamp(earliestTicket, timestampBuffer))
                     // TODO: preemptive timeout policy
                     break;
-                RetireTicket(ticket);
+                RetireTicket(earliestTicket);
             }
+
+            // TODO: consider retiring the whole batch of tickets at once
+            // m_previousCheckpoint.store(earliestTicket);
 
             UnmapTimestampBuffer(timestampBuffer);
 
             RecalibrateClocks();
         }
 
-    private:
         bool ResolveTimestamp(uint64_t ticket, UINT64* timestampBuffer)
         {
             uint32_t queryId = RingIndex(ticket);
@@ -337,12 +345,15 @@ namespace tracy
             int64_t baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
             if (baseline_diff <= 0)
                 return false;
+            TracyD3D12Debug( ZoneScoped );
+            TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
             EmitGpuTime(gpuZoneBeginTimestamp, queryId);
             EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
             m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
             m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
             return true;
         }
+
         void DropTimestamp(uint64_t ticket, UINT64* timestampBuffer)
         {
             if (ResolveTimestamp(ticket, timestampBuffer))
@@ -354,17 +365,14 @@ namespace tracy
             uint64_t latestGpuTimestamp;
             if (FAILED(m_queue->GetClockCalibration(&latestGpuTimestamp, &latestCpuTimestamp)))
                 TracyD3D12Panic("Failed to get queue clock calibration.", return);
+            TracyD3D12Debug( ZoneScopedC(Color::Red4) );
+            TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(0)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(1)) );
             EmitGpuTime(latestGpuTimestamp, queryId);
             EmitGpuTime(latestGpuTimestamp, queryId+1);
-            m_shadowBuffer[queryId+0] = latestGpuTimestamp;
-            m_shadowBuffer[queryId+1] = latestGpuTimestamp;
-            TracyD3D12Debug(
-                ZoneScopedNC("tracy::D3D12QueueCtx::Collect::[drop]", Color::Red4);
-                ZoneValue(int64_t(queryId));
-                //TracyPlot("TracyD3D12|timeout", float(0));
-                //TracyPlot("TracyD3D12|timeout", float(timeout.count()));
-                //TracyPlot("TracyD3D12|timeout", float(0));
-            );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(1)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(0)) );
         }
 
         tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
@@ -375,6 +383,7 @@ namespace tracy
             MemWrite(&item->gpuTime.queryId, static_cast<uint16_t>(queryId));
             MemWrite(&item->gpuTime.context, GetId());
             Profiler::QueueSerialFinish();
+            m_shadowBuffer[queryId] = gpuTimestamp;
             TracyD3D12Debug(
                 TracyFreeN(reinterpret_cast<void*>(uintptr_t(queryId)), "TracyD3D12|Query");
             );
@@ -417,12 +426,14 @@ namespace tracy
             // query pair immediately upon m_queryCounter being incremented, the "late"
             // timestamp value may be collected as if it belonged to the the new query.
             const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            while (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
+            if (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
             {
                 ZoneScopedC(Color::Red4);
                 ZoneValue(int64_t(m_contextId));
-                TracyD3D12Panic("Submitted too many GPU queries!");
-                Collect();
+                ZoneValue(int64_t(RingIndex(ticket)));
+                TracyD3D12Panic("Too many pending GPU queries: stalling!");
+                while (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
+                    Collect();
             }
 
             const uint32_t queryId = RingIndex(ticket);

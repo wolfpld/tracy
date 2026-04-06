@@ -532,6 +532,15 @@ namespace tracy
             Profiler::QueueSerialFinish();
         }
 
+        tracy_force_inline bool ShouldSkipQuery(uint32_t queryId) {
+            static constexpr uint32_t ignoreList[] = { 6000 };
+            constexpr auto begin = std::begin(ignoreList);
+            constexpr auto end = std::end(ignoreList);
+            auto it = std::find(begin, end, queryId);
+            bool contains = (it != end);
+            return contains;
+        }
+
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active&& GetProfiler().IsConnected())
@@ -545,6 +554,7 @@ namespace tracy
             m_cmdList = cmdList;
 
             m_queryId = m_ctx->NextQueryId();
+            if (ShouldSkipQuery(m_queryId)) return;
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
         }
 
@@ -587,6 +597,7 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
+            if (ShouldSkipQuery(m_queryId)) return;
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
             // NOTE: can't quite move this ResolveQueryData() call to Collect()...
             // If a command is instrumented, but the command list is never submitted

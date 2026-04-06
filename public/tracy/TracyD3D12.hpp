@@ -33,11 +33,8 @@ using TracyD3D12Ctx = void*;
 #else
 
 #include "Tracy.hpp"
-#include "../client/TracyProfiler.hpp"
-#include "../client/TracyCallstack.hpp"
 
 #include <atomic>
-#include <chrono>
 #include <mutex>
 #include <vector>
 #include <cstdlib>

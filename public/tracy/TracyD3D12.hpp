@@ -90,6 +90,7 @@ namespace tracy
         uint32_t m_queryLimit = 0;
 
         std::vector<UINT64> m_shadowBuffer;
+        UINT64 m_latestKnownGpuTimestamp = 0;
 
         UINT64 m_prevCalibrationTicksCPU = 0;
 
@@ -221,6 +222,7 @@ namespace tracy
             }
 
             m_shadowBuffer.resize(m_queryLimit, gpuTimestamp);
+            m_latestKnownGpuTimestamp = gpuTimestamp;
 
             // Save the device cpu timestamp, not the profiler's timestamp.
             m_prevCalibrationTicksCPU = cpuTimestamp;
@@ -349,8 +351,8 @@ namespace tracy
             TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
             EmitGpuTime(gpuZoneBeginTimestamp, queryId);
             EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
-            m_shadowBuffer[queryId+0] = gpuZoneEndTimestamp;
-            m_shadowBuffer[queryId+1] = gpuZoneEndTimestamp;
+            if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
+                m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
             return true;
         }
 
@@ -361,10 +363,7 @@ namespace tracy
             // emit a "bogus" GpuTime to avoid problems with the internal
             // zone tracking and matching logic in the server/profiler
             uint32_t queryId = RingIndex(ticket);
-            uint64_t latestCpuTimestamp;
-            uint64_t latestGpuTimestamp;
-            if (FAILED(m_queue->GetClockCalibration(&latestGpuTimestamp, &latestCpuTimestamp)))
-                TracyD3D12Panic("Failed to get queue clock calibration.", return);
+            uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             TracyD3D12Debug( ZoneScopedC(Color::Red4) );
             TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
             TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(0)) );

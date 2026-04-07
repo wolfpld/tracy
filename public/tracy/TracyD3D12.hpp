@@ -309,16 +309,20 @@ namespace tracy
             TracyD3D12Debug( ZoneValue(uint64_t(m_contextId)) );
 
             uint64_t earliestTicket = m_previousCheckpoint;
-            uint64_t latestTicket = m_queryCounter;
-            ZoneValue(uint64_t(earliestTicket));
-            ZoneValue(uint64_t(latestTicket));
-            if (Distance(earliestTicket, latestTicket) <= 0)
+            uint64_t endTicket = m_queryCounter;
+            TracyD3D12Debug( ZoneValue(earliestTicket) );
+            TracyD3D12Debug( ZoneValue(endTicket) );
+            if (Distance(earliestTicket, endTicket) <= 0)
                 return;
 
             UINT64* timestampBuffer = MapTimestampBuffer();
             
-            while (Distance(earliestTicket, latestTicket) > RingCapacity())
+            // Panic! Too many queries: start dropping aggressively!
+            while (Distance(earliestTicket, endTicket) > RingCapacity())
             {
+                DropTimestamp(earliestTicket, timestampBuffer);
+                earliestTicket = RetireTicket(earliestTicket);
+            }
 
             // Now ensure that the target query ticket gets processed
             TracyD3D12Assert( Distance(targetQueryTicket, endTicket) > 0 );
@@ -328,16 +332,14 @@ namespace tracy
                 earliestTicket = RetireTicket(earliestTicket);
             }
 
-            for (earliestTicket; earliestTicket != latestTicket; earliestTicket += 2)
+            // Finally, scan progress on remaining query tickets
+            for (earliestTicket; earliestTicket != endTicket; earliestTicket += 2)
             {
                 if (!ResolveTimestamp(earliestTicket, timestampBuffer))
-                    // TODO: preemptive timeout policy
+                    // TODO: implement preemptive timeout policy
                     break;
                 RetireTicket(earliestTicket);
             }
-
-            // TODO: consider retiring the whole batch of tickets at once
-            // m_previousCheckpoint.store(earliestTicket);
 
             UnmapTimestampBuffer(timestampBuffer);
 
@@ -382,8 +384,9 @@ namespace tracy
             TracyD3D12Assert( Distance(m_previousCheckpoint, queryTicket) < 0 );
         }
 
+        bool ResolveTimestamp(uint64_t queryTicket, UINT64* timestampBuffer)
         {
-            uint32_t queryId = RingIndex(ticket);
+            uint32_t queryId = RingIndex(queryTicket);
             UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
             UINT64 gpuZoneEndTimestamp = timestampBuffer[queryId+1];
             UINT64 baselineTimestamp = m_shadowBuffer[queryId+1];
@@ -391,6 +394,7 @@ namespace tracy
             if (baseline_diff <= 0)
                 return false;
             TracyD3D12Debug( ZoneScoped );
+            TracyD3D12Debug( ZoneValue(queryTicket) );
             TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
             EmitGpuTime(gpuZoneBeginTimestamp, queryId);
             EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
@@ -399,22 +403,23 @@ namespace tracy
             return true;
         }
 
-        void DropTimestamp(uint64_t ticket, UINT64* timestampBuffer)
+        void DropTimestamp(uint64_t queryTicket, UINT64* timestampBuffer)
         {
-            if (ResolveTimestamp(ticket, timestampBuffer))
+            if (ResolveTimestamp(queryTicket, timestampBuffer))
                 return;
             // emit a "bogus" GpuTime to avoid problems with the internal
             // zone tracking and matching logic in the server/profiler
-            uint32_t queryId = RingIndex(ticket);
+            uint32_t queryId = RingIndex(queryTicket);
             uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             TracyD3D12Debug( ZoneScopedC(Color::Red4) );
+            TracyD3D12Debug( ZoneValue(queryTicket) );
             TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
-            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(0)) );
-            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(1)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(0)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(1)) );
             EmitGpuTime(latestGpuTimestamp, queryId);
             EmitGpuTime(latestGpuTimestamp, queryId+1);
-            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(1)) );
-            TracyD3D12Debug( TracyPlot("TracyD3D12|timeout", float(0)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(1)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(0)) );
         }
 
         tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)

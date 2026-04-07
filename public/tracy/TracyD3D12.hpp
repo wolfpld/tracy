@@ -299,12 +299,11 @@ namespace tracy
             // but there's no need to block contending threads
             if (!m_collectionMutex.try_lock()) return;
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
-            uint64_t lastCollectedTicket = m_previousCheckpoint - 2;
-            Collect(lock, lastCollectedTicket);
+            Collect(lock);
         }
 
     private:
-        void Collect(std::unique_lock<std::mutex>& lock, uint64_t targetQueryTicket)
+        void Collect(std::unique_lock<std::mutex>& lock)
         {
             ZoneScopedC(Color::Red4);
             TracyD3D12Assert( lock.owns_lock() );
@@ -314,69 +313,24 @@ namespace tracy
             uint64_t endTicket = m_queryCounter;
             TracyD3D12Debug( ZoneValue(earliestTicket) );
             TracyD3D12Debug( ZoneValue(endTicket) );
+            TracyD3D12Debug( ZoneValue(endTicket - earliestTicket) );
             if (Distance(earliestTicket, endTicket) <= 0)
                 return;
 
             UINT64* timestampBuffer = MapTimestampBuffer();
-            
-            // Panic! Too many queries: start dropping aggressively!
-            while (Distance(earliestTicket, endTicket) > RingCapacity())
-            {
-                DropTimestamp(earliestTicket, timestampBuffer);
-                earliestTicket = RetireTicket(earliestTicket);
-            }
 
-            // Now ensure that the target query ticket gets processed
-            TracyD3D12Assert( Distance(targetQueryTicket, endTicket) > 0 );
-            while (Distance(earliestTicket, targetQueryTicket) >= 0)
+            uint64_t ticket = earliestTicket;
+            for (ticket = earliestTicket; ticket != endTicket; ticket += 2)
             {
-                DropTimestamp(earliestTicket, timestampBuffer);
-                earliestTicket = RetireTicket(earliestTicket);
-            }
-
-            // Finally, scan progress on remaining query tickets
-            for (earliestTicket; earliestTicket != endTicket; earliestTicket += 2)
-            {
-                if (!ResolveTimestamp(earliestTicket, timestampBuffer))
+                if (!ResolveTimestamp(ticket, timestampBuffer))
                     // TODO: implement preemptive timeout policy
                     break;
-                RetireTicket(earliestTicket);
             }
+            TracyD3D12Debug( ZoneValue(ticket - earliestTicket) );
 
             UnmapTimestampBuffer(timestampBuffer);
 
             RecalibrateClocks();
-        }
-
-        bool Wait(uint64_t queryTicket, uint64_t timeout_ms)
-        {
-            ZoneScopedC(Color::Red4);
-            TracyD3D12Debug( ZoneValue(m_contextId) );
-            TracyD3D12Debug( ZoneValue(queryTicket) );
-            TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
-            // queryTicket is at or ahead of the end-ticket:
-            if (Distance(m_queryCounter, queryTicket) >= 0)
-            {
-                TracyD3D12Assert(false);
-                uint64_t lastIssuedTicket = m_queryCounter - 2;
-                Wait(lastIssuedTicket, timeout_ms);
-                return false;
-            }
-            // queryTicket is already behind the checkpoint:
-            if (Distance(m_previousCheckpoint, queryTicket) < 0)
-                return true;
-            // queryTicket is between [checkpoint, end):
-            auto Now = GetTickCount64;
-            auto ini = Now();
-            while (Distance(m_previousCheckpoint, queryTicket) >= 0)
-            {
-                Collect();
-                auto now = Now();
-                if ((now - ini) >= timeout_ms)
-                    break;
-                _mm_pause(); // TracyYield();
-            }
-            return (Distance(m_previousCheckpoint, queryTicket) < 0);
         }
 
         void Drain(uint64_t queryTicket, uint64_t gracePeriod_ms)
@@ -385,13 +339,33 @@ namespace tracy
             TracyD3D12Debug( ZoneValue(m_contextId) );
             TracyD3D12Debug( ZoneValue(queryTicket) );
             TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
-            if (!Wait(queryTicket, gracePeriod_ms))
+            auto Now = GetTickCount64;
+            auto ini = Now();
+            // polite wait during the grace period
+            while (Distance(m_previousCheckpoint, queryTicket) >= 0)
             {
-                // force the collection of queryTicket
-                std::unique_lock lock (m_collectionMutex);
-                Collect(lock, queryTicket);
+                Collect();
+                auto now = Now();
+                if ((now - ini) >= gracePeriod_ms)
+                    break;
+                _mm_pause(); // TracyYield();
             }
-            TracyD3D12Assert( Distance(m_previousCheckpoint, queryTicket) < 0 );
+            // can't wait anymore, start dropping:
+            while (Distance(m_previousCheckpoint, queryTicket) >= 0)
+            {
+                if (!m_collectionMutex.try_lock())
+                {
+                    _mm_pause(); // TracyYield();
+                    continue;
+                };
+                std::unique_lock lock (m_collectionMutex, std::adopt_lock);
+                UINT64* timestampBuffer = MapTimestampBuffer();
+                while (Distance(m_previousCheckpoint, queryTicket) >= 0)
+                    DropTimestamp(m_previousCheckpoint, timestampBuffer);
+                while (Distance(m_previousCheckpoint, m_queryCounter) > RingCapacity())
+                    DropTimestamp(m_previousCheckpoint, timestampBuffer);
+                UnmapTimestampBuffer(timestampBuffer);
+            }
         }
 
         bool ResolveTimestamp(uint64_t queryTicket, UINT64* timestampBuffer)
@@ -405,6 +379,7 @@ namespace tracy
                 return false;
             EmitGpuTime(gpuZoneBeginTimestamp, queryId);
             EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
+            RetireTicket(queryTicket);
             if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
                 m_latestKnownGpuTimestamp = gpuZoneEndTimestamp;
             return true;
@@ -426,6 +401,7 @@ namespace tracy
             uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             EmitGpuTime(latestGpuTimestamp, queryId);
             EmitGpuTime(latestGpuTimestamp, queryId+1);
+            RetireTicket(queryTicket);
             TracyD3D12Debug( TracyPlot("TracyD3D12|drop", int64_t(1)) );
             TracyD3D12Debug( TracyPlot("TracyD3D12|drop", int64_t(0)) );
         }

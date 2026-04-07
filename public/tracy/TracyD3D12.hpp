@@ -52,7 +52,7 @@ using TracyD3D12Ctx = void*;
 
 #if TRACY_D3D12_DEBUG_LEVEL
 #define TracyD3D12Debug(...) __VA_ARGS__;
-#define TracyD3D12Break() __debugbreak(); // MSVC
+#define TracyD3D12Break() if (IsDebuggerPresent()) __debugbreak() // MSVC
 #define TracyD3D12Assert(predicate, ...) if (predicate) {} else { __VA_ARGS__; TracyD3D12Break(); }
 #else
 #define TracyD3D12Debug(...)

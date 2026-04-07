@@ -47,16 +47,21 @@ using TracyD3D12Ctx = void*;
 #define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.005f
 #endif
 
-#define TRACY_D3D12_DEBUG (1)
+#define TRACY_D3D12_DEBUG_LEVEL (1)
 #define TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER (1)
 
-#define TracyD3D12Panic(msg, ...) do { assert(false && "TracyD3D12: " msg); tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::Error, tracy::Color::Red4, 0, msg ); __VA_ARGS__; } while(false);
-
-#if TRACY_D3D12_DEBUG
-#define TracyD3D12Debug(...) __VA_ARGS__
+#if TRACY_D3D12_DEBUG_LEVEL
+#define TracyD3D12Debug(...) __VA_ARGS__;
+#define TracyD3D12Break() __debugbreak(); // MSVC
+#define TracyD3D12Assert(predicate, ...) if (predicate) {} else { __VA_ARGS__; TracyD3D12Break(); }
 #else
 #define TracyD3D12Debug(...)
+#define TracyD3D12Break()
+#define TracyD3D12Assert(predicate, ...) assert(predicate);
 #endif
+
+#define TracyD3D12Log(severity, msg) tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );
+#define TracyD3D12Panic(msg, ...) do { TracyD3D12Log(Error, msg); TracyD3D12Assert(false && "TracyD3D12: " msg); __VA_ARGS__; } while(false);
 
 namespace tracy
 {
@@ -301,7 +306,8 @@ namespace tracy
         void Collect(std::unique_lock<std::mutex>& lock)
         {
             ZoneScopedC(Color::Red4);
-            ZoneValue(uint64_t(m_contextId));
+            TracyD3D12Assert( lock.owns_lock() );
+            TracyD3D12Debug( ZoneValue(uint64_t(m_contextId)) );
 
             uint64_t earliestTicket = m_previousCheckpoint;
             uint64_t latestTicket = m_queryCounter;
@@ -403,7 +409,7 @@ namespace tracy
 
         uint64_t RetireTicket(uint64_t ticket)
         {
-            assert(m_previousCheckpoint == ticket);
+            TracyD3D12Assert( m_previousCheckpoint == ticket );
             ticket += 2;
             m_previousCheckpoint.store(ticket);
             return ticket;
@@ -454,7 +460,7 @@ namespace tracy
             }
             UINT64* timestampBuffer = static_cast<UINT64*>(readbackBufferMapping);
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-            assert(m_persistentTimestampBuffer == nullptr);
+            TracyD3D12Assert( m_persistentTimestampBuffer == nullptr );
             m_persistentTimestampBuffer = timestampBuffer;
 #endif
             return timestampBuffer;
@@ -624,6 +630,10 @@ namespace tracy
 #undef TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
 #undef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
 #undef TracyD3D12Panic
+#undef TracyD3D12Log
+#undef TracyD3D12Assert
+#undef TracyD3D12Break
+#undef TracyD3D12Debug
 
 using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 

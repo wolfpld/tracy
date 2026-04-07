@@ -258,14 +258,13 @@ namespace tracy
             // NOTE: even with Signal(), there are no guarantees the queries were sent
             // to the GPU for execution, so the Signal() does not give us much "signal"
  
-            // attempt to collect all pending queries up to the latest known query
+            // collect all pending queries up to the latest known query
             uint64_t latestQuery = m_queryCounter;
-            while (Distance(m_previousCheckpoint, latestQuery) > 0)
-                Collect();
+            Drain(latestQuery, 200);
 
             // if the client is still pushing queries past the latest checkpoint above,
             // assume there's a bug in the client, and ignore them (don't collect)
-            if (latestQuery != m_queryCounter)
+            if (Distance(latestQuery, m_queryCounter) > 0)
                 TracyD3D12Panic("client is still pushing queries.");
 
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
@@ -299,11 +298,11 @@ namespace tracy
             // but there's no need to block contending threads
             if (!m_collectionMutex.try_lock()) return;
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
-            Collect(lock);
+            Collect(lock, m_previousCheckpoint);
         }
 
     private:
-        void Collect(std::unique_lock<std::mutex>& lock)
+        void Collect(std::unique_lock<std::mutex>& lock, uint64_t targetQueryTicket)
         {
             ZoneScopedC(Color::Red4);
             TracyD3D12Assert( lock.owns_lock() );
@@ -320,7 +319,11 @@ namespace tracy
             
             while (Distance(earliestTicket, latestTicket) > RingCapacity())
             {
-                uint64_t ticket = earliestTicket;
+
+            // Now ensure that the target query ticket gets processed
+            TracyD3D12Assert( Distance(targetQueryTicket, endTicket) > 0 );
+            while (Distance(earliestTicket, targetQueryTicket) >= 0)
+            {
                 DropTimestamp(earliestTicket, timestampBuffer);
                 earliestTicket = RetireTicket(earliestTicket);
             }
@@ -341,7 +344,44 @@ namespace tracy
             RecalibrateClocks();
         }
 
-        bool ResolveTimestamp(uint64_t ticket, UINT64* timestampBuffer)
+        bool Wait(uint64_t queryTicket, uint64_t timeout_ms)
+        {
+            ZoneScopedC(Color::Red4);
+            TracyD3D12Debug(
+                ZoneValue(uint64_t(m_contextId));
+                ZoneValue(queryTicket);
+                ZoneValue(int64_t(RingIndex(queryTicket)));
+            );
+            if (Distance(m_previousCheckpoint, queryTicket) < 0)
+                return true;
+            auto Now = GetTickCount64;
+            auto ini = Now();
+            while (Distance(m_previousCheckpoint, queryTicket) >= 0)
+            {
+                Collect();
+                auto now = Now();
+                if ((now - ini) >= timeout_ms)
+                    break;
+            }
+            return (Distance(m_previousCheckpoint, queryTicket) < 0);
+        }
+
+        void Drain(uint64_t queryTicket, uint64_t gracePeriod_ms)
+        {
+            ZoneScopedC(Color::Red4);
+            TracyD3D12Debug(
+                ZoneValue(uint64_t(m_contextId));
+                ZoneValue(queryTicket);
+                ZoneValue(int64_t(RingIndex(queryTicket)));
+            );
+            if (Wait(queryTicket, gracePeriod_ms) == false)
+            {
+                std::unique_lock lock (m_collectionMutex);
+                Collect(lock, queryTicket);
+            }
+            TracyD3D12Assert( Distance(m_previousCheckpoint, queryTicket) < 0 );
+        }
+
         {
             uint32_t queryId = RingIndex(ticket);
             UINT64 gpuZoneBeginTimestamp = timestampBuffer[queryId];
@@ -431,11 +471,8 @@ namespace tracy
             if (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
             {
                 ZoneScopedC(Color::Red4);
-                ZoneValue(int64_t(m_contextId));
-                ZoneValue(int64_t(RingIndex(ticket)));
                 TracyD3D12Panic("Too many pending GPU queries: stalling!");
-                while (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
-                    Collect();
+                Drain(ticket, 0);
             }
 
             const uint32_t queryId = RingIndex(ticket);

@@ -259,12 +259,13 @@ namespace tracy
             // to the GPU for execution, so the Signal() does not give us much "signal"
  
             // collect all pending queries up to the latest known query
-            uint64_t latestQuery = m_queryCounter;
-            Drain(latestQuery, 200);
+            uint64_t endTicket = m_queryCounter;
+            uint64_t lastIssuedTicket = endTicket - 2;
+            Drain(lastIssuedTicket, 200);
 
             // if the client is still pushing queries past the latest checkpoint above,
             // assume there's a bug in the client, and ignore them (don't collect)
-            if (Distance(latestQuery, m_queryCounter) > 0)
+            if (Distance(endTicket, m_queryCounter) > 0)
                 TracyD3D12Panic("client is still pushing queries.");
 
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
@@ -298,7 +299,8 @@ namespace tracy
             // but there's no need to block contending threads
             if (!m_collectionMutex.try_lock()) return;
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
-            Collect(lock, m_previousCheckpoint);
+            uint64_t lastCollectedTicket = m_previousCheckpoint - 2;
+            Collect(lock, lastCollectedTicket);
         }
 
     private:
@@ -413,9 +415,7 @@ namespace tracy
             uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             TracyD3D12Debug( ZoneScopedC(Color::Red4) );
             TracyD3D12Debug( ZoneValue(queryTicket) );
-            TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
-            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(0)) );
-            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(1)) );
+            uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             EmitGpuTime(latestGpuTimestamp, queryId);
             EmitGpuTime(latestGpuTimestamp, queryId+1);
             TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(1)) );
@@ -476,8 +476,9 @@ namespace tracy
             if (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
             {
                 ZoneScopedC(Color::Red4);
-                TracyD3D12Panic("Too many pending GPU queries: stalling!");
-                Drain(ticket, 0);
+                TracyD3D12Log(Warning, "Too many pending GPU queries: stalling!");
+                uint64_t oldTicket = ticket - RingCapacity();
+                Drain(oldTicket, 0);
             }
 
             const uint32_t queryId = RingIndex(ticket);

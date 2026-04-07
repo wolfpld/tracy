@@ -233,7 +233,7 @@ namespace tracy
 
             // All setup/init checks completed: ready to create the context.
             m_contextId = GetGpuCtxCounter().fetch_add(1);
-            ZoneValue(int64_t(m_contextId));
+            ZoneValue(m_contextId);
 
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuNewContext);
@@ -250,7 +250,7 @@ namespace tracy
         ~D3D12QueueCtx()
         {
             ZoneScopedC(Color::Red4);
-            ZoneValue(int64_t(m_contextId));
+            ZoneValue(m_contextId);
 
             // TODO: could use queue->Signal() to inject a progress point in the queue
             // and the immediately wait for the signal, in order to avoid busy-waiting
@@ -308,7 +308,7 @@ namespace tracy
         {
             ZoneScopedC(Color::Red4);
             TracyD3D12Assert( lock.owns_lock() );
-            TracyD3D12Debug( ZoneValue(uint64_t(m_contextId)) );
+            TracyD3D12Debug( ZoneValue(m_contextId) );
 
             uint64_t earliestTicket = m_previousCheckpoint;
             uint64_t endTicket = m_queryCounter;
@@ -351,11 +351,9 @@ namespace tracy
         bool Wait(uint64_t queryTicket, uint64_t timeout_ms)
         {
             ZoneScopedC(Color::Red4);
-            TracyD3D12Debug(
-                ZoneValue(uint64_t(m_contextId));
-                ZoneValue(queryTicket);
-                ZoneValue(int64_t(RingIndex(queryTicket)));
-            );
+            TracyD3D12Debug( ZoneValue(m_contextId) );
+            TracyD3D12Debug( ZoneValue(queryTicket) );
+            TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
             if (Distance(m_previousCheckpoint, queryTicket) < 0)
                 return true;
             auto Now = GetTickCount64;
@@ -373,12 +371,10 @@ namespace tracy
         void Drain(uint64_t queryTicket, uint64_t gracePeriod_ms)
         {
             ZoneScopedC(Color::Red4);
-            TracyD3D12Debug(
-                ZoneValue(uint64_t(m_contextId));
-                ZoneValue(queryTicket);
-                ZoneValue(int64_t(RingIndex(queryTicket)));
-            );
-            if (Wait(queryTicket, gracePeriod_ms) == false)
+            TracyD3D12Debug( ZoneValue(m_contextId) );
+            TracyD3D12Debug( ZoneValue(queryTicket) );
+            TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
+            if (!Wait(queryTicket, gracePeriod_ms))
             {
                 std::unique_lock lock (m_collectionMutex);
                 Collect(lock, queryTicket);
@@ -395,9 +391,6 @@ namespace tracy
             int64_t baseline_diff = Distance(baselineTimestamp, gpuZoneEndTimestamp);
             if (baseline_diff <= 0)
                 return false;
-            TracyD3D12Debug( ZoneScoped );
-            TracyD3D12Debug( ZoneValue(queryTicket) );
-            TracyD3D12Debug( ZoneValue(int64_t(queryId)) );
             EmitGpuTime(gpuZoneBeginTimestamp, queryId);
             EmitGpuTime(gpuZoneEndTimestamp, queryId+1);
             if (Distance(m_latestKnownGpuTimestamp, gpuZoneEndTimestamp) > 0)
@@ -412,17 +405,19 @@ namespace tracy
             // emit a "bogus" GpuTime to avoid problems with the internal
             // zone tracking and matching logic in the server/profiler
             uint32_t queryId = RingIndex(queryTicket);
-            uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             TracyD3D12Debug( ZoneScopedC(Color::Red4) );
             TracyD3D12Debug( ZoneValue(queryTicket) );
+            TracyD3D12Debug( ZoneValue(queryId) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", int64_t(0)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", int64_t(1)) );
             uint64_t latestGpuTimestamp = m_latestKnownGpuTimestamp;
             EmitGpuTime(latestGpuTimestamp, queryId);
             EmitGpuTime(latestGpuTimestamp, queryId+1);
-            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(1)) );
-            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", float(0)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", int64_t(1)) );
+            TracyD3D12Debug( TracyPlot("TracyD3D12|drop", int64_t(0)) );
         }
 
-        tracy_force_inline void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
+        void EmitGpuTime(UINT64 gpuTimestamp, uint32_t queryId)
         {
             auto* item = Profiler::QueueSerial();
             MemWrite(&item->hdr.type, QueueType::GpuTime);

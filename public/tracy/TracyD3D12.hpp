@@ -322,9 +322,6 @@ namespace tracy
             if (Distance(earliestTicket, endTicket) <= 0)
                 return;
 
-            // TODO: check device lost
-            //       check the queries, but do not emit them just yet
-
             UINT64* timestampBuffer = MapTimestampBuffer();
 
             // Attempt to collect as many resolved queries as possible
@@ -356,9 +353,12 @@ namespace tracy
 
             UnmapTimestampBuffer(timestampBuffer);
 
-            // TODO: check device lost, again
-            //       only emit resolved queries if device has not been lost
-            //       (reading from readback heaps can be wonky in such cases)
+            // TODO: check for device status (device lost).
+            // Technically speaking, values read from the timestamp buffer (readback heap)
+            // should only be trusted while the device is "fine". Ideally, queries should
+            // be "peeked" first, and those deemed "resolved" should only be "emitted" if
+            // the device is fine, or dropped otherwise. All that said, the collect code,
+            // as is, should not cause catastrophic issues.
 
             RecalibrateClocks();
         }
@@ -527,6 +527,12 @@ namespace tracy
             D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
             m_readbackBuffer->Unmap(0, &fullRange);
 #endif
+        }
+
+        bool DeviceLost()
+        {
+            HRESULT status = m_device->GetDeviceRemovedReason();
+            return (status != S_OK);
         }
 
         tracy_force_inline uint8_t GetId() const

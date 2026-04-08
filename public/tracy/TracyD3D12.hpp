@@ -63,6 +63,8 @@ using TracyD3D12Ctx = void*;
 #define TracyD3D12Log(severity, msg) tracy::Profiler::LogString( tracy::MessageSourceType::Tracy, tracy::MessageSeverity::severity, tracy::Color::Red4, 0, msg );
 #define TracyD3D12Panic(msg, ...) do { TracyD3D12Log(Error, msg); TracyD3D12Assert(false && "TracyD3D12: " msg); __VA_ARGS__; } while(false);
 
+#define TracyD3D12Relax() _mm_pause() // TracyYield()
+
 namespace tracy
 {
 
@@ -339,6 +341,7 @@ namespace tracy
             TracyD3D12Debug( ZoneValue(m_contextId) );
             TracyD3D12Debug( ZoneValue(queryTicket) );
             TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
+            TracyD3D12Assert(Distance(queryTicket, m_queryCounter) > 0);
             auto Now = GetTickCount64;
             auto ini = Now();
             // polite wait during the grace period
@@ -348,23 +351,19 @@ namespace tracy
                 auto now = Now();
                 if ((now - ini) >= gracePeriod_ms)
                     break;
-                _mm_pause(); // TracyYield();
+                TracyD3D12Relax();
             }
             // can't wait anymore, start dropping:
             while (Distance(m_previousCheckpoint, queryTicket) >= 0)
             {
-                if (!m_collectionMutex.try_lock())
-                {
-                    _mm_pause(); // TracyYield();
-                    continue;
-                };
-                std::unique_lock lock (m_collectionMutex, std::adopt_lock);
+                std::unique_lock lock (m_collectionMutex);
                 UINT64* timestampBuffer = MapTimestampBuffer();
                 while (Distance(m_previousCheckpoint, queryTicket) >= 0)
                     DropTimestamp(m_previousCheckpoint, timestampBuffer);
                 while (Distance(m_previousCheckpoint, m_queryCounter) > RingCapacity())
                     DropTimestamp(m_previousCheckpoint, timestampBuffer);
                 UnmapTimestampBuffer(timestampBuffer);
+                Collect(lock);
             }
         }
 
@@ -447,15 +446,16 @@ namespace tracy
         tracy_force_inline uint32_t NextQueryId()
         {
             // WARN: the moment m_queryCounter is incremented, Collect() will have instant
-            // visibility of the query id pair and may start attempting to collect it!
-            // Under most circumstances, this is fine. However, if Collect() decided to
-            // drop a timestamp query due to timeout, but the query was indeed submitted
-            // to the GPU queue for execution later on, the "late" query will eventually
-            // be resolved by the GPU (asynchronously writting to the corresponding query
-            // "slot"). The newly produced query pair below could have matching ids/slots
-            // with the late query. Given that Collect() may attempt to inspect the new
-            // query pair immediately upon m_queryCounter being incremented, the "late"
-            // timestamp value may be collected as if it belonged to the the new query.
+            // visibility of the change and may therefore start attempting to collect them.
+            // Under most circumstances, this is fine. However, suppose Collect() ends up
+            // dropping a query due to timeout, but said query is indeed submitted to the
+            // GPU queue for execution later on. This "late" query will eventually become
+            // resolved by the GPU asynchronously writting to the corresponding query slot.
+            // The newly produced query below could have matching ids/slot with said query.
+            // From there, there's no bullet-proof way for Collect() to distinguish between
+            // the timestamp written to the query slot belonging to the old/late query, or
+            // to the query that has just been generated. The value of the "late" query may
+            // may end up being collected as if it belonged to the the new query.
             const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
             if (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
             {
@@ -563,7 +563,7 @@ namespace tracy
         }
 
         tracy_force_inline bool ShouldSkipQuery(uint32_t queryId) {
-            static constexpr uint32_t ignoreList[] = { 6000 };
+            static constexpr uint32_t ignoreList[] = { 7949, 9970, 12306, 13712, 14001, 14510, 16192, 16243, 16911, 18016, 18223, 20278, 21079, 21333, 25097, 26966, 29634, 33158, 35220, 35745, 36202, 39545, 49108, 50510, 53098, 54975, 55569, 55730, 56867, 62322 };
             constexpr auto begin = std::begin(ignoreList);
             constexpr auto end = std::end(ignoreList);
             auto it = std::find(begin, end, queryId);

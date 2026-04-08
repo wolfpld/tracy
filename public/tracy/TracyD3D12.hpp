@@ -146,6 +146,8 @@ namespace tracy
         {
             ZoneScopedC(Color::Red4);
 
+            m_queue->AddRef();
+
             // Verify we support timestamp queries on this queue.
             if (queue->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_COPY)
             {
@@ -277,6 +279,7 @@ namespace tracy
 #endif
             m_readbackBuffer->Release();
             m_queryHeap->Release();
+            m_queue->Release();
         }
 
         void Name( const char* name, uint16_t len )

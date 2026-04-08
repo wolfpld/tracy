@@ -382,8 +382,7 @@ struct GpuEvent
     tracy_force_inline int64_t GpuStart() const { return int64_t( _gpuStart_child1 ) >> 16; }
     tracy_force_inline void SetGpuStart( int64_t gpuStart )
     {
-        // Assert omitted for v0.6 trace compatibility
-        // assert( gpuStart < (int64_t)( 1ull << 47 ) );
+        assert( gpuStart < (int64_t)( 1ull << 47 ) );
         memcpy( ((char*)&_gpuStart_child1)+2, &gpuStart, 4 );
         memcpy( ((char*)&_gpuStart_child1)+6, ((char*)&gpuStart)+4, 2 );
     }

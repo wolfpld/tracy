@@ -69,7 +69,6 @@ namespace tracy
 {
 
     // Command queue context.
-#pragma optimize ( "", off )
     class D3D12QueueCtx
     {
         friend class D3D12ZoneScope;
@@ -540,7 +539,6 @@ namespace tracy
             return m_contextId;
         }
     };
-#pragma optimize ( "", on )
 
     class D3D12ZoneScope
     {

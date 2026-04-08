@@ -562,7 +562,7 @@ namespace tracy
             Profiler::QueueSerialFinish();
         }
 
-        tracy_force_inline bool ShouldSkipQuery(uint32_t queryId) {
+        tracy_force_inline bool DebugShouldSkipQuery(uint32_t queryId) {
             static constexpr uint32_t ignoreList[] = { 7949, 9970, 12306, 13712, 14001, 14510, 16192, 16243, 16911, 18016, 18223, 20278, 21079, 21333, 25097, 26966, 29634, 33158, 35220, 35745, 36202, 39545, 49108, 50510, 53098, 54975, 55569, 55730, 56867, 62322 };
             constexpr auto begin = std::begin(ignoreList);
             constexpr auto end = std::end(ignoreList);
@@ -584,7 +584,7 @@ namespace tracy
             m_cmdList = cmdList;
 
             m_queryId = m_ctx->NextQueryId();
-            if (ShouldSkipQuery(m_queryId)) return;
+            //if (DebugShouldSkipQuery(m_queryId)) return;
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
         }
 
@@ -627,7 +627,7 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
-            if (ShouldSkipQuery(m_queryId)) return;
+            //if (DebugShouldSkipQuery(m_queryId)) return;
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
             // NOTE: can't quite move this ResolveQueryData() call to Collect()...
             // If a command is instrumented, but the command list is never submitted

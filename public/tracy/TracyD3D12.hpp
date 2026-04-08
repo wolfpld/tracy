@@ -43,12 +43,13 @@ using TracyD3D12Ctx = void*;
 #include <d3d12.h>
 #include <dxgi.h>
 
-#ifndef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
-#define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.005f
-#endif
-
+#ifndef TRACY_D3D12_DEBUG_LEVEL
 #define TRACY_D3D12_DEBUG_LEVEL (0)
+#endif//TRACY_D3D12_DEBUG_LEVEL
+
+#ifndef TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
 #define TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER (1)
+#endif//TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
 
 #if TRACY_D3D12_DEBUG_LEVEL
 #define TracyD3D12Debug(...) __VA_ARGS__;
@@ -594,15 +595,6 @@ namespace tracy
             Profiler::QueueSerialFinish();
         }
 
-        tracy_force_inline bool DebugShouldSkipQuery(uint32_t queryId) {
-            static constexpr uint32_t ignoreList[] = { 7949, 9970, 12306, 13712, 14001, 14510, 16192, 16243, 16911, 18016, 18223, 20278, 21079, 21333, 25097, 26966, 29634, 33158, 35220, 35745, 36202, 39545, 49108, 50510, 53098, 54975, 55569, 55730, 56867, 62322 };
-            constexpr auto begin = std::begin(ignoreList);
-            constexpr auto end = std::end(ignoreList);
-            auto it = std::find(begin, end, queryId);
-            bool contains = (it != end);
-            return contains;
-        }
-
         tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, bool active)
 #ifdef TRACY_ON_DEMAND
             : m_active(active&& GetProfiler().IsConnected())
@@ -616,7 +608,6 @@ namespace tracy
             m_cmdList = cmdList;
 
             m_queryId = m_ctx->NextQueryId();
-            TracyD3D12Debug( if (DebugShouldSkipQuery(m_queryId)) return; );
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
         }
 
@@ -659,7 +650,6 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
-            TracyD3D12Debug( if (DebugShouldSkipQuery(m_queryId)) return; );
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
             // NOTE: can't quite move this ResolveQueryData() call to Collect()...
             // If a command is instrumented, but the command list is never submitted
@@ -685,14 +675,13 @@ namespace tracy
 
 }
 
-#undef TRACY_D3D12_DEBUG
-#undef TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-#undef TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT
 #undef TracyD3D12Panic
 #undef TracyD3D12Log
 #undef TracyD3D12Assert
 #undef TracyD3D12Break
 #undef TracyD3D12Debug
+#undef TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
+#undef TRACY_D3D12_DEBUG
 
 using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 

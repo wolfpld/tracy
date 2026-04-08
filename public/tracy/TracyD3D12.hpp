@@ -47,7 +47,7 @@ using TracyD3D12Ctx = void*;
 #define TRACY_D3D12_TIMESTAMP_COLLECT_TIMEOUT 0.005f
 #endif
 
-#define TRACY_D3D12_DEBUG_LEVEL (1)
+#define TRACY_D3D12_DEBUG_LEVEL (0)
 #define TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER (1)
 
 #if TRACY_D3D12_DEBUG_LEVEL
@@ -301,11 +301,12 @@ namespace tracy
             // but there's no need to block contending threads
             if (!m_collectionMutex.try_lock()) return;
             std::unique_lock lock (m_collectionMutex, std::adopt_lock);
-            Collect(lock);
+            uint64_t targetTicket = m_queryCounter;
+            Collect(lock, m_queryCounter, false);
         }
 
     private:
-        void Collect(std::unique_lock<std::mutex>& lock)
+        void Collect(std::unique_lock<std::mutex>& lock, uint64_t targetTicket, bool urgent)
         {
             ZoneScopedC(Color::Red4);
             TracyD3D12Assert( lock.owns_lock() );
@@ -315,12 +316,15 @@ namespace tracy
             uint64_t endTicket = m_queryCounter;
             TracyD3D12Debug( ZoneValue(earliestTicket) );
             TracyD3D12Debug( ZoneValue(endTicket) );
-            TracyD3D12Debug( ZoneValue(endTicket - earliestTicket) );
             if (Distance(earliestTicket, endTicket) <= 0)
                 return;
 
+            // TODO: check device lost
+            //       check the queries, but do not emit them just yet
+
             UINT64* timestampBuffer = MapTimestampBuffer();
 
+            // Attempt to collect as many resolved queries as possible
             uint64_t ticket = earliestTicket;
             for (ticket = earliestTicket; ticket != endTicket; ticket += 2)
             {
@@ -328,11 +332,51 @@ namespace tracy
                     // TODO: implement preemptive timeout policy
                     break;
             }
-            TracyD3D12Debug( ZoneValue(ticket - earliestTicket) );
+
+            // Urgent request: ensure 'targetTicket' is collected before returning
+            if (urgent)
+            {
+                TracyD3D12Assert( Distance(targetTicket, endTicket) > 0 );
+                while (Distance(ticket, targetTicket) >= 0)
+                {
+                    DropTimestamp(ticket, timestampBuffer);
+                    ticket += 2;
+                }
+            }
+
+            // Panic: overflow, start dropping queries to normalize the situation
+            while (Distance(ticket, endTicket) > RingCapacity())
+            {
+                DropTimestamp(ticket, timestampBuffer);
+                ticket += 2;
+            }
 
             UnmapTimestampBuffer(timestampBuffer);
 
+            // TODO: check device lost, again
+            //       only emit resolved queries if device has not been lost
+            //       (reading from readback heaps can be wonky in such cases)
+
             RecalibrateClocks();
+        }
+
+        bool Wait(uint64_t queryTicket, uint64_t timeout_ms)
+        {
+            ZoneScopedC(Color::Red4);
+            TracyD3D12Debug( ZoneValue(m_contextId) );
+            TracyD3D12Debug( ZoneValue(queryTicket) );
+            TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
+            auto Now = GetTickCount64;
+            auto ini = Now();
+            auto elapsed = 0;
+            // TODO: could use condition variable to avoid spurious lock + collect iterations
+            while ((Distance(m_previousCheckpoint, queryTicket) >= 0) && (elapsed < timeout_ms))
+            {
+                std::unique_lock lock (m_collectionMutex);
+                Collect(lock, queryTicket, false);
+                elapsed = Now() - ini;
+            }
+            return Distance(m_previousCheckpoint, queryTicket) < 0;
         }
 
         void Drain(uint64_t queryTicket, uint64_t gracePeriod_ms)
@@ -341,30 +385,11 @@ namespace tracy
             TracyD3D12Debug( ZoneValue(m_contextId) );
             TracyD3D12Debug( ZoneValue(queryTicket) );
             TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
-            TracyD3D12Assert(Distance(queryTicket, m_queryCounter) > 0);
-            auto Now = GetTickCount64;
-            auto ini = Now();
-            // polite wait during the grace period
-            while (Distance(m_previousCheckpoint, queryTicket) >= 0)
-            {
-                Collect();
-                auto now = Now();
-                if ((now - ini) >= gracePeriod_ms)
-                    break;
-                TracyD3D12Relax();
-            }
-            // can't wait anymore, start dropping:
-            while (Distance(m_previousCheckpoint, queryTicket) >= 0)
-            {
-                std::unique_lock lock (m_collectionMutex);
-                UINT64* timestampBuffer = MapTimestampBuffer();
-                while (Distance(m_previousCheckpoint, queryTicket) >= 0)
-                    DropTimestamp(m_previousCheckpoint, timestampBuffer);
-                while (Distance(m_previousCheckpoint, m_queryCounter) > RingCapacity())
-                    DropTimestamp(m_previousCheckpoint, timestampBuffer);
-                UnmapTimestampBuffer(timestampBuffer);
-                Collect(lock);
-            }
+            if (Wait(queryTicket, gracePeriod_ms))
+                return;
+            // can't wait anymore: urgent collect request
+            std::unique_lock lock (m_collectionMutex);
+            Collect(lock, queryTicket, true);
         }
 
         bool ResolveTimestamp(uint64_t queryTicket, UINT64* timestampBuffer)
@@ -584,7 +609,7 @@ namespace tracy
             m_cmdList = cmdList;
 
             m_queryId = m_ctx->NextQueryId();
-            //if (DebugShouldSkipQuery(m_queryId)) return;
+            TracyD3D12Debug( if (DebugShouldSkipQuery(m_queryId)) return; );
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
         }
 
@@ -627,7 +652,7 @@ namespace tracy
             MemWrite(&item->gpuZoneEnd.context, m_ctx->GetId());
             Profiler::QueueSerialFinish();
 
-            //if (DebugShouldSkipQuery(m_queryId)) return;
+            TracyD3D12Debug( if (DebugShouldSkipQuery(m_queryId)) return; );
             m_cmdList->EndQuery(m_ctx->m_queryHeap, D3D12_QUERY_TYPE_TIMESTAMP, queryId);
             // NOTE: can't quite move this ResolveQueryData() call to Collect()...
             // If a command is instrumented, but the command list is never submitted

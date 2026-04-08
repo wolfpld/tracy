@@ -84,8 +84,6 @@
 #include "TracySysTrace.hpp"
 #include "../tracy/TracyC.h"
 
-#include "../tracy/Tracy.hpp"
-
 #if defined TRACY_MANUAL_LIFETIME && !defined(TRACY_DELAYED_INIT)
 #  error "TRACY_MANUAL_LIFETIME requires enabled TRACY_DELAYED_INIT"
 #endif

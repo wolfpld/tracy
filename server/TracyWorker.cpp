@@ -5924,7 +5924,7 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
     assert( !td->second.stack.empty() );
     auto zone = td->second.stack.back_and_pop();
 
-    assert( !ctx->query[ev.queryId] ); 
+    assert( !ctx->query[ev.queryId] );
     ctx->query[ev.queryId] = zone;
 
     int64_t cpuTime;
@@ -5946,16 +5946,8 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
-    if (ev.gpuTime < -1'000'000'000)
-        __debugbreak();
-
     int64_t tgpu = RefTime( m_refTimeGpu, ev.gpuTime );
-
-    // This overflow logic is for detecting "backward time jumps" due to asynchronous
-    // GPU scheduling (commands being rescheduled internally by the command processor,
-    // instead of being forced to execute in submit queue order)
-    constexpr int64_t gracePeriod = ( 1u << 31 ); // 2^31 ticks (about 2s, when 1 tick = 1ns)
-    if( tgpu < ctx->lastGpuTime - gracePeriod )
+    if( tgpu < ctx->lastGpuTime - ( 1u << 31 ) )
     {
         if( ctx->overflow == 0 )
         {
@@ -5963,6 +5955,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
         }
         ctx->overflowMul++;
     }
+    ctx->lastGpuTime = tgpu;
     if( ctx->overflow != 0 )
     {
         tgpu += ctx->overflow * ctx->overflowMul;

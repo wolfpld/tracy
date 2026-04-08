@@ -2025,12 +2025,6 @@ void View::ZoneTooltip( const GpuEvent& ev )
         }
     }
 
-    ImGui::Separator();
-    TextDisabledUnformatted( "GPU zone debug" );
-    TextFocused( "GPU begin (Tracy ns):", RealToString( ev.GpuStart() ) );
-    TextFocused( "GPU end (Tracy ns):", RealToString( end ) );
-    TextFocused( "Begin query id:", RealToString( ev.query_id ) );
-
     ImGui::EndTooltip();
 }
 

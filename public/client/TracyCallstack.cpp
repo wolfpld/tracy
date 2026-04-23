@@ -844,10 +844,10 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
 
     if( s_shouldResolveSymbolsOffline ) return sym;
 
-    // NOTE: decoding symbol addresses from modules with SymExport (0x4)
-    // will likely fail for internal (non-public/exported) symbols...
+    // SymExport modules do not contain line information
     const ModuleNameAndBaseAddress moduleNameAndAddress = GetModuleNameAndPrepareSymbols( ptr );
     if (moduleNameAndAddress.symType == SymNone) return sym;
+    if (moduleNameAndAddress.symType == SymExport) return sym;
 
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
@@ -976,8 +976,15 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     // DEBUG
     else { ZoneScopedNC(__FUNCTION__"[TracySymFromAddr]", tracy::Color::Crimson); ZoneValue(symType); ZoneText(symName, strlen(symName)); }
 
+    // SymExport modules do not contain line/inline information
+    if (symType == SymExport)
+    {
+        cb_data[0] = ResolveCallstackEntry( symAddr, symSize, symName, "[unknown]", 0 );
+        return { cb_data, 1, moduleNameAndAddress.name };
+    }
+
     IMAGEHLP_LINE64 line;
-    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+    line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 );
     DWORD displacement = 0;
 
     const char* symFile = "[unknown]";

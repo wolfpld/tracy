@@ -53,6 +53,10 @@ struct DbgHelpScopedLock
 
 #define DBGHELP_SCOPED_LOCK ::tracy::DbgHelpScopedLock dbgHelpLock;
 
+#ifndef DBGHELP_DEBUG_LEVEL
+#define DBGHELP_DEBUG_LEVEL (0)
+#endif
+
 static void TracySymError( const char* function, DWORD code )
 {
     if( code == ERROR_SUCCESS ) return;
@@ -80,8 +84,10 @@ static BOOL TracySymFromAddr( HANDLE hProcess, DWORD64 Address, PDWORD64 Displac
 {
     DBGHELP_SCOPED_LOCK;
     BOOL status = SymFromAddr( hProcess, Address, Displacement, Symbol );
+#if DBGHELP_DEBUG_LEVEL >= 2
     if( status == FALSE )
         TracySymError( "SymFromAddr", GetLastError() );
+#endif
     return status;
 }
 
@@ -89,8 +95,10 @@ static BOOL TracySymGetLineFromAddr64( HANDLE hProcess, DWORD64 qwAddr, PDWORD p
 {
     DBGHELP_SCOPED_LOCK;
     BOOL status = SymGetLineFromAddr64( hProcess, qwAddr, pdwDisplacement, Line64 );
+#if DBGHELP_DEBUG_LEVEL >= 2
     if( status == FALSE )
         TracySymError( "SymGetLineFromAddr64", GetLastError() );
+#endif
     return status;
 }
 
@@ -109,6 +117,7 @@ static BOOL TracySymGetLineNext64( HANDLE hProcess, PIMAGEHLP_LINE64 Line )
 static DWORD64 TracySymLoadModuleEx( HANDLE hProcess, HANDLE hFile, PCSTR ImageName, PCSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags ) {
     DBGHELP_SCOPED_LOCK;
     DWORD64 BaseAddress = SymLoadModuleEx( hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags );
+#if DBGHELP_DEBUG_LEVEL >= 1
     if( BaseAddress == 0 ) {
         DWORD code = GetLastError();
         if( code != ERROR_SUCCESS )
@@ -119,6 +128,7 @@ static DWORD64 TracySymLoadModuleEx( HANDLE hProcess, HANDLE hFile, PCSTR ImageN
             TracySymError( msg, GetLastError() );
         }
     }
+#endif
     return BaseAddress;
 }
 
@@ -281,8 +291,9 @@ static SYM_TYPE DbgHelpLoadSymbolsForModule( const char* imageName, uint64_t bas
     return info.SymType;
 }
 
-}
+#undef DBGHELP_DEBUG_LEVEL
+#undef DBGHELP_SCOPED_LOCK
 
-#define DBGHELP_SCOPED_LOCK ::tracy::DbgHelpScopedLock dbgHelpLock;
+}
 
 #endif

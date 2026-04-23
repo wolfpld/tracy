@@ -19,11 +19,9 @@
 #pragma warning( pop )
 #endif
 
-#include "../../tracy/Tracy.hpp"
+#include "../TracyProfiler.hpp"
 
 #ifdef TRACY_DBGHELP_LOCK
-#  include "TracyProfiler.hpp"
-
 #  define DBGHELP_INIT TracyConcat( TRACY_DBGHELP_LOCK, Init() )
 #  define DBGHELP_LOCK TracyConcat( TRACY_DBGHELP_LOCK, Lock() );
 #  define DBGHELP_UNLOCK TracyConcat( TRACY_DBGHELP_LOCK, Unlock() );
@@ -57,6 +55,10 @@ struct DbgHelpScopedLock
 
 static void TracySymError( const char* function, DWORD code )
 {
+    if( code == ERROR_SUCCESS ) return;
+    constexpr uint32_t Color_Red4 = 0x8b0000;
+    static constexpr tracy::SourceLocationData srcLocHere{ nullptr, __FUNCTION__, __FILE__, __LINE__, Color_Red4 };
+    tracy::ScopedZone ___tracy_scoped_zone( &srcLocHere, 0, true );
     char message[1024] = {};
     int written = snprintf( message, sizeof( message ), "ERROR: %s FAILED with code %u (0x%x) | ", function, code, code );
     written += FormatMessageA(
@@ -71,13 +73,11 @@ static void TracySymError( const char* function, DWORD code )
     fprintf( stderr, "%s\n", message );
     OutputDebugStringA( message );
     tracy::InitCallstackCritical();
-    constexpr uint32_t Color_Red4 = 0x8b0000;
     tracy::Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, Color_Red4, 60, written, message );
 }
 
 static BOOL TracySymFromAddr( HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol )
 {
-    ZoneScoped;
     DBGHELP_SCOPED_LOCK;
     BOOL status = SymFromAddr( hProcess, Address, Displacement, Symbol );
     if( status == FALSE )
@@ -87,7 +87,6 @@ static BOOL TracySymFromAddr( HANDLE hProcess, DWORD64 Address, PDWORD64 Displac
 
 static BOOL TracySymGetLineFromAddr64( HANDLE hProcess, DWORD64 qwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64 )
 {
-    ZoneScoped;
     DBGHELP_SCOPED_LOCK;
     BOOL status = SymGetLineFromAddr64( hProcess, qwAddr, pdwDisplacement, Line64 );
     if( status == FALSE )
@@ -97,7 +96,6 @@ static BOOL TracySymGetLineFromAddr64( HANDLE hProcess, DWORD64 qwAddr, PDWORD p
 
 static BOOL TracySymGetLineNext64( HANDLE hProcess, PIMAGEHLP_LINE64 Line )
 {
-    ZoneScoped;
     DBGHELP_SCOPED_LOCK;
     BOOL status = SymGetLineNext64( hProcess, Line );
     if( status == FALSE )
@@ -109,7 +107,6 @@ static BOOL TracySymGetLineNext64( HANDLE hProcess, PIMAGEHLP_LINE64 Line )
 }
 
 static DWORD64 TracySymLoadModuleEx( HANDLE hProcess, HANDLE hFile, PCSTR ImageName, PCSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags ) {
-    ZoneScoped;
     DBGHELP_SCOPED_LOCK;
     DWORD64 BaseAddress = SymLoadModuleEx( hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags );
     if( BaseAddress == 0 ) {
@@ -127,7 +124,6 @@ static DWORD64 TracySymLoadModuleEx( HANDLE hProcess, HANDLE hFile, PCSTR ImageN
 
 static BOOL TracySymGetModuleInfo64(HANDLE hProcess, DWORD64 qwAddr, PIMAGEHLP_MODULE64 ModuleInfo)
 {
-    ZoneScoped;
     DBGHELP_SCOPED_LOCK;
     BOOL status = SymGetModuleInfo64( hProcess, qwAddr, ModuleInfo );
     if( status == FALSE )
@@ -137,7 +133,6 @@ static BOOL TracySymGetModuleInfo64(HANDLE hProcess, DWORD64 qwAddr, PIMAGEHLP_M
 
 static BOOL TracyEnumProcessModules( HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded )
 {
-    ZoneScoped;
     BOOL status = EnumProcessModules( hProcess, lphModule, cb, lpcbNeeded );
     if( status == FALSE )
         TracySymError( "EnumProcessModules", GetLastError() );
@@ -146,7 +141,6 @@ static BOOL TracyEnumProcessModules( HANDLE hProcess, HMODULE* lphModule, DWORD 
 
 static BOOL TracyGetModuleInformation( HANDLE hProcess, HMODULE hModule, LPMODULEINFO lpmodinfo, DWORD cb )
 {
-    ZoneScoped;
     BOOL status = GetModuleInformation( hProcess, hModule, lpmodinfo, cb );
     if( status == FALSE )
         TracySymError( "GetModuleInformation", GetLastError() );
@@ -155,7 +149,6 @@ static BOOL TracyGetModuleInformation( HANDLE hProcess, HMODULE hModule, LPMODUL
 
 static DWORD TracyGetModuleFileNameA( HMODULE hModule, LPSTR lpFilename, DWORD nSize )
 {
-    ZoneScoped;
     BOOL status = GetModuleFileNameA( hModule, lpFilename, nSize );
     if( status == FALSE )
         TracySymError( "GetModuleFileNameA", GetLastError() );
@@ -167,7 +160,6 @@ static DWORD TracySymAddrIncludeInlineTrace( HANDLE hProcess, DWORD64 Address )
 #ifdef TRACY_NO_CALLSTACK_INLINES
     return 0;
 #endif
-    ZoneScoped;
     using SymAddrIncludeInlineTraceProc = decltype(TracySymAddrIncludeInlineTrace)(__stdcall*);
     static auto _SymAddrIncludeInlineTrace = (SymAddrIncludeInlineTraceProc)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymAddrIncludeInlineTrace");
     if (!_SymAddrIncludeInlineTrace) return 0;
@@ -182,7 +174,6 @@ static BOOL TracySymQueryInlineTrace( HANDLE hProcess, DWORD64 StartAddress, DWO
 #ifdef TRACY_NO_CALLSTACK_INLINES
     return FALSE;
 #endif
-    ZoneScoped;
     using SymQueryInlineTraceProc = decltype(TracySymQueryInlineTrace)(__stdcall*);
     static auto _SymQueryInlineTrace = (SymQueryInlineTraceProc)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymQueryInlineTrace");
     if (!_SymQueryInlineTrace) return FALSE;
@@ -198,7 +189,6 @@ static BOOL TracySymFromInlineContext( HANDLE hProcess, DWORD64 Address, ULONG I
 #ifdef TRACY_NO_CALLSTACK_INLINES
     return FALSE;
 #endif
-    ZoneScoped;
     using SymFromInlineContextProc = decltype(TracySymFromInlineContext)(__stdcall*);
     static auto _SymFromInlineContext = (SymFromInlineContextProc)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymFromInlineContext");
     if (!_SymFromInlineContext) return FALSE;
@@ -214,7 +204,6 @@ static BOOL TracySymGetLineFromInlineContext( HANDLE hProcess, DWORD64 qwAddr, U
 #ifdef TRACY_NO_CALLSTACK_INLINES
     return FALSE;
 #endif
-    ZoneScoped;
     using SymGetLineFromInlineContextProc = decltype(TracySymGetLineFromInlineContext)(__stdcall*);
     static auto _SymGetLineFromInlineContext = (SymGetLineFromInlineContextProc)GetProcAddress(GetModuleHandleA("dbghelp.dll"), "SymGetLineFromInlineContext");
     if (!_SymGetLineFromInlineContext) return 0;

@@ -57,9 +57,6 @@ struct DbgHelpScopedLock
 
 static void TracySymError( const char* function, DWORD code )
 {
-    TracyPlot( "Tracy|SymError", int64_t(0) );
-    TracyPlot( "Tracy|SymError", int64_t(code) );
-#if 1
     char message[1024] = {};
     int written = snprintf( message, sizeof( message ), "ERROR: %s FAILED with code %u (0x%x) | ", function, code, code );
     written += FormatMessageA(
@@ -76,9 +73,6 @@ static void TracySymError( const char* function, DWORD code )
     tracy::InitCallstackCritical();
     constexpr uint32_t Color_Red4 = 0x8b0000;
     tracy::Profiler::LogString( MessageSourceType::Tracy, MessageSeverity::Error, Color_Red4, 60, written, message );
-#endif
-    TracyPlot( "Tracy|SymError", int64_t(code) );
-    TracyPlot( "Tracy|SymError", int64_t(0) );
 }
 
 static BOOL TracySymFromAddr( HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol )

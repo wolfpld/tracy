@@ -852,14 +852,7 @@ CallstackSymbolData DecodeSymbolAddress( uint64_t ptr )
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-    if( TracySymGetLineFromAddr64(GetCurrentProcess(), ptr, &displacement, &line) == FALSE )
-    {
-        // DEBUG
-        ZoneScopedC(tracy::Color::Crimson);
-        ZoneValue(moduleNameAndAddress.symType);
-        ZoneText(moduleNameAndAddress.name, strlen(moduleNameAndAddress.name));
-        return sym;
-    }
+    if( TracySymGetLineFromAddr64(GetCurrentProcess(), ptr, &displacement, &line) == FALSE ) return sym;
 
     if( line.LineNumber >= 0xF00000 ) return sym;
 
@@ -883,7 +876,7 @@ static CallstackEntryData MakeUnresolvedCallstackEntryData( uint64_t ptr, Module
 {
     uint64_t symAddr = ptr - moduleNameAndBaseAddress.baseAddr;
     cb_data[0] = ResolveCallstackEntry( symAddr, 0, "[unresolved]", "[unknown]", 0 );
-     return { cb_data, 1, moduleNameAndBaseAddress.name };
+    return { cb_data, 1, moduleNameAndBaseAddress.name };
 }
 
 static int ResolveInlines( uint64_t ptr, const ModuleNameAndBaseAddress& moduleInfo )
@@ -973,8 +966,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         symSize = si->Size;
         symAddr = si->Address;
     }
-    // DEBUG
-    else { ZoneScopedNC(__FUNCTION__"[TracySymFromAddr]", tracy::Color::Crimson); ZoneValue(symType); ZoneText(symName, strlen(symName)); }
 
     // SymExport modules do not contain line/inline information
     if (symType == SymExport)
@@ -997,8 +988,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             symLine = line.LineNumber;
         }
     }
-    // DEBUG
-    else { ZoneScopedNC(__FUNCTION__"[TracySymGetLineFromAddr64]", tracy::Color::Crimson); ZoneValue(symType); ZoneText(symName, strlen(symName)); }
 
     int outermost = ResolveInlines( ptr, moduleNameAndAddress );
     cb_num = 1 + outermost;

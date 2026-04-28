@@ -9,7 +9,9 @@ import glob
 import io
 import os
 import logging
+import re
 import socket
+import struct
 import sys
 import time
 import uuid
@@ -44,6 +46,113 @@ def _read_text(path: str) -> str:
             return f.read()
     except Exception as e:
         return f"(unavailable: {e})"
+
+
+# Tracy UDP broadcast packet support. Tracy clients announce themselves on
+# port 8086 with a BroadcastMessage (see public/common/TracyProtocol.hpp).
+# The dev GUI reads protocolVersion from the broadcast and refuses connection
+# on mismatch instead of hitting an opaque TCP timeout. We do the same.
+_PROTOCOL_HPP = os.path.normpath(
+    os.path.join(_HERE, "..", "..", "public", "common", "TracyProtocol.hpp")
+)
+_BROADCAST_PORT = 8086
+_PROGRAM_NAME_SIZE = 64
+
+
+def _read_bindings_protocol_version() -> int | None:
+    """Parse ProtocolVersion from TracyProtocol.hpp at startup so our 'expected'
+    version stays in sync with the bindings build without extra C++ wiring."""
+    try:
+        with open(_PROTOCOL_HPP, encoding="utf-8") as f:
+            for line in f:
+                m = re.search(r"constexpr\s+uint32_t\s+ProtocolVersion\s*=\s*(\d+)", line)
+                if m:
+                    return int(m.group(1))
+    except Exception:
+        pass
+    return None
+
+
+_OUR_PROTOCOL_VERSION = _read_bindings_protocol_version()
+
+
+def _parse_broadcast(data: bytes) -> dict | None:
+    """Parse a Tracy BroadcastMessage. Handles broadcast versions 0-3.
+
+    Fixed-field sizes (from TracyProtocol.hpp, packed):
+      v3: u16 bv, u16 lp, u32 pv, u64 pid, i32 at, char[<=64] name  (>=20 + name)
+      v2: u16 bv, u16 lp, u32 pv, i32 at, char[<=64] name           (>=12 + name)
+      v1: u32 bv, u32 pv, u32 lp, u32 at, char[<=64] name           (>=16 + name)
+      v0: u32 bv, u32 pv, u32 at, char[<=64] name                   (>=12 + name)
+
+    The programName field is variable-length on the wire — the sender writes
+    only the actual name plus null terminator, not the full 64-byte buffer.
+    """
+    if len(data) < 4:
+        return None
+
+    def _name(buf: bytes) -> str:
+        return buf[:_PROGRAM_NAME_SIZE].split(b"\0", 1)[0].decode("utf-8", "replace")
+
+    bv16 = struct.unpack_from("<H", data, 0)[0]
+    if bv16 == 3 and len(data) >= 21:
+        bv, lp, pv, pid, at = struct.unpack_from("<HHIQi", data, 0)
+        return {"broadcast_version": bv, "listen_port": lp,
+                "protocol_version": pv, "pid": pid,
+                "active_seconds": at, "program": _name(data[20:])}
+    if bv16 == 2 and len(data) >= 13:
+        bv, lp, pv, at = struct.unpack_from("<HHIi", data, 0)
+        return {"broadcast_version": bv, "listen_port": lp,
+                "protocol_version": pv, "active_seconds": at,
+                "program": _name(data[12:])}
+    bv32 = struct.unpack_from("<I", data, 0)[0]
+    if bv32 == 1 and len(data) >= 17:
+        bv, pv, lp, at = struct.unpack_from("<IIII", data, 0)
+        return {"broadcast_version": bv, "listen_port": lp,
+                "protocol_version": pv, "active_seconds": at,
+                "program": _name(data[16:])}
+    if bv32 == 0 and len(data) >= 13:
+        bv, pv, at = struct.unpack_from("<III", data, 0)
+        return {"broadcast_version": bv, "listen_port": None,
+                "protocol_version": pv, "active_seconds": at,
+                "program": _name(data[12:])}
+    return None
+
+
+async def _listen_broadcasts(timeout_s: float = 1.5) -> list[dict]:
+    """Listen briefly on UDP 8086 for Tracy client announcements.
+
+    Returns a list of parsed broadcasts (deduplicated by listen_port). Empty
+    list means no broadcast received — the target may use TRACY_ON_DEMAND,
+    a non-default broadcast port, or simply isn't running.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        s.bind(("", _BROADCAST_PORT))
+    except OSError:
+        s.close()
+        return []
+    s.setblocking(False)
+    loop = asyncio.get_running_loop()
+    seen: dict[int | None, dict] = {}
+    deadline = loop.time() + timeout_s
+    try:
+        while loop.time() < deadline:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                break
+            try:
+                fut = loop.sock_recvfrom(s, 2048)
+                data, _addr = await asyncio.wait_for(fut, timeout=remaining)
+            except (asyncio.TimeoutError, BlockingIOError):
+                break
+            parsed = _parse_broadcast(data)
+            if parsed:
+                seen.setdefault(parsed.get("listen_port"), parsed)
+    finally:
+        s.close()
+    return list(seen.values())
 
 
 def _is_our_server_running() -> tuple[bool, int]:
@@ -210,17 +319,34 @@ async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str 
     """
     if not tracy_server:
         return "Error: Tracy Server bindings not found."
+
+    # Pre-flight: read Tracy's UDP broadcast on port 8086 and compare protocol
+    # versions before attempting TCP. Mirrors what the Tracy GUI does so a
+    # version mismatch produces a precise error instead of an opaque timeout.
+    # Tracy clients broadcast every ~3s (TracyProfiler.cpp), so we listen a
+    # little longer to guarantee catching at least one beat.
+    broadcasts = await _listen_broadcasts(timeout_s=3.5)
+    match = next((b for b in broadcasts if b.get("listen_port") == port), None)
+    if match and _OUR_PROTOCOL_VERSION is not None:
+        if match["protocol_version"] != _OUR_PROTOCOL_VERSION:
+            return (
+                f"Protocol mismatch: target program '{match['program']}' "
+                f"announces Tracy protocol v{match['protocol_version']} on "
+                f"{address}:{port}, but these server bindings are built "
+                f"against v{_OUR_PROTOCOL_VERSION}. Rebuild the bindings or "
+                f"the target against a matching Tracy version."
+            )
+
     try:
         w = tracy_server.Worker(address, port)
     except Exception as e:
         return f"Failed to connect: {str(e)}"
 
     # Worker construction returns immediately even on protocol failure (the
-    # bindings expose no error state — see is_connected() as the only signal).
-    # Probe briefly so silent failures — typically a version mismatch between
-    # these server bindings and the Tracy client compiled into the target
-    # program, or TRACY_ON_DEMAND with no profiler request yet — surface as
-    # actionable errors instead of misleading success.
+    # bindings expose no error state — is_connected() is the only signal).
+    # Probe briefly so silent failures (e.g. TRACY_ON_DEMAND with no profiler
+    # request yet, or a target broadcasting on a non-default port) surface
+    # cleanly even when broadcast pre-flight didn't catch them.
     deadline_s = 2.0
     step_s = 0.1
     elapsed = 0.0
@@ -233,15 +359,26 @@ async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str 
             w.shutdown()
         except Exception:
             pass
+        hint = ""
+        if broadcasts and not match:
+            seen = ", ".join(
+                f"'{b['program']}' on port {b.get('listen_port')} (protocol v{b['protocol_version']})"
+                for b in broadcasts
+            )
+            hint = f" Detected other Tracy broadcasts: {seen}."
+        elif not broadcasts:
+            hint = (
+                " No Tracy broadcasts were received on port 8086 in 3.5s — "
+                "the target may use TRACY_ON_DEMAND, a non-default broadcast "
+                "port, or isn't running."
+            )
         return (
             f"Reached {address}:{port} but the Tracy handshake did not complete "
-            f"within {deadline_s:.1f}s. The TCP port is open but no "
-            f"WelcomeMessage arrived. Common causes: (1) the Tracy client "
-            f"version embedded in the target program differs from these server "
-            f"bindings — rebuild one to match; (2) the target was built with "
-            f"TRACY_ON_DEMAND and is awaiting a profiler request; (3) another "
-            f"client is already attached. Verify by attempting to connect with "
-            f"the matching Tracy GUI build."
+            f"within {deadline_s:.1f}s.{hint} Common causes: (1) the Tracy "
+            f"client version embedded in the target program differs from these "
+            f"server bindings; (2) the target was built with TRACY_ON_DEMAND "
+            f"and is awaiting a profiler request; (3) another client is "
+            f"already attached."
         )
 
     name = alias or f"live_{address}_{port}"

@@ -102,18 +102,6 @@ static BOOL TracySymGetLineFromAddr64( HANDLE hProcess, DWORD64 qwAddr, PDWORD p
     return status;
 }
 
-static BOOL TracySymGetLineNext64( HANDLE hProcess, PIMAGEHLP_LINE64 Line )
-{
-    DBGHELP_SCOPED_LOCK;
-    BOOL status = SymGetLineNext64( hProcess, Line );
-    if( status == FALSE )
-    {
-        const DWORD err = GetLastError();
-        if( err != ERROR_NO_MORE_ITEMS ) TracySymError( "SymGetLineNext64", err );
-    }
-    return status;
-}
-
 static DWORD64 TracySymLoadModuleEx( HANDLE hProcess, HANDLE hFile, PCSTR ImageName, PCSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags ) {
     DBGHELP_SCOPED_LOCK;
     DWORD64 BaseAddress = SymLoadModuleEx( hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags );

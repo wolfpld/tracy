@@ -24,9 +24,26 @@ import mcp.server.fastmcp as fastmcp
 logging.getLogger("uvicorn.error").setLevel(logging.CRITICAL)
 logging.getLogger("starlette").setLevel(logging.CRITICAL)
 
-_PORT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracy_mcp.port")
-_PID_FILE  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracy_mcp.pid")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PORT_FILE = os.path.join(_HERE, "tracy_mcp.port")
+_PID_FILE  = os.path.join(_HERE, "tracy_mcp.pid")
 _PREFERRED_PORT = int(os.environ.get("TRACY_MCP_PORT", "47380"))
+
+# Shared documentation surfaces. system.prompt.md is Tracy Assist's source
+# system prompt; exposing it as an MCP resource keeps analysis guidance in
+# sync across both surfaces with no plumbing. eval_guide.md covers
+# bindings-layer detail (ctx object model, units, source-location ID joins).
+_LLM_DIR = os.path.normpath(os.path.join(_HERE, "..", "..", "profiler", "src", "llm"))
+_PROMPT_PATH = os.path.join(_LLM_DIR, "system.prompt.md")
+_EVAL_GUIDE_PATH = os.path.join(_HERE, "eval_guide.md")
+
+
+def _read_text(path: str) -> str:
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"(unavailable: {e})"
 
 
 def _is_our_server_running() -> tuple[bool, int]:
@@ -120,6 +137,23 @@ tasks: dict[str, Task] = {}
 captures_dir: str | None = os.environ.get("TRACY_CAPTURES_DIR")
 
 
+@mcp_server.resource("tracy://prompt")
+def _prompt_resource() -> str:
+    """Tracy Assist's analysis guidance (system.prompt.md). Contains workflows
+    for optimization, callstack inspection, and privacy rules. %TIME%, %USER%,
+    and %PROGRAMNAME% are placeholders filled by the in-app chat — ignore them
+    when reading from MCP."""
+    return _read_text(_PROMPT_PATH)
+
+
+@mcp_server.resource("tracy://eval-guide")
+def _eval_guide_resource() -> str:
+    """Bindings-layer guide for the eval tool: ctx object model, time units,
+    source-location ID semantics, and worked examples translating catalog
+    entries into ctx Python."""
+    return _read_text(_EVAL_GUIDE_PATH)
+
+
 @mcp_server.tool()
 async def list_captures() -> list[str]:
     """List .tracy capture files in the TRACY_CAPTURES_DIR directory (non-recursive)."""
@@ -178,20 +212,61 @@ async def live_connect(address: str = "127.0.0.1", port: int = 8086, alias: str 
         return "Error: Tracy Server bindings not found."
     try:
         w = tracy_server.Worker(address, port)
-        name = alias or f"live_{address}_{port}"
-        instances[name] = TracyInstance(name, w)
-        return f"Connected to live instance as '{name}'"
     except Exception as e:
         return f"Failed to connect: {str(e)}"
+
+    # Worker construction returns immediately even on protocol failure (the
+    # bindings expose no error state — see is_connected() as the only signal).
+    # Probe briefly so silent failures — typically a version mismatch between
+    # these server bindings and the Tracy client compiled into the target
+    # program, or TRACY_ON_DEMAND with no profiler request yet — surface as
+    # actionable errors instead of misleading success.
+    deadline_s = 2.0
+    step_s = 0.1
+    elapsed = 0.0
+    while elapsed < deadline_s and not w.is_connected():
+        await asyncio.sleep(step_s)
+        elapsed += step_s
+
+    if not w.is_connected():
+        try:
+            w.shutdown()
+        except Exception:
+            pass
+        return (
+            f"Reached {address}:{port} but the Tracy handshake did not complete "
+            f"within {deadline_s:.1f}s. The TCP port is open but no "
+            f"WelcomeMessage arrived. Common causes: (1) the Tracy client "
+            f"version embedded in the target program differs from these server "
+            f"bindings — rebuild one to match; (2) the target was built with "
+            f"TRACY_ON_DEMAND and is awaiting a profiler request; (3) another "
+            f"client is already attached. Verify by attempting to connect with "
+            f"the matching Tracy GUI build."
+        )
+
+    name = alias or f"live_{address}_{port}"
+    instances[name] = TracyInstance(name, w)
+    return (
+        f"Connected to live instance as '{name}'. "
+        f"Before your first eval, read resources tracy://prompt "
+        f"(analysis guidance) and tracy://eval-guide (ctx object model, "
+        f"ns time units, srcloc IDs)."
+    )
 
 
 @mcp_server.tool()
 async def load_capture(path: str, alias: str | None = None) -> str:
     """
-    Load a .tracy capture file.
+    Load a .tracy capture file by absolute path.
 
-    If alias is provided, it is used as the instance name (overwrites existing).
-    If no alias, returns a unique ID based on filename and mtime.
+    Parameters:
+      path  — absolute path to a .tracy file. On Windows use backslashes
+              (e.g. 'E:\\\\traces\\\\foo.tracy').
+      alias — optional instance name; overwrites existing on collision.
+              If omitted, an ID is derived from filename and mtime.
+
+    If you don't already have a path, call `list_captures` first — it lists
+    .tracy files in the TRACY_CAPTURES_DIR environment directory.
     """
     if not tracy_server:
         return "Error: Tracy Server bindings not found."
@@ -214,7 +289,12 @@ async def load_capture(path: str, alias: str | None = None) -> str:
         inst.path = path
         inst.mtime = mtime
         instances[name] = inst
-        return f"Loaded as '{name}'"
+        return (
+            f"Loaded as '{name}'. "
+            f"Before your first eval, read resources tracy://prompt "
+            f"(analysis guidance) and tracy://eval-guide (ctx object model, "
+            f"ns time units, srcloc IDs)."
+        )
     except Exception as e:
         return f"Failed to load: {str(e)}"
 
@@ -231,10 +311,13 @@ async def unload_capture(instance_id: str) -> str:
 @mcp_server.tool(name="eval")
 async def tracy_eval(code: str, instance_id: str, async_mode: bool = False) -> object:
     """
-    Execute Python code against a specific Tracy Worker.
+    Execute Python code against a specific Tracy Worker bound as `ctx`.
 
-    The variable `ctx` is available for analysis.
-    If async_mode=True, returns a task_id immediately.
+    On first use, read the `tracy://prompt` (analysis guidance) and
+    `tracy://eval-guide` (ctx object model, units, source-location ID joins)
+    resources. Time values returned by Worker methods are nanoseconds.
+
+    If async_mode=True, returns a task_id immediately; poll via the `task` tool.
     """
     if instance_id not in instances:
         return f"Error: Instance '{instance_id}' not found. Use list_instances to find valid IDs."

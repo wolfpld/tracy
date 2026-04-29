@@ -201,6 +201,7 @@ namespace tracy
             }
 
             UINT64* timestampBuffer = MapTimestampBuffer();
+            if (timestampBuffer == nullptr) return;
             for (uint64_t i = 0; i < m_queryLimit; ++i)
                 timestampBuffer[i] = 0;
             UnmapTimestampBuffer(timestampBuffer);
@@ -323,6 +324,7 @@ namespace tracy
                 return;
 
             UINT64* timestampBuffer = MapTimestampBuffer();
+            if (timestampBuffer == nullptr) return;
 
             // Attempt to collect as many resolved queries as possible
             uint64_t ticket = earliestTicket;

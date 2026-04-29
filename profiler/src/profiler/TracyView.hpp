@@ -399,8 +399,10 @@ private:
     int64_t GetZoneChildTimeFastClamped( const ZoneEvent& zone, int64_t t0, int64_t t1 );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
-    bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
-    bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, const RangeSlim& range, int64_t& time, uint64_t& cnt );
+    uint64_t GetRunningCsRange( const ContextSwitch* ctx, int64_t start, int64_t end, const ContextSwitchData*& outRunningBegin, const ContextSwitchData*& outRunningEnd, bool* incomplete = nullptr ) const;
+    void ComputeRunningTime( int64_t start, int64_t end, const ContextSwitchData* outRunningBegin, const ContextSwitchData* outRunningEnd, int64_t& time, uint8_t* cpus/*[256]*/ = nullptr ) const;
+    uint64_t GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, bool* incomplete = nullptr ) const;
+    uint64_t GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, const RangeSlim& range, int64_t& time, bool* incomplete = nullptr ) const;
     const char* GetThreadContextData( uint64_t thread, bool& local, bool& untracked, const char*& program );
 
     tracy_force_inline void CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );

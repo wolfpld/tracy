@@ -132,9 +132,8 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
                         const auto ctx0 = m_worker.GetContextSwitchData( GetZoneThread( *lhs ) );
                         const auto ctx1 = m_worker.GetContextSwitchData( GetZoneThread( *rhs ) );
                         int64_t t0, t1;
-                        uint64_t c0, c1;
-                        GetZoneRunningTime( ctx0, *lhs, t0, c0 );
-                        GetZoneRunningTime( ctx1, *rhs, t1, c1 );
+                        GetZoneRunningTime( ctx0, *lhs, t0 );
+                        GetZoneRunningTime( ctx1, *rhs, t1 );
                         return t0 > t1;
                         } );
                 }
@@ -144,9 +143,8 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
                         const auto ctx0 = m_worker.GetContextSwitchData( GetZoneThread( *lhs ) );
                         const auto ctx1 = m_worker.GetContextSwitchData( GetZoneThread( *rhs ) );
                         int64_t t0, t1;
-                        uint64_t c0, c1;
-                        GetZoneRunningTime( ctx0, *lhs, t0, c0 );
-                        GetZoneRunningTime( ctx1, *rhs, t1, c1 );
+                        GetZoneRunningTime( ctx0, *lhs, t0 );
+                        GetZoneRunningTime( ctx1, *rhs, t1 );
                         return t0 < t1;
                         } );
                 }
@@ -208,8 +206,7 @@ void View::DrawZoneList( int id, const Vector<short_ptr<ZoneEvent>>& zones )
             if( m_findZone.runningTime )
             {
                 const auto ctx = m_worker.GetContextSwitchData( GetZoneThread( *ev ) );
-                uint64_t cnt;
-                GetZoneRunningTime( ctx, *ev, timespan, cnt );
+                GetZoneRunningTime( ctx, *ev, timespan );
             }
             else
             {
@@ -459,8 +456,7 @@ void View::DrawFindZone()
                             const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                             if( !ctx ) break;
                             int64_t t;
-                            uint64_t cnt;
-                            if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
+                            if( !GetZoneRunningTime( ctx, zone, t ) ) break;
                             vec.push_back_no_space_check( t );
                             total += t;
                             if( t < tmin ) tmin = t;
@@ -475,8 +471,7 @@ void View::DrawFindZone()
                             const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                             if( !ctx ) break;
                             int64_t t;
-                            uint64_t cnt;
-                            if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
+                            if( !GetZoneRunningTime( ctx, zone, t ) ) break;
                             vec.push_back_no_space_check( t );
                             total += t;
                             if( t < tmin ) tmin = t;
@@ -590,8 +585,7 @@ void View::DrawFindZone()
                                 {
                                     const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                                     int64_t t;
-                                    uint64_t cnt;
-                                    GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
+                                    GetZoneRunningTime( ctx, *ev.Zone(), t );
                                     vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
@@ -608,8 +602,7 @@ void View::DrawFindZone()
                                 {
                                     const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                                     int64_t t;
-                                    uint64_t cnt;
-                                    GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
+                                    GetZoneRunningTime( ctx, *ev.Zone(), t );
                                     vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
@@ -1667,8 +1660,7 @@ void View::DrawFindZone()
                 const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( ev.Thread() ) );
                 if( !ctx ) break;
                 int64_t t;
-                uint64_t cnt;
-                if( !GetZoneRunningTime( ctx, *ev.Zone(), t, cnt ) ) break;
+                if( !GetZoneRunningTime( ctx, *ev.Zone(), t ) ) break;
                 timespan = t;
             }
 

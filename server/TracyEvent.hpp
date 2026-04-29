@@ -563,6 +563,7 @@ struct ContextSwitchData
     tracy_force_inline int64_t End() const { return _end.Val(); }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
     tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
+    tracy_force_inline int64_t EndOrStart() const { return _end.IsNonNegative() ? _end.Val() : _start.Val(); }
     tracy_force_inline uint8_t Cpu() const { return _cpu; }
     tracy_force_inline void SetCpu( uint8_t cpu ) { _cpu = cpu; }
     tracy_force_inline uint8_t WakeupCpu() const { return _wakeupcpu; }

@@ -274,13 +274,21 @@ namespace tracy
                 TracyD3D12Panic("client is still pushing queries.");
 
 #if TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-            D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
-            m_readbackBuffer->Unmap(0, &fullRange);
-            m_persistentTimestampBuffer = nullptr;
+            if (m_readbackBuffer)
+            {
+                D3D12_RANGE fullRange { 0, m_queryLimit * sizeof(UINT64) };
+                m_readbackBuffer->Unmap(0, &fullRange);
+                m_persistentTimestampBuffer = nullptr;
+            }
 #endif
-            m_readbackBuffer->Release();
-            m_queryHeap->Release();
+            if (m_readbackBuffer) m_readbackBuffer->Release();
+            if (m_queryHeap) m_queryHeap->Release();
             m_queue->Release();
+        }
+
+        tracy_force_inline uint8_t GetId() const
+        {
+            return m_contextId;
         }
 
         void Name( const char* name, uint16_t len )
@@ -536,11 +544,6 @@ namespace tracy
             HRESULT status = m_device->GetDeviceRemovedReason();
             return (status != S_OK);
         }
-
-        tracy_force_inline uint8_t GetId() const
-        {
-            return m_contextId;
-        }
     };
 
     class D3D12ZoneScope
@@ -665,7 +668,12 @@ namespace tracy
     {
         auto* ctx = static_cast<D3D12QueueCtx*>(tracy_malloc(sizeof(D3D12QueueCtx)));
         new (ctx) D3D12QueueCtx{ device, queue };
-
+        // constructor may have failed:
+        if (ctx->GetId() == 255)
+        {
+            DestroyD3D12Context(ctx);
+            return nullptr;
+        }
         return ctx;
     }
 

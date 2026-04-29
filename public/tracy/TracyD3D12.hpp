@@ -473,12 +473,11 @@ namespace tracy
             return static_cast<int64_t>(end - begin);
         }
 
-        uint64_t RetireTicket(uint64_t ticket)
+        void RetireTicket(uint64_t ticket)
         {
             TracyD3D12Assert( m_previousCheckpoint == ticket );
-            ticket += 2;
-            m_previousCheckpoint.store(ticket);
-            return ticket;
+            uint64_t nextTicket = ticket + 2;
+            m_previousCheckpoint.store(nextTicket, std::memory_order_release);
         }
 
         tracy_force_inline uint32_t NextQueryId()
@@ -495,7 +494,8 @@ namespace tracy
             // to the query that has just been generated. The value of the "late" query may
             // may end up being collected as if it belonged to the the new query.
             const uint64_t ticket = m_queryCounter.fetch_add(2, std::memory_order_relaxed);
-            if (Distance(m_previousCheckpoint, ticket) >= RingCapacity())
+            const uint64_t checkpoint = m_previousCheckpoint.load(std::memory_order_relaxed);
+            if (Distance(checkpoint, ticket) >= RingCapacity())
             {
                 ZoneScopedC(Color::Red4);
                 TracyD3D12Log(Warning, "Too many pending GPU queries: stalling!");

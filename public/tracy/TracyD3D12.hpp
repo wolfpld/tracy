@@ -379,15 +379,14 @@ namespace tracy
             TracyD3D12Debug( ZoneValue(m_contextId) );
             TracyD3D12Debug( ZoneValue(queryTicket) );
             TracyD3D12Debug( ZoneValue(RingIndex(queryTicket)) );
-            auto Now = GetTickCount64;
-            auto ini = Now();
+            auto ini = GetTickCount64();
             auto elapsed = 0;
             // TODO: could use condition variable to avoid spurious lock + collect iterations
             while ((Distance(m_previousCheckpoint, queryTicket) >= 0) && (elapsed < timeout_ms))
             {
                 std::unique_lock lock (m_collectionMutex);
                 Collect(lock, queryTicket, false);
-                elapsed = Now() - ini;
+                elapsed = GetTickCount64() - ini;
             }
             return Distance(m_previousCheckpoint, queryTicket) < 0;
         }
@@ -692,7 +691,7 @@ namespace tracy
 #undef TracyD3D12Break
 #undef TracyD3D12Debug
 #undef TRACY_D3D12_PERSISTENT_TIMESTAMP_BUFFER
-#undef TRACY_D3D12_DEBUG
+#undef TRACY_D3D12_DEBUG_LEVEL
 
 using TracyD3D12Ctx = tracy::D3D12QueueCtx*;
 

@@ -664,6 +664,13 @@ namespace tracy
         }
     };
 
+    static inline void DestroyD3D12Context(D3D12QueueCtx* ctx)
+    {
+        TracyD3D12Assert(ctx);
+        ctx->~D3D12QueueCtx();
+        tracy_free(ctx);
+    }
+
     static inline D3D12QueueCtx* CreateD3D12Context(ID3D12Device* device, ID3D12CommandQueue* queue)
     {
         auto* ctx = static_cast<D3D12QueueCtx*>(tracy_malloc(sizeof(D3D12QueueCtx)));
@@ -675,12 +682,6 @@ namespace tracy
             return nullptr;
         }
         return ctx;
-    }
-
-    static inline void DestroyD3D12Context(D3D12QueueCtx* ctx)
-    {
-        ctx->~D3D12QueueCtx();
-        tracy_free(ctx);
     }
 
 }

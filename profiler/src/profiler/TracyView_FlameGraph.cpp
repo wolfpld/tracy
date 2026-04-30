@@ -837,20 +837,30 @@ void View::DrawFlameGraph()
             m_flameGraphInvariant.Reset();
         }
 
-        int idx = 0;
-        for( const auto& t : td )
+        if( tsz != 0 )
         {
-            ImGui::PushID( idx++ );
-            const auto threadColor = GetThreadColor( t->id, 0 );
-            SmallColorBox( threadColor );
-            ImGui::SameLine();
-            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) ) m_flameGraphInvariant.Reset();
-            ImGui::PopID();
-            if( t->isFiber )
+            constexpr size_t MaxVisibleThreadRows = 15;
+            const auto visibleThreadRows = std::min( tsz, MaxVisibleThreadRows );
+            const auto threadListHeight =
+                ( ImGui::GetTextLineHeightWithSpacing() * visibleThreadRows ) + ( ImGui::GetStyle().WindowPadding.y * 2 );
+            ImGui::BeginChild( "##flameVisibleThreads", ImVec2( 0, threadListHeight ), true);
+
+            int idx = 0;
+            for( const auto& t : td )
             {
+                ImGui::PushID( idx++ );
+                const auto threadColor = GetThreadColor( t->id, 0 );
+                SmallColorBox( threadColor );
                 ImGui::SameLine();
-                TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                if( SmallCheckbox( m_worker.GetThreadName( t->id ), &FlameGraphThread( t->id ) ) ) m_flameGraphInvariant.Reset();
+                ImGui::PopID();
+                if( t->isFiber )
+                {
+                    ImGui::SameLine();
+                    TextColoredUnformatted( ImVec4( 0.2f, 0.6f, 0.2f, 1.f ), "Fiber" );
+                }
             }
+            ImGui::EndChild();
         }
         ImGui::TreePop();
     }

@@ -2473,6 +2473,123 @@ The following additional CMake options are available when building the Python pa
 
 Be aware that the memory allocated by this buffer is global and is not freed, see section~\ref{uniquepointers}.
 
+\subsection{MCP Server}
+\label{mcpserver}
+
+Tracy provides an optional MCP (Model Context Protocol\footnote{\url{https://modelcontextprotocol.io}}) server that allows AI coding assistants to load and analyze Tracy captures as part of automated workflows. It runs as a separate Python sidecar process and does not integrate with or depend on Tracy Assist (section~\ref{tracyassist}). No Python interpreter is required to run Tracy itself.
+
+The primary use case is agentic tooling: an AI agent can load a \texttt{.tracy} capture, execute arbitrary analysis code against the \texttt{Worker} bindings (see below), and compare results across multiple captures — for example, validating that a proposed optimization reduced frame time.
+
+\subsubsection{Building}
+
+The MCP server requires the Tracy Server Python bindings, which are built alongside the client bindings when \texttt{TRACY\_CLIENT\_PYTHON} is enabled:
+
+\begin{lstlisting}
+cmake -B build -DTRACY_CLIENT_PYTHON=ON
+cmake --build build --config Release
+\end{lstlisting}
+
+\subsubsection{Running}
+
+\begin{lstlisting}
+pip install mcp
+python extra/mcp/tracy_mcp.py
+\end{lstlisting}
+
+Set the following environment variables before launching (or export them in your shell):
+
+\begin{lstlisting}
+PYTHONPATH=/path/to/tracy/build/python/Release
+TRACY_CAPTURES_DIR=/path/to/captures   # enables list_captures
+TRACY_MCP_PORT=47380                   # optional; default 47380
+\end{lstlisting}
+
+\subsubsection{Integrating with an AI assistant}
+
+The server runs as a singleton on SSE transport (port 47380 by default). Only one process loads \texttt{TracyServerBindings} regardless of how many editor windows are open; subsequent launches detect the port is taken and exit immediately.
+
+The server prints its URL on startup and writes it to \texttt{extra/mcp/tracy\_mcp.port}:
+
+\begin{lstlisting}
+Tracy MCP listening on http://127.0.0.1:47380/sse
+\end{lstlisting}
+
+Configure your AI assistant using that URL. For example, for a JSON-based MCP configuration:
+
+\begin{lstlisting}
+{
+  "mcpServers": {
+    "tracy": {
+      "url": "http://127.0.0.1:47380/sse"
+    }
+  }
+}
+\end{lstlisting}
+
+\subsubsection{Available tools}
+
+\begin{itemize}
+\item \texttt{list\_captures} --- List \texttt{*.tracy} files in \texttt{TRACY\_CAPTURES\_DIR} (top-level only).
+\item \texttt{list\_instances} --- List all captures currently loaded in the server.
+\item \texttt{load\_capture} --- Load a \texttt{.tracy} file by path, optionally giving it an alias.
+\item \texttt{connect\_instance} --- Set the active instance for subsequent analysis calls.
+\item \texttt{live\_connect} --- Connect to a running Tracy-instrumented application by address and port.
+\item \texttt{discover\_instances} --- Scan a port range for running Tracy-instrumented applications.
+\item \texttt{eval} --- Execute arbitrary Python against the active \texttt{Worker} object (available as \texttt{ctx}). Supports \texttt{async\_mode=True} for long-running queries.
+\item \texttt{task} --- Poll, cancel, or list background analysis tasks started with \texttt{async\_mode=True}.
+\end{itemize}
+
+\subsubsection{Worker API (available via \texttt{eval})}
+
+Inside \texttt{eval}, the variable \texttt{ctx} is a \texttt{Worker} instance. All time values are in nanoseconds. The following methods are available:
+
+\paragraph{Capture metadata}
+\begin{itemize}
+\item \texttt{get\_capture\_name()} / \texttt{get\_capture\_program()} --- Name and program string stored in the trace.
+\item \texttt{get\_host\_info()} --- OS, CPU, RAM, and compiler info as a string.
+\item \texttt{get\_resolution()} --- Timer resolution in nanoseconds.
+\item \texttt{get\_first\_time()} / \texttt{get\_last\_time()} --- Trace time range in nanoseconds.
+\end{itemize}
+
+\paragraph{CPU zones}
+\begin{itemize}
+\item \texttt{get\_all\_zone\_stats()} --- Returns a \texttt{dict[str, ZoneStats]} keyed by zone name. Each \texttt{ZoneStats} has \texttt{min}, \texttt{max}, \texttt{total}, \texttt{avg}, \texttt{count}, \texttt{sum\_sq} (all in nanoseconds). Includes nested zones.
+\item \texttt{get\_root\_zone\_stats()} --- Like \texttt{get\_all\_zone\_stats()} but aggregates only top-level zones per thread. Safe to sum across zones.
+\item \texttt{get\_zone\_stats(srcloc\_id)} --- Stats for a single source location.
+\item \texttt{get\_zone\_durations(name)} --- List of individual zone durations (ns) for distribution analysis.
+\item \texttt{get\_zone\_source\_location(name)} --- Returns \texttt{\{"name", "function", "file", "line", "color"\}} for the named zone.
+\end{itemize}
+
+\paragraph{GPU zones}
+\begin{itemize}
+\item \texttt{get\_all\_gpu\_zone\_stats()} --- Returns a \texttt{dict[str, GpuZoneStats]}.
+\item \texttt{get\_gpu\_contexts()} --- Returns a list of \texttt{GpuContextSummary} objects.
+\item \texttt{get\_gpu\_zone\_durations(name)} --- Individual GPU zone durations (ns).
+\end{itemize}
+
+\paragraph{Frames}
+\begin{itemize}
+\item \texttt{get\_frame\_times()} --- Per-frame durations (ns) for the default frame set.
+\item \texttt{get\_frame\_times\_named(name)} --- Per-frame durations for a named frame set.
+\item \texttt{get\_frame\_boundaries()} --- List of \texttt{(start\_ns, end\_ns)} tuples for each frame.
+\item \texttt{get\_frame\_count()} --- Frame count for the default frame set.
+\end{itemize}
+
+\paragraph{Threads, messages, plots, memory, and locks}
+\begin{itemize}
+\item \texttt{get\_threads()} --- List of \texttt{ThreadData} objects with \texttt{id}, \texttt{count}, \texttt{is\_fiber}.
+\item \texttt{get\_messages()} --- List of \texttt{MessageInfo} objects with \texttt{time}, \texttt{text}, \texttt{color}, \texttt{thread}.
+\item \texttt{get\_plots()} --- List of \texttt{PlotSummary} objects with \texttt{name}, \texttt{type}, \texttt{min}, \texttt{max}, \texttt{sum}, \texttt{avg}, \texttt{count}.
+\item \texttt{get\_memory\_events()} --- List of raw allocation events including pointer, size, alloc/free times, and callstack index.
+\item \texttt{get\_locks()} --- List of \texttt{LockSummary} objects. Use \texttt{get\_lock\_wait\_stats()} for contention analysis.
+\item \texttt{get\_symbol\_stats()} --- Callstack-sample hit counts per symbol. Sort by \texttt{excl} to find hot functions.
+\item \texttt{get\_callstack\_frames(callstack\_idx)} --- Resolve a callstack index to a list of \texttt{\{"name", "file", "line", "addr"\}} frames.
+\end{itemize}
+
+\subsubsection{Loading a capture}
+
+Traces must be explicitly loaded through the MCP server — opening a file in the Tracy GUI does not make it available to the server. Use \texttt{load\_capture} with the full path to a \texttt{.tracy} file, or use \texttt{list\_captures} first if \texttt{TRACY\_CAPTURES\_DIR} is configured.
+
 \subsection{Fortran API}
 \label{fortranapi}
 

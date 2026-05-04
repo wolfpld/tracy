@@ -1710,7 +1710,7 @@ The queue must have been created through the specified device, however, a comman
 
 Using GPU zones is the same as the Vulkan implementation, where the \texttt{TracyD3D12Zone(ctx, cmdList, name)} macro is used, with \texttt{name} as a string literal. \texttt{TracyD3D12ZoneC(ctx, cmdList, name, color)} can be used to create a custom-colored zone. The given command list must be in an open state.
 
-The macro \texttt{TracyD3D12NewFrame(ctx)} is used to mark a new frame, and should appear before or after recording command lists, similar to \texttt{FrameMark}. This macro is a key component that enables automatic query data synchronization, so the user doesn't have to worry about synchronizing GPU execution before invoking a collection. Event data can then be collected and sent to the profiler using the \texttt{TracyD3D12Collect(ctx)} macro.
+You must periodically collect the GPU events by calling \texttt{TracyD3D12Collect(ctx)}. Good places for collection are after synchronous GPU waits (e.g., \texttt{ID3D12CommandQueue::Wait}) and after swap chain present calls (i.e., \texttt{IDXGISwapChain::Present}).
 
 Note that GPU profiling may be slightly inaccurate due to artifacts from dynamic frequency scaling. To counter this, \texttt{ID3D12Device::SetStablePowerState()} can be used to enable accurate profiling, at the expense of some performance. If the machine is not in developer mode, the operating system will remove the device upon calling. Do not use this in the shipping code.
 

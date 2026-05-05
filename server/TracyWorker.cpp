@@ -3185,12 +3185,7 @@ void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
 void Worker::Query( ServerQuery type, uint64_t data, uint32_t extra )
 {
     ServerQueryPacket query { type, data, extra };
-    if( m_serverQuerySpaceLeft > 0 && m_serverQueryQueuePrio.empty() && m_serverQueryQueue.empty() )
-    {
-        m_serverQuerySpaceLeft--;
-        m_sock.Send( &query, ServerQueryPacketSize );
-    }
-    else if( IsQueryPrio( type ) )
+    if( IsQueryPrio( type ) )
     {
         m_serverQueryQueuePrio.push_back( query );
     }

@@ -722,7 +722,13 @@ private:
     tracy_force_inline bool Process( const QueueItem& ev );
     tracy_force_inline void ProcessThreadContext( const QueueThreadContext& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBegin64( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBegin32( const QueueZoneBegin32& ev );
+    tracy_force_inline void ProcessZoneBegin16( const QueueZoneBegin16& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack64( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack32( const QueueZoneBegin32& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack16( const QueueZoneBegin16& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBeginLean& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );

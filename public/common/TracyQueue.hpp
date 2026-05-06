@@ -27,7 +27,11 @@ enum class QueueType : uint8_t
     CallstackSampleContextSwitch,
     FrameImage,
     ZoneBegin,
+    ZoneBegin32,
+    ZoneBegin16,
     ZoneBeginCallstack,
+    ZoneBeginCallstack32,
+    ZoneBeginCallstack16,
     ZoneEnd,
     ZoneEnd32,
     ZoneEnd16,
@@ -153,6 +157,18 @@ struct QueueZoneBegin : public QueueZoneBeginLean
 struct QueueZoneBeginThread : public QueueZoneBegin
 {
     uint32_t thread;
+};
+
+struct QueueZoneBegin32
+{
+    uint32_t time;
+    uint64_t srcloc;
+};
+
+struct QueueZoneBegin16
+{
+    uint16_t time;
+    uint64_t srcloc;
 };
 
 struct QueueZoneEnd
@@ -796,6 +812,8 @@ struct QueueItem
         QueueZoneBegin zoneBegin;
         QueueZoneBeginLean zoneBeginLean;
         QueueZoneBeginThread zoneBeginThread;
+        QueueZoneBegin32 zoneBegin32;
+        QueueZoneBegin16 zoneBegin16;
         QueueZoneEnd zoneEnd;
         QueueZoneEnd32 zoneEnd32;
         QueueZoneEnd16 zoneEnd16;
@@ -907,7 +925,11 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // context switch
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin32 ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin16 ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin32 ),     // callstack
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin16 ),     // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd32 ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd16 ),

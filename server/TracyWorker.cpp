@@ -4498,10 +4498,22 @@ bool Worker::Process( const QueueItem& ev )
         ProcessThreadContext( ev.threadCtx );
         break;
     case QueueType::ZoneBegin:
-        ProcessZoneBegin( ev.zoneBegin );
+        ProcessZoneBegin64( ev.zoneBegin );
+        break;
+    case QueueType::ZoneBegin32:
+        ProcessZoneBegin32( ev.zoneBegin32 );
+        break;
+    case QueueType::ZoneBegin16:
+        ProcessZoneBegin16( ev.zoneBegin16 );
         break;
     case QueueType::ZoneBeginCallstack:
-        ProcessZoneBeginCallstack( ev.zoneBegin );
+        ProcessZoneBeginCallstack64( ev.zoneBegin );
+        break;
+    case QueueType::ZoneBeginCallstack32:
+        ProcessZoneBeginCallstack32( ev.zoneBegin32 );
+        break;
+    case QueueType::ZoneBeginCallstack16:
+        ProcessZoneBeginCallstack16( ev.zoneBegin16 );
         break;
     case QueueType::ZoneBeginAllocSrcLoc:
         ProcessZoneBeginAllocSrcLoc( ev.zoneBeginLean );
@@ -4879,6 +4891,31 @@ void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
     ProcessZoneBeginImpl( zone, ev );
 }
 
+void Worker::ProcessZoneBegin64( const QueueZoneBegin& ev )
+{
+    QueueZoneBegin unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessZoneBegin( unpack );
+}
+
+void Worker::ProcessZoneBegin32( const QueueZoneBegin32& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = int64_t( ev.time + ProtocolOffset16Bit );
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBegin( unpack );
+}
+
+void Worker::ProcessZoneBegin16( const QueueZoneBegin16& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = ev.time;
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBegin( unpack );
+}
+
 void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
 {
     auto zone = AllocZoneEvent();
@@ -4889,6 +4926,31 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
     auto& extra = RequestZoneExtra( *zone );
     extra.callstack.SetVal( it->second );
     it->second = 0;
+}
+
+void Worker::ProcessZoneBeginCallstack64( const QueueZoneBegin& ev )
+{
+    QueueZoneBegin unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessZoneBeginCallstack( unpack );
+}
+
+void Worker::ProcessZoneBeginCallstack32( const QueueZoneBegin32& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = int64_t( ev.time + ProtocolOffset16Bit );
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBeginCallstack( unpack );
+}
+
+void Worker::ProcessZoneBeginCallstack16( const QueueZoneBegin16& ev )
+{
+    QueueZoneBegin unpack;
+    unpack.time = ev.time;
+    unpack.srcloc = ev.srcloc;
+
+    ProcessZoneBeginCallstack( unpack );
 }
 
 void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBeginLean& ev )

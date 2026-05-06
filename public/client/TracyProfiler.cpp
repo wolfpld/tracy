@@ -2599,6 +2599,32 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
                         int64_t dt = t - refThread;
                         refThread = t;
+                        if( dt >= 0 )
+                        {
+                            if( dt < ProtocolOffset16Bit )
+                            {
+                                const uint64_t srcloc = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                                idx = QueueType( idx ) == QueueType::ZoneBegin ? (int)QueueType::ZoneBegin16 : (int)QueueType::ZoneBeginCallstack16;
+                                MemWrite( &item->hdr.idx, idx );
+                                MemWrite( &item->zoneBegin16.time, uint16_t( dt ) );
+                                MemWrite( &item->zoneBegin16.srcloc, srcloc );
+                                break;
+                            }
+                            else if( dt < ProtocolOffset32Bit )
+                            {
+                                dt -= ProtocolOffset16Bit;
+                                const uint64_t srcloc = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                                idx = QueueType( idx ) == QueueType::ZoneBegin ? (int)QueueType::ZoneBegin32 : (int)QueueType::ZoneBeginCallstack32;
+                                MemWrite( &item->hdr.idx, idx );
+                                MemWrite( &item->zoneBegin32.time, uint32_t( dt ) );
+                                MemWrite( &item->zoneBegin32.srcloc, srcloc );
+                                break;
+                            }
+                            else
+                            {
+                                dt -= ProtocolOffset32Bit;
+                            }
+                        }
                         MemWrite( &item->zoneBegin.time, dt );
                         break;
                     }
@@ -3049,6 +3075,32 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
                     int64_t dt = t - refThread;
                     refThread = t;
+                    if( dt >= 0 )
+                    {
+                        if( dt < ProtocolOffset16Bit )
+                        {
+                            const uint64_t srcloc = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                            idx = QueueType( idx ) == QueueType::ZoneBegin ? (int)QueueType::ZoneBegin16 : (int)QueueType::ZoneBeginCallstack16;
+                            MemWrite( &item->hdr.idx, idx );
+                            MemWrite( &item->zoneBegin16.time, uint16_t( dt ) );
+                            MemWrite( &item->zoneBegin16.srcloc, srcloc );
+                            break;
+                        }
+                        else if( dt < ProtocolOffset32Bit )
+                        {
+                            dt -= ProtocolOffset16Bit;
+                            const uint64_t srcloc = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                            idx = QueueType( idx ) == QueueType::ZoneBegin ? (int)QueueType::ZoneBegin32 : (int)QueueType::ZoneBeginCallstack32;
+                            MemWrite( &item->hdr.idx, idx );
+                            MemWrite( &item->zoneBegin32.time, uint32_t( dt ) );
+                            MemWrite( &item->zoneBegin32.srcloc, srcloc );
+                            break;
+                        }
+                        else
+                        {
+                            dt -= ProtocolOffset32Bit;
+                        }
+                    }
                     MemWrite( &item->zoneBegin.time, dt );
                     break;
                 }

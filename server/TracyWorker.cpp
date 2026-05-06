@@ -4510,7 +4510,13 @@ bool Worker::Process( const QueueItem& ev )
         ProcessZoneBeginAllocSrcLocCallstack( ev.zoneBeginLean );
         break;
     case QueueType::ZoneEnd:
-        ProcessZoneEnd( ev.zoneEnd );
+        ProcessZoneEnd64( ev.zoneEnd );
+        break;
+    case QueueType::ZoneEnd32:
+        ProcessZoneEnd32( ev.zoneEnd32 );
+        break;
+    case QueueType::ZoneEnd16:
+        ProcessZoneEnd16( ev.zoneEnd16 );
         break;
     case QueueType::ZoneValidation:
         ProcessZoneValidation( ev.zoneValidation );
@@ -5007,6 +5013,25 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 #else
     CountZoneStatistics( zone );
 #endif
+}
+
+void Worker::ProcessZoneEnd64( const QueueZoneEnd& ev )
+{
+    QueueZoneEnd unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessZoneEnd( unpack );
+}
+
+void Worker::ProcessZoneEnd32( const QueueZoneEnd32& ev )
+{
+    QueueZoneEnd unpack = { .time = int64_t( ev.time + ProtocolOffset16Bit ) };
+    ProcessZoneEnd( unpack );
+}
+
+void Worker::ProcessZoneEnd16( const QueueZoneEnd16& ev )
+{
+    QueueZoneEnd unpack = { .time = ev.time };
+    ProcessZoneEnd( unpack );
 }
 
 void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )

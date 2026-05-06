@@ -43,13 +43,11 @@
 #  include <sys/mman.h>
 #  include <sys/system_properties.h>
 #  include <stdio.h>
-#  include <stdint.h>
 #  include <algorithm>
 #  include <vector>
 #endif
 
 #ifdef __QNX__
-#  include <stdint.h>
 #  include <stdio.h>
 #  include <string.h>
 #  include <sys/syspage.h>
@@ -62,6 +60,7 @@
 #include <chrono>
 #include <limits>
 #include <new>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -2608,6 +2607,24 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         int64_t t = MemRead<int64_t>( &item->zoneEnd.time );
                         int64_t dt = t - refThread;
                         refThread = t;
+                        if( dt >= 0 )
+                        {
+                            if( dt < ProtocolOffset16Bit )
+                            {
+                                idx = (int)QueueType::ZoneEnd16;
+                                MemWrite( &item->hdr.idx, idx );
+                            }
+                            else if( dt < ProtocolOffset32Bit )
+                            {
+                                dt -= ProtocolOffset16Bit;
+                                idx = (int)QueueType::ZoneEnd32;
+                                MemWrite( &item->hdr.idx, idx );
+                            }
+                            else
+                            {
+                                dt -= ProtocolOffset32Bit;
+                            }
+                        }
                         MemWrite( &item->zoneEnd.time, dt );
                         break;
                     }
@@ -3054,6 +3071,24 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     int64_t t = MemRead<int64_t>( &item->zoneEnd.time );
                     int64_t dt = t - refThread;
                     refThread = t;
+                    if( dt >= 0 )
+                    {
+                        if( dt < ProtocolOffset16Bit )
+                        {
+                            idx = (int)QueueType::ZoneEnd16;
+                            MemWrite( &item->hdr.idx, idx );
+                        }
+                        else if( dt < ProtocolOffset32Bit )
+                        {
+                            dt -= ProtocolOffset16Bit;
+                            idx = (int)QueueType::ZoneEnd32;
+                            MemWrite( &item->hdr.idx, idx );
+                        }
+                        else
+                        {
+                            dt -= ProtocolOffset32Bit;
+                        }
+                    }
                     MemWrite( &item->zoneEnd.time, dt );
                     break;
                 }

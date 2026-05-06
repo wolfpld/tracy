@@ -29,6 +29,8 @@ enum class QueueType : uint8_t
     ZoneBegin,
     ZoneBeginCallstack,
     ZoneEnd,
+    ZoneEnd32,
+    ZoneEnd16,
     LockWait,
     LockObtain,
     LockRelease,
@@ -156,6 +158,16 @@ struct QueueZoneBeginThread : public QueueZoneBegin
 struct QueueZoneEnd
 {
     int64_t time;
+};
+
+struct QueueZoneEnd32
+{
+    uint32_t time;
+};
+
+struct QueueZoneEnd16
+{
+    uint16_t time;
 };
 
 struct QueueZoneEndThread : public QueueZoneEnd
@@ -785,6 +797,8 @@ struct QueueItem
         QueueZoneBeginLean zoneBeginLean;
         QueueZoneBeginThread zoneBeginThread;
         QueueZoneEnd zoneEnd;
+        QueueZoneEnd32 zoneEnd32;
+        QueueZoneEnd16 zoneEnd16;
         QueueZoneEndThread zoneEndThread;
         QueueZoneValidation zoneValidation;
         QueueZoneValidationThread zoneValidationThread;
@@ -895,6 +909,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneEnd32 ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneEnd16 ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),

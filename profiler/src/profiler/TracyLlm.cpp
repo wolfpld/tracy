@@ -1083,7 +1083,9 @@ void TracyLlm::SendMessage()
     {
         auto query = chat;
         query[0]["content"] = "Provide a one-line topic summary for the user input. Do NOT answer the question. The summary should be slogan-like, 5-8 words max. Reply with ONLY the summary, nothing else. Match the language of the user's query.";
-        QueueFastMessageLocking( query, [this]( const nlohmann::json& res ) {
+        const int chatId = m_chatId.load( std::memory_order_acquire );
+        QueueFastMessageLocking( query, [this, chatId]( const nlohmann::json& res ) {
+            if( m_chatId.load( std::memory_order_acquire ) != chatId ) return;
             if( res.contains( "choices" ) )
             {
                 auto& choices = res["choices"];

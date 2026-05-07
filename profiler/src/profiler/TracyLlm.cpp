@@ -704,11 +704,19 @@ void TracyLlm::Draw()
         const char* hint = m_suggestion.empty() ? "Write your question here…" : m_suggestion.c_str();
         bool send = ImGui::InputTextWithHint( "##chat_input", hint, m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
-        if( *m_input == 0 ) ImGui::BeginDisabled();
+        const bool inputEmpty = *m_input == 0;
+        const bool hasSuggestion = !m_suggestion.empty();
+        if( inputEmpty && !hasSuggestion ) ImGui::BeginDisabled();
         send |= ImGui::Button( buttonText );
-        if( *m_input == 0 ) ImGui::EndDisabled();
+        if( inputEmpty && !hasSuggestion ) ImGui::EndDisabled();
         if( send )
         {
+            if( inputEmpty && hasSuggestion )
+            {
+                const auto sz = std::min( InputBufferSize - 1, m_suggestion.size() );
+                memcpy( m_input, m_suggestion.data(), sz );
+                m_input[sz] = 0;
+            }
             auto ptr = m_input;
             while( *ptr )
             {

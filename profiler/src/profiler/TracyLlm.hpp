@@ -108,7 +108,7 @@ private:
 
     bool m_busy = false;
     bool m_focusInput = false;
-    int m_chatId = 0;
+    std::atomic<int> m_chatId {0};
     int m_usedCtx = 0;
     float m_temperature = 1.0f;
     bool m_setTemperature = false;

@@ -537,7 +537,7 @@ void TracyLlm::Draw()
     }
     else
     {
-        ImGui::PushID( m_chatId );
+        ImGui::PushID( m_chatId.load( std::memory_order_relaxed ) );
         m_chatUi->Begin();
 
         int thinkIdx = 0;
@@ -868,7 +868,7 @@ void TracyLlm::ResetChat()
 {
     *m_input = 0;
     m_usedCtx = 0;
-    m_chatId++;
+    m_chatId.fetch_add( 1, std::memory_order_release );
     m_chat.clear();
     m_summary.clear();
     m_suggestion.clear();
@@ -1325,7 +1325,9 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 {"role", "user"},
                 {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, under 80 characters."}
             } );
-            QueueFastMessageLocking( suggestionQuery, [this]( const nlohmann::json& res ) {
+            const int chatId = m_chatId.load( std::memory_order_acquire );
+            QueueFastMessageLocking( suggestionQuery, [this, chatId]( const nlohmann::json& res ) {
+                if( m_chatId.load( std::memory_order_acquire ) != chatId ) return;
                 if( res.contains( "choices" ) )
                 {
                     auto& choices = res["choices"];

@@ -617,6 +617,7 @@ void TracyLlm::Draw()
                         memcpy( m_input, content.data(), sz );
                         m_input[sz] = 0;
                         inputChanged = true;
+                        m_suggestion.clear();
                     }
                 }
 
@@ -700,7 +701,8 @@ void TracyLlm::Draw()
         buttonSize.x += ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::PushItemWidth( ImGui::GetContentRegionAvail().x - buttonSize.x );
         if( inputChanged ) ImGui::GetInputTextState( ImGui::GetCurrentWindow()->GetID( "##chat_input" ) )->ReloadUserBufAndMoveToEnd();
-        bool send = ImGui::InputTextWithHint( "##chat_input", "Write your question here…", m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
+        const char* hint = m_suggestion.empty() ? "Write your question here…" : m_suggestion.c_str();
+        bool send = ImGui::InputTextWithHint( "##chat_input", hint, m_input, InputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
         if( *m_input == 0 ) ImGui::BeginDisabled();
         send |= ImGui::Button( buttonText );
@@ -718,6 +720,7 @@ void TracyLlm::Draw()
                 std::lock_guard lock( m_jobsLock );
                 AddMessage( ptr, "user" );
                 *m_input = 0;
+                m_suggestion.clear();
                 QueueSendMessage();
             }
             else
@@ -868,6 +871,7 @@ void TracyLlm::ResetChat()
     m_chatId++;
     m_chat.clear();
     m_summary.clear();
+    m_suggestion.clear();
 
     UpdateSystemPrompt();
 }
@@ -1306,6 +1310,39 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
         }
         else
         {
+            auto chat = m_chat;
+            chatLock.unlock();
+
+            for( auto& msg : chat )
+            {
+                if( msg.contains( "time_start" ) ) msg.erase( "time_start" );
+                if( msg.contains( "time_end" ) ) msg.erase( "time_end" );
+                if( msg.contains( "model" ) ) msg.erase( "model" );
+            }
+
+            auto suggestionQuery = chat;
+            suggestionQuery.push_back( nlohmann::json {
+                {"role", "user"},
+                {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, under 80 characters."}
+            } );
+            QueueFastMessageLocking( suggestionQuery, [this]( const nlohmann::json& res ) {
+                if( res.contains( "choices" ) )
+                {
+                    auto& choices = res["choices"];
+                    if( choices.is_array() && !choices.empty() )
+                    {
+                        if( choices[0].contains( "message" ) && choices[0]["message"].contains( "content" ) )
+                        {
+                            auto str = choices[0]["message"]["content"].get<std::string>();
+                            std::ranges::replace( str, '\n', ' ' );
+                            std::ranges::replace( str, '\r', ' ' );
+                            std::lock_guard lock( m_chatLock );
+                            m_suggestion = std::move( str );
+                        }
+                    }
+                }
+            } );
+
             jobsLock.lock();
             m_focusInput = true;
         }

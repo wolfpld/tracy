@@ -119,6 +119,7 @@ private:
     std::mutex m_chatLock;
     std::vector<nlohmann::json> m_chat;
     std::string m_summary;
+    std::string m_suggestion;
 
     std::vector<LlmSkill> m_skills;
     std::shared_ptr<EmbedData> m_systemPrompt;

@@ -54,7 +54,8 @@ void View::DrawNotificationArea()
         else
         {
             const auto sif = m_worker.GetSendInFlight();
-            if( sif != 0 )
+            if( sif != 0 ) m_sendInFlightTime = s_time;
+            if( s_time - m_sendInFlightTime < 0.1f )
             {
                 ImGui::SameLine();
                 TextColoredUnformatted( ImVec4( 1, 0.75f, 0, 1 ), ICON_FA_SATELLITE_DISH );

@@ -641,6 +641,7 @@ private:
     AttentionCallback m_acb;
 
     float m_notificationTime = 0;
+    float m_sendInFlightTime = 0;
     std::string m_notificationText;
 
     bool m_groupCallstackTreeByNameBottomUp = true;

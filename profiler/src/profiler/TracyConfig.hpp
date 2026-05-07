@@ -48,6 +48,8 @@ struct Config
     bool llmAnnotateCallstacks = false;
     bool llmLimitToolReplySize = false;
     int llmMaxToolReplySizeValue = 48*1024;
+    bool llmSummary = true;
+    bool llmSuggestion = true;
 };
 
 extern Config s_config;

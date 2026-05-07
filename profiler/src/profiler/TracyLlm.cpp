@@ -325,6 +325,18 @@ void TracyLlm::Draw()
             SaveConfig();
         }
 
+        if( ImGui::Checkbox( ICON_FA_HAND_POINT_RIGHT " Show summary", &s_config.llmSummary ) )
+        {
+            SaveConfig();
+        }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( ImGui::Checkbox( ICON_FA_COMMENT_DOTS " Chat suggestion", &s_config.llmSuggestion ) )
+        {
+            SaveConfig();
+        }
+
         if( ImGui::TreeNode( "Advanced" ) )
         {
             if( responding ) ImGui::BeginDisabled();
@@ -1077,7 +1089,7 @@ void TracyLlm::SendMessage()
     std::unique_lock lock( m_chatLock );
     ManageContext();
     auto chat = m_chat;
-    bool needSummary = m_summary.empty();
+    bool needSummary = m_summary.empty() && s_config.llmSummary;
     lock.unlock();
 
     for( auto& msg : chat )
@@ -1330,30 +1342,33 @@ bool TracyLlm::OnResponse( const nlohmann::json& json )
                 if( msg.contains( "model" ) ) msg.erase( "model" );
             }
 
-            auto suggestionQuery = chat;
-            suggestionQuery.push_back( nlohmann::json {
-                {"role", "user"},
-                {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, under 80 characters."}
-            } );
-            const int chatId = m_chatId.load( std::memory_order_acquire );
-            QueueFastMessageLocking( suggestionQuery, [this, chatId]( const nlohmann::json& res ) {
-                if( m_chatId.load( std::memory_order_acquire ) != chatId ) return;
-                if( res.contains( "choices" ) )
-                {
-                    auto& choices = res["choices"];
-                    if( choices.is_array() && !choices.empty() )
+            if( s_config.llmSuggestion )
+            {
+                auto suggestionQuery = chat;
+                suggestionQuery.push_back( nlohmann::json {
+                    {"role", "user"},
+                    {"content", "Based on this conversation, suggest one useful follow-up question the user might want to ask next. It should be relevant, actionable, and something the user would genuinely want to explore. Reply with ONLY the question text, in the user's language, under 80 characters."}
+                } );
+                const int chatId = m_chatId.load( std::memory_order_acquire );
+                QueueFastMessageLocking( suggestionQuery, [this, chatId]( const nlohmann::json& res ) {
+                    if( m_chatId.load( std::memory_order_acquire ) != chatId ) return;
+                    if( res.contains( "choices" ) )
                     {
-                        if( choices[0].contains( "message" ) && choices[0]["message"].contains( "content" ) )
+                        auto& choices = res["choices"];
+                        if( choices.is_array() && !choices.empty() )
                         {
-                            auto str = choices[0]["message"]["content"].get<std::string>();
-                            std::ranges::replace( str, '\n', ' ' );
-                            std::ranges::replace( str, '\r', ' ' );
-                            std::lock_guard lock( m_chatLock );
-                            m_suggestion = std::move( str );
+                            if( choices[0].contains( "message" ) && choices[0]["message"].contains( "content" ) )
+                            {
+                                auto str = choices[0]["message"]["content"].get<std::string>();
+                                std::ranges::replace( str, '\n', ' ' );
+                                std::ranges::replace( str, '\r', ' ' );
+                                std::lock_guard lock( m_chatLock );
+                                m_suggestion = std::move( str );
+                            }
                         }
                     }
-                }
-            } );
+                } );
+            }
 
             jobsLock.lock();
             m_focusInput = true;

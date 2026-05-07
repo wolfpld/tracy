@@ -146,6 +146,12 @@ void View::DrawCallstackTable( const CallstackFrameId* data, size_t size, uint64
         }
         if( ImGui::BeginPopup( "##callstackllm" ) )
         {
+            if( hasCrashed && ImGui::Selectable( "How to fix this crash?" ) )
+            {
+                Attach();
+                AddLlmQuery( "How to fix this crash?" );
+                ImGui::CloseCurrentPopup();
+            }
             if( ImGui::Selectable( "What is program doing at this moment?" ) )
             {
                 Attach();

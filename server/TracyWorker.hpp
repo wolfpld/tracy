@@ -793,7 +793,13 @@ private:
     tracy_force_inline void ProcessCallstackSerial();
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSample64( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSample32( const QueueCallstackSample32& ev );
+    tracy_force_inline void ProcessCallstackSample16( const QueueCallstackSample16& ev );
     tracy_force_inline void ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSampleContextSwitch64( const QueueCallstackSample& ev );
+    tracy_force_inline void ProcessCallstackSampleContextSwitch32( const QueueCallstackSample32& ev );
+    tracy_force_inline void ProcessCallstackSampleContextSwitch16( const QueueCallstackSample16& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev, bool querySymbols );
     tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );

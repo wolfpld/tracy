@@ -2580,6 +2580,24 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         int64_t t = MemRead<int64_t>( &item->callstackSampleFat.time );
                         int64_t dt = t - refCtx;
                         refCtx = t;
+                        if( dt >= 0 )
+                        {
+                            if( dt < ProtocolOffset16Bit )
+                            {
+                                idx = QueueType( idx ) == QueueType::CallstackSample ? (int)QueueType::CallstackSample16 : (int)QueueType::CallstackSampleContextSwitch16;
+                                MemWrite( &item->hdr.idx, idx );
+                            }
+                            else if( dt < ProtocolOffset32Bit )
+                            {
+                                dt -= ProtocolOffset16Bit;
+                                idx = QueueType( idx ) == QueueType::CallstackSample ? (int)QueueType::CallstackSample32 : (int)QueueType::CallstackSampleContextSwitch32;
+                                MemWrite( &item->hdr.idx, idx );
+                            }
+                            else
+                            {
+                                dt -= ProtocolOffset32Bit;
+                            }
+                        }
                         MemWrite( &item->callstackSampleFat.time, dt );
                         break;
                     }

@@ -24,7 +24,11 @@ enum class QueueType : uint8_t
     Callstack,
     CallstackAlloc,
     CallstackSample,
+    CallstackSample32,
+    CallstackSample16,
     CallstackSampleContextSwitch,
+    CallstackSampleContextSwitch32,
+    CallstackSampleContextSwitch16,
     FrameImage,
     ZoneBegin,
     ZoneBegin32,
@@ -638,13 +642,25 @@ struct QueueCallstackAllocFatThread : public QueueCallstackAllocFat
 
 struct QueueCallstackSample
 {
-    int64_t time;
     uint32_t thread;
+    int64_t time;
 };
 
 struct QueueCallstackSampleFat : public QueueCallstackSample
 {
     uint64_t ptr;
+};
+
+struct QueueCallstackSample32
+{
+    uint32_t thread;
+    uint32_t time;
+};
+
+struct QueueCallstackSample16
+{
+    uint32_t thread;
+    uint16_t time;
 };
 
 struct QueueCallstackFrameSize
@@ -878,6 +894,8 @@ struct QueueItem
         QueueCallstackAllocFatThread callstackAllocFatThread;
         QueueCallstackSample callstackSample;
         QueueCallstackSampleFat callstackSampleFat;
+        QueueCallstackSample32 callstackSample32;
+        QueueCallstackSample16 callstackSample16;
         QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrameSizeFat callstackFrameSizeFat;
         QueueCallstackFrame callstackFrame;
@@ -922,7 +940,11 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // callstack
     sizeof( QueueHeader ),                                  // callstack alloc
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
-    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // context switch
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample32 ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample16 ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),   // context switch
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample32 ), // context switch
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample16 ), // context switch
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin32 ),

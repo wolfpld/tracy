@@ -4722,10 +4722,22 @@ bool Worker::Process( const QueueItem& ev )
         ProcessCallstack();
         break;
     case QueueType::CallstackSample:
-        ProcessCallstackSample( ev.callstackSample );
+        ProcessCallstackSample64( ev.callstackSample );
+        break;
+    case QueueType::CallstackSample32:
+        ProcessCallstackSample32( ev.callstackSample32 );
+        break;
+    case QueueType::CallstackSample16:
+        ProcessCallstackSample16( ev.callstackSample16 );
         break;
     case QueueType::CallstackSampleContextSwitch:
-        ProcessCallstackSampleContextSwitch( ev.callstackSample );
+        ProcessCallstackSampleContextSwitch64( ev.callstackSample );
+        break;
+    case QueueType::CallstackSampleContextSwitch32:
+        ProcessCallstackSampleContextSwitch32( ev.callstackSample32 );
+        break;
+    case QueueType::CallstackSampleContextSwitch16:
+        ProcessCallstackSampleContextSwitch16( ev.callstackSample16 );
         break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
@@ -6650,6 +6662,31 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
 }
 
+void Worker::ProcessCallstackSample64( const QueueCallstackSample& ev )
+{
+    QueueCallstackSample unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessCallstackSample( unpack );
+}
+
+void Worker::ProcessCallstackSample32( const QueueCallstackSample32& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time + ProtocolOffset16Bit )
+    };
+    ProcessCallstackSample( unpack );
+}
+
+void Worker::ProcessCallstackSample16( const QueueCallstackSample16& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time )
+    };
+    ProcessCallstackSample( unpack );
+}
+
 void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev )
 {
     assert( m_pendingCallstackId != 0 );
@@ -6669,6 +6706,31 @@ void Worker::ProcessCallstackSampleContextSwitch( const QueueCallstackSample& ev
     ProcessCallstackSampleInsertSample( sd, td );
 
     td.ctxSwitchSamples.push_back( sd );
+}
+
+void Worker::ProcessCallstackSampleContextSwitch64( const QueueCallstackSample& ev )
+{
+    QueueCallstackSample unpack = ev;
+    if( ev.time >= 0 ) unpack.time += ProtocolOffset32Bit;
+    ProcessCallstackSampleContextSwitch( unpack );
+}
+
+void Worker::ProcessCallstackSampleContextSwitch32( const QueueCallstackSample32& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time + ProtocolOffset16Bit )
+    };
+    ProcessCallstackSampleContextSwitch( unpack );
+}
+
+void Worker::ProcessCallstackSampleContextSwitch16( const QueueCallstackSample16& ev )
+{
+    QueueCallstackSample unpack = {
+        .thread = ev.thread,
+        .time = int64_t( ev.time )
+    };
+    ProcessCallstackSampleContextSwitch( unpack );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

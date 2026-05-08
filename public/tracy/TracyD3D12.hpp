@@ -324,7 +324,7 @@ namespace tracy
             TracyD3D12Assert( lock.owns_lock() );
             TracyD3D12Debug( ZoneValue(m_contextId) );
 
-            uint64_t earliestTicket = m_previousCheckpoint.load(std::memory_order::relaxed);
+            uint64_t earliestTicket = m_previousCheckpoint.load(std::memory_order_relaxed);
             uint64_t endTicket = m_queryCounter;
             TracyD3D12Debug( ZoneValue(earliestTicket) );
             TracyD3D12Debug( ZoneValue(endTicket) );
@@ -373,9 +373,9 @@ namespace tracy
             RecalibrateClocks();
         }
 
-        bool IsTicketPending(uint64_t queryTicket)
+        tracy_force_inline bool IsTicketPending(uint64_t queryTicket)
         {
-            auto checkpoint = m_previousCheckpoint.load(std::memory_order::acquire);
+            auto checkpoint = m_previousCheckpoint.load(std::memory_order_acquire);
             return (Distance(checkpoint, queryTicket) >= 0);
         }
 

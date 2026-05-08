@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "TracyDebug.hpp"
+#include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -75,7 +76,7 @@ public:
         ioctl( m_fd, PERF_EVENT_IOC_ENABLE, 0 );
     }
 
-    void Read( void* dst, uint64_t offset, uint64_t cnt )
+    tracy_force_inline void Read( void* dst, uint64_t offset, uint64_t cnt )
     {
         const auto size = m_size;
         auto src = ( m_tail + offset ) & m_mask;

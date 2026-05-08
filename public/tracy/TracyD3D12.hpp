@@ -324,7 +324,7 @@ namespace tracy
             TracyD3D12Assert( lock.owns_lock() );
             TracyD3D12Debug( ZoneValue(m_contextId) );
 
-            uint64_t earliestTicket = m_previousCheckpoint;
+            uint64_t earliestTicket = m_previousCheckpoint.load(std::memory_order::relaxed);
             uint64_t endTicket = m_queryCounter;
             TracyD3D12Debug( ZoneValue(earliestTicket) );
             TracyD3D12Debug( ZoneValue(endTicket) );
@@ -373,6 +373,12 @@ namespace tracy
             RecalibrateClocks();
         }
 
+        bool IsTicketPending(uint64_t queryTicket)
+        {
+            auto checkpoint = m_previousCheckpoint.load(std::memory_order::acquire);
+            return (Distance(checkpoint, queryTicket) >= 0);
+        }
+
         bool Wait(uint64_t queryTicket, uint64_t timeout_ms)
         {
             ZoneScopedC(Color::Red4);
@@ -382,13 +388,15 @@ namespace tracy
             auto ini = GetTickCount64();
             auto elapsed = 0;
             // TODO: could use condition variable to avoid spurious lock + collect iterations
-            while ((Distance(m_previousCheckpoint, queryTicket) >= 0) && (elapsed < timeout_ms))
+            while (IsTicketPending(queryTicket))
             {
+                if (elapsed >= timeout_ms)
+                    return false;
                 std::unique_lock lock (m_collectionMutex);
                 Collect(lock, queryTicket, false);
                 elapsed = GetTickCount64() - ini;
             }
-            return Distance(m_previousCheckpoint, queryTicket) < 0;
+            return true;
         }
 
         void Drain(uint64_t queryTicket, uint64_t gracePeriod_ms)

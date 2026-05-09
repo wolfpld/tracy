@@ -1322,7 +1322,7 @@ void SysTraceWorker( void* ptr )
                             rbPos += hdr.size;
                             if( rbPos == end[idx] )
                             {
-                                memmove( active+i, active+i+1, sizeof(*active) * ( activeNum - i - 1 ) );
+                                active[i] = active[activeNum-1];
                                 activeNum--;
                                 i--;
                             }
@@ -1485,7 +1485,7 @@ void SysTraceWorker( void* ptr )
                         rbPos += hdr.size;
                         if( rbPos == end[sel] )
                         {
-                            memmove( active+selPos, active+selPos+1, sizeof(*active) * ( activeNum - selPos - 1 ) );
+                            active[selPos] = active[activeNum - 1];
                             activeNum--;
                         }
                         else

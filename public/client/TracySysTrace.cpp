@@ -1270,19 +1270,39 @@ void SysTraceWorker( void* ptr )
             uint16_t active[512];
             uint32_t end[512];
             uint32_t pos[512];
+            int64_t time[512];
+
+            auto PrimeNext = [&pos, &end, &time]( int idx, RingBuffer& ring ) {
+                while( pos[idx] < end[idx] )
+                {
+                    perf_event_header hdr;
+                    ring.Read( &hdr, pos[idx], sizeof( hdr ) );
+                    if( hdr.type == PERF_RECORD_SAMPLE )
+                    {
+                        ring.Read( time + idx, pos[idx] + sizeof( hdr ), sizeof( int64_t ) );
+                        return true;
+                    }
+                    assert( hdr.size > 0 );
+                    pos[idx] += hdr.size;
+                }
+                return false;
+            };
+
             for( int i=0; i<ctxBufNum; i++ )
             {
                 const auto rbIdx = ctxBufferIdx + i;
                 const auto rbHead = ringArray[rbIdx].LoadHead();
                 const auto rbTail = ringArray[rbIdx].GetTail();
-                const auto rbActive = rbHead != rbTail;
 
-                if( rbActive )
+                if( rbHead != rbTail )
                 {
-                    active[activeNum] = (uint16_t)i;
-                    activeNum++;
                     end[i] = rbHead - rbTail;
                     pos[i] = 0;
+                    if( PrimeNext( i, ringArray[rbIdx] ) )
+                    {
+                        active[activeNum] = (uint16_t)i;
+                        activeNum++;
+                    }
                 }
                 else
                 {
@@ -1301,40 +1321,18 @@ void SysTraceWorker( void* ptr )
                     for( int i=0; i<activeNum; i++ )
                     {
                         auto idx = active[i];
-                        auto rbPos = pos[idx];
-                        assert( rbPos < end[idx] );
-                        const auto rbIdx = ctxBufferIdx + idx;
-                        perf_event_header hdr;
-                        ringArray[rbIdx].Read( &hdr, rbPos, sizeof( perf_event_header ) );
-                        if( hdr.type == PERF_RECORD_SAMPLE )
+                        if( time[idx] < t0 )
                         {
-                            int64_t rbTime;
-                            ringArray[rbIdx].Read( &rbTime, rbPos + sizeof( perf_event_header ), sizeof( int64_t ) );
-                            if( rbTime < t0 )
-                            {
-                                t0 = rbTime;
-                                sel = idx;
-                                selPos = i;
-                            }
-                        }
-                        else
-                        {
-                            rbPos += hdr.size;
-                            if( rbPos == end[idx] )
-                            {
-                                active[i] = active[activeNum-1];
-                                activeNum--;
-                                i--;
-                            }
-                            else
-                            {
-                                pos[idx] = rbPos;
-                            }
+                            t0 = time[idx];
+                            sel = idx;
+                            selPos = i;
                         }
                     }
                     // Found any event
                     if( sel >= 0 )
                     {
+                        assert( pos[sel] < end[sel] );
+
                         auto& ring = ringArray[ctxBufferIdx + sel];
                         auto rbPos = pos[sel];
                         auto offset = rbPos;
@@ -1483,14 +1481,11 @@ void SysTraceWorker( void* ptr )
                         }
 
                         rbPos += hdr.size;
-                        if( rbPos == end[sel] )
+                        pos[sel] = rbPos;
+                        if( !PrimeNext( sel, ring ) )
                         {
                             active[selPos] = active[activeNum - 1];
                             activeNum--;
-                        }
-                        else
-                        {
-                            pos[sel] = rbPos;
                         }
                     }
                 }

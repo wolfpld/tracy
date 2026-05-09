@@ -129,30 +129,6 @@ static BOOL TracySymGetModuleInfo64(HANDLE hProcess, DWORD64 qwAddr, PIMAGEHLP_M
     return status;
 }
 
-static BOOL TracyEnumProcessModules( HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded )
-{
-    BOOL status = EnumProcessModules( hProcess, lphModule, cb, lpcbNeeded );
-    if( status == FALSE )
-        TracySymError( "EnumProcessModules", GetLastError() );
-    return status;
-}
-
-static BOOL TracyGetModuleInformation( HANDLE hProcess, HMODULE hModule, LPMODULEINFO lpmodinfo, DWORD cb )
-{
-    BOOL status = GetModuleInformation( hProcess, hModule, lpmodinfo, cb );
-    if( status == FALSE )
-        TracySymError( "GetModuleInformation", GetLastError() );
-    return status;
-}
-
-static DWORD TracyGetModuleFileNameA( HMODULE hModule, LPSTR lpFilename, DWORD nSize )
-{
-    BOOL status = GetModuleFileNameA( hModule, lpFilename, nSize );
-    if( status == FALSE )
-        TracySymError( "GetModuleFileNameA", GetLastError() );
-    return status;
-}
-
 static DWORD TracySymAddrIncludeInlineTrace( HANDLE hProcess, DWORD64 Address )
 {
 #ifdef TRACY_NO_CALLSTACK_INLINES

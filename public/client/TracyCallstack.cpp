@@ -14,7 +14,7 @@
 #ifdef TRACY_HAS_CALLSTACK
 
 #if TRACY_HAS_CALLSTACK == 1
-#  include "windows/TracySym.cpp"
+#  include "windows/TracyDbgHelp.cpp"
 #elif defined(TRACY_USE_LIBBACKTRACE)
 
 #  include "../libbacktrace/backtrace.hpp"

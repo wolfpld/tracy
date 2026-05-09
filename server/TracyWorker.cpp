@@ -4128,7 +4128,7 @@ void Worker::AddCallstackAllocPayload( const char* data )
 
         for( auto& frame : *arr )
         {
-            QueryCallstackFrame( GetCanonicalPointer( frame ) );
+            if( frame.sel == 0 ) QueryCallstackFrame( GetCanonicalPointer( frame ) );
         }
     }
     else

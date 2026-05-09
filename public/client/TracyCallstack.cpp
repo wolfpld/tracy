@@ -1145,7 +1145,7 @@ static FastVector<DebugInfo>* s_di_known;
 struct KernelSymbol
 {
     uint64_t addr;
-    uint32_t size;
+    uint64_t endAddr;
     const char* name;
     const char* mod;
 };
@@ -1226,7 +1226,7 @@ static void InitKernelSymbols()
 
         auto sym = tmpSym.push_next();
         sym->addr = addr;
-        sym->size = 0;
+        sym->endAddr = addr;
         sym->name = strname;
         sym->mod = strmod;
     }
@@ -1237,7 +1237,7 @@ static void InitKernelSymbols()
     std::sort( tmpSym.begin(), tmpSym.end(), []( const KernelSymbol& lhs, const KernelSymbol& rhs ) { return lhs.addr < rhs.addr; } );
     for( size_t i=0; i<tmpSym.size()-1; i++ )
     {
-        if( tmpSym[i].name ) tmpSym[i].size = tmpSym[i+1].addr - tmpSym[i].addr;
+        if( tmpSym[i].name ) tmpSym[i].endAddr = tmpSym[i+1].addr;
     }
 
     s_kernelSymCnt = validCnt;
@@ -1825,13 +1825,13 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 #ifdef __linux
     else if( s_kernelSym )
     {
-        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.addr + lhs.size < rhs; } );
+        auto it = std::lower_bound( s_kernelSym, s_kernelSym + s_kernelSymCnt, ptr, []( const KernelSymbol& lhs, const uint64_t& rhs ) { return lhs.endAddr < rhs; } );
         if( it != s_kernelSym + s_kernelSymCnt )
         {
             cb_data[0].name = CopyStringFast( it->name );
             cb_data[0].file = CopyStringFast( "<kernel>" );
             cb_data[0].line = 0;
-            cb_data[0].symLen = it->size;
+            cb_data[0].symLen = it->endAddr - it->addr;
             cb_data[0].symAddr = it->addr;
             return { cb_data, 1, it->mod ? it->mod : "<kernel>" };
         }

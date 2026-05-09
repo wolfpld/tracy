@@ -255,6 +255,76 @@ static SYM_TYPE DbgHelpLoadSymbolsForModule( const char* imageName, uint64_t bas
     return info.SymType;
 }
 
+struct DbgHelpSymbol
+{
+    static constexpr size_t MaxNameSize = 8*1024;
+    SYMBOL_INFO info;
+    char buf [MaxNameSize];    // must follow SYMBOL_INFO
+    DWORD64 displacement;
+    DbgHelpSymbol()
+    {
+        info.SizeOfStruct = sizeof( SYMBOL_INFO );
+        info.MaxNameLen = MaxNameSize;
+    }
+};
+
+static bool DbgHelpResolveSymbol( DbgHelpSymbol& symbol, DWORD64 address )
+{
+    HANDLE hProc = GetCurrentProcess();
+    BOOL result = TracySymFromAddr( hProc, address, &symbol.displacement, &symbol.info );
+    return result != FALSE;
+}
+
+struct DbgHelpSource
+{
+    IMAGEHLP_LINE64 line;
+    DWORD displacement = 0;
+    DbgHelpSource() { line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 ); }
+};
+
+static bool DbgHelpResolveSource( DbgHelpSource& source, DWORD64 address )
+{
+    HANDLE hProc = GetCurrentProcess();
+    BOOL result = TracySymGetLineFromAddr64( hProc, address, &source.displacement, &source.line );
+    return result != FALSE;
+}
+
+struct DbgHelpInline
+{
+    ULONG context = 0;
+};
+
+static int DbgHelpTraceInline( DbgHelpInline& inln, DWORD64 address )
+{
+    HANDLE hProc = GetCurrentProcess();
+
+    DWORD inlineNum = TracySymAddrIncludeInlineTrace( hProc, address );
+    if( inlineNum == 0 ) return 0;
+
+    DWORD ctx = 0;
+    DWORD idx;
+    if( TracySymQueryInlineTrace( hProc, address, 0, address, address, &ctx, &idx ) == FALSE ) return 0;
+
+    inln.context = ctx;
+    return inlineNum;
+}
+
+static bool DbgHelpResolveSymbolInline( DbgHelpSymbol& symbol, DWORD64 address, DbgHelpInline& inln, int idx )
+{
+    HANDLE hProc = GetCurrentProcess();
+    ULONG inlineContext = inln.context + idx;
+    BOOL result = TracySymFromInlineContext( hProc, address, inlineContext, &symbol.displacement, &symbol.info );
+    return result != FALSE;
+}
+
+static bool DbgHelpResolveSourceInline( DbgHelpSource& source, DWORD64 address, DbgHelpInline& inln, int idx )
+{
+    HANDLE hProc = GetCurrentProcess();
+    ULONG inlineContext = inln.context + idx;
+    BOOL result = TracySymGetLineFromInlineContext( hProc, address, inlineContext, 0, &source.displacement, &source.line );
+    return result != FALSE;
+}
+
 #undef DBGHELP_DEBUG_LEVEL
 #undef DBGHELP_SCOPED_LOCK
 

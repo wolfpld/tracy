@@ -1335,8 +1335,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         TextDisabledUnformatted( tmp );
     }
 
-    if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
-    if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
+    if( ImGui::IsWindowFocused() )
+    {
+        if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
+        if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
+    }
 
     const bool limitView = view.m_statRange.active;
     if( inlineList )
@@ -1826,8 +1829,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         break;
     }
 
-    if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
-    if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
+    if( ImGui::IsWindowFocused() )
+    {
+        if( ImGui::IsKeyDown( ImGuiKey_Z ) ) m_childCalls = !m_childCalls;
+        if( ImGui::IsKeyDown( ImGuiKey_X ) ) m_propagateInlines = !m_propagateInlines;
+    }
 
     if( jumpOut != 0 )
     {

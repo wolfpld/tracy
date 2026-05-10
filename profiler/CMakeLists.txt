@@ -59,6 +59,7 @@ set(SERVER_FILES
     TracyBadVersion.cpp
     TracyColor.cpp
     TracyConfig.cpp
+    TracyDisassembly.cpp
     TracyEmbed.cpp
     TracyEventDebug.cpp
     TracyFileselector.cpp

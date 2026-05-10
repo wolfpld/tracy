@@ -2590,7 +2590,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         }
         else
         {
-            line = "-:-:";
+            line = "::";
         }
 
         line += "+" + std::to_string( m_asm[i].addr - m_baseAddr ) + ":";
@@ -2611,7 +2611,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
                 }
             }
         }
-        if( !hasCost ) line += "-:";
+        if( !hasCost ) line += ":";
 
         line += v.mnemonic;
 

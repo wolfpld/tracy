@@ -15,13 +15,13 @@ When a source code function is compiled, the compiler may inline multiple auxili
 
 The assembly instruction listing of a symbol must be mapped to the source code. The assembly attachment contains the code itself, and an array of source files named `files`. The format of an assembly line is:
 
-fileIdx:line:offset:cost:assembly
+fileIdx:line:offset:cost:callCost:assembly
 
 To identify the source file name of any assembly instruction, you must access `files[fileIdx]`. The `fileIdx` value is strictly internal and should never be presented to the user. Always show the source file name and line number in your answers.
 
 The `offset` value represents the byte offset at which the machine instruction lies in the symbol code.
 
-The `cost` value shows how much time was spent by the CPU executing the given machine instruction. The value is a percentage relative to the total execution cost of an entire symbol. If the cost is not present, there was no activity recorded by the profiler for the given instruction.
+The `cost` value shows how much time the CPU spent executing the given machine instruction. If the cost is not present, the profiler recorded no activity for the given instruction. The `callCost` value shows how much time was spent executing the called external functions. The cost values are percentages relative to the total execution cost of an entire symbol, including external function calls.
 
 The `assembly` value is the actual disassembled machine code. It may also contain a comment with:
 - Local jump target, `label`, for example `.L6`.

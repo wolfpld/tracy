@@ -2563,7 +2563,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         { "type", "assembly" },
         { "symbol", symName },
         { "files", nlohmann::json::object() },
-        { "hint", "Code lines format is: fileIdx:line:offset:cost:assembly. To decode file names, access files[fileIdx]. Never show undecoded fileIdx to user." }
+        { "hint", "Code lines format is: fileIdx:line:offset:cost:callCost:assembly. To decode file names, access files[fileIdx]. Never show undecoded fileIdx to user." }
     };
 
     std::vector<std::string> sources;
@@ -2601,8 +2601,8 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
 
         line += "+" + std::to_string( m_asm[i].addr - m_baseAddr ) + ":";
 
-        bool hasCost = false;
-        if( as.ipTotalAsm.local + as.ipTotalAsm.ext != 0 )
+        const auto totalCost = as.ipTotalAsm.local + as.ipTotalAsm.ext;
+        if( totalCost != 0 )
         {
             char buf[32];
             auto it = as.ipCountAsm.find( v.addr );
@@ -2611,13 +2611,28 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
                 auto& stat = it->second;
                 if( stat.local != 0 )
                 {
-                    snprintf( buf, sizeof(buf), "%.4f%%:", 100.0f * stat.local / as.ipTotalAsm.local );
+                    snprintf( buf, sizeof(buf), "%.4f%%:", 100.0f * stat.local / totalCost );
                     line += buf;
-                    hasCost = true;
+                }
+                else
+                {
+                    line += ":";
+                }
+                if( stat.ext != 0 )
+                {
+                    snprintf( buf, sizeof(buf), "%.4f%%", 100.0f * stat.ext / totalCost );
+                    line += buf;
+                }
+                else
+                {
+                    line += ":";
                 }
             }
         }
-        if( !hasCost ) line += ":";
+        else
+        {
+            line += "::";
+        }
 
         line += v.mnemonic;
 

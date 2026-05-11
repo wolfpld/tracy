@@ -1094,8 +1094,11 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
             }
             if( as.ipTotalAsm.ext )
             {
+                char buf[32];
+                auto end = PrintFloat( buf, buf+32, as.ipTotalAsm.ext * 100.f / ( as.ipTotalAsm.local + as.ipTotalAsm.ext ), 2 );
+                *end = '\0';
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%c%s)", m_childCalls ? '-' : '+', TimeToString( as.ipTotalAsm.ext * worker.GetSamplingPeriod() ) );
+                ImGui::TextDisabled( "(%c%s / %s%%)", m_childCalls ? '-' : '+', TimeToString( as.ipTotalAsm.ext * worker.GetSamplingPeriod() ), buf );
                 TooltipIfHovered( "Child call samples" );
             }
             ImGui::SameLine();

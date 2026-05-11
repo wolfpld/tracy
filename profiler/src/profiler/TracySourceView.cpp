@@ -2077,6 +2077,10 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
                     line += ":";
                 }
             }
+            else
+            {
+                line += "::";
+            }
         }
         else
         {

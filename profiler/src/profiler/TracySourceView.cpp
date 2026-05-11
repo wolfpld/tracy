@@ -1177,103 +1177,101 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
         if( !map.empty() )
         {
             if( m_childCallHeight == 0 ) m_childCallHeight = ImGui::GetTextLineHeightWithSpacing() * std::min<float>( 5.5f, map.size() + 1 );
-            if( ImGui::BeginChild( "##ccd", ImVec2( 0, m_childCallHeight ) ) )
+            ImGui::BeginChild( "##ccd", ImVec2( 0, m_childCallHeight ) );
+            std::vector<ChildStat> vec;
+            vec.reserve( map.size() );
+            for( auto& v : map ) vec.emplace_back( ChildStat { v.first, v.second } );
+            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs.count > rhs.count; } );
+            if( ImGui::BeginTable( "##ccd", 7, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
             {
-                std::vector<ChildStat> vec;
-                vec.reserve( map.size() );
-                for( auto& v : map ) vec.emplace_back( ChildStat { v.first, v.second } );
-                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs.count > rhs.count; } );
-                if( ImGui::BeginTable( "##ccd", 7, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
+                ImGui::TableSetupScrollFreeze( 0, 1 );
+                ImGui::TableSetupColumn( "#", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder );
+                ImGui::TableSetupColumn( "Child call", ImGuiTableColumnFlags_NoHide );
+                ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "% Calls", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "% Total", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                ImGui::TableSetupColumn( "Source file", ImGuiTableColumnFlags_NoSort );
+                ImGui::TableSetupColumn( "Image", ImGuiTableColumnFlags_NoSort );
+                ImGui::TableHeadersRow();
+                int idx = 1;
+                for( auto& v : vec )
                 {
-                    ImGui::TableSetupScrollFreeze( 0, 1 );
-                    ImGui::TableSetupColumn( "#", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder );
-                    ImGui::TableSetupColumn( "Child call", ImGuiTableColumnFlags_NoHide );
-                    ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                    ImGui::TableSetupColumn( "% Calls", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                    ImGui::TableSetupColumn( "% Total", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                    ImGui::TableSetupColumn( "Source file", ImGuiTableColumnFlags_NoSort );
-                    ImGui::TableSetupColumn( "Image", ImGuiTableColumnFlags_NoSort );
-                    ImGui::TableHeadersRow();
-                    int idx = 1;
-                    for( auto& v : vec )
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextDisabled( "%i.", idx++ );
+                    ImGui::TableNextColumn();
+                    auto sd = worker.GetSymbolData( v.addr );
+                    const auto symName = sd ? worker.GetString( sd->name ) : "[unknown]";
+                    if( v.addr >> 63 == 0 )
                     {
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        ImGui::TextDisabled( "%i.", idx++ );
-                        ImGui::TableNextColumn();
-                        auto sd = worker.GetSymbolData( v.addr );
-                        const auto symName = sd ? worker.GetString( sd->name ) : "[unknown]";
-                        if( v.addr >> 63 == 0 )
+                        if( shortenName == ShortenName::Never )
                         {
-                            if( shortenName == ShortenName::Never )
-                            {
-                                ImGui::TextUnformatted( symName );
-                            }
-                            else
-                            {
-                                const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
-                                ImGui::TextUnformatted( normalized );
-                                TooltipNormalizedName( symName, normalized );
-                            }
+                            ImGui::TextUnformatted( symName );
                         }
                         else
                         {
-                            TextColoredUnformatted( 0xFF8888FF, symName );
-                        }
-                        ImGui::TableNextColumn();
-                        ImGui::TextUnformatted( TimeToString( v.count * worker.GetSamplingPeriod() ) );
-                        ImGui::TableNextColumn();
-                        char tmp[16];
-                        auto end = PrintFloat( tmp, tmp+16, 100.f * v.count / as.ipTotalAsm.ext, 2 );
-                        *end = '\0';
-                        ImGui::TextDisabled( "%s%%", tmp );
-                        if( ImGui::IsItemHovered() )
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::Text( "%s samples", RealToString( v.count ) );
-                            ImGui::EndTooltip();
-                        }
-                        ImGui::TableNextColumn();
-                        {
-                            char tmp2[16];
-                            auto end2 = PrintFloat( tmp2, tmp2+16, 100.f * v.count / ( as.ipTotalAsm.local + as.ipTotalAsm.ext ), 2 );
-                            *end2 = '\0';
-                            ImGui::TextDisabled( "%s%%", tmp2 );
-                        }
-                        ImGui::TableNextColumn();
-                        if( sd && sd->line != 0 )
-                        {
-                            const auto fileName = worker.GetString( sd->file );
-                            ImGui::TextDisabled( "%s:%i", fileName, sd->line );
-                            if( ImGui::IsItemHovered() && SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
-                            {
-                                m_sourceTooltip.Parse( fileName, worker, view );
-                                if( !m_sourceTooltip.empty() )
-                                {
-                                    ImGui::BeginTooltip();
-                                    SetFont();
-                                    PrintSourceFragment( m_sourceTooltip, sd->line, 4, 7 );
-                                    UnsetFont();
-                                    ImGui::EndTooltip();
-                                }
-                                if( ImGui::IsMouseClicked( 1 ) )
-                                {
-                                    OpenSymbol( fileName, sd->line, v.addr, v.addr, worker, view );
-                                }
-                            }
-                        }
-                        ImGui::TableNextColumn();
-                        if( sd )
-                        {
-                            const auto imageName = worker.GetString( sd->imageName );
-                            const auto cw = ImGui::GetContentRegionAvail().x;
-                            const auto tw = ImGui::CalcTextSize( imageName ).x;
-                            TextDisabledUnformatted( imageName );
-                            if( tw > cw ) TooltipIfHovered( imageName );
+                            const auto normalized = ShortenZoneName( ShortenName::OnlyNormalize, symName );
+                            ImGui::TextUnformatted( normalized );
+                            TooltipNormalizedName( symName, normalized );
                         }
                     }
-                    ImGui::EndTable();
+                    else
+                    {
+                        TextColoredUnformatted( 0xFF8888FF, symName );
+                    }
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted( TimeToString( v.count * worker.GetSamplingPeriod() ) );
+                    ImGui::TableNextColumn();
+                    char tmp[16];
+                    auto end = PrintFloat( tmp, tmp+16, 100.f * v.count / as.ipTotalAsm.ext, 2 );
+                    *end = '\0';
+                    ImGui::TextDisabled( "%s%%", tmp );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text( "%s samples", RealToString( v.count ) );
+                        ImGui::EndTooltip();
+                    }
+                    ImGui::TableNextColumn();
+                    {
+                        char tmp2[16];
+                        auto end2 = PrintFloat( tmp2, tmp2+16, 100.f * v.count / ( as.ipTotalAsm.local + as.ipTotalAsm.ext ), 2 );
+                        *end2 = '\0';
+                        ImGui::TextDisabled( "%s%%", tmp2 );
+                    }
+                    ImGui::TableNextColumn();
+                    if( sd && sd->line != 0 )
+                    {
+                        const auto fileName = worker.GetString( sd->file );
+                        ImGui::TextDisabled( "%s:%i", fileName, sd->line );
+                        if( ImGui::IsItemHovered() && SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
+                        {
+                            m_sourceTooltip.Parse( fileName, worker, view );
+                            if( !m_sourceTooltip.empty() )
+                            {
+                                ImGui::BeginTooltip();
+                                SetFont();
+                                PrintSourceFragment( m_sourceTooltip, sd->line, 4, 7 );
+                                UnsetFont();
+                                ImGui::EndTooltip();
+                            }
+                            if( ImGui::IsMouseClicked( 1 ) )
+                            {
+                                OpenSymbol( fileName, sd->line, v.addr, v.addr, worker, view );
+                            }
+                        }
+                    }
+                    ImGui::TableNextColumn();
+                    if( sd )
+                    {
+                        const auto imageName = worker.GetString( sd->imageName );
+                        const auto cw = ImGui::GetContentRegionAvail().x;
+                        const auto tw = ImGui::CalcTextSize( imageName ).x;
+                        TextDisabledUnformatted( imageName );
+                        if( tw > cw ) TooltipIfHovered( imageName );
+                    }
                 }
+                ImGui::EndTable();
             }
             ImGui::EndChild();
             if( map.size() >= 4 )

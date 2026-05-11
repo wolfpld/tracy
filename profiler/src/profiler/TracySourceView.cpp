@@ -2142,7 +2142,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
 
     for( size_t i=0; i<sources.size(); i++ )
     {
-        json["files"][std::to_string( i )] = sources[i];
+        json["files"][std::to_string(i)] = sources[i];
     }
 
     view.AddLlmAttachment( json );

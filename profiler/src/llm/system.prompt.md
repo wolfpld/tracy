@@ -53,6 +53,8 @@ To provide a link to user manual section, use the anchor point as the link desti
 
 Insert links inline in the text, for example: "Function xyz() is located at [line 123 in source.c](source:/home/user/source.c:123)."
 
+Never write a link in an inline code block, like: `[description](link)`. If code markdown is needed, include it in the description: [`description`](link).
+
 ## Case specific operation
 
 Specialized instructions and workflows for specific tasks are provided with the `skill` tool. If the task description matches the skill description, you must load the skill in question to gather the required abilities, *before* doing anything else.

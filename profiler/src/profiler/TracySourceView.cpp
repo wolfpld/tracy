@@ -1984,7 +1984,7 @@ std::tuple<size_t, size_t> SourceView::GetJumpRange( const AsmJumpData& jump )
     return std::make_tuple( minIdx, maxIdx );
 }
 
-void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, View& view, const AddrStatData& as )
+void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, View& view )
 {
     auto sym = worker.GetSymbolData( m_symAddr );
     assert( sym );
@@ -2006,6 +2006,29 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
     else
     {
         symName = worker.GetString( sym->name );
+    }
+
+    const bool limitView = view.m_statRange.active;
+    AddrStatData as;
+    if( m_calcInlineStats )
+    {
+        GatherIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), false );
+        GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), false );
+    }
+    else
+    {
+        GatherIpStats( m_baseAddr, as, worker, limitView, view, m_source.filename(), false );
+        auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+        if( iptr )
+        {
+            const auto symEnd = m_baseAddr + m_codeLen;
+            while( *iptr < symEnd )
+            {
+                GatherIpStats( *iptr, as, worker, limitView, view, m_source.filename(), false );
+                iptr++;
+            }
+        }
+        GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, m_source.filename(), false );
     }
 
     nlohmann::json json = {
@@ -2140,7 +2163,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
         ImGui::SameLine();
         if( ImGui::SmallButton( ICON_FA_ROBOT ) )
         {
-            AttachRangeToLlm( 0, m_asm.size(), worker, view, as );
+            AttachRangeToLlm( 0, m_asm.size(), worker, view );
         }
     }
 
@@ -2408,7 +2431,7 @@ uint64_t SourceView::RenderSymbolAsmView( const AddrStatData& as, Worker& worker
                 if( ImGui::MenuItem( ICON_FA_ROBOT " Attach jump range in chat" ) )
                 {
                     auto [start, stop] = GetJumpRange( it->second );
-                    AttachRangeToLlm( start, stop, worker, view, as );
+                    AttachRangeToLlm( start, stop, worker, view );
                 }
             }
             if( needSeparator ) ImGui::Separator();

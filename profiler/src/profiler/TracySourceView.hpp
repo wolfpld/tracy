@@ -114,7 +114,7 @@ private:
     tracy_force_inline float CalcJumpSeparation( float scale );
     std::tuple<size_t, size_t> GetJumpRange( const AsmJumpData& jump );
 
-    void AttachRangeToLlm( size_t start, size_t stop, Worker& worker, View& view, const AddrStatData& as );
+    void AttachRangeToLlm( size_t start, size_t stop, Worker& worker, View& view );
 
 #ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );

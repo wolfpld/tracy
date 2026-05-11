@@ -183,5 +183,22 @@
       "required": ["query"]
     }
   }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "symbol_disasm",
+    "description": "Get disassembly and profiling data for a symbol.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Symbol name."
+        }
+      },
+      "required": ["name"]
+    }
+  }
 }
 ]

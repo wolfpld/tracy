@@ -10,6 +10,7 @@
 #include <regex>
 
 #include "TracyConfig.hpp"
+#include "TracyDisassembly.hpp"
 #include "TracyLlm.hpp"
 #include "TracyLlmApi.hpp"
 #include "TracyLlmTools.hpp"
@@ -188,6 +189,10 @@ std::string TracyLlmTools::HandleToolCalls( const std::string& tool, const nlohm
         else if( tool == "skill" )
         {
             return GetSkill( Param( "name" ) );
+        }
+        else if( tool == "symbol_disasm" )
+        {
+            return SymbolDisasm( Param( "name" ) );
         }
         return "Unknown tool call: " + tool;
     }
@@ -1020,6 +1025,19 @@ std::string TracyLlmTools::GetSkill( const std::string& name ) const
     auto it = std::ranges::find_if( m_skills, [&name]( const auto& skill ) { return skill.name == name; } );
     if( it == m_skills.end() ) return "No such skill.";
     return it->content;
+}
+
+std::string TracyLlmTools::SymbolDisasm( const std::string& name ) const
+{
+    for( auto& v : m_worker.GetSymbolMap() )
+    {
+        if( strcmp( m_worker.GetString( v.second.name ), name.c_str() ) == 0 )
+        {
+            auto json = JsonDisassembly( v.first, m_worker, m_view );
+            return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );
+        }
+    }
+    return "Symbol not found.";
 }
 
 }

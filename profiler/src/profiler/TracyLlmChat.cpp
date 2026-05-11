@@ -137,6 +137,11 @@ std::string TracyLlmChat::ToolCallDescription( const nlohmann::json& json ) cons
         if( it == m_skills.end() ) return "";
         return "Learn skill: " + it->description;
     }
+    else if( name == "symbol_disasm" )
+    {
+        if( !args.contains( "name" ) ) return "";
+        return "Disassemble symbol: " + args["name"].get_ref<const std::string&>();
+    }
     return "";
 }
 

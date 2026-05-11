@@ -1,6 +1,7 @@
 #ifndef __TRACYDISASSEMBLY_HPP__
 #define __TRACYDISASSEMBLY_HPP__
 
+#include <nlohmann/json.hpp>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -134,6 +135,7 @@ struct AddrStatData
 
 DisasmData Disassemble( uint64_t symAddr, const Worker& worker );
 std::string FormatDisassemblyLine( const AsmLine& opcode, Worker& worker, std::vector<std::string>& sources, uint64_t symAddr, const AddrStatData& as, const unordered_flat_map<uint64_t, uint32_t>& locMap );
+nlohmann::json JsonDisassembly( uint64_t symAddr, Worker& worker, const View& view );
 
 void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines );
 void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines );

@@ -708,6 +708,47 @@ std::string FormatDisassemblyLine( const AsmLine& opcode, Worker& worker, std::v
     return line;
 }
 
+nlohmann::json JsonDisassembly( uint64_t symAddr, Worker& worker, const View& view )
+{
+    auto sym = worker.GetSymbolData( symAddr );
+    if( !sym ) return nlohmann::json { { "error", "Symbol not found" } };
+    if( sym->isInline ) return nlohmann::json { { "error", "Symbol is inline" } };
+
+    auto data = Disassemble( symAddr, worker );
+    if( data.lines.empty() ) return nlohmann::json { { "error", "Disassembly failed" } };
+
+    const bool limitView = view.m_statRange.active;
+    AddrStatData as;
+    GatherIpStats( symAddr, as, worker, limitView, view, nullptr, false );
+    auto iptr = worker.GetInlineSymbolList( symAddr, data.codeLen );
+    if( iptr )
+    {
+        const auto symEnd = symAddr + data.codeLen;
+        while( *iptr < symEnd )
+        {
+            GatherIpStats( *iptr, as, worker, limitView, view, nullptr, false );
+            iptr++;
+        }
+    }
+    GatherAdditionalIpStats( symAddr, as, worker, limitView, view, nullptr, false );
+
+    nlohmann::json json = {
+        { "address", symAddr },
+        { "files", nlohmann::json::object() },
+        { "hint", "Code lines format is: fileIdx:line:offset:cost:callCost:assembly. To decode file names, access files[fileIdx]." },
+        { "symbol", worker.GetString( sym->name ) }
+    };
+
+    std::vector<std::string> sources;
+    std::string code;
+
+    for( auto& v: data.lines ) code += FormatDisassemblyLine( v, worker, sources, symAddr, as, data.locMap ) + "\n";
+    json["code"] = code;
+    for( size_t i = 0; i < sources.size(); ++i ) json["files"][std::to_string(i)] = sources[i];
+
+    return json;
+}
+
 void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines )
 {
     if( limitView )

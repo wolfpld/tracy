@@ -17,7 +17,7 @@ The assembly instruction listing of a symbol must be mapped to the source code. 
 
 fileIdx:line:offset:cost:callCost:assembly
 
-To identify the source file name of any assembly instruction, you must access `files[fileIdx]`. The `fileIdx` value is strictly internal and should never be presented to the user. Always show the source file name and line number in your answers.
+To identify the source file name of any assembly instruction, you must access `files[fileIdx]`. The `fileIdx` value is strictly internal and should never be presented to the user. Always show the source file name and line number in your answers. Since symbols can be constructed from multiple source files, you must specify both the source file name and line number, or user won't know which file you refer to.
 
 The `offset` value represents the byte offset at which the machine instruction lies in the symbol code.
 

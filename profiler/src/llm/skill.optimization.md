@@ -46,7 +46,8 @@ A careful investigation of the cost attribution is thus needed.
 
 1. Start by mapping the assembly instructions to the source code. All reasoning should be performed with source code first. The assembly can only be used as a supplementary source.
 2. Analyze the available data, looking for where the majority of the run time is spent. Always look at the code as a whole. Do not stop after finding a bunch of interesting spots.
-3. Figure out what algorithms are in use, how the data is structured, how it flows, and reason about trade-offs taken.
-4. Determine whether the code can be made to perform better. Note that some code will already be optimal, despite having hot spots.
-5. Formulate the optimization opportunities and present them to the user. Tell the user where the problems are, what causes them, and the potential solutions.
-6. Do not provide concrete speedup percentages. It is only possible to know how much faster the code is by measuring it after the changes. You can't do that.
+3. Consider the external calls the function is making. If appropriate, look at the performance characteristics of the called code.
+4. Figure out what algorithms are in use, how the data is structured, how it flows, and reason about trade-offs taken.
+5. Determine whether the code can be made to perform better. Note that some code will already be optimal, despite having hot spots.
+6. Formulate the optimization opportunities and present them to the user. Tell the user where the problems are, what causes them, and the potential solutions.
+7. Do not provide concrete speedup percentages. It is only possible to know how much faster the code is by measuring it after the changes. You can't do that.

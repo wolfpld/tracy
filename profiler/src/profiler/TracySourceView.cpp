@@ -2048,7 +2048,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
             line = "::";
         }
 
-        line += "+" + std::to_string( m_asm[i].addr - m_baseAddr ) + ":";
+        line += "+" + std::to_string( v.addr - m_baseAddr ) + ":";
 
         const auto totalCost = as.ipTotalAsm.local + as.ipTotalAsm.ext;
         if( totalCost != 0 )

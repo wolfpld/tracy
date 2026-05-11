@@ -1031,7 +1031,7 @@ std::string TracyLlmTools::SymbolDisasm( const std::string& name ) const
 {
     for( auto& v : m_worker.GetSymbolMap() )
     {
-        if( strcmp( m_worker.GetString( v.second.name ), name.c_str() ) == 0 )
+        if( !v.second.isInline && strcmp( m_worker.GetString( v.second.name ), name.c_str() ) == 0 )
         {
             auto json = JsonDisassembly( v.first, m_worker, m_view );
             return json.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace );

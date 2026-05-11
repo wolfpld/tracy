@@ -2012,7 +2012,7 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
         { "type", "assembly" },
         { "symbol", symName },
         { "files", nlohmann::json::object() },
-        { "hint", "Code lines format is: fileIdx:line:offset:cost:callCost:assembly. To decode file names, access files[fileIdx]. Never show undecoded fileIdx to user." }
+        { "hint", "Code lines format is: fileIdx:line:offset:cost:callCost:assembly. To decode file names, access files[fileIdx]." }
     };
 
     std::vector<std::string> sources;

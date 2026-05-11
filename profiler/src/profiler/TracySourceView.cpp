@@ -1183,13 +1183,14 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                 vec.reserve( map.size() );
                 for( auto& v : map ) vec.emplace_back( ChildStat { v.first, v.second } );
                 pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs.count > rhs.count; } );
-                if( ImGui::BeginTable( "##ccd", 6, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
+                if( ImGui::BeginTable( "##ccd", 7, ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY ) )
                 {
                     ImGui::TableSetupScrollFreeze( 0, 1 );
                     ImGui::TableSetupColumn( "#", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder );
                     ImGui::TableSetupColumn( "Child call", ImGuiTableColumnFlags_NoHide );
                     ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
-                    ImGui::TableSetupColumn( "Calls", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                    ImGui::TableSetupColumn( "% Calls", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
+                    ImGui::TableSetupColumn( "% Total", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
                     ImGui::TableSetupColumn( "Source file", ImGuiTableColumnFlags_NoSort );
                     ImGui::TableSetupColumn( "Image", ImGuiTableColumnFlags_NoSort );
                     ImGui::TableHeadersRow();
@@ -1231,6 +1232,13 @@ void SourceView::RenderSymbolView( Worker& worker, View& view )
                             ImGui::BeginTooltip();
                             ImGui::Text( "%s samples", RealToString( v.count ) );
                             ImGui::EndTooltip();
+                        }
+                        ImGui::TableNextColumn();
+                        {
+                            char tmp2[16];
+                            auto end2 = PrintFloat( tmp2, tmp2+16, 100.f * v.count / ( as.ipTotalAsm.local + as.ipTotalAsm.ext ), 2 );
+                            *end2 = '\0';
+                            ImGui::TextDisabled( "%s%%", tmp2 );
                         }
                         ImGui::TableNextColumn();
                         if( sd && sd->line != 0 )

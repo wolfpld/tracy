@@ -639,7 +639,7 @@ std::string FormatDisassemblyLine( const AsmLine& opcode, Worker& worker, std::v
             }
             if( stat.ext != 0 )
             {
-                snprintf( buf, sizeof(buf), "%.4f%%", 100.0f * stat.ext / totalCost );
+                snprintf( buf, sizeof(buf), "%.4f%%:", 100.0f * stat.ext / totalCost );
                 line += buf;
             }
             else

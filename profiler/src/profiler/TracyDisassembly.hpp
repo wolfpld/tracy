@@ -106,6 +106,31 @@ struct DisasmData
     CpuArchitecture cpuArch;
 };
 
+struct AddrStat
+{
+    uint64_t local;
+    uint64_t ext;
+
+    AddrStat& operator+=( const AddrStat& other )
+    {
+        local += other.local;
+        ext += other.ext;
+        return *this;
+    }
+};
+
+struct AddrStatData
+{
+    AddrStat ipTotalSrc = {};
+    AddrStat ipTotalAsm = {};
+    AddrStat ipMaxSrc = {};
+    AddrStat ipMaxAsm = {};
+    AddrStat hwMaxSrc = {};
+    AddrStat hwMaxAsm = {};
+    unordered_flat_map<uint64_t, AddrStat> ipCountSrc, ipCountAsm;
+    unordered_flat_map<uint64_t, AddrStat> hwCountSrc, hwCountAsm;
+};
+
 DisasmData Disassemble( uint64_t symAddr, const Worker& worker );
 
 }

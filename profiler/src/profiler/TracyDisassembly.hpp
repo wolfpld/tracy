@@ -132,6 +132,7 @@ struct AddrStatData
 };
 
 DisasmData Disassemble( uint64_t symAddr, const Worker& worker );
+std::string FormatDisassemblyLine( const AsmLine& opcode, Worker& worker, std::vector<std::string>& sources, uint64_t symAddr, const AddrStatData& as, const unordered_flat_map<uint64_t, uint32_t>& locMap );
 
 }
 

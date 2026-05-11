@@ -589,4 +589,122 @@ DisasmData Disassemble( uint64_t symAddr, const Worker& worker )
     return data;
 }
 
+std::string FormatDisassemblyLine( const AsmLine& opcode, Worker& worker, std::vector<std::string>& sources, uint64_t symAddr, const AddrStatData& as, const unordered_flat_map<uint64_t, uint32_t>& locMap )
+{
+    std::string line;
+
+    uint32_t srcline;
+    const auto srcidx = worker.GetLocationForAddress( opcode.addr, srcline );
+    if( srcidx.Active() )
+    {
+        size_t idx;
+        const auto file = worker.GetString( srcidx );
+        auto it = std::ranges::find( sources, file );
+        if( it == sources.end() )
+        {
+            idx = sources.size();
+            sources.emplace_back( file );
+        }
+        else
+        {
+            idx = std::distance( sources.begin(), it );
+        }
+
+        line = std::to_string( idx ) + ":" + std::to_string( srcline ) + ":";
+    }
+    else
+    {
+        line = "::";
+    }
+
+    line += "+" + std::to_string( opcode.addr - symAddr ) + ":";
+
+    const auto totalCost = as.ipTotalAsm.local + as.ipTotalAsm.ext;
+    if( totalCost != 0 )
+    {
+        char buf[32];
+        auto it = as.ipCountAsm.find( opcode.addr );
+        if( it != as.ipCountAsm.end() )
+        {
+            auto& stat = it->second;
+            if( stat.local != 0 )
+            {
+                snprintf( buf, sizeof(buf), "%.4f%%:", 100.0f * stat.local / totalCost );
+                line += buf;
+            }
+            else
+            {
+                line += ":";
+            }
+            if( stat.ext != 0 )
+            {
+                snprintf( buf, sizeof(buf), "%.4f%%", 100.0f * stat.ext / totalCost );
+                line += buf;
+            }
+            else
+            {
+                line += ":";
+            }
+        }
+        else
+        {
+            line += "::";
+        }
+    }
+    else
+    {
+        line += "::";
+    }
+
+    line += opcode.mnemonic;
+
+    const char* jumpName = nullptr;
+    bool hasJump = false;
+    if( opcode.jumpAddr != 0 )
+    {
+        auto lit = locMap.find( opcode.jumpAddr );
+        if( lit != locMap.end() )
+        {
+            line += " .L" + std::to_string( lit->second );
+            hasJump = true;
+        }
+        else
+        {
+            uint32_t jumpOffset;
+            uint64_t jumpBase = worker.GetSymbolForAddress( opcode.jumpAddr, jumpOffset );
+            if( jumpBase && jumpBase != symAddr )
+            {
+                auto jumpSym = worker.GetSymbolData( jumpBase );
+                if( jumpSym )
+                {
+                    if( worker.HasInlineSymbolAddresses() )
+                    {
+                        const auto jumpAddr = worker.GetInlineSymbolForAddress( opcode.jumpAddr );
+                        if( jumpAddr != 0 )
+                        {
+                            const auto symData = worker.GetSymbolData( jumpAddr );
+                            if( symData ) jumpName = worker.GetString( symData->name );
+                        }
+                    }
+                    if( !jumpName ) jumpName = worker.GetString( jumpSym->name );
+                }
+            }
+        }
+    }
+    if( !hasJump && !opcode.operands.empty() ) line += " " + opcode.operands;
+
+    std::string label;
+    auto it = locMap.find( opcode.addr );
+    if( it != locMap.end() ) label = ".L" + std::to_string( it->second );
+
+    if( jumpName || !label.empty() )
+    {
+        line += ";";
+        if( !label.empty() ) line += " label: " + label;
+        if( jumpName ) line += " destination: " + std::string( jumpName );
+    }
+
+    return line;
+}
+
 }

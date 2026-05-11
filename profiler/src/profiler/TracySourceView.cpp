@@ -2012,23 +2012,23 @@ void SourceView::AttachRangeToLlm( size_t start, size_t stop, Worker& worker, Vi
     AddrStatData as;
     if( m_calcInlineStats )
     {
-        GatherIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), false );
-        GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, m_source.filename(), false );
+        GatherIpStats( m_symAddr, as, worker, limitView, view, nullptr, false );
+        GatherAdditionalIpStats( m_symAddr, as, worker, limitView, view, nullptr, false );
     }
     else
     {
-        GatherIpStats( m_baseAddr, as, worker, limitView, view, m_source.filename(), false );
+        GatherIpStats( m_baseAddr, as, worker, limitView, view, nullptr, false );
         auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
         if( iptr )
         {
             const auto symEnd = m_baseAddr + m_codeLen;
             while( *iptr < symEnd )
             {
-                GatherIpStats( *iptr, as, worker, limitView, view, m_source.filename(), false );
+                GatherIpStats( *iptr, as, worker, limitView, view, nullptr, false );
                 iptr++;
             }
         }
-        GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, m_source.filename(), false );
+        GatherAdditionalIpStats( m_baseAddr, as, worker, limitView, view, nullptr, false );
     }
 
     nlohmann::json json = {

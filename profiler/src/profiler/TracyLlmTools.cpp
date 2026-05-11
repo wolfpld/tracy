@@ -79,8 +79,9 @@ static std::unique_ptr<pugi::xml_document> ParseHtml( const std::string& html )
     return doc;
 }
 
-TracyLlmTools::TracyLlmTools( Worker& worker, const TracyManualData& manual, const std::vector<LlmSkill>& skills )
+TracyLlmTools::TracyLlmTools( Worker& worker, const View& view, const TracyManualData& manual, const std::vector<LlmSkill>& skills )
     : m_worker( worker )
+    , m_view( view )
     , m_manual( manual )
     , m_skills( skills )
 {

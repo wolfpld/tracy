@@ -57,7 +57,7 @@ TracyLlm::TracyLlm( Worker& worker, View& view, const TracyManualData& manual )
 
     m_api = std::make_unique<TracyLlmApi>();
     m_chatUi = std::make_unique<TracyLlmChat>( view, worker, m_skills );
-    m_tools = std::make_unique<TracyLlmTools>( worker, manual, m_skills );
+    m_tools = std::make_unique<TracyLlmTools>( worker, view, manual, m_skills );
 
     m_busy = true;
     QueueConnect();

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "TracyDisassembly.hpp"
+#include "TracyView.hpp"
 #include "tracy_pdqsort.h"
 #include "../server/TracyWorker.hpp"
 
@@ -705,6 +706,233 @@ std::string FormatDisassemblyLine( const AsmLine& opcode, Worker& worker, std::v
     }
 
     return line;
+}
+
+void GatherIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines )
+{
+    if( limitView )
+    {
+        auto vec = worker.GetSamplesForSymbol( baseAddr );
+        if( !vec ) return;
+        auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        if( it == vec->end() ) return;
+        auto end = std::lower_bound( it, vec->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        as.ipTotalAsm.local += end - it;
+        while( it != end )
+        {
+            if( filename )
+            {
+                auto frame = worker.GetCallstackFrame( it->ip );
+                if( frame )
+                {
+                    const auto end = propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
+                    {
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
+                        {
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
+                            {
+                                auto sit = as.ipCountSrc.find( line );
+                                if( sit == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat { 1, 0 } );
+                                    if( as.ipMaxSrc.local < 1 ) as.ipMaxSrc.local = 1;
+                                }
+                                else
+                                {
+                                    const auto sum = sit->second.local + 1;
+                                    sit->second.local = sum;
+                                    if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
+                                }
+                                as.ipTotalSrc.local++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            auto addr = worker.GetCanonicalPointer( it->ip );
+            auto sit = as.ipCountAsm.find( addr );
+            if( sit == as.ipCountAsm.end() )
+            {
+                as.ipCountAsm.emplace( addr, AddrStat{ 1, 0 } );
+                if( as.ipMaxAsm.local < 1 ) as.ipMaxAsm.local = 1;
+            }
+            else
+            {
+                const auto sum = sit->second.local + 1;
+                sit->second.local = sum;
+                if( as.ipMaxAsm.local < sum ) as.ipMaxAsm.local = sum;
+            }
+
+            ++it;
+        }
+    }
+    else
+    {
+        auto ipmap = worker.GetSymbolInstructionPointers( baseAddr );
+        if( !ipmap ) return;
+        for( auto& ip : *ipmap )
+        {
+            auto addr = worker.GetCanonicalPointer( ip.first );
+            assert( as.ipCountAsm.find( addr ) == as.ipCountAsm.end() );
+            as.ipCountAsm.emplace( addr, AddrStat { ip.second, 0 } );
+            as.ipTotalAsm.local += ip.second;
+            if( as.ipMaxAsm.local < ip.second ) as.ipMaxAsm.local = ip.second;
+
+            if( filename )
+            {
+                auto frame = worker.GetCallstackFrame( ip.first );
+                if( frame )
+                {
+                    const auto end = propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
+                    {
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
+                        {
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
+                            {
+                                auto it = as.ipCountSrc.find( line );
+                                if( it == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat{ ip.second, 0 } );
+                                    if( as.ipMaxSrc.local < ip.second ) as.ipMaxSrc.local = ip.second;
+                                }
+                                else
+                                {
+                                    const auto sum = it->second.local + ip.second;
+                                    it->second.local = sum;
+                                    if( as.ipMaxSrc.local < sum ) as.ipMaxSrc.local = sum;
+                                }
+                                as.ipTotalSrc.local += ip.second;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void GatherAdditionalIpStats( uint64_t baseAddr, AddrStatData& as, const Worker& worker, bool limitView, const View& view, const char* filename, bool propagateInlines )
+{
+    if( !worker.AreSymbolSamplesReady() ) return;
+    auto sym = worker.GetSymbolData( baseAddr );
+    if( !sym ) return;
+
+    if( limitView )
+    {
+        for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
+        {
+            auto cp = worker.GetChildSamples( ip );
+            if( !cp ) continue;
+            auto it = std::lower_bound( cp->begin(), cp->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            if( it == cp->end() ) continue;
+            auto end = std::lower_bound( it, cp->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+            const auto ccnt = uint64_t( end - it );
+            auto eit = as.ipCountAsm.find( ip );
+            if( eit == as.ipCountAsm.end() )
+            {
+                as.ipCountAsm.emplace( ip, AddrStat { 0, ccnt } );
+            }
+            else
+            {
+                eit->second.ext += ccnt;
+            }
+            as.ipTotalAsm.ext += ccnt;
+            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
+
+            if( filename )
+            {
+                auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
+                if( frame )
+                {
+                    const auto end = propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
+                    {
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
+                        {
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
+                            {
+                                auto sit = as.ipCountSrc.find( line );
+                                if( sit == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                    if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
+                                }
+                                else
+                                {
+                                    const auto csum = sit->second.ext + ccnt;
+                                    sit->second.ext = csum;
+                                    if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
+                                }
+                                as.ipTotalSrc.ext += ccnt;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        for( uint64_t ip = baseAddr; ip < baseAddr + sym->size.Val(); ip++ )
+        {
+            auto cp = worker.GetChildSamples( ip );
+            if( !cp ) continue;
+            const auto ccnt = cp->size();
+            auto eit = as.ipCountAsm.find( ip );
+            if( eit == as.ipCountAsm.end() )
+            {
+                as.ipCountAsm.emplace( ip, AddrStat { 0, ccnt } );
+            }
+            else
+            {
+                eit->second.ext += ccnt;
+            }
+            as.ipTotalAsm.ext += ccnt;
+            if( as.ipMaxAsm.ext < ccnt ) as.ipMaxAsm.ext = ccnt;
+
+            if( filename )
+            {
+                auto frame = worker.GetCallstackFrame( worker.PackPointer( ip ) );
+                if( frame )
+                {
+                    const auto end = propagateInlines ? frame->size : 1;
+                    for( uint8_t i=0; i<end; i++ )
+                    {
+                        const auto line = frame->data[i].line;
+                        if( line != 0 )
+                        {
+                            auto ffn = worker.GetString( frame->data[i].file );
+                            if( strcmp( ffn, filename ) == 0 )
+                            {
+                                auto sit = as.ipCountSrc.find( line );
+                                if( sit == as.ipCountSrc.end() )
+                                {
+                                    as.ipCountSrc.emplace( line, AddrStat{ 0, ccnt } );
+                                    if( as.ipMaxSrc.ext < ccnt ) as.ipMaxSrc.ext = ccnt;
+                                }
+                                else
+                                {
+                                    const auto csum = sit->second.ext + ccnt;
+                                    sit->second.ext = csum;
+                                    if( as.ipMaxSrc.ext < csum ) as.ipMaxSrc.ext = csum;
+                                }
+                                as.ipTotalSrc.ext += ccnt;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 }
